@@ -18,8 +18,8 @@ This transition requires a structured and coordinated approach across multiple t
 
 ### Preparation
 
-1. Preserve some RPC nodes for heimdall-v1 historical data (this can be done in advance)
-2. (Internal) Disable self-heal on heimdall-v1 nodes (this can be done in advance)
+1. Preserve some RPC nodes for heimdall-v1 historical data
+2. (Internal) Disable self-heal on heimdall-v1 nodes
 3. **Node Operators Update Bor/Erigon to the latest version (compatible with v1 and v2)**
 4. **Node Operators Update Heimdall-v1 to migration-ready version**
 5. **Confirmation of a successful upgrade from all node operators**
@@ -29,11 +29,11 @@ This transition requires a structured and coordinated approach across multiple t
 ### Execution
 
 In case the script does not support your architecture, or you are not using the 0xpolygon docker image, you can use this runbook to perform the migration manually.  
-Be aware that some commands must be adapted to your architecture (e.g. if running heimdall inside docker or kubernetes, rather than plain Linux/Ubuntu machines).
-Please also refer to the [bash migration script](migrate.sh) for more details on the steps, the configuration files examples under `configs` [directory](./../configs), and the [README](README.md).  
+Be aware that some commands must be adapted to your architecture (e.g., if running heimdall inside `docker` or `kubernetes`, rather than plain Linux/Ubuntu machines).
+Please also refer to the [bash migration script](migrate.sh) for more details on the steps, the configuration files examples under `configs` [directory](../configs), and the [README](README.md).  
 
 ### Migration Steps
-1. (Internally) Resolve all the [PRE-MIGRATION] tasks in JIRA under heimdall-v2 epic
+1. (Internal) Resolve all the [PRE-MIGRATION] tasks in JIRA under heimdall-v2 epic
 2. Node operators confirm to be on the latest Bor/Erigon version (compatible with v1 and v2)
 3. Node operators confirm to be on the latest Heimdall-v1 version (with `halt_height` embedded)
 4. Node operators confirm to be on the latest `heimdallcli` version (with `get-last-committed-height` embedded)
@@ -70,36 +70,27 @@ Please also refer to the [bash migration script](migrate.sh) for more details on
 16. Node operators create a new `HEIMDALL_HOME` directory under `/var/lib/heimdall` by running `heimdalld init [moniker-name] --home=/var/lib/heimdall --chain-id=<V2_CHAIN_ID>`.  
     The moniker is available in v1 at `V1_HEIMDALL_HOME/config/config.toml`.
     The service file `heimdall.service` should reflect the same `User` (and possibly `Group`) coming from v1 service file.
-17. Node operators edit their configuration files with config information from their backup, plus default values. For detailed info, see [here](../configs).
-    1. v2 `app.toml` must reflect the “merge” from v1 `app.toml` and `heimdall-config.toml`
-        - All values from v1 `app.toml` should NOT be carried over.
-        - For `heimdall-config.toml`:
-            - `heimdall_rest_server` key is no longer required in v2
-            - It's recommended to set `bor_grpc_flag = "false"` for the sake of the migration (you can set it to `true` later on)
-    2. v2 `config.toml` also needs to be edited
-        - Ensure `moniker` remains the same in v2.
-        - Use `log_level = "info"` (v2 default is `info`)
-        - Do NOT port the following:
-            - `upnp`
-            - the entire `[fastsync]` section
-            - the `[consensus]` section (v2 defaults are fine)
-            - `index_tags` and `index_all_tags`
-    3. v2 `priv_validator_state.json` must reflect v1 `priv_validator_state.json` and update the `round` from a string type to an int type. Also, `height` must be set to the agreed initial v2 height (`v1_halt_height + 1`)
-    - v2 `addrbook.json` must match v1 `addrbook.json` (this is not mandatory but will help heimdall to peer faster)
-    - v2 `node_key.json` must reflect v1 values (`priv_key.value`) and preserve v2 types
-    - v2 `priv_validator_key.json` must reflect v1 values (`pub_key.value`, `priv_key.value` and `address`) and preserve v2 types
+17. Node operators edit their configuration files with config information from their backup, plus default values. For detailed info, see [here](../configs/README.md).
 18. **Move bridge folder** — Move the `bridge` folder from the backup to the new `HEIMDALL_HOME` directory, if it was used in v1.
 19. **Move New Genesis File** – Make sure the migrated genesis file is placed it in the correct directory.
-20. **Reload daemon and start heimdall with** `sudo systemctl daemon-reload && sudo systemctl start heimdalld`
-21. **Restart telemetry** (if needed) with `sudo systemctl restart telemetry`
-22. **Internal Monitoring**
-23. **Optional: WebSocket for Bor–Heimdall comm** - Edit bor `config.toml` file by adding the following under the [heimdall] section:
+20. **Enable self-heal on v2** by setting the following in `app.toml` (for amoy):
+    ```toml
+    sub_graph_url = "https://api.studio.thegraph.com/query/113009/amoy-subgraph-polygon/version/latest"
+    enable_self_heal = "true"
+    sh_state_synced_interval = "1h0m0s"
+    sh_stake_update_interval = "1h0m0s"
+    sh_max_depth_duration = "24h0m0s"
+    ```
+21. **Reload daemon and start heimdall with** `sudo systemctl daemon-reload && sudo systemctl start heimdalld`
+22. **Restart telemetry** (if needed) with `sudo systemctl restart telemetry`
+23. **(Internal) Monitoring**
+24. **Optional: WebSocket for Bor–Heimdall comm** - Edit bor `config.toml` file by adding the following under the [heimdall] section:
     ```toml
     [heimdall]
     ws-address = "ws://localhost:26657/websocket"
     ```
-24. **Restart bor** Only in case the step above was done.
-25. *Verification (internal)*
+25. **Restart bor** Only in case the step above was done.
+26. *(Internal) Verification*
     Once the migration is completed, and the v2 network is up and running:
     1. Make sure checkpoints are going through via APIs
     2. If the next checkpoint is stuck in the buffer, send the ack message for it manually:
@@ -107,5 +98,5 @@ Please also refer to the [bash migration script](migrate.sh) for more details on
        heimdalld tx checkpoint send-ack --home /var/lib/heimdall --auto-configure=true
        ```
     3. Make sure state syncs are going through via APIs
-26. (Internal) Contract `RootChain` is updated on L1 via method `RootChain.setHeimdallId` with the chainId previously agreed (since this is not used, can be done in advance or after the migration)
-27. (Internally) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic
+27. (Internal) Contract `RootChain` is updated on L1 via method `RootChain.setHeimdallId` with the chainId previously agreed (since this is not used, can be done in advance or after the migration)
+28. (Internal) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic

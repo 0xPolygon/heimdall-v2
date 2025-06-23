@@ -241,18 +241,22 @@ max-txs = -1
 
 ##### RPC and REST configs #####
 
+### TODO-MIGRATION: THIS IS PORTED FROM `eth_rpc_url` IN V1'S `heimdall-config.toml`
 # RPC endpoint for ethereum chain
 eth_rpc_url = "http://34.142.14.241:9545"
 
+### TODO-MIGRATION: THIS IS PORTED FROM `bor_rpc_url` IN V1'S `heimdall-config.toml`
 # RPC endpoint for bor chain
 bor_rpc_url = "http://localhost:8545"
 
 # GRPC flag for bor chain
 bor_grpc_flag = "false"
 
+### TODO-MIGRATION: THIS IS PORTED FROM `bor_grpc_url` IN V1'S `heimdall-config.toml`
 # GRPC endpoint for bor chain
 bor_grpc_url = "localhost:3131"
 
+### TODO-MIGRATION: THIS IS PORTED FROM `tendermint_bft_rpc_url` IN V1'S `heimdall-config.toml`
 # RPC endpoint for cometBFT
 comet_bft_rpc_url = "http://0.0.0.0:26657"
 

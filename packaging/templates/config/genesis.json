@@ -1,5 +1,5 @@
 {
-  "_comment" : "TODO HV2: replace this with actual genesis file after export",
+  "_comment" : "This is a placeholder heimdall-v1 genesis file. It is not compatible with v2 networks.",
   "genesis_time": "2020-06-04T10:47:20.806665Z",
   "chain_id": "heimdall-80001",
   "consensus_params": {

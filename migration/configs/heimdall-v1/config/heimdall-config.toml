@@ -1,23 +1,26 @@
-### TODO-MIGRATION: THIS WHOLE FILE WILL BE MERGED WITH `app.toml` IN V2
+### TODO-MIGRATION: THIS WHOLE FILE WILL BE MERGED WITH `app.toml` IN V2, KEEP A BACKUP AND DELETE IT
 
 # This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 
 ##### RPC and REST configs #####
 
+### TODO-MIGRATION: PORT THIS VALUE TO V2'S `app.toml`
 # RPC endpoint for ethereum chain
 eth_rpc_url = "http://34.142.14.241:9545"
 
+### TODO-MIGRATION: PORT THIS VALUE TO V2'S `app.toml`
 # RPC endpoint for bor chain
 bor_rpc_url = "http://localhost:8545"
 
 # GRPC flag for bor chain
 bor_grpc_flag = "false"
 
+### TODO-MIGRATION: PORT THIS VALUE TO V2'S `app.toml`
 # GRPC endpoint for bor chain
 bor_grpc_url = "localhost:3131"
 
-### TODO-MIGRATION: THIS KEY IS NAMED IS `comet_bft_rpc_url` IN V2
+### TODO-MIGRATION: PORT THIS VALUE TO `comet_bft_rpc_url` IN V2'S `app.toml`
 # RPC endpoint for tendermint
 tendermint_rpc_url = "http://0.0.0.0:26657"
 
@@ -26,7 +29,6 @@ sub_graph_url = ""
 
 #### Bridge configs ####
 
-### TODO-MIGRATION: THIS IS NOT NEEDED IN V2
 # Heimdall REST server endpoint, which is used by bridge
 heimdall_rest_server = "http://0.0.0.0:1317"
 

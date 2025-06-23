@@ -1,5 +1,5 @@
 {
-  "_comment" : "TODO HV2: replace this with actual genesis file after export",
+  "_comment" : "This is the old heimdall-v1 mumbai genesis file, which is now deprecated.",
   "genesis_time": "2020-06-04T10:47:20.806665Z",
   "chain_id": "heimdall-80001",
   "consensus_params": {

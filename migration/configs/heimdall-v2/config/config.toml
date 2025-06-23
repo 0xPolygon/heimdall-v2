@@ -18,6 +18,7 @@ version = "0.38.17"
 # or the name of an ABCI application compiled in with the CometBFT binary
 proxy_app = "tcp://127.0.0.1:26658"
 
+### TODO-MIGRATION: THIS IS PORTED FROM `moniker` IN V1'S `config.toml`
 # A custom human readable name for this node
 moniker = "heimdall0"
 
@@ -86,6 +87,7 @@ filter_peers = false
 #######################################################
 [rpc]
 
+### TODO-MIGRATION: THIS IS PORTED FROM `rpc.laddr` IN V1'S `config.toml`
 # TCP or UNIX socket address for the RPC server to listen on
 laddr = "tcp://127.0.0.1:26657"
 
@@ -202,17 +204,21 @@ pprof_laddr = "localhost:6060"
 #######################################################
 [p2p]
 
+### TODO-MIGRATION: THIS IS PORTED FROM `p2p.laddr` IN V1'S `config.toml`
 # Address to listen for incoming connections
 laddr = "tcp://0.0.0.0:26656"
 
+### TODO-MIGRATION: THIS IS PORTED FROM `external_address` IN V1'S `config.toml`
 # Address to advertise to peers for them to dial. If empty, will use the same
 # port as the laddr, and will introspect on the listener to figure out the
 # address. IP and port are required. Example: 159.89.10.97:26656
 external_address = ""
 
+### TODO-MIGRATION: THIS IS PORTED FROM `seeds` IN V1'S `config.toml`
 # Comma separated list of seed nodes to connect to
 seeds = ""
 
+### TODO-MIGRATION: THIS IS PORTED FROM `persistent_peers` IN V1'S `config.toml`
 # Comma separated list of nodes to keep persistent connections to
 persistent_peers = "b2a52e2b3b597a819974e304065608619fa28423@34.142.14.241:26656,99eeb85db956da1272005cab2b950df58a89e67e@34.142.12.127:26656"
 

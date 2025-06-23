@@ -1,5 +1,5 @@
 {
-  "_comment" : "TODO HV2: replace this with actual genesis file after export",
+  "_comment" : "This is the old heimdall-v1 amoy genesis file. New one is available at https://storage.googleapis.com/amoy-heimdallv2-genesis/dump-genesis.json",
   "genesis_time": "2023-11-06T06:41:35.410487141Z",
   "chain_id": "heimdall-80002",
   "consensus_params": {
