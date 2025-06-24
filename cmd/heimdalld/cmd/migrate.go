@@ -46,7 +46,7 @@ const (
 // MigrateCommand returns a command that migrates the heimdall v1 genesis file to heimdall v2.
 func MigrateCommand() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "migrate [genesis-file] --chain-id=[chain-id] --genesis-time=[genesis-time] --initial-height=[initial-height] [--verify-hash=true|false]",
+		Use:   "migrate [genesis-file] --chain-id=[chain-id] --genesis-time=[genesis-time] --initial-height=[initial-height] [--verify-data=true|false]",
 		Short: "Migrate application state",
 		Long:  `Run migrations to update the application state (e.g., for a chain upgrade) based on the provided genesis file.`,
 		Args:  cobra.ExactArgs(1),
