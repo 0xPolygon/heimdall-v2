@@ -21,10 +21,20 @@ If you are using a containerized version of Heimdall (e.g. `docker` or inside a 
 an image will be available to pull once the pilot node migration is successful.
 You'd need to back the content of `HEIMDALL_HOME/data` folder up, related to heimdall-v1, for future reference,
 and leave that folder empty.
-Then, install the docker image,
-access the container and apply the changes explained in [./configs/README.md](./configs/README.md).
-At this point, you can run heimdall-v2.
-Note that the image will contain the `genesis.json` file, so you won't need to download it separately.
+Then, install the docker image.
+Such an image will contain the `genesis.json` file, so you won't need to download it separately.
+At this point, based on your convenience, you can decide to go one of the following ways:  
+1. access the container(s) and apply the changes explained in [./configs/README.md](./configs/README.md).
+2. or generate the default configuration files by running the following command:
+```bash
+```bash
+  heimdalld init <MONIKER> --chain-id <CHAIN_ID>
+```
+Make sure not to replace the existing genesis file (do not use `--overwrite` in the `init` command).
+`<MONIKER>` is the name of your node and `<CHAIN_ID>` is the chain you are running Heimdall-v2 on
+(e.g., `heimdallv2-80002` for `amoy`, and `heimdallv2-137` for `mainnet`)
+At this point, you can run the heimdall-v2 image.
+As previously stated, the image will contain the `genesis.json` file, so you won't need to download it separately.
 However, the file is going to be pretty large, especially for mainnet, where it is expected to be around 4–5 GB.
 Hence, please make sure you have enough disk space available, and you have a fast internet connection.
 
