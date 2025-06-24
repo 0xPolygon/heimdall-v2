@@ -176,7 +176,7 @@ func initRootCmd(
 
 			// wait for the rest server to start
 			resultChan := make(chan string)
-			timeout := time.After(60 * time.Second)
+			timeout := time.After(60 * time.Minute)
 
 			go checkServerStatus(clientCtx, helper.GetHeimdallServerEndpoint(util.AccountParamsURL), resultChan)
 
