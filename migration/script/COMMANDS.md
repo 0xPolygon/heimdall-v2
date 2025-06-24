@@ -259,16 +259,16 @@ If the migration itself doesn't go as planned, you can roll back to the previous
     ```bash
     sudo mv -f /lib/systemd/system/heimdalld.service.backup /lib/systemd/system/heimdalld.service
     ```
-5. Install the "fallback version" of heimdall (without `halt_height` embedded), `v1.5.0-beta`.
+5. Install the previous version of heimdall `v1.6.0-beta`.
    This can be previously backed up or downloaded with the following command, after replacing the version tag, network name (`amoy` or `mainnet`), and node type (`sentry` or `validator`).
     ```bash
-    curl -L https://raw.githubusercontent.com/maticnetwork/install/main/heimdall.sh | bash -s -- v1.5.0-beta <network> <node_type>    ```
+    curl -L https://raw.githubusercontent.com/maticnetwork/install/main/heimdall.sh | bash -s -- v1.6.0-beta <network> <node_type>    ```
     ```
 6. Check `heimdalld` version
     ```bash
     /usr/bin/heimdalld version
     # It should print
-    # v1.5.0-beta
+    # v1.6.0-beta
     ```
    If it still prints the v2 version, you need to move the v1 binary to the correct location.
 7. Reload the daemon and start heimdall
