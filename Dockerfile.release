@@ -6,13 +6,16 @@ ENV HEIMDALL_DIR=$HEIMDALL_DIR
 RUN apk add --no-cache \
        ca-certificates \
        tini && \
-       mkdir -p ${HEIMDALL_DIR}
+       mkdir -p ${HEIMDALL_DIR} \
+       curl
 
 WORKDIR ${HEIMDALL_DIR}
+
 COPY heimdalld /usr/bin/
 COPY builder/files/genesis-mainnet-v1.json ${HEIMDALL_DIR}/
 COPY builder/files/genesis-testnet-v4.json ${HEIMDALL_DIR}/
-COPY builder/files/genesis-amoy-v1.json ${HEIMDALL_DIR}/
+RUN mkdir -p ${HEIMDALL_DIR}/config
+RUN curl -L -o ${HEIMDALL_DIR}/config/genesis.json https://storage.googleapis.com/amoy-heimdallv2-genesis/migrated_dump-genesis.json
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
