@@ -4,14 +4,14 @@ umask 0022
 
 # -------------------- Env variables, to be adjusted before rolling out --------------------
 V1_VERSION="1.6.0-beta"
-V1_GENESIS_CHECKSUM="4eb6ddd5d84f08f6db4c1cc0f1793cc8b68ac112684eae4ce2b26042a7a9b3645ac6657fda212d77e5881c54cbc829384e1fc31eb9ced167c6d10ac8afbadd7e"
-V2_GENESIS_CHECKSUM="02c4d40eada58ee8835bfdbe633bda07f2989bc0d65c18114df2cbfe4b07d8fdbbce3a72a1c3bfeef2b7fc9c295bbf5b4d5ede70c3fb480546625075459675e2"
-V2_VERSION="0.2.1"
+V1_GENESIS_CHECKSUM="2243f213c280afbffc06926052bbd83e200825c614cc434f3d045c52c565c7ca50bbd7d8f4a0d8f5c5c78dd64fd3a4db5a160056726f49f5926ac610d9157788"
+V2_GENESIS_CHECKSUM="70bb9b754781f0ec77ace3132079420b26da602b606e514b71c969d29ab9a0c4ec757d44b5597d2889342708fdbfb48d9029caddd48ef1584d484977a17bd24d"
+V2_VERSION="0.2.2"
 V1_CHAIN_ID="heimdall-80002"
 V2_CHAIN_ID="heimdallv2-80002"
 V2_GENESIS_TIME="2025-06-24T20:00:00Z"
 V1_HALT_HEIGHT=8788500
-VERIFY_EXPORTED_DATA=true
+VERIFY_EXPORTED_DATA=false
 TRUSTED_GENESIS_URL="https://storage.googleapis.com/amoy-heimdallv2-genesis/dump-genesis.json"
 
 # -------------------- const env variables --------------------
@@ -992,7 +992,7 @@ for path in "${CRITICAL_PATHS[@]}"; do
     fi
 done
 echo "[INFO] Recursively setting ownership of all contents in $V2_HEIMDALL_HOME to $HEIMDALL_SERVICE_USER"
-sudo chown -R "$HEIMDALL_SERVICE_USER":"$HEIMDALL_SERVICE_USER" "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to chown $V2_HEIMDALL_HOME"
+sudo chown -R "$HEIMDALL_SERVICE_USER" "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to chown $V2_HEIMDALL_HOME"
 # Set 640 permissions for all files
 echo "[INFO] Setting 640 permissions for all files under $V2_HEIMDALL_HOME"
 find "$V2_HEIMDALL_HOME" -type f ! -name '.*' -exec chmod 644 {} \; || handle_error $STEP "Failed to chmod files"
