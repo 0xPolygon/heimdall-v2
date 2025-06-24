@@ -130,12 +130,14 @@ To let all node operators run the migration on their nodes, the pilot node must 
      V2_GENESIS_CHECKSUM="02c4d40eada58ee8835bfdbe633bda07f2989bc0d65c18114df2cbfe4b07d8fdbbce3a72a1c3bfeef2b7fc9c295bbf5b4d5ede70c3fb480546625075459675e2"
      TRUSTED_GENESIS_URL="https://storage.googleapis.com/amoy-heimdallv2-genesis/dump-genesis.json"
      VERIFY_EXPORTED_DATA=false
+     V2_VERSION="0.2.1"
      ```
     where
     - `V1_GENESIS_CHECKSUM` is the content of `dump-genesis.json.sha512`
     - `V2_GENESIS_CHECKSUM` is the content of `migrated_dump-genesis.json.sha512`
     - `TRUSTED_GENESIS_URL` is the `Public URL` of the genesis file (previously updated on a GCP bucket).
     - `VERIFY_EXPORTED_DATA` is set to `false` because the genesis data has been already verified on the pilot node, and this will save some time and computational resources on other nodes.  
+    - `V2_VERSION` is the next version we are going to release, which is likely to be `0.2.2` for amoy.
 20. cd into the migration script folder
     ```bash
     cd heimdall-v2/migration/script
