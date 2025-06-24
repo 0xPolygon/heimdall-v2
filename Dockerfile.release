@@ -5,9 +5,10 @@ ENV HEIMDALL_DIR=$HEIMDALL_DIR
 
 RUN apk add --no-cache \
        ca-certificates \
-       tini && \
+       tini \
+       curl && \
        mkdir -p ${HEIMDALL_DIR} \
-       curl
+       
 
 WORKDIR ${HEIMDALL_DIR}
 
