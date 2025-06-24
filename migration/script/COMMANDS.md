@@ -18,7 +18,7 @@ To let all node operators run the migration on their nodes, the pilot node must 
     V2_VERSION="0.2.1"
     V1_CHAIN_ID="heimdall-80002"
     V2_CHAIN_ID="heimdallv2-80002"
-    V2_GENESIS_TIME="2025-06-24T20:30:00Z"
+    V2_GENESIS_TIME="2025-06-24T20:00:00Z"
     V1_HALT_HEIGHT=8788500
     VERIFY_EXPORTED_DATA=true
     ```
