@@ -112,11 +112,13 @@ To let all node operators run the migration on their nodes, the pilot node must 
 17. Copy the following file from the remote machine to the local one (they are located under `backup-dir`, which is `HEIMDALL_HOME.backup/`, typically `/var/lib/heimdall.backup/`):
     - `dump-genesis.json`
     - `dump-genesis.json.sha512`
+    - `migrated_dump-genesis.json`
     - `migrated_dump-genesis.json.sha512`
      You can use the following commands from your local machine
     ```bash
      scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/dump-genesis.json ./
      scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/dump-genesis.json.sha512 ./
+     scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/migrated_dump-genesis.json ./
      scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/migrated_dump-genesis.json.sha512 ./
       ```
 18. Upload the `dump-genesis.json` to the GCP bucket so that they can be accessed by other node operators:
@@ -130,7 +132,7 @@ To let all node operators run the migration on their nodes, the pilot node must 
      V2_GENESIS_CHECKSUM="02c4d40eada58ee8835bfdbe633bda07f2989bc0d65c18114df2cbfe4b07d8fdbbce3a72a1c3bfeef2b7fc9c295bbf5b4d5ede70c3fb480546625075459675e2"
      TRUSTED_GENESIS_URL="https://storage.googleapis.com/amoy-heimdallv2-genesis/dump-genesis.json"
      VERIFY_EXPORTED_DATA=false
-     V2_VERSION="0.2.1"
+     V2_VERSION="0.2.2"
      ```
     where
     - `V1_GENESIS_CHECKSUM` is the content of `dump-genesis.json.sha512`
@@ -209,12 +211,12 @@ This can be run by any node operator.
    ```bash
      sudo bash migrate.sh \
        --heimdall-v1-home=/var/lib/heimdall \
-       --heimdallcli-path=/home/ubuntu/go/bin/heimdallcli \
-       --heimdalld-path=/home/ubuntu/go/bin/heimdalld \
+       --heimdallcli-path=/usr/bin/heimdallcli \
+       --heimdalld-path=/usr/bin/heimdalld \
        --network=amoy \
        --node-type=validator \
        --service-user=heimdall \
-       --generate-genesis=true
+       --generate-genesis=false
    ```
    This will create `heimdall-v2` into `/var/lib/heimdall`
 8. When the script finishes, run the following commands to reload the daemon, and start `heimdall`
@@ -284,7 +286,7 @@ If the migration itself doesn't go as planned, you can roll back to the previous
 10. Potentially rerun the migration process when the issues are fixed.
 
 
-# (Internal) Verification (internal)
+# (Internal) Verification
 1. Once the migration is completed and the v2 network is up and running:
    - Make sure checkpoints are going through via APIs
    - If the next checkpoint is stuck in the buffer, send the ack message for it manually:
