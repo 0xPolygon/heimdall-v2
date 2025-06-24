@@ -7,8 +7,7 @@ RUN apk add --no-cache \
        ca-certificates \
        tini \
        curl && \
-       mkdir -p ${HEIMDALL_DIR} \
-       
+       mkdir -p ${HEIMDALL_DIR}
 
 WORKDIR ${HEIMDALL_DIR}
 
