@@ -83,28 +83,39 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		request.Pagination.Limit = defaultRecordListLimit
 	}
 
-	res, _, err := query.CollectionPaginate(
+	// fetch all records without pagination first
+	allRes, _, err := query.CollectionPaginate(
 		ctx,
 		q.k.RecordsWithID,
-		&request.Pagination, func(id uint64, record types.EventRecord) (*types.EventRecord, error) {
+		nil, // fetch all
+		func(id uint64, record types.EventRecord) (*types.EventRecord, error) {
 			return q.k.GetEventRecord(ctx, id)
 		},
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to collect records: %v", err)
 	}
 
-	records := make([]types.EventRecord, 0, len(res))
-	for _, r := range res {
+	// apply filters
+	filtered := make([]types.EventRecord, 0, len(allRes))
+	for _, r := range allRes {
 		if r.Id >= request.FromId && r.RecordTime.Before(request.ToTime) {
-			records = append(records, *r)
-			if len(records) >= maxRecordListLimitPerPage {
-				break
-			}
+			filtered = append(filtered, *r)
 		}
 	}
 
-	return &types.RecordListWithTimeResponse{EventRecords: records}, nil
+	if len(filtered) == 0 {
+		return &types.RecordListWithTimeResponse{
+			EventRecords: []types.EventRecord{},
+		}, nil
+	}
+
+	// apply pagination over the filtered result
+	paginatedRecords := filterWithPage(filtered, &request.Pagination)
+
+	return &types.RecordListWithTimeResponse{
+		EventRecords: paginatedRecords,
+	}, nil
 }
 
 func (q queryServer) GetRecordSequence(ctx context.Context, request *types.RecordSequenceRequest) (*types.RecordSequenceResponse, error) {
@@ -204,4 +215,21 @@ func isPaginationEmpty(p query.PageRequest) bool {
 		p.Limit == 0 &&
 		!p.CountTotal &&
 		!p.Reverse
+}
+
+func filterWithPage(records []types.EventRecord, pagination *query.PageRequest) []types.EventRecord {
+	if pagination == nil {
+		return records
+	}
+
+	start := int(pagination.Offset)
+	end := start + int(pagination.Limit)
+
+	if start >= len(records) {
+		return []types.EventRecord{}
+	}
+	if end > len(records) {
+		end = len(records)
+	}
+	return records[start:end]
 }
