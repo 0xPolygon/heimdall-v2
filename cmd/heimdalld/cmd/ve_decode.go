@@ -18,8 +18,8 @@ import (
 	"github.com/cometbft/cometbft/store"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	goproto "github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/golang/protobuf/proto"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -208,7 +208,7 @@ func GetVEsFromEndpoint(height int64, host string, port uint64) (*abci.ExtendedC
 	}
 
 	var voteExt abci.ExtendedCommitInfo
-	if err := goproto.Unmarshal(veBytes, &voteExt); err != nil {
+	if err := proto.Unmarshal(veBytes, &voteExt); err != nil {
 		return nil, err
 	}
 	return &voteExt, nil
@@ -253,7 +253,7 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 	for i, v := range ext.Votes {
 		// Unmarshal sideTx extension
 		var ves sidetxs.VoteExtension
-		if err := goproto.Unmarshal(v.VoteExtension, &ves); err != nil {
+		if err := proto.Unmarshal(v.VoteExtension, &ves); err != nil {
 			return nil, err
 		}
 
@@ -330,7 +330,7 @@ func BuildSummaryJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo
 		power := v.Validator.Power
 
 		var ves sidetxs.VoteExtension
-		if err := goproto.Unmarshal(v.VoteExtension, &ves); err != nil {
+		if err := proto.Unmarshal(v.VoteExtension, &ves); err != nil {
 			return nil, err
 		}
 		if mp := ves.MilestoneProposition; mp != nil {
@@ -406,6 +406,9 @@ func IsDummyNonRpVoteExtension(height int64, chainId string, nonRpVoteExt []byte
 }
 
 func GetCheckpointMsg(nonRpVoteExt []byte) (*checkpointTypes.MsgCheckpoint, error) {
+	if len(nonRpVoteExt) < 1 {
+		return nil, fmt.Errorf("nonRpVoteExt is too short: length %d", len(nonRpVoteExt))
+	}
 	// Skip leading marker byte
 	checkpointMsg, err := checkpointTypes.UnpackCheckpointSideSignBytes(nonRpVoteExt[1:])
 	if err != nil {
