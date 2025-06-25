@@ -64,15 +64,13 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	}
 
 	// Parse chain_id and vote_extensions_enable_height from the genesis file.
-	// chainId, enableHeight, err := extractGenesisMetadata(genPath)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to parse genesis: %w", err)
-	// }
-	// if height <= enableHeight {
-	// 	return fmt.Errorf("block height must be > vote_extensions_enable_height (%d)", enableHeight)
-	// }
-
-	chainId := "heimdallv2-80002"
+	chainId, enableHeight, err := extractGenesisMetadata(genPath)
+	if err != nil {
+		return fmt.Errorf("failed to parse genesis: %w", err)
+	}
+	if height <= enableHeight {
+		return fmt.Errorf("block height must be > vote_extensions_enable_height (%d)", enableHeight)
+	}
 
 	host, err := cmd.Flags().GetString("host")
 	if err != nil {
