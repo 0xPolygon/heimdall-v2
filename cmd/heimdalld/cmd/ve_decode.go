@@ -117,12 +117,10 @@ func extractGenesisMetadata(path string) (chainID string, voteExtHeight int64, e
 	var genesis struct {
 		ChainID   string `json:"chain_id"`
 		Consensus struct {
-			Params struct {
-				ABCI struct {
-					VoteExtHeight string `json:"vote_extensions_enable_height"`
-				} `json:"abci"`
-			} `json:"params"`
-		} `json:"consensus"`
+			ABCI struct {
+				VoteExtHeight string `json:"vote_extensions_enable_height"`
+			} `json:"abci"`
+		} `json:"consensus_params"`
 	}
 	if err := json.Unmarshal(data, &genesis); err != nil {
 		return "", 0, err
@@ -130,7 +128,7 @@ func extractGenesisMetadata(path string) (chainID string, voteExtHeight int64, e
 	if genesis.ChainID == "" {
 		return "", 0, fmt.Errorf("empty chain_id found in genesis.json")
 	}
-	enableHeight, err := strconv.ParseInt(genesis.Consensus.Params.ABCI.VoteExtHeight, 10, 64)
+	enableHeight, err := strconv.ParseInt(genesis.Consensus.ABCI.VoteExtHeight, 10, 64)
 	if err != nil {
 		return "", 0, fmt.Errorf("invalid vote_extensions_enable_height: %w", err)
 	}
