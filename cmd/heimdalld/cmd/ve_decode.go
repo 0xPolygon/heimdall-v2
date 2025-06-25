@@ -64,13 +64,15 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	}
 
 	// Parse chain_id and vote_extensions_enable_height from the genesis file.
-	chainId, enableHeight, err := extractGenesisMetadata(genPath)
-	if err != nil {
-		return fmt.Errorf("failed to parse genesis: %w", err)
-	}
-	if height <= enableHeight {
-		return fmt.Errorf("block height must be > vote_extensions_enable_height (%d)", enableHeight)
-	}
+	// chainId, enableHeight, err := extractGenesisMetadata(genPath)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to parse genesis: %w", err)
+	// }
+	// if height <= enableHeight {
+	// 	return fmt.Errorf("block height must be > vote_extensions_enable_height (%d)", enableHeight)
+	// }
+
+	chainId := "heimdallv2-80002"
 
 	host, err := cmd.Flags().GetString("host")
 	if err != nil {
@@ -285,21 +287,23 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 			}
 		}
 
-		// Non-RP vote extension: dummy vs checkpoint
-		if isDummy, _ := IsDummyNonRpVoteExtension(height, chainId, v.NonRpVoteExtension); isDummy {
-			vote.NonRpData = util.FormatHex(v.NonRpVoteExtension)
-		} else {
-			msg, err := GetCheckpointMsg(v.NonRpVoteExtension)
-			if err != nil {
-				return nil, fmt.Errorf("error unpacking checkpoint: %w", err)
-			}
-			vote.NonRpData = CheckpointData{
-				Proposer:        common.HexToAddress(msg.Proposer).Hex(),
-				StartBlock:      msg.StartBlock,
-				EndBlock:        msg.EndBlock,
-				RootHash:        common.BytesToHash(msg.RootHash).Hex(),
-				AccountRootHash: common.BytesToHash(msg.AccountRootHash).Hex(),
-				BorChainID:      msg.BorChainId,
+		if len(v.NonRpVoteExtension) > 0 {
+			// Non-RP vote extension: dummy vs checkpoint
+			if isDummy, _ := IsDummyNonRpVoteExtension(height, chainId, v.NonRpVoteExtension); isDummy {
+				vote.NonRpData = util.FormatHex(v.NonRpVoteExtension)
+			} else {
+				msg, err := GetCheckpointMsg(v.NonRpVoteExtension)
+				if err != nil {
+					return nil, fmt.Errorf("error unpacking checkpoint: %w", err)
+				}
+				vote.NonRpData = CheckpointData{
+					Proposer:        common.HexToAddress(msg.Proposer).Hex(),
+					StartBlock:      msg.StartBlock,
+					EndBlock:        msg.EndBlock,
+					RootHash:        common.BytesToHash(msg.RootHash).Hex(),
+					AccountRootHash: common.BytesToHash(msg.AccountRootHash).Hex(),
+					BorChainID:      msg.BorChainId,
+				}
 			}
 		}
 
@@ -346,33 +350,35 @@ func BuildSummaryJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo
 			sideTxVP[txKey][r.Result.String()] += power
 		}
 
-		var key string
-		isDummy, err := IsDummyNonRpVoteExtension(height, chainId, v.NonRpVoteExtension)
-		if err != nil {
-			return nil, fmt.Errorf("error checking dummy non-RP extension: %w", err)
-		}
-		if isDummy {
-			key = util.FormatHex(v.NonRpVoteExtension)
-		} else {
-			msg, err := GetCheckpointMsg(v.NonRpVoteExtension)
+		if len(v.NonRpVoteExtension) > 0 {
+			var key string
+			isDummy, err := IsDummyNonRpVoteExtension(height, chainId, v.NonRpVoteExtension)
 			if err != nil {
-				return nil, fmt.Errorf("error unpacking checkpoint message: %w", err)
+				return nil, fmt.Errorf("error checking dummy non-RP extension: %w", err)
 			}
-			checkpointData := CheckpointData{
-				Proposer:        common.HexToAddress(msg.Proposer).Hex(),
-				StartBlock:      msg.StartBlock,
-				EndBlock:        msg.EndBlock,
-				RootHash:        common.BytesToHash(msg.RootHash).Hex(),
-				AccountRootHash: common.BytesToHash(msg.AccountRootHash).Hex(),
-				BorChainID:      msg.BorChainId,
+			if isDummy {
+				key = util.FormatHex(v.NonRpVoteExtension)
+			} else {
+				msg, err := GetCheckpointMsg(v.NonRpVoteExtension)
+				if err != nil {
+					return nil, fmt.Errorf("error unpacking checkpoint message: %w", err)
+				}
+				checkpointData := CheckpointData{
+					Proposer:        common.HexToAddress(msg.Proposer).Hex(),
+					StartBlock:      msg.StartBlock,
+					EndBlock:        msg.EndBlock,
+					RootHash:        common.BytesToHash(msg.RootHash).Hex(),
+					AccountRootHash: common.BytesToHash(msg.AccountRootHash).Hex(),
+					BorChainID:      msg.BorChainId,
+				}
+				b, err := json.Marshal(checkpointData)
+				if err != nil {
+					return nil, err
+				}
+				key = string(b)
 			}
-			b, err := json.Marshal(checkpointData)
-			if err != nil {
-				return nil, err
-			}
-			key = string(b)
+			nonRpVP[key] += power
 		}
-		nonRpVP[key] += power
 	}
 
 	summary := SummaryData{
