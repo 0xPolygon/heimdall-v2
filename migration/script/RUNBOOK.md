@@ -75,7 +75,7 @@ Please also refer to the [bash migration script](migrate.sh) for more details on
 19. **Move New Genesis File** – Make sure the migrated genesis file is placed it in the correct directory.
 20. **Enable self-heal on v2** by setting the following in `app.toml` (for amoy):
     ```toml
-    sub_graph_url = "https://api.studio.thegraph.com/query/113009/amoy-subgraph-polygon/version/latest"
+    sub_graph_url = "<SUBGRAPH_URL>"
     enable_self_heal = "true"
     sh_state_synced_interval = "1h0m0s"
     sh_stake_update_interval = "1h0m0s"
