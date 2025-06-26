@@ -243,10 +243,10 @@ max-txs = -1
 ##### RPC and REST configs #####
 
 # RPC endpoint for ethereum chain
-eth_rpc_url = "https://sepolia.gateway.tenderly.co/1Fu9PnuvvCTkD8smYbVTHR"
+eth_rpc_url = ""
 
 # RPC endpoint for bor chain
-bor_rpc_url = "https://rpc-amoy.polygon.technology/"
+bor_rpc_url = ""
 
 # GRPC flag for bor chain
 bor_grpc_flag = "false"
