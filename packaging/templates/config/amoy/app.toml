@@ -243,7 +243,7 @@ max-txs = -1
 ##### RPC and REST configs #####
 
 # RPC endpoint for ethereum chain
-eth_rpc_url = "https://few-thrilling-fog.ethereum-sepolia.quiknode.pro/820ce4af3919ef793e5976a761e55d08137e11d3/"
+eth_rpc_url = "http://localhost:9545"
 
 # RPC endpoint for bor chain
 bor_rpc_url = "http://localhost:8545"
