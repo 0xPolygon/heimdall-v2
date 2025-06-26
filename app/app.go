@@ -67,7 +67,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/client/docs"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	"github.com/0xPolygon/heimdall-v2/version"
+	hversion "github.com/0xPolygon/heimdall-v2/version"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -749,7 +749,7 @@ func getCometStatusHandler(cliCtx client.Context) func(w http.ResponseWriter, r 
 
 func getHeimdallV2Version() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		versionInfo := version.NewInfo()
+		versionInfo := hversion.NewInfo()
 		versionBytes, err := json.Marshal(versionInfo)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to marshal version: %v", err), http.StatusInternalServerError)
