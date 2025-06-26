@@ -83,6 +83,10 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		request.Pagination.Limit = defaultRecordListLimit
 	}
 
+	if request.FromId < 1 {
+		return nil, status.Errorf(codes.InvalidArgument, "fromId should start from at least 1")
+	}
+
 	// fetch all records without pagination first
 	allRes, _, err := query.CollectionPaginate(
 		ctx,
