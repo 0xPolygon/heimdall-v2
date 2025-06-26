@@ -89,7 +89,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		q.k.RecordsWithID,
 		&query.PageRequest{
 			Limit:  maxRecordListLimitPerPage,
-			Offset: request.FromId,
+			Offset: request.FromId - 1, // Offset is 0-based, so we subtract 1 from FromId
 		},
 		func(id uint64, record types.EventRecord) (*types.EventRecord, error) {
 			return q.k.GetEventRecord(ctx, id)
