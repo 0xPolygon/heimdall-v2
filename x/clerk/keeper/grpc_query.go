@@ -87,7 +87,9 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	allRes, _, err := query.CollectionPaginate(
 		ctx,
 		q.k.RecordsWithID,
-		nil, // fetch all
+		&query.PageRequest{
+			Limit: maxRecordListLimitPerPage,
+		},
 		func(id uint64, record types.EventRecord) (*types.EventRecord, error) {
 			return q.k.GetEventRecord(ctx, id)
 		},
