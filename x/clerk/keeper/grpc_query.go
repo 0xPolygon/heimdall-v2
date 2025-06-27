@@ -216,6 +216,11 @@ func (q queryServer) GetLatestRecordId(ctx context.Context, _ *types.LatestRecor
 	return &types.LatestRecordIdResponse{LatestRecordId: latestRecordId, IsProcessedByHeimdall: eventRecordExists}, nil
 }
 
+// GetRecordCount implements the gRPC service handler to query the total count of event records.
+func (q queryServer) GetRecordCount(ctx context.Context, _ *types.RecordCountRequest) (*types.RecordCountResponse, error) {
+	return &types.RecordCountResponse{Count: q.k.GetEventRecordCount(ctx)}, nil
+}
+
 func isPaginationEmpty(p query.PageRequest) bool {
 	return p.Key == nil &&
 		p.Offset == 0 &&
