@@ -5,11 +5,7 @@
    | OS     | Arch    | Package Manager | Supported | Notes                   |
    |--------|---------|-----------------|-----------|-------------------------|
    | Linux  | x86_64  | `dpkg` (Debian) | ✅         | Uses `.deb` package     |
-   | Linux  | x86_64  | `rpm` (RedHat)  | ✅         | Uses `.rpm` package     |
    | Linux  | aarch64 | `dpkg`          | ✅         | Uses ARM `.deb` package |
-   | Linux  | aarch64 | `rpm`           | ✅         | Uses ARM `.rpm` package |
-   | macOS  | Any     | —               | ❌         | Not supported           |
-   | Alpine | Any     | `apk`           | ❌         | Not supported           |
 
 2. Make sure the following tools are installed on your system.  
    The migration script will anyway fail early if such tools are not installed.
