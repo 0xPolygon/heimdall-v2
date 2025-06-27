@@ -18,6 +18,8 @@ This will produce the binary `heimdalld` in the `build` directory.
 $ heimdalld init <MONIKER_NAME> --chain-id=<NETWORK_NAME>
 ```
 You can skip `--chain-id` flag if you want to run this locally (it will default to `heimdall-local`).
+Otherwise, use `heimdallv2-80002` for `amoy`, or `heimdallv2-137` for `mainnet`.
+`<MONIKER_NAME>` is the name of your node, which can be any string you like.
 
 This command will generate some folders and files in the heimdall home directory (default /var/lib/heimdall).
 

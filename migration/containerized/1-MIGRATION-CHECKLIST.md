@@ -8,10 +8,10 @@ Adjustments are necessary due to volume mounts, ephemeral storage, container net
    - Identify the container runtime (`docker`, `containerd`, etc).
    - Identify the volume mount path for Heimdall data and config (e.g., `-v /heimdall:/root/.heimdall`).
 2. Prepare Backup
-   - Back up the `HEIMDALL_HOME`, containing `config/` and `data/` folders outside the container. 
+   - Back up the `HEIMDALL_HOME` (default `/var/lib/heimdall`), containing `config/` and `data/` folders outside the container. 
    - Example (Docker):
      ```bash
-     docker cp <container_id>:/root/.heimdall /path/to/backup
+     docker cp <container_id>:/var/lib/heimdall /path/to/backup
      ```
 3. Stop Existing Containers
    - Gracefully shut down Heimdall v1, e.g., using:
@@ -34,6 +34,6 @@ Adjustments are necessary due to volume mounts, ephemeral storage, container net
       sudo lsof -i -P -n | grep LISTEN
       ```
 5. Make sure your system has at least 30 GB of available RAM
-6. Make sure your system has at least 3x current size (in GB) of `HEIMDALL_HOME/data` available disk space.
+6. Make sure your system has at least 3x current size (in GB) of `HEIMDALL_HOME` available disk space.
 7. Make sure you have a stable and fast internet connection, as the migration process will download the genesis file from a trusted source.
    The file is going to be pretty large, especially for mainnet, where it is expected to be around 4–5 GB.
