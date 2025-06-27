@@ -7,12 +7,12 @@ V1_VERSION="1.6.0-beta"
 V1_GENESIS_CHECKSUM="2243f213c280afbffc06926052bbd83e200825c614cc434f3d045c52c565c7ca50bbd7d8f4a0d8f5c5c78dd64fd3a4db5a160056726f49f5926ac610d9157788"
 V2_GENESIS_CHECKSUM="70bb9b754781f0ec77ace3132079420b26da602b606e514b71c969d29ab9a0c4ec757d44b5597d2889342708fdbfb48d9029caddd48ef1584d484977a17bd24d"
 V2_VERSION="0.2.1"
-V1_CHAIN_ID="heimdall-80002"
-V2_CHAIN_ID="heimdallv2-80002"
+V1_CHAIN_ID="heimdall-137"
+V2_CHAIN_ID="heimdallv2-137"
 V2_GENESIS_TIME="2025-06-24T20:00:00Z"
 V1_HALT_HEIGHT=8788500
 VERIFY_EXPORTED_DATA=false
-TRUSTED_GENESIS_URL="https://storage.googleapis.com/amoy-heimdallv2-genesis/dump-genesis.json"
+TRUSTED_GENESIS_URL="https://storage.googleapis.com/mainnet-heimdallv2-genesis/dump-genesis.json"
 
 # -------------------- const env variables --------------------
 V2_INITIAL_HEIGHT=$(( V1_HALT_HEIGHT + 1 ))
@@ -847,30 +847,12 @@ else
 fi
 echo "[INFO] Successfully updated priv_validator_state.json"
 
-
-# Step 25: Restore addrbook.json from backup if it exists
+# Step 25: Configuration changes
 STEP=25
-print_step $STEP "Restoring addrbook.json from backup (if present)"
-ADDRBOOK_FILE="$BACKUP_DIR/config/addrbook.json"
-TARGET_ADDRBOOK_FILE="$V2_HEIMDALL_HOME/config/addrbook.json"
-if [ -f "$ADDRBOOK_FILE" ]; then
-    # Backup current one (if any)
-    if [ -f "$TARGET_ADDRBOOK_FILE" ]; then
-        cp "$TARGET_ADDRBOOK_FILE" "$TARGET_ADDRBOOK_FILE.bak" || handle_error $STEP "Failed to backup existing addrbook.json"
-        echo "[INFO] Backup saved at: $TARGET_ADDRBOOK_FILE.bak"
-    fi
-    cp "$ADDRBOOK_FILE" "$TARGET_ADDRBOOK_FILE" || handle_error $STEP "Failed to restore addrbook.json from backup"
-    echo "[INFO] addrbook.json restored successfully."
-else
-    echo "[INFO] No addrbook.json found in backup. Skipping restore."
-fi
-
-
-# Step 26: Configuration changes
-STEP=26
 print_step $STEP "Applying minimal v1 → v2 configuration migration"
 echo -e "\n⚠️  [INFO] This step will automatically migrate a minimal and safe subset of configuration values from Heimdall v1 to Heimdall v2."
-echo -e "   Only the following keys will be carried over:\n"
+echo -e "   Only the following keys will be carried over or explicitly set:\n"
+
 echo -e "📁 From v1 \033[1mconfig.toml\033[0m → v2 config.toml:"
 echo -e "   - moniker"
 echo -e "   - external_address"
@@ -879,16 +861,23 @@ echo -e "   - persistent_peers"
 echo -e "   - max_num_inbound_peers"
 echo -e "   - max_num_outbound_peers"
 echo -e "   - proxy_app"
-echo -e "   - addr_book_strict\n"
+echo -e "   - addr_book_strict"
+echo -e "   - \033[1mlog_level\033[0m (set to 'info')"
+echo -e "   - \033[1mlog_format\033[0m (set to 'plain')\n"
+
 echo -e "📁 From v1 \033[1mheimdall-config.toml\033[0m → v2 app.toml:"
 echo -e "   - eth_rpc_url"
 echo -e "   - bor_rpc_url"
-echo -e "   - bor_grpc_flag"
+echo -e "   - bor_grpc_flag (set to 'false')"
 echo -e "   - bor_grpc_url"
-echo -e "   - amqp_url\n"
+echo -e "   - amqp_url"
+echo -e "   - bor_rpc_timeout (set to '1s')\n"
+
 echo -e "📁 Into \033[1mclient.toml\033[0m:"
 echo -e "   - chain-id = \"$V2_CHAIN_ID\"\n"
+
 echo -e "💡 You may manually edit other parameters (e.g. ports, metrics, logging) after migration."
+
 echo -e "\n📁 \033[1mBor Configuration Notice\033[0m:"
 echo -e "   ⚠️  Please update your Bor's \033[1mbor/config.toml\033[0m manually to reflect v2-compatible settings."
 echo -e "   💡 You can optionally add the following entry under the \033[1m[heimdall]\033[0m section to enable WebSocket support:"
@@ -896,6 +885,7 @@ echo -e "\n     [heimdall]"
 echo -e "     ws-address = \"ws://localhost:26657/websocket\"\n"
 echo -e "   ✅ This setting is recommended, as it improves performance by reducing the number of HTTP polling requests from Heimdall to Bor."
 echo -e "   🔄 After updating the config, make sure to restart your Bor node for changes to take effect.\n"
+
 # 1. Set chain-id in client.toml
 CLIENT_TOML="$V2_HEIMDALL_HOME/config/client.toml"
 echo "[INFO] Setting chain-id in client.toml..."
@@ -982,8 +972,8 @@ echo "[OK]   app.toml: bor_rpc_timeout = 1s"
 echo "[INFO] app.toml values migrated and updated successfully."
 
 
-# Step 27: Assign correct ownership to Heimdall directories
-STEP=27
+# Step 26: Assign correct ownership to Heimdall directories
+STEP=26
 print_step $STEP "Assigning correct ownership and permissions under $V2_HEIMDALL_HOME as user: $HEIMDALL_SERVICE_USER"
 # Sanity check: avoid chowning critical paths
 CRITICAL_PATHS=("/" "/usr" "/usr/bin" "/bin" "/lib" "/lib64" "/etc" "/boot")
@@ -1015,8 +1005,8 @@ for f in "${SENSITIVE_FILES[@]}"; do
 done
 echo "[INFO] Ownership and permissions successfully enforced under $V2_HEIMDALL_HOME"
 
-# Step 28: Automatically update the systemd unit file to set the correct user
-STEP=28
+# Step 27: Automatically update the systemd unit file to set the correct user
+STEP=27
 print_step $STEP "Patching systemd service file to enforce user: $HEIMDALL_SERVICE_USER"
 SERVICE_FILE=$(systemctl status heimdalld | grep 'Loaded:' | awk '{print $3}' | tr -d '();')
 if [[ -z "$SERVICE_FILE" || ! -f "$SERVICE_FILE" ]]; then
@@ -1037,8 +1027,8 @@ else
 fi
 
 
-# Step 29: Clean up .bak files in "$V2_HEIMDALL_HOME"
-STEP=29
+# Step 28: Clean up .bak files in "$V2_HEIMDALL_HOME"
+STEP=28
 print_step $STEP "Cleaning up .bak files in parent directory of $V2_HEIMDALL_HOME"
 # Determine the parent directory of V2_HEIMDALL_HOME
 HEIMDALL_PARENT_DIR=$(dirname "$V2_HEIMDALL_HOME")

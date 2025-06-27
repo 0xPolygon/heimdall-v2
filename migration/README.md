@@ -1,66 +1,26 @@
+# Heimdall v1 -> v2 migration guide
 
-# Heimdall v1 to v2 Migration
+This folder contains the migration guide for Heimdall v1 to v2, in two different formats:
 
-This directory contains the documentation and tools to manage the migration from Heimdall v1 to Heimdall v2.
-If you are willing to run Heimdall v2, you will need to migrate your existing Heimdall v1 node to the new version.  
-This migration process is automated, but still requires some manual steps to execute a coordinated upgrade.  
+- [containerized](./containerized) contains instructions for containerized migration (e.g., docker or kubernetes setups).
+  This folder contains:
+  -`1-MIGRATION-CHECKLIST.md`: file with the checklist to run ahead of migration.
+  -`2-MIGRATION.md`: file with the migration's instructions.
+  -`3-MIGRATION-ROLLBACK.md`: file with the instructions to temporarily roll back to v1 in case the migration fails.
+  -`4-MIGRATION-ROLLBACK-V1.md`: file with the instructions to roll back to v1 in case the migration fails.
+    Do not use this file until you are instructed to do so by the Polygon team.
+- [systemd](./systemd) contains instructions for the migration for users running Heimdall v1 on systemd.
+  Inside this folder you will find instructions for both automated and manual migration.
+  Automated migration is preferred, as it is less error-prone and easier to execute.
+  Manual migration is provided as a fallback option in case the automated script does not work for your setup.
+  This folder contains:
+  -`1-MIGRATION-CHECKLIST.md`: file with the checklist to run ahead of migration.
+  -`2a-MIGRATION-AUTOMATED.md`: file with the migration's instructions for automated script executions.
+  -`2b-MIGRATION-MANUAL.md`: file with the migration's instructions for manual executions.
+  -`3-MIGRATION-ROLLBACK.md`: file with the instructions to temporarily roll back to v1 in case the migration fails.
+  -`4-MIGRATION-ROLLBACK-V1.md` file with the instructions to roll back to v1 in case the migration fails.
+  Do not use this file until you are instructed to do so by the Polygon team.
+  Also, this folder contains the [script](./systemd/script), which is used to automate the migration process 
+  in case `2a-MIGRATION-AUTOMATED.md` is used.
 
-## ⚠️ Important notice on the migration process
-The migration will be executed for the very first time on a node managed by the Polygon team (pilot node).  
-Once the migration on that node is successful:
-- The v1 genesis will be exported and made available for the community in a GCP bucket together with a checksum
-- The v2 genesis will be created and made available for the community in a GCP bucket together with a checksum
-- The script will be distributed with the checksum to prevent any tampering and made available for the community on heimdall-v2 repo
-- Once the pilot node has been migrated, the genesis and the checksum files are available,
-  and the script has been distributed, node operators can perform the migration on their own nodes using the [script](script/migrate.sh)
-  (please check the [COMMANDS.md](./script/COMMANDS.md) in case).
-  Operators can also execute the migration via [docker](#containerized-migration) or [manually](script/RUNBOOK.md).
-
-### Containerized Migration
-You can’t run init on an existing config directory. Not only will genesis.json be in the way, you’ll also run into issues with the existing toml files not having the right content.
-
-Instead, run init without a config or data directory present. If you’re a validator, copy your priv_validator_state.json to data first then run init, but watch out for the format changing - what was previously a string for round now needs to be an integer.
-
-Then copy in the right genesis.json, copy in addrbook.json.
-
-Apply config changes to app.toml and config.toml and you should be good to go. Locations have changed a bit, you can look at the entrypoint script linked above as to what we’re setting and where it is.
-
-
-If you are using a containerized version of Heimdall (e.g. `docker` or inside a `kubernetes` cluster),
-an image will be available to pull once the pilot node migration is successful.
-You'd need to back the content of `HEIMDALL_HOME/data` folder up, related to heimdall-v1, for future reference,
-and leave that folder empty.
-Then, install the docker image.
-Now install the default configs for Heimdall v2 by running the following command:
-```bash
-```bash
-  heimdalld init <MONIKER> --chain-id <CHAIN_ID>
-```
-`<MONIKER>` is the name of your node and `<CHAIN_ID>` is the chain you are running Heimdall-v2 on
-(e.g., `heimdallv2-80002` for `amoy`, and `heimdallv2-137` for `mainnet`)
-And then apply your custom configuration to the `app.toml`, `config.toml` and `client.toml` files.
-Now, download the `genesis.json` file from the GCP bucket URL,
-which will be available once the pilot node migration is successful,  
-and place it in the `HEIMDALL_HOME/config` directory.
-The file is going to be pretty large, especially for mainnet, where it is expected to be around 4–5 GB.
-Hence, please make sure you have enough disk space available, and you have a fast internet connection.
-At this point, you can run the heimdall-v2 image.
-
-If you prefer to use the migration script, you'd need to make it compatible with your containerized environment.
-Otherwise, you can use the [RUNBOOK](script/RUNBOOK.md) to run the migration process manually.
-However, we strongly recommend using the containerized approach or the script to avoid mistakes and
-ensure a smooth migration process.
-
-
-### Non-containerized Migration
-If you are not using a containerized version of Heimdall (e.g., `Linux/Debian`),
-please refer to [these instructions](./script/README.md) for more information
-on how to use the migration bash script.
-Moreover, [this doc](./script/COMMANDS.md) provides a detailed list of commands to execute the v1→v2 migration.  
-Please skip the points marked as `(Internal)` as they are not relevant for the community.  
-
-### Manual Migration
-If you prefer not to use any script, but rather execute the migration manually, you can follow the instructions in
-the [runbook](./script/RUNBOOK.md).
-However, we strongly recommend using the script or the containerized approach to avoid mistakes,  
-execute fast, and ensure a smooth migration process.
+Please follow the instructions based on your setup/environment and preferred option.
