@@ -3,7 +3,7 @@ set -e
 
 echo "Starting smoke tests for the local docker devnet..."
 
-cd ./devnet
+cd matic-cli/devnet/devnet
 ADDRESS=$(jq -r '.[0].address' signer-dump.json)
 PRIVATE_KEY=$(jq -r '.[0].priv_key' signer-dump.json)
 
