@@ -25,6 +25,7 @@ const (
 	Query_GetRecordListWithTime_FullMethodName = "/heimdallv2.clerk.Query/GetRecordListWithTime"
 	Query_GetRecordSequence_FullMethodName     = "/heimdallv2.clerk.Query/GetRecordSequence"
 	Query_IsClerkTxOld_FullMethodName          = "/heimdallv2.clerk.Query/IsClerkTxOld"
+	Query_GetRecordCount_FullMethodName        = "/heimdallv2.clerk.Query/GetRecordCount"
 )
 
 // QueryClient is the client API for Query service.
@@ -44,6 +45,8 @@ type QueryClient interface {
 	// IsClerkTxOld queries for a specific clerk tx to check its status (old
 	// means already submitted)
 	IsClerkTxOld(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*IsClerkTxOldResponse, error)
+	// GetRecordCount queries the total number of event records
+	GetRecordCount(ctx context.Context, in *RecordCountRequest, opts ...grpc.CallOption) (*RecordCountResponse, error)
 }
 
 type queryClient struct {
@@ -108,6 +111,15 @@ func (c *queryClient) IsClerkTxOld(ctx context.Context, in *RecordSequenceReques
 	return out, nil
 }
 
+func (c *queryClient) GetRecordCount(ctx context.Context, in *RecordCountRequest, opts ...grpc.CallOption) (*RecordCountResponse, error) {
+	out := new(RecordCountResponse)
+	err := c.cc.Invoke(ctx, Query_GetRecordCount_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -125,6 +137,8 @@ type QueryServer interface {
 	// IsClerkTxOld queries for a specific clerk tx to check its status (old
 	// means already submitted)
 	IsClerkTxOld(context.Context, *RecordSequenceRequest) (*IsClerkTxOldResponse, error)
+	// GetRecordCount queries the total number of event records
+	GetRecordCount(context.Context, *RecordCountRequest) (*RecordCountResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -149,6 +163,9 @@ func (UnimplementedQueryServer) GetRecordSequence(context.Context, *RecordSequen
 }
 func (UnimplementedQueryServer) IsClerkTxOld(context.Context, *RecordSequenceRequest) (*IsClerkTxOldResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsClerkTxOld not implemented")
+}
+func (UnimplementedQueryServer) GetRecordCount(context.Context, *RecordCountRequest) (*RecordCountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRecordCount not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -271,6 +288,24 @@ func _Query_IsClerkTxOld_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_GetRecordCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordCountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetRecordCount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetRecordCount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetRecordCount(ctx, req.(*RecordCountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -301,6 +336,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsClerkTxOld",
 			Handler:    _Query_IsClerkTxOld_Handler,
+		},
+		{
+			MethodName: "GetRecordCount",
+			Handler:    _Query_GetRecordCount_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

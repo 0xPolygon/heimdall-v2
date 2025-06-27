@@ -286,3 +286,8 @@ func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
 
 	return isPresent
 }
+
+// GetEventRecordCount returns the total count of event records
+func (k *Keeper) GetEventRecordCount(ctx context.Context) uint64 {
+	return uint64(len(k.GetAllEventRecords(ctx)))
+}
