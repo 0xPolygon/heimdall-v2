@@ -1,41 +1,96 @@
-# Rollback procedure
+# Rollback Procedure (Permanent)
 
-If the migration fails and the Polygon team instruct node operators to roll back permanently to heimdall v1, follow this procedure.
-Do not use this file until you are instructed to do so by the Polygon team.
-1. Stop `heimdalld` service (it can be v1 or v2 based on the current state of the migration)
-   ```bash
-   sudo systemctl stop heimdalld
-   ```
-2. Restore the backup of the v1 home directory, e.g.:
-   ```bash
-   sudo rm -rf /var/lib/heimdall && \
-   sudo mv /var/lib/heimdall.backup /var/lib/heimdall
-    ```
-3. Restore the v1 service file
-    ```bash
-    sudo mv -f /lib/systemd/system/heimdalld.service.backup /lib/systemd/system/heimdalld.service
-    ```
-4. Install the previous version of heimdall `v1.5.0-beta`.
-    ```bash
-    curl -L https://raw.githubusercontent.com/maticnetwork/install/main/heimdall.sh | bash -s -- v1.5.0-beta <network> <node_type>
-    ```
-5. Check `heimdalld` version
-    ```bash
-    /usr/bin/heimdalld version
-    # It should print
-    # v1.5.0-beta
-    ```
-   If it still prints the v2 version, you need to move the v1 binary to the correct location.
-6. Reload the daemon and start heimdall
-   ```bash
-   sudo systemctl daemon-reload && sudo systemctl start heimdalld
-    ```
-7. Restart telemetry (if needed)
-   ```bash
-   sudo systemctl restart telemetry
-   ```
-8. Check the logs
-   ```bash
-    journalctl -fu heimdalld
-    ```
-9. Heimdall v1 should be up and running again, with no halt height hardcoded, hence the v1 chain will resume from the last committed block.
+If the migration fails and the Polygon team instructs node operators to **permanently** revert to Heimdall v1,
+follow the steps below.
+
+> **Do not use this procedure unless explicitly instructed by the Polygon team.**
+
+---
+
+### 1. Stop the `heimdalld` Service
+
+This may be a v1 or v2 service, depending on the current state of migration:
+
+```bash
+sudo systemctl stop heimdalld
+````
+
+---
+
+### 2. Restore the v1 `HEIMDALL_HOME` Directory
+
+Example:
+
+```bash
+sudo rm -rf /var/lib/heimdall && \
+sudo mv /var/lib/heimdall.backup /var/lib/heimdall
+```
+
+---
+
+### 3. Restore the v1 Systemd Service File
+
+```bash
+sudo mv -f /lib/systemd/system/heimdalld.service.backup /lib/systemd/system/heimdalld.service
+```
+
+---
+
+### 4. Reinstall Heimdall v1
+
+```bash
+curl -L https://raw.githubusercontent.com/maticnetwork/install/main/heimdall.sh | bash -s -- <VERSION> <NETWORK> <NODE_TYPE>
+```
+
+Replace
+- `VERSION` with the target version (TODO update it)
+- `NETWORK` with `mainnet`
+- `NODE_TYPE` with `sentry` or `validator`
+
+---
+---
+
+### 5. Verify Installed Version
+
+```bash
+/usr/bin/heimdalld version
+```
+
+Expected output:
+
+```
+<VERSION>
+```
+
+> If the output shows a v2 version, manually move the v1 binary into the correct location.
+
+---
+
+### 6. Reload the Daemon and Start Heimdall
+
+```bash
+sudo systemctl daemon-reload && sudo systemctl start heimdalld
+```
+
+---
+
+### 7. Restart Telemetry (If Needed)
+
+```bash
+sudo systemctl restart telemetry
+```
+
+---
+
+### 8. Check Logs
+
+```bash
+journalctl -fu heimdalld
+```
+
+---
+
+### 9. Chain Behavior After Rollback
+
+Heimdall v1 should now be up and running.
+No halt height is hardcoded, so the chain will automatically resume from the last committed block.

@@ -3,26 +3,26 @@
 This checklist is for users running Heimdall nodes in Docker or Kubernetes containers, or any other environment using docker images. 
 Adjustments are necessary due to volume mounts, ephemeral storage, container networking, etc...
 
-1. Verify the environment
+## 1. Verify the environment
    - Ensure you are running Heimdall in Docker or Kubernetes etc...
    - Identify the container runtime (`docker`, `containerd`, etc).
-   - Identify the volume mount path for Heimdall data and config (e.g., `-v /heimdall:/root/.heimdall`).
-2. Prepare Backup
+   - Identify the volume mount path for Heimdall data and config (e.g., `-v /heimdall:/var/lib/.heimdall`).
+## 2. Prepare Backup
    - Back up the `HEIMDALL_HOME` (default `/var/lib/heimdall`), containing `config/` and `data/` folders outside the container. 
    - Example (Docker):
      ```bash
      docker cp <container_id>:/var/lib/heimdall /path/to/backup
      ```
-3. Stop Existing Containers
-   - Gracefully shut down Heimdall v1, e.g., using:
+## 3.  Stop Existing Heimdall v1 Containers
+   - Gracefully shut down Heimdall v1, for docker:
      ```bash
      docker stop <container_id>
      ```
-     or for Kubernetes: 
+     for Kubernetes: 
      ```bash
      kubectl scale deployment heimdall --replicas=0
      ```
-4. Free Required Ports (on Host Machine)
+## 4. Free Required Ports on the Host
     * 26656 (P2P)
     * 26657 (RPC)
     * 26660 or 6060 (pprof)
@@ -33,7 +33,13 @@ Adjustments are necessary due to volume mounts, ephemeral storage, container net
       ```bash
       sudo lsof -i -P -n | grep LISTEN
       ```
-5. Make sure your system has at least 30 GB of available RAM
-6. Make sure your system has at least 3x current size (in GB) of `HEIMDALL_HOME` available disk space.
-7. Make sure you have a stable and fast internet connection, as the migration process will download the genesis file from a trusted source.
-   The file is going to be pretty large, especially for mainnet, where it is expected to be around 4–5 GB.
+## 5. Memory Requirements 
+Ensure your system has at least 20 GB of available RAM.
+
+## 6. Disk Space Requirements
+Ensure your system has at least 3× the current size of `HEIMDALL_HOME` in available disk space.
+
+## 7. Internet Connectivity
+Ensure a stable and fast internet connection.
+The migration will download the genesis file from a trusted source,
+which may be 4–5 GB in size for mainnet.
