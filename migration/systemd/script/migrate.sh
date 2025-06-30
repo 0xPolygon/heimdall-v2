@@ -51,7 +51,7 @@ show_help() {
             --network=mainnet|amoy \\
             --node-type=sentry|validator \\
             --service-user=<HEIMDALL_SERVICE_USER> \\
-            --generate-genesis=true|false"
+            --generate-genesis=true|false 2>&1 | tee migrate.log"
   echo "Required arguments:"
   echo "  --heimdall-v1-home=PATH          Absolute path to Heimdall home directory (must contain 'config' and 'data')"
   echo "  --heimdallcli-path=PATH               Path to the heimdallcli binary (must be >= v1.0.10)"
@@ -70,7 +70,7 @@ show_help() {
     --network=mainnet \\
     --node-type=validator \\
     --service-user=heimdall \\
-    --generate-genesis=true"
+    --generate-genesis=true 2>&1 | tee migrate.log"
   exit 0
 }
 

@@ -146,7 +146,7 @@ sudo bash migrate.sh \
   --network=mainnet \
   --node-type=validator \
   --service-user=heimdall \
-  --generate-genesis=false
+  --generate-genesis=false 2>&1 | tee migrate.log
 ```
 
 Double-check every flag before execution. 
