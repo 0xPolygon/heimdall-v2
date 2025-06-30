@@ -137,7 +137,7 @@ jobs:
 
       - name: Run smoke tests
         run: |
-          timeout 30m bash heimdall-v2/integration-tests/smoke_test.sh
+          timeout 20m bash heimdall-v2/integration-tests/smoke_test.sh
 
       - name: Resolve absolute path for logs
         id: pathfix
