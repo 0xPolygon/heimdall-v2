@@ -364,6 +364,25 @@ func GetCheckpointParams(cdc codec.Codec) (*checkpointTypes.Params, error) {
 	return &params.Params, nil
 }
 
+// GetCheckpointAckCount return checkpoint ack count
+func GetCheckpointAckCount(cdc codec.Codec) (uint64, error) {
+	logger := Logger()
+
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CountCheckpointURL))
+	if err != nil {
+		logger.Error("Error fetching checkpoint ack count", "err", err)
+		return 0, err
+	}
+
+	var ackCount checkpointTypes.QueryAckCountResponse
+	if err := cdc.UnmarshalJSON(response, &ackCount); err != nil {
+		logger.Error("Error unmarshalling checkpoint ack count", "url", CountCheckpointURL, "err", err)
+		return 0, err
+	}
+
+	return ackCount.AckCount, nil
+}
+
 // GetBufferedCheckpoint return checkpoint from buffer
 func GetBufferedCheckpoint(cdc codec.Codec) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
