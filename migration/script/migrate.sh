@@ -490,6 +490,7 @@ fi
 # Step 11: install heimdall-v2 binary
 STEP=11
 print_step $STEP "Install heimdall-v2 binary"
+sudo dpkg --purge heimdalld-profile || echo "[WARN] Nothing to purge"
 if [ "$type" = "deb" ]; then
     echo "[INFO] Uninstalling any existing heimdalld..."
     sudo dpkg -r heimdalld heimdall || echo "[WARN] Nothing to uninstall"

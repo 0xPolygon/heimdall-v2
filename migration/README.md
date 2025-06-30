@@ -17,26 +17,34 @@ Once the migration on that node is successful:
   Operators can also execute the migration via [docker](#containerized-migration) or [manually](script/RUNBOOK.md).
 
 ### Containerized Migration
+You can’t run init on an existing config directory. Not only will genesis.json be in the way, you’ll also run into issues with the existing toml files not having the right content.
+
+Instead, run init without a config or data directory present. If you’re a validator, copy your priv_validator_state.json to data first then run init, but watch out for the format changing - what was previously a string for round now needs to be an integer.
+
+Then copy in the right genesis.json, copy in addrbook.json.
+
+Apply config changes to app.toml and config.toml and you should be good to go. Locations have changed a bit, you can look at the entrypoint script linked above as to what we’re setting and where it is.
+
+
 If you are using a containerized version of Heimdall (e.g. `docker` or inside a `kubernetes` cluster),
 an image will be available to pull once the pilot node migration is successful.
 You'd need to back the content of `HEIMDALL_HOME/data` folder up, related to heimdall-v1, for future reference,
 and leave that folder empty.
 Then, install the docker image.
-Such an image will contain the `genesis.json` file, so you won't need to download it separately.
-At this point, based on your convenience, you can decide to go one of the following ways:  
-1. access the container(s) and apply the changes explained in [./configs/README.md](./configs/README.md).
-2. or generate the default configuration files by running the following command:
+Now install the default configs for Heimdall v2 by running the following command:
 ```bash
 ```bash
   heimdalld init <MONIKER> --chain-id <CHAIN_ID>
 ```
-Make sure not to replace the existing genesis file (do not use `--overwrite` in the `init` command).
 `<MONIKER>` is the name of your node and `<CHAIN_ID>` is the chain you are running Heimdall-v2 on
 (e.g., `heimdallv2-80002` for `amoy`, and `heimdallv2-137` for `mainnet`)
-At this point, you can run the heimdall-v2 image.
-As previously stated, the image will contain the `genesis.json` file, so you won't need to download it separately.
-However, the file is going to be pretty large, especially for mainnet, where it is expected to be around 4–5 GB.
+And then apply your custom configuration to the `app.toml`, `config.toml` and `client.toml` files.
+Now, download the `genesis.json` file from the GCP bucket URL,
+which will be available once the pilot node migration is successful,  
+and place it in the `HEIMDALL_HOME/config` directory.
+The file is going to be pretty large, especially for mainnet, where it is expected to be around 4–5 GB.
 Hence, please make sure you have enough disk space available, and you have a fast internet connection.
+At this point, you can run the heimdall-v2 image.
 
 If you prefer to use the migration script, you'd need to make it compatible with your containerized environment.
 Otherwise, you can use the [RUNBOOK](script/RUNBOOK.md) to run the migration process manually.

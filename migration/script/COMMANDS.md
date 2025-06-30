@@ -83,7 +83,7 @@ To let all node operators run the migration on their nodes, the pilot node must 
     This will migrate heimdall and create its home under `/var/lib/heimdall`
 11. When the script finishes, enable self-heal on v2 by setting the following in `app.toml` (for amoy):
     ```toml
-    sub_graph_url = "https://api.studio.thegraph.com/query/113009/amoy-subgraph-polygon/version/latest"
+    sub_graph_url = "<SUBGRAPH_URL>"
     enable_self_heal = "true"
     sh_state_synced_interval = "1h0m0s"
     sh_stake_update_interval = "1h0m0s"
