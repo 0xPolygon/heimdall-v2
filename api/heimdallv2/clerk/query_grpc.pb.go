@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	Query_GetRecordCount_FullMethodName        = "/heimdallv2.clerk.Query/GetRecordCount"
 	Query_GetRecordList_FullMethodName         = "/heimdallv2.clerk.Query/GetRecordList"
 	Query_GetLatestRecordId_FullMethodName     = "/heimdallv2.clerk.Query/GetLatestRecordId"
 	Query_GetRecordById_FullMethodName         = "/heimdallv2.clerk.Query/GetRecordById"
@@ -31,6 +32,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
+	// GetRecordCount queries the total number of event records
+	GetRecordCount(ctx context.Context, in *RecordCountRequest, opts ...grpc.CallOption) (*RecordCountResponse, error)
 	// GetRecordList queries a list of records
 	GetRecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error)
 	// GetLatestRecordId queries the latest record id from L1.
@@ -52,6 +55,15 @@ type queryClient struct {
 
 func NewQueryClient(cc grpc.ClientConnInterface) QueryClient {
 	return &queryClient{cc}
+}
+
+func (c *queryClient) GetRecordCount(ctx context.Context, in *RecordCountRequest, opts ...grpc.CallOption) (*RecordCountResponse, error) {
+	out := new(RecordCountResponse)
+	err := c.cc.Invoke(ctx, Query_GetRecordCount_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *queryClient) GetRecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error) {
@@ -112,6 +124,8 @@ func (c *queryClient) IsClerkTxOld(ctx context.Context, in *RecordSequenceReques
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
+	// GetRecordCount queries the total number of event records
+	GetRecordCount(context.Context, *RecordCountRequest) (*RecordCountResponse, error)
 	// GetRecordList queries a list of records
 	GetRecordList(context.Context, *RecordListRequest) (*RecordListResponse, error)
 	// GetLatestRecordId queries the latest record id from L1.
@@ -132,6 +146,9 @@ type QueryServer interface {
 type UnimplementedQueryServer struct {
 }
 
+func (UnimplementedQueryServer) GetRecordCount(context.Context, *RecordCountRequest) (*RecordCountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRecordCount not implemented")
+}
 func (UnimplementedQueryServer) GetRecordList(context.Context, *RecordListRequest) (*RecordListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRecordList not implemented")
 }
@@ -161,6 +178,24 @@ type UnsafeQueryServer interface {
 
 func RegisterQueryServer(s grpc.ServiceRegistrar, srv QueryServer) {
 	s.RegisterService(&Query_ServiceDesc, srv)
+}
+
+func _Query_GetRecordCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordCountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetRecordCount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetRecordCount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetRecordCount(ctx, req.(*RecordCountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Query_GetRecordList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -278,6 +313,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "heimdallv2.clerk.Query",
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetRecordCount",
+			Handler:    _Query_GetRecordCount_Handler,
+		},
 		{
 			MethodName: "GetRecordList",
 			Handler:    _Query_GetRecordList_Handler,
