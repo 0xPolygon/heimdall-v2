@@ -54,14 +54,53 @@ Download the appropriate `genesis.json` from the following GCP bucket:
 
 Save the file as `genesis.json` and place it in your `HEIMDALL_HOME/config` directory.
 
+For example, you can use this command:
+```bash
+wget -O <HEIMDALL_HOME>/config/genesis.json https://storage.googleapis.com/mainnet-heimdallv2-genesis/migrated_dump-genesis.json
+```
+
 **Note:** The genesis file is large (4–5 GB on Mainnet). 
 Ensure you have sufficient disk space and a reliable, fast internet connection.
 
 ---
 
+## Step 3: Verify genesis checksum
+
+Download the checksum file available [here](https://storage.googleapis.com/mainnet-heimdallv2-genesis/migrated_dump-genesis.json.sha512).
+Place the checksum file in the same folder as the `genesis.json`, under `HEIMDALL_HOME/config`.  
+
+For example, you can use this command:
+```bash
+wget -O <HEIMDALL_HOME>/config/genesis.json https://storage.googleapis.com/mainnet-heimdallv2-genesis/migrated_dump-genesis.json.sha512
+```
+
+Move into the folder where you have downloaded such files, e.g.,
+
+```bash
+cd <HEIMDALL_HOME>/config/
+```
+
+And verify the correctness of your genesis file by running:
+
+```bash
+[ "$(sha512sum migrated_dump-genesis.json | awk '{print $1}')" = "$(cat migrated_dump-genesis.json.sha512)" ] && echo "✅ Checksum matches" || echo "❌ Checksum mismatch"
+```
+
+Expected output:
+
+```
+✅ Checksum matches
+```
+
+**Do not proceed if the checksum verification fails (output `❌ Checksum mismatch`).**
+
+---
+
 ## Step 4: Start the Heimdall v2 Container
 
-Run the container with the appropriate configuration. Example:
+Now that you have the right configuration and genesis file,  
+you can run the container with the appropriate configuration.
+Example (please adjust the `-v` and `-p` options based on your deployment needs):
 
 ```bash
 docker run -d --name heimdall-v2 \
@@ -70,8 +109,6 @@ docker run -d --name heimdall-v2 \
   0xpolygon/heimdall-v2:<VERSION> \
   start
 ```
-
-Adjust the `-v` and `-p` options based on your deployment needs.
 
 ---
 

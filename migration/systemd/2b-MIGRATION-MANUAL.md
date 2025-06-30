@@ -146,8 +146,16 @@ wget -O <HEIMDALL_HOME>/config/genesis.json.sha512 https://storage.googleapis.co
 ### 11. Verify Genesis File
 
 ```bash
-sha512sum -c migrated_dump-genesis.json.sha512
+[ "$(sha512sum migrated_dump-genesis.json | awk '{print $1}')" = "$(cat migrated_dump-genesis.json.sha512)" ] && echo "✅ Checksum matches" || echo "❌ Checksum mismatch"
 ```
+
+Expected output:
+
+```
+✅ Checksum matches
+```
+
+**Do not proceed if the checksum verification fails (output `❌ Checksum mismatch`).**
 
 ---
 
