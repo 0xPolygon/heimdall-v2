@@ -20,18 +20,19 @@ Ensure your platform is supported by the migration script:
 
 The following tools must be installed. The script will fail early if any are missing.
 
-| Tool        | Purpose               | Install Command (Ubuntu/Debian) |
-|-------------|-----------------------|---------------------------------|
-| `curl`      | Download binaries     | `sudo apt install curl`         |
-| `tar`       | Extract archives      | `sudo apt install tar`          |
-| `jq`        | JSON manipulation     | `sudo apt install jq`           |
-| `sha512sum` | Integrity checks      | `sudo apt install coreutils`    |
-| `file`      | File type detection   | `sudo apt install file`         |
-| `awk`       | Text processing       | `sudo apt install gawk`         |
-| `sed`       | Stream editing        | `sudo apt install sed`          |
-| `systemctl` | Service management    | Pre-installed on most systems   |
-| `grep`      | Pattern matching      | Pre-installed on most systems   |
-| `id`        | User info lookup      | Pre-installed on most systems   |
+| Tool        | Purpose              | Install Command (Ubuntu/Debian) |
+|-------------|----------------------|---------------------------------|
+| `curl`      | Download binaries    | `sudo apt install curl`         |
+| `tar`       | Extract archives     | `sudo apt install tar`          |
+| `jq`        | JSON manipulation    | `sudo apt install jq`           |
+| `sha512sum` | Integrity checks     | `sudo apt install coreutils`    |
+| `file`      | File type detection  | `sudo apt install file`         |
+| `awk`       | Text processing      | `sudo apt install gawk`         |
+| `sed`       | Stream editing       | `sudo apt install sed`          |
+| `tee`       | Output file and logs | `sudo apt install coreutils`    |
+| `systemctl` | Service management   | Pre-installed on most systems   |
+| `grep`      | Pattern matching     | Pre-installed on most systems   |
+| `id`        | User info lookup     | Pre-installed on most systems   |
 
 ---
 
@@ -146,7 +147,8 @@ sudo bash migrate.sh \
   --network=mainnet \
   --node-type=validator \
   --service-user=heimdall \
-  --generate-genesis=false
+  --generate-genesis=false \
+  2>&1 | tee migrate.log
 ```
 
 Double-check every flag before execution. 

@@ -1,7 +1,7 @@
 # Rollback Procedure
 
 If the migration fails due to an error,
-and you wish to roll back to the previous state to retry the migration later, follow the steps below.
+and you wish to roll back to the previous state to retry the migration later, follow the steps below carefully.
 
 ---
 
@@ -11,15 +11,30 @@ and you wish to roll back to the previous state to retry the migration later, fo
 sudo systemctl stop heimdalld
 ````
 
+> ℹ️ If the service does not exist, the command will fail harmlessly. You can safely ignore any related error.
+
 ---
 
 ### 2. Restore the v1 `HEIMDALL_HOME` Directory
 
-Example:
+⚠️ **Important:** Make sure the backup directory exists before deleting anything.
+
+Run this to check:
+
 ```bash
-sudo rm -rf /var/lib/heimdall && \
+ls -ld /var/lib/heimdall.backup
+```
+
+If the above command confirms the backup exists, proceed with:
+
+```bash
+sudo rm -rf /var/lib/heimdall # or any other v1 home you used as flag in the script (`--heimdall-v1-home`)
 sudo mv /var/lib/heimdall.backup /var/lib/heimdall
 ```
+
+> ❌ **Do not delete `/var/lib/heimdall` unless you have confirmed the backup exists!**
+> Otherwise, you risk losing critical data.
+> If the backup folder doesn't exist, skip this step and do not remove the current v1 home
 
 ---
 
@@ -32,28 +47,40 @@ sudo rm -f /var/lib/heimdall/migrated_dump_genesis.json
 sudo rm -f /var/lib/heimdall/migrated_dump_genesis.json.sha512
 ```
 
+> Optional but recommended to ensure a clean state before retrying migration.
+> If these files do not exist, it's not a problem.
 ---
 
 ### 4. Restore the v1 Systemd Service File
+
+First, verify that the backup exists:
+
+```bash
+ls -l /lib/systemd/system/heimdalld.service.backup
+```
+
+If the file exists, you can restore it with:
 
 ```bash
 sudo mv -f /lib/systemd/system/heimdalld.service.backup /lib/systemd/system/heimdalld.service
 ```
 
----
+> ℹ️ If the backup does **not** exist, skip this step.
+> You likely didn’t modify or back up the service file during migration.
 
 ### 5. Install Heimdall v1
 
-If you don’t have the binary backed up, reinstall it using:
+If you don’t have the v1 binary already backed up, you can reinstall it using:
 
 ```bash
 curl -L https://raw.githubusercontent.com/maticnetwork/install/main/heimdall.sh | bash -s -- <VERSION> <NETWORK> <NODE_TYPE>
 ```
 
-Replace 
-- `VERSION` with the target version (TODO update it)
-- `NETWORK` with `mainnet`
-- `NODE_TYPE` with `sentry` or `validator`
+Replace:
+
+* `VERSION` with the target v1 version (TODO update it)
+* `NETWORK` with `mainnet`
+* `NODE_TYPE` with `sentry` or `validator`
 
 ---
 
@@ -69,7 +96,7 @@ Expected output:
 <VERSION>
 ```
 
-If the output shows the v2 version, manually replace the binary with the v1 version.
+If the output shows a v2 version, replace the binary manually with the correct v1 build.
 
 ---
 
@@ -87,6 +114,8 @@ sudo systemctl daemon-reload && sudo systemctl start heimdalld
 sudo systemctl restart telemetry
 ```
 
+> Optional, only needed if your telemetry service was configured separately.
+
 ---
 
 ### 9. Check the Logs
@@ -95,10 +124,10 @@ sudo systemctl restart telemetry
 journalctl -fu heimdalld
 ```
 
+Use this to monitor the node and confirm it is running correctly on v1.
+
 ---
 
 ### 10. Retry Migration When Ready
 
-Once the underlying issues are resolved, you can rerun the migration script or proceed with manual migration.
-
-```
+Once the underlying issues are resolved, you can rerun the migration script or proceed with a manual migration workflow.

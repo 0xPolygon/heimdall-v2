@@ -94,7 +94,8 @@ sudo bash migrate.sh \
   --network=mainnet \
   --node-type=validator \
   --service-user=heimdall \
-  --generate-genesis=true
+  --generate-genesis=true \
+  2>&1 | tee migrate.log
 ```
 
 ---
@@ -206,7 +207,8 @@ sudo bash migrate.sh \
   --network=mainnet \
   --node-type=validator \
   --service-user=heimdall \
-  --generate-genesis=false
+  --generate-genesis=false \
+  2>&1 | tee migrate.log
 ```
 
 This will initialize Heimdall v2 in `/var/lib/heimdall`.
