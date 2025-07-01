@@ -64,3 +64,99 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Success() {
 		require.GreaterOrEqual(rec.Id, uint64(1))
 	}
 }
+
+func (s *KeeperTestSuite) TestGetRecordListWithTime_Pagination() {
+	ctx, ck, queryClient, require := s.ctx, s.keeper, s.queryClient, s.Require()
+	now := time.Now().UTC()
+
+	// Insert 10 test records
+	for i := uint64(1); i <= 10; i++ {
+		rec := types.NewEventRecord(
+			TxHash1, i, i, Address1, make([]byte, 1), "1",
+			now.Add(-time.Duration(i)*time.Minute), // decreasing timestamp
+		)
+		require.NoError(ck.SetEventRecord(ctx, rec))
+	}
+
+	type testCase struct {
+		name          string
+		fromID        uint64
+		toTime        time.Time
+		pagination    query.PageRequest
+		expectedIDs   []uint64
+		expectedError bool
+	}
+
+	tests := []testCase{
+		{
+			name:        "limit 1, from_id 1",
+			fromID:      1,
+			toTime:      now,
+			pagination:  query.PageRequest{Offset: 0, Limit: 1},
+			expectedIDs: []uint64{1},
+		},
+		{
+			name:        "limit 5, from_id 3",
+			fromID:      3,
+			toTime:      now,
+			pagination:  query.PageRequest{Offset: 0, Limit: 5},
+			expectedIDs: []uint64{3, 4, 5, 6, 7},
+		},
+		{
+			name:        "limit beyond max (truncates)",
+			fromID:      1,
+			toTime:      now,
+			pagination:  query.PageRequest{Offset: 0, Limit: 100},
+			expectedIDs: []uint64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		},
+		{
+			name:        "offset skipping first 5",
+			fromID:      1,
+			toTime:      now,
+			pagination:  query.PageRequest{Offset: 5, Limit: 5},
+			expectedIDs: []uint64{6, 7, 8, 9, 10},
+		},
+		{
+			name:        "from_id beyond dataset",
+			fromID:      50,
+			toTime:      now,
+			pagination:  query.PageRequest{Limit: 5},
+			expectedIDs: []uint64{},
+		},
+		{
+			name:        "to_time before all records",
+			fromID:      1,
+			toTime:      now.Add(-11 * time.Minute),
+			pagination:  query.PageRequest{Limit: 5},
+			expectedIDs: []uint64{},
+		},
+		{
+			name:        "empty pagination default limit",
+			fromID:      1,
+			toTime:      now,
+			pagination:  query.PageRequest{},
+			expectedIDs: []uint64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+		},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			req := &types.RecordListWithTimeRequest{
+				FromId:     tc.fromID,
+				ToTime:     tc.toTime,
+				Pagination: tc.pagination,
+			}
+			res, err := queryClient.GetRecordListWithTime(ctx, req)
+
+			if tc.expectedError {
+				require.Error(err)
+			} else {
+				require.NoError(err)
+				require.Len(res.EventRecords, len(tc.expectedIDs))
+				for i, rec := range res.EventRecords {
+					require.Equal(tc.expectedIDs[i], rec.Id)
+				}
+			}
+		})
+	}
+}

@@ -67,6 +67,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/client/docs"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	hversion "github.com/0xPolygon/heimdall-v2/version"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -721,6 +722,8 @@ func (app *HeimdallApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.A
 	}
 
 	apiSvr.Router.HandleFunc("/status", getCometStatusHandler(clientCtx)).Methods("GET")
+
+	apiSvr.Router.HandleFunc("/version", getHeimdallV2Version()).Methods("GET")
 }
 
 func getCometStatusHandler(cliCtx client.Context) func(w http.ResponseWriter, r *http.Request) {
@@ -739,6 +742,23 @@ func getCometStatusHandler(cliCtx client.Context) func(w http.ResponseWriter, r 
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write(resp); err != nil {
 			http.Error(w, fmt.Sprintf("failed to write response: %v", err), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func getHeimdallV2Version() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		versionInfo := hversion.NewInfo()
+		versionBytes, err := json.Marshal(versionInfo)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to marshal version: %v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if _, err := w.Write(versionBytes); err != nil {
+			http.Error(w, fmt.Sprintf("failed to write version response: %v", err), http.StatusInternalServerError)
 			return
 		}
 	}

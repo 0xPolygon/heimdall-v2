@@ -16,7 +16,6 @@ heimdalld --help
 The output is something like this:
 
 ```bash
-
 Usage:
   heimdalld [command]
 
@@ -46,6 +45,7 @@ Available Commands:
   start                  Run the full node
   status                 Query remote node for status
   tx                     Transactions subcommands
+  ve-decode              Decode VEs for a specific block height
   verify-genesis         Verify if the genesis matches
   version                Print the app version
 
@@ -63,9 +63,9 @@ Flags:
       --grpc_server string                Set GRPC Server Endpoint
       --heimdall_rest_server string       Set Heimdall REST server endpoint
   -h, --help                              help for heimdalld
-      --home string                       directory for config and data (default "/home/ubuntu/var/lib/heimdall")
+      --home string                       directory for config and data (default "/var/lib/heimdall")
       --log_format string                 The logging format (json|plain) (default "plain")
-      --log_level string                  The logging level (trace|debug|info|warn|error|fatal|panic|disabled or '*:<level>,<key>:<level>') (default "info")
+      --log_level string                  The logging level (trace|debug|info|warn|error|fatal|panic|disabled) (default "info")
       --log_no_color                      Disable colored logs
       --logs_writer_file string           Set logs writer file, Default is os.Stdout
       --main_chain_gas_limit uint         Set main chain gas limit
@@ -73,10 +73,9 @@ Flags:
       --milestone_poll_interval string    Set milestone interval (default "30s")
       --no_ack_wait_time string           Set time ack service waits to clear buffer and elect new proposer
       --noack_poll_interval string        Set no acknowledge pull interval
+      --producer_votes string             Set comma-separated list of producer IDs
       --seeds string                      Override seeds
       --span_poll_interval string         Set span pull interval
       --syncer_poll_interval string       Set syncer pull interval
       --trace                             print out full stack trace on errors
-
-Use "heimdalld [command] --help" for more information about a command.
 ```

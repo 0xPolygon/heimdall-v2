@@ -4,15 +4,15 @@ umask 0022
 
 # -------------------- Env variables, to be adjusted before rolling out --------------------
 V1_VERSION="1.6.0-beta"
-V1_GENESIS_CHECKSUM="4eb6ddd5d84f08f6db4c1cc0f1793cc8b68ac112684eae4ce2b26042a7a9b3645ac6657fda212d77e5881c54cbc829384e1fc31eb9ced167c6d10ac8afbadd7e"
-V2_GENESIS_CHECKSUM="02c4d40eada58ee8835bfdbe633bda07f2989bc0d65c18114df2cbfe4b07d8fdbbce3a72a1c3bfeef2b7fc9c295bbf5b4d5ede70c3fb480546625075459675e2"
+V1_GENESIS_CHECKSUM="2243f213c280afbffc06926052bbd83e200825c614cc434f3d045c52c565c7ca50bbd7d8f4a0d8f5c5c78dd64fd3a4db5a160056726f49f5926ac610d9157788"
+V2_GENESIS_CHECKSUM="70bb9b754781f0ec77ace3132079420b26da602b606e514b71c969d29ab9a0c4ec757d44b5597d2889342708fdbfb48d9029caddd48ef1584d484977a17bd24d"
 V2_VERSION="0.2.1"
-V1_CHAIN_ID="heimdall-80002"
-V2_CHAIN_ID="heimdallv2-80002"
-V2_GENESIS_TIME="2025-06-24T20:30:00Z"
+V1_CHAIN_ID="heimdall-137"
+V2_CHAIN_ID="heimdallv2-137"
+V2_GENESIS_TIME="2025-06-24T20:00:00Z"
 V1_HALT_HEIGHT=8788500
-VERIFY_EXPORTED_DATA=true
-TRUSTED_GENESIS_URL="https://storage.googleapis.com/amoy-heimdallv2-genesis/dump-genesis.json"
+VERIFY_EXPORTED_DATA=false
+TRUSTED_GENESIS_URL="https://storage.googleapis.com/mainnet-heimdallv2-genesis/dump-genesis.json"
 
 # -------------------- const env variables --------------------
 V2_INITIAL_HEIGHT=$(( V1_HALT_HEIGHT + 1 ))
@@ -25,12 +25,12 @@ START_TIME=$(date +%s)
 SCRIPT_PATH=$(realpath "$0")
 
 if ! tail -n 10 "$SCRIPT_PATH" | grep -q "# End of script"; then
-  echo "[ERROR] Script appears to be incomplete or partially downloaded."
+  echo "[ERROR] Script appears to be incomplete or partially downloaded, try to download it again."
   exit 1
 fi
 
 if [[ "$(id -u)" -ne 0 ]]; then
-  echo "[ERROR] This script must be run as root. Use sudo."
+  echo "[ERROR] This script must be run as root. Use sudo and rerun it."
   exit 1
 fi
 
@@ -61,16 +61,6 @@ show_help() {
   echo "  --service-user=USER          System user that runs the Heimdall service"
   echo "                                (typically 'heimdall'; check systemd with 'sudo systemctl status heimdalld')"
   echo "  --generate-genesis=true|false Whether to export genesis from heimdalld (recommended: true)"
-  echo "Optional arguments:"
-  echo "Example:"
-  echo "  sudo bash migrate.sh \\
-    --heimdall-v1-home=/var/lib/heimdall \\
-    --heimdallcli-path=/usr/bin/heimdallcli \\
-    --heimdalld-path=/usr/bin/heimdalld \\
-    --network=mainnet \\
-    --node-type=validator \\
-    --service-user=heimdall \\
-    --generate-genesis=true"
   exit 0
 }
 
@@ -176,19 +166,14 @@ echo ""
 echo -e "🔄  Welcome to the Polygon Heimdall v1 → v2 Migration Script 🔄"
 echo -e "----------------------------------------------------------"
 echo -e "This script will execute a multi-step migration"
-echo -e "from Heimdall v1 to Heimdall v2, including:"
-echo -e "  ✅ Exporting and verifying the v1 state"
-echo -e "  ✅ Installing Heimdall v2 binaries"
-echo -e "  ✅ Initializing and migrating configurations"
-echo -e "  ✅ Updating genesis and validator keys"
-echo -e "  ✅ Applying permissions and restarting the node"
+echo -e "from Heimdall v1 to Heimdall v2"
 echo -e "----------------------------------------------------------\n"
-sleep 3
+sleep 5
 
 
 # Step 1: Check script dependencies
 STEP=1
-print_step $STEP "Checking for required dependencies"
+print_step $STEP "CHECK DEPENDENCIES"
 # Define base and new dependencies
 DEPENDENCIES=("curl" "tar" "jq" "sha512sum" "file" "awk" "sed" "systemctl" "grep" "id")
 MISSING_DEPS=()
@@ -207,7 +192,7 @@ echo "[INFO] All required dependencies are installed."
 
 # Step 2: Validate provided arguments
 STEP=2
-print_step $STEP "Validating provided arguments"
+print_step $STEP "ARGUMENTS VALIDATION"
 # HEIMDALL_HOME
 validate_absolute_path "$HEIMDALL_HOME" "HEIMDALL_HOME"
 if [[ ! -d "$HEIMDALL_HOME/data" || ! -d "$HEIMDALL_HOME/config" ]]; then
@@ -262,8 +247,7 @@ if [[ "$V1_CHAIN_ID" != "devnet" ]]; then
 fi
 if [[ -n "$EXPECTED_V1_CHAIN_ID" ]]; then
     if [[ "$V1_CHAIN_ID" != "$EXPECTED_V1_CHAIN_ID" ]]; then
-        echo "❌ Chain ID mismatch: expected '$EXPECTED_V1_CHAIN_ID', got '$V1_CHAIN_ID'"
-        exit 1
+        handle_error $STEP "Chain ID mismatch: expected $EXPECTED_V1_CHAIN_ID, got $V1_CHAIN_ID"
     fi
 fi
 # NODETYPE
@@ -281,25 +265,11 @@ fi
 if [[ "$GENERATE_GENESIS" != "true" && "$GENERATE_GENESIS" != "false" ]]; then
     handle_error $STEP "Invalid value for --generate-genesis. Must be 'true' or 'false'."
 fi
-# Summary
-echo ""
-echo "[INFO] Configuration summary:"
-echo "       HEIMDALL_HOME:         $HEIMDALL_HOME"
-echo "       HEIMDALL_CLI_PATH:     $HEIMDALL_CLI_PATH"
-echo "       HEIMDALLD_PATH:        $HEIMDALLD_PATH"
-echo "       NETWORK:               $NETWORK"
-echo "       NODETYPE:              $NODETYPE"
-echo "       HEIMDALL_SERVICE_USER: $HEIMDALL_SERVICE_USER"
-echo "       GENERATE_GENESIS:      $GENERATE_GENESIS"
-echo "       V1_CHAIN_ID:           $V1_CHAIN_ID"
-echo "       V2_CHAIN_ID:           $V2_CHAIN_ID"
-echo "       V2_GENESIS_TIME:       $V2_GENESIS_TIME"
-echo ""
 
 
 # Step 3: stop heimdall-v1. The apocalypse tag embeds the halt_height so heimdalld should be down already, running it for consistency/completeness
 STEP=3
-print_step $STEP "Backing up service file and stopping heimdall-v1"
+print_step $STEP "BACK UP SERVICE FILE AND STOP V1"
 if systemctl list-units --type=service | grep -q heimdalld.service; then
     if systemctl is-active --quiet heimdalld; then
         systemctl stop heimdalld
@@ -328,7 +298,7 @@ fi
 
 # Step 4: Ensure node has committed up to latest height
 STEP=4
-print_step $STEP "Checking that Heimdall v1 has committed the latest height"
+print_step $STEP "LATEST HEIGHT CHECK IN V1"
 
 if [[ "$GENERATE_GENESIS" == "false" ]]; then
     echo "[INFO] Skipping committed height check since GENERATE_GENESIS=false was passed."
@@ -360,16 +330,18 @@ fi
 
 # Step 5: Generate or download Heimdall v1 genesis JSON
 STEP=5
-print_step $STEP "Obtaining Heimdall v1 genesis JSON file"
+print_step $STEP "OBTAIN V1 GENESIS FILE"
 GENESIS_FILE="$HEIMDALL_HOME/$DUMP_V1_GENESIS_FILE_NAME"
 if $GENERATE_GENESIS; then
     echo "[INFO] Generating genesis file using heimdalld export..."
     if ! $HEIMDALL_CLI_PATH export-heimdall --home "$HEIMDALL_HOME" --chain-id "$V1_CHAIN_ID"; then
         handle_error $STEP "Failed to generate Heimdall v1 genesis file $GENESIS_FILE"
     fi
+    echo "[INFO] This may take some time as the genesis on mainnet is supposed to be around 5GB..."
     echo "[INFO] Genesis file generated to $GENESIS_FILE"
 else
     echo "[INFO] Downloading genesis file from default source: $TRUSTED_GENESIS_URL"
+    echo "[INFO] This may take some time as the genesis on mainnet is supposed to be around 5GB..."
     if ! curl -fsSL "$TRUSTED_GENESIS_URL" -o "$GENESIS_FILE"; then
         handle_error $STEP "Failed to download genesis file from $TRUSTED_GENESIS_URL"
     fi
@@ -379,7 +351,7 @@ fi
 
 # Step 6: Generate checksum of the genesis export
 STEP=6
-print_step $STEP "Generating checksum for Heimdall v1 genesis file, it will be saved in $HEIMDALL_HOME/$DUMP_V1_GENESIS_FILE_NAME.sha512"
+print_step $STEP "V1 GENESIS CHECKSUM GENERATION"
 V1_GENESIS_CHECKSUM_FILE="$HEIMDALL_HOME/$DUMP_V1_GENESIS_FILE_NAME.sha512"
 # Ensure the genesis file exists before computing checksum
 if [[ ! -f "$GENESIS_FILE" ]]; then
@@ -398,7 +370,7 @@ echo "[INFO] Generated checksum: $GENERATED_V1_GENESIS_CHECKSUM"
 
 # Step 7: verify checksum
 STEP=7
-print_step $STEP "Verifying checksum"
+print_step $STEP "V1 GENESIS CHECKSUM VERIFICATION"
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "[DRY-RUN] Skipping checksum verification"
 else
@@ -419,7 +391,8 @@ fi
 # Step 8: move heimdall-v1 to backup location
 STEP=8
 BACKUP_DIR="${HEIMDALL_HOME}.backup"
-print_step $STEP "Moving $HEIMDALL_HOME to $BACKUP_DIR"
+print_step $STEP "BACKING UP V1"
+echo "[INFO] Backup will be executed from $HEIMDALL_HOME to $BACKUP_DIR"
 # Create parent directory in case it doesn't exist
 sudo mkdir -p "$(dirname "$BACKUP_DIR")" || handle_error $STEP "Failed to create parent directory for $BACKUP_DIR"
 # Move Heimdall home to backup location
@@ -428,7 +401,7 @@ echo "[INFO] Backup (move) completed successfully."
 
 # Step 9 : select the proper heimdall-v2 binary package
 STEP=9
-print_step $STEP "Create temp directory for heimdall-v2 and target the right package based on current system"
+print_step $STEP "PACKAGE TARGETING FOR V2"
 tmpDir="/tmp/tmp-heimdall-v2"
 sudo mkdir -p $tmpDir || handle_error $STEP "Cannot create $tmpDir directory for downloading files"
 profileInfo=${NETWORK}-${NODETYPE}-config_v${V2_VERSION}
@@ -445,9 +418,9 @@ case "$(uname -s).$(uname -m)" in
             binary="heimdall-v${V2_VERSION}.x86_64.rpm"
             profile="heimdall-${profileInforpm}.noarch.rpm"
         elif command -v apk &> /dev/null; then
-            handle_error $STEP "Sorry, there is no binary distribution for your platform"
+            handle_error $STEP "No binary distribution for your platform"
         else
-            handle_error $STEP "Sorry, there is no binary distribution for your platform"
+            handle_error $STEP "No binary distribution for your platform"
         fi
         ;;
     Linux.aarch64)
@@ -460,18 +433,18 @@ case "$(uname -s).$(uname -m)" in
             binary="heimdall-v${V2_VERSION}.aarch64.rpm"
             profile="heimdall-${profileInforpm}.noarch.rpm"
         elif command -v apk &> /dev/null; then
-            handle_error $STEP "Sorry, there is no binary distribution for your platform"
+            handle_error $STEP "No binary distribution for your platform"
         else
-            handle_error $STEP "Sorry, there is no binary distribution for your platform"
+            handle_error $STEP "No binary distribution for your platform"
         fi
         ;;
     Darwin.x86_64)
-        handle_error $STEP "Sorry, there is no binary distribution for your platform"
+        handle_error $STEP "No binary distribution for your platform"
         ;;
     Darwin.arm64|Darwin.aarch64)
-        handle_error $STEP "Sorry, there is no binary distribution for your platform"
+        handle_error $STEP "No binary distribution for your platform"
         ;;
-    *) handle_error $STEP "Sorry, there is no binary distribution for your platform";;
+    *) handle_error $STEP "No binary distribution for your platform";;
 esac
 url="${baseUrl}/${binary}"
 package="$tmpDir/$binary"
@@ -479,7 +452,8 @@ package="$tmpDir/$binary"
 
 # Step 10: download heimdall-v2 binary package
 STEP=10
-print_step $STEP "Download heimdall-v2 binary package from $baseUrl to $tmpDir"
+print_step $STEP "DOWNLOAD V2 PACKAGE"
+echo "[INFO] Package will be downloaded from $baseUrl to $tmpDir"
 curl -L "$url" -o "$package" || handle_error $STEP "Failed to download binary from \"$url\""
 if [ -n "$profile"  ]; then
     profileUrl="${baseUrl}/${profile}"
@@ -489,7 +463,8 @@ fi
 
 # Step 11: install heimdall-v2 binary
 STEP=11
-print_step $STEP "Install heimdall-v2 binary"
+print_step $STEP "INSTALL V2 BINARY"
+sudo dpkg --purge heimdalld-profile || echo "[WARN] Nothing to purge"
 if [ "$type" = "deb" ]; then
     echo "[INFO] Uninstalling any existing heimdalld..."
     sudo dpkg -r heimdalld heimdall || echo "[WARN] Nothing to uninstall"
@@ -528,7 +503,8 @@ echo "[INFO] Heimdall-v2 binary installation completed"
 
 # Step 12: copy binary to user-specified path
 STEP=12
-print_step $STEP "Copying heimdalld binary to $HEIMDALLD_PATH"
+print_step $STEP "COPY V1 BINARY"
+echo "[INFO] The binary will be copied to $HEIMDALLD_PATH"
 # Determine source binary path - prefer /usr/bin/heimdalld
 if [ -x "/usr/bin/heimdalld" ]; then
     SOURCE_BINARY="/usr/bin/heimdalld"
@@ -570,7 +546,7 @@ echo "[INFO] heimdalld binary installed at $HEIMDALLD_PATH"
 
 # Step 13: verify heimdall-v2 version
 STEP=13
-print_step $STEP "Verifying Heimdall v2 version"
+print_step $STEP "VERIFY V2 VERSION"
 # Check if heimdalld is installed and executable
 if [[ ! -x "$HEIMDALLD_PATH" ]]; then
     handle_error $STEP "Heimdalld binary is missing or not executable: $HEIMDALLD_PATH"
@@ -600,7 +576,8 @@ echo "[INFO] heimdall-v2 is using the correct version $V2_VERSION"
 
 # Step 14: migrate genesis file
 STEP=14
-print_step $STEP "Migrating Heimdall v1 genesis file $GENESIS_FILE to v2 format, the result file will be saved in $BACKUP_DIR/migrated_$DUMP_V1_GENESIS_FILE_NAME"
+print_step $STEP "MIGRATE V1 GENESIS FILE TO V2"
+echo "[INFO] v1 genesis file $GENESIS_FILE is being migrated to v2 format and stored in $BACKUP_DIR/migrated_$DUMP_V1_GENESIS_FILE_NAME"
 # Define the target output file
 MIGRATED_GENESIS_FILE="$BACKUP_DIR/migrated_$DUMP_V1_GENESIS_FILE_NAME"
 # Ensure the v1 genesis file exists before proceeding
@@ -639,39 +616,40 @@ fi
 
 # Step 15: Generate checksum of the migrated genesis
 STEP=15
-print_step $STEP "Generating checksum for Heimdall v2 genesis file, it will be saved in $MIGRATED_GENESIS_FILE.sha512"
-V2_CHAIN_IDGENESIS_CHECKSUM_FILE="$MIGRATED_GENESIS_FILE.sha512"
+print_step $STEP "V2 GENESIS CHECKSUM GENERATION"
+echo "[INFO] The checksum for the v2 genesis file will be saved in $MIGRATED_GENESIS_FILE.sha512"
+V2_GENESIS_CHECKSUM_FILE="$MIGRATED_GENESIS_FILE.sha512"
 # Ensure the genesis file exists before computing checksum
 if [[ ! -f "$MIGRATED_GENESIS_FILE" ]]; then
     handle_error $STEP "Migrated genesis file $MIGRATED_GENESIS_FILE not found. Cannot generate checksum."
 fi
 # execute command
-sha512sum "$MIGRATED_GENESIS_FILE" | awk '{print $1}' > "$V2_CHAIN_IDGENESIS_CHECKSUM_FILE"
+sha512sum "$MIGRATED_GENESIS_FILE" | awk '{print $1}' > "$V2_GENESIS_CHECKSUM_FILE"
 # Verify checksum file exists and is not empty
-if [[ ! -s "$V2_CHAIN_IDGENESIS_CHECKSUM_FILE" ]]; then
+if [[ ! -s "$V2_GENESIS_CHECKSUM_FILE" ]]; then
     handle_error $STEP "Checksum file was not created or is empty."
 fi
-GENERATED_V2_CHAIN_IDGENESIS_CHECKSUM=$(awk '{print $1}' "$V2_CHAIN_IDGENESIS_CHECKSUM_FILE")
+GENERATED_V2_GENESIS_CHECKSUM=$(awk '{print $1}' "$V2_GENESIS_CHECKSUM_FILE")
 # Print checksum
-echo "[INFO] Generated checksum: $GENERATED_V2_CHAIN_IDGENESIS_CHECKSUM"
+echo "[INFO] Generated checksum: $GENERATED_V2_GENESIS_CHECKSUM"
 
 
 # Step 16: verify checksum of the migrated genesis
 STEP=16
-print_step $STEP "Verifying checksum of the migrated genesis file"
+print_step $STEP "V2 GENESIS CHECKSUM VERIFICATION"
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "[DRY-RUN] Skipping checksum verification"
 else
-    V2_CHAIN_IDGENESIS_CHECKSUM_FILE="$MIGRATED_GENESIS_FILE.sha512"
+    V2_GENESIS_CHECKSUM_FILE="$MIGRATED_GENESIS_FILE.sha512"
     # Ensure checksum file exists before reading it
-    if [[ ! -f "$V2_CHAIN_IDGENESIS_CHECKSUM_FILE" ]]; then
-        handle_error $STEP "Checksum file $V2_CHAIN_IDGENESIS_CHECKSUM_FILE not found! Cannot verify checksum."
+    if [[ ! -f "$V2_GENESIS_CHECKSUM_FILE" ]]; then
+        handle_error $STEP "Checksum file $V2_GENESIS_CHECKSUM_FILE not found! Cannot verify checksum."
     fi
     # Read expected checksum from the file
-    V2_GENESIS_CHECKSUM=$(awk '{print $1}' "$V2_CHAIN_IDGENESIS_CHECKSUM_FILE")
+    V2_GENESIS_CHECKSUM=$(awk '{print $1}' "$V2_GENESIS_CHECKSUM_FILE")
     # Verify checksum matches the generated one
-    if [[ "$GENERATED_V2_CHAIN_IDGENESIS_CHECKSUM" != "$V2_GENESIS_CHECKSUM" ]]; then
-        handle_error $STEP "Checksum mismatch! Expected: $V2_GENESIS_CHECKSUM, Found: $GENERATED_V2_CHAIN_IDGENESIS_CHECKSUM"
+    if [[ "$GENERATED_V2_GENESIS_CHECKSUM" != "$V2_GENESIS_CHECKSUM" ]]; then
+        handle_error $STEP "Checksum mismatch! Expected: $V2_GENESIS_CHECKSUM, Found: $GENERATED_V2_GENESIS_CHECKSUM"
     fi
     echo "[INFO] Checksum verification passed."
 fi
@@ -679,7 +657,7 @@ fi
 
 # Step 17: create temp heimdall-v2 home dir
 STEP=17
-print_step $STEP "Creating temp directory for heimdall-v2 in and applying proper permissions"
+print_step $STEP "V2 FOLDERS PERMISSIONS"
 sudo mkdir -p "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to create $V2_HEIMDALL_HOME directory"
 # apply proper permissions for the current user
 sudo chmod -R 755 "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to set permissions"
@@ -691,7 +669,7 @@ fi
 
 # Step 18: init heimdall-v2
 STEP=18
-print_step $STEP "Initializing heimdalld for version v2"
+print_step $STEP "V2 INIT"
 # Ensure Heimdall home exists before proceeding
 if [[ ! -d "$V2_HEIMDALL_HOME" ]]; then
     handle_error $STEP "$V2_HEIMDALL_HOME does not exist. Cannot proceed with initialization."
@@ -705,7 +683,8 @@ echo "[INFO] heimdalld initialized successfully."
 
 # Step 19: verify required directories exist
 STEP=19
-print_step $STEP "Verifying required directories and configuration files in $V2_HEIMDALL_HOME"
+print_step $STEP "V2 DIRS AND FILES CHECK"
+echo "[INFO] Verifying required directories and configuration files in $V2_HEIMDALL_HOME"
 # Check if required directories exist
 REQUIRED_DIRS=("data" "config")
 for dir in "${REQUIRED_DIRS[@]}"; do
@@ -732,7 +711,7 @@ echo "[INFO] All required directories are present in $V2_HEIMDALL_HOME"
 
 # Step 20: Restore bridge directory from backup
 STEP=20
-print_step $STEP "Restoring bridge directory from backup if present"
+print_step $STEP "RESTORE BRIDGE"
 BRIDGE_SRC="$BACKUP_DIR/bridge"
 BRIDGE_DEST="$V2_HEIMDALL_HOME/bridge"
 
@@ -748,7 +727,8 @@ fi
 
 # Step 21: move genesis file to new heimdall home
 STEP=21
-print_step $STEP "Moving genesis file to $V2_HEIMDALL_HOME/config"
+print_step $STEP "V2 GENESIS MOVE"
+echo "[INFO] Moving genesis file to $V2_HEIMDALL_HOME/config"
 TARGET_GENESIS_FILE="$V2_HEIMDALL_HOME/config/genesis.json"
 # Backup existing genesis file before replacing it
 if [ -f "$TARGET_GENESIS_FILE" ]; then
@@ -762,7 +742,7 @@ cp -p "$MIGRATED_GENESIS_FILE" "$TARGET_GENESIS_FILE" || handle_error $STEP "Fai
 
 # Step 22: edit priv_validator_key.json file according to v2 setup
 STEP=22
-print_step $STEP "Updating priv_validator_key.json file"
+print_step $STEP "UPDATE priv_validator_key.json"
 PRIV_VALIDATOR_FILE="$V2_HEIMDALL_HOME/config/priv_validator_key.json"
 TEMP_PRIV_FILE="temp_priv_validator_key.json"
 TEMP_FILES+=("$TEMP_PRIV_FILE")
@@ -794,7 +774,7 @@ echo "[INFO] Updated priv_validator_key.json file saved as $PRIV_VALIDATOR_FILE"
 
 # Step 23: edit node_key.json file according to v2 setup
 STEP=23
-print_step $STEP "Updating node_key.json file"
+print_step $STEP "UPDATE node_key.json"
 NODE_KEY_FILE="$V2_HEIMDALL_HOME/config/node_key.json"
 TEMP_NODE_KEY_FILE="temp_node_key.json"
 TEMP_FILES+=("$TEMP_NODE_KEY_FILE")
@@ -821,7 +801,7 @@ echo "[INFO] Updated node_key.json file saved as $NODE_KEY_FILE"
 
 # Step 24: Fix JSON formatting in priv_validator_state.json and set initial height
 STEP=24
-print_step $STEP "Fixing formatting in priv_validator_state.json and set initial height"
+print_step $STEP "UPDATE priv_validator_state.json"
 PRIV_VALIDATOR_STATE="$V2_HEIMDALL_HOME/data/priv_validator_state.json"
 TEMP_STATE_FILE="temp_priv_validator_state.json"
 TEMP_FILES+=("$TEMP_STATE_FILE")
@@ -846,55 +826,9 @@ else
 fi
 echo "[INFO] Successfully updated priv_validator_state.json"
 
-
-# Step 25: Restore addrbook.json from backup if it exists
+# Step 25: Configuration changes
 STEP=25
-print_step $STEP "Restoring addrbook.json from backup (if present)"
-ADDRBOOK_FILE="$BACKUP_DIR/config/addrbook.json"
-TARGET_ADDRBOOK_FILE="$V2_HEIMDALL_HOME/config/addrbook.json"
-if [ -f "$ADDRBOOK_FILE" ]; then
-    # Backup current one (if any)
-    if [ -f "$TARGET_ADDRBOOK_FILE" ]; then
-        cp "$TARGET_ADDRBOOK_FILE" "$TARGET_ADDRBOOK_FILE.bak" || handle_error $STEP "Failed to backup existing addrbook.json"
-        echo "[INFO] Backup saved at: $TARGET_ADDRBOOK_FILE.bak"
-    fi
-    cp "$ADDRBOOK_FILE" "$TARGET_ADDRBOOK_FILE" || handle_error $STEP "Failed to restore addrbook.json from backup"
-    echo "[INFO] addrbook.json restored successfully."
-else
-    echo "[INFO] No addrbook.json found in backup. Skipping restore."
-fi
-
-
-# Step 26: Configuration changes
-STEP=26
-print_step $STEP "Applying minimal v1 → v2 configuration migration"
-echo -e "\n⚠️  [INFO] This step will automatically migrate a minimal and safe subset of configuration values from Heimdall v1 to Heimdall v2."
-echo -e "   Only the following keys will be carried over:\n"
-echo -e "📁 From v1 \033[1mconfig.toml\033[0m → v2 config.toml:"
-echo -e "   - moniker"
-echo -e "   - external_address"
-echo -e "   - seeds"
-echo -e "   - persistent_peers"
-echo -e "   - max_num_inbound_peers"
-echo -e "   - max_num_outbound_peers"
-echo -e "   - proxy_app"
-echo -e "   - addr_book_strict\n"
-echo -e "📁 From v1 \033[1mheimdall-config.toml\033[0m → v2 app.toml:"
-echo -e "   - eth_rpc_url"
-echo -e "   - bor_rpc_url"
-echo -e "   - bor_grpc_flag"
-echo -e "   - bor_grpc_url"
-echo -e "   - amqp_url\n"
-echo -e "📁 Into \033[1mclient.toml\033[0m:"
-echo -e "   - chain-id = \"$V2_CHAIN_ID\"\n"
-echo -e "💡 You may manually edit other parameters (e.g. ports, metrics, logging) after migration."
-echo -e "\n📁 \033[1mBor Configuration Notice\033[0m:"
-echo -e "   ⚠️  Please update your Bor's \033[1mbor/config.toml\033[0m manually to reflect v2-compatible settings."
-echo -e "   💡 You can optionally add the following entry under the \033[1m[heimdall]\033[0m section to enable WebSocket support:"
-echo -e "\n     [heimdall]"
-echo -e "     ws-address = \"ws://localhost:26657/websocket\"\n"
-echo -e "   ✅ This setting is recommended, as it improves performance by reducing the number of HTTP polling requests from Heimdall to Bor."
-echo -e "   🔄 After updating the config, make sure to restart your Bor node for changes to take effect.\n"
+print_step $STEP "V1 -> V2 CONFIG PORTING"
 # 1. Set chain-id in client.toml
 CLIENT_TOML="$V2_HEIMDALL_HOME/config/client.toml"
 echo "[INFO] Setting chain-id in client.toml..."
@@ -981,9 +915,10 @@ echo "[OK]   app.toml: bor_rpc_timeout = 1s"
 echo "[INFO] app.toml values migrated and updated successfully."
 
 
-# Step 27: Assign correct ownership to Heimdall directories
-STEP=27
-print_step $STEP "Assigning correct ownership and permissions under $V2_HEIMDALL_HOME as user: $HEIMDALL_SERVICE_USER"
+# Step 26: Assign correct ownership to Heimdall directories
+STEP=26
+print_step $STEP "V2 OWNERSHIP AND PERMISSIONS"
+echo "[INFO] Assigning correct ownership and permissions under $V2_HEIMDALL_HOME as user: $HEIMDALL_SERVICE_USER"
 # Sanity check: avoid chowning critical paths
 CRITICAL_PATHS=("/" "/usr" "/usr/bin" "/bin" "/lib" "/lib64" "/etc" "/boot")
 for path in "${CRITICAL_PATHS[@]}"; do
@@ -992,7 +927,7 @@ for path in "${CRITICAL_PATHS[@]}"; do
     fi
 done
 echo "[INFO] Recursively setting ownership of all contents in $V2_HEIMDALL_HOME to $HEIMDALL_SERVICE_USER"
-sudo chown -R "$HEIMDALL_SERVICE_USER":"$HEIMDALL_SERVICE_USER" "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to chown $V2_HEIMDALL_HOME"
+sudo chown -R "$HEIMDALL_SERVICE_USER" "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to chown $V2_HEIMDALL_HOME"
 # Set 640 permissions for all files
 echo "[INFO] Setting 640 permissions for all files under $V2_HEIMDALL_HOME"
 find "$V2_HEIMDALL_HOME" -type f ! -name '.*' -exec chmod 644 {} \; || handle_error $STEP "Failed to chmod files"
@@ -1014,9 +949,10 @@ for f in "${SENSITIVE_FILES[@]}"; do
 done
 echo "[INFO] Ownership and permissions successfully enforced under $V2_HEIMDALL_HOME"
 
-# Step 28: Automatically update the systemd unit file to set the correct user
-STEP=28
-print_step $STEP "Patching systemd service file to enforce user: $HEIMDALL_SERVICE_USER"
+# Step 27: Automatically update the systemd unit file to set the correct user
+STEP=27
+print_step $STEP "EDIT SYSTEMD FILE"
+echo "[INFO] Patching systemd service file to enforce user: $HEIMDALL_SERVICE_USER"
 SERVICE_FILE=$(systemctl status heimdalld | grep 'Loaded:' | awk '{print $3}' | tr -d '();')
 if [[ -z "$SERVICE_FILE" || ! -f "$SERVICE_FILE" ]]; then
     echo "[WARNING] Could not detect systemd unit file for heimdalld. Please update it manually to set the correct 'User=' value."
@@ -1035,61 +971,13 @@ else
     echo "[INFO] Systemd unit patched."
 fi
 
-
-# Step 29: Clean up .bak files in "$V2_HEIMDALL_HOME"
-STEP=29
-print_step $STEP "Cleaning up .bak files in parent directory of $V2_HEIMDALL_HOME"
-# Determine the parent directory of V2_HEIMDALL_HOME
-HEIMDALL_PARENT_DIR=$(dirname "$V2_HEIMDALL_HOME")
-# Find and delete all .bak files or directories
-BAK_FILES=$(find "$HEIMDALL_PARENT_DIR" -name "*.bak")
-if [[ -n "$BAK_FILES" ]]; then
-    echo "[INFO] Removing the following backup files or directories:"
-    echo "$BAK_FILES"
-    find "$HEIMDALL_PARENT_DIR" -name "*.bak" -exec rm -rf {} \;
-    echo "[INFO] Cleanup complete."
-else
-    echo "[INFO] No .bak files or directories found in $HEIMDALL_PARENT_DIR"
-fi
-
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 MINUTES=$((DURATION / 60))
 SECONDS=$((DURATION % 60))
 
-echo -e "\n⚠️  \033[1mManual Verification Required\033[0m:"
-echo -e "   Please review the updated configuration files under:"
-echo -e "     \033[1m/var/lib/heimdall/config/\033[0m"
-echo -e "   and ensure that they match your expected custom values from:"
-echo -e "     \033[1m/var/lib/heimdall/config/\033[0m"
-echo -e "   Especially if you had non-standard settings (e.g., ports, metrics, logging, pruning)."
-echo -e "   The migration only carried over a minimal and safe subset of parameters:\n"
-echo -e "📁 \033[1mconfig.toml\033[0m:"
-echo -e "   - moniker"
-echo -e "   - external_address"
-echo -e "   - seeds"
-echo -e "   - persistent_peers"
-echo -e "   - max_num_inbound_peers"
-echo -e "   - max_num_outbound_peers"
-echo -e "   - proxy_app"
-echo -e "   - addr_book_strict\n"
-echo -e "📁 \033[1mapp.toml\033[0m:"
-echo -e "   - eth_rpc_url"
-echo -e "   - bor_rpc_url"
-echo -e "   - bor_grpc_flag"
-echo -e "   - bor_grpc_url"
-echo -e "   - amqp_url\n"
-echo -e "📁 \033[1mclient.toml\033[0m:"
-echo -e "   - chain-id = \"$V2_CHAIN_ID\"\n"
-
-echo -e "\n✅ [SUCCESS] Heimdall v2 migration completed successfully! ✅"
+echo -e "\n✅ HEIMDALL MIGRATION EXECUTED SUCCESSFULLY! ✅"
 echo -e "🕓 Migration completed in ${MINUTES}m ${SECONDS}s."
-echo -e "When notified to start heimdall-v2, please run: "
-echo -e "sudo systemctl daemon-reload && sudo systemctl start heimdalld"
-echo -e "if you are running telemetry, also restart that service with: "
-echo -e "sudo systemctl restart telemetry"
-echo -e "Then - once heimdall is running, to verify everything is correct - check the logs using:"
-echo -e "📌 journalctl -fu heimdalld"
 
 # Don't remove next line!
 # End of script

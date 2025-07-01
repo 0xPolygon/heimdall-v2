@@ -83,28 +83,46 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		request.Pagination.Limit = defaultRecordListLimit
 	}
 
-	res, _, err := query.CollectionPaginate(
+	if request.FromId < 1 {
+		return nil, status.Errorf(codes.InvalidArgument, "fromId should start from at least 1")
+	}
+
+	// fetch all records without pagination first
+	allRes, _, err := query.CollectionPaginate(
 		ctx,
 		q.k.RecordsWithID,
-		&request.Pagination, func(id uint64, record types.EventRecord) (*types.EventRecord, error) {
+		&query.PageRequest{
+			Limit:  maxRecordListLimitPerPage,
+			Offset: request.FromId - 1, // Offset is 0-based, so we subtract 1 from FromId
+		},
+		func(id uint64, record types.EventRecord) (*types.EventRecord, error) {
 			return q.k.GetEventRecord(ctx, id)
 		},
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to collect records: %v", err)
 	}
 
-	records := make([]types.EventRecord, 0, len(res))
-	for _, r := range res {
+	// apply filters
+	filtered := make([]types.EventRecord, 0, len(allRes))
+	for _, r := range allRes {
 		if r.Id >= request.FromId && r.RecordTime.Before(request.ToTime) {
-			records = append(records, *r)
-			if len(records) >= maxRecordListLimitPerPage {
-				break
-			}
+			filtered = append(filtered, *r)
 		}
 	}
 
-	return &types.RecordListWithTimeResponse{EventRecords: records}, nil
+	if len(filtered) == 0 {
+		return &types.RecordListWithTimeResponse{
+			EventRecords: []types.EventRecord{},
+		}, nil
+	}
+
+	// apply pagination over the filtered result
+	paginatedRecords := filterWithPage(filtered, &request.Pagination)
+
+	return &types.RecordListWithTimeResponse{
+		EventRecords: paginatedRecords,
+	}, nil
 }
 
 func (q queryServer) GetRecordSequence(ctx context.Context, request *types.RecordSequenceRequest) (*types.RecordSequenceResponse, error) {
@@ -198,10 +216,32 @@ func (q queryServer) GetLatestRecordId(ctx context.Context, _ *types.LatestRecor
 	return &types.LatestRecordIdResponse{LatestRecordId: latestRecordId, IsProcessedByHeimdall: eventRecordExists}, nil
 }
 
+// GetRecordCount implements the gRPC service handler to query the total count of event records.
+func (q queryServer) GetRecordCount(ctx context.Context, _ *types.RecordCountRequest) (*types.RecordCountResponse, error) {
+	return &types.RecordCountResponse{Count: q.k.GetEventRecordCount(ctx)}, nil
+}
+
 func isPaginationEmpty(p query.PageRequest) bool {
 	return p.Key == nil &&
 		p.Offset == 0 &&
 		p.Limit == 0 &&
 		!p.CountTotal &&
 		!p.Reverse
+}
+
+func filterWithPage(records []types.EventRecord, pagination *query.PageRequest) []types.EventRecord {
+	if pagination == nil {
+		return records
+	}
+
+	start := int(pagination.Offset)
+	end := start + int(pagination.Limit)
+
+	if start >= len(records) {
+		return []types.EventRecord{}
+	}
+	if end > len(records) {
+		end = len(records)
+	}
+	return records[start:end]
 }
