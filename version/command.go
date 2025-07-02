@@ -10,10 +10,11 @@ import (
 
 const flagLong = "long"
 const flagOutput = "output"
+const outputJSON = "json"
 
 func init() {
 	Cmd.Flags().BoolP(flagLong, "l", false, "Print long version information")
-	Cmd.Flags().StringP(flagOutput, "o", "text", "Output format (text|json)")
+	Cmd.Flags().StringP(flagOutput, "o", "text", "Output format (text|"+outputJSON+")")
 }
 
 // Cmd prints out the application's version information passed via build flags.
@@ -37,7 +38,7 @@ var Cmd = &cobra.Command{
 		if !longFormat {
 			// For short format, just return version string or JSON with version only.
 			switch outputFormat {
-			case "json":
+			case outputJSON:
 				shortInfo := map[string]string{"version": verInfo.Version}
 				bz, err = json.MarshalIndent(shortInfo, "", "  ")
 			default:
@@ -47,7 +48,7 @@ var Cmd = &cobra.Command{
 		} else {
 			// For long format, return the full info.
 			switch outputFormat {
-			case "json":
+			case outputJSON:
 				bz, err = json.MarshalIndent(verInfo, "", "  ")
 			default:
 				bz, err = yaml.Marshal(&verInfo)
