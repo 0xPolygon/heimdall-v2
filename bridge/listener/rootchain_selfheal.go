@@ -128,6 +128,11 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 		return
 	}
 
+	if bufferedCheckpoint == nil || bufferedCheckpoint.Id == 0 {
+		rl.Logger.Error("Empty buffered checkpoint")
+		return
+	}
+
 	// Check if the buffered checkpoint matches the L1 checkpoint.
 	if l1HeaderBlockId != bufferedCheckpoint.Id {
 		rl.Logger.Info("No matching buffered checkpoint found for L1 checkpoint", "l1HeaderBlockId", l1HeaderBlockId, "bufferedCheckpointId", bufferedCheckpoint.Id)
