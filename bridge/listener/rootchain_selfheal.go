@@ -124,7 +124,7 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 	// Check if we have a checkpoint in buffer.
 	bufferedCheckpoint, err := util.GetBufferedCheckpoint(rl.cliCtx.Codec)
 	if err != nil {
-		rl.Logger.Info("No buffered checkpoint found")
+		rl.Logger.Error("Failed to get buffered checkpoint", "error", err)
 		return
 	}
 
