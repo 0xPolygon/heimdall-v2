@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"runtime"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -74,6 +75,15 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			shouldSkip := false
 			msgs := tx.GetMsgs()
 			for _, msg := range msgs {
+
+				if _, ok := msg.(*checkpointTypes.MsgCheckpoint); ok {
+					logger.Info("EthCC - Checkpoint - PrepareProposal", "height", ctx.BlockHeight())
+				}
+
+				if _, ok := msg.(*clerkTypes.MsgEventRecord); ok {
+					logger.Info("EthCC - StateSync - PrepareProposal", "height", ctx.BlockHeight())
+				}
+
 				if _, ok := msg.(*borTypes.MsgVoteProducers); ok {
 					if err := app.BorKeeper.CanVoteProducers(ctx); err != nil {
 						logger.Info("skipping MsgVoteProducers in PrepareProposal", "error", err)
@@ -161,6 +171,14 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			// Check for MsgVoteProducers and apply VEBLOP validation to reject malicious proposals
 			msgs := txn.GetMsgs()
 			for _, msg := range msgs {
+
+				if _, ok := msg.(*checkpointTypes.MsgCheckpoint); ok {
+					logger.Info("EthCC - Checkpoint - ProcessProposal", "height", ctx.BlockHeight())
+				}
+				if _, ok := msg.(*clerkTypes.MsgEventRecord); ok {
+					logger.Info("EthCC - StateSync - ProcessProposal", "height", ctx.BlockHeight())
+				}
+
 				if _, ok := msg.(*borTypes.MsgVoteProducers); ok {
 					if err := app.BorKeeper.CanVoteProducers(ctx); err != nil {
 						logger.Error("rejecting proposal with invalid MsgVoteProducers", "error", err)
@@ -253,6 +271,13 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 				// execute the side handler to collect the votes from the validators
 				res := sideHandler(ctx, msg)
+
+				if _, ok := msg.(*checkpointTypes.MsgCheckpoint); ok {
+					logger.Info("EthCC - Checkpoint - ExtendVote", "height", ctx.BlockHeight())
+				}
+				if _, ok := msg.(*clerkTypes.MsgEventRecord); ok {
+					logger.Info("EthCC - StateSync - ExtendVote", "height", ctx.BlockHeight())
+				}
 
 				if res == sidetxs.Vote_VOTE_YES && checkpointTypes.IsCheckpointMsg(msg) {
 					checkpointMsg, ok := msg.(*types.MsgCheckpoint)
@@ -766,6 +791,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 				if checkpointTypes.IsCheckpointMsg(msg) && checkpointTxHash != txHash {
 					logger.Debug("Skipping checkpoint message since it is not the one that generated the signatures", "msg", msg)
 					continue
+				}
+
+				if _, ok := msg.(*checkpointTypes.MsgCheckpoint); ok {
+					logger.Info("EthCC - Checkpoint - FinalizeBlock", "height", ctx.BlockHeight())
+				}
+				if _, ok := msg.(*clerkTypes.MsgEventRecord); ok {
+					logger.Info("EthCC - StateSync - FinalizeBlock", "height", ctx.BlockHeight())
 				}
 
 				postHandler := app.sideTxCfg.GetPostHandler(msg)
