@@ -3,14 +3,14 @@
 umask 0022
 
 # -------------------- Env variables, to be adjusted before rolling out --------------------
-V1_VERSION="1.6.0"
+V1_VERSION="1.6.0-beta"
 V1_GENESIS_CHECKSUM="2243f213c280afbffc06926052bbd83e200825c614cc434f3d045c52c565c7ca50bbd7d8f4a0d8f5c5c78dd64fd3a4db5a160056726f49f5926ac610d9157788"
 V2_GENESIS_CHECKSUM="70bb9b754781f0ec77ace3132079420b26da602b606e514b71c969d29ab9a0c4ec757d44b5597d2889342708fdbfb48d9029caddd48ef1584d484977a17bd24d"
-V2_VERSION="0.2.7"
+V2_VERSION="0.2.1"
 V1_CHAIN_ID="heimdall-137"
 V2_CHAIN_ID="heimdallv2-137"
 V2_GENESIS_TIME="2025-06-24T20:00:00Z"
-V1_HALT_HEIGHT=24404500
+V1_HALT_HEIGHT=8788500
 VERIFY_EXPORTED_DATA=false
 TRUSTED_GENESIS_URL="https://storage.googleapis.com/mainnet-heimdallv2-genesis/dump-genesis.json"
 
@@ -19,7 +19,7 @@ V2_INITIAL_HEIGHT=$(( V1_HALT_HEIGHT + 1 ))
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
 DRY_RUN=false
 V2_HEIMDALL_HOME="/var/lib/heimdall"
-
+BACKUP=false
 # -------------------- Script start --------------------
 START_TIME=$(date +%s)
 SCRIPT_PATH=$(realpath "$0")
@@ -51,7 +51,8 @@ show_help() {
             --network=mainnet|amoy \\
             --node-type=sentry|validator \\
             --service-user=<HEIMDALL_SERVICE_USER> \\
-            --generate-genesis=true|false"
+            --generate-genesis=true|false \\
+            --backup=true|false"
   echo "Required arguments:"
   echo "  --heimdall-v1-home=PATH          Absolute path to Heimdall home directory (must contain 'config' and 'data')"
   echo "  --heimdallcli-path=PATH               Path to the heimdallcli binary (must be >= v1.0.10)"
@@ -61,6 +62,7 @@ show_help() {
   echo "  --service-user=USER          System user that runs the Heimdall service"
   echo "                                (typically 'heimdall'; check systemd with 'sudo systemctl status heimdalld')"
   echo "  --generate-genesis=true|false Whether to export genesis from heimdalld (recommended: true)"
+  echo "  --backup=true|false Whether to backup heimdall data (recommended: true), but not required."
   exit 0
 }
 
@@ -74,6 +76,7 @@ for arg in "$@"; do
     --node-type=*) NODETYPE="${arg#*=}" ;;
     --service-user=*) HEIMDALL_SERVICE_USER="${arg#*=}" ;;
     --generate-genesis=*) GENERATE_GENESIS="${arg#*=}" ;;
+    --backup=*) BACKUP="${arg#*=}" ;;
     --help|-h) show_help ;;
     *) echo "[ERROR] Unknown argument: $arg"; exit 1 ;;
   esac
@@ -89,6 +92,7 @@ missing_args=()
 [[ -z "$NODETYPE" ]] && missing_args+=("--node-type")
 [[ -z "$HEIMDALL_SERVICE_USER" ]] && missing_args+=("--service-user")
 [[ -z "$GENERATE_GENESIS" ]] && missing_args+=("--generate-genesis")
+[[ -z "$BACKUP" ]] && missing_args+=("--backup")
 if (( ${#missing_args[@]} > 0 )); then
   echo "[ERROR] Missing required arguments: ${missing_args[*]}"
   show_help
@@ -266,6 +270,12 @@ if [[ "$GENERATE_GENESIS" != "true" && "$GENERATE_GENESIS" != "false" ]]; then
     handle_error $STEP "Invalid value for --generate-genesis. Must be 'true' or 'false'."
 fi
 
+if [[ "$BACKUP" != "false" ]]; then
+   echo "Backup will not be performed for heimdall contents. Please Consider"
+else
+  echo "BAckup of heimdall contents will be made"
+fi
+
 
 # Step 3: stop heimdall-v1. The apocalypse tag embeds the halt_height so heimdalld should be down already, running it for consistency/completeness
 STEP=3
@@ -389,15 +399,20 @@ else
 fi
 
 # Step 8: move heimdall-v1 to backup location
+# Optional, flag backup=false if not wanted, or true if wanted
 STEP=8
 BACKUP_DIR="${HEIMDALL_HOME}.backup"
-print_step $STEP "BACKING UP V1"
-echo "[INFO] Backup will be executed from $HEIMDALL_HOME to $BACKUP_DIR"
-# Create parent directory in case it doesn't exist
-sudo mkdir -p "$(dirname "$BACKUP_DIR")" || handle_error $STEP "Failed to create parent directory for $BACKUP_DIR"
-# Move Heimdall home to backup location
-sudo mv "$HEIMDALL_HOME" "$BACKUP_DIR" || handle_error $STEP "Failed to move $HEIMDALL_HOME to $BACKUP_DIR"
-echo "[INFO] Backup (move) completed successfully."
+if [[ "$BACKUP_HEIMDALL" == "false" ]]; then
+  echo "[BACKUP] is being skipped"
+else
+   print_step $STEP "BACKING UP V1"
+   echo "[INFO] Backup will be executed from $HEIMDALL_HOME to $BACKUP_DIR"
+   # Create parent directory in case it doesn't exist
+   sudo mkdir -p "$(dirname "$BACKUP_DIR")" || handle_error $STEP "Failed to create parent directory for $BACKUP_DIR"
+   # Move Heimdall home to backup location
+   sudo mv "$HEIMDALL_HOME" "$BACKUP_DIR" || handle_error $STEP "Failed to move $HEIMDALL_HOME to $BACKUP_DIR"
+   echo "[INFO] Backup (move) completed successfully."
+fi
 
 # Step 9 : select the proper heimdall-v2 binary package
 STEP=9
