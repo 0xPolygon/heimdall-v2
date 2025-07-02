@@ -90,11 +90,12 @@ const (
 
 	DefaultMilestonePollInterval = 30 * time.Second
 
-	DefaultEnableSH              = false
-	DefaultSHStateSyncedInterval = 15 * time.Minute
-	DefaultSHStakeUpdateInterval = 3 * time.Hour
-
-	DefaultSHMaxDepthDuration = time.Hour
+	// Self healing defaults
+	DefaultEnableSH                = false
+	DefaultSHStateSyncedInterval   = 3 * time.Hour
+	DefaultSHStakeUpdateInterval   = 3 * time.Hour
+	DefaultSHCheckpointAckInterval = 30 * time.Minute
+	DefaultSHMaxDepthDuration      = 24 * time.Hour
 
 	DefaultMainChainGasLimit = uint64(5000000)
 
@@ -146,16 +147,17 @@ type CustomConfig struct {
 	MainChainMaxGasPrice int64 `mapstructure:"main_chain_max_gas_price"` // max-gas-price for main chain txs
 
 	// config related to bridge
-	CheckpointPollInterval time.Duration `mapstructure:"checkpoint_poll_interval"` // Poll interval for checkpointer service to send new checkpoints or missing ACK
-	SyncerPollInterval     time.Duration `mapstructure:"syncer_poll_interval"`     // Poll interval for syncer service to sync for changes on the main chain
-	NoACKPollInterval      time.Duration `mapstructure:"noack_poll_interval"`      // Poll interval for ack service to send no-ack in case of no checkpoints
-	ClerkPollInterval      time.Duration `mapstructure:"clerk_poll_interval"`
-	SpanPollInterval       time.Duration `mapstructure:"span_poll_interval"`
-	MilestonePollInterval  time.Duration `mapstructure:"milestone_poll_interval"`
-	EnableSH               bool          `mapstructure:"enable_self_heal"`         // Enable self-healing
-	SHStateSyncedInterval  time.Duration `mapstructure:"sh_state_synced_interval"` // Interval to self-heal StateSynced events if missing
-	SHStakeUpdateInterval  time.Duration `mapstructure:"sh_stake_update_interval"` // Interval to self-heal StakeUpdate events if missing
-	SHMaxDepthDuration     time.Duration `mapstructure:"sh_max_depth_duration"`    // Max duration that allows to suggest self-healing is not needed
+	CheckpointPollInterval  time.Duration `mapstructure:"checkpoint_poll_interval"` // Poll interval for checkpointer service to send new checkpoints or missing ACK
+	SyncerPollInterval      time.Duration `mapstructure:"syncer_poll_interval"`     // Poll interval for syncer service to sync for changes on the main chain
+	NoACKPollInterval       time.Duration `mapstructure:"noack_poll_interval"`      // Poll interval for ack service to send no-ack in case of no checkpoints
+	ClerkPollInterval       time.Duration `mapstructure:"clerk_poll_interval"`
+	SpanPollInterval        time.Duration `mapstructure:"span_poll_interval"`
+	MilestonePollInterval   time.Duration `mapstructure:"milestone_poll_interval"`
+	EnableSH                bool          `mapstructure:"enable_self_heal"`           // Enable self-healing
+	SHStateSyncedInterval   time.Duration `mapstructure:"sh_state_synced_interval"`   // Interval to self-heal StateSynced events if missing
+	SHStakeUpdateInterval   time.Duration `mapstructure:"sh_stake_update_interval"`   // Interval to self-heal StakeUpdate events if missing
+	SHCheckpointAckInterval time.Duration `mapstructure:"sh_checkpoint_ack_interval"` // Interval to self-heal Checkpoint ACKs (New Header Blocks) events if missing
+	SHMaxDepthDuration      time.Duration `mapstructure:"sh_max_depth_duration"`      // Max duration that allows to suggest self-healing is not needed
 
 	// wait-time-related options
 	NoACKWaitTime time.Duration `mapstructure:"no_ack_wait_time"` // Time ack service waits to clear buffer and elect new proposer
@@ -355,6 +357,12 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		conf.Custom.SHStakeUpdateInterval = DefaultSHStakeUpdateInterval
 	}
 
+	if conf.Custom.SHCheckpointAckInterval == 0 {
+		// fallback to default
+		Logger.Debug("Missing self-healing Checkpoint ACK interval or invalid value provided, falling back to default", "interval", DefaultSHCheckpointAckInterval)
+		conf.Custom.SHCheckpointAckInterval = DefaultSHCheckpointAckInterval
+	}
+
 	if conf.Custom.SHMaxDepthDuration == 0 {
 		// fallback to default
 		Logger.Debug("Missing self-healing max depth duration or invalid value provided, falling back to default", "duration", DefaultSHMaxDepthDuration)
@@ -438,16 +446,17 @@ func GetDefaultHeimdallConfig() CustomConfig {
 
 		MainChainMaxGasPrice: DefaultMainChainMaxGasPrice,
 
-		CheckpointPollInterval: DefaultCheckpointPollInterval,
-		SyncerPollInterval:     DefaultSyncerPollInterval,
-		NoACKPollInterval:      DefaultNoACKPollInterval,
-		ClerkPollInterval:      DefaultClerkPollInterval,
-		SpanPollInterval:       DefaultSpanPollInterval,
-		MilestonePollInterval:  DefaultMilestonePollInterval,
-		EnableSH:               DefaultEnableSH,
-		SHStateSyncedInterval:  DefaultSHStateSyncedInterval,
-		SHStakeUpdateInterval:  DefaultSHStakeUpdateInterval,
-		SHMaxDepthDuration:     DefaultSHMaxDepthDuration,
+		CheckpointPollInterval:  DefaultCheckpointPollInterval,
+		SyncerPollInterval:      DefaultSyncerPollInterval,
+		NoACKPollInterval:       DefaultNoACKPollInterval,
+		ClerkPollInterval:       DefaultClerkPollInterval,
+		SpanPollInterval:        DefaultSpanPollInterval,
+		MilestonePollInterval:   DefaultMilestonePollInterval,
+		EnableSH:                DefaultEnableSH,
+		SHStateSyncedInterval:   DefaultSHStateSyncedInterval,
+		SHStakeUpdateInterval:   DefaultSHStakeUpdateInterval,
+		SHCheckpointAckInterval: DefaultSHCheckpointAckInterval,
+		SHMaxDepthDuration:      DefaultSHMaxDepthDuration,
 
 		NoACKWaitTime: NoACKWaitTime,
 
@@ -998,6 +1007,10 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 
 	if cc.MilestonePollInterval != 0 {
 		c.Custom.MilestonePollInterval = cc.MilestonePollInterval
+	}
+
+	if cc.SHCheckpointAckInterval != 0 {
+		c.Custom.SHCheckpointAckInterval = cc.SHCheckpointAckInterval
 	}
 
 	if cc.NoACKWaitTime != 0 {
