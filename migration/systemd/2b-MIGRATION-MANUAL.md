@@ -46,18 +46,16 @@ sudo mv /lib/systemd/system/heimdalld.service /lib/systemd/system/heimdalld.serv
 You can use the installation script:
 
 ```bash
-curl -L https://raw.githubusercontent.com/maticnetwork/install/heimdall-v2/heimdall-v2.sh | sudo bash -s -- <VERSION> <NETWORK> <NODE_TYPE>
+curl -L https://raw.githubusercontent.com/maticnetwork/install/heimdall-v2/heimdall-v2.sh | sudo bash -s -- v0.2.7 mainnet <NODE_TYPE>
 ```
 where: 
-- `VERSION` is the target version of v2 (TODO update)
-- `NETWORK` is `mainnet` 
 - `NODE_TYPE` is `sentry` or `validator`
 
 If the script fails, build from source:
 ```bash
 git clone https://github.com/0xPolygon/heimdall-v2.git
 cd heimdall-v2
-git checkout <VERSION>
+git checkout v0.2.7
 make build
 sudo cp build/heimdalld /usr/bin/heimdalld
 ```
@@ -70,7 +68,7 @@ sudo cp build/heimdalld /usr/bin/heimdalld
 heimdalld version
 ```
 
-Output should match the `<VERSION>` installed.
+Output should match the `v0.2.7` installed.
 
 ---
 
@@ -145,17 +143,21 @@ wget -O <HEIMDALL_HOME>/config/genesis.json.sha512 https://storage.googleapis.co
 
 ### 11. Verify Genesis File
 
+Move into the folder where you have downloaded the genesis file and its checksum.  
+Generate the checksum of the `genesis.json` file by running
+
+```
+sha512sum genesis.json
+```
+
+The output will be something like
 ```bash
-[ "$(sha512sum migrated_dump-genesis.json | awk '{print $1}')" = "$(cat migrated_dump-genesis.json.sha512)" ] && echo "✅ Checksum matches" || echo "❌ Checksum mismatch"
+<CHECKSUM> genesis.json
 ```
 
-Expected output:
+Verify that the `CHECKSUM` string matches the one present in `genesis.json.sha512`
 
-```
-✅ Checksum matches
-```
-
-**Do not proceed if the checksum verification fails (output `❌ Checksum mismatch`).**
+**Do not proceed if the checksum verification fails (string mismatch).**
 
 ---
 
@@ -188,6 +190,20 @@ Example:
 
 ```json
 "round": 0  // ✅ valid
+```
+
+```json
+"round": "0"  // ❌ invalid
+```
+
+Also, set the `height` field to `24404501`, e.g.,
+
+```json
+{
+  "height": "24404501",
+  "round": 0,
+  "step": 0
+}
 ```
 
 ---

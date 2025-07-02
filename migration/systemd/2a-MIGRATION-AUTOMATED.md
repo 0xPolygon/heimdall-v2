@@ -29,12 +29,12 @@ git checkout -b <BRANCH_NAME>
 Edit the environment variables in `script/migrate.sh`:
 
 ```bash
-V1_VERSION="1.6.0-beta"
-V2_VERSION="0.2.1"
+V1_VERSION="1.6.0"
+V2_VERSION="0.2.7"
 V1_CHAIN_ID="heimdall-137"
 V2_CHAIN_ID="heimdallv2-137"
 V2_GENESIS_TIME="2025-07-10T20:00:00Z"
-V1_HALT_HEIGHT=8788500
+V1_HALT_HEIGHT=24404500
 VERIFY_EXPORTED_DATA=true
 ```
 
@@ -42,7 +42,7 @@ Explanation:
 
 * `V1_VERSION`: installed v1 version on this node
 * `V2_VERSION`: upcoming v2 version
-* `V2_GENESIS_TIME`: should be ~4 hours in the future from when pilot migration is triggered
+* `V2_GENESIS_TIME`: should be ~2 hours in the future from when pilot migration is triggered
 * `VERIFY_EXPORTED_DATA`: must be `true` to validate the exported genesis from this node
 
 ---
@@ -112,7 +112,7 @@ sh_stake_update_interval = "1h0m0s"
 sh_max_depth_duration = "24h0m0s"
 ```
 
-Then:
+Then reload the daemon and start heimdall. Eventually (if required) restart telemetry and print the logs:
 
 ```bash
 sudo systemctl daemon-reload
@@ -153,7 +153,7 @@ V1_GENESIS_CHECKSUM="<dump-genesis.json.sha512>"
 V2_GENESIS_CHECKSUM="<migrated_dump-genesis.json.sha512>"
 TRUSTED_GENESIS_URL="https://storage.googleapis.com/mainnet-heimdallv2-genesis/dump-genesis.json"
 VERIFY_EXPORTED_DATA=false
-V2_VERSION="0.2.2"
+V2_VERSION="0.2.8"
 ```
 
 Generate script checksum:

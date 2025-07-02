@@ -10,9 +10,9 @@ Two deployment environments are supported:
 Use this if you run Heimdall using Docker, Kubernetes, or other containerized environments.
 
 Contents:
-- `1-MIGRATION-CHECKLIST.md`: Pre-migration checklist. Verify ahead of migration time
+- `1-MIGRATION-CHECKLIST.md`: Pre-migration checklist. Verify ahead of the migration time
 - `2-MIGRATION.md`: Step-by-step migration instructions.
-- `3-MIGRATION-ROLLBACK.md`: Temporary rollback procedure (to v1) if migration fails.
+- `3-MIGRATION-ROLLBACK.md`: Temporary rollback procedure (to v1) if the migration fails.
 - `4-MIGRATION-ROLLBACK-V1.md`: Full rollback to v1.  
   ⚠️ **Use this only if explicitly instructed by the Polygon team.**
 
@@ -26,10 +26,10 @@ This folder contains instructions for **both automated and manual** migration.
 Automated migration is recommended for simplicity and reduced risk of errors.
 
 Contents:
-- `1-MIGRATION-CHECKLIST.md`: Pre-migration checklist. Verify ahead of migration time.
+- `1-MIGRATION-CHECKLIST.md`: Pre-migration checklist. Verify ahead of the migration time.
 - `2a-MIGRATION-AUTOMATED.md`: Instructions for using the automated migration script.
 - `2b-MIGRATION-MANUAL.md`: Instructions for manual migration.
-- `3-MIGRATION-ROLLBACK.md`: Temporary rollback procedure (to v1) if migration fails.
+- `3-MIGRATION-ROLLBACK.md`: Temporary rollback procedure (to v1) if the migration fails.
 - `4-MIGRATION-ROLLBACK-V1.md`: Full rollback to v1.  
   ⚠️ **Use this only if explicitly instructed by the Polygon team.**
 - [`script/`](./systemd/script): Directory containing the automated migration script used in `2a-MIGRATION-AUTOMATED.md`.
