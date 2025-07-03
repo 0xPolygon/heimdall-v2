@@ -145,19 +145,23 @@ wget -O <HEIMDALL_HOME>/config/genesis.json.sha512 https://storage.googleapis.co
 
 ---
 
-### 11. Verify Genesis File
+## 11. Verify genesis checksum
 
+Move into the folder where you have downloaded the genesis file.
+Generate the checksum of the `genesis.json` file by running
+
+```
+sha512sum genesis.json
+```
+
+The output will be something like
 ```bash
-[ "$(sha512sum migrated_dump-genesis.json | awk '{print $1}')" = "$(cat migrated_dump-genesis.json.sha512)" ] && echo "✅ Checksum matches" || echo "❌ Checksum mismatch"
+<CHECKSUM> genesis.json
 ```
 
-Expected output:
+Verify that the `CHECKSUM` string matches the one present in `genesis.json.sha512`
 
-```
-✅ Checksum matches
-```
-
-**Do not proceed if the checksum verification fails (output `❌ Checksum mismatch`).**
+**Do not proceed if the checksum verification fails (string mismatch).**
 
 ---
 
