@@ -414,8 +414,9 @@ else
    echo "[INFO] Backup (move) completed successfully."
 fi
 echo "Backing up the ${HEIMDALL_HOME}configs"
-sudo mkdir -p /var/lib/heimdall/v1config.bak
-sudo cp -rp ${HEIMDALL_HOME}/config/* /var/lib/heimdall/v1config.bak/
+sudo mkdir -p "$(dirname "$BACKUP_DIR")" || handle_error $STEP "Failed to create parent directory for $BACKUP_DIR"
+sudo cp -rp ${HEIMDALL_HOME}/config/* $BACKUP_DIR
+sudo cp -rp ${HEIMDALL_HOME}/data/priv_validator_state.json $BACKUP_DIR
 
 
 # Step 9 : select the proper heimdall-v2 binary package
