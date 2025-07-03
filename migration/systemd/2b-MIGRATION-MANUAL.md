@@ -109,6 +109,8 @@ Also set:
 * `bor_grpc_flag = false`
 * `bor_rpc_timeout = "1s"`
 
+And make sure `chain = "mainnet"`
+
 #### `client.toml` (v2 only):
 
 Set directly:
@@ -141,9 +143,9 @@ wget -O <HEIMDALL_HOME>/config/genesis.json.sha512 https://storage.googleapis.co
 
 ---
 
-### 11. Verify Genesis File
+## 11. Verify genesis checksum
 
-Move into the folder where you have downloaded the genesis file and its checksum.  
+Move into the folder where you have downloaded the genesis file.
 Generate the checksum of the `genesis.json` file by running
 
 ```

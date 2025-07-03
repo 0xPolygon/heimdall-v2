@@ -91,6 +91,8 @@ Also set in v2:
 * `bor_grpc_flag = false`
 * `bor_rpc_timeout = "1s"`
 
+And make sure `chain = "mainnet"`
+
 #### `client.toml` (v2 only):
 
 Set directly:

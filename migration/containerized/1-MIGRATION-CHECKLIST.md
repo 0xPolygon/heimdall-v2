@@ -15,12 +15,12 @@ Verify that the files in `HEIMDALL_HOME/config` are present and correctly format
 
 ## 3. Free Required Ports on the Host
    - Make sure you have the following ports free on the host machine, so that heimdall-v2 can use them.
-    * 26656 (P2P)
-    * 26657 (RPC)
-    * 26660 or 6060 (pprof)
-    * 1317 (REST)
-    * 9090 (gRPC)
-    * 9091 (gRPC-Web, optional)
+        * 26656 (P2P)
+        * 26657 (RPC)
+        * 26660 or 6060 (pprof)
+        * 1317 (REST)
+        * 9090 (gRPC)
+        * 9091 (gRPC-Web, optional)
   For example, you can check that with:
       ```bash
       sudo lsof -i -P -n | grep LISTEN
@@ -35,3 +35,5 @@ Ensure your system has at least 2× the current size of `HEIMDALL_HOME` in avail
 Ensure a stable and fast internet connection.
 The migration will download the genesis file from a trusted source,
 which may be around 4 GB in size for mainnet.
+
+**Reminder:** Please migrate the validators first, to ensure the stake is moved over to v2 as soon as possible, and avoid any potential issue with the new network.
