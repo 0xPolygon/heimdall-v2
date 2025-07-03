@@ -153,3 +153,5 @@ sudo bash migrate.sh \
 
 Double-check every flag before execution. 
 The script will validate all inputs before proceeding with migration.
+
+**Reminder:** Please migrate the validators first, to ensure the stake is moved over to v2 as soon as possible, and avoid any potential issue with the new network.

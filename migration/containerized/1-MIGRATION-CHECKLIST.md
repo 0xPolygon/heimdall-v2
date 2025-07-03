@@ -35,3 +35,5 @@ Ensure your system has at least 2× the current size of `HEIMDALL_HOME` in avail
 Ensure a stable and fast internet connection.
 The migration will download the genesis file from a trusted source,
 which may be around 4 GB in size for mainnet.
+
+**Reminder:** Please migrate the validators first, to ensure the stake is moved over to v2 as soon as possible, and avoid any potential issue with the new network.
