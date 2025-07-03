@@ -421,7 +421,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case AmoyChain:
 		veblopHeight = 0
 	default:
-		veblopHeight = 0
+		veblopHeight = 400 // VeBlop height for local testnets.
 	}
 }
 
