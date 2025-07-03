@@ -40,7 +40,9 @@ func NewRootCmd() *cobra.Command {
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
 	// note, this is not necessary when using app wiring, as depInject can be directly used (see root_v2.go)
 
-	tempApp := app.NewHeimdallApp(logger, db.NewMemDB(), nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
+	// Since this is only a temp app, we don't need info logs, only warn and error logs.
+	tempLogger := log.NewLogger(os.Stdout, log.LevelOption(zerolog.WarnLevel))
+	tempApp := app.NewHeimdallApp(tempLogger, db.NewMemDB(), nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
 	encodingConfig := EncodingConfig{
 		InterfaceRegistry: tempApp.InterfaceRegistry(),
 		Codec:             tempApp.AppCodec(),

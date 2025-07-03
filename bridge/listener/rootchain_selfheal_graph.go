@@ -29,6 +29,13 @@ type stateSynced struct {
 	TransactionHash string `json:"transactionHash"`
 }
 
+// newHeaderBlock represents the NewHeaderBlock event.
+type newHeaderBlock struct {
+	HeaderBlockId   string `json:"headerBlockId"`
+	LogIndex        string `json:"logIndex"`
+	TransactionHash string `json:"transactionHash"`
+}
+
 type stakeUpdateResponse struct {
 	Data struct {
 		StakeUpdates []stakeUpdate `json:"stakeUpdates"`
@@ -38,6 +45,12 @@ type stakeUpdateResponse struct {
 type stateSyncedsResponse struct {
 	Data struct {
 		StateSynceds []stateSynced `json:"stateSynceds"`
+	} `json:"data"`
+}
+
+type newHeaderBlocksResponse struct {
+	Data struct {
+		NewHeaderBlocks []newHeaderBlock `json:"newHeaderBlocks"`
 	} `json:"data"`
 }
 
@@ -254,4 +267,44 @@ func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorId, no
 	}
 
 	return nil, fmt.Errorf("no log found for given log index %s ,validator %d and nonce %d", response.Data.StakeUpdates[0].LogIndex, validatorId, nonce)
+}
+
+// getLatestCheckpointFromL1 returns the latest checkpoint from L1 using subgraph
+func (rl *RootChainListener) getLatestCheckpointFromL1(ctx context.Context) (*newHeaderBlock, error) {
+	query := map[string]string{
+		"query": `
+		{
+			newHeaderBlocks(first: 1, orderBy: headerBlockId, orderDirection: desc) {
+				headerBlockId
+				logIndex
+				transactionHash
+			}
+		}
+		`,
+	}
+
+	byteQuery, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := rl.querySubGraph(byteQuery, ctx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch latest header block event from subgraph with err: %w", err)
+	}
+
+	var response newHeaderBlocksResponse
+	if err = json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal subgraph response: %w", err)
+	}
+
+	if len(response.Data.NewHeaderBlocks) == 0 {
+		return nil, fmt.Errorf("no header block event found")
+	}
+
+	latestHeaderBlock := response.Data.NewHeaderBlocks[0]
+
+	rl.Logger.Info("Fetched latest header block event from subgraph", "headerBlockId", latestHeaderBlock.HeaderBlockId, "logIndex", latestHeaderBlock.LogIndex, "transactionHash", latestHeaderBlock.TransactionHash)
+
+	return &latestHeaderBlock, nil
 }

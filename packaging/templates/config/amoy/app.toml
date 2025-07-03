@@ -275,9 +275,10 @@ clerk_poll_interval = "10s"
 span_poll_interval = "1m0s"
 milestone_poll_interval = "30s"
 enable_self_heal = "false"
-sh_state_synced_interval = "15m0s"
+sh_state_synced_interval = "3h0m0s"
 sh_stake_update_interval = "3h0m0s"
-sh_max_depth_duration = "1h0m0s"
+sh_checkpoint_ack_interval = "30m0s"
+sh_max_depth_duration = "24h0m0s"
 
 #### gas limits ####
 main_chain_gas_limit = "5000000"
