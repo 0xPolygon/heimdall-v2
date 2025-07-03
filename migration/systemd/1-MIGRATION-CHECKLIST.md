@@ -19,6 +19,7 @@ Ensure your platform is supported by the migration script:
 ## 2. Required Tools
 
 The following tools must be installed. The script will fail early if any are missing.
+Please ensure they are present on your system.
 
 | Tool        | Purpose              | Install Command (Ubuntu/Debian) |
 |-------------|----------------------|---------------------------------|
@@ -38,7 +39,7 @@ The following tools must be installed. The script will fail early if any are mis
 
 ## 3. Shell Requirements
 
-Ensure `bash` is installed and used.  
+Ensure `bash` is installed and being used while running the script.  
 The script relies on `bash` features and will not work with `sh`.
 
 ---
@@ -93,8 +94,6 @@ sudo netstat -tuln | grep LISTEN
 sudo ss -tuln
 ````
 
----
-
 ## 9. Validate Systemd Service User
 
 Ensure the user running the Heimdall v1 service exists and is correct.
@@ -137,7 +136,8 @@ Record the values for these flags before running the script:
 
 ## 11. Prepare the Script Command
 
-Once you have all values, prepare the command. Always run it with `sudo` and `bash`:
+Once you have all values, prepare the command but don't run it.
+Make sure to have it ready with `sudo` and `bash`:
 
 ```bash
 sudo bash migrate.sh \
@@ -151,7 +151,7 @@ sudo bash migrate.sh \
   2>&1 | tee migrate.log
 ```
 
-Double-check every flag before execution. 
+Double-check every flag. 
 The script will validate all inputs before proceeding with migration.
 
 **Reminder:** Please migrate the validators first, to ensure the stake is moved over to v2 as soon as possible, and avoid any potential issue with the new network.

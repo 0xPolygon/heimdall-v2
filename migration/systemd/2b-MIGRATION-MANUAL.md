@@ -46,18 +46,16 @@ sudo mv /lib/systemd/system/heimdalld.service /lib/systemd/system/heimdalld.serv
 You can use the installation script:
 
 ```bash
-curl -L https://raw.githubusercontent.com/maticnetwork/install/heimdall-v2/heimdall-v2.sh | sudo bash -s -- <VERSION> <NETWORK> <NODE_TYPE>
+curl -L https://raw.githubusercontent.com/maticnetwork/install/heimdall-v2/heimdall-v2.sh | sudo bash -s -- v0.2.7 mainnet <NODE_TYPE>
 ```
 where: 
-- `VERSION` is the target version of v2 (TODO update)
-- `NETWORK` is `mainnet` 
 - `NODE_TYPE` is `sentry` or `validator`
 
 If the script fails, build from source:
 ```bash
 git clone https://github.com/0xPolygon/heimdall-v2.git
 cd heimdall-v2
-git checkout <VERSION>
+git checkout v0.2.7
 make build
 sudo cp build/heimdalld /usr/bin/heimdalld
 ```
@@ -70,7 +68,7 @@ sudo cp build/heimdalld /usr/bin/heimdalld
 heimdalld version
 ```
 
-Output should match the `<VERSION>` installed.
+Output should match the `v0.2.7` installed.
 
 ---
 
@@ -194,6 +192,20 @@ Example:
 
 ```json
 "round": 0  // ✅ valid
+```
+
+```json
+"round": "0"  // ❌ invalid
+```
+
+Also, set the `height` field to `24404501`, e.g.,
+
+```json
+{
+  "height": "24404501",
+  "round": 0,
+  "step": 0
+}
 ```
 
 ---
