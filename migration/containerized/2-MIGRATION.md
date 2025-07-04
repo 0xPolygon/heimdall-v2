@@ -6,12 +6,28 @@ outlined in the [Migration Checklist](../containerized/1-MIGRATION-CHECKLIST.md)
 Please migrate the validators first, to ensure the stake is moved over to v2 as soon as possible,
 and avoid any potential issue with the new network.
 
+Once instructed by the Polygon team, please start the migration.  
+
 ## 1. Prepare Backup
 - Back up the `HEIMDALL_HOME` (default `/var/lib/heimdall`), containing `config/`, `data/` and `bridge/` folders outside the container.
 - Example (for Docker):
   ```bash
   docker cp <container_id>:/var/lib/heimdall /path/to/backup
   ```
+  
+You can start with the backup as soon as possible.  
+You can anyway verify that `heimdall` reached the `24404500` height by running the following command (optional):  
+
+```bash
+sudo heimdallcli get-last-committed-height --home "$HEIMDALL_HOME" 
+```
+> The command needs to be adapted based on your system
+
+If the printed height is `24404500`, your node committed the last height.  
+However, it can happen that the node will never reach that height    
+(e.g., if it is not synced and all other nodes are already down/migrated so not able to send the block).  
+In that case, there is no problem, because the correct genesis file is anyway going to be downloaded,   
+and snapshot providers will still keep the state of the network at that final height for any future reference.  
 
 ## 2. Stop Existing Heimdall v1 Containers
 - Gracefully shut down Heimdall v1, e.g., for docker:
