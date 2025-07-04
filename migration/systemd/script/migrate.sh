@@ -6,10 +6,10 @@ umask 0022
 V1_VERSION="1.6.0"
 V1_GENESIS_CHECKSUM="2243f213c280afbffc06926052bbd83e200825c614cc434f3d045c52c565c7ca50bbd7d8f4a0d8f5c5c78dd64fd3a4db5a160056726f49f5926ac610d9157788"
 V2_GENESIS_CHECKSUM="70bb9b754781f0ec77ace3132079420b26da602b606e514b71c969d29ab9a0c4ec757d44b5597d2889342708fdbfb48d9029caddd48ef1584d484977a17bd24d"
-V2_VERSION="0.2.7"
+V2_VERSION="0.2.6"
 V1_CHAIN_ID="heimdall-137"
 V2_CHAIN_ID="heimdallv2-137"
-V2_GENESIS_TIME="2025-06-24T20:00:00Z"
+V2_GENESIS_TIME="2025-07-10T16:00:00Z"
 V1_HALT_HEIGHT=24404500
 VERIFY_EXPORTED_DATA=false
 TRUSTED_GENESIS_URL="https://storage.googleapis.com/mainnet-heimdallv2-genesis/dump-genesis.json"
@@ -23,6 +23,9 @@ V2_HEIMDALL_HOME="/var/lib/heimdall"
 # -------------------- Script start --------------------
 START_TIME=$(date +%s)
 SCRIPT_PATH=$(realpath "$0")
+
+LOG_FILE="migrate.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
 
 if ! tail -n 10 "$SCRIPT_PATH" | grep -q "# End of script"; then
   echo "[ERROR] Script appears to be incomplete or partially downloaded, try to download it again."
@@ -42,6 +45,7 @@ NETWORK=""
 NODETYPE=""
 HEIMDALL_SERVICE_USER=""
 GENERATE_GENESIS=""
+BACKUP=""
 
 show_help() {
   echo "Usage: sudo bash migrate.sh \\
@@ -51,7 +55,8 @@ show_help() {
             --network=mainnet|amoy \\
             --node-type=sentry|validator \\
             --service-user=<HEIMDALL_SERVICE_USER> \\
-            --generate-genesis=true|false"
+            --generate-genesis=true|false \\
+            --backup=true|false"
   echo "Required arguments:"
   echo "  --heimdall-v1-home=PATH          Absolute path to Heimdall home directory (must contain 'config' and 'data')"
   echo "  --heimdallcli-path=PATH               Path to the heimdallcli binary (must be >= v1.0.10)"
@@ -61,6 +66,7 @@ show_help() {
   echo "  --service-user=USER          System user that runs the Heimdall service"
   echo "                                (typically 'heimdall'; check systemd with 'sudo systemctl status heimdalld')"
   echo "  --generate-genesis=true|false Whether to export genesis from heimdalld (recommended: true)"
+  echo "  --backup=true|false Whether to create the v1 backup under <PATH_TO_HEIMDALL_HOME>.backup (recommended: true)"
   exit 0
 }
 
@@ -74,6 +80,7 @@ for arg in "$@"; do
     --node-type=*) NODETYPE="${arg#*=}" ;;
     --service-user=*) HEIMDALL_SERVICE_USER="${arg#*=}" ;;
     --generate-genesis=*) GENERATE_GENESIS="${arg#*=}" ;;
+    --backup=*) BACKUP="${arg#*=}" ;;
     --help|-h) show_help ;;
     *) echo "[ERROR] Unknown argument: $arg"; exit 1 ;;
   esac
@@ -89,6 +96,7 @@ missing_args=()
 [[ -z "$NODETYPE" ]] && missing_args+=("--node-type")
 [[ -z "$HEIMDALL_SERVICE_USER" ]] && missing_args+=("--service-user")
 [[ -z "$GENERATE_GENESIS" ]] && missing_args+=("--generate-genesis")
+[[ -z "$BACKUP" ]] && missing_args+=("--backup")
 if (( ${#missing_args[@]} > 0 )); then
   echo "[ERROR] Missing required arguments: ${missing_args[*]}"
   show_help
@@ -163,11 +171,10 @@ set_toml_key() {
 
 # ------------------ Welcome Message ------------------
 echo ""
-echo -e "🔄  Welcome to the Polygon Heimdall v1 → v2 Migration Script 🔄"
 echo -e "----------------------------------------------------------"
-echo -e "This script will execute a multi-step migration"
-echo -e "from Heimdall v1 to Heimdall v2"
-echo -e "----------------------------------------------------------\n"
+echo -e "🔄  Polygon Heimdall v1 → v2 Migration Script  🔄"
+echo -e "----------------------------------------------------------"
+echo ""
 sleep 5
 
 
@@ -265,7 +272,11 @@ fi
 if [[ "$GENERATE_GENESIS" != "true" && "$GENERATE_GENESIS" != "false" ]]; then
     handle_error $STEP "Invalid value for --generate-genesis. Must be 'true' or 'false'."
 fi
-
+# BACKUP
+if [[ "$BACKUP" != "true" && "$BACKUP" != "false" ]]; then
+    handle_error $STEP "Invalid value for --backup. Must be 'true' or 'false'."
+fi
+echo "[INFO] All provided arguments are valid."
 
 # Step 3: stop heimdall-v1. The apocalypse tag embeds the halt_height so heimdalld should be down already, running it for consistency/completeness
 STEP=3
@@ -388,16 +399,111 @@ else
     echo "[INFO] Checksum verification passed."
 fi
 
-# Step 8: move heimdall-v1 to backup location
+# Step 8: move heimdall-v1 to backup location (if BACKUP is true) or create minimal backup (if BACKUP is false)
 STEP=8
 BACKUP_DIR="${HEIMDALL_HOME}.backup"
 print_step $STEP "BACKING UP V1"
-echo "[INFO] Backup will be executed from $HEIMDALL_HOME to $BACKUP_DIR"
-# Create parent directory in case it doesn't exist
+# Ensure parent directory exists in both cases
 sudo mkdir -p "$(dirname "$BACKUP_DIR")" || handle_error $STEP "Failed to create parent directory for $BACKUP_DIR"
-# Move Heimdall home to backup location
-sudo mv "$HEIMDALL_HOME" "$BACKUP_DIR" || handle_error $STEP "Failed to move $HEIMDALL_HOME to $BACKUP_DIR"
-echo "[INFO] Backup (move) completed successfully."
+if [[ "$BACKUP" == "false" ]]; then
+  echo "[INFO] Skipping full backup. Proceeding with minimal config + state + bridge backup"
+  # Create minimal backup structure
+  sudo mkdir -p "$BACKUP_DIR/config" || handle_error $STEP "Failed to create backup config dir"
+  sudo mkdir -p "$BACKUP_DIR/data" || handle_error $STEP "Failed to create backup data dir"
+  # Copy essential config files
+  for file in app.toml config.toml heimdall-config.toml node_key.json priv_validator_key.json; do
+    src="$HEIMDALL_HOME/config/$file"
+    dst="$BACKUP_DIR/config/$file"
+    if [[ -f "$src" ]]; then
+      sudo cp -a "$src" "$dst" || handle_error $STEP "Failed to copy $src to $dst"
+    else
+      handle_error $STEP "$src not found during minimal backup"
+    fi
+  done
+  # Copy priv_validator_state.json separately
+  state_file="$HEIMDALL_HOME/data/priv_validator_state.json"
+  if [[ -f "$state_file" ]]; then
+    sudo cp -a "$state_file" "$BACKUP_DIR/data/" || handle_error $STEP "Failed to copy $state_file"
+  else
+    handle_error $STEP "$state_file not found during minimal backup"
+  fi
+  # Move genesis
+  if [[ -f "$GENESIS_FILE" ]]; then
+    sudo mv "$GENESIS_FILE" "$BACKUP_DIR" || handle_error $STEP "Failed to move $GENESIS_FILE"
+  else
+    handle_error $STEP "$GENESIS_FILE not found during minimal backup"
+  fi
+  # Move genesis checksum
+  if [[ -f "$V1_GENESIS_CHECKSUM_FILE" ]]; then
+    sudo mv "$V1_GENESIS_CHECKSUM_FILE" "$BACKUP_DIR" || handle_error $STEP "Failed to copy $V1_GENESIS_CHECKSUM_FILE"
+  else
+    handle_error $STEP "$V1_GENESIS_CHECKSUM_FILE not found during minimal backup"
+  fi
+  # Copy bridge folder if it exists
+  if [[ -d "$HEIMDALL_HOME/bridge" ]]; then
+    sudo cp -a "$HEIMDALL_HOME/bridge" "$BACKUP_DIR/" || handle_error $STEP "Failed to copy bridge directory"
+  else
+    echo "[INFO] bridge directory not found, skipping"
+  fi
+  echo "[INFO] Minimal backup completed (config + state + bridge)"
+#  # Remove files that would conflict with v2
+#  echo "[INFO] Cleaning up Heimdall v1 directory to avoid config conflicts..."
+#  for file in app.toml config.toml heimdall-config.toml node_key.json priv_validator_key.json; do
+#    sudo rm -f "$HEIMDALL_HOME/config/$file" || handle_error $STEP "Failed to remove $file from v1 config"
+#  done
+#  # Clean up everything in data/ except priv_validator_state.json
+#  echo "[INFO] Cleaning up Heimdall v1 data directory (excluding priv_validator_state.json)..."
+#  for entry in "$HEIMDALL_HOME/data/"*; do
+#    if [[ "$(basename "$entry")" != "priv_validator_state.json" ]]; then
+#      sudo rm -rf "$entry" || handle_error $STEP "Failed to remove $entry from data dir"
+#    fi
+#  done
+#  if [[ -d "$HEIMDALL_HOME/bridge" ]]; then
+#    echo "[INFO] Removing bridge directory from original Heimdall v1 path..."
+#    sudo rm -rf "$HEIMDALL_HOME/bridge" || handle_error $STEP "Failed to remove bridge directory from v1"
+#  fi
+#  echo "[INFO] Cleanup of v1 complete. Genesis and exports preserved."
+
+  sudo rm -rf "$V2_HEIMDALL_HOME" || echo "[INFO] $V2_HEIMDALL_HOME does not exist, skipping removal"
+
+
+  # Assign proper ownership and permissions
+  echo "[INFO] Assigning correct ownership and permissions under $BACKUP_DIR as user: $HEIMDALL_SERVICE_USER"
+  # Sanity check: avoid chowning critical paths
+  CRITICAL_PATHS=("/" "/usr" "/usr/bin" "/bin" "/lib" "/lib64" "/etc" "/boot")
+  for path in "${CRITICAL_PATHS[@]}"; do
+      if [[ "$BACKUP_DIR" == "$path" ]]; then
+          handle_error $STEP "Refusing to chown critical system path: $path"
+      fi
+  done
+  echo "[INFO] Recursively setting ownership of all contents in $BACKUP_DIR to $HEIMDALL_SERVICE_USER"
+  sudo chown -R "$HEIMDALL_SERVICE_USER" "$BACKUP_DIR" || handle_error $STEP "Failed to chown $BACKUP_DIR"
+  # Set 640 permissions for all files
+  echo "[INFO] Setting 640 permissions for all files under $BACKUP_DIR"
+  find "$BACKUP_DIR" -type f ! -name '.*' -exec chmod 644 {} \; || handle_error $STEP "Failed to chmod files"
+  # Set 750 permissions for all directories
+  echo "[INFO] Setting 755 permissions for all directories under $BACKUP_DIR"
+  find "$BACKUP_DIR" -type d ! -name '.*' -exec chmod 755 {} \; || handle_error $STEP "Failed to chmod directories"
+  echo "[INFO] Ownership and permissions successfully enforced under $BACKUP_DIR"
+  # Override sensitive files with stricter permissions
+  SENSITIVE_FILES=(
+    "$BACKUP_DIR/config/priv_validator_key.json"
+    "$BACKUP_DIR/config/node_key.json"
+    "$BACKUP_DIR/data/priv_validator_state.json"
+  )
+  echo "[INFO] Enforcing stricter 600 permissions on sensitive files"
+  for f in "${SENSITIVE_FILES[@]}"; do
+    if [[ -f "$f" ]]; then
+      chmod 600 "$f" || echo "[WARN] Failed to chmod 600 $f"
+    fi
+  done
+  echo "[INFO] Ownership and permissions successfully enforced under $BACKUP_DIR"
+else
+  echo "[INFO] Backup will be executed from $HEIMDALL_HOME to $BACKUP_DIR"
+  # Move Heimdall home to backup location
+  sudo mv "$HEIMDALL_HOME" "$BACKUP_DIR" || handle_error $STEP "Failed to move $HEIMDALL_HOME to $BACKUP_DIR"
+  echo "[INFO] Backup (move) completed successfully."
+fi
 
 # Step 9 : select the proper heimdall-v2 binary package
 STEP=9
@@ -448,7 +554,7 @@ case "$(uname -s).$(uname -m)" in
 esac
 url="${baseUrl}/${binary}"
 package="$tmpDir/$binary"
-
+echo "[INFO] Right package for your platform has been targeted"
 
 # Step 10: download heimdall-v2 binary package
 STEP=10
@@ -975,6 +1081,23 @@ END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 MINUTES=$((DURATION / 60))
 SECONDS=$((DURATION % 60))
+
+# Step 28: Clean up .bak files in V2_HEIMDALL_HOME parent directory
+STEP=28
+print_step $STEP "CLEAN UP"
+echo "[INFO] Cleaning up all the .bak files in the parent directory of $V2_HEIMDALL_HOME"
+# Determine the parent directory of V2_HEIMDALL_HOME
+HEIMDALL_PARENT_DIR=$(dirname "$V2_HEIMDALL_HOME")
+# Find and delete all .bak files or directories
+BAK_FILES=$(find "$HEIMDALL_PARENT_DIR" -name "*.bak")
+if [[ -n "$BAK_FILES" ]]; then
+    echo "[INFO] Removing the following backup files or directories:"
+    echo "$BAK_FILES"
+    find "$HEIMDALL_PARENT_DIR" -name "*.bak" -exec rm -rf {} \;
+    echo "[INFO] Cleanup complete."
+else
+    echo "[INFO] No .bak files or directories found in $HEIMDALL_PARENT_DIR"
+fi
 
 echo -e "\n✅ HEIMDALL MIGRATION EXECUTED SUCCESSFULLY! ✅"
 echo -e "🕓 Migration completed in ${MINUTES}m ${SECONDS}s."

@@ -8,6 +8,7 @@ Adjustments are necessary due to volume mounts, ephemeral storage, container net
    - Identify the container runtime (`docker`, `containerd`, etc).
    - Identify the volume mount path for Heimdall data and config (e.g., `-v /heimdall:/var/lib/heimdall`).
    - Make sure your system is equipped with `sha512sum` (to verify the checksum of the genesis file)
+   - Heimdall v2 will use `go 1.24.x`, so ensure your environment supports it.
 
 ## 2. Validate Heimdall v1 Config Files
 
@@ -20,7 +21,7 @@ Verify that the files in `HEIMDALL_HOME/config` are present and correctly format
         * 26660 or 6060 (pprof)
         * 1317 (REST)
         * 9090 (gRPC)
-        * 9091 (gRPC-Web, optional)
+        * 9091 (gRPC-Web, optional)  
   For example, you can check that with:
       ```bash
       sudo lsof -i -P -n | grep LISTEN
@@ -29,10 +30,12 @@ Verify that the files in `HEIMDALL_HOME/config` are present and correctly format
 Ensure your system has at least 20 GB of available RAM at the time of migration.
 
 ## 5. Disk Space Requirements
-Ensure your system has at least 2× the current size of `HEIMDALL_HOME` in available disk space.
+If you plan to back up v1 `HEIMDALL_HOME`,
+ensure your system has at least 2× the current size of `HEIMDALL_HOME` in available disk space
+(on the disk or external storage that you will use for the backup).
 
 ## 6. Internet Connectivity
-Ensure a stable and fast internet connection.
+Ensure a stable and fast internet connection.  
 The migration will download the genesis file from a trusted source,
 which may be around 4 GB in size for mainnet.
 

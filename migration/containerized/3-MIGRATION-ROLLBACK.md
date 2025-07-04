@@ -1,7 +1,8 @@
 # Rollback Procedure
 
 If you executed the migration and heimdall-v2 fails to start or throws some errors,  
-you can debug and fix the issues without rolling back to v1.
+you can debug and fix the issues without rolling back to v1.  
+Polygon team can guide you through the process if you reach out.  
 
 However, if the migration itself fails due to an error,
 and you wish to roll back to the previous stable state to retry the migration, follow the steps below carefully.
