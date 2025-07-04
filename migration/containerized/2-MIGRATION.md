@@ -34,10 +34,6 @@ and snapshot providers will still keep the state of the network at that final he
   ```bash
   docker stop <container_id>
   ```
-  and e.g., for Kubernetes:
-  ```bash
-  kubectl scale deployment heimdall --replicas=0
-  ```
 
 ## 3. Pull the Heimdall v2 Image
 
