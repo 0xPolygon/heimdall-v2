@@ -131,7 +131,7 @@ Record the values for these flags before running the script:
 | `--heimdall-v1-home` | Path to Heimdall v1 home (must contain `config/` and `data/`)                                                                                               |
 | `--heimdallcli-path` | Path to `heimdallcli` binary (latest stable). Use `which heimdallcli`.                                                                                      |
 | `--heimdalld-path`   | Path to `heimdalld` binary (latest stable). Use `which heimdalld`.                                                                                          |
-| `--network`          | Target network: `mainnet` or `amoy`                                                                                                                         |
+| `--network`          | Target network: `mainnet`                                                                                                                                   |
 | `--node-type`        | Node type: `sentry` or `validator`                                                                                                                          |
 | `--service-user`     | System user running Heimdall (as confirmed above)                                                                                                           |
 | `--generate-genesis` | Whether to export the genesis from local data. Set to `false` (recommended). Will be overridden if needed.                                                  |

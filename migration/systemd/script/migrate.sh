@@ -446,27 +446,8 @@ if [[ "$BACKUP" == "false" ]]; then
     echo "[INFO] bridge directory not found, skipping"
   fi
   echo "[INFO] Minimal backup completed (config + state + bridge)"
-#  # Remove files that would conflict with v2
-#  echo "[INFO] Cleaning up Heimdall v1 directory to avoid config conflicts..."
-#  for file in app.toml config.toml heimdall-config.toml node_key.json priv_validator_key.json; do
-#    sudo rm -f "$HEIMDALL_HOME/config/$file" || handle_error $STEP "Failed to remove $file from v1 config"
-#  done
-#  # Clean up everything in data/ except priv_validator_state.json
-#  echo "[INFO] Cleaning up Heimdall v1 data directory (excluding priv_validator_state.json)..."
-#  for entry in "$HEIMDALL_HOME/data/"*; do
-#    if [[ "$(basename "$entry")" != "priv_validator_state.json" ]]; then
-#      sudo rm -rf "$entry" || handle_error $STEP "Failed to remove $entry from data dir"
-#    fi
-#  done
-#  if [[ -d "$HEIMDALL_HOME/bridge" ]]; then
-#    echo "[INFO] Removing bridge directory from original Heimdall v1 path..."
-#    sudo rm -rf "$HEIMDALL_HOME/bridge" || handle_error $STEP "Failed to remove bridge directory from v1"
-#  fi
-#  echo "[INFO] Cleanup of v1 complete. Genesis and exports preserved."
-
-  sudo rm -rf "$V2_HEIMDALL_HOME" || echo "[INFO] $V2_HEIMDALL_HOME does not exist, skipping removal"
-
-
+  # Remove v1 home
+  sudo rm -rf "$HEIMDALL_HOME" || echo "[INFO] $HEIMDALL_HOME does not exist, skipping removal"
   # Assign proper ownership and permissions
   echo "[INFO] Assigning correct ownership and permissions under $BACKUP_DIR as user: $HEIMDALL_SERVICE_USER"
   # Sanity check: avoid chowning critical paths

@@ -1,12 +1,11 @@
 # Checklist for Heimdall v1 to v2 containerized migration
 
-This checklist is for users running Heimdall nodes in Docker or Kubernetes containers, or any other environment using docker images. 
+This checklist is for users running Heimdall nodes in Docker or Kubernetes containers, or any other environment using docker images.  
 Adjustments are necessary due to volume mounts, ephemeral storage, container networking, etc...
 
 ## 1. Verify the environment
-   - Ensure you are running Heimdall in Docker or Kubernetes etc...
    - Identify the container runtime (`docker`, `containerd`, etc).
-   - Identify the volume mount path for Heimdall data and config (e.g., `-v /heimdall:/var/lib/heimdall`).
+   - Identify the volume mount path for Heimdall `data`, `config`, and `bridge` (e.g., `-v /heimdall:/var/lib/heimdall`).
    - Make sure your system is equipped with `sha512sum` (to verify the checksum of the genesis file)
    - Heimdall v2 will use `go 1.24.x`, so ensure your environment supports it.
 

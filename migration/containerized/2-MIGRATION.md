@@ -7,7 +7,7 @@ Please migrate the validators first, to ensure the stake is moved over to v2 as 
 and avoid any potential issue with the new network.
 
 ## 1. Prepare Backup
-- Back up the `HEIMDALL_HOME` (default `/var/lib/heimdall`), containing `config/` and `data/` folders outside the container.
+- Back up the `HEIMDALL_HOME` (default `/var/lib/heimdall`), containing `config/`, `data/` and `bridge/` folders outside the container.
 - Example (for Docker):
   ```bash
   docker cp <container_id>:/var/lib/heimdall /path/to/backup
@@ -34,7 +34,7 @@ Run the `init` command in the container to generate default config files, e.g.,
 ```bash
 docker run --rm -v "<HEIMDALL_HOME>:/var/lib/heimdall" 0xpolygon/heimdall-v2:0.2.6 init <MONIKER> --chain-id heimdallv2-137
 ```
-* `<MONIKER>` is your node name (any string), and it should match the moniker from your v1 configs (under `config.toml`)
+* `MONIKER` is your node name (any string), and it should match the moniker from your v1 configs (under `config.toml`)
 
 This can't maybe be done in Kubernetes or other environments.  
 In that case, place the default config files under `HEIMDALL_HOME/config` manually.  
