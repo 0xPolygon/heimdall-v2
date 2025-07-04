@@ -14,6 +14,11 @@ Ensure your platform is supported by the migration script:
 | Linux  | x86_64  | `dpkg` (Debian) | ✅         | Uses `.deb` package   |
 | Linux  | aarch64 | `dpkg`          | ✅         | Uses ARM `.deb`       |
 
+Make sure you're running the latest versions of `bor`, `heimdall` and `heimdallcli`:  
+  * `bor v2.2.5`
+  * `heimdall v1.6.0`
+  * `heimdallcli v1.6.0`
+
 ---
 
 ## 2. Required Tools
@@ -34,6 +39,8 @@ Please ensure they are present on your system.
 | `systemctl` | Service management   | Pre-installed on most systems   |
 | `grep`      | Pattern matching     | Pre-installed on most systems   |
 | `id`        | User info lookup     | Pre-installed on most systems   |
+
+> Heimdall v2 will use `go 1.24.x`, so ensure your environment supports it.
 
 ---
 
@@ -56,9 +63,13 @@ Ensure the system has **at least 20 GB of available RAM**.
 
 ---
 
-## 6. Disk Space Requirements
+## 6. Backup And Disk Space Requirements
 
-Ensure the system has **at least 3× the size of `HEIMDALL_HOME`** in available disk space.
+If you plan to back up the v1 `HEIMDALL_HOME`,  
+ensure the system has **at least 2× the size of `HEIMDALL_HOME`** in available disk space.  
+If you use the script, the backup will be created under `HEIMDALL_HOME.backup`.  
+If you are using the script and want to use a custom location or an external storage for the backup,  
+you can set the `--backup` flag to `false` and then manually create the backup in your desired location.  
 
 > This space is needed for backup and temporary files. The backup can be safely deleted a few weeks after a successful migration.
 
@@ -67,7 +78,7 @@ Ensure the system has **at least 3× the size of `HEIMDALL_HOME`** in available 
 ## 7. Internet Connectivity
 
 Ensure a **stable and fast internet connection**,
-as the script will download a large `genesis.json` file (4–5 GB on mainnet).
+as the script will download a large `genesis.json` file (4 GB on mainnet).
 
 ---
 
@@ -120,17 +131,19 @@ This user must be passed to the script via `--service-user` to ensure proper per
 
 Record the values for these flags before running the script:
 
-| Flag                 | Description                                                                                                |
-|----------------------|------------------------------------------------------------------------------------------------------------|
-| `--heimdall-v1-home` | Path to Heimdall v1 home (must contain `config/` and `data/`)                                              |
-| `--heimdallcli-path` | Path to `heimdallcli` binary (latest stable). Use `which heimdallcli`.                                     |
-| `--heimdalld-path`   | Path to `heimdalld` binary (latest stable). Use `which heimdalld`.                                         |
-| `--network`          | Target network: `mainnet` or `amoy`                                                                        |
-| `--node-type`        | Node type: `sentry` or `validator`                                                                         |
-| `--service-user`     | System user running Heimdall (as confirmed above)                                                          |
-| `--generate-genesis` | Whether to export the genesis from local data. Set to `false` (recommended). Will be overridden if needed. |
+| Flag                 | Description                                                                                                                                                 |
+|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--heimdall-v1-home` | Path to Heimdall v1 home (must contain `config/` and `data/`)                                                                                               |
+| `--heimdallcli-path` | Path to `heimdallcli` binary (latest stable). Use `which heimdallcli`.                                                                                      |
+| `--heimdalld-path`   | Path to `heimdalld` binary (latest stable). Use `which heimdalld`.                                                                                          |
+| `--network`          | Target network: `mainnet`                                                                                                                                   |
+| `--node-type`        | Node type: `sentry` or `validator`                                                                                                                          |
+| `--service-user`     | System user running Heimdall (as confirmed above)                                                                                                           |
+| `--generate-genesis` | Whether to export the genesis from local data. Set to `false` (recommended). Will be overridden if needed.                                                  |
+| `--backup`           | Whether to create the v1 backup under `HEIMDALL_HOME`.backup (recommended: true). If set to false, make sure to do the backup manually before the migration |
 
 > If the node cannot export the latest required block height, `--generate-genesis` will be automatically set to `false` and the script will download the genesis file from a trusted source.
+> If you set --backup to `false`, the script will NOT create a backup of the v1 home directory under `HEIMDALL_HOME.backup`. So make sure you crated your own backup in a custom location before proceeding with the migration.
 
 ---
 
@@ -148,10 +161,11 @@ sudo bash migrate.sh \
   --node-type=validator \
   --service-user=heimdall \
   --generate-genesis=false \
-  2>&1 | tee migrate.log
+  --backup=true 
 ```
 
-Double-check every flag. 
-The script will validate all inputs before proceeding with migration.
+Double-check every flag.  
+The script will validate all inputs before proceeding with migration.  
+It will also save a log file next to the script, named `migrate.log`, which you can review after the migration.    
 
 **Reminder:** Please migrate the validators first, to ensure the stake is moved over to v2 as soon as possible, and avoid any potential issue with the new network.
