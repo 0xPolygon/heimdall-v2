@@ -24,24 +24,26 @@ If using a custom service name, replace `heimdalld` accordingly.
 ## 3. Backup Heimdall v1 Data
 
 Move the existing `HEIMDALL_HOME` (typically `/var/lib/heimdall`)
-to a backup directory (e.g., `/var/lib/heimdall.backup`), or any other location (or external storage).
-
-You can start with the backup as soon as heimdall v1 reached the `24404500` height.
-This can be verified with:
-
-```bash
-sudo heimdallcli get-last-committed-height --home "$HEIMDALL_HOME" 
-```
-If the printed height is `24404500`, you can proceed with the backup.
-A corner case could be that the node will never reach that height  
-(e.g., if it is not synced and all other nodes are already down/migrated so not able to send the block).  
-In that case, no problems, the genesis file will be downloaded and snapshot providers will still keep the state of the network at that height.
+to a backup directory (e.g., `/var/lib/heimdall.backup`), or any other location (or external storage).  
 
 ```bash
 sudo mv /var/lib/heimdall /var/lib/heimdall.backup
 ```
 
 This preserves `config` and `data` folders, And `bridge` folder as well, if used.
+
+You can start with the backup as soon as possible.  
+You can anyway verify that `heimdall` reached the `24404500` height by running the following command (optional):
+
+```bash
+sudo heimdallcli get-last-committed-height --home "$HEIMDALL_HOME" 
+```
+
+If the printed height is `24404500`, your node committed the last height.  
+However, it can happen that the node will never reach that height    
+(e.g., if it is not synced and all other nodes are already down/migrated so not able to send the block).  
+In that case, there is no problem, because the correct genesis file is anyway going to be downloaded,   
+and snapshot providers will still keep the state of the network at that final height for any future reference.
 
 ---
 
