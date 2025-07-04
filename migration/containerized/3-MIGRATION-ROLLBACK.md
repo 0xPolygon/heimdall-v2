@@ -9,7 +9,7 @@ and you wish to roll back to the previous stable state to retry the migration, f
 
 ## Steps
 
-1. **Stop the Heimdall v2 container** (if running)
+1. **Stop the Heimdall v2 container** (if running)  
    Depending on the state of your migration, you may be running either Heimdall v1 or v2.
 
 2. **Restore the v1 `HEIMDALL_HOME` backup**

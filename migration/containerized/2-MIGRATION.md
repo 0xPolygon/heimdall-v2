@@ -266,6 +266,14 @@ docker run -d --name heimdall-v2 \
   start
 ```
 
+If the genesis time is in the future, you will see logs like these:  
+
+```
+Genesis time is in the future. Sleeping until then...
+```
+
+Otherwise, the node will begin syncing immediately.  
+
 ## 13. Configure WebSocket for Bor ↔ Heimdall Communication
 
 Edit Bor's `config.toml` to include:
@@ -280,3 +288,10 @@ ws-address = "ws://localhost:26657/websocket"
 ## 14. Restart Bor (If Step 13 Was Applied)
 
 Use your container orchestration tool to restart the Bor container.  
+
+
+### Keyring Info
+*Not required for the migration*  
+The encoding for v2 keys is different from v1, because it uses `base64` and no longer `hex`.  
+If you plan to use the `heimdalld` to submit txs, you will need to import your keys into the keyring again.  
+Instructions on how to do that are available in the [README](../../README.md) file.

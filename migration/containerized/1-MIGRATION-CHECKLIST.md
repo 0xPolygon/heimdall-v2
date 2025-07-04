@@ -8,6 +8,10 @@ Adjustments are necessary due to volume mounts, ephemeral storage, container net
    - Identify the volume mount path for Heimdall `data`, `config`, and `bridge` (e.g., `-v /heimdall:/var/lib/heimdall`).
    - Make sure your system is equipped with `sha512sum` (to verify the checksum of the genesis file)
    - Heimdall v2 will use `go 1.24.x`, so ensure your environment supports it.
+   - Make sure you're running the latest versions of `bor`, `heimdall` and `heimdallcli`:  
+     * `bor v2.2.5`
+     * `heimdall v1.6.0`
+     * `heimdallcli v1.6.0`
 
 ## 2. Validate Heimdall v1 Config Files
 

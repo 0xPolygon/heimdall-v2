@@ -12,6 +12,7 @@ Ensure all required steps in the [Migration Checklist](../systemd/1-MIGRATION-CH
 
 ## 2. Stop Heimdall v1
 
+Once instructed by the Polygon team, to start the migration, stop the Heimdall v1 service.  
 ```bash
 sudo systemctl stop heimdalld
 ````
@@ -24,6 +25,17 @@ If using a custom service name, replace `heimdalld` accordingly.
 
 Move the existing `HEIMDALL_HOME` (typically `/var/lib/heimdall`)
 to a backup directory (e.g., `/var/lib/heimdall.backup`), or any other location (or external storage).
+
+You can start with the backup as soon as heimdall v1 reached the `24404500` height.
+This can be verified with:
+
+```bash
+sudo heimdallcli get-last-committed-height --home "$HEIMDALL_HOME" 
+```
+If the printed height is `24404500`, you can proceed with the backup.
+A corner case could be that the node will never reach that height  
+(e.g., if it is not synced and all other nodes are already down/migrated so not able to send the block).  
+In that case, no problems, the genesis file will be downloaded and snapshot providers will still keep the state of the network at that height.
 
 ```bash
 sudo mv /var/lib/heimdall /var/lib/heimdall.backup
@@ -354,3 +366,17 @@ sudo systemctl restart bor
 ```bash
 journalctl -fu heimdalld
 ```
+
+If the genesis time is in the future, you will see:  
+
+```
+Genesis time is in the future. Sleeping until then...
+```
+
+Otherwise, the node will begin syncing immediately.  
+
+### Keyring Info
+*Not required for the migration*  
+The encoding for v2 keys is different from v1, because it uses `base64` and no longer `hex`.  
+If you plan to use the `heimdalld` to submit txs, you will need to import your keys into the keyring again.  
+Instructions on how to do that are available in the [README](../../README.md) file.

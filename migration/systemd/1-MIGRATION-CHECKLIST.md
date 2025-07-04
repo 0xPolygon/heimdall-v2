@@ -14,6 +14,11 @@ Ensure your platform is supported by the migration script:
 | Linux  | x86_64  | `dpkg` (Debian) | ✅         | Uses `.deb` package   |
 | Linux  | aarch64 | `dpkg`          | ✅         | Uses ARM `.deb`       |
 
+Make sure you're running the latest versions of `bor`, `heimdall` and `heimdallcli`:  
+  * `bor v2.2.5`
+  * `heimdall v1.6.0`
+  * `heimdallcli v1.6.0`
+
 ---
 
 ## 2. Required Tools
