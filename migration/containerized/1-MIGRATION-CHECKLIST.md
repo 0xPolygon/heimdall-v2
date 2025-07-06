@@ -42,4 +42,10 @@ Ensure a stable and fast internet connection.
 The migration will download the genesis file from a trusted source,
 which may be around 4 GB in size for mainnet.
 
+> The mainnet migration will occur on July 10th, between 2 and 5 PM UTC.  
+> As soon as the halt height `24404500` is reached, the Polygon team will create the v2 genesis and distribute to the community.  
+> The process should take around 30-45 min.  
+> Once the genesis is available, you can start the migration.  
+> Expect heimdall downtime of around 2h (bor will continue working).
+
 **Reminder:** Please migrate the validators first, to ensure the stake is moved over to v2 as soon as possible, and avoid any potential issue with the new network.

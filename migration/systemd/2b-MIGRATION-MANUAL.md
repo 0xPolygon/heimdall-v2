@@ -32,18 +32,7 @@ sudo mv /var/lib/heimdall /var/lib/heimdall.backup
 
 This preserves `config` and `data` folders, And `bridge` folder as well, if used.
 
-You can start with the backup as soon as possible.  
-You can anyway verify that `heimdall` reached the `24404500` height by running the following command (optional):
-
-```bash
-sudo heimdallcli get-last-committed-height --home "$HEIMDALL_HOME" 
-```
-
-If the printed height is `24404500`, your node committed the last height.  
-However, it can happen that the node will never reach that height    
-(e.g., if it is not synced and all other nodes are already down/migrated so not able to send the block).  
-In that case, there is no problem, because the correct genesis file is anyway going to be downloaded,   
-and snapshot providers will still keep the state of the network at that final height for any future reference.
+You can start with the backup as soon as the halt height `24404500` has been reached.   
 
 ---
 
