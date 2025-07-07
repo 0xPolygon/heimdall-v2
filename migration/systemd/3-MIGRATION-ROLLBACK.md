@@ -1,11 +1,14 @@
 # Rollback Procedure
 
-If the migration fails due to an error,
-and you wish to roll back to the previous state to retry the migration later, follow the steps below carefully.
+If you executed the migration and heimdall-v2 fails to start or throws some errors,  
+you can debug and fix the issues without rolling back to v1.
+
+However, if the migration itself fails due to an error,
+and you wish to roll back to the previous stable state to retry the migration, follow the steps below carefully.
 
 ---
 
-### 1. Stop the Heimdall v2 Service
+## 1. Stop the Heimdall v2 Service
 
 ```bash
 sudo systemctl stop heimdalld
@@ -15,21 +18,13 @@ sudo systemctl stop heimdalld
 
 ---
 
-### 2. Restore the v1 `HEIMDALL_HOME` Directory
+## 2. Restore the v1 `HEIMDALL_HOME` Directory
 
 ⚠️ **Important:** Make sure the backup directory exists before deleting anything.
 
-Run this to check:
-
-```bash
-ls -ld /var/lib/heimdall.backup
-```
-
-If the above command confirms the backup exists, proceed with:
-
 ```bash
 sudo rm -rf /var/lib/heimdall # or any other v1 home you used as flag in the script (`--heimdall-v1-home`)
-sudo mv /var/lib/heimdall.backup /var/lib/heimdall
+sudo mv <HOME_BACKUP_LOCATION> /var/lib/heimdall
 ```
 
 > ❌ **Do not delete `/var/lib/heimdall` unless you have confirmed the backup exists!**
@@ -38,7 +33,7 @@ sudo mv /var/lib/heimdall.backup /var/lib/heimdall
 
 ---
 
-### 3. Delete Genesis Dump Files
+## 3. Delete Genesis Dump Files
 
 ```bash
 sudo rm -f /var/lib/heimdall/dump_genesis.json
@@ -51,7 +46,7 @@ sudo rm -f /var/lib/heimdall/migrated_dump_genesis.json.sha512
 > If these files do not exist, it's not a problem.
 ---
 
-### 4. Restore the v1 Systemd Service File
+## 4. Restore the v1 Systemd Service File
 
 First, verify that the backup exists:
 
@@ -68,7 +63,7 @@ sudo mv -f /lib/systemd/system/heimdalld.service.backup /lib/systemd/system/heim
 > ℹ️ If the backup does **not** exist, skip this step.
 > You likely didn’t modify or back up the service file during migration.
 
-### 5. Install Heimdall v1
+## 5. Install Heimdall v1
 
 If you don’t have the v1 binary already backed up, you can reinstall it using:
 
@@ -81,7 +76,7 @@ Replace:
 
 ---
 
-### 6. Check the Installed Version
+## 6. Check the Installed Version
 
 ```bash
 /usr/bin/heimdalld version
@@ -97,7 +92,7 @@ If the output shows a v2 version, replace the binary manually with the correct v
 
 ---
 
-### 7. Reload the Daemon and Start Heimdall
+## 7. Reload the Daemon and Start Heimdall
 
 ```bash
 sudo systemctl daemon-reload && sudo systemctl start heimdalld
@@ -105,7 +100,7 @@ sudo systemctl daemon-reload && sudo systemctl start heimdalld
 
 ---
 
-### 8. Restart Telemetry (If Needed)
+## 8. Restart Telemetry (If Needed)
 
 ```bash
 sudo systemctl restart telemetry
@@ -115,7 +110,7 @@ sudo systemctl restart telemetry
 
 ---
 
-### 9. Check the Logs
+## 9. Check the Logs
 
 ```bash
 journalctl -fu heimdalld
@@ -125,6 +120,6 @@ Use this to monitor the node and confirm it is running correctly on v1.
 
 ---
 
-### 10. Retry Migration When Ready
+## 10. Retry Migration When Ready
 
 Once the underlying issues are resolved, you can rerun the migration script or proceed with a manual migration workflow.
