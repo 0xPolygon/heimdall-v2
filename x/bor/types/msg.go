@@ -7,7 +7,6 @@ import (
 )
 
 var _ sdk.Msg = &MsgProposeSpan{}
-var _ sdk.Msg = &MsgBackfillSpans{}
 
 // NewMsgProposeSpan creates a new MsgProposeSpan instance
 func NewMsgProposeSpan(
@@ -33,24 +32,4 @@ func NewMsgProposeSpan(
 // Type returns the type of the x/bor MsgProposeSpan.
 func (msg MsgProposeSpan) Type() string {
 	return EventTypeProposeSpan
-}
-
-// NewMsgBackfillSpans creates a new MsgBackfillSpans instance
-func NewMsgBackfillSpans(
-	proposer string,
-	chainId string,
-	latestSpanId uint64,
-	latestBorSpanId uint64,
-) *MsgBackfillSpans {
-	return &MsgBackfillSpans{
-		Proposer:        util.FormatAddress(proposer),
-		ChainId:         chainId,
-		LatestSpanId:    latestSpanId,
-		LatestBorSpanId: latestBorSpanId,
-	}
-}
-
-// Type returns the type of the x/bor MsgBackfillSpans.
-func (msg MsgBackfillSpans) Type() string {
-	return EventTypeBackfillSpans
 }

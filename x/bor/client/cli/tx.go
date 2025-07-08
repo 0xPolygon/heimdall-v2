@@ -14,7 +14,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/common/cli"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 var logger = helper.Logger.With("module", "bor/client/cli")
@@ -119,101 +118,6 @@ func NewSpanProposalCmd() *cobra.Command {
 
 	if err := cmd.MarkFlagRequired(FlagStartBlock); err != nil {
 		fmt.Printf("PostSendProposeSpanTx | MarkFlagRequired | FlagStartBlock Error: %v", err)
-	}
-
-	return cmd
-}
-
-// NewBackfillSpans returns a CLI command handler for creating a MsgBackfillSpans transaction.
-func NewBackfillSpans() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "backfill-spans",
-		Short: "send backfill spans tx",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
-			borChainID := viper.GetString(FlagBorChainId)
-			if borChainID == "" {
-				return fmt.Errorf("BorChainID cannot be empty")
-			}
-
-			// get proposer
-			proposer := viper.GetString(FlagProposerAddress)
-			if proposer == "" {
-				proposer = clientCtx.GetFromAddress().String()
-			}
-
-			addressCodec := addresscodec.NewHexCodec()
-			_, err = addressCodec.StringToBytes(proposer)
-			if err != nil {
-				return fmt.Errorf("proposer address is invalid: %w", err)
-			}
-
-			// get latest span id
-			queryClient := types.NewQueryClient(clientCtx)
-			latestSpanResp, err := queryClient.GetLatestSpan(cmd.Context(), &types.QueryLatestSpanRequest{})
-			if err != nil {
-				return fmt.Errorf("failed to get latest span: %w", err)
-			}
-
-			if latestSpanResp == nil {
-				return fmt.Errorf("no latest span found")
-			}
-
-			contractCaller, err := helper.NewContractCaller()
-			if err != nil {
-				return err
-			}
-
-			borLastUsedSpanID, err := contractCaller.GetStartBlockHeimdallSpanID(clientCtx.CmdContext, latestSpanResp.Span.EndBlock+1)
-			if err != nil {
-				return fmt.Errorf("failed to get last used heimdall span id: %w", err)
-			}
-
-			if borLastUsedSpanID == 0 {
-				return fmt.Errorf("heimdall span id is 0, no backfill needed")
-			}
-
-			borLastUsedSpan, err := queryClient.GetSpanById(cmd.Context(), &types.QuerySpanByIdRequest{
-				Id: strconv.FormatUint(borLastUsedSpanID, 10),
-			})
-			if err != nil {
-				return fmt.Errorf("failed to get last used heimdall span: %w", err)
-			}
-
-			if borLastUsedSpan == nil {
-				return fmt.Errorf("no last used heimdall span found for id: %d", borLastUsedSpanID)
-			}
-
-			// calculate latest bor span id
-			milestoneQueryClient := milestoneTypes.NewQueryClient(clientCtx)
-
-			latestMilestoneResp, err := milestoneQueryClient.GetLatestMilestone(cmd.Context(), &milestoneTypes.QueryLatestMilestoneRequest{})
-			if err != nil {
-				return fmt.Errorf("failed to get latest milestone: %w", err)
-			}
-			if latestMilestoneResp == nil {
-				return fmt.Errorf("no latest milestone found")
-			}
-
-			borSpanId, err := types.CalcCurrentBorSpanId(latestMilestoneResp.Milestone.EndBlock, borLastUsedSpan.Span)
-			if err != nil {
-				return fmt.Errorf("failed to calculate bor span id: %w", err)
-			}
-
-			msg := types.NewMsgBackfillSpans(proposer, borChainID, borLastUsedSpanID, borSpanId)
-
-			return cli.BroadcastMsg(clientCtx, proposer, msg, logger)
-		},
-	}
-
-	cmd.Flags().StringP(FlagProposerAddress, "p", "", "--proposer=<proposer-address>")
-	cmd.Flags().String(FlagBorChainId, "", "--bor-chain-id=<bor-chain-id>")
-
-	if err := cmd.MarkFlagRequired(FlagBorChainId); err != nil {
-		fmt.Printf("PostSendProposeSpanTx | MarkFlagRequired | FlagBorChainId Error: %v", err)
 	}
 
 	return cmd

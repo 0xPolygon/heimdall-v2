@@ -50,6 +50,97 @@ paths:
                       format: byte
       tags:
         - Query
+  /bor/producer-votes:
+    get:
+      summary: GetProducerVotes queries producer votes from all validators.
+      operationId: GetProducerVotes
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              all_votes:
+                type: object
+                additionalProperties:
+                  type: object
+                  properties:
+                    votes:
+                      type: array
+                      items:
+                        type: string
+                        format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      tags:
+        - Query
+  /bor/producer-votes/{validator_id}:
+    get:
+      summary: |-
+        GetProducerVotesByValidatorId queries the producer votes for a given
+        validator id.
+      operationId: GetProducerVotesByValidatorId
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              votes:
+                type: array
+                items:
+                  type: string
+                  format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: validator_id
+          in: path
+          required: true
+          type: string
+          format: uint64
+      tags:
+        - Query
   /bor/spans/latest:
     get:
       summary: GetLatestSpan queries the latest span.
@@ -1537,6 +1628,43 @@ paths:
           required: true
           type: string
           format: uint64
+      tags:
+        - Query
+  /clerk/event-records/count:
+    get:
+      summary: GetRecordCount queries the total number of event records
+      operationId: GetRecordCount
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              count:
+                type: string
+                format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
       tags:
         - Query
   /clerk/event-records/latest-id:
@@ -3035,6 +3163,14 @@ definitions:
       producer_count:
         type: string
         format: uint64
+  heimdallv2.bor.ProducerVotes:
+    type: object
+    properties:
+      votes:
+        type: array
+        items:
+          type: string
+          format: uint64
   heimdallv2.bor.QueryLatestSpanResponse:
     type: object
     properties:
@@ -3291,6 +3427,27 @@ definitions:
           producer_count:
             type: string
             format: uint64
+  heimdallv2.bor.QueryProducerVotesByValidatorIdResponse:
+    type: object
+    properties:
+      votes:
+        type: array
+        items:
+          type: string
+          format: uint64
+  heimdallv2.bor.QueryProducerVotesResponse:
+    type: object
+    properties:
+      all_votes:
+        type: object
+        additionalProperties:
+          type: object
+          properties:
+            votes:
+              type: array
+              items:
+                type: string
+                format: uint64
   heimdallv2.bor.QuerySpanByIdResponse:
     type: object
     properties:
@@ -4251,6 +4408,12 @@ definitions:
         format: uint64
       is_processed_by_heimdall:
         type: boolean
+  heimdallv2.clerk.RecordCountResponse:
+    type: object
+    properties:
+      count:
+        type: string
+        format: uint64
   heimdallv2.clerk.RecordListResponse:
     type: object
     properties:
