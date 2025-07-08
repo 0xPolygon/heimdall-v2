@@ -11,8 +11,8 @@ Confirm you have verified the requirements in the [Migration Checklist](../syste
 ## 2. Download and Verify the Script
 
 ```bash
-curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/develop/migration/script/migrate.sh
-curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/develop/migration/script/migrate.sh.sha512
+curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/develop/migration/systemd/script/migrate.sh
+curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/develop/migration/systemd/script/migrate.sh.sha512
 sha512sum -c migrate.sh.sha512
 ```
 
