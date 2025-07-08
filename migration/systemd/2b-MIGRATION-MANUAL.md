@@ -325,7 +325,11 @@ sudo systemctl start heimdalld
 
 ---
 
-## 18. Restart Telemetry (If Needed)
+## 18. Upgrade And Restart Telemetry (If Needed)
+
+If you're using telemetry, you need to upgrade the service to be compatible with v2.  
+Here the [instructions](https://github.com/vitwit/matic-telemetry/tree/heimdall-v2?tab=readme-ov-file#upgrading-for-heimdall-v2-version-api-change).
+
 
 ```bash
 sudo systemctl restart telemetry

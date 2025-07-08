@@ -165,7 +165,7 @@ Place the previously downloaded genesis.json in your `HEIMDALL_HOME/config` dire
 
 Extract from the v1 file (under v1's `HEIMDALL_HOME/config`, previously backed-up) the following fields,  
 and inject into the corresponding fields of v2’s `priv_validator_key.json`.  
-**Do not change key types, as in v1 they have a tendermint namespace and in v they have a comet namespace.**
+**Do not change key types, as in v1 they have a tendermint namespace and in v2 they have a comet namespace.**
 
 Values to extract from v1's `priv_validator_key.json`:
 * `address`
@@ -293,6 +293,9 @@ ws-address = "ws://localhost:26657/websocket"
 
 Use your container orchestration tool to restart the Bor container.  
 
+## 15. Upgrade telemetry (if used)
+If you're using telemetry, you need to upgrade the service to be compatible with v2.  
+Here the [instructions](https://github.com/vitwit/matic-telemetry/tree/heimdall-v2?tab=readme-ov-file#upgrading-for-heimdall-v2-version-api-change).   
 
 ### Keyring Info
 *Not required for the migration*  
