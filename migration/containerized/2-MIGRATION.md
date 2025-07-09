@@ -8,20 +8,20 @@ and avoid any potential issue with the new network.
 
 Once instructed by the Polygon team, please start the migration.  
 
-## 1. Prepare Backup
+## 1. Stop Existing Heimdall v1 Containers
+- Gracefully shut down Heimdall v1, e.g., for docker:
+  ```bash
+  docker stop <container_id>
+  ```
+
+## 2. Prepare Backup
 - Back up the `HEIMDALL_HOME` (default `/var/lib/heimdall`), containing `config/`, `data/` and `bridge/` folders outside the container.
 - Example (for Docker):
   ```bash
   docker cp <container_id>:/var/lib/heimdall /path/to/backup
   ```
   
-You can start with the backup as soon as the halt height `24404500` has been reached.  
-
-## 2. Stop Existing Heimdall v1 Containers
-- Gracefully shut down Heimdall v1, e.g., for docker:
-  ```bash
-  docker stop <container_id>
-  ```
+You can start with the backup as soon as the halt height `24404500` has been reached.
 
 ## 3. Pull the Heimdall v2 Image
 
