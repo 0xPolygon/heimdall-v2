@@ -84,26 +84,25 @@ as the script will download a large `genesis.json` file (4 GB on mainnet).
 
 ## 8. Port Availability
 
-Check that no other process is using the ports required by Heimdall v2.
+Make sure you have the following ports free on the host machine, so that heimdall-v2 can use them.
 
-| Port  | Protocol | Purpose                                                                 |
-|-------|----------|-------------------------------------------------------------------------|
-| 26656 | TCP      | CometBFT P2P                                                            |
-| 26657 | HTTP     | CometBFT RPC (`/status`, `/broadcast_tx_sync`, etc.)                    |
-| 26660 | HTTP     | CometBFT pprof (if enabled)                                             |
-| 6060  | HTTP     | Alternate pprof port (Go default)                                       |
-| 1317  | HTTP     | REST API (Cosmos SDK gRPC-Gateway)                                      |
-| 9090  | gRPC     | Cosmos SDK gRPC server                                                  |
-| 9091  | gRPC     | gRPC-Web server (optional)                                              |
+| Port          | Use                       | Protocol | Direction        | Notes                                                                 |
+|---------------|---------------------------|----------|------------------|-----------------------------------------------------------------------|
+| 26656         | **P2P**                   | **TCP**  | Inbound/Outbound | CometBFT peer-to-peer gossiping of blocks and transactions.           |
+| 26657         | **RPC (CometBFT)**        | **TCP**  | Inbound          | Public CometBFT RPC API (e.g. `/status`, `/broadcast_tx_async`, etc). |
+| 26660 or 6060 | **pprof (Profiling)**     | **TCP**  | Inbound          | Go’s `net/http/pprof` for debugging/profiling.                        |
+| 1317          | **REST (Cosmos-SDK API)** | **TCP**  | Inbound          | REST endpoint via gRPC-Gateway from Cosmos SDK.                       |
+| 9090          | **gRPC (Cosmos)**         | **TCP**  | Inbound          | Protobuf-based gRPC queries against app state.                        |
+| 9091          | **gRPC-Web**              | **TCP**  | Inbound          | gRPC-Web server for browser clients.                                  |
 
-For example, you can check with:
+For example, you can check that with:
 ```bash
 sudo lsof -i -P -n | grep LISTEN
-# or
-sudo netstat -tuln | grep LISTEN
-# or
-sudo ss -tuln
-````
+```
+Or
+```bash
+sudo ss -tulpn
+```
 
 ## 9. Validate Systemd Service User
 

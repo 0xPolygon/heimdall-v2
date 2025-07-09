@@ -18,17 +18,27 @@ Adjustments are necessary due to volume mounts, ephemeral storage, container net
 Verify that the files in `HEIMDALL_HOME/config` are present and correctly formatted.
 
 ## 3. Free Required Ports on the Host
-   - Make sure you have the following ports free on the host machine, so that heimdall-v2 can use them.
-        * 26656 (P2P)
-        * 26657 (RPC)
-        * 26660 or 6060 (pprof)
-        * 1317 (REST)
-        * 9090 (gRPC)
-        * 9091 (gRPC-Web, optional)  
+
+Make sure you have the following ports free on the host machine, so that heimdall-v2 can use them.
+
+| Port          | Use                       | Protocol | Direction        | Notes                                                                 |
+|---------------|---------------------------|----------|------------------|-----------------------------------------------------------------------|
+| 26656         | **P2P**                   | **TCP**  | Inbound/Outbound | CometBFT peer-to-peer gossiping of blocks and transactions.           |
+| 26657         | **RPC (CometBFT)**        | **TCP**  | Inbound          | Public CometBFT RPC API (e.g. `/status`, `/broadcast_tx_async`, etc). |
+| 26660 or 6060 | **pprof (Profiling)**     | **TCP**  | Inbound          | Go’s `net/http/pprof` for debugging/profiling.                        |
+| 1317          | **REST (Cosmos-SDK API)** | **TCP**  | Inbound          | REST endpoint via gRPC-Gateway from Cosmos SDK.                       |
+| 9090          | **gRPC (Cosmos)**         | **TCP**  | Inbound          | Protobuf-based gRPC queries against app state.                        |
+| 9091          | **gRPC-Web**              | **TCP**  | Inbound          | gRPC-Web server for browser clients.                                  |
+
   For example, you can check that with:
       ```bash
       sudo lsof -i -P -n | grep LISTEN
       ```
+  Or
+      ```bash
+      sudo ss -tulpn
+      ```
+
 ## 4. Memory Requirements 
 Ensure your system has at least 20 GB of available RAM at the time of migration.
 
