@@ -31,7 +31,7 @@ and you wish to roll back to the previous stable state to retry the migration, f
 
 5. **Check the logs**
 
-   Monitor startup logs to ensure Heimdall v1 is running as expected:
+   Monitor startup logs to ensure Heimdall v1 is running as expected.
 
 6. **Retry migration when ready**
 
