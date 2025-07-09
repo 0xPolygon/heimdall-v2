@@ -95,6 +95,14 @@ Make sure you have the following ports free on the host machine, so that heimdal
 | 9090          | **gRPC (Cosmos)**         | **TCP**  | Inbound          | Protobuf-based gRPC queries against app state.                        |
 | 9091          | **gRPC-Web**              | **TCP**  | Inbound          | gRPC-Web server for browser clients.                                  |
 
+
+Port `26656` (P2P) must be open on the validator to the sentry IPs.  
+This is how sentries connect to the validator for block propagation and voting.  
+Port `26657` (RPC) is generally not exposed on the validator.  
+However, if your architecture requires sentries to relay transactions via RPC to the validator,  
+you can open it to trusted IPs.  
+
+
 For example, you can check that with:
 ```bash
 sudo lsof -i -P -n | grep LISTEN
