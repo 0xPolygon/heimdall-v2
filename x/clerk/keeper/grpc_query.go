@@ -87,28 +87,21 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Errorf(codes.InvalidArgument, "fromId should start from at least 1")
 	}
 
-	// fetch all records without pagination first
-	allRes, _, err := query.CollectionPaginate(
-		ctx,
-		q.k.RecordsWithID,
-		&query.PageRequest{
-			Limit:  maxRecordListLimitPerPage,
-			Offset: request.FromId - 1, // Offset is 0-based, so we subtract 1 from FromId
-		},
-		func(id uint64, record types.EventRecord) (*types.EventRecord, error) {
-			return q.k.GetEventRecord(ctx, id)
-		},
-	)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to collect records: %v", err)
-	}
+	filtered := make([]types.EventRecord, 0, request.Pagination.Limit)
 
-	// apply filters
-	filtered := make([]types.EventRecord, 0, len(allRes))
-	for _, r := range allRes {
-		if r.Id >= request.FromId && r.RecordTime.Before(request.ToTime) {
-			filtered = append(filtered, *r)
+	for i := uint64(0); i < request.Pagination.Limit; i++ {
+		value, err := q.k.RecordsWithID.Get(ctx, request.FromId)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get record with ID %d: %v", request.FromId, err)
 		}
+
+		if value.RecordTime.Before(request.ToTime) {
+			filtered = append(filtered, value)
+			request.FromId++ // Increment FromId until we find a valid record or run out of
+			continue
+		}
+
+		break
 	}
 
 	if len(filtered) == 0 {
