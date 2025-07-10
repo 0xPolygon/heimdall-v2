@@ -262,12 +262,21 @@ Now that you have the right configuration and genesis file,
 you can run the container with the appropriate configuration.  
 For example (please adjust the `-v` and `-p` options based on your deployment needs):
 
+for non-validators:
 ```bash
 docker run -d --name heimdall-v2 \
   -v "$HEIMDALL_HOME:/var/lib/heimdall" \
   -p 26656:26656 -p 26657:26657 -p 1317:1317 \
   0xpolygon/heimdall-v2:0.2.7 \
   start
+```
+and for validators:
+```bash
+docker run -d --name heimdall-v2 \
+  -v "$HEIMDALL_HOME:/var/lib/heimdall" \
+  -p 26656:26656 -p 26657:26657 -p 1317:1317 \
+  0xpolygon/heimdall-v2:0.2.7 \
+  start --bridge --all --chain=amoy --rest-server
 ```
 
 If the genesis time is in the future, you will see logs like these:  
