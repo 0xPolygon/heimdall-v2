@@ -150,12 +150,12 @@ heimdalld tx checkpoint send-checkpoint --proposer=<proposer-address> --start-bl
 #### Send checkpoint ack
 With autoconfiguration:  
 ```bash
-heimdalld tx checkpoint send-ack --auto-configure=true
+heimdalld tx checkpoint send-ack --auto-configure=true --home /var/lib/heimdall/
 ```
 
 Or without autoconfiguration (you need to provide the following parameters):
 ```bash
-heimdalld tx checkpoint send-ack --tx-hash=<checkpoint-tx-hash> --log-index=<log-index> --header=<header> --proposer=<proposer-address> --auto-configure=false
+heimdalld tx checkpoint send-ack --home /var/lib/heimdall/ --tx-hash=<checkpoint-tx-hash> --log-index=<log-index> --header=<header> --proposer=<proposer-address> --auto-configure=false
 ```
 
 #### Send checkpoint no-ack
