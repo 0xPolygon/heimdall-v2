@@ -100,6 +100,7 @@ seeds = "..."
 persistent_peers = "..."
 max_num_inbound_peers = "..."
 max_num_outbound_peers = "..."
+pex = "..."
 ```
 
 Also set in v2
