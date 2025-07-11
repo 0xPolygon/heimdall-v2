@@ -28,7 +28,7 @@ You can start with the backup as soon as the halt height `24404500` has been rea
 Download the v2 Docker image from Docker Hub:
 
 ```bash
-docker pull 0xpolygon/heimdall-v2:0.2.7
+docker pull 0xpolygon/heimdall-v2:0.2.9
 ````
 
 ## 4. Initialize Default Configuration
@@ -36,7 +36,7 @@ docker pull 0xpolygon/heimdall-v2:0.2.7
 Run the `init` command in the container to generate default config files, e.g.,
 
 ```bash
-docker run --rm -v "<HEIMDALL_HOME>:/var/lib/heimdall" 0xpolygon/heimdall-v2:0.2.7 init <MONIKER> --chain-id heimdallv2-137
+docker run --rm -v "<HEIMDALL_HOME>:/var/lib/heimdall" 0xpolygon/heimdall-v2:0.2.9 init <MONIKER> --chain-id heimdallv2-137
 ```
 * `MONIKER` is your node name (any string), and it should match the moniker from your v1 configs (under `config.toml`)
 
@@ -268,7 +268,7 @@ for non-validators:
 docker run -d --name heimdall-v2 \
   -v "$HEIMDALL_HOME:/var/lib/heimdall" \
   -p 26656:26656 -p 26657:26657 -p 1317:1317 \
-  0xpolygon/heimdall-v2:0.2.7 \
+  0xpolygon/heimdall-v2:0.2.9 \
   start
 ```
 and for validators:
@@ -276,7 +276,7 @@ and for validators:
 docker run -d --name heimdall-v2 \
   -v "$HEIMDALL_HOME:/var/lib/heimdall" \
   -p 26656:26656 -p 26657:26657 -p 1317:1317 \
-  0xpolygon/heimdall-v2:0.2.7 \
+  0xpolygon/heimdall-v2:0.2.9 \
   start --bridge --all --chain=amoy --rest-server
 ```
 
