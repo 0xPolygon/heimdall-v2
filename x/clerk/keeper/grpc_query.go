@@ -98,7 +98,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 
 		if value.RecordTime.Before(request.ToTime) {
 			filtered = append(filtered, value)
-			request.FromId++ // Increment FromId until we find a valid record or run out of
+			request.FromId++ // Increment FromId until we find a valid record or run out of records.
 			continue
 		}
 
@@ -111,7 +111,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		}, nil
 	}
 
-	// apply pagination over the filtered result
+	// Apply pagination over the filtered result.
 	paginatedRecords := filterWithPage(filtered, &request.Pagination)
 
 	return &types.RecordListWithTimeResponse{

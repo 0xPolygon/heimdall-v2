@@ -127,35 +127,29 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint
 		limit = MaxPageLimit
 	}
 
-	startIndex := int((page - 1) * limit)
-	endIndex := int(page * limit)
+	// Calculate the starting record ID based on page and limit
+	startRecordID := (page - 1) * limit
+	endRecordID := page * limit
 
-	// Initialize a counter to track the number of records processed
-	counter := 0
+	// Use Range to efficiently query only the records we need
+	rng := new(collections.Range[uint64]).
+		StartInclusive(startRecordID).
+		EndExclusive(endRecordID)
 
-	// Use Walk to iterate over the records
-	err := k.RecordsWithID.Walk(ctx, nil, func(key uint64, record types.EventRecord) (bool, error) {
-		// If the current index is within the desired range, add the record to the slice
-		if counter >= startIndex && counter < endIndex {
-			records = append(records, record)
-		}
+	iterator, err := k.RecordsWithID.Iterate(ctx, rng)
+	if err != nil {
+		return nil, err
+	}
+	defer iterator.Close()
 
-		// Increment the counter
-		counter++
-
-		// Stop walking if we've collected enough records
-		if counter >= endIndex {
-			return true, nil // Stop the walk
-		}
-
-		return false, nil // Continue walking
-	})
+	// Collect the records from the iterator
+	records, err = iterator.Values()
 	if err != nil {
 		return nil, err
 	}
 
 	// Check if we have collected any records
-	if len(records) == 0 && startIndex > 0 {
+	if len(records) == 0 && page > 1 {
 		return nil, fmt.Errorf("page %d does not exist", page)
 	}
 
@@ -289,5 +283,17 @@ func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
 
 // GetEventRecordCount returns the total count of event records.
 func (k *Keeper) GetEventRecordCount(ctx context.Context) uint64 {
-	return uint64(len(k.GetAllEventRecords(ctx)))
+	iterator, err := k.RecordsWithID.Iterate(ctx, nil)
+	if err != nil {
+		k.Logger(ctx).Error("failed to create iterator for counting records", "error", err)
+		return 0
+	}
+	defer iterator.Close()
+
+	count := uint64(0)
+	for ; iterator.Valid(); iterator.Next() {
+		count++
+	}
+
+	return count
 }
