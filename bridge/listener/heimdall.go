@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	heimdallLastBlockKey = "heimdall-last-block" // storage key
+	heimdallLastBlockKey         = "heimdall-last-block" // storage key
+	heimdallV2InitialBlockHeight = 24404501
 )
 
 // HeimdallListener - Listens to and process events from heimdall
@@ -121,7 +122,7 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 
 func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, uint64, error) {
 	// toBlock - get the latest block height from heimdall node
-	fromBlock := uint64(0)
+	fromBlock := uint64(heimdallV2InitialBlockHeight)
 	toBlock := uint64(0)
 
 	nodeStatus, err := helper.GetNodeStatus(hl.cliCtx, ctx)
