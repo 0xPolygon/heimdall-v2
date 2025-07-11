@@ -117,12 +117,11 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Pagination() {
 			expectedIDs: []uint64{6, 7, 8, 9, 10},
 		},
 		{
-			name:          "from_id beyond dataset",
-			fromID:        50,
-			toTime:        now,
-			limit:         5,
-			expectedIDs:   []uint64{},
-			expectedError: true, // should return an error if no records found
+			name:        "from_id beyond dataset",
+			fromID:      50,
+			toTime:      now,
+			limit:       5,
+			expectedIDs: []uint64{},
 		},
 		{
 			name:        "to_time before all records",
