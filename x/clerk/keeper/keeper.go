@@ -15,11 +15,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-const (
-	// MaxPageLimit is the maximum page limit.
-	MaxPageLimit = uint64(50)
-)
-
 // Keeper stores all the related data.
 type Keeper struct {
 	storeService storetypes.KVStoreService
@@ -125,9 +120,13 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint
 	// Create the records' slice.
 	var records []types.EventRecord
 
-	// Set the max page limit.
-	if limit > MaxPageLimit {
-		limit = MaxPageLimit
+	// Set the page limit.
+	if page == 0 {
+		page = DefaultPageLimit
+	}
+	// Set the max record list limit per page.
+	if limit == 0 || limit > MaxRecordListLimitPerPage {
+		limit = MaxRecordListLimitPerPage
 	}
 
 	// Calculate the start and end record ID based on page and limit.
@@ -164,9 +163,9 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 	// Create the records' slice.
 	var records []types.EventRecord
 
-	// Set the max page limit.
-	if limit > MaxPageLimit {
-		limit = MaxPageLimit
+	// Set the max record list limit per page.
+	if limit > MaxRecordListLimitPerPage {
+		limit = MaxRecordListLimitPerPage
 	}
 
 	rng := new(collections.Range[collections.Pair[time.Time, uint64]]).

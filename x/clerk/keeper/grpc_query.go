@@ -15,9 +15,14 @@ import (
 )
 
 const (
-	defaultPageLimit          = 1
-	defaultRecordListLimit    = 50
-	maxRecordListLimitPerPage = 1000
+	// DefaultPageLimit is the default page limit for queries.
+	DefaultPageLimit = 1
+
+	// DefaultRecordListLimit is the default record list limit for queries.
+	DefaultRecordListLimit = 50
+
+	// MaxRecordListLimitPerPage is the maximum record list limit per page for queries.
+	MaxRecordListLimitPerPage = 1000
 )
 
 var _ types.QueryServer = queryServer{}
@@ -52,11 +57,11 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 	}
 
 	if request.Page == 0 {
-		request.Page = defaultPageLimit
+		request.Page = DefaultPageLimit
 	}
 
-	if request.Limit == 0 || request.Limit > maxRecordListLimitPerPage {
-		request.Limit = defaultRecordListLimit
+	if request.Limit == 0 || request.Limit > MaxRecordListLimitPerPage {
+		request.Limit = DefaultRecordListLimit
 	}
 
 	records, err := q.k.GetEventRecordList(ctx, request.Page, request.Limit)
@@ -75,12 +80,12 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if isPaginationEmpty(request.Pagination) && request.Pagination.Limit > maxRecordListLimitPerPage {
-		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one of offset, key, or limit must be set) and limit exceeds max allowed limit %d", maxRecordListLimitPerPage)
+	if isPaginationEmpty(request.Pagination) && request.Pagination.Limit > MaxRecordListLimitPerPage {
+		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one of offset, key, or limit must be set) and limit exceeds max allowed limit %d", MaxRecordListLimitPerPage)
 	}
 
-	if request.Pagination.Limit == 0 || request.Pagination.Limit > maxRecordListLimitPerPage {
-		request.Pagination.Limit = defaultRecordListLimit
+	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimitPerPage {
+		request.Pagination.Limit = DefaultRecordListLimit
 	}
 
 	if request.FromId < 1 {
