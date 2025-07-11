@@ -15,7 +15,7 @@ Ensure your platform is supported by the migration script:
 | Linux  | aarch64 | `dpkg`          | ✅         | Uses ARM `.deb`       |
 
 Make sure you're running the latest versions of `bor`/`erigon`, `heimdall` and `heimdallcli`:  
-  * `bor v2.2.5` / `erigon v3.0.12`+
+  * `bor v2.2.8` / `erigon v3.0.14`
   * `heimdall v1.6.0`
   * `heimdallcli v1.6.0`
 
