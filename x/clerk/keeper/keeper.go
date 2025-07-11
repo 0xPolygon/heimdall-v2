@@ -129,14 +129,14 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint
 		limit = MaxRecordListLimitPerPage
 	}
 
-	// Calculate the start and end record ID based on page and limit.
-	startRecordID := (page - 1) * limit
+	// Calculate the starting record ID based on page and limit
+	startRecordID := (page-1)*limit + 1
 	endRecordID := page * limit
 
 	// Use Range to efficiently query only the records we need.
 	rng := new(collections.Range[uint64]).
 		StartInclusive(startRecordID).
-		EndExclusive(endRecordID)
+		EndInclusive(endRecordID)
 
 	iterator, err := k.RecordsWithID.Iterate(ctx, rng)
 	if err != nil {
@@ -285,17 +285,25 @@ func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
 
 // GetEventRecordCount returns the total count of event records.
 func (k *Keeper) GetEventRecordCount(ctx context.Context) uint64 {
-	iterator, err := k.RecordsWithID.Iterate(ctx, nil)
+	// Create a reverse iterator to get the highest key efficiently.
+	iterator, err := k.RecordsWithID.Iterate(ctx, (&collections.Range[uint64]{}).Descending())
 	if err != nil {
-		k.Logger(ctx).Error("failed to create iterator for counting records", "error", err)
+		k.Logger(ctx).Error("failed to create reverse iterator for counting records", "error", err)
 		return 0
 	}
 	defer iterator.Close()
 
-	count := uint64(0)
-	for ; iterator.Valid(); iterator.Next() {
-		count++
+	// Get the first (highest) key from the reverse iterator.
+	if !iterator.Valid() {
+		return 0 // No records exist.
 	}
 
-	return count
+	highestKey, err := iterator.Key()
+	if err != nil {
+		k.Logger(ctx).Error("failed to get highest key for counting records", "error", err)
+		return 0
+	}
+
+	// Since record IDs are sequential starting from 1, the highest key equals the count.
+	return highestKey
 }

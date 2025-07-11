@@ -126,7 +126,7 @@ func (s *KeeperTestSuite) TestGetEventRecordList() {
 
 	var testRecords []types.EventRecord
 
-	for i = 0; i < 60; i++ {
+	for i = 1; i <= 60; i++ {
 		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1", time.Now())
 		testRecord.RecordTime = testRecord.RecordTime.UTC()
 		err := ck.SetEventRecord(ctx, testRecord)

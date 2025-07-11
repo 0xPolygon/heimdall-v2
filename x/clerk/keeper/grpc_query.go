@@ -18,11 +18,8 @@ const (
 	// DefaultPageLimit is the default page limit for queries.
 	DefaultPageLimit = 1
 
-	// DefaultRecordListLimit is the default record list limit for queries.
-	DefaultRecordListLimit = 50
-
 	// MaxRecordListLimitPerPage is the maximum record list limit per page for queries.
-	MaxRecordListLimitPerPage = 1000
+	MaxRecordListLimitPerPage = 50
 )
 
 var _ types.QueryServer = queryServer{}
@@ -61,7 +58,7 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 	}
 
 	if request.Limit == 0 || request.Limit > MaxRecordListLimitPerPage {
-		request.Limit = DefaultRecordListLimit
+		request.Limit = MaxRecordListLimitPerPage
 	}
 
 	records, err := q.k.GetEventRecordList(ctx, request.Page, request.Limit)
@@ -85,7 +82,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	}
 
 	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimitPerPage {
-		request.Pagination.Limit = DefaultRecordListLimit
+		request.Pagination.Limit = MaxRecordListLimitPerPage
 	}
 
 	if request.FromId < 1 {
