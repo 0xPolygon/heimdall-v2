@@ -92,6 +92,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	for i := uint64(0); i < request.Pagination.Limit; i++ {
 		value, err := q.k.RecordsWithID.Get(ctx, request.FromId)
 		if err != nil {
+			q.k.Logger(ctx).Error("error in fetching event record", "error", err, "fromId", request.FromId)
 			break
 		}
 
