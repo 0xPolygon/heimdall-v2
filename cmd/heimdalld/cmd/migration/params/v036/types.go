@@ -10,25 +10,12 @@ import (
 )
 
 const (
-	// ModuleName defines the name of the module
-	ModuleName = "params"
-
 	// RouterKey defines the routing key for a ParameterChangeProposal
 	RouterKey = "params"
-)
-
-const (
 	// ProposalTypeChange defines the type for a ParameterChangeProposal
 	ProposalTypeChange = "ParameterChange"
-)
-
-// Param module codespace constants
-const (
+	// DefaultCodespace defines the param module codespace name
 	DefaultCodespace = "params"
-
-	CodeUnknownSubspace  = 1
-	CodeSettingParameter = 2
-	CodeEmptyData        = 3
 )
 
 // Assert ParameterChangeProposal implements v036gov.Content at compile-time
@@ -42,10 +29,6 @@ type ParameterChangeProposal struct {
 	Changes     []ParamChange `json:"changes" yaml:"changes"`
 }
 
-func NewParameterChangeProposal(title, description string, changes []ParamChange) ParameterChangeProposal {
-	return ParameterChangeProposal{title, description, changes}
-}
-
 // GetTitle returns the title of a parameter change proposal.
 func (pcp ParameterChangeProposal) GetTitle() string { return pcp.Title }
 
@@ -55,7 +38,7 @@ func (pcp ParameterChangeProposal) GetDescription() string { return pcp.Descript
 // ProposalRoute returns the routing key of a parameter change proposal.
 func (pcp ParameterChangeProposal) ProposalRoute() string { return RouterKey }
 
-// ProposalType returns the type of a parameter change proposal.
+// ProposalType returns the type of the parameter change proposal.
 func (pcp ParameterChangeProposal) ProposalType() string { return ProposalTypeChange }
 
 // ValidateBasic validates the parameter change proposal
@@ -98,14 +81,6 @@ type ParamChange struct {
 	Value    string `json:"value" yaml:"value"`
 }
 
-func NewParamChange(subspace, key, value string) ParamChange {
-	return ParamChange{subspace, key, "", value}
-}
-
-func NewParamChangeWithSubkey(subspace, key, subkey, value string) ParamChange {
-	return ParamChange{subspace, key, subkey, value}
-}
-
 // String implements the Stringer interface.
 func (pc ParamChange) String() string {
 	return fmt.Sprintf(`Param Change:
@@ -138,16 +113,6 @@ func ValidateChanges(changes []ParamChange) error {
 	return nil
 }
 
-// ErrUnknownSubspace returns an unknown subspace error.
-func ErrUnknownSubspace(_ string, space string) error {
-	return fmt.Errorf("unknown subspace %s", space)
-}
-
-// ErrSettingParameter returns an error for failing to set a parameter.
-func ErrSettingParameter(_ string, key, subkey, value, msg string) error {
-	return fmt.Errorf("error setting parameter %s on %s (%s): %s", value, key, subkey, msg)
-}
-
 // ErrEmptyChanges returns an error for empty parameter changes.
 func ErrEmptyChanges(_ string) error {
 	return fmt.Errorf("submitted parameter changes are empty")
@@ -159,7 +124,7 @@ func ErrEmptySubspace(_ string) error {
 }
 
 // ErrEmptyKey returns an error for when an empty key is given.
-func ErrEmptyKey(codespace string) error {
+func ErrEmptyKey(_ string) error {
 	return fmt.Errorf("parameter key is empty")
 }
 

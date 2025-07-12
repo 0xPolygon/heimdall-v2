@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -31,7 +31,7 @@ func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) sidetxs.Vote
 func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote sidetxs.Vote) {
 	cfg := s.sideMsgCfg
 
-	cfg.GetPostHandler(msg)(ctx, msg, vote)
+	_ = cfg.GetPostHandler(msg)(ctx, msg, vote)
 }
 
 func (s *KeeperTestSuite) TestSideHandler() {
@@ -249,7 +249,7 @@ func (s *KeeperTestSuite) TestPostHandler() {
 		chainId,
 	)
 
-	// Post handler should fail
+	// post-handler should fail
 	postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 }
 
@@ -278,7 +278,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 	)
 
 	t.Run("NoResult", func(t *testing.T) {
-		// Post handler should fail
+		// post-handler should fail
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_NO)
 
 		// there should be no stored event record
@@ -288,7 +288,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 	})
 
 	t.Run("YesResult", func(t *testing.T) {
-		// Post handler should succeed
+		// post-handler should succeed
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 
 		// sequence id
@@ -296,7 +296,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 		sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-		// check sequence
+		// check the sequence
 		hasSequence := ck.HasRecordSequence(ctx, sequence.String())
 		require.True(t, hasSequence, "Sequence should be stored correctly")
 
@@ -324,10 +324,10 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 			chainId,
 		)
 
-		// Post handler should succeed
+		// post-handler should succeed
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 
-		// Post handler should prevent replay attack
+		// post-handler should prevent replay attack
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 	})
 }

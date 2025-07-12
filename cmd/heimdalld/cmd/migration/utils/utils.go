@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
 	"cosmossdk.io/math"
-	"github.com/cosmos/cosmos-sdk/codec"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -45,15 +45,22 @@ func LoadJSONFromFile(filename string) (map[string]interface{}, error) {
 	return data, nil
 }
 
-// SaveJSONToFile writes data map to a file in JSON format.
+// SaveJSONToFile writes the data map to a file in JSON format.
 func SaveJSONToFile(data map[string]interface{}, filename string) error {
-	fileContent, err := json.MarshalIndent(data, "", "  ")
+	file, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("failed to marshal JSON: %w", err)
+		return fmt.Errorf("failed to create file: %w", err)
 	}
-	// #nosec G306 -- write file with 0644 permission
-	if err := os.WriteFile(filename, fileContent, 0o644); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			fmt.Printf("failed to close file: %v", err)
+		}
+	}(file)
+
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(data); err != nil {
+		return fmt.Errorf("failed to encode JSON to file: %w", err)
 	}
 
 	return nil
@@ -121,7 +128,7 @@ func traversePath(data map[string]interface{}, path string) (map[string]interfac
 }
 
 // MigrateValidators migrates multiple validators to the new format.
-func MigrateValidators(appCodec codec.Codec, validatorsInterface interface{}) error {
+func MigrateValidators(validatorsInterface interface{}) error {
 	validators, ok := validatorsInterface.([]interface{})
 	if !ok {
 		return fmt.Errorf("failed to cast validators")
@@ -132,7 +139,7 @@ func MigrateValidators(appCodec codec.Codec, validatorsInterface interface{}) er
 			return fmt.Errorf("failed to cast validator data at index %d", i)
 		}
 
-		if err := MigrateValidator(appCodec, validatorMap); err != nil {
+		if err := MigrateValidator(validatorMap); err != nil {
 			return fmt.Errorf("failed to migrate validator at index %d: %w", i, err)
 		}
 	}
@@ -140,7 +147,7 @@ func MigrateValidators(appCodec codec.Codec, validatorsInterface interface{}) er
 }
 
 // MigrateValidator migrates a single validator to the new format by renaming few fields and migrating the public key to proto encoding.
-func MigrateValidator(appCodec codec.Codec, validator map[string]interface{}) error {
+func MigrateValidator(validator map[string]interface{}) error {
 	if err := RenameProperty(validator, ".", "power", "voting_power"); err != nil {
 		return fmt.Errorf("failed to rename power field: %w", err)
 	}
@@ -168,7 +175,7 @@ func MigrateValidator(appCodec codec.Codec, validator map[string]interface{}) er
 	return nil
 }
 
-// MigrateGovProposalContent returns the proposal into new format with proto encoding.
+// MigrateGovProposalContent returns the proposal into the new format with proto encoding.
 func MigrateGovProposalContent(oldContent v036gov.Content) *codecTypes.Any {
 	authority := authTypes.NewModuleAddress(v036gov.ModuleName).String()
 
@@ -367,4 +374,37 @@ func migratePubKey(pubKeyStr string) (string, error) {
 		return "", fmt.Errorf("failed to decode hex public key: %w", err)
 	}
 	return base64.StdEncoding.EncodeToString(pubKeyBytes), nil
+}
+
+// SortByTimestamp sorts the items by their timestamp field.
+// The timestamp is expected to be in string format.
+// The function modifies the original slice.
+func SortByTimestamp(items []interface{}) {
+	sort.Slice(items, func(i, j int) bool {
+		itemI := items[i].(map[string]interface{})
+		itemJ := items[j].(map[string]interface{})
+		timestampI, _ := strconv.Atoi(itemI["timestamp"].(string))
+		timestampJ, _ := strconv.Atoi(itemJ["timestamp"].(string))
+		return timestampI < timestampJ
+	})
+}
+
+// SortByStartBlock sorts the items by their start_block field.
+// The start_block is expected to be in string format.
+// The function modifies the original slice.
+func SortByStartBlock(items []interface{}) {
+	sort.Slice(items, func(i, j int) bool {
+		vi := items[i].(map[string]interface{})["start_block"].(string)
+		vj := items[j].(map[string]interface{})["start_block"].(string)
+
+		viInt, err := strconv.ParseUint(vi, 10, 64)
+		if err != nil {
+			panic(fmt.Sprintf("invalid start_block at index %d: %v", i, err))
+		}
+		vjInt, err := strconv.ParseUint(vj, 10, 64)
+		if err != nil {
+			panic(fmt.Sprintf("invalid start_block at index %d: %v", j, err))
+		}
+		return viInt < vjInt
+	})
 }

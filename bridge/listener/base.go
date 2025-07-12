@@ -21,7 +21,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-// Listener defines a block header listener for Rootchain, Borchain, Heimdall
+// Listener defines a block header listener for RootChain, BorChain, Heimdall
 type Listener interface {
 	Start() error
 
@@ -64,7 +64,7 @@ type BaseListener struct {
 	cliCtx client.Context
 
 	// queue connector
-	queueConnector *queue.QueueConnector
+	queueConnector *queue.Connector
 
 	// http client to subscribe to
 	httpClient *rpchttp.HTTP
@@ -79,7 +79,7 @@ type blockHeader struct {
 }
 
 // NewBaseListener creates a new BaseListener.
-func NewBaseListener(cdc codec.Codec, queueConnector *queue.QueueConnector, httpClient *rpchttp.HTTP, chainClient *ethclient.Client, name string, impl Listener) *BaseListener {
+func NewBaseListener(cdc codec.Codec, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, chainClient *ethclient.Client, name string, impl Listener) *BaseListener {
 	logger := util.Logger().With("service", "listener", "module", name)
 
 	contractCaller, err := helper.NewContractCaller()
@@ -98,7 +98,7 @@ func NewBaseListener(cdc codec.Codec, queueConnector *queue.QueueConnector, http
 	}
 	cliCtx = cliCtx.WithClient(rpc)
 
-	// creating syncer object
+	// creating the syncer object
 	return &BaseListener{
 		Logger:        logger,
 		name:          name,
@@ -121,7 +121,7 @@ func (bl *BaseListener) String() string {
 	return bl.name
 }
 
-// StartHeaderProcess starts header process when they get new header
+// StartHeaderProcess starts the header process when they get a new header
 func (bl *BaseListener) StartHeaderProcess(ctx context.Context) {
 	bl.Logger.Info("Starting header process")
 
@@ -157,12 +157,12 @@ func (bl *BaseListener) StartPolling(ctx context.Context, pollInterval time.Dura
 					// finalized was requested
 					bHeader = &blockHeader{header: header, isFinalized: true}
 				} else {
-					// latest was requested
+					// the latest was requested
 					bHeader = &blockHeader{header: header, isFinalized: false}
 				}
 			}
 
-			// if error occurred and finalized was requested, fall back to latest block
+			// if an error occurred and finalized was requested, fall back to the latest block
 			if err != nil && number != nil {
 				header, err = bl.chainClient.HeaderByNumber(ctx, nil)
 				if err == nil && header != nil {
@@ -216,7 +216,7 @@ func (bl *BaseListener) Stop() {
 		bl.cancelSubscription()
 	}
 
-	// cancel header process
+	// cancel the header process
 	if bl.cancelHeaderProcess != nil {
 		bl.cancelHeaderProcess()
 	}

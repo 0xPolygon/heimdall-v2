@@ -1,7 +1,5 @@
 #!/bin/sh
 
-# TODO-HV2: test this script once app is ready (is this needed at all?)
-
 set -e
 
 PKG="heimdall"

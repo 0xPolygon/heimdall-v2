@@ -38,7 +38,7 @@ func TestPermCheck(t *testing.T) {
 	}
 
 	for i, c := range tc {
-		// get path to UAT secrets file
+		// get the path to the UAT secrets file
 		caseMsg := fmt.Sprintf("for i: %v, case: %v", i, c.msg)
 		// set files for perm
 
@@ -47,7 +47,7 @@ func TestPermCheck(t *testing.T) {
 		_, err = os.OpenFile(c.filePath, os.O_CREATE, c.perm) // os.OpenFile creates the file if it is missing
 		assert.Nil(t, err, caseMsg)
 
-		// check file perm for secret file
+		// check file perm for the secret file
 		err = PermCheck(c.filePath, c.validPerm)
 		assert.Equal(t, c.expErr, err)
 

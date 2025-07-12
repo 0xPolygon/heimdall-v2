@@ -15,16 +15,23 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// StakeUpdate represents the StakeUpdate event
+// stakeUpdate represents the StakeUpdate event.
 type stakeUpdate struct {
 	Nonce           string `json:"nonce"`
-	TransactionHash string `json:"transactionHash"`
 	LogIndex        string `json:"logIndex"`
+	TransactionHash string `json:"transactionHash"`
 }
 
-// StateSync represents the StateSync event
-type stateSync struct {
-	StateID         string `json:"stateId"`
+// stateSynced represents the StateSynced event.
+type stateSynced struct {
+	StateId         string `json:"stateId"`
+	LogIndex        string `json:"logIndex"`
+	TransactionHash string `json:"transactionHash"`
+}
+
+// newHeaderBlock represents the NewHeaderBlock event.
+type newHeaderBlock struct {
+	HeaderBlockId   string `json:"headerBlockId"`
 	LogIndex        string `json:"logIndex"`
 	TransactionHash string `json:"transactionHash"`
 }
@@ -35,9 +42,15 @@ type stakeUpdateResponse struct {
 	} `json:"data"`
 }
 
-type stateSyncResponse struct {
+type stateSyncedsResponse struct {
 	Data struct {
-		StateSyncs []stateSync `json:"stateSyncs"`
+		StateSynceds []stateSynced `json:"stateSynceds"`
+	} `json:"data"`
+}
+
+type newHeaderBlocksResponse struct {
+	Data struct {
+		NewHeaderBlocks []newHeaderBlock `json:"newHeaderBlocks"`
 	} `json:"data"`
 }
 
@@ -62,12 +75,12 @@ func (rl *RootChainListener) querySubGraph(query []byte, ctx context.Context) (d
 	return io.ReadAll(response.Body)
 }
 
-// getLatestStateID returns state ID from the latest StateSynced event
+// getLatestStateID returns the state ID from the latest StateSynced event
 func (rl *RootChainListener) getLatestStateID(ctx context.Context) (*big.Int, error) {
 	query := map[string]string{
 		"query": `
 		{
-			stateSyncs(first : 1, orderBy : stateId, orderDirection : desc) {
+			stateSynceds(first : 1, orderBy : stateId, orderDirection : desc) {
 				stateId
 			}
 		}
@@ -84,30 +97,31 @@ func (rl *RootChainListener) getLatestStateID(ctx context.Context) (*big.Int, er
 		return nil, fmt.Errorf("unable to fetch latest state id from graph with err: %w", err)
 	}
 
-	var response stateSyncResponse
+	var response stateSyncedsResponse
 	if err = json.Unmarshal(data, &response); err != nil {
 		return nil, fmt.Errorf("unable to unmarshal graph response: %w", err)
 	}
 
-	if len(response.Data.StateSyncs) == 0 {
+	if len(response.Data.StateSynceds) == 0 {
 		return big.NewInt(0), nil
 	}
 
-	stateID := big.NewInt(0)
-	stateID.SetString(response.Data.StateSyncs[0].StateID, 10)
+	stateId := big.NewInt(0)
+	stateId.SetString(response.Data.StateSynceds[0].StateId, 10)
+	rl.Logger.Info("Fetched latest stateId from subgraph", "stateId", stateId)
 
-	return stateID, nil
+	return stateId, nil
 }
 
 // getCurrentStateID returns the current state ID handled by the polygon chain
 func (rl *RootChainListener) getCurrentStateID(ctx context.Context) (*big.Int, error) {
-	rootchainContext, err := rl.getRootChainContext()
+	rootChainContext, err := rl.getRootChainContext()
 	if err != nil {
 		return nil, err
 	}
 
 	stateReceiverInstance, err := rl.contractCaller.GetStateReceiverInstance(
-		rootchainContext.ChainmanagerParams.ChainParams.StateReceiverAddress,
+		rootChainContext.ChainmanagerParams.ChainParams.StateReceiverAddress,
 	)
 	if err != nil {
 		return nil, err
@@ -121,12 +135,12 @@ func (rl *RootChainListener) getCurrentStateID(ctx context.Context) (*big.Int, e
 	return stateId, nil
 }
 
-// getStateSync returns the StateSynced event based on the given state ID
-func (rl *RootChainListener) getStateSync(ctx context.Context, stateId int64) (*types.Log, error) {
+// getStateSynced returns the StateSynced event based on the given state ID
+func (rl *RootChainListener) getStateSynced(ctx context.Context, stateId int64) (*types.Log, error) {
 	query := map[string]string{
 		"query": `
 		{
-			stateSyncs(where: {stateId: ` + strconv.Itoa(int(stateId)) + `}) {
+			stateSynceds(where: {stateId: ` + strconv.Itoa(int(stateId)) + `}) {
 				logIndex
 				transactionHash
 			}
@@ -141,30 +155,31 @@ func (rl *RootChainListener) getStateSync(ctx context.Context, stateId int64) (*
 
 	data, err := rl.querySubGraph(byteQuery, ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch latest state id from graph with err: %w", err)
+		return nil, fmt.Errorf("unable to fetch latest stateId from graph with err: %w", err)
 	}
 
-	var response stateSyncResponse
+	var response stateSyncedsResponse
 	if err = json.Unmarshal(data, &response); err != nil {
 		return nil, fmt.Errorf("unable to unmarshal graph response: %w", err)
 	}
 
-	if len(response.Data.StateSyncs) == 0 {
-		return nil, fmt.Errorf("no state sync found for state id %d", stateId)
+	if len(response.Data.StateSynceds) == 0 {
+		return nil, fmt.Errorf("no state synced event found for state id %d", stateId)
 	}
 
-	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(response.Data.StateSyncs[0].TransactionHash))
+	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(response.Data.StateSynceds[0].TransactionHash))
 	if err != nil {
 		return nil, err
 	}
 
 	for _, log := range receipt.Logs {
-		if strconv.Itoa(int(log.Index)) == response.Data.StateSyncs[0].LogIndex {
+		if strconv.Itoa(int(log.Index)) == response.Data.StateSynceds[0].LogIndex {
+			rl.Logger.Info("Retrieved log for StateSynced event", "stateId", stateId, "logIndex", response.Data.StateSynceds[0].LogIndex, "txHash", response.Data.StateSynceds[0].TransactionHash)
 			return log, nil
 		}
 	}
 
-	return nil, fmt.Errorf("no log found for given log index %s and state id %d", response.Data.StateSyncs[0].LogIndex, stateId)
+	return nil, fmt.Errorf("no log found for given log index %s and state id %d", response.Data.StateSynceds[0].LogIndex, stateId)
 }
 
 // getLatestNonce returns the nonce from the latest StakeUpdate event
@@ -202,6 +217,7 @@ func (rl *RootChainListener) getLatestNonce(ctx context.Context, validatorId uin
 	if err != nil {
 		return 0, err
 	}
+	rl.Logger.Info("Fetched latest nonce from subgraph", "validatorId", validatorId, "latestNonce", uint64(latestValidatorNonce))
 
 	return uint64(latestValidatorNonce), nil
 }
@@ -245,9 +261,50 @@ func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorId, no
 
 	for _, log := range receipt.Logs {
 		if strconv.Itoa(int(log.Index)) == response.Data.StakeUpdates[0].LogIndex {
+			rl.Logger.Info("Retrieved StakeUpdate log from Ethereum", "validatorId", validatorId, "nonce", nonce, "txHash", log.TxHash.Hex())
 			return log, nil
 		}
 	}
 
 	return nil, fmt.Errorf("no log found for given log index %s ,validator %d and nonce %d", response.Data.StakeUpdates[0].LogIndex, validatorId, nonce)
+}
+
+// getLatestCheckpointFromL1 returns the latest checkpoint from L1 using subgraph
+func (rl *RootChainListener) getLatestCheckpointFromL1(ctx context.Context) (*newHeaderBlock, error) {
+	query := map[string]string{
+		"query": `
+		{
+			newHeaderBlocks(first: 1, orderBy: headerBlockId, orderDirection: desc) {
+				headerBlockId
+				logIndex
+				transactionHash
+			}
+		}
+		`,
+	}
+
+	byteQuery, err := json.Marshal(query)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := rl.querySubGraph(byteQuery, ctx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch latest header block event from subgraph with err: %w", err)
+	}
+
+	var response newHeaderBlocksResponse
+	if err = json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal subgraph response: %w", err)
+	}
+
+	if len(response.Data.NewHeaderBlocks) == 0 {
+		return nil, fmt.Errorf("no header block event found")
+	}
+
+	latestHeaderBlock := response.Data.NewHeaderBlocks[0]
+
+	rl.Logger.Info("Fetched latest header block event from subgraph", "headerBlockId", latestHeaderBlock.HeaderBlockId, "logIndex", latestHeaderBlock.LogIndex, "transactionHash", latestHeaderBlock.TransactionHash)
+
+	return &latestHeaderBlock, nil
 }

@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/0xPolygon/heimdall-v2/common/hex"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
@@ -21,7 +22,7 @@ type queryServer struct {
 }
 
 // NewQueryServer creates a new querier for topup clients.
-// It uses the underlying keeper and its contractCaller to interact with Ethereum chain.
+// It uses the underlying keeper and its contractCaller to interact with the Ethereum chain.
 func NewQueryServer(k *Keeper) types.QueryServer {
 	return queryServer{
 		k: k,
@@ -32,6 +33,10 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTopupSequenceRequest) (*types.QueryTopupSequenceResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	if !hex.IsTxHashNonEmpty(req.TxHash) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid tx hash")
 	}
 
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
@@ -72,6 +77,10 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
+	if !hex.IsTxHashNonEmpty(req.TxHash) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid tx hash")
+	}
+
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -103,6 +112,10 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types.QueryDividendAccountRequest) (*types.QueryDividendAccountResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	if !common.IsHexAddress(req.Address) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid address")
 	}
 
 	exists, err := q.k.HasDividendAccount(ctx, req.Address)
@@ -145,6 +158,14 @@ func (q queryServer) VerifyAccountProofByAddress(ctx context.Context, req *types
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
+	if !common.IsHexAddress(req.Address) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid address")
+	}
+
+	if err := hex.ValidateProof(req.Proof); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid proof: %s", err.Error())
+	}
+
 	dividendAccounts, err := q.k.GetAllDividendAccounts(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -165,7 +186,11 @@ func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.Qu
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	// Fetch the AccountRoot from RootChainContract, then the AccountRoot from current account
+	if !common.IsHexAddress(req.Address) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid address")
+	}
+
+	// Fetch the AccountRoot from RootChainContract, then the AccountRoot from the current account
 	// Finally, if they are equal, calculate the merkle path using GetAllDividendAccounts
 
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)

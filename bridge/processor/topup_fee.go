@@ -15,13 +15,13 @@ import (
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-// FeeProcessor - process fee related events
+// FeeProcessor processes the fee-related events
 type FeeProcessor struct {
 	BaseProcessor
 	stakingInfoAbi *abi.ABI
 }
 
-// NewFeeProcessor - add  abi to clerk processor
+// NewFeeProcessor adds the abi to the clerk processor
 func NewFeeProcessor(stakingInfoAbi *abi.ABI) *FeeProcessor {
 	return &FeeProcessor{
 		stakingInfoAbi: stakingInfoAbi,
@@ -34,7 +34,7 @@ func (fp *FeeProcessor) Start() error {
 	return nil
 }
 
-// RegisterTasks - Registers clerk related tasks with machinery
+// RegisterTasks registers the clerk-related tasks with machinery
 func (fp *FeeProcessor) RegisterTasks() {
 	fp.Logger.Info("Registering fee related tasks")
 
@@ -43,11 +43,11 @@ func (fp *FeeProcessor) RegisterTasks() {
 	}
 }
 
-// processTopupFeeEvent - processes topup fee event
+// sendTopUpFeeToHeimdall - processes top up fee event
 func (fp *FeeProcessor) sendTopUpFeeToHeimdall(eventName string, logBytes string) error {
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
-		fp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
+		fp.Logger.Error("Error while unmarshalling event from rootChain", "error", err)
 		return err
 	}
 
@@ -56,7 +56,7 @@ func (fp *FeeProcessor) sendTopUpFeeToHeimdall(eventName string, logBytes string
 		fp.Logger.Error("Error while parsing event", "name", eventName, "error", err)
 	} else {
 		if isOld, _ := fp.isOldTx(fp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.TopupEvent, event); isOld {
-			fp.Logger.Info("Ignoring task to send topup to heimdall as already processed",
+			fp.Logger.Info("Ignoring task to send top up to heimdall as already processed",
 				"event", eventName,
 				"user", event.User,
 				"Fee", event.Fee,
@@ -67,7 +67,7 @@ func (fp *FeeProcessor) sendTopUpFeeToHeimdall(eventName string, logBytes string
 			return nil
 		}
 
-		fp.Logger.Info("✅ sending topup to heimdall",
+		fp.Logger.Info("✅ sending top up to heimdall",
 			"event", eventName,
 			"user", event.User,
 			"Fee", event.Fee,
@@ -82,13 +82,13 @@ func (fp *FeeProcessor) sendTopUpFeeToHeimdall(eventName string, logBytes string
 		// return broadcast to heimdall
 		txRes, err := fp.txBroadcaster.BroadcastToHeimdall(msg, event)
 		if err != nil {
-			fp.Logger.Error("Error while broadcasting TopupFee msg to heimdall", "msg", msg, "error", err)
+			fp.Logger.Error("Error while broadcasting TopUpFee msg to heimdall", "msg", msg, "error", err)
 			return err
 		}
 
 		if txRes.Code != abci.CodeTypeOK {
-			fp.Logger.Error("topup tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
-			return fmt.Errorf("topup tx failed, tx response code: %v", txRes.Code)
+			fp.Logger.Error("topUp tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+			return fmt.Errorf("topUp tx failed, tx response code: %v", txRes.Code)
 		}
 
 	}

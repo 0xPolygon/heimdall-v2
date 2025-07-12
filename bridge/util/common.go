@@ -17,7 +17,6 @@ import (
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/pkg/errors"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -35,51 +34,39 @@ const (
 	AccountParamsURL        = "/cosmos/auth/v1beta1/params"
 	LastNoAckURL            = "/checkpoints/last-no-ack"
 	CheckpointParamsURL     = "/checkpoints/params"
-	CheckpointSignaturesURL = "/checkpoint/signatures/%v"
-	MilestoneCountURL       = "/milestone/count"
+	CheckpointSignaturesURL = "/checkpoints/signatures/%v"
 	ChainManagerParamsURL   = "/chainmanager/params"
 	ProposersURL            = "/stake/proposers/%v"
-	MilestoneProposersURL   = "/milestone/proposer/%v"
 	BufferedCheckpointURL   = "/checkpoints/buffer"
 	LatestCheckpointURL     = "/checkpoints/latest"
-	LatestMilestoneURL      = "/milestone/latest"
 	CountCheckpointURL      = "/checkpoints/count"
-	CurrentProposerURL      = "/checkpoint/proposers/current"
-	LatestSpanURL           = "/bor/span/latest"
-	NextSpanInfoURL         = "/bor/span/prepare"
-	NextSpanSeedURL         = "/bor/span/seed/%v"
+	CurrentProposerURL      = "/stake/proposers/current"
+	LatestSpanURL           = "/bor/spans/latest"
+	SpanByIdURL             = "/bor/spans/%v"
+	NextSpanInfoURL         = "/bor/spans/prepare"
+	NextSpanSeedURL         = "/bor/spans/seed/%v"
+	ProducerVotesURL        = "/bor/producer-votes/%v"
 	DividendAccountRootURL  = "/topup/dividend-account-root"
 	ValidatorURL            = "/stake/validator/%v"
-	CurrentValidatorSetURL  = "/stake/validator-set"
+	CurrentValidatorSetURL  = "/stake/validators-set"
 	StakingTxStatusURL      = "/stake/is-old-tx"
-	TopupTxStatusURL        = "/topup/isoldtx"
-	ClerkTxStatusURL        = "/clerk/isoldtx"
-	ClerkEventRecordURL     = "/clerk/event-record/%d"
-	/* HV2 - not adding slashing
-	LatestSlashInfoBytesURL = "/slashing/latest_slash_info_bytes"
-	TickSlashInfoListURL    = "/slashing/tick_slash_infos"
-	SlashingTxStatusURL     = "/slashing/isoldtx"
-	SlashingTickCountURL    = "/slashing/tick-count"
-	*/
+	TopupTxStatusURL        = "/topup/is-old-tx"
+	ClerkTxStatusURL        = "/clerk/is-old-tx"
+	ClerkEventRecordURL     = "/clerk/event-records/%d"
+	LatestMilestoneURL      = "/milestones/latest"
 
 	CometBFTUnconfirmedTxsURL      = "/unconfirmed_txs"
 	CometBFTUnconfirmedTxsCountURL = "/num_unconfirmed_txs"
 
-	TransactionTimeout      = 1 * time.Minute
-	CommitTimeout           = 2 * time.Minute
 	TaskDelayBetweenEachVal = 10 * time.Second
 	RetryTaskDelay          = 12 * time.Second
 	RetryStateSyncTaskDelay = 24 * time.Second
 
 	mempoolTxnCountDivisor = 1000
 
-	// Bridge event types
 	StakingEvent BridgeEvent = "staking"
 	TopupEvent   BridgeEvent = "topup"
 	ClerkEvent   BridgeEvent = "clerk"
-	/* HV2 - not adding slashing
-	SlashingEvent BridgeEvent = "slashing"
-	*/
 
 	BridgeDBFlag = "bridge-db"
 )
@@ -89,7 +76,7 @@ func Logger() log.Logger {
 	return helper.Logger.With("module", "bridge")
 }
 
-// IsProposer checks if we are proposer
+// IsProposer checks if the current is the proposer
 func IsProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 	var (
@@ -121,42 +108,6 @@ func IsProposer(cdc codec.Codec) (bool, error) {
 	return false, nil
 }
 
-// IsMilestoneProposer checks if we are the milestone proposer
-func IsMilestoneProposer(cdc codec.Codec) (bool, error) {
-	logger := Logger()
-
-	count := uint64(1)
-
-	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))))
-	if err != nil {
-		logger.Error("Error fetching milestone proposers", "url", MilestoneProposersURL, "error", err)
-		return false, err
-	}
-
-	var response milestoneTypes.QueryMilestoneProposerResponse
-	if err := cdc.UnmarshalJSON(result, &response); err != nil {
-		logger.Error("error unmarshalling milestone proposer slice", "error", err)
-		return false, err
-	}
-
-	if len(response.Proposers) == 0 {
-		logger.Error("length of proposer list is 0")
-		return false, errors.Errorf("Length of proposer list is 0")
-	}
-
-	ac := addressCodec.NewHexCodec()
-	signerBytes, err := ac.StringToBytes(response.Proposers[0].Signer)
-	if err != nil {
-		logger.Error("Error converting signer string to bytes", "error", err)
-		return false, err
-	}
-	if bytes.Equal(signerBytes, helper.GetAddress()) {
-		return true, nil
-	}
-
-	return false, nil
-}
-
 // IsInProposerList checks if we are in the current proposers list
 func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	logger := Logger()
@@ -170,7 +121,7 @@ func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	}
 
 	// unmarshall data from buffer
-	var proposers checkpointTypes.QueryProposerResponse
+	var proposers staketypes.QueryProposersResponse
 	if err := cdc.UnmarshalJSON(response, &proposers); err != nil {
 		logger.Error("Error unmarshalling validator data ", "error", err)
 		return false, err
@@ -194,44 +145,8 @@ func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	return false, nil
 }
 
-// IsInMilestoneProposerList checks if we are in the current milestone proposers list
-func IsInMilestoneProposerList(count uint64, cdc codec.Codec) (bool, error) {
-	logger := Logger()
-
-	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count, 10))
-
-	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))))
-	if err != nil {
-		logger.Error("Unable to send request for next proposers", "url", MilestoneProposersURL, "error", err)
-		return false, err
-	}
-
-	var milestoneProposers milestoneTypes.QueryMilestoneProposerResponse
-	if err := cdc.UnmarshalJSON(response, &milestoneProposers); err != nil {
-		logger.Error("Error unmarshalling validator data ", "error", err)
-		return false, err
-	}
-
-	logger.Debug("Fetched proposers list", "numberOfProposers", count)
-
-	ac := addressCodec.NewHexCodec()
-
-	for _, proposer := range milestoneProposers.Proposers {
-		signerBytes, err := ac.StringToBytes(proposer.Signer)
-		if err != nil {
-			logger.Error("Error converting signer string to bytes", "error", err)
-			return false, err
-		}
-		if bytes.Equal(signerBytes, helper.GetAddress()) {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
-// CalculateTaskDelay calculates delay required for current validator to propose the tx
-// It solves for multiple validators sending same transaction.
+// CalculateTaskDelay calculates delay required for the current validator to propose the tx
+// It solves for multiple validators sending the same transaction.
 func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration) {
 	logger := Logger()
 
@@ -243,7 +158,7 @@ func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration
 
 	validatorSet, err := GetValidatorSet(cdc)
 	if err != nil {
-		logger.Error("Error getting current validatorset data ", "error", err)
+		logger.Error("Error getting current validatorSet data ", "error", err)
 		return false, 0
 	}
 
@@ -264,13 +179,12 @@ func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration
 		}
 	}
 
-	// Change calculation later as per the discussion
-	// Currently it will multiply delay for every 1000 unconfirmed txns in mempool
-	// For example if the current default delay is 12 Seconds
-	// Then for upto 1000 txns it will stay as 12 only
-	// For 1000-2000 It will be 24 seconds
-	// For 2000-3000 it will be 36 seconds
-	// Basically for every 1000 txns it will increase the factor by 1.
+	// Multiply the delay for every 1000 unconfirmed txs in the mempool.
+	// For example, if the current default delay is 12 seconds,
+	// then for up to 1000 txs it will stay as 12 only.
+	// For 1000-2000 It will be 24 seconds.
+	// For 2000-3000 it will be 36 seconds.
+	// Basically, for every 1000 txs it will increase the factor by 1.
 
 	mempoolFactor := GetUnconfirmedTxnCount(event) / mempoolTxnCountDivisor
 
@@ -280,11 +194,11 @@ func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration
 	return isCurrentValidator, taskDelay
 }
 
-// IsCurrentProposer checks if we are current proposer
+// IsCurrentProposer checks if we are the current proposer
 func IsCurrentProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
-	var response checkpointTypes.QueryCurrentProposerResponse
+	var response staketypes.QueryCurrentProposerResponse
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CurrentProposerURL))
 	if err != nil {
@@ -450,6 +364,25 @@ func GetCheckpointParams(cdc codec.Codec) (*checkpointTypes.Params, error) {
 	return &params.Params, nil
 }
 
+// GetCheckpointAckCount return checkpoint ack count
+func GetCheckpointAckCount(cdc codec.Codec) (uint64, error) {
+	logger := Logger()
+
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CountCheckpointURL))
+	if err != nil {
+		logger.Error("Error fetching checkpoint ack count", "err", err)
+		return 0, err
+	}
+
+	var ackCount checkpointTypes.QueryAckCountResponse
+	if err := cdc.UnmarshalJSON(response, &ackCount); err != nil {
+		logger.Error("Error unmarshalling checkpoint ack count", "url", CountCheckpointURL, "err", err)
+		return 0, err
+	}
+
+	return ackCount.AckCount, nil
+}
+
 // GetBufferedCheckpoint return checkpoint from buffer
 func GetBufferedCheckpoint(cdc codec.Codec) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
@@ -488,48 +421,10 @@ func GetLatestCheckpoint(cdc codec.Codec) (*checkpointTypes.Checkpoint, error) {
 	return &checkpoint.Checkpoint, nil
 }
 
-// GetLatestMilestone return last successful milestone
-func GetLatestMilestone(cdc codec.Codec) (*milestoneTypes.Milestone, error) {
-	logger := Logger()
-
-	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestMilestoneURL))
-	if err != nil {
-		logger.Debug("Error fetching latest milestone", "err", err)
-		return nil, err
-	}
-
-	var milestoneResp milestoneTypes.QueryLatestMilestoneResponse
-	if err = cdc.UnmarshalJSON(response, &milestoneResp); err != nil {
-		logger.Error("Error unmarshalling latest milestone", "url", LatestMilestoneURL, "err", err)
-		return nil, err
-	}
-
-	return &milestoneResp.Milestone, nil
-}
-
-// GetMilestoneCount return milestones count
-func GetMilestoneCount(cdc codec.Codec) (uint64, error) {
-	logger := Logger()
-
-	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(MilestoneCountURL))
-	if err != nil {
-		logger.Error("Error fetching Milestone count", "err", err)
-		return 0, err
-	}
-
-	var count milestoneTypes.QueryCountResponse
-	if err := cdc.UnmarshalJSON(response, &count); err != nil {
-		logger.Error("Error unmarshalling milestone Count", "url", MilestoneCountURL)
-		return 0, err
-	}
-
-	return count.Count, nil
-}
-
 // AppendPrefix returns PublicKey in uncompressed format
 func AppendPrefix(signerPubKey []byte) []byte {
-	// append prefix - "0x04" as heimdall uses publickey in uncompressed format. Refer below link
-	// https://superuser.com/questions/1465455/what-is-the-size-of-public-key-for-ecdsa-spec256r1
+	// Append the prefix "0x04", because heimdall uses publicKey in an uncompressed format.
+	// See https://superuser.com/questions/1465455/what-is-the-size-of-public-key-for-ecdsa-spec256r1
 	prefix := make([]byte, 1)
 	prefix[0] = byte(0x04)
 	signerPubKey = append(prefix[:], signerPubKey[:]...)
@@ -564,7 +459,7 @@ func GetValidatorSet(cdc codec.Codec) (*staketypes.ValidatorSet, error) {
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CurrentValidatorSetURL))
 	if err != nil {
-		logger.Error("Unable to send request for current validatorset", "url", CurrentValidatorSetURL, "error", err)
+		logger.Error("Unable to send request for current validatorSet", "url", CurrentValidatorSetURL, "error", err)
 		return nil, err
 	}
 
@@ -669,11 +564,21 @@ func LogElapsedTimeForStateSyncedEvent(event interface{}, functionName string, s
 		"timeElapsed", timeElapsed)
 }
 
-// IsPubKeyFirstByteValid checks the validity of the first byte of the public key.
-// It must be 0x04 for uncompressed public keys
-func IsPubKeyFirstByteValid(pubKey []byte) bool {
-	prefix := make([]byte, 1)
-	prefix[0] = byte(0x04)
+// GetLatestMilestone return last successful milestone
+func GetLatestMilestone(cdc codec.Codec) (*milestoneTypes.Milestone, error) {
+	logger := Logger()
 
-	return bytes.Equal(prefix, pubKey[0:1])
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestMilestoneURL))
+	if err != nil {
+		logger.Debug("Error fetching latest milestone", "err", err)
+		return nil, err
+	}
+
+	var milestone milestoneTypes.QueryLatestMilestoneResponse
+	if err = cdc.UnmarshalJSON(response, &milestone); err != nil {
+		logger.Error("Error unmarshalling latest milestone", "url", LatestMilestoneURL, "err", err)
+		return nil, err
+	}
+
+	return &milestone.Milestone, nil
 }

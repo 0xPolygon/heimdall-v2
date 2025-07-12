@@ -1,4 +1,3 @@
-# TODO-HV2: check this file once we have a proper build
 FROM golang:latest
 
 ARG HEIMDALL_DIR=/var/lib/heimdall
@@ -9,6 +8,11 @@ RUN apt-get update -y && apt-get upgrade -y \
     && mkdir -p $HEIMDALL_DIR
 
 WORKDIR ${HEIMDALL_DIR}
+
+# Copy go.mod and go.sum and download first to leverage Docker's cache
+COPY go.mod go.sum ./
+RUN go mod download
+
 COPY . .
 
 RUN make build && cp build/heimdalld /usr/local/bin/

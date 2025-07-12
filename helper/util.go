@@ -1,25 +1,19 @@
 package helper
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
 	"math/big"
-	"math/bits"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/merkle"
-	"github.com/cometbft/cometbft/crypto/secp256k1"
-	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/input"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -29,7 +23,14 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
-const APIBodyLimit = 128 * 1024 * 1024 // 128 MB
+const (
+	APIBodyLimit              = 128 * 1024 * 1024 // 128 MB
+	mainnetChainID            = "heimdallv2-137"
+	amoyChainID               = "heimdallv2-80002"
+	mainnetInitialBlockHeight = 24404501
+	amoyInitialBlockHeight    = 8788501
+	devnetInitialBlockHeight  = 0
+)
 
 //go:generate mockgen -destination=./mocks/http_client_mock.go -package=mocks . HTTPClient
 type HTTPClient interface {
@@ -55,117 +56,13 @@ func GetFromAddress(cliCtx client.Context) string {
 }
 
 func init() {
-	Client = &http.Client{}
-}
-
-// GetPubObjects returns PubKeySecp256k1 public key
-func GetPubObjects(pubkey crypto.PubKey) secp256k1.PubKey {
-	var pubObject secp256k1.PubKey
-
-	cdc.MustUnmarshalBinaryBare(pubkey.Bytes(), &pubObject)
-
-	return pubObject
-}
-
-// GetMerkleProofList return proof array
-// each proof has one byte for direction: 0x0 for left and 0x1 for right
-func GetMerkleProofList(proof *merkle.Proof) [][]byte {
-	var result [][]byte
-	computeHashFromAunts(proof.Index, proof.Total, proof.LeafHash, proof.Aunts, &result)
-
-	return result
-}
-
-// AppendBytes appends bytes
-func AppendBytes(data ...[]byte) []byte {
-	var result []byte
-	for _, v := range data {
-		result = append(result, v[:]...)
-	}
-
-	return result
-}
-
-// Use the leafHash and innerHashes to get the root merkle hash.
-// If the length of the innerHashes slice isn't exactly correct, the result is nil.
-// Recursive impl.
-func computeHashFromAunts(index int64, total int64, leafHash []byte, innerHashes [][]byte, newInnerHashes *[][]byte) []byte {
-	if index >= total || index < 0 || total <= 0 {
-		return nil
-	}
-
-	switch total {
-	case 1:
-		if len(innerHashes) != 0 {
-			return nil
-		}
-
-		return leafHash
-	default:
-		if len(innerHashes) == 0 {
-			return nil
-		}
-
-		numLeft := getSplitPoint(total)
-		if index < numLeft {
-			leftHash := computeHashFromAunts(index, numLeft, leafHash, innerHashes[:len(innerHashes)-1], newInnerHashes)
-			if leftHash == nil {
-				return nil
-			}
-
-			*newInnerHashes = append(*newInnerHashes, append(rightPrefix, innerHashes[len(innerHashes)-1]...))
-
-			return innerHash(leftHash, innerHashes[len(innerHashes)-1])
-		}
-
-		rightHash := computeHashFromAunts(index-numLeft, total-numLeft, leafHash, innerHashes[:len(innerHashes)-1], newInnerHashes)
-		if rightHash == nil {
-			return nil
-		}
-
-		*newInnerHashes = append(*newInnerHashes, append(leftPrefix, innerHashes[len(innerHashes)-1]...))
-
-		return innerHash(innerHashes[len(innerHashes)-1], rightHash)
+	Client = &http.Client{
+		Timeout: 10 * time.Second,
 	}
 }
 
-//
-// Inner functions
-//
-
-// getSplitPoint returns the largest power of 2 less than length
-func getSplitPoint(length int64) int64 {
-	if length < 1 {
-		panic("Trying to split a tree with size < 1")
-	}
-
-	uLength := uint(length)
-	bitlen := bits.Len(uLength)
-
-	k := 1 << uint(bitlen-1)
-	if k == int(length) {
-		k >>= 1
-	}
-
-	return int64(k)
-}
-
-// TODO: make these have a large predefined capacity
-var (
-	innerPrefix = []byte{1}
-
-	leftPrefix  = []byte{0}
-	rightPrefix = []byte{1}
-)
-
-// returns tmhash(0x01 || left || right)
-func innerHash(left []byte, right []byte) []byte {
-	return tmhash.Sum(append(innerPrefix, append(left, right...)...))
-}
-
-// ToBytes32 is a convenience method for converting a byte slice to a fix
-// sized 32 byte array. This method will truncate the input if it is larger
-// than 32 bytes.
+// ToBytes32 is a convenience method for converting a byte slice to a fixed-sized 32-byte array.
+// This method will truncate the input if it is larger than 32 bytes.
 func ToBytes32(x []byte) [32]byte {
 	var y [32]byte
 
@@ -174,7 +71,7 @@ func ToBytes32(x []byte) [32]byte {
 	return y
 }
 
-// GetPowerFromAmount returns power from amount -- note that this will populate amount object
+// GetPowerFromAmount returns power from amount -- note that this will populate the amount object
 func GetPowerFromAmount(amount *big.Int) (*big.Int, error) {
 	decimals18 := big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil)
 	if amount.Cmp(decimals18) == -1 {
@@ -216,9 +113,9 @@ func UnpackSigAndVotes(payload []byte, abi abi.ABI) (votes []byte, sigs []byte, 
 }
 
 // EventByID looks up an event by the topic id
-func EventByID(abiObject *abi.ABI, sigdata []byte) *abi.Event {
+func EventByID(abiObject *abi.ABI, sigData []byte) *abi.Event {
 	for _, event := range abiObject.Events {
-		if bytes.Equal(event.ID.Bytes(), sigdata) {
+		if bytes.Equal(event.ID.Bytes(), sigData) {
 			return &event
 		}
 	}
@@ -236,7 +133,7 @@ func GetHeimdallServerEndpoint(endpoint string) string {
 	return addr
 }
 
-// FetchFromAPI fetches data from any URL with limited read size
+// FetchFromAPI fetches data from any URL with a limited read size
 func FetchFromAPI(URL string) ([]byte, error) {
 	resp, err := Client.Get(URL)
 	if err != nil {
@@ -268,7 +165,7 @@ func FetchFromAPI(URL string) ([]byte, error) {
 	return nil, fmt.Errorf("error while fetching data from url: %s, status: %d, error: %w", URL, resp.StatusCode, err)
 }
 
-// IsPubKeyFirstByteValid checks the validity of the first byte of the public key.
+// IsPubKeyFirstByteValid checks the validity of the public key's first byte.
 // It must be 0x04 for uncompressed public keys
 func IsPubKeyFirstByteValid(pubKey []byte) bool {
 	prefix := make([]byte, 1)
@@ -280,7 +177,6 @@ func IsPubKeyFirstByteValid(pubKey []byte) bool {
 // BroadcastTx attempts to generate, sign and broadcast a transaction with the
 // given set of messages. It will also simulate gas requirements if necessary.
 // It will return an error upon failure.
-// HV2 - This function is taken from cosmos-sdk, and it now returns TxResponse as well
 func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg) (*sdk.TxResponse, error) {
 	txf, err := txf.Prepare(clientCtx)
 	if err != nil {
@@ -319,28 +215,6 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 
 	if !clientCtx.SkipConfirm {
 		panic("this should not happen as SkipConfirm is set to true")
-		//nolint:govet //ignoring the unreachable code linter error
-		encoder := clientCtx.TxConfig.TxEncoder()
-
-		txBytes, err := encoder(tx.GetTx())
-		if err != nil {
-			return nil, fmt.Errorf("failed to encode transaction: %w", err)
-		}
-
-		if err := clientCtx.PrintRaw(txBytes); err != nil {
-			Logger.Error("error while printing raw tx", "error", err, "txBytes", txBytes)
-		}
-
-		buf := bufio.NewReader(os.Stdin)
-		ok, err := input.GetConfirmation("confirm transaction before signing and broadcasting", buf, os.Stderr)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "error: %v\ncanceled transaction\n", err)
-			return nil, err
-		}
-		if !ok {
-			_, _ = fmt.Fprintln(os.Stderr, "canceled transaction")
-			return nil, errors.New("transaction canceled by user")
-		}
 	}
 
 	cosmosPrivKey := &cosmossecp256k1.PrivKey{Key: GetPrivKey()}
@@ -435,16 +309,13 @@ func SecureRandomInt(minValue, maxLimit int64) (int64, error) {
 	return nBig.Int64(), nil
 }
 
-func GetSignature(signMode signing.SignMode, accSeq uint64) signing.SignatureV2 {
-	cosmosPrivKey := cosmossecp256k1.PrivKey{Key: GetPrivKey()}
-
-	sig := signing.SignatureV2{
-		PubKey: cosmosPrivKey.PubKey(),
-		Data: &signing.SingleSignatureData{
-			SignMode: signMode,
-		},
-		Sequence: accSeq,
+func GetInitialBlockHeight(chainID string) uint64 {
+	switch chainID {
+	case mainnetChainID:
+		return mainnetInitialBlockHeight
+	case amoyChainID:
+		return amoyInitialBlockHeight
+	default:
+		return devnetInitialBlockHeight
 	}
-
-	return sig
 }

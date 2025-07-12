@@ -1,13 +1,13 @@
 package simulation
 
 import (
+	"math"
 	"math/big"
 	"math/rand"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/ethereum/go-ethereum/common/math"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/types"
@@ -45,7 +45,7 @@ func RandomizeGenState(simState *module.SimulationState) {
 
 		sequences[i] = sequenceNumber
 
-		// create dividend account for validator
+		// create the dividend account for validator
 		dividendAccounts[i] = types.DividendAccount{
 			User:      accounts[i].Address.String(),
 			FeeAmount: big.NewInt(0).String(),

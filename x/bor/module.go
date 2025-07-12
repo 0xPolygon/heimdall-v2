@@ -79,16 +79,13 @@ func (am AppModule) RegisterSideMsgServices(sideCfg sidetxs.SideTxConfigurator) 
 // AppModule implements an application module for the bor module.
 type AppModule struct {
 	keeper         keeper.Keeper
-	contractCaller *helper.IContractCaller
+	contractCaller helper.IContractCaller
 }
 
 // GetTxCmd returns the root tx command for the bor module.
 func (am AppModule) GetTxCmd() *cobra.Command {
 	return cli.NewTxCmd()
 }
-
-// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
-func (am AppModule) IsOnePerModuleType() {}
 
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {}
@@ -106,7 +103,7 @@ func NewAppModule(
 ) AppModule {
 	return AppModule{
 		keeper:         keeper,
-		contractCaller: &contractCaller,
+		contractCaller: contractCaller,
 	}
 }
 

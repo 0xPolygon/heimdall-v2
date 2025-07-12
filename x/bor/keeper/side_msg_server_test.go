@@ -14,10 +14,11 @@ import (
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
-	ctx, require, borKeeper, sideMsgServer := s.ctx, s.Require(), s.borKeeper, s.sideMsgServer
+	ctx, require, borKeeper, milestoneKeeper, sideMsgServer := s.ctx, s.Require(), s.borKeeper, s.milestoneKeeper, s.sideMsgServer
 	testChainParams, contractCaller := chainmanagertypes.DefaultParams(), &s.contractCaller
 
 	borParams := types.DefaultParams()
@@ -65,6 +66,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 	val1Addr := common.HexToAddress(vals[0].GetOperator())
 	blockHeader1 := ethTypes.Header{Number: big.NewInt(int64(seedBlock1))}
 	blockHash1 := blockHeader1.Hash()
+	blockHeader2 := ethTypes.Header{Number: big.NewInt(int64(seedBlock1 - 200))}
+	blockHash2 := blockHeader2.Hash()
 
 	for _, span := range spans {
 		err := borKeeper.AddNewSpan(ctx, &span)
@@ -128,19 +131,23 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 				StartBlock: 26657,
 				EndBlock:   30000,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       blockHash1.Bytes(),
+				Seed:       blockHash2.Bytes(),
 				SeedAuthor: val1Addr.Hex(),
 			},
 			lastSeedProducer: &val1Addr,
 			lastSpanId:       3,
-			expSeed:          blockHash1,
+			expSeed:          blockHash2,
 			expVote:          sidetxs.Vote_VOTE_YES,
 			mockFn: func() {
 				contractCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
-				contractCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader1, nil)
+				contractCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader2, nil)
 			},
 		},
 	}
+
+	milestoneKeeper.EXPECT().GetLastMilestone(ctx).Return(&milestoneTypes.Milestone{
+		EndBlock: 1000,
+	}, nil).AnyTimes()
 
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
@@ -151,7 +158,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			res := sideHandler(s.ctx, tc.msg)
 			require.Equal(tc.expVote, res)
 		})
-		// cleanup the contract caller to update the mocked expected calls
+		// clean up the contract caller to update the mocked expected calls
 		s.contractCaller = mocks.IContractCaller{}
 	}
 }
@@ -240,7 +247,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			postHandler := sideMsgServer.PostTxHandler(sdk.MsgTypeURL(&types.MsgProposeSpan{}))
-			postHandler(ctx, tc.msg, tc.vote)
+			_ = postHandler(ctx, tc.msg, tc.vote)
 
 			lastSpan, err := borKeeper.GetLastSpan(ctx)
 			require.NoError(err)

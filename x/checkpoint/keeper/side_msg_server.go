@@ -10,7 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -43,7 +43,7 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler
 	}
 }
 
-// PostTxHandler returns a post handler for "checkpoint" type messages.
+// PostTxHandler returns a post-handler for "checkpoint" type messages.
 func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 	switch methodName {
 	case checkpointTypeUrl:
@@ -192,20 +192,10 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return errors.New("side-tx didn't get yes votes")
 	}
 
-	// fetch last checkpoint from store
+	// fetch the last checkpoint from the store
 	lastCheckpoint, err := srv.GetLastCheckpoint(ctx)
 	if err == nil {
-		// make sure new checkpoint is after tip
-		if lastCheckpoint.EndBlock > msg.StartBlock {
-			logger.Error("checkpoint already exists",
-				"currentTip", lastCheckpoint.EndBlock,
-				"startBlock", msg.StartBlock,
-			)
-
-			return errors.New("checkpoint already exists")
-		}
-
-		// check if new checkpoint's start block start from current tip
+		// check if the new checkpoint's start block starts from the current tip
 		if lastCheckpoint.EndBlock+1 != msg.StartBlock {
 			logger.Error("checkpoint not in continuity",
 				"currentTip", lastCheckpoint.EndBlock,
@@ -213,7 +203,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 
 			return errors.New("checkpoint not in continuity")
 		}
-	} else if err.Error() == types.ErrNoCheckpointFound.Error() && msg.StartBlock != 0 {
+	} else if errors.Is(err, types.ErrNoCheckpointFound) && msg.StartBlock != 0 {
 		logger.Error("first checkpoint to start from block 0", "error", err)
 		return err
 	}
@@ -225,7 +215,12 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	}
 
 	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
-	if err == nil && doExist {
+	if err != nil {
+		logger.Error("error in getting checkpoint from buffer", "error", err)
+		return err
+	}
+
+	if doExist {
 		logger.Debug("checkpoint already exists in buffer")
 
 		// get checkpoint buffer time from params
@@ -302,7 +297,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return errors.New("side-tx didn't get yes votes")
 	}
 
-	// get last checkpoint from buffer
+	// get the last checkpoint from the buffer
 	checkpointObj, err := srv.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		logger.Error("unable to get checkpoint buffer", "error", err)
@@ -315,13 +310,13 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return errors.New("invalid start block")
 	}
 
-	// return err if start and end matches but contract root hash doesn't match
-	if msg.StartBlock == checkpointObj.StartBlock && msg.EndBlock == checkpointObj.EndBlock && !bytes.Equal(msg.RootHash, checkpointObj.RootHash) {
+	// return err if start and end match, but contract root hash doesn't match
+	if msg.EndBlock == checkpointObj.EndBlock && !bytes.Equal(msg.RootHash, checkpointObj.RootHash) {
 		logger.Error("invalid ACK",
 			"startExpected", checkpointObj.StartBlock,
 			"startReceived", msg.StartBlock,
 			"endExpected", checkpointObj.EndBlock,
-			"endReceived", msg.StartBlock,
+			"endReceived", msg.EndBlock,
 			"rootExpected", common.Bytes2Hex(checkpointObj.RootHash),
 			"rootReceived", common.Bytes2Hex(msg.RootHash),
 		)
@@ -329,8 +324,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return errors.New("invalid ACK")
 	}
 
-	// adjust checkpoint data if latest checkpoint is already submitted
-
+	// adjust checkpoint data if the latest checkpoint is already submitted
 	if checkpointObj.EndBlock != msg.EndBlock {
 		logger.Info("adjusting endBlock to one already submitted on chain", "endBlock", checkpointObj.EndBlock, "adjustedEndBlock", msg.EndBlock)
 		checkpointObj.EndBlock = msg.EndBlock

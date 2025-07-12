@@ -1,63 +1,66 @@
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
-
 # Bor module
 
 ## Table of Contents
 
 * [Preliminary terminology](#preliminary-terminology)
 * [Overview](#overview)
-* [How does it work](#how-does-it-work)
+* [How it works](#how-does-it-work)
 	* [How to propose a span](#how-to-propose-a-span)
 * [Query commands](#query-commands)
+	* [CLI Commands](#cli-commands)
+	* [GRPC Endpoints](#grpc-endpoints)
+	* [REST Endpoints](#rest-endpoints)
+
 
 
 ## Preliminary terminology
 
 * A `side-transaction` is a normal heimdall transaction but the data with which the message is composed needs to be voted on by the validators since the data is obscure to the consensus protocol itself, and it has no way of validating the data's correctness.
 * A `sprint` comprises of 16 bor blocks (configured in [bor](https://github.com/maticnetwork/launch/blob/fe86ba6cd16e5c36067a5ae49c0bad62ce8b1c3f/mainnet-v1/sentry/validator/bor/genesis.json#L26C18-L28)).
-* A `span` comprises of 400 sprints in bor (check heimdall's bor [params](https://heimdall-api.polygon.technology/bor/params) endpoint ).
+* A `span` comprises 400 sprints in bor (check heimdall's bor [params](https://heimdall-api.polygon.technology/bor/params) endpoint).
 
 ## Overview
 
-The validators on bor chain produce blocks in sprints and spans. Hence, it is imperative for the protocol to formalise the validators who will be producers in a range of blocks (`span`). The `bor` module in heimdall facilitates this by pseudo-randomly selecting validators who will producing blocks (producers) from the current validator set. The bor chain fetches and persists this information before the next span begins. `bor` module is a crucial component in heimdall since the PoS chain "liveness" depends on it.
+The validators on the bor chain produce blocks in sprints and spans. Hence, it is imperative for the protocol to formalize the validators who will be producers in a range of blocks (`span`). The `bor` module in heimdall facilitates this by pseudo-randomly selecting validators who will producing blocks (producers) from the current validator set. The bor chain fetches and persists this information before the next span begins. `bor` module is a crucial component in heimdall since the PoS chain "liveness" depends on it.
 
-## How does it work
+## How it works
 
 A `Span` is defined by the data structure:
 
 ```protobuf
 message Span {
-	uint64 id = 1;
-	uint64 start_block = 2;
-	uint64 end_block = 3;
+	uint64 id = 1 [ (amino.dont_omitempty) = true ];
+	uint64 start_block = 2 [ (amino.dont_omitempty) = true ];
+	uint64 end_block = 3 [ (amino.dont_omitempty) = true ];
 	heimdallv2.stake.ValidatorSet validator_set = 4
-	[ (gogoproto.nullable) = false ];
+	[ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 	repeated heimdallv2.stake.Validator selected_producers = 5
-	[ (gogoproto.nullable) = false ];
-	string chain_id = 6;
+	[ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+	string bor_chain_id = 6 [ (amino.dont_omitempty) = true ];
 }
 ```
-where ,
+where
 
 * `id` means the id of the span, calculated by monotonically incrementing the id of the previous span.
-* `start_block` corresponds to the block in bor from which the given span would commence.
+* `start_block` corresponds to the block in bor from which the given span would begin.
 * `end_block` corresponds to the block in bor at which the given span would conclude.
 * `validator_set` defines the set of active validators.
 * `selected_producers` are the validators selected to produce blocks in bor from the validator set.
-* `chain_id` corresponds to bor chain ID.
+* `bor_chain_id` corresponds to bor chain ID.
 
 A validator on heimdall can construct a span proposal message:
 
 ```protobuf
 message MsgProposeSpan {
+	option (amino.name) = "heimdallv2/bor/MsgProposeSpan";
 	option (cosmos.msg.v1.signer) = "proposer";
-
 	uint64 span_id = 1;
 	string proposer = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
 	uint64 start_block = 3;
 	uint64 end_block = 4;
 	string chain_id = 5;
 	bytes seed = 6;
+	string seed_author = 7 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
 }
 ```
 
@@ -67,10 +70,9 @@ Finally, if there are 2/3+ `YES` votes, the `PostHandleMsgSpan` persists the pro
 ```go
 // freeze for new span
 err = s.k.FreezeSet(ctx, msg.SpanId, msg.StartBlock, msg.EndBlock, msg.ChainId, common.Hash(msg.Seed))
-if err != nil {
-	s.k.Logger(ctx).Error("Unable to freeze validator set for span", "span id", msg.SpanId, "error", err)
-	return
-
+	if err != nil {
+	logger.Error("unable to freeze validator set for span", "span id", msg.SpanId, "error", err)
+	return err
 }
 ```
 
@@ -78,23 +80,26 @@ if err != nil {
 
 ```go
 // select next producers
-newProducers, err := k.SelectNextProducers(ctx, seed)
+newProducers, err := k.SelectNextProducers(ctx, seed, prevVals)
 if err != nil {
 	return err
 }
 ```
 
-and then initialises and stores the span:
+and then initializes and stores the span:
 
 ```go
+// generate new span
 newSpan := &types.Span{
 	Id:                id,
 	StartBlock:        startBlock,
 	EndBlock:          endBlock,
-	ValidatorSet:      k.sk.GetValidatorSet(ctx),
+	ValidatorSet:      valSet,
 	SelectedProducers: newProducers,
-	ChainId:           borChainID,
+	BorChainId:        borChainID,
 }
+
+logger.Info("Freezing new span", "id", id, "span", newSpan)
 
 return k.AddNewSpan(ctx, newSpan)
 ```
@@ -104,64 +109,102 @@ return k.AddNewSpan(ctx, newSpan)
 A validator can leverage the CLI to propose a span like so :
 
 ```bash
-heimdallcli tx bor next-span --proposer <VALIDATOR ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
+heimdalld tx bor propose-span --proposer <VALIDATOR_ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
 ```
 
 ## Query commands
 
-One can run the following query commands from the bor module :
+One can run the following query commands from the bor module:
 
 * `span` - Query the span corresponding to the given span id.
-* `latest span` - Query the latest span.
-* `params` - Fetch the parameters associated to bor module.
-* `spanlist` - Fetch span list.
+* `span-list` - Fetch span list.
+* `latest-span` - Query the latest span.
 * `next-span-seed` - Query the seed for the next span.
-* `propose-span` - Print the `propose-span` command.
+* `next-span` - Query the next span.
+* `params` - Fetch the parameters associated with the bor module.
 
 ### CLI commands
 
 ```bash
-heimdallcli query bor span --span-id=<SPAN_ID>
+heimdalld query bor span-by-id <SPAN_ID>
 ```
 
 ```bash
-heimdallcli query bor latest-span
+heimdalld query bor span-list
 ```
 
 ```bash
-heimdallcli query bor params
+heimdalld query bor latest-span
 ```
 
 ```bash
-heimdallcli query bor spanlist --page=<PAGE_NUM> --limit=<LIMIT>
+heimdalld query bor next-span-seed [id]
 ```
 
 ```bash
-heimdallcli query bor next-span-seed
+heimdalld query bor next-span
 ```
 
 ```bash
-heimdallcli query bor next-span --proposer <VALIDATOR ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
+heimdalld query bor params
 ```
+
+### GRPC Endpoints
+
+The endpoints and the params are defined in the [bor/query.proto](/proto/heimdallv2/bor/query.proto) file. Please refer to them for more information about the optional params.
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.bor.Query/GetSpanList
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.bor.Query/GetLatestSpan
+```
+
+```bash
+grpcurl -plaintext -d '{"id": <>}' localhost:9090 heimdallv2.bor.Query/GetNextSpanSeed
+```
+
+```bash
+grpcurl -plaintext -d '{"span_id": <>, "start_block": <>, "bor_chain_id": "<>"}' localhost:9090 heimdallv2.bor.Query/GetNextSpan
+```
+
+```bash
+grpcurl -plaintext -d '{"id": "<>"}' localhost:9090 heimdallv2.bor.Query/GetSpanById
+
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.bor.Query/GetBorParams
+```
+
 
 ### REST endpoints
 
+The endpoints and the params are defined in the [bor/query.proto](/proto/heimdallv2/bor/query.proto) file. Please refer to them for more information about the optional params.
+
 ```bash
-curl localhost:1317/bor/span/<SPAN_ID>
+curl localhost:1317/bor/spans/list
 ```
 
 ```bash
-curl localhost:1317/bor/span/latest
+curl localhost:1317/bor/spans/latest
+```
+
+```bash
+curl localhost:1317/bor/spans/seed/<SPAN_ID>
+```
+
+```bash
+curl "localhost:1317/bor/spans/prepare?span_id=<SPAN_ID>&start_block=<BOR_START_BLOCK>&bor_chain_id=<BOR_CHAIN_ID>"
+```
+
+```bash
+curl localhost:1317/bor/spans/<SPAN_ID>
 ```
 
 ```bash
 curl localhost:1317/bor/params
 ```
 
-```bash
-curl localhost:1317/bor/span/seed
-```
 
-```bash
-curl "localhost:1317/bor/span/prepare?span_id=<SPAN_ID>&start_block=<BOR_START_BLOCK>&chain_id="<BOR_CHAIN_ID>""
-```

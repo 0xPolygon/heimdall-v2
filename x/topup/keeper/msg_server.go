@@ -37,10 +37,6 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 		"blockNumber", msg.BlockNumber,
 	)
 
-	/* HV2: v1's BankKeeper.GetSendEnabled is no longer available in cosmos-sdk.
-	   We use BankKeeper.IsSendEnabledDenom instead
-	*/
-
 	// check if send is enabled for default denom
 	if !m.k.BankKeeper.IsSendEnabledDenom(ctx, sdk.DefaultBondDenom) {
 		logger.Error("send not enabled")
@@ -48,7 +44,7 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 			"send for denom %s is not enabled in bank keeper", sdk.DefaultBondDenom)
 	}
 
-	// check feasibility of topup tx based on msg fee
+	// check the feasibility of topup tx based on msg fee
 	if msg.Fee.LT(ante.DefaultFeeWantedPerTx[0].Amount) {
 		logger.Error("default fee exceeds amount to topup", "user", msg.User,
 			"amount", msg.Fee, "defaultFeeWantedPerTx", ante.DefaultFeeWantedPerTx[0])
@@ -77,7 +73,7 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 			"tx with hash %s already exists", txHash.String())
 	}
 
-	// emit event if tx is valid, then return
+	// emit the event if tx is valid, then return
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeTopup,
@@ -102,13 +98,15 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 		"amount", msg.Amount.String(),
 	)
 
-	// partial withdraw
-	amount := msg.Amount
+	// check if the amount is negative
+	if msg.Amount.IsNegative() {
+		logger.Error("negative amount to withdraw")
+		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest,
+			"amount %s is negative", msg.Amount.String())
+	}
 
-	/* HV2: v1's BankKeeper.GetCoins is no longer available in cosmos-sdk.
-	Hence, we could use BankKeeper.GetBalance,
-	but - just to be compatible with vesting, if ever enabled - we use BankKeeper.SpendableCoin.
-	*/
+	// partial withdrawal
+	amount := msg.Amount
 
 	// full withdraw
 	if msg.Amount.IsZero() {
@@ -128,10 +126,6 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	// create coins object
 	coins := sdk.Coins{sdk.Coin{Denom: sdk.DefaultBondDenom, Amount: amount}}
 
-	/* HV2: v1's BankKeeper.SubtractCoins is no longer available in cosmos-sdk.
-	   We use BankKeeper.SendCoinsFromAccountToModule + BankKeeper.BurnCoins instead
-	*/
-
 	// send coins from account to module
 	err := m.k.BankKeeper.SendCoinsFromAccountToModule(ctx, sdk.AccAddress(msg.Proposer), types.ModuleName, coins)
 	if err != nil {
@@ -141,7 +135,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 			"err", err)
 		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
-	// burn coins from module
+	// burn coins from the module
 	err = m.k.BankKeeper.BurnCoins(ctx, types.ModuleName, coins)
 	if err != nil {
 		logger.Error("error while burning coins",

@@ -27,7 +27,7 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 		Data: data,
 	}
 
-	// get priv key
+	// get the private key
 	pkObject := GetPrivKey()
 
 	// create ecdsa private key
@@ -44,10 +44,10 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 		return
 	}
 
-	mainChainMaxGasPrice := GetConfig().MainchainMaxGasPrice
+	mainChainMaxGasPrice := GetConfig().MainChainMaxGasPrice
 	// Check if configured or not, Use default in case of invalid value
 	if mainChainMaxGasPrice <= 0 {
-		mainChainMaxGasPrice = DefaultMainchainMaxGasPrice
+		mainChainMaxGasPrice = DefaultMainChainMaxGasPrice
 	}
 
 	if gasPrice.Cmp(big.NewInt(mainChainMaxGasPrice)) == 1 {
@@ -91,7 +91,7 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 	return
 }
 
-// SendCheckpoint sends checkpoint to rootchain contract
+// SendCheckpoint sends checkpoint to rootChain contract
 func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) error {
 	data, err := c.RootChainABI.Pack("submitCheckpoint", signedData, sigs)
 	if err != nil {
@@ -121,7 +121,7 @@ func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, r
 		return err
 	}
 
-	Logger.Info("submitted new checkpoint to rootchain successfully", "txHash", tx.Hash().String())
+	Logger.Info("submitted new checkpoint to rootChain successfully", "txHash", tx.Hash().String())
 
 	return nil
 }
@@ -138,7 +138,7 @@ func (c *ContractCaller) StakeFor(val common.Address, stakeAmount *big.Int, feeA
 		return errors.New("public key first byte mismatch")
 	}
 	// pack data based on method definition
-	data, err := c.StakeManagerABI.Pack("stakeFor", val, stakeAmount, feeAmount, acceptDelegation, signerPubKey)
+	data, err := c.StakeManagerABI.Pack("stakeFor", val, stakeAmount, feeAmount, acceptDelegation, signerPubKey.Bytes())
 	if err != nil {
 		Logger.Error("unable to pack tx for stakeFor", "error", err)
 		return err
@@ -173,7 +173,7 @@ func (c *ContractCaller) StakeFor(val common.Address, stakeAmount *big.Int, feeA
 func (c *ContractCaller) ApproveTokens(amount *big.Int, stakeManager common.Address, tokenAddress common.Address, tokenInstance *erc20.Erc20) error {
 	data, err := c.PolTokenABI.Pack("approve", stakeManager, amount)
 	if err != nil {
-		Logger.Error("unable topack tx for approve", "error", err)
+		Logger.Error("unable to pack tx for approve", "error", err)
 		return err
 	}
 

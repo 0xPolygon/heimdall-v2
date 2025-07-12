@@ -33,7 +33,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/cosmos/cosmos-sdk/server/types"
@@ -95,7 +94,7 @@ type ValidatorAccountFormatter struct {
 }
 
 // GetSignerInfo returns signer information
-func GetSignerInfo(pub crypto.PubKey, privKey []byte, cdc *codec.LegacyAmino) ValidatorAccountFormatter {
+func GetSignerInfo(pub crypto.PubKey, privKey []byte) ValidatorAccountFormatter {
 	privKeyObject := secp256k1.PrivKey(privKey)
 	pubKeyObject := secp256k1.PubKey(pub.Bytes())
 
@@ -109,10 +108,22 @@ func GetSignerInfo(pub crypto.PubKey, privKey []byte, cdc *codec.LegacyAmino) Va
 // initCometBFTConfig helps to override default CometBFT Config values.
 // It returns cmtcfg.DefaultConfig if no custom configuration is required for the application.
 func initCometBFTConfig() *cmtcfg.Config {
-	return cmtcfg.DefaultConfig()
+	customCMTConfig := cmtcfg.DefaultConfig()
+
+	customCMTConfig.Consensus.TimeoutPropose = 1000 * time.Millisecond
+	customCMTConfig.Consensus.TimeoutProposeDelta = 200 * time.Millisecond
+	customCMTConfig.Consensus.TimeoutPrevote = 1000 * time.Millisecond
+	customCMTConfig.Consensus.TimeoutPrevoteDelta = 200 * time.Millisecond
+	customCMTConfig.Consensus.TimeoutPrecommit = 1000 * time.Millisecond
+	customCMTConfig.Consensus.TimeoutPrecommitDelta = 200 * time.Millisecond
+	customCMTConfig.Consensus.TimeoutCommit = 500 * time.Millisecond
+	customCMTConfig.Consensus.PeerGossipSleepDuration = 25 * time.Millisecond
+	customCMTConfig.Consensus.PeerQueryMaj23SleepDuration = 200 * time.Millisecond
+
+	return customCMTConfig
 }
 
-// initAppConfig helps to override default appConfig template and configs.
+// initAppConfig helps to override the default app config template and configs.
 // It returns "", nil if no custom configuration is required for the application.
 func initAppConfig() (string, interface{}) {
 	srvConf := serverconfig.DefaultConfig()
@@ -138,10 +149,7 @@ func initRootCmd(
 	_ client.TxConfig,
 	basicManager module.BasicManager,
 	hApp *app.HeimdallApp,
-	keyring keyring.Keyring,
-	keyringDir string,
 ) {
-	cdc := codec.NewLegacyAmino()
 	ctx := server.NewDefaultContext()
 
 	cfg := sdk.GetConfig()
@@ -166,9 +174,10 @@ func initRootCmd(
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
 			helper.InitHeimdallConfig("")
 
-			// wait for rest server to start
+			// wait for the rest server to start
 			resultChan := make(chan string)
-			timeout := time.After(60 * time.Second)
+			// TODO take this back to 5 minutes after migration is done
+			timeout := time.After(120 * time.Minute)
 
 			go checkServerStatus(clientCtx, helper.GetHeimdallServerEndpoint(util.AccountParamsURL), resultChan)
 
@@ -176,7 +185,7 @@ func initRootCmd(
 			case result := <-resultChan:
 				fmt.Println("Fetch successful, received data:", result)
 			case <-timeout:
-				return fmt.Errorf("Fetch operation timed out")
+				return fmt.Errorf("fetch operation timed out")
 			}
 
 			chainParam, err := util.GetChainmanagerParams(clientCtx.Codec)
@@ -185,8 +194,6 @@ func initRootCmd(
 			}
 
 			clientCtx = clientCtx.
-				WithKeyring(keyring).
-				WithKeyringDir(keyringDir).
 				WithChainID(chainParam.ChainParams.HeimdallChainId)
 
 			// start bridge
@@ -211,7 +218,7 @@ func initRootCmd(
 
 	// add custom commands
 	rootCmd.AddCommand(
-		testnetCmd(ctx, cdc, hApp.BasicManager),
+		testnetCmd(ctx, hApp.BasicManager),
 		generateKeystore(),
 		importKeyStore(),
 		generateValidatorKey(),
@@ -224,6 +231,8 @@ func initRootCmd(
 	rootCmd.AddCommand(showPrivateKeyCmd())
 	rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
+
+	rootCmd.AddCommand(veDecodeCmd())
 }
 
 func checkServerStatus(ctx client.Context, url string, resultChan chan<- string) {
@@ -241,25 +250,31 @@ func checkServerStatus(ctx client.Context, url string, resultChan chan<- string)
 			fmt.Println("Error fetching the URL:", err)
 			continue
 		}
-		defer resp.Body.Close()
 
-		if resp.StatusCode == http.StatusOK {
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				fmt.Println("Error reading response body:", err)
-				continue
+		func() {
+			defer func(Body io.ReadCloser) {
+				err := Body.Close()
+				if err != nil {
+					fmt.Println("Error closing response body:", err)
+				}
+			}(resp.Body)
+			if resp.StatusCode == http.StatusOK {
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					fmt.Println("Error reading response body:", err)
+					return
+				}
+
+				resultChan <- string(body)
+				return
+			} else {
+				fmt.Println("Received non-OK HTTP status:", resp.StatusCode)
 			}
-
-			resultChan <- string(body)
-			return
-		} else {
-			fmt.Println("Received non-OK HTTP status:", resp.StatusCode)
-		}
+		}()
 	}
 }
 
 // AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
-// HV2 - This function is taken from cosmos-sdk
 func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome string, appCreator types.AppCreator, appExport types.AppExporter, opts server.StartCmdOptions) {
 	cometCmd := &cobra.Command{
 		Use:     "comet",
@@ -396,7 +411,7 @@ func appExport(
 	return hApp.ExportAppStateAndValidators(false, nil, modulesToExport)
 }
 
-// generateKeystore generate keystore file from private key
+// generateKeystore generate the keystore file from the private key
 func generateKeystore() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate-keystore",
@@ -418,7 +433,7 @@ func generateKeystore() *cobra.Command {
 	return cmd
 }
 
-// importKeyStore imports keystore from private key in the given file path
+// importKeyStore imports keystore from the private key in the given file path
 func importKeyStore() *cobra.Command {
 	return &cobra.Command{
 		Use:   "import-keystore <keystore-file>",
@@ -488,7 +503,7 @@ func importValidatorKey() *cobra.Command {
 
 			bz := ethcrypto.FromECDSA(pk)
 
-			// set private object
+			// set the private object
 			var privKeyObject secp256k1.PrivKey
 			copy(privKeyObject[:], bz)
 
@@ -540,7 +555,7 @@ func showPrivateKeyCmd() *cobra.Command {
 	}
 }
 
-// VerifyGenesis verifies the genesis file and brings it in sync with on-chain contract
+// VerifyGenesis verifies the genesis file and brings it to sync with the on-chain contract
 func VerifyGenesis(ctx *server.Context, hApp *app.HeimdallApp) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "verify-genesis",
@@ -634,7 +649,7 @@ func nodeDir(i int) string {
 	return filepath.Join(outDir, nodeDirName, nodeDaemonHomeName)
 }
 
-// hostnameOrIP returns the hostname of ip of nodes
+// hostnameOrIP returns the IP or the hostname of the node
 func hostnameOrIP(i int) string {
 	return fmt.Sprintf("%s%d", viper.GetString(flagNodeHostPrefix), i)
 }
@@ -696,18 +711,6 @@ func InitializeNodeValidatorFiles(
 	return nodeID, valPubKey, FilePv.Key.PrivKey, nil
 }
 
-// WriteDefaultHeimdallConfig writes default heimdall config to the given path
-func WriteDefaultHeimdallConfig(path string, conf helper.CustomConfig) {
-	// Don't write if config file in path already exists
-	if _, err := os.Stat(path); err == nil {
-		logger.Info(fmt.Sprintf("Config file %s already exists. Skip writing default heimdall config.", path))
-	} else if errors.Is(err, os.ErrNotExist) {
-		helper.WriteConfigFile(path, &conf)
-	} else {
-		logger.Error("error while checking for config file", "error", err)
-	}
-}
-
 func createKeyStore(pk *ecdsa.PrivateKey) error {
 	id, err := uuid.NewRandom()
 	if err != nil {
@@ -724,13 +727,13 @@ func createKeyStore(pk *ecdsa.PrivateKey) error {
 		return err
 	}
 
-	keyjson, err := keystore.EncryptKey(key, passphrase, keystore.StandardScryptN, keystore.StandardScryptP)
+	keyJson, err := keystore.EncryptKey(key, passphrase, keystore.StandardScryptN, keystore.StandardScryptP)
 	if err != nil {
 		return err
 	}
 
 	// Then write the new keyfile in place of the old one.
-	if err := os.WriteFile(keyFileName(key.Address), keyjson, 0o600); err != nil {
+	if err := os.WriteFile(keyFileName(key.Address), keyJson, 0o600); err != nil {
 		return err
 	}
 	return nil

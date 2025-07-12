@@ -14,7 +14,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -142,7 +142,7 @@ func (k *Keeper) AddCheckpoint(ctx context.Context, checkpoint types.Checkpoint)
 	return nil
 }
 
-// SetCheckpointBuffer sets the checkpoint in buffer
+// SetCheckpointBuffer sets the checkpoint in the buffer
 func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint types.Checkpoint) error {
 	checkpoint.Proposer = util.FormatAddress(checkpoint.Proposer)
 	if checkpoint.Id == 0 {
@@ -173,7 +173,7 @@ func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (type
 	return checkpoint, nil
 }
 
-// GetLastCheckpoint gets last checkpoint, where its number is equal to the ack count
+// GetLastCheckpoint gets the last checkpoint, where its number is equal to the ack count
 func (k *Keeper) GetLastCheckpoint(ctx context.Context) (checkpoint types.Checkpoint, err error) {
 	ackCount, err := k.GetAckCount(ctx)
 	if err != nil {
@@ -204,11 +204,11 @@ func (k *Keeper) FlushCheckpointBuffer(ctx context.Context) error {
 	return nil
 }
 
-// GetCheckpointFromBuffer gets the buffered checkpoint from store
+// GetCheckpointFromBuffer gets the buffered checkpoint from the store
 func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (types.Checkpoint, error) {
 	var checkpoint types.Checkpoint
 
-	exists, err := k.bufferedCheckpoint.Has(ctx)
+	exists, err := k.HasCheckpointInBuffer(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error while checking for existence of the buffered checkpoint in store", "err", err)
 		return checkpoint, err
@@ -263,31 +263,23 @@ func (k *Keeper) GetLastNoAck(ctx context.Context) (uint64, error) {
 }
 
 // GetCheckpoints gets all the checkpoints from the store
-func (k *Keeper) GetCheckpoints(ctx context.Context) (checkpoints []types.Checkpoint, e error) {
+func (k *Keeper) GetCheckpoints(ctx context.Context) ([]types.Checkpoint, error) {
 	iterator, err := k.checkpoints.Iterate(ctx, nil)
 	if err != nil {
 		k.Logger(ctx).Error("error in getting the iterator", "err", err)
 		return nil, err
 	}
-
-	defer func() {
+	defer func(iterator collections.Iterator[uint64, types.Checkpoint]) {
 		err := iterator.Close()
 		if err != nil {
-			k.Logger(ctx).Error("error in closing the checkpoint iterator", "error", err)
+			k.Logger(ctx).Error("error in closing iterator", "err", err)
 		}
-		checkpoints = nil
-		e = err
-	}()
+	}(iterator)
 
-	var checkpoint types.Checkpoint
-
-	for ; iterator.Valid(); iterator.Next() {
-		checkpoint, err = iterator.Value()
-		if err != nil {
-			k.Logger(ctx).Error("error while getting checkpoint from iterator", "err", err)
-			return nil, err
-		}
-		checkpoints = append(checkpoints, checkpoint)
+	checkpoints, err := iterator.Values()
+	if err != nil {
+		k.Logger(ctx).Error("error in getting the iterator values", "err", err)
+		return nil, err
 	}
 
 	return checkpoints, nil

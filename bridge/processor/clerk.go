@@ -33,7 +33,7 @@ type ClerkProcessor struct {
 	stateSenderAbi *abi.ABI
 }
 
-// NewClerkProcessor - add statesender abi to clerk processor
+// NewClerkProcessor - add state sender abi to clerk processor
 func NewClerkProcessor(stateSenderAbi *abi.ABI) *ClerkProcessor {
 	return &ClerkProcessor{
 		stateSenderAbi: stateSenderAbi,
@@ -46,7 +46,7 @@ func (cp *ClerkProcessor) Start() error {
 	return nil
 }
 
-// RegisterTasks - Registers clerk related tasks with machinery
+// RegisterTasks registers the clerk-related tasks with machinery
 func (cp *ClerkProcessor) RegisterTasks() {
 	cp.Logger.Info("Registering clerk tasks")
 
@@ -55,20 +55,20 @@ func (cp *ClerkProcessor) RegisterTasks() {
 	}
 }
 
-// HandleStateSyncEvent - handle state sync event from rootchain
-// 1. check if this deposit event has to be broadcasted to heimdall
-// 2. create and broadcast  record transaction to heimdall
+// sendStateSyncedToHeimdall - handle state sync event from rootChain
+// 1. Check if this deposit event has to be broadcast to heimdall
+// 2. Create and broadcast record transaction to heimdall
 func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes string) error {
-	otelCtx := tracing.WithTracer(context.Background(), otel.Tracer("State-Sync"))
+	tracingCtx := tracing.WithTracer(context.Background(), otel.Tracer("State-Sync"))
 	// work begins
-	sendStateSyncedToHeimdallCtx, sendStateSyncedToHeimdallSpan := tracing.StartSpan(otelCtx, "sendStateSyncedToHeimdall")
+	sendStateSyncedToHeimdallCtx, sendStateSyncedToHeimdallSpan := tracing.StartSpan(tracingCtx, "sendStateSyncedToHeimdall")
 	defer tracing.EndSpan(sendStateSyncedToHeimdallSpan)
 
 	start := time.Now()
 
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
-		cp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
+		cp.Logger.Error("Error while unmarshalling event from rootChain", "error", err)
 		return err
 	}
 
@@ -148,7 +148,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		_, checkTxAgainstMempoolSpan := tracing.StartSpan(sendStateSyncedToHeimdallCtx, "checkTxAgainstMempool")
 		// Check if we have the same transaction in mempool or not
 		// Don't drop the transaction. Keep retrying after `util.RetryStateSyncTaskDelay = 24 seconds`,
-		// until the transaction in mempool is processed or cancelled.
+		// until the transaction in mempool is processed or canceled.
 		inMempool, _ := cp.checkTxAgainstMempool(&msg, event)
 		tracing.EndSpan(checkTxAgainstMempoolSpan)
 
@@ -170,10 +170,6 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 
 	return nil
 }
-
-//
-// utils
-//
 
 func (cp *ClerkProcessor) getClerkContext() (*ClerkContext, error) {
 	chainmanagerParams, err := util.GetChainmanagerParams(cp.cliCtx.Codec)

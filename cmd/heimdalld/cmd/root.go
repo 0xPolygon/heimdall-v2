@@ -38,9 +38,11 @@ type EncodingConfig struct {
 // main function.
 func NewRootCmd() *cobra.Command {
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
-	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
+	// note, this is not necessary when using app wiring, as depInject can be directly used (see root_v2.go)
 
-	tempApp := app.NewHeimdallApp(logger, db.NewMemDB(), nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
+	// Since this is only a temp app, we don't need info logs, only warn and error logs.
+	tempLogger := log.NewLogger(os.Stdout, log.LevelOption(zerolog.WarnLevel))
+	tempApp := app.NewHeimdallApp(tempLogger, db.NewMemDB(), nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
 	encodingConfig := EncodingConfig{
 		InterfaceRegistry: tempApp.InterfaceRegistry(),
 		Codec:             tempApp.AppCodec(),
@@ -105,7 +107,10 @@ func NewRootCmd() *cobra.Command {
 			customAppTemplate, customAppConfig := initAppConfig()
 			customCMTConfig := initCometBFTConfig()
 
-			if cmd.Name() != commands.InitFilesCmd.Name() && cmd.Name() != testnetCmdName {
+			if cmd.Name() != commands.InitFilesCmd.Name() &&
+				cmd.Name() != commands.VersionCmd.Name() &&
+				cmd.Name() != MigrateCommand().Name() &&
+				cmd.Name() != testnetCmdName {
 				helper.InitHeimdallConfig("")
 			}
 
@@ -121,7 +126,7 @@ func NewRootCmd() *cobra.Command {
 			}
 			serverCtx.Logger = logger.With(log.ModuleKey, "server")
 
-			// Get log_level from from serverCtx.Viper
+			// Get log_level from serverCtx.Viper
 			logLevelStr := serverCtx.Viper.GetString(flags.FlagLogLevel)
 
 			// Set log_level value to viper
@@ -146,13 +151,11 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 
-	// adding heimdall configuration flags to root command
+	// adding heimdall configuration flags to the root command
 	helper.DecorateWithHeimdallFlags(rootCmd, viper.GetViper(), logger, "main")
 	helper.DecorateWithCometBFTFlags(rootCmd, viper.GetViper(), logger, "main")
 
-	initClientCtx, _ = config.ReadFromClientConfig(initClientCtx)
-
-	initRootCmd(rootCmd, encodingConfig.TxConfig, tempApp.BasicManager, tempApp, initClientCtx.Keyring, initClientCtx.KeyringDir)
+	initRootCmd(rootCmd, encodingConfig.TxConfig, tempApp.BasicManager, tempApp)
 
 	// add keyring to autocli opts
 	autoCliOpts := tempApp.AutoCliOpts()

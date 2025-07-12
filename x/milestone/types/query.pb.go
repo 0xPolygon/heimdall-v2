@@ -6,7 +6,6 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	types "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	_ "github.com/cosmos/cosmos-sdk/types/query"
 	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	_ "github.com/cosmos/gogoproto/gogoproto"
@@ -192,86 +191,6 @@ func (m *QueryCountResponse) GetCount() uint64 {
 	return 0
 }
 
-type QueryLastNoAckRequest struct {
-}
-
-func (m *QueryLastNoAckRequest) Reset()         { *m = QueryLastNoAckRequest{} }
-func (m *QueryLastNoAckRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryLastNoAckRequest) ProtoMessage()    {}
-func (*QueryLastNoAckRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2569eb9c5aa780c5, []int{4}
-}
-func (m *QueryLastNoAckRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryLastNoAckRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryLastNoAckRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryLastNoAckRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryLastNoAckRequest.Merge(m, src)
-}
-func (m *QueryLastNoAckRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryLastNoAckRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryLastNoAckRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryLastNoAckRequest proto.InternalMessageInfo
-
-type QueryLastNoAckResponse struct {
-	Result uint64 `protobuf:"varint,1,opt,name=result,proto3" json:"result,omitempty"`
-}
-
-func (m *QueryLastNoAckResponse) Reset()         { *m = QueryLastNoAckResponse{} }
-func (m *QueryLastNoAckResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryLastNoAckResponse) ProtoMessage()    {}
-func (*QueryLastNoAckResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2569eb9c5aa780c5, []int{5}
-}
-func (m *QueryLastNoAckResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryLastNoAckResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryLastNoAckResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryLastNoAckResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryLastNoAckResponse.Merge(m, src)
-}
-func (m *QueryLastNoAckResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryLastNoAckResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryLastNoAckResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryLastNoAckResponse proto.InternalMessageInfo
-
-func (m *QueryLastNoAckResponse) GetResult() uint64 {
-	if m != nil {
-		return m.Result
-	}
-	return 0
-}
-
 type QueryLatestMilestoneRequest struct {
 }
 
@@ -279,7 +198,7 @@ func (m *QueryLatestMilestoneRequest) Reset()         { *m = QueryLatestMileston
 func (m *QueryLatestMilestoneRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryLatestMilestoneRequest) ProtoMessage()    {}
 func (*QueryLatestMilestoneRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2569eb9c5aa780c5, []int{6}
+	return fileDescriptor_2569eb9c5aa780c5, []int{4}
 }
 func (m *QueryLatestMilestoneRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -316,7 +235,7 @@ func (m *QueryLatestMilestoneResponse) Reset()         { *m = QueryLatestMilesto
 func (m *QueryLatestMilestoneResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryLatestMilestoneResponse) ProtoMessage()    {}
 func (*QueryLatestMilestoneResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2569eb9c5aa780c5, []int{7}
+	return fileDescriptor_2569eb9c5aa780c5, []int{5}
 }
 func (m *QueryLatestMilestoneResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -360,7 +279,7 @@ func (m *QueryMilestoneRequest) Reset()         { *m = QueryMilestoneRequest{} }
 func (m *QueryMilestoneRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryMilestoneRequest) ProtoMessage()    {}
 func (*QueryMilestoneRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2569eb9c5aa780c5, []int{8}
+	return fileDescriptor_2569eb9c5aa780c5, []int{6}
 }
 func (m *QueryMilestoneRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -404,7 +323,7 @@ func (m *QueryMilestoneResponse) Reset()         { *m = QueryMilestoneResponse{}
 func (m *QueryMilestoneResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryMilestoneResponse) ProtoMessage()    {}
 func (*QueryMilestoneResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2569eb9c5aa780c5, []int{9}
+	return fileDescriptor_2569eb9c5aa780c5, []int{7}
 }
 func (m *QueryMilestoneResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -440,335 +359,54 @@ func (m *QueryMilestoneResponse) GetMilestone() Milestone {
 	return Milestone{}
 }
 
-type QueryLatestNoAckMilestoneRequest struct {
-}
-
-func (m *QueryLatestNoAckMilestoneRequest) Reset()         { *m = QueryLatestNoAckMilestoneRequest{} }
-func (m *QueryLatestNoAckMilestoneRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryLatestNoAckMilestoneRequest) ProtoMessage()    {}
-func (*QueryLatestNoAckMilestoneRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2569eb9c5aa780c5, []int{10}
-}
-func (m *QueryLatestNoAckMilestoneRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryLatestNoAckMilestoneRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryLatestNoAckMilestoneRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryLatestNoAckMilestoneRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryLatestNoAckMilestoneRequest.Merge(m, src)
-}
-func (m *QueryLatestNoAckMilestoneRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryLatestNoAckMilestoneRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryLatestNoAckMilestoneRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryLatestNoAckMilestoneRequest proto.InternalMessageInfo
-
-type QueryLatestNoAckMilestoneResponse struct {
-	Result string `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
-}
-
-func (m *QueryLatestNoAckMilestoneResponse) Reset()         { *m = QueryLatestNoAckMilestoneResponse{} }
-func (m *QueryLatestNoAckMilestoneResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryLatestNoAckMilestoneResponse) ProtoMessage()    {}
-func (*QueryLatestNoAckMilestoneResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2569eb9c5aa780c5, []int{11}
-}
-func (m *QueryLatestNoAckMilestoneResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryLatestNoAckMilestoneResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryLatestNoAckMilestoneResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryLatestNoAckMilestoneResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryLatestNoAckMilestoneResponse.Merge(m, src)
-}
-func (m *QueryLatestNoAckMilestoneResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryLatestNoAckMilestoneResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryLatestNoAckMilestoneResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryLatestNoAckMilestoneResponse proto.InternalMessageInfo
-
-func (m *QueryLatestNoAckMilestoneResponse) GetResult() string {
-	if m != nil {
-		return m.Result
-	}
-	return ""
-}
-
-type QueryNoAckMilestoneByIDRequest struct {
-	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-}
-
-func (m *QueryNoAckMilestoneByIDRequest) Reset()         { *m = QueryNoAckMilestoneByIDRequest{} }
-func (m *QueryNoAckMilestoneByIDRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryNoAckMilestoneByIDRequest) ProtoMessage()    {}
-func (*QueryNoAckMilestoneByIDRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2569eb9c5aa780c5, []int{12}
-}
-func (m *QueryNoAckMilestoneByIDRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryNoAckMilestoneByIDRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryNoAckMilestoneByIDRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryNoAckMilestoneByIDRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryNoAckMilestoneByIDRequest.Merge(m, src)
-}
-func (m *QueryNoAckMilestoneByIDRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryNoAckMilestoneByIDRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryNoAckMilestoneByIDRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryNoAckMilestoneByIDRequest proto.InternalMessageInfo
-
-func (m *QueryNoAckMilestoneByIDRequest) GetId() string {
-	if m != nil {
-		return m.Id
-	}
-	return ""
-}
-
-type QueryNoAckMilestoneByIDResponse struct {
-	Result bool `protobuf:"varint,1,opt,name=result,proto3" json:"result,omitempty"`
-}
-
-func (m *QueryNoAckMilestoneByIDResponse) Reset()         { *m = QueryNoAckMilestoneByIDResponse{} }
-func (m *QueryNoAckMilestoneByIDResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryNoAckMilestoneByIDResponse) ProtoMessage()    {}
-func (*QueryNoAckMilestoneByIDResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2569eb9c5aa780c5, []int{13}
-}
-func (m *QueryNoAckMilestoneByIDResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryNoAckMilestoneByIDResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryNoAckMilestoneByIDResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryNoAckMilestoneByIDResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryNoAckMilestoneByIDResponse.Merge(m, src)
-}
-func (m *QueryNoAckMilestoneByIDResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryNoAckMilestoneByIDResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryNoAckMilestoneByIDResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryNoAckMilestoneByIDResponse proto.InternalMessageInfo
-
-func (m *QueryNoAckMilestoneByIDResponse) GetResult() bool {
-	if m != nil {
-		return m.Result
-	}
-	return false
-}
-
-type QueryMilestoneProposerRequest struct {
-	Times uint64 `protobuf:"varint,1,opt,name=times,proto3" json:"times,omitempty"`
-}
-
-func (m *QueryMilestoneProposerRequest) Reset()         { *m = QueryMilestoneProposerRequest{} }
-func (m *QueryMilestoneProposerRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryMilestoneProposerRequest) ProtoMessage()    {}
-func (*QueryMilestoneProposerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2569eb9c5aa780c5, []int{14}
-}
-func (m *QueryMilestoneProposerRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryMilestoneProposerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryMilestoneProposerRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryMilestoneProposerRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryMilestoneProposerRequest.Merge(m, src)
-}
-func (m *QueryMilestoneProposerRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryMilestoneProposerRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryMilestoneProposerRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryMilestoneProposerRequest proto.InternalMessageInfo
-
-func (m *QueryMilestoneProposerRequest) GetTimes() uint64 {
-	if m != nil {
-		return m.Times
-	}
-	return 0
-}
-
-type QueryMilestoneProposerResponse struct {
-	Proposers []types.Validator `protobuf:"bytes,1,rep,name=proposers,proto3" json:"proposers"`
-}
-
-func (m *QueryMilestoneProposerResponse) Reset()         { *m = QueryMilestoneProposerResponse{} }
-func (m *QueryMilestoneProposerResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryMilestoneProposerResponse) ProtoMessage()    {}
-func (*QueryMilestoneProposerResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_2569eb9c5aa780c5, []int{15}
-}
-func (m *QueryMilestoneProposerResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryMilestoneProposerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryMilestoneProposerResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryMilestoneProposerResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryMilestoneProposerResponse.Merge(m, src)
-}
-func (m *QueryMilestoneProposerResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryMilestoneProposerResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryMilestoneProposerResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryMilestoneProposerResponse proto.InternalMessageInfo
-
-func (m *QueryMilestoneProposerResponse) GetProposers() []types.Validator {
-	if m != nil {
-		return m.Proposers
-	}
-	return nil
-}
-
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "heimdallv2.milestone.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "heimdallv2.milestone.QueryParamsResponse")
 	proto.RegisterType((*QueryCountRequest)(nil), "heimdallv2.milestone.QueryCountRequest")
 	proto.RegisterType((*QueryCountResponse)(nil), "heimdallv2.milestone.QueryCountResponse")
-	proto.RegisterType((*QueryLastNoAckRequest)(nil), "heimdallv2.milestone.QueryLastNoAckRequest")
-	proto.RegisterType((*QueryLastNoAckResponse)(nil), "heimdallv2.milestone.QueryLastNoAckResponse")
 	proto.RegisterType((*QueryLatestMilestoneRequest)(nil), "heimdallv2.milestone.QueryLatestMilestoneRequest")
 	proto.RegisterType((*QueryLatestMilestoneResponse)(nil), "heimdallv2.milestone.QueryLatestMilestoneResponse")
 	proto.RegisterType((*QueryMilestoneRequest)(nil), "heimdallv2.milestone.QueryMilestoneRequest")
 	proto.RegisterType((*QueryMilestoneResponse)(nil), "heimdallv2.milestone.QueryMilestoneResponse")
-	proto.RegisterType((*QueryLatestNoAckMilestoneRequest)(nil), "heimdallv2.milestone.QueryLatestNoAckMilestoneRequest")
-	proto.RegisterType((*QueryLatestNoAckMilestoneResponse)(nil), "heimdallv2.milestone.QueryLatestNoAckMilestoneResponse")
-	proto.RegisterType((*QueryNoAckMilestoneByIDRequest)(nil), "heimdallv2.milestone.QueryNoAckMilestoneByIDRequest")
-	proto.RegisterType((*QueryNoAckMilestoneByIDResponse)(nil), "heimdallv2.milestone.QueryNoAckMilestoneByIDResponse")
-	proto.RegisterType((*QueryMilestoneProposerRequest)(nil), "heimdallv2.milestone.QueryMilestoneProposerRequest")
-	proto.RegisterType((*QueryMilestoneProposerResponse)(nil), "heimdallv2.milestone.QueryMilestoneProposerResponse")
 }
 
 func init() { proto.RegisterFile("heimdallv2/milestone/query.proto", fileDescriptor_2569eb9c5aa780c5) }
 
 var fileDescriptor_2569eb9c5aa780c5 = []byte{
-	// 786 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x56, 0x4d, 0x6f, 0xd3, 0x40,
-	0x10, 0x8d, 0x0b, 0xa9, 0x9a, 0xed, 0x85, 0x6c, 0x92, 0xb6, 0x72, 0x1a, 0x37, 0x18, 0x24, 0xc2,
-	0x47, 0x63, 0x9a, 0x96, 0xf6, 0x82, 0x04, 0x98, 0x4a, 0x05, 0xa9, 0x54, 0xa5, 0x42, 0x3d, 0x70,
-	0x73, 0x92, 0x25, 0xb5, 0x6a, 0x7b, 0x5d, 0xef, 0x26, 0x6a, 0x54, 0xf5, 0x82, 0x84, 0x04, 0x37,
-	0xa4, 0x1e, 0xf9, 0x03, 0x70, 0x02, 0xf1, 0x2b, 0x7a, 0xac, 0xc4, 0x85, 0x13, 0x42, 0x29, 0x12,
-	0x7f, 0x03, 0x79, 0xbd, 0x8e, 0x3f, 0xe2, 0x26, 0xcd, 0x81, 0x4b, 0x64, 0x8d, 0xe7, 0xcd, 0x7b,
-	0x33, 0xe3, 0x37, 0x0a, 0x28, 0xef, 0x21, 0xdd, 0x6c, 0x6a, 0x86, 0xd1, 0xa9, 0x29, 0xa6, 0x6e,
-	0x20, 0x42, 0xb1, 0x85, 0x94, 0x83, 0x36, 0x72, 0xba, 0x55, 0xdb, 0xc1, 0x14, 0xc3, 0x7c, 0x90,
-	0x51, 0xed, 0x67, 0x88, 0xf9, 0x16, 0x6e, 0x61, 0x96, 0xa0, 0xb8, 0x4f, 0x5e, 0xae, 0x38, 0xdf,
-	0xc2, 0xb8, 0x65, 0x20, 0x45, 0xb3, 0x75, 0x45, 0xb3, 0x2c, 0x4c, 0x35, 0xaa, 0x63, 0x8b, 0xf0,
-	0xb7, 0xc5, 0x06, 0x26, 0x26, 0x26, 0x5e, 0x75, 0xa5, 0xb3, 0x14, 0xa6, 0x11, 0xb3, 0x9a, 0xa9,
-	0x5b, 0x58, 0x61, 0xbf, 0x3c, 0x74, 0x33, 0x51, 0x5b, 0xff, 0x89, 0x67, 0x85, 0x3b, 0x20, 0x54,
-	0xdb, 0x47, 0x4a, 0x47, 0x33, 0xf4, 0xa6, 0x46, 0xb1, 0xe3, 0x65, 0xc8, 0x79, 0x00, 0x5f, 0xba,
-	0x4c, 0xdb, 0x9a, 0xa3, 0x99, 0x64, 0x07, 0x1d, 0xb4, 0x11, 0xa1, 0xf2, 0x2e, 0xc8, 0x45, 0xa2,
-	0xc4, 0xc6, 0x16, 0x41, 0xf0, 0x11, 0x98, 0xb4, 0x59, 0x64, 0x4e, 0x28, 0x0b, 0x95, 0xe9, 0xda,
-	0x7c, 0x35, 0xa9, 0xff, 0xaa, 0x87, 0x52, 0x33, 0xa7, 0xbf, 0x16, 0x52, 0x9f, 0xff, 0x7e, 0xbb,
-	0x23, 0xec, 0x70, 0x98, 0x9c, 0x03, 0x59, 0x56, 0xf7, 0x29, 0x6e, 0x5b, 0xd4, 0x27, 0x5b, 0xe2,
-	0x12, 0x78, 0x90, 0x73, 0x15, 0x41, 0xba, 0xe1, 0x06, 0x18, 0xd5, 0x55, 0x35, 0xed, 0x15, 0xf2,
-	0x62, 0xf2, 0x2c, 0x28, 0x30, 0xc8, 0xa6, 0x46, 0xe8, 0x16, 0x7e, 0xd2, 0xd8, 0xf7, 0x6b, 0xad,
-	0x81, 0x99, 0xf8, 0x0b, 0x5e, 0xaf, 0x04, 0x26, 0x1d, 0x44, 0xda, 0x46, 0xac, 0x20, 0x0f, 0xca,
-	0x25, 0x50, 0xe4, 0x40, 0x8a, 0x08, 0x7d, 0xe1, 0xf7, 0xe2, 0xd7, 0xdd, 0x03, 0xf3, 0xc9, 0xaf,
-	0x79, 0xf5, 0x67, 0x20, 0xd3, 0xef, 0x9f, 0x0f, 0x67, 0x21, 0x79, 0x38, 0x7d, 0x6c, 0x78, 0x3e,
-	0x01, 0x58, 0x5e, 0xe5, 0xad, 0xc5, 0x25, 0xb8, 0x0d, 0x58, 0x6d, 0xb3, 0x8e, 0x9c, 0x58, 0x03,
-	0x5e, 0x50, 0xae, 0xf3, 0xce, 0xff, 0xa7, 0x36, 0x19, 0x94, 0x43, 0x53, 0x60, 0xf3, 0x1d, 0x98,
-	0x94, 0x0a, 0xae, 0x0f, 0xc9, 0x49, 0x5c, 0x46, 0x26, 0xbe, 0x8c, 0x35, 0x20, 0xb1, 0x1a, 0x51,
-	0xb4, 0xda, 0x7d, 0xbe, 0xee, 0x0f, 0xa3, 0x00, 0x26, 0xf4, 0x66, 0x14, 0x3c, 0xa1, 0x37, 0xe5,
-	0xc7, 0x60, 0xe1, 0x42, 0x60, 0x22, 0xf5, 0x54, 0x9c, 0xfa, 0x21, 0x28, 0x45, 0xc7, 0xb8, 0xed,
-	0x60, 0x1b, 0x13, 0xe4, 0xf8, 0xcc, 0x45, 0x90, 0xa6, 0xba, 0x89, 0x48, 0xec, 0xbb, 0x64, 0x31,
-	0xf9, 0x0d, 0x17, 0x9e, 0x80, 0xe6, 0xf4, 0xeb, 0x20, 0x63, 0xf3, 0x98, 0x5b, 0xe2, 0x4a, 0x65,
-	0xba, 0x56, 0x0c, 0x2f, 0x83, 0xb9, 0xb4, 0xba, 0xeb, 0xbb, 0x34, 0xb2, 0x88, 0x3e, 0xb0, 0xd6,
-	0x9b, 0x02, 0x69, 0x46, 0x04, 0x3f, 0x08, 0x00, 0x6e, 0xa0, 0xe0, 0x8b, 0xf4, 0xbc, 0x07, 0x2b,
-	0xc9, 0x0b, 0x1e, 0xb4, 0xba, 0x78, 0xfb, 0x12, 0x99, 0x9e, 0x76, 0x59, 0x7a, 0xef, 0xea, 0x78,
-	0xfb, 0xe3, 0xcf, 0xc9, 0x44, 0x0e, 0x66, 0x43, 0x67, 0xc7, 0x73, 0x37, 0x7c, 0x27, 0x80, 0x6c,
-	0x58, 0x0b, 0x33, 0x34, 0xbc, 0x35, 0x84, 0x20, 0x7c, 0x07, 0xc4, 0xca, 0xe8, 0x44, 0x2e, 0xa4,
-	0x14, 0x08, 0x81, 0xf0, 0x5a, 0x48, 0x08, 0xbb, 0x0e, 0xf0, 0x93, 0x37, 0x93, 0x98, 0x57, 0xe1,
-	0xd2, 0x90, 0xfa, 0xc9, 0xb6, 0x17, 0x6b, 0xe3, 0x40, 0x46, 0x4d, 0xc9, 0x60, 0x00, 0xf8, 0x55,
-	0x00, 0xb3, 0x7d, 0x75, 0xd1, 0x0f, 0x15, 0xae, 0x8e, 0xe4, 0x4b, 0x34, 0x9d, 0xb8, 0x36, 0x36,
-	0x8e, 0x8b, 0xbd, 0x11, 0x88, 0x9d, 0x83, 0x33, 0x11, 0xb1, 0x84, 0x2e, 0x5a, 0x78, 0x51, 0x6b,
-	0xec, 0xc3, 0x13, 0x01, 0xe4, 0xc3, 0x7b, 0x55, 0xbb, 0x5b, 0xec, 0xe6, 0xc0, 0xbb, 0x43, 0x68,
-	0x07, 0x34, 0xde, 0xbb, 0x5c, 0x32, 0x17, 0x56, 0x0e, 0x84, 0x15, 0x60, 0x2e, 0x24, 0xec, 0xc8,
-	0xbb, 0x77, 0xc7, 0xf0, 0x8b, 0x00, 0x0a, 0x1b, 0x88, 0x0e, 0x58, 0xbd, 0x09, 0x57, 0x86, 0x30,
-	0x5d, 0x78, 0x52, 0xc4, 0x07, 0x63, 0xa2, 0x46, 0x4d, 0xd0, 0x1b, 0x9e, 0x72, 0xa4, 0x37, 0x8f,
-	0xe1, 0x77, 0x01, 0x14, 0x23, 0x2e, 0xe5, 0x4e, 0x56, 0xbb, 0xaf, 0xdc, 0xbb, 0x01, 0x97, 0x2f,
-	0x33, 0x9b, 0xd8, 0x25, 0x12, 0x57, 0xc6, 0x03, 0x71, 0xbd, 0x95, 0x40, 0x6f, 0x09, 0x16, 0xc3,
-	0x26, 0xe6, 0x99, 0xca, 0x11, 0xbb, 0x65, 0xc7, 0xea, 0xe6, 0x69, 0x4f, 0x12, 0xce, 0x7a, 0x92,
-	0xf0, 0xbb, 0x27, 0x09, 0x1f, 0xcf, 0xa5, 0xd4, 0xd9, 0xb9, 0x94, 0xfa, 0x79, 0x2e, 0xa5, 0x5e,
-	0xd7, 0x5a, 0x3a, 0xdd, 0x6b, 0xd7, 0xab, 0x0d, 0x6c, 0x2a, 0xf7, 0x0f, 0xb7, 0xb1, 0xd1, 0x6d,
-	0x61, 0x4b, 0xf1, 0xd5, 0x2c, 0x76, 0x6a, 0xca, 0x61, 0xa8, 0x30, 0xed, 0xda, 0x88, 0xd4, 0x27,
-	0xd9, 0xff, 0x8d, 0xe5, 0x7f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xfb, 0xbc, 0xd8, 0x51, 0x55, 0x09,
-	0x00, 0x00,
+	// 526 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x94, 0x4f, 0x8b, 0xd3, 0x40,
+	0x18, 0xc6, 0x3b, 0xb2, 0x2d, 0xec, 0x78, 0xea, 0x34, 0x2e, 0x92, 0x76, 0xd3, 0x35, 0x08, 0xd6,
+	0x7f, 0x19, 0x1b, 0xc1, 0xab, 0x50, 0x0f, 0x7a, 0x58, 0x65, 0xdd, 0x83, 0x07, 0x6f, 0x69, 0x1d,
+	0xd2, 0x40, 0x32, 0x6f, 0xb6, 0x33, 0x29, 0x5b, 0xc4, 0x8b, 0x07, 0x11, 0x4f, 0x82, 0x1e, 0xfd,
+	0x00, 0x1e, 0xfd, 0x18, 0x7b, 0x5c, 0xd8, 0x8b, 0x27, 0x91, 0x56, 0xf0, 0x6b, 0x48, 0x67, 0xa6,
+	0x4d, 0xb6, 0x1b, 0xba, 0x2b, 0xec, 0x25, 0x0c, 0x6f, 0xde, 0xe7, 0x7d, 0x7e, 0xf3, 0xe6, 0x21,
+	0x78, 0x67, 0xc8, 0xa2, 0xe4, 0x4d, 0x10, 0xc7, 0x63, 0x9f, 0x26, 0x51, 0xcc, 0x84, 0x04, 0xce,
+	0xe8, 0x41, 0xc6, 0x46, 0x13, 0x2f, 0x1d, 0x81, 0x04, 0x62, 0xe5, 0x1d, 0xde, 0xb2, 0xc3, 0xae,
+	0x07, 0x49, 0xc4, 0x81, 0xaa, 0xa7, 0x6e, 0xb4, 0x9b, 0x03, 0x10, 0x09, 0x08, 0x2d, 0xa6, 0xe3,
+	0x6e, 0x71, 0x8a, 0x6d, 0x85, 0x10, 0x82, 0x3a, 0xd2, 0xf9, 0xc9, 0x54, 0x5b, 0x21, 0x40, 0x18,
+	0x33, 0x1a, 0xa4, 0x11, 0x0d, 0x38, 0x07, 0x19, 0xc8, 0x08, 0xb8, 0x30, 0x6f, 0x6f, 0x96, 0xb2,
+	0x2d, 0x4f, 0xba, 0xcb, 0xb5, 0x30, 0x79, 0x39, 0x37, 0xda, 0x0b, 0x46, 0x41, 0x22, 0xf6, 0xd9,
+	0x41, 0xc6, 0x84, 0x74, 0x5f, 0xe1, 0xc6, 0xa9, 0xaa, 0x48, 0x81, 0x0b, 0x46, 0x1e, 0xe3, 0x5a,
+	0xaa, 0x2a, 0xd7, 0xd1, 0x0e, 0xea, 0x5c, 0xf5, 0x5b, 0x5e, 0xd9, 0xed, 0x3c, 0xad, 0xea, 0x6d,
+	0x1e, 0xfd, 0x6a, 0x57, 0xbe, 0xff, 0xfd, 0x71, 0x07, 0xed, 0x1b, 0x99, 0xdb, 0xc0, 0x75, 0x35,
+	0xf7, 0x09, 0x64, 0x5c, 0x2e, 0xcc, 0xba, 0x06, 0xc1, 0x14, 0x8d, 0x57, 0x13, 0x57, 0x07, 0xf3,
+	0x82, 0xb2, 0xda, 0xe8, 0x55, 0xf5, 0x20, 0x5d, 0x73, 0xb7, 0x71, 0x53, 0x49, 0x76, 0x03, 0xc9,
+	0x84, 0x7c, 0xbe, 0x70, 0x5e, 0x4c, 0x1c, 0xe2, 0x56, 0xf9, 0x6b, 0x33, 0xfb, 0x19, 0xde, 0x5c,
+	0xd2, 0x9a, 0xab, 0xb4, 0xcb, 0xaf, 0xb2, 0xd4, 0x16, 0x6f, 0x93, 0x8b, 0xdd, 0x47, 0xf8, 0x9a,
+	0x72, 0x5a, 0x45, 0x20, 0xdb, 0xb8, 0xc6, 0xb3, 0xa4, 0xcf, 0x46, 0xa7, 0xf9, 0x4d, 0xd1, 0xed,
+	0xe3, 0xad, 0x55, 0xdd, 0x65, 0xb3, 0xf9, 0x27, 0x1b, 0xb8, 0xaa, 0x4c, 0xc8, 0x27, 0x84, 0xc9,
+	0x53, 0x96, 0x2f, 0x42, 0x7f, 0x20, 0xd2, 0x29, 0x9f, 0x7b, 0x36, 0x0f, 0xf6, 0xed, 0x0b, 0x74,
+	0x6a, 0x7e, 0xb7, 0xfd, 0x71, 0xce, 0xf1, 0xfe, 0xe4, 0xcf, 0x97, 0x2b, 0x16, 0x21, 0x79, 0xde,
+	0x04, 0xd5, 0x19, 0x20, 0x1f, 0x10, 0xae, 0x17, 0x61, 0xd4, 0x67, 0x27, 0xb7, 0xd6, 0x38, 0x14,
+	0xd3, 0x62, 0x77, 0xce, 0x6f, 0x34, 0x24, 0x4e, 0x4e, 0xd2, 0x20, 0xf5, 0x22, 0x89, 0x0a, 0x11,
+	0xf9, 0xa6, 0xb7, 0xb2, 0x12, 0x12, 0xd2, 0x5d, 0x63, 0x50, 0x9e, 0x37, 0xdb, 0xff, 0x1f, 0xc9,
+	0xb9, 0x7b, 0x8a, 0x95, 0x82, 0x7c, 0x45, 0xd8, 0x2a, 0xee, 0xa9, 0x37, 0x79, 0xa1, 0xb2, 0x43,
+	0xee, 0xae, 0x71, 0x3b, 0x83, 0x76, 0xef, 0x62, 0xcd, 0x06, 0xea, 0x46, 0x0e, 0xb5, 0x45, 0xac,
+	0x22, 0xd4, 0x5b, 0x1d, 0xdc, 0x77, 0xbd, 0xdd, 0xa3, 0xa9, 0x83, 0x8e, 0xa7, 0x0e, 0xfa, 0x3d,
+	0x75, 0xd0, 0xe7, 0x99, 0x53, 0x39, 0x9e, 0x39, 0x95, 0x9f, 0x33, 0xa7, 0xf2, 0xda, 0x0f, 0x23,
+	0x39, 0xcc, 0xfa, 0xde, 0x00, 0x12, 0xfa, 0xe0, 0x70, 0x0f, 0xe2, 0x49, 0x08, 0x9c, 0x2e, 0xec,
+	0xef, 0x8f, 0x7d, 0x7a, 0x58, 0xf8, 0x11, 0xc9, 0x49, 0xca, 0x44, 0xbf, 0xa6, 0xfe, 0x42, 0x0f,
+	0xff, 0x05, 0x00, 0x00, 0xff, 0xff, 0x1d, 0xc2, 0x12, 0xdc, 0x49, 0x05, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -789,14 +427,8 @@ type QueryClient interface {
 	GetMilestoneCount(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error)
 	// GetLatestMilestone queries for the latest milestone
 	GetLatestMilestone(ctx context.Context, in *QueryLatestMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestMilestoneResponse, error)
-	// GetLatestNoAckMilestone query for the LatestNoAck
-	GetLatestNoAckMilestone(ctx context.Context, in *QueryLatestNoAckMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestNoAckMilestoneResponse, error)
 	// GetMilestoneByNumber queries for the milestone based on the number
 	GetMilestoneByNumber(ctx context.Context, in *QueryMilestoneRequest, opts ...grpc.CallOption) (*QueryMilestoneResponse, error)
-	// GetNoAckMilestoneById query for the no-ack by id
-	GetNoAckMilestoneById(ctx context.Context, in *QueryNoAckMilestoneByIDRequest, opts ...grpc.CallOption) (*QueryNoAckMilestoneByIDResponse, error)
-	// GetMilestoneProposerByTimes queries for the milestone proposer
-	GetMilestoneProposerByTimes(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error)
 }
 
 type queryClient struct {
@@ -834,36 +466,9 @@ func (c *queryClient) GetLatestMilestone(ctx context.Context, in *QueryLatestMil
 	return out, nil
 }
 
-func (c *queryClient) GetLatestNoAckMilestone(ctx context.Context, in *QueryLatestNoAckMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestNoAckMilestoneResponse, error) {
-	out := new(QueryLatestNoAckMilestoneResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/GetLatestNoAckMilestone", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *queryClient) GetMilestoneByNumber(ctx context.Context, in *QueryMilestoneRequest, opts ...grpc.CallOption) (*QueryMilestoneResponse, error) {
 	out := new(QueryMilestoneResponse)
 	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/GetMilestoneByNumber", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *queryClient) GetNoAckMilestoneById(ctx context.Context, in *QueryNoAckMilestoneByIDRequest, opts ...grpc.CallOption) (*QueryNoAckMilestoneByIDResponse, error) {
-	out := new(QueryNoAckMilestoneByIDResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/GetNoAckMilestoneById", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *queryClient) GetMilestoneProposerByTimes(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error) {
-	out := new(QueryMilestoneProposerResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/GetMilestoneProposerByTimes", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -878,14 +483,8 @@ type QueryServer interface {
 	GetMilestoneCount(context.Context, *QueryCountRequest) (*QueryCountResponse, error)
 	// GetLatestMilestone queries for the latest milestone
 	GetLatestMilestone(context.Context, *QueryLatestMilestoneRequest) (*QueryLatestMilestoneResponse, error)
-	// GetLatestNoAckMilestone query for the LatestNoAck
-	GetLatestNoAckMilestone(context.Context, *QueryLatestNoAckMilestoneRequest) (*QueryLatestNoAckMilestoneResponse, error)
 	// GetMilestoneByNumber queries for the milestone based on the number
 	GetMilestoneByNumber(context.Context, *QueryMilestoneRequest) (*QueryMilestoneResponse, error)
-	// GetNoAckMilestoneById query for the no-ack by id
-	GetNoAckMilestoneById(context.Context, *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error)
-	// GetMilestoneProposerByTimes queries for the milestone proposer
-	GetMilestoneProposerByTimes(context.Context, *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -901,17 +500,8 @@ func (*UnimplementedQueryServer) GetMilestoneCount(ctx context.Context, req *Que
 func (*UnimplementedQueryServer) GetLatestMilestone(ctx context.Context, req *QueryLatestMilestoneRequest) (*QueryLatestMilestoneResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLatestMilestone not implemented")
 }
-func (*UnimplementedQueryServer) GetLatestNoAckMilestone(ctx context.Context, req *QueryLatestNoAckMilestoneRequest) (*QueryLatestNoAckMilestoneResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetLatestNoAckMilestone not implemented")
-}
 func (*UnimplementedQueryServer) GetMilestoneByNumber(ctx context.Context, req *QueryMilestoneRequest) (*QueryMilestoneResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneByNumber not implemented")
-}
-func (*UnimplementedQueryServer) GetNoAckMilestoneById(ctx context.Context, req *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetNoAckMilestoneById not implemented")
-}
-func (*UnimplementedQueryServer) GetMilestoneProposerByTimes(ctx context.Context, req *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneProposerByTimes not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -972,24 +562,6 @@ func _Query_GetLatestMilestone_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_GetLatestNoAckMilestone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryLatestNoAckMilestoneRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).GetLatestNoAckMilestone(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/heimdallv2.milestone.Query/GetLatestNoAckMilestone",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetLatestNoAckMilestone(ctx, req.(*QueryLatestNoAckMilestoneRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Query_GetMilestoneByNumber_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryMilestoneRequest)
 	if err := dec(in); err != nil {
@@ -1004,42 +576,6 @@ func _Query_GetMilestoneByNumber_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServer).GetMilestoneByNumber(ctx, req.(*QueryMilestoneRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Query_GetNoAckMilestoneById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryNoAckMilestoneByIDRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).GetNoAckMilestoneById(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/heimdallv2.milestone.Query/GetNoAckMilestoneById",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetNoAckMilestoneById(ctx, req.(*QueryNoAckMilestoneByIDRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Query_GetMilestoneProposerByTimes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryMilestoneProposerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).GetMilestoneProposerByTimes(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/heimdallv2.milestone.Query/GetMilestoneProposerByTimes",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetMilestoneProposerByTimes(ctx, req.(*QueryMilestoneProposerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1061,20 +597,8 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_GetLatestMilestone_Handler,
 		},
 		{
-			MethodName: "GetLatestNoAckMilestone",
-			Handler:    _Query_GetLatestNoAckMilestone_Handler,
-		},
-		{
 			MethodName: "GetMilestoneByNumber",
 			Handler:    _Query_GetMilestoneByNumber_Handler,
-		},
-		{
-			MethodName: "GetNoAckMilestoneById",
-			Handler:    _Query_GetNoAckMilestoneById_Handler,
-		},
-		{
-			MethodName: "GetMilestoneProposerByTimes",
-			Handler:    _Query_GetMilestoneProposerByTimes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1182,57 +706,6 @@ func (m *QueryCountResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = l
 	if m.Count != 0 {
 		i = encodeVarintQuery(dAtA, i, uint64(m.Count))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryLastNoAckRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryLastNoAckRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryLastNoAckRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryLastNoAckResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryLastNoAckResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryLastNoAckResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Result != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Result))
 		i--
 		dAtA[i] = 0x8
 	}
@@ -1356,187 +829,6 @@ func (m *QueryMilestoneResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryLatestNoAckMilestoneRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryLatestNoAckMilestoneRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryLatestNoAckMilestoneRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryLatestNoAckMilestoneResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryLatestNoAckMilestoneResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryLatestNoAckMilestoneResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Result) > 0 {
-		i -= len(m.Result)
-		copy(dAtA[i:], m.Result)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.Result)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryNoAckMilestoneByIDRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryNoAckMilestoneByIDRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryNoAckMilestoneByIDRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Id) > 0 {
-		i -= len(m.Id)
-		copy(dAtA[i:], m.Id)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.Id)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryNoAckMilestoneByIDResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryNoAckMilestoneByIDResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryNoAckMilestoneByIDResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Result {
-		i--
-		if m.Result {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryMilestoneProposerRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryMilestoneProposerRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryMilestoneProposerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Times != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Times))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryMilestoneProposerResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryMilestoneProposerResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryMilestoneProposerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Proposers) > 0 {
-		for iNdEx := len(m.Proposers) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Proposers[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintQuery(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -1589,27 +881,6 @@ func (m *QueryCountResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryLastNoAckRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *QueryLastNoAckResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Result != 0 {
-		n += 1 + sovQuery(uint64(m.Result))
-	}
-	return n
-}
-
 func (m *QueryLatestMilestoneRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1650,80 +921,6 @@ func (m *QueryMilestoneResponse) Size() (n int) {
 	_ = l
 	l = m.Milestone.Size()
 	n += 1 + l + sovQuery(uint64(l))
-	return n
-}
-
-func (m *QueryLatestNoAckMilestoneRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *QueryLatestNoAckMilestoneResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Result)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
-
-func (m *QueryNoAckMilestoneByIDRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Id)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	return n
-}
-
-func (m *QueryNoAckMilestoneByIDResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Result {
-		n += 2
-	}
-	return n
-}
-
-func (m *QueryMilestoneProposerRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Times != 0 {
-		n += 1 + sovQuery(uint64(m.Times))
-	}
-	return n
-}
-
-func (m *QueryMilestoneProposerResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Proposers) > 0 {
-		for _, e := range m.Proposers {
-			l = e.Size()
-			n += 1 + l + sovQuery(uint64(l))
-		}
-	}
 	return n
 }
 
@@ -1960,125 +1157,6 @@ func (m *QueryCountResponse) Unmarshal(dAtA []byte) error {
 				b := dAtA[iNdEx]
 				iNdEx++
 				m.Count |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryLastNoAckRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryLastNoAckRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryLastNoAckRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryLastNoAckResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryLastNoAckResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryLastNoAckResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Result", wireType)
-			}
-			m.Result = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Result |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2365,443 +1443,6 @@ func (m *QueryMilestoneResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.Milestone.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryLatestNoAckMilestoneRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryLatestNoAckMilestoneRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryLatestNoAckMilestoneRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryLatestNoAckMilestoneResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryLatestNoAckMilestoneResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryLatestNoAckMilestoneResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Result", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Result = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryNoAckMilestoneByIDRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryNoAckMilestoneByIDRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryNoAckMilestoneByIDRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Id = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryNoAckMilestoneByIDResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryNoAckMilestoneByIDResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryNoAckMilestoneByIDResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Result", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Result = bool(v != 0)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryMilestoneProposerRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryMilestoneProposerRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryMilestoneProposerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Times", wireType)
-			}
-			m.Times = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Times |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryMilestoneProposerResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryMilestoneProposerResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryMilestoneProposerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Proposers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Proposers = append(m.Proposers, types.Validator{})
-			if err := m.Proposers[len(m.Proposers)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

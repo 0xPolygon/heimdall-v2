@@ -1,5 +1,3 @@
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
-
 # Clerk module
 
 ## Table of Contents
@@ -7,9 +5,12 @@
 * [Preliminary terminology](#preliminary-terminology)
 * [Overview](#overview)
 * [State-Sync Mechanism](#state-sync-mechanism)
-* [How does it work](#how-does-it-work)
+* [How it works](#how-it-works)
 * [How to add an event](#how-to-add-an-event)
 * [Query commands](#query-commands)
+  * [CLI Commands](#cli-commands)
+  * [GRPC Endpoints](#grpc-endpoints)
+  * [REST Endpoints](#rest-endpoints)
 
 ## Preliminary terminology
 
@@ -19,15 +20,21 @@
 
 ## Overview
 
-Clerk manages generic event records from Ethereum blockchain related to state-sync events, These are specially designed events that are emitted by the StateSender contract on the L1 chain to notify the L2 nodes (Bor in case of PoS) about the state changes in the L1. Once the events are processed by the bridge, Clerk listens to these events and stores them in the database for further processing.
+Clerk module manages generic event records from the Ethereum blockchain related to state-sync events.  
+These are specially designed events that are emitted by the StateSender contract on the L1 chain to notify the L2 nodes
+(Bor in case of PoS) about the state changes in the L1. 
+Once the bridge processes the events,
+the clerk module listens to these events and stores them in the database for further processing.
 
 ## State-Sync Mechanism
 
-It's a mechanism for state-management between Ethereum and Bor chain, The events generated are called state-sync events. This is a way to move data from the L1 chain to L2 chain.
+It's a mechanism for state-management between the Ethereum and Bor chain.
+The events generated are called state-sync events.
+This is a way to move data from the L1 chain to the L2 chain.
 
 ![State-Sync Flow](state_sync_flow.png)
 
-## How does it work
+## How it works
 
 An `EventRecord` is defined by the data structure :
 
@@ -35,18 +42,20 @@ An `EventRecord` is defined by the data structure :
 message EventRecord {
   option (gogoproto.goproto_getters) = false;
   option (gogoproto.equal) = false;
-
-  uint64 id = 1;
+  uint64 id = 1 [ (amino.dont_omitempty) = true ];
   string contract = 2 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
-  bytes data = 3;
-  string tx_hash = 4;
-  uint64 log_index = 5;
-  string bor_chain_id = 6;
-  google.protobuf.Timestamp record_time = 7
-  [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  bytes data = 3 [ (amino.dont_omitempty) = true ];
+  string tx_hash = 4 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
+  string bor_chain_id = 6 [ (amino.dont_omitempty) = true ];
+  google.protobuf.Timestamp record_time = 7 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
 }
 ```
 
@@ -62,29 +71,33 @@ The bridge will listen to the state-sync events from L1 and generate a txn with 
 
 ```protobuf
 message MsgEventRecord {
+  option (amino.name) = "heimdallv2/clerk/MsgEventRecord";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
+  option (cosmos.msg.v1.signer) = "from";
 
   string from = 1 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
-  string tx_hash = 2;
-  uint64 log_index = 3;
-  uint64 block_number = 4;
+  string tx_hash = 2 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 3 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 4 [ (amino.dont_omitempty) = true ];
   string contract_address = 5 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
-  bytes data = 6;
-  uint64 id = 7;
-  string chain_id = 8;
+  bytes data = 6 [ (amino.dont_omitempty) = true ];
+  uint64 id = 7 [ (amino.dont_omitempty) = true ];
+  string chain_id = 8 [ (amino.dont_omitempty) = true ];
 }
 ```
 
 [Handler](keeper/msg_server.go) for this transaction validates for multiple conditions including `TxHash` and `LogIndex` to ensure that the event exists on L1 and the data is not tampered with, It throws `Older invalid tx found` error if the event is already processed.
 
-Once the event is validated by the Handler, It will go to `SideHandleMsgEventRecord` in each validator node and after verifying the event, The validators will vote with either a `YES` return an error for a failed verification.
+Once the event is validated by the Handler,
+it will go to `SideHandleMsgEventRecord` in each validator node and after verifying the event,
+the validators will vote with either a `YES` return an error for failed verification.
 
 Only when there is a majority of `YES` votes, The event will be processed by `PostHandleMsgEventRecord` which will persist the event in the state via keeper.
 
@@ -93,46 +106,111 @@ Only when there is a majority of `YES` votes, The event will be processed by `Po
 A validator can leverage the CLI to add an event to the state in case it's missing and not processed by the bridge, The CLI command is :
 
 ```bash
-heimdallcli tx clerk record 
-    --id <event-id>
-    --contract <contract-address>
-    --data <event-data>
-    --tx-hash <tx-hash>
-    --log-index <log-index>
-    --block-number <L1-block-number>
-    --bor-chain-id <bor-chain-id>
-    --chain-id <heimdall-chain-id>
+heimdalld tx clerk handle-msg-event-record [from] [tx-hash] [log-index] [block-number] [contract-address] [data] [id] [chain-id]
 ```
 
 ## Query commands
 
 One can run the following query commands from the clerk module :
 
-* `record` - Query for a specific event record.
-* `list` - Query a list of event records.
-* `isoldtx` - Query if the event record is already processed.
-
+* `record` - Query for a specific event record by its ID.
+* `record-list` - Query a list of event records by page and limit.
+* `is-old-tx` - Query if the event record is already processed.
+* `latest-record-id` - Query the latest record (state-sync) id from L1.
+* `record-count` - Query the total number of event records.
 
 ### CLI commands
 
 ```bash
-heimdallcli query clerk record --id <event-id>
+heimdalld query clerk record [record-id]
 ```
 
 ```bash
-heimdallcli query clerk is-old-tx --tx-hash <tx-hash> --log-index <log-index>
+heimdalld query clerk record-list [page] [limit]
+```
+
+```bash
+heimdalld query clerk record-list-with-time [from-id] [to-time]
+```
+
+```bash
+heimdalld query clerk record-sequence [tx-hash] [log-index]
+```
+
+```bash
+heimdalld query clerk is-old-tx [tx-hash] [log-index]
+```
+
+```bash
+heimdalld query clerk latest-record-id
+```
+
+```bash
+heimdalld query clerk record-count
+```
+
+### GRPC Endpoints
+
+The endpoints and the params are defined in the [clerk/query.proto](/proto/heimdallv2/clerk/query.proto) file.
+Please refer to them for more information about the optional params.
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.clerk.Query/GetRecordList
+```
+
+```bash
+grpcurl -plaintext -d '{"record_id": <>}' localhost:9090 heimdallv2.clerk.Query/GetRecordById
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.clerk.Query/GetRecordListWithTime
+```
+
+```bash
+grpcurl -plaintext -d '{"tx_hash": <>, "log_index": <>}' localhost:9090 heimdallv2.clerk.Query/GetRecordSequence
+```
+
+```bash
+grpcurl -plaintext -d '{"tx_hash": <>, "log_index": <>}' localhost:9090 heimdallv2.clerk.Query/IsClerkTxOld
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.clerk.Query/GetLatestRecordId
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.clerk.Query/GetRecordCount
 ```
 
 ### REST endpoints
 
+The endpoints and the params are defined in the [clerk/query.proto](/proto/heimdallv2/clerk/query.proto) file.
+Please refer to them for more information about the optional params.
+
 ```bash
-curl -X GET "localhost:1317/clerk/event-record/<event-id>"
+curl localhost:1317/clerk/event-records/list?page=<page>&limit=<limit>
 ```
 
 ```bash
-curl -X GET "localhost:1317/clerk/event-record/list?from-id=<from-id>&to-time=<time-in-unix>&limit=<limit>"
+curl localhost:1317/clerk/event-records/latest-id
 ```
 
 ```bash
-curl -X GET "localhost:1317/clerk/isoldtx?tx-hash=<tx-hash>&log-index=<log-index>"
+curl localhost:1317/clerk/event-records/<event-id>
+```
+
+```bash
+curl localhost:1317/clerk/time?from_id=<from-id>&to_time=<to-time>&page=<page>&limit=<limit>
+```
+
+```bash
+curl localhost:1317/clerk/sequence?tx_hash=<tx-hash>&log_index=<log-index>
+```
+
+```bash
+curl localhost:1317/clerk/is-old-tx?tx_hash=<tx-hash>&log_index=<log-index>
+```
+
+```bash
+curl localhost:1317/clerk/event-records/count
 ```

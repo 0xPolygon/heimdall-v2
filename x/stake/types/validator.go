@@ -15,7 +15,7 @@ import (
 	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 )
 
 // NewValidator func creates a new validator
@@ -40,7 +40,7 @@ func NewValidator(
 }
 
 // SortValidatorByAddress sorts a slice of validators by address
-// to sort it we compare the values of signer field
+// to sort it we compare the values of the signer field
 func SortValidatorByAddress(a []Validator) []Validator {
 	sort.Slice(a, func(i, j int) bool {
 		return strings.Compare(util.FormatAddress(a[i].Signer), util.FormatAddress(a[j].Signer)) < 0
@@ -49,9 +49,9 @@ func SortValidatorByAddress(a []Validator) []Validator {
 	return a
 }
 
-// IsCurrentValidator checks if validator is in current validator set
+// IsCurrentValidator checks if the validator is in the current validator set
 func (v *Validator) IsCurrentValidator(ackCount uint64) bool {
-	// current epoch will be ack count + 1
+	// the current epoch will be ack count + 1
 	currentEpoch := ackCount + 1
 
 	// validator hasn't initialised unstake
@@ -59,16 +59,20 @@ func (v *Validator) IsCurrentValidator(ackCount uint64) bool {
 }
 
 // ValidateBasic validates a validator struct
-func (v *Validator) ValidateBasic() bool {
+func (v *Validator) ValidateBasic() error {
 	if bytes.Equal(v.PubKey, EmptyPubKey[:]) {
-		return false
+		return ErrInvalidMsg
 	}
 
 	pk := secp256k1.PubKey{
 		Key: v.PubKey,
 	}
 
-	return util.FormatAddress(v.Signer) == util.FormatAddress(pk.Address().String())
+	if util.FormatAddress(v.Signer) != util.FormatAddress(pk.Address().String()) {
+		return ErrInvalidMsg
+	}
+
+	return nil
 }
 
 // Copy creates a new copy of the validator, so we can mutate accum
@@ -108,9 +112,11 @@ func (v Validator) ConsPubKey() ([]byte, error) {
 }
 
 // Bytes computes the unique encoding of a validator with a given voting power.
-// These are the bytes that gets hashed in consensus. It excludes address
-// as it's redundant with the pubKey. This also excludes ProposerPriority
-// which changes every round.
+// These are the bytes that get hashed in consensus.
+// It excludes the address
+// as it's redundant with the pubKey.
+// This also excludes the ProposerPriority
+// which changes at every round.
 func (v *Validator) Bytes() []byte {
 	result := make([]byte, 64)
 
@@ -120,7 +126,7 @@ func (v *Validator) Bytes() []byte {
 	return result
 }
 
-// UpdatedAt returns block number of last validator update
+// UpdatedAt returns block number of the last validator update
 func (v *Validator) UpdatedAt() string {
 	return v.LastUpdated
 }
@@ -160,14 +166,14 @@ func (v Validator) CmtConsPublicKey() (cmtprotocrypto.PublicKey, error) {
 }
 
 // MinimalVal is the minimal validator representation
-// Used to send validator information to bor validator contract
+// Used to send validator information to the bor validator contract
 type MinimalVal struct {
 	ID          uint64         `json:"ID"`
-	VotingPower uint64         `json:"power"` // TODO add 10^-18 here so that we don't overflow easily
+	VotingPower uint64         `json:"power"`
 	Signer      common.Address `json:"signer"`
 }
 
-// Following functions are implemented to support cosmos validator interface
+// The following functions are implemented to support cosmos validator interface
 
 // GetCommission implements types.ValidatorI.
 func (*Validator) GetCommission() math.LegacyDec {

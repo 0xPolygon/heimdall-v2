@@ -8,18 +8,18 @@ import (
 	"google.golang.org/grpc"
 )
 
-// SideTxHandler defines the core of side-tx execution of an application
+// SideTxHandler defines the core of the app side-tx execution
 type SideTxHandler func(ctx sdk.Context, msg sdk.Msg) Vote
 
-// PostTxHandler defines the core of the state transition function of an application after side-tx execution
+// PostTxHandler defines the core of the app state transition function after side-tx execution
 type PostTxHandler func(ctx sdk.Context, msg sdk.Msg, sideTxResult Vote) error
 
-// SideMsgServer defines the interface to implement the sidetxs and post handlers.
+// SideMsgServer defines the interface to implement the side txs and post-handlers.
 type SideMsgServer interface {
 	// SideTxHandler to register specific sideHandler based on methodName
 	SideTxHandler(methodName string) SideTxHandler
 
-	// PostTxHandler to register specific postHandler based on methodName
+	// PostTxHandler to register the specific postHandler based on methodName
 	PostTxHandler(methodName string) PostTxHandler
 }
 
@@ -38,8 +38,8 @@ func CommonRegisterSideMsgServer(
 		_, _ = service.Handler(nil, context.Background(), func(i interface{}) error {
 			msg, ok := i.(sdk.Msg)
 			if !ok {
-				// We panic here because there is no other alternative and the app cannot be initialized correctly
-				// this should only happen if there is a problem with code generation in which case the app won't
+				// We panic here because there is no other alternative and the app cannot be initialized correctly.
+				// This should only happen if there is a problem with code generation, where the app won't
 				// work correctly anyway.
 				panic(fmt.Errorf("unable to register service method : %T does not implement sdk.Msg", i))
 			}

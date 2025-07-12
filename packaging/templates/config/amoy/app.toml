@@ -240,13 +240,15 @@ max-txs = -1
 # This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 
+bor_rpc_timeout = "1s"
+
 ##### RPC and REST configs #####
 
 # RPC endpoint for ethereum chain
-eth_rpc_url = ""
+eth_rpc_url = "http://localhost:9545"
 
 # RPC endpoint for bor chain
-bor_rpc_url = ""
+bor_rpc_url = "http://localhost:8545"
 
 # GRPC flag for bor chain
 bor_grpc_flag = "false"
@@ -273,9 +275,10 @@ clerk_poll_interval = "10s"
 span_poll_interval = "1m0s"
 milestone_poll_interval = "30s"
 enable_self_heal = "false"
-sh_state_synced_interval = "15m0s"
+sh_state_synced_interval = "3h0m0s"
 sh_stake_update_interval = "3h0m0s"
-sh_max_depth_duration = "1h0m0s"
+sh_checkpoint_ack_interval = "30m0s"
+sh_max_depth_duration = "24h0m0s"
 
 #### gas limits ####
 main_chain_gas_limit = "5000000"
