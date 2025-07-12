@@ -19,21 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Msg_Milestone_FullMethodName        = "/heimdallv2.milestone.Msg/Milestone"
-	Msg_MilestoneTimeout_FullMethodName = "/heimdallv2.milestone.Msg/MilestoneTimeout"
-	Msg_UpdateParams_FullMethodName     = "/heimdallv2.milestone.Msg/UpdateParams"
+	Msg_UpdateParams_FullMethodName = "/heimdallv2.milestone.Msg/UpdateParams"
 )
 
 // MsgClient is the client API for Msg service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MsgClient interface {
-	// Milestone defines a method for sending a milestone which
-	// finalizes a range of bor blocks
-	Milestone(ctx context.Context, in *MsgMilestone, opts ...grpc.CallOption) (*MsgMilestoneResponse, error)
-	// MilestoneTimeout defines a method to indicate that no milestone
-	// was proposed within the timeout period
-	MilestoneTimeout(ctx context.Context, in *MsgMilestoneTimeout, opts ...grpc.CallOption) (*MsgMilestoneTimeoutResponse, error)
 	// UpdateParams defines an operation for updating the x/milestone module
 	// parameters.
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
@@ -45,24 +37,6 @@ type msgClient struct {
 
 func NewMsgClient(cc grpc.ClientConnInterface) MsgClient {
 	return &msgClient{cc}
-}
-
-func (c *msgClient) Milestone(ctx context.Context, in *MsgMilestone, opts ...grpc.CallOption) (*MsgMilestoneResponse, error) {
-	out := new(MsgMilestoneResponse)
-	err := c.cc.Invoke(ctx, Msg_Milestone_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *msgClient) MilestoneTimeout(ctx context.Context, in *MsgMilestoneTimeout, opts ...grpc.CallOption) (*MsgMilestoneTimeoutResponse, error) {
-	out := new(MsgMilestoneTimeoutResponse)
-	err := c.cc.Invoke(ctx, Msg_MilestoneTimeout_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error) {
@@ -78,12 +52,6 @@ func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts 
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
-	// Milestone defines a method for sending a milestone which
-	// finalizes a range of bor blocks
-	Milestone(context.Context, *MsgMilestone) (*MsgMilestoneResponse, error)
-	// MilestoneTimeout defines a method to indicate that no milestone
-	// was proposed within the timeout period
-	MilestoneTimeout(context.Context, *MsgMilestoneTimeout) (*MsgMilestoneTimeoutResponse, error)
 	// UpdateParams defines an operation for updating the x/milestone module
 	// parameters.
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
@@ -94,12 +62,6 @@ type MsgServer interface {
 type UnimplementedMsgServer struct {
 }
 
-func (UnimplementedMsgServer) Milestone(context.Context, *MsgMilestone) (*MsgMilestoneResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Milestone not implemented")
-}
-func (UnimplementedMsgServer) MilestoneTimeout(context.Context, *MsgMilestoneTimeout) (*MsgMilestoneTimeoutResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MilestoneTimeout not implemented")
-}
 func (UnimplementedMsgServer) UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateParams not implemented")
 }
@@ -114,42 +76,6 @@ type UnsafeMsgServer interface {
 
 func RegisterMsgServer(s grpc.ServiceRegistrar, srv MsgServer) {
 	s.RegisterService(&Msg_ServiceDesc, srv)
-}
-
-func _Msg_Milestone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgMilestone)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MsgServer).Milestone(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Msg_Milestone_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).Milestone(ctx, req.(*MsgMilestone))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Msg_MilestoneTimeout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgMilestoneTimeout)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MsgServer).MilestoneTimeout(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Msg_MilestoneTimeout_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).MilestoneTimeout(ctx, req.(*MsgMilestoneTimeout))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _Msg_UpdateParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -177,14 +103,6 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "heimdallv2.milestone.Msg",
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "Milestone",
-			Handler:    _Msg_Milestone_Handler,
-		},
-		{
-			MethodName: "MilestoneTimeout",
-			Handler:    _Msg_MilestoneTimeout_Handler,
-		},
 		{
 			MethodName: "UpdateParams",
 			Handler:    _Msg_UpdateParams_Handler,

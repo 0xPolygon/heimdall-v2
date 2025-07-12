@@ -11,7 +11,7 @@ import (
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-// selectNextProducers selects producers for next span
+// selectNextProducers selects producers for the next span
 func selectNextProducers(blkHash common.Hash, spanEligibleValidators []staketypes.Validator, producerCount uint64) []uint64 {
 	selectedProducers := make([]uint64, 0)
 
@@ -26,7 +26,7 @@ func selectNextProducers(blkHash common.Hash, spanEligibleValidators []staketype
 	// extract seed from hash
 	seedBytes := helper.ToBytes32(blkHash.Bytes()[:32])
 	seed := int64(binary.BigEndian.Uint64(seedBytes[:]))
-	// #nosec G404 -- suppress gosec warning as predictable randomness is required
+	// #nosec G404 -- suppress warning as predictable randomness is required
 	r := rand.New(rand.NewSource(seed))
 
 	// weighted range from validators' voting power
@@ -39,10 +39,10 @@ func selectNextProducers(blkHash common.Hash, spanEligibleValidators []staketype
 	// select producers, with replacement
 	for i := uint64(0); i < producerCount; i++ {
 		/*
-			random must be in [1, totalVotingPower] to avoid situation such as
+			Random must be in [1, totalVotingPower] to avoid the situation such as
 			2 validators with 1 staking power each.
 			Weighted range will look like (1, 2)
-			Rolling inclusive will have a range of 0 - 2, making validator with staking power 1 chance of selection = 66%
+			Rolling inclusive will have a range of 0-2, making validator with staking power 1 chance of selection = 66%
 		*/
 		targetWeight := randomRangeInclusive(1, totalVotingPower, r)
 		index := binarySearch(weightedRanges, targetWeight)
@@ -82,7 +82,7 @@ func randomRangeInclusive(minValue uint64, maxValue uint64, rand *rand.Rand) uin
 	maxAllowedValue := math.MaxUint64 - math.MaxUint64%rangeLength - 1
 	randomValue := rand.Uint64()
 
-	// reject anything that is beyond the reminder to avoid bias
+	// reject anything beyond the reminder to avoid bias
 	for randomValue >= maxAllowedValue {
 		randomValue = rand.Uint64()
 	}

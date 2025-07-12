@@ -12,7 +12,6 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/codec"
 	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -34,14 +33,14 @@ import (
 var testnetCmdName = "create-testnet"
 
 // testnetCmd initialises files required to start heimdall testnet
-func testnetCmd(_ *server.Context, cdc *codec.LegacyAmino, mbm module.BasicManager) *cobra.Command {
+func testnetCmd(_ *server.Context, mbm module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   testnetCmdName,
 		Short: "Initialize files for a Heimdall testnet",
 		Long: `testnet will create "v" + "n" number of directories and populate each with
 necessary files (private validator, genesis, config, etc.).
 
-Note, strict routability for addresses is turned off in the config file.
+Note, strict rout ability for addresses is turned off in the config file.
 Optionally, it will fill in persistent_peers list in config file using either hostnames or IPs.
 
 Example:
@@ -67,7 +66,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 			// num of validators = validators in genesis files
 			numValidators := viper.GetInt(flagNumValidators)
 
-			// get total number of validators to be generated
+			// get the total number of validators to be generated
 			totalValidators := getTotalNumberOfNodes()
 
 			// first validators start ID
@@ -128,7 +127,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				cosmosPrivKey := &cosmossecp256k1.PrivKey{Key: privKeys[i].Bytes()}
 
 				if i < numValidators {
-					// create validator account
+					// create the validator account
 					validators[i], err = stakeTypes.NewValidator(
 						uint64(startID+int64(i)),
 						0,
@@ -142,22 +141,22 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 						return err
 					}
 
-					// create dividend account for validator
+					// create the dividend account for the validator
 					dividendAccounts[i] = hmTypes.DividendAccount{
 						User:      validators[i].Signer,
 						FeeAmount: big.NewInt(0).String(),
 					}
 				}
 
-				signers[i] = GetSignerInfo(valPubKeys[i], privKeys[i].Bytes(), cdc)
+				signers[i] = GetSignerInfo(valPubKeys[i], privKeys[i].Bytes())
 
-				cfgz, err := os.ReadFile(appCfgFile)
+				cf, err := os.ReadFile(appCfgFile)
 				if err != nil {
 					return err
 				}
 
-				// write config file
-				err = os.WriteFile(filepath.Join(config.RootDir, "config/app.toml"), cfgz, 0o600)
+				// write the config file
+				err = os.WriteFile(filepath.Join(config.RootDir, "config/app.toml"), cf, 0o600)
 				if err != nil {
 					return err
 				}
@@ -246,7 +245,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				}
 			}
 
-			// dump signer information in a json file
+			// dump signer information into a JSON file
 			// this is required when setting up node dirs for devnet
 			dump := viper.GetBool("signer-dump")
 			if dump {

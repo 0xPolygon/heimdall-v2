@@ -16,12 +16,12 @@ func RandomBytes() []byte {
 }
 
 func RandDividendAccounts() []hmTypes.DividendAccount {
-	dividendAccs := make([]hmTypes.DividendAccount, 1)
+	dividendAccounts := make([]hmTypes.DividendAccount, 1)
 
-	dividendAccs[0] = hmTypes.DividendAccount{
+	dividendAccounts[0] = hmTypes.DividendAccount{
 		User:      secp256k1.GenPrivKey().PubKey().Address().String(),
 		FeeAmount: big.NewInt(0).String(),
 	}
 
-	return dividendAccs
+	return dividendAccounts
 }

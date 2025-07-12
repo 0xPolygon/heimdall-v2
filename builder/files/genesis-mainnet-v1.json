@@ -1,11 +1,11 @@
 {
-  "_comment" : "TODO-HV2: replace this with actual genesis file after export",
+  "_comment" : "This is the old heimdall-v1 mainnet genesis file. New one is available at https://storage.googleapis.com/mainnet-heimdallv2-genesis/dump-genesis.json",
   "genesis_time": "2020-05-30T04:28:03.177054Z",
   "chain_id": "heimdall-137",
   "consensus_params": {
     "block": {
-      "max_bytes": "22020096",
-      "max_gas": "25000000",
+      "max_bytes": "2097152",
+      "max_gas": "10000000",
       "time_iota_ms": "1000"
     },
     "evidence": {

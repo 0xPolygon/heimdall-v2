@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
@@ -36,6 +37,7 @@ type KeeperTestSuite struct {
 	borKeeper          keeper.Keeper
 	chainManagerKeeper *bortestutil.MockChainManagerKeeper
 	stakeKeeper        *bortestutil.MockStakeKeeper
+	milestoneKeeper    *bortestutil.MockMilestoneKeeper
 	contractCaller     mocks.IContractCaller
 	queryClient        types.QueryClient
 	msgServer          types.MsgServer
@@ -48,6 +50,7 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (s *KeeperTestSuite) SetupTest() {
+	helper.SetVeblopHeight(100000)
 	key := storetypes.NewKVStoreKey(types.StoreKey)
 	testCtx := testutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
@@ -62,6 +65,9 @@ func (s *KeeperTestSuite) SetupTest() {
 	stakeKeeper := bortestutil.NewMockStakeKeeper(ctrl)
 	s.stakeKeeper = stakeKeeper
 
+	milestoneKeeper := bortestutil.NewMockMilestoneKeeper(ctrl)
+	s.milestoneKeeper = milestoneKeeper
+
 	s.contractCaller = mocks.IContractCaller{}
 	s.ctx = ctx
 
@@ -71,11 +77,16 @@ func (s *KeeperTestSuite) SetupTest() {
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		s.chainManagerKeeper,
 		s.stakeKeeper,
+		s.milestoneKeeper,
 		nil,
 	)
 
 	s.borKeeper.SetContractCaller(&s.contractCaller)
 	types.RegisterInterfaces(encCfg.InterfaceRegistry)
+
+	borParams := types.DefaultParams()
+	err := s.borKeeper.SetParams(ctx, borParams)
+	s.Require().NoError(err)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
 	types.RegisterQueryServer(queryHelper, keeper.NewQueryServer(&s.borKeeper))
@@ -543,6 +554,95 @@ func (s *KeeperTestSuite) TestParamsGetterSetter() {
 	resParams, err := borKeeper.FetchParams(ctx)
 	require.NoError(err)
 	require.True(expParams.Equal(resParams))
+}
+
+func (s *KeeperTestSuite) TestSpanByBlockNumber() {
+	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
+
+	// Spans with overlaps
+	spans := []types.Span{
+		{Id: 0, StartBlock: 0, EndBlock: 0},
+		{Id: 1, StartBlock: 1, EndBlock: 100},
+		{Id: 2, StartBlock: 101, EndBlock: 200},
+		{Id: 3, StartBlock: 50, EndBlock: 200},
+		{Id: 4, StartBlock: 51, EndBlock: 200},
+		{Id: 5, StartBlock: 200, EndBlock: 300},
+		{Id: 6, StartBlock: 52, EndBlock: 200},
+	}
+
+	for i := range spans {
+		err := borKeeper.AddNewSpan(ctx, &spans[i])
+		require.NoError(err)
+	}
+
+	testCases := []struct {
+		name           string
+		blockNumber    uint64
+		expectedSpanID uint64
+		expectError    bool
+		errorContains  string
+	}{
+		{
+			name:           "Block in multiple overlapping spans (1)",
+			blockNumber:    51,
+			expectedSpanID: 4,
+		},
+		{
+			name:           "Block in multiple overlapping spans (2)",
+			blockNumber:    52,
+			expectedSpanID: 6,
+		},
+		{
+			name:           "Block in multiple overlapping spans (3)",
+			blockNumber:    75,
+			expectedSpanID: 6,
+		},
+		{
+			name:           "Block in single span",
+			blockNumber:    25,
+			expectedSpanID: 1,
+		},
+		{
+			name:           "Block on boundary of multiple spans",
+			blockNumber:    200,
+			expectedSpanID: 6,
+		},
+		{
+			name:           "Edge case - start of first span",
+			blockNumber:    1,
+			expectedSpanID: 1,
+		},
+		{
+			name:           "Edge case - end of a span",
+			blockNumber:    100,
+			expectedSpanID: 6, // In spans 1, 3, 4, 6. Highest ID is 6.
+		},
+		{
+			name:           "Edge case - end of last span",
+			blockNumber:    300,
+			expectedSpanID: 5,
+		},
+		{
+			name:          "Block not found - after all spans",
+			blockNumber:   301,
+			expectError:   true,
+			errorContains: "span not found for block 301",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			span, err := borKeeper.SpanByBlockNumber(ctx, tc.blockNumber)
+
+			if tc.expectError {
+				require.Error(err)
+				require.Contains(err.Error(), tc.errorContains)
+			} else {
+				require.NoError(err)
+				require.Equal(tc.expectedSpanID, span.Id)
+			}
+		})
+	}
 }
 
 func (s *KeeperTestSuite) genTestSpans(num uint64) []*types.Span {

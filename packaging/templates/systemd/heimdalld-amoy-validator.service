@@ -7,7 +7,7 @@
   RestartSec=5s
   WorkingDirectory=/usr/bin
   ExecStart=/usr/bin/heimdalld start --home "/var/lib/heimdall" \
-		--bridge --all \
+	--bridge --all \
     --chain=amoy \
     --rest-server
   Type=simple

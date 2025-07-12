@@ -9,7 +9,6 @@ import (
 	"github.com/golang/mock/gomock"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
@@ -23,7 +22,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 	borChainId := "1234"
 	params, _ := keeper.GetParams(ctx)
 
-	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
+	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(chSim.RandDividendAccounts(), nil)
 	dividendAccounts, err := topupKeeper.GetAllDividendAccounts(ctx)
 	require.NoError(err)
 
@@ -35,7 +34,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
-	require.NotNil(lastCheckpoint)
+	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
 	checkpoint := chSim.GenRandCheckpoint(start, params.MaxCheckpointLength, lastCheckpoint.Id+1)
@@ -134,7 +133,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	require.NoError(err)
 	checkpointBufferTime := params.CheckpointBufferTime
 
-	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
+	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(chSim.RandDividendAccounts(), nil)
 	dividendAccounts, err := topupKeeper.GetAllDividendAccounts(ctx)
 	require.NoError(err)
 
@@ -147,7 +146,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
-	require.NotNil(lastCheckpoint)
+	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
 	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
@@ -181,8 +180,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	newTime := checkpointBuffer.Timestamp + uint64(checkpointBufferTime)
 	ctx = ctx.WithBlockTime(time.Unix(int64(newTime), 0))
 
-	// send new checkpoint which should replace old one
-	// send checkpoint to handler
+	// send the new checkpoint which should replace the old one
 	_, err = msgServer.Checkpoint(ctx, msgCheckpoint)
 	require.NoError(err)
 }
@@ -196,7 +194,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 
 	borChainId := "1234"
 
-	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
+	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(chSim.RandDividendAccounts(), nil)
 	dividendAccounts, err := topupKeeper.GetAllDividendAccounts(ctx)
 	require.NoError(err)
 
@@ -208,7 +206,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
-	require.NotNil(lastCheckpoint)
+	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
 	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
@@ -251,19 +249,24 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
 	stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
 
-	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
-	if err == nil {
-		start = start + lastCheckpoint.EndBlock + 1
-	}
-	require.NotNil(lastCheckpoint)
-	require.NotNil(lastCheckpoint.Id)
+	lastCheckpoint := chSim.GenRandCheckpoint(start, maxSize, 1)
+	err := keeper.AddCheckpoint(ctx, lastCheckpoint)
+	require.NoError(err)
 
-	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
+	err = keeper.IncrementAckCount(ctx)
+	require.NoError(err)
+
+	lastCheckpoint, err = keeper.GetLastCheckpoint(ctx)
+	require.NoError(err)
+	require.NotEmpty(&lastCheckpoint)
+	require.NotEmpty(lastCheckpoint.Id)
+
+	checkpoint := chSim.GenRandCheckpoint(maxSize+1, maxSize, lastCheckpoint.Id+1)
 
 	// add current proposer to checkpoint
 	checkpoint.Proposer = validatorSet.Proposer.Signer
 
-	cpNumber := uint64(1)
+	cpNumber := lastCheckpoint.Id + 1
 
 	s.Run("No checkpoint in buffer", func() {
 		MsgCpAck := types.NewMsgCpAck(
@@ -273,12 +276,10 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
-		require.NoError(err)
+		require.ErrorContains(err, types.ErrBadAck.Error())
 	})
 
 	err = keeper.SetCheckpointBuffer(ctx, checkpoint)
@@ -292,8 +293,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
@@ -311,8 +310,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			uint64(123),
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
@@ -326,9 +323,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			checkpoint.Proposer,
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
-			testutil.RandomBytes(),
-			testutil.RandomBytes(),
-			uint64(1),
+			chSim.RandomBytes(),
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
@@ -356,7 +351,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
-	require.NotNil(lastCheckpoint)
+	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
 	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)

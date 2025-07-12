@@ -41,7 +41,7 @@ const (
 	waitDuration = 1 * time.Minute
 )
 
-// StartBridgeWithCtx starts bridge service and is able to shutdow gracefully
+// StartBridgeWithCtx starts bridge service, and it's able to shut down gracefully
 // returns service errors, if any
 func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) error {
 	// create codec
@@ -131,7 +131,7 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 
 	// shutdown phase
 	g.Go(func() error {
-		// wait for interrupt and start shut down
+		// wait for interrupt and start the shut-down
 		<-shutdownCtx.Done()
 
 		logger.Info("Received stop signal - Stopping all heimdall bridge services")
@@ -155,7 +155,7 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 		return nil
 	})
 
-	// wait for all routines to finish and log error
+	// wait for all routines to finish and log the error
 	if err := g.Wait(); err != nil {
 		logger.Error("Bridge stopped", "err", err)
 		return err
@@ -258,7 +258,6 @@ func StartBridge(isStandAlone bool) {
 	for _, service := range services {
 		go func(serv common.Service) {
 			defer wg.Done()
-			// TODO handle error while starting service
 			if err := serv.Start(); err != nil {
 				logger.Error("GetStartCmd | serv.Start", "Error", err)
 			}

@@ -10,7 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -27,14 +27,14 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 	pk1 := ed25519.GenPrivKey().PubKey()
 	require.NotNil(pk1)
 
-	// Msg with wrong pub key
+	// Msg with the wrong public key
 	msgValJoin := stakingtypes.MsgValidatorJoin{
 		From:            pk1.Address().String(),
 		ValId:           uint64(1),
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(1000000000000000000)),
 		SignerPubKey:    pk1.Bytes(),
-		TxHash:          []byte{},
+		TxHash:          common.FromHex(TxHash1),
 		LogIndex:        uint64(1),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -53,7 +53,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(1000000000000000000)),
 		SignerPubKey:    pk1.Bytes(),
-		TxHash:          []byte{},
+		TxHash:          common.FromHex(TxHash1),
 		LogIndex:        uint64(1),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -89,15 +89,15 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 	ctx, msgServer, keeper, require, checkpointKeeper := s.ctx, s.msgServer, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
-	// pass 0 as time alive to generate non de-activated validators
-	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	// pass 0 as time alive to generate the non-deactivated validators
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0, 0)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
 	oldSigner := oldValSet.Validators[0]
-	newSigner := testutil.GenRandomVals(1, 0, 10, 10, false, 1)
+	newSigner := testutil.GenRandomVals(1, 0, 10, 10, false, 1, 0)
 	newSigner[0].ValId = oldSigner.ValId
 	newSigner[0].VotingPower = oldSigner.VotingPower
 
@@ -105,7 +105,7 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 		From:            oldSigner.Signer,
 		ValId:           oldSigner.ValId,
 		NewSignerPubKey: oldSigner.GetPubKey(),
-		TxHash:          []byte{},
+		TxHash:          common.FromHex(TxHash1),
 		LogIndex:        uint64(0),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -119,7 +119,7 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 		From:            newSigner[0].Signer,
 		ValId:           uint64(1),
 		NewSignerPubKey: newSigner[0].GetPubKey(),
-		TxHash:          []byte{},
+		TxHash:          common.FromHex(TxHash1),
 		LogIndex:        uint64(0),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -153,12 +153,12 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 	ctx, msgServer, keeper, require, checkpointKeeper := s.ctx, s.msgServer, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
-	// pass 0 as time alive to generate non de-activated validators
-	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	// pass 0 as time alive to generate the non-deactivated validators
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0, 0)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
-	msgTxHash := common.Hex2Bytes(TxHash1)
+	msgTxHash := common.FromHex(TxHash1)
 
 	validators[0].EndEpoch = 10
 	msgValidatorExit := stakingtypes.MsgValidatorExit{
@@ -188,14 +188,14 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
 
-	// pass 0 as time alive to generate non de-activated validators
-	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	// pass 0 as time alive to generate the non-deactivated validators
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0, 0)
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
 	oldVal := oldValSet.Validators[0]
 
-	msgTxHash := common.Hex2Bytes(TxHash1)
+	msgTxHash := common.FromHex(TxHash1)
 	newAmount := math.NewInt(2000000000000000000)
 
 	msgStakeUpdate := stakingtypes.MsgStakeUpdate{
@@ -257,7 +257,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(100000)),
 		SignerPubKey:    pk1.Bytes(),
-		TxHash:          []byte{},
+		TxHash:          common.FromHex(TxHash1),
 		LogIndex:        logIndex,
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -269,7 +269,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 
 func (s *KeeperTestSuite) TestValidatorPubKey() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
-	testutil.LoadRandomValidatorSet(require, 1, keeper, ctx, false, 0)
+	testutil.LoadRandomValidatorSet(require, 1, keeper, ctx, false, 0, 0)
 	valPubKey := keeper.GetAllValidators(ctx)[0].GetPubKey()
 	valAddr := keeper.GetAllValidators(ctx)[0].Signer
 	modPubKey := secp256k1.PubKey{Key: valPubKey}

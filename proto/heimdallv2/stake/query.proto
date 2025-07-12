@@ -14,7 +14,7 @@ service Query {
   rpc GetCurrentValidatorSet(QueryCurrentValidatorSetRequest)
       returns (QueryCurrentValidatorSetResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/stake/validator-set";
+    option (google.api.http).get = "/stake/validators-set";
   }
   // GetSignerByAddress queries validator info for a given validator address
   rpc GetSignerByAddress(QuerySignerRequest) returns (QuerySignerResponse) {
@@ -41,8 +41,13 @@ service Query {
   // IsStakeTxOld queries for the staking sequence
   rpc IsStakeTxOld(QueryStakeIsOldTxRequest)
       returns (QueryStakeIsOldTxResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/is-old-tx";
+  }
+  // GetCurrentProposer queries validator info for the current proposer
+  rpc GetCurrentProposer(QueryCurrentProposerRequest)
+      returns (QueryCurrentProposerResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/stake/proposers/current";
   }
   // GetProposersByTimes queries for the proposers by Tendermint iterations
   rpc GetProposersByTimes(QueryProposersRequest)
@@ -106,5 +111,12 @@ message QueryProposersRequest {
 
 message QueryProposersResponse {
   repeated heimdallv2.stake.Validator proposers = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryCurrentProposerRequest {}
+
+message QueryCurrentProposerResponse {
+  heimdallv2.stake.Validator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

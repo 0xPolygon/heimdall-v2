@@ -1,5 +1,5 @@
-# This is an example compose file for starting up geimdall-v2 required components
-# to run standalone without Bor for development and testing purposes.
+# This is an example docker-compose file for starting up heimdall-v2 required components.
+# To run standalone without Bor for development and testing purposes.
 # Do not use this for production.
 version: "3"
 
@@ -13,7 +13,7 @@ services:
 
   heimdalld:
     container_name: heimdalld
-    image: 0xpolygon/heimdall:latest # TODO-HV2: replace this with proper image
+    image: 0xpolygon/heimdall-v2:latest
     build: .
     restart: unless-stopped
     environment:
@@ -32,7 +32,7 @@ services:
 
   heimdallr:
     container_name: heimdallr
-    image: 0xpolygon/heimdall:latest # TODO-HV2: replace this with proper image
+    image: 0xpolygon/heimdall-v2:latest
     build: .
     restart: unless-stopped
     environment:
@@ -50,7 +50,7 @@ services:
 
   bridge:
     container_name: bridge
-    image: 0xpolygon/heimdall:latest # TODO-HV2: replace this with proper image
+    image: 0xpolygon/heimdall-v2:latest
     build: .
     restart: unless-stopped
     environment:
@@ -64,7 +64,7 @@ services:
       - heimdalld
       - heimdallr
       - rabbitmq
-    command: # TODO-HV2: check these commands once we have a proper build
+    command:
       - bridge
       - start
       - --all

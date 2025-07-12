@@ -138,7 +138,7 @@ func BenchmarkSendTaskWithDelay(b *testing.B) {
 
 			// when
 			b.StartTimer()
-			// This will trigger 'error="Set state pending error: dial tcp 127.0.0.1:6379: connect: connection refused'
+			// This will trigger error="Set state pending error: dial tcp 127.0.0.1:6379: connect: connection refused"
 			// it's fine as long as we don't want to test the actual sendTask to rabbitmq
 			rcl.SendTaskWithDelay(
 				"sendStateSyncedToHeimdall", "StateSynced",
@@ -225,28 +225,13 @@ func prepareMockData(b *testing.B) *gomock.Controller {
 
 	mockHttpClient := helperMocks.NewMockHTTPClient(mockCtrl)
 
-	//nolint: bodyclose
 	mockHttpClient.EXPECT().Get(chainManagerParamsUrl).Return(prepareResponse(chainManagerParamsResponse), nil).AnyTimes()
-
-	//nolint: bodyclose
 	mockHttpClient.EXPECT().Get(getAccountUrl).Return(prepareResponse(getAccountResponse), nil).AnyTimes()
-
-	//nolint: bodyclose
 	mockHttpClient.EXPECT().Get(getAccountUrl2).Return(prepareResponse(getAccountResponse), nil).AnyTimes()
-
-	//nolint: bodyclose
 	mockHttpClient.EXPECT().Get(isOldTxUrl).Return(prepareResponse(isOldTxResponse), nil).AnyTimes()
-
-	//nolint: bodyclose
 	mockHttpClient.EXPECT().Get(checkpointCountUrl).Return(prepareResponse(checkpointCountResponse), nil).AnyTimes()
-
-	//nolint: bodyclose
 	mockHttpClient.EXPECT().Get(unconfirmedTxsUrl).Return(prepareResponse(unconfirmedTxsResponse), nil).AnyTimes()
-
-	//nolint: bodyclose
 	mockHttpClient.EXPECT().Get(getUnconfirmedTxnCountUrl).Return(prepareResponse(getUnconfirmedTxnCountResponse), nil).AnyTimes()
-
-	//nolint: bodyclose
 	mockHttpClient.EXPECT().Get(getValidatorSetUrl).Return(prepareResponse(getValidatorSetResponse), nil).AnyTimes()
 
 	helper.Client = mockHttpClient
@@ -263,13 +248,13 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 	viper.Set(flags.FlagLogLevel, "debug")
 	helper.InitTestHeimdallConfig("")
 
-	srvconf := serverconfig.DefaultConfig()
+	srvConf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
-	srvconf.API.Enable = true
-	srvconf.API.Address = dummyHeimdallServerUrl
+	srvConf.API.Enable = true
+	srvConf.API.Address = dummyHeimdallServerUrl
 	configuration.CometBFTRPCUrl = dummyCometBFTNode
 	customAppConf := helper.CustomAppConfig{
-		Config: *srvconf,
+		Config: *srvConf,
 		Custom: configuration,
 	}
 	helper.SetTestConfig(customAppConf)
@@ -299,13 +284,13 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
 	viper.Set(flags.FlagLogLevel, "debug")
 
-	srvconf := serverconfig.DefaultConfig()
+	srvConf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
-	srvconf.API.Enable = true
-	srvconf.API.Address = dummyHeimdallServerUrl
+	srvConf.API.Enable = true
+	srvConf.API.Address = dummyHeimdallServerUrl
 	configuration.CometBFTRPCUrl = dummyCometBFTNode
 	customAppConf := helper.CustomAppConfig{
-		Config: *srvconf,
+		Config: *srvConf,
 		Custom: configuration,
 	}
 	helper.SetTestConfig(customAppConf)
@@ -320,7 +305,7 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 	}
 
 	rcl.BaseListener = *listener.NewBaseListener(
-		cdc, &queue.QueueConnector{Server: server}, nil, helper.GetMainClient(), "rootchain", rcl)
+		cdc, &queue.Connector{Server: server}, nil, helper.GetMainClient(), "rootChain", rcl)
 
 	stopFn = func() {
 		rcl.Stop()

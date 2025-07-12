@@ -14,7 +14,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
@@ -26,16 +26,12 @@ type Keeper struct {
 	authority    string
 	schema       collections.Schema
 
-	stakeKeeper     types.StakeKeeper
 	IContractCaller helper.IContractCaller
 
-	milestone   collections.Map[uint64, types.Milestone]
-	params      collections.Item[types.Params]
-	blockNumber collections.Item[int64]
-	count       collections.Item[uint64]
-	timeout     collections.Item[uint64]
-	noAckMap    collections.Map[string, bool]
-	lastNoAckID collections.Item[string]
+	milestone          collections.Map[uint64, types.Milestone]
+	params             collections.Item[types.Params]
+	count              collections.Item[uint64]
+	lastMilestoneBlock collections.Item[uint64]
 }
 
 // NewKeeper creates a new milestone Keeper instance
@@ -43,7 +39,6 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	authority string,
 	storeService storetypes.KVStoreService,
-	stakingKeeper types.StakeKeeper,
 	contractCaller helper.IContractCaller,
 ) Keeper {
 	bz, err := address.NewHexCodec().StringToBytes(authority)
@@ -62,16 +57,12 @@ func NewKeeper(
 		storeService:    storeService,
 		authority:       authority,
 		cdc:             cdc,
-		stakeKeeper:     stakingKeeper,
 		IContractCaller: contractCaller,
 
-		milestone:   collections.NewMap(sb, types.MilestoneMapPrefixKey, "milestone", collections.Uint64Key, codec.CollValue[types.Milestone](cdc)),
-		noAckMap:    collections.NewMap(sb, types.MilestoneNoAckPrefixKey, "no_ack", collections.StringKey, collections.BoolValue),
-		params:      collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
-		count:       collections.NewItem(sb, types.CountPrefixKey, "count", collections.Uint64Value),
-		blockNumber: collections.NewItem(sb, types.BlockNumberPrefixKey, "block_number", collections.Int64Value),
-		timeout:     collections.NewItem(sb, types.MilestoneTimeoutKPrefixKey, "timeout", collections.Uint64Value),
-		lastNoAckID: collections.NewItem(sb, types.MilestoneLastNoAckKeyPrefixKey, "last_no_ack", collections.StringValue),
+		milestone:          collections.NewMap(sb, types.MilestoneMapPrefixKey, "milestone", collections.Uint64Key, codec.CollValue[types.Milestone](cdc)),
+		params:             collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
+		count:              collections.NewItem(sb, types.CountPrefixKey, "count", collections.Uint64Value),
+		lastMilestoneBlock: collections.NewItem(sb, types.LastMilestoneBlockPrefixKey, "lastMilestoneBlock", collections.Uint64Value),
 	}
 
 	// build the schema and set it in the keeper
@@ -82,6 +73,35 @@ func NewKeeper(
 	k.schema = s
 
 	return k
+}
+
+func (k Keeper) SetLastMilestoneBlock(ctx context.Context, block uint64) error {
+	err := k.lastMilestoneBlock.Set(ctx, block)
+	if err != nil {
+		k.Logger(ctx).Error("error while setting last milestone block in store", "err", err)
+		return err
+	}
+
+	return nil
+}
+
+func (k Keeper) GetLastMilestoneBlock(ctx context.Context) (uint64, error) {
+	doExist, err := k.lastMilestoneBlock.Has(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while checking the existence of last milestone block in store", "err", err)
+		return 0, err
+	}
+
+	if !doExist {
+		return 0, nil
+	}
+	block, err := k.lastMilestoneBlock.Get(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while getting last milestone block from store", "err", err)
+		return 0, err
+	}
+
+	return block, nil
 }
 
 // Logger returns a module-specific logger.
@@ -97,7 +117,7 @@ func (k Keeper) GetAuthority() string {
 
 // SetParams sets the x/milestone module parameters.
 func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
-	err := params.Validate()
+	err := params.ValidateBasic()
 	if err != nil {
 		k.Logger(ctx).Error("error while validating params", "err", err)
 		return err
@@ -125,6 +145,8 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 
 // AddMilestone adds a milestone to the store
 func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 	// GetMilestoneCount gives the number of previous milestone
 	milestoneNumber, err := k.GetMilestoneCount(ctx)
 	if err != nil {
@@ -145,6 +167,11 @@ func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone) er
 		k.Logger(ctx).Error("error while storing milestone count in store", "err", err)
 		return err
 	}
+
+	// emit milestone event
+	sdkCtx.EventManager().EmitEvent(
+		types.NewMilestoneEvent(milestone, milestoneNumber),
+	)
 
 	return nil
 }
@@ -182,7 +209,7 @@ func (k *Keeper) GetLastMilestone(ctx context.Context) (*types.Milestone, error)
 	}
 
 	if lastMilestoneNumber == 0 {
-		k.Logger(ctx).Error("milestone doesn't exist in store")
+		k.Logger(ctx).Warn("no milestones found in store yet")
 		return nil, types.ErrNoMilestoneFound
 	}
 
@@ -227,115 +254,25 @@ func (k *Keeper) GetMilestoneCount(ctx context.Context) (uint64, error) {
 	return count, nil
 }
 
-// SetMilestoneBlockNumber set the block number when the latest milestone enter the handler
-func (k *Keeper) SetMilestoneBlockNumber(ctx context.Context, number int64) error {
-	err := k.blockNumber.Set(ctx, number)
+// GetMilestones gets all milestones
+func (k *Keeper) GetMilestones(ctx context.Context) ([]types.Milestone, error) {
+	iterator, err := k.milestone.Iterate(ctx, nil)
 	if err != nil {
-		k.Logger(ctx).Error("error while setting block number in store", "err", err)
-		return err
+		k.Logger(ctx).Error("error in getting the iterator", "err", err)
+		return nil, err
 	}
+	defer func(iterator collections.Iterator[uint64, types.Milestone]) {
+		err := iterator.Close()
+		if err != nil {
+			k.Logger(ctx).Error("error in closing iterator", "err", err)
+		}
+	}(iterator)
 
-	return nil
-}
-
-// GetMilestoneBlockNumber returns the block number when the latest milestone enter the handler
-func (k *Keeper) GetMilestoneBlockNumber(ctx context.Context) (int64, error) {
-	doExist, err := k.blockNumber.Has(ctx)
+	milestones, err := iterator.Values()
 	if err != nil {
-		k.Logger(ctx).Error("error while checking the existence of block number in store", "err", err)
-		return 0, err
+		k.Logger(ctx).Error("error in getting the iterator values", "err", err)
+		return nil, err
 	}
 
-	if !doExist {
-		return 0, nil
-	}
-
-	number, err := k.blockNumber.Get(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error while fetching block number from store", "err", err)
-		return 0, err
-	}
-
-	return number, nil
-}
-
-// SetNoAckMilestone sets the last no-ack milestone
-func (k *Keeper) SetNoAckMilestone(ctx context.Context, milestoneId string) error {
-	err := k.noAckMap.Set(ctx, milestoneId, true)
-	if err != nil {
-		k.Logger(ctx).Error("error while storing milestone no ack in store", "err", err)
-		return err
-	}
-
-	err = k.lastNoAckID.Set(ctx, milestoneId)
-	if err != nil {
-		k.Logger(ctx).Error("error while setting last milestone id in store", "err", err)
-		return err
-	}
-
-	return nil
-}
-
-// GetLastNoAckMilestone returns the last no-ack milestone
-func (k *Keeper) GetLastNoAckMilestone(ctx context.Context) (string, error) {
-	doExist, err := k.lastNoAckID.Has(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error while checking the existence of last no ack milestone in store", "err", err)
-		return "", err
-	}
-
-	if !doExist {
-		return "", nil
-	}
-
-	milestoneID, err := k.lastNoAckID.Get(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error while fetching last no ack milestone from store", "err", err)
-		return "", err
-	}
-
-	return milestoneID, nil
-}
-
-// HasNoAckMilestone checks for existence of the last no-ack milestone
-func (k *Keeper) HasNoAckMilestone(ctx context.Context, milestoneId string) (bool, error) {
-	res, err := k.noAckMap.Has(ctx, milestoneId)
-	if err != nil {
-		k.Logger(ctx).Error("error while getting no ack from store", "err", err)
-		return false, err
-	}
-
-	return res, nil
-}
-
-// SetLastMilestoneTimeout set lastMilestone timeout time
-func (k *Keeper) SetLastMilestoneTimeout(ctx context.Context, timestamp uint64) error {
-	err := k.timeout.Set(ctx, timestamp)
-	if err != nil {
-		k.Logger(ctx).Error("error while setting milestone timeout in store", "err", err)
-		return err
-	}
-
-	return nil
-}
-
-// GetLastMilestoneTimeout returns lastMilestone timeout time
-func (k *Keeper) GetLastMilestoneTimeout(ctx context.Context) (uint64, error) {
-	doExist, err := k.timeout.Has(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error while checking the existence of milestone timeout in store", "err", err)
-		return 0, err
-	}
-
-	if !doExist {
-		return 0, nil
-	}
-
-	timeout, err := k.timeout.Get(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error while fetching milestone timeout from store", "err", err)
-		return timeout, err
-	}
-
-	return timeout, nil
+	return milestones, nil
 }

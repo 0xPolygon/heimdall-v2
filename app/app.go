@@ -17,6 +17,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/tx/signing"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -33,6 +34,7 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -65,6 +67,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/client/docs"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	hversion "github.com/0xPolygon/heimdall-v2/version"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -86,6 +89,10 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
+)
+
+const (
+	HeimdallAppName = "heimdallapp"
 )
 
 var (
@@ -132,7 +139,7 @@ type HeimdallApp struct {
 	BorKeeper          borKeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
-	caller helper.ContractCaller
+	caller helper.IContractCaller
 
 	ModuleManager *module.Manager
 	BasicManager  module.BasicManager
@@ -146,12 +153,7 @@ type HeimdallApp struct {
 }
 
 func init() {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-
-	DefaultNodeHome = filepath.Join(userHomeDir, "/var/lib/heimdall")
+	DefaultNodeHome = filepath.Join("/var/lib/heimdall")
 }
 
 func NewHeimdallApp(
@@ -180,7 +182,7 @@ func NewHeimdallApp(
 	std.RegisterLegacyAminoCodec(legacyAmino)
 	std.RegisterInterfaces(interfaceRegistry)
 
-	bApp := baseapp.NewBaseApp(AppName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
+	bApp := baseapp.NewBaseApp(HeimdallAppName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
@@ -224,7 +226,7 @@ func NewHeimdallApp(
 		panic(err)
 	}
 
-	app.caller = contractCallerObj
+	app.caller = &contractCallerObj
 
 	moduleAccountAddresses := app.ModuleAccountAddrs()
 	blockedAddr := app.BlockedModuleAccountAddrs(moduleAccountAddresses)
@@ -257,7 +259,7 @@ func NewHeimdallApp(
 		appCodec,
 		runtime.NewKVStoreService(keys[clerktypes.StoreKey]),
 		app.ChainManagerKeeper,
-		&app.caller,
+		app.caller,
 	)
 
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
@@ -274,7 +276,7 @@ func NewHeimdallApp(
 		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
 		app.BankKeeper,
 		app.ChainManagerKeeper,
-		&app.caller,
+		app.caller,
 	)
 
 	app.StakeKeeper = stakeKeeper.NewKeeper(
@@ -283,7 +285,7 @@ func NewHeimdallApp(
 		app.BankKeeper,
 		app.ChainManagerKeeper,
 		address.HexCodec{},
-		&app.caller,
+		app.caller,
 	)
 
 	govRouter := govv1beta1.NewRouter()
@@ -304,10 +306,7 @@ func NewHeimdallApp(
 	// Set legacy router for backwards compatibility with gov v1beta1
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
-		govtypes.NewMultiGovHooks(
-		// register the governance hooks
-		),
-	)
+		govtypes.NewMultiGovHooks())
 
 	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
 		appCodec,
@@ -316,15 +315,14 @@ func NewHeimdallApp(
 		&app.StakeKeeper,
 		app.ChainManagerKeeper,
 		&app.TopupKeeper,
-		&app.caller,
+		app.caller,
 	)
 
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
 		appCodec,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		runtime.NewKVStoreService(keys[milestoneTypes.StoreKey]),
-		&app.StakeKeeper,
-		&app.caller,
+		app.caller,
 	)
 
 	app.BorKeeper = borKeeper.NewKeeper(
@@ -333,7 +331,8 @@ func NewHeimdallApp(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		&app.ChainManagerKeeper,
 		&app.StakeKeeper,
-		&app.caller,
+		&app.MilestoneKeeper,
+		app.caller,
 	)
 
 	// HV2: stake and checkpoint keepers are circularly dependent. This workaround solves it
@@ -349,7 +348,7 @@ func NewHeimdallApp(
 		topup.NewAppModule(app.TopupKeeper, app.caller),
 		checkpoint.NewAppModule(&app.CheckpointKeeper),
 		milestone.NewAppModule(&app.MilestoneKeeper),
-		bor.NewAppModule(app.BorKeeper, &app.caller),
+		bor.NewAppModule(app.BorKeeper, app.caller),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 	)
@@ -456,6 +455,40 @@ func NewHeimdallApp(
 	return app
 }
 
+func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
+	// Only apply VEBLOP validation during normal CheckTx (not recheck)
+	if req.Type == abci.CheckTxType_New {
+		// Decode transaction to check for MsgVoteProducers
+		tx, err := app.TxDecode(req.Tx)
+		if err != nil {
+			return &abci.ResponseCheckTx{
+				Code: sdkerrors.ErrTxDecode.ABCICode(),
+				Log:  fmt.Sprintf("failed to decode transaction: %v", err),
+			}, nil
+		}
+
+		// Check for MsgVoteProducers and apply VEBLOP validation
+		msgs := tx.GetMsgs()
+		for _, msg := range msgs {
+			if _, ok := msg.(*borTypes.MsgVoteProducers); ok {
+				// Create a context for validation
+				ctx := app.NewUncachedContext(true, cmtproto.Header{})
+
+				// Validate VEBLOP phase using common function
+				if err := app.BorKeeper.CanVoteProducers(ctx); err != nil {
+					app.Logger().Debug("rejecting MsgVoteProducers in CheckTx", "error", err)
+					return &abci.ResponseCheckTx{
+						Code: sdkerrors.ErrInvalidRequest.ABCICode(),
+						Log:  err.Error(),
+					}, nil
+				}
+			}
+		}
+	}
+
+	return app.BaseApp.CheckTx(req)
+}
+
 func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig, sideTxConfig sidetxs.SideTxConfigurator) {
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
@@ -552,7 +585,6 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		}
 	}
 
-	// TODO: make sure old validators don't go in validator updates i.e. deactivated validators have to be removed
 	// update validators
 	return &abci.ResponseInitChain{
 		Validators: valUpdates,
@@ -561,19 +593,6 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
-	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
-		account, err := sdk.AccAddressFromHex(proposer.String())
-		if err != nil {
-			app.Logger().Error("error while converting the proposer from hex to account address", "error", err)
-			return sdk.BeginBlock{}, err
-		}
-		err = app.AccountKeeper.SetBlockProposer(ctx, account)
-		if err != nil {
-			app.Logger().Error("error while setting the block proposer", "error", err)
-			return sdk.BeginBlock{}, err
-		}
-	}
-
 	return app.ModuleManager.BeginBlock(ctx)
 }
 
@@ -700,6 +719,48 @@ func (app *HeimdallApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.A
 	// register heimdall-v2 and cosmos swagger API
 	if err := RegisterSwaggerAPI(apiSvr.ClientCtx, apiSvr.Router, apiConfig.Swagger); err != nil {
 		panic(err)
+	}
+
+	apiSvr.Router.HandleFunc("/status", getCometStatusHandler(clientCtx)).Methods("GET")
+
+	apiSvr.Router.HandleFunc("/version", getHeimdallV2Version()).Methods("GET")
+}
+
+func getCometStatusHandler(cliCtx client.Context) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resultStatus, err := helper.GetNodeStatus(cliCtx, r.Context())
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to get node status: %v", err), http.StatusInternalServerError)
+			return
+		}
+		resp, err := json.Marshal(resultStatus.SyncInfo)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to marshal node status: %v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if _, err := w.Write(resp); err != nil {
+			http.Error(w, fmt.Sprintf("failed to write response: %v", err), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func getHeimdallV2Version() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		versionInfo := hversion.NewInfo()
+		versionBytes, err := json.Marshal(versionInfo)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to marshal version: %v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if _, err := w.Write(versionBytes); err != nil {
+			http.Error(w, fmt.Sprintf("failed to write version response: %v", err), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 

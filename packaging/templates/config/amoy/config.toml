@@ -1,5 +1,4 @@
 # This is a TOML config file.
-# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 
 # NOTE: Any path below can be absolute (e.g. "/var/myawesomeapp/data") or
@@ -20,7 +19,7 @@ version = "0.38.17"
 proxy_app = "tcp://127.0.0.1:26658"
 
 # A custom human readable name for this node
-moniker = "amoy-testnet-archive-ubuntu-amd64-001"
+moniker = "ip-10-8-2-38"
 
 # Database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb
 # * goleveldb (github.com/syndtr/goleveldb - most popular implementation)
@@ -77,7 +76,6 @@ abci = "socket"
 # so the app can decide if we should keep the connection or not
 filter_peers = false
 
-
 #######################################################################
 ###                 Advanced Configuration Options                  ###
 #######################################################################
@@ -88,7 +86,7 @@ filter_peers = false
 [rpc]
 
 # TCP or UNIX socket address for the RPC server to listen on
-laddr = "tcp://0.0.0.0:26657"
+laddr = "tcp://127.0.0.1:26657"
 
 # A list of origins a cross-domain request can be executed from
 # Default value '[]' disables cors support
@@ -209,7 +207,7 @@ laddr = "tcp://0.0.0.0:26656"
 # Address to advertise to peers for them to dial. If empty, will use the same
 # port as the laddr, and will introspect on the listener to figure out the
 # address. IP and port are required. Example: 159.89.10.97:26656
-external_address = ""
+external_address = "54.171.220.164:26656"
 
 # Comma separated list of seed nodes to connect to
 seeds = "e4eabef3111155890156221f018b0ea3b8b64820@35.197.249.21:26656,811c3127677a4a34df907b021aad0c9d22f84bf4@34.89.39.114:26656,2ec15d1d33261e8cf42f57236fa93cfdc21c1cfb@35.242.167.175:26656,38120f9d2c003071a7230788da1e3129b6fb9d3f@34.89.15.223:26656,2f16f3857c6c99cc11e493c2082b744b8f36b127@34.105.128.110:26656,2833f06a5e33da2e80541fb1bfde2a7229877fcb@34.89.21.99:26656,2e6f1342416c5d758f5ae32f388bb76f7712a317@34.89.101.16:26656,a596f98b41851993c24de00a28b767c7c5ff8b42@34.89.11.233:26656"
@@ -217,18 +215,21 @@ seeds = "e4eabef3111155890156221f018b0ea3b8b64820@35.197.249.21:26656,811c312767
 # Comma separated list of nodes to keep persistent connections to
 persistent_peers = "e4eabef3111155890156221f018b0ea3b8b64820@35.197.249.21:26656,811c3127677a4a34df907b021aad0c9d22f84bf4@34.89.39.114:26656,2ec15d1d33261e8cf42f57236fa93cfdc21c1cfb@35.242.167.175:26656,38120f9d2c003071a7230788da1e3129b6fb9d3f@34.89.15.223:26656,2f16f3857c6c99cc11e493c2082b744b8f36b127@34.105.128.110:26656,2833f06a5e33da2e80541fb1bfde2a7229877fcb@34.89.21.99:26656,2e6f1342416c5d758f5ae32f388bb76f7712a317@34.89.101.16:26656,a596f98b41851993c24de00a28b767c7c5ff8b42@34.89.11.233:26656"
 
+# UPNP port forwarding
+upnp = false
+
 # Path to address book
 addr_book_file = "config/addrbook.json"
 
 # Set true for strict address routability rules
 # Set false for private or local networks
-addr_book_strict = "true"
+addr_book_strict = true
 
 # Maximum number of inbound peers
-max_num_inbound_peers = "100"
+max_num_inbound_peers = 100
 
 # Maximum number of outbound peers to connect to, excluding persistent peers
-max_num_outbound_peers = "100"
+max_num_outbound_peers = 100
 
 # List of node IDs, to which a connection will be (re)established ignoring any existing limits
 unconditional_peer_ids = ""
@@ -467,7 +468,7 @@ discard_abci_responses = false
 # Options:
 #   1) "null"
 #   2) "kv" (default) - the simplest possible indexer, backed by key-value storage (defaults to levelDB; see DBBackend).
-# 		- When "kv" is chosen "tx.height" and "tx.hash" will always be indexed.
+#               - When "kv" is chosen "tx.height" and "tx.hash" will always be indexed.
 #   3) "psql" - the indexer services backed by PostgreSQL.
 # When "kv" or "psql" is chosen "tx.height" and "tx.hash" will always be indexed.
 indexer = "kv"
@@ -484,7 +485,7 @@ psql-conn = ""
 # When true, Prometheus metrics are served under /metrics on
 # PrometheusListenAddr.
 # Check out the documentation for the list of available metrics.
-prometheus = false
+prometheus = true
 
 # Address to listen for Prometheus collector(s) connections
 prometheus_listen_addr = ":26660"

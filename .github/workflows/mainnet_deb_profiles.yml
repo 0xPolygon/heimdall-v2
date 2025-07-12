@@ -68,7 +68,7 @@ jobs:
           NODE: sentry
           NETWORK: mainnet
       - name: Copying config for ${{ env.NODE }} on ${{ env.NETWORK }} on ${{ env.ARCH }}
-        run: cp -rp packaging/templates/config/${{ env.NETWORK }}/heimdall-config.toml packaging/deb/heimdall-${{ env.NETWORK }}-${{ env.NODE }}-config_${{ env.GIT_TAG }}-${{ env.ARCH }}/var/lib/heimdall/config/heimdall-config.toml
+        run: cp -rp packaging/templates/config/${{ env.NETWORK }}/app.toml packaging/deb/heimdall-${{ env.NETWORK }}-${{ env.NODE }}-config_${{ env.GIT_TAG }}-${{ env.ARCH }}/var/lib/heimdall/config/app.toml
         env:
           ARCH: all
           NODE: sentry
@@ -130,13 +130,19 @@ jobs:
           NODE: sentry
           NETWORK: mainnet
       - name: Copying config for ${{ env.NODE }} on ${{ env.NETWORK }} on ${{ env.ARCH }}
-        run: cp -rp packaging/templates/config/${{ env.NETWORK }}/heimdall-config.toml packaging/deb/heimdall-${{ env.NETWORK }}-${{ env.NODE }}-config_${{ env.GIT_TAG }}-${{ env.ARCH }}/var/lib/heimdall/config/heimdall-config.toml
+        run: cp -rp packaging/templates/config/${{ env.NETWORK }}/app.toml packaging/deb/heimdall-${{ env.NETWORK }}-${{ env.NODE }}-config_${{ env.GIT_TAG }}-${{ env.ARCH }}/var/lib/heimdall/config/app.toml
         env:
           ARCH: all
           NODE: sentry
           NETWORK: mainnet
       - name: Copying config for ${{ env.NODE }} on ${{ env.NETWORK }} on ${{ env.ARCH }}
         run: cp -rp packaging/templates/config/${{ env.NETWORK }}/config.toml packaging/deb/heimdall-${{ env.NETWORK }}-${{ env.NODE }}-config_${{ env.GIT_TAG }}-${{ env.ARCH }}/var/lib/heimdall/config/config.toml
+        env:
+          ARCH: all
+          NODE: sentry
+          NETWORK: mainnet
+      - name: Copying config for ${{ env.NODE }} on ${{ env.NETWORK }} on ${{ env.ARCH }}
+        run: cp -rp packaging/templates/config/${{ env.NETWORK }}/client.toml packaging/deb/heimdall-${{ env.NETWORK }}-${{ env.NODE }}-config_${{ env.GIT_TAG }}-${{ env.ARCH }}/var/lib/heimdall/config/client.toml
         env:
           ARCH: all
           NODE: sentry
@@ -180,10 +186,10 @@ jobs:
         run: ls -ltr packaging/deb/ | grep heimdall
 
       - name: Release heimdall Packages
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.2.2
         with:
           tag_name: ${{ env.GIT_TAG }}
-          prerelease: true
+          make_latest: false
           files: |
             packaging/deb/heimdall-mainnet-**.deb
             packaging/deb/heimdall-mainnet-**.deb.checksum

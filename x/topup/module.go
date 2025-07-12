@@ -38,11 +38,11 @@ var (
 // AppModule implements an application module for the topup module.
 type AppModule struct {
 	keeper         keeper.Keeper
-	contractCaller helper.ContractCaller
+	contractCaller helper.IContractCaller
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(keeper keeper.Keeper, contractCaller helper.ContractCaller) AppModule {
+func NewAppModule(keeper keeper.Keeper, contractCaller helper.IContractCaller) AppModule {
 	return AppModule{
 		keeper:         keeper,
 		contractCaller: contractCaller,
@@ -131,7 +131,7 @@ func (am AppModule) GenerateGenesisState(simState *module.SimulationState) {
 func (am AppModule) RegisterStoreDecoder(_ simulation.StoreDecoderRegistry) {
 }
 
-// WeightedOperations returns the all the gov module operations with their respective weights.
+// WeightedOperations returns all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simulation.WeightedOperation {
 	return nil
 }

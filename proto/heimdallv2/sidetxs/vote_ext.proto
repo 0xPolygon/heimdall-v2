@@ -1,16 +1,19 @@
 syntax = "proto3";
 package heimdallv2.sidetxs;
 
-option go_package = "github.com/0xPolygon/heimdall-v2/sidetxs";
-
 import "amino/amino.proto";
 import "gogoproto/gogo.proto";
+import "heimdallv2/milestone/milestone.proto";
 
-message ConsolidatedSideTxResponse {
-  repeated SideTxResponse side_tx_responses = 1
+option go_package = "github.com/0xPolygon/heimdall-v2/sidetxs";
+
+message VoteExtension {
+  bytes block_hash = 1 [ (amino.dont_omitempty) = true ];
+  int64 height = 2 [ (amino.dont_omitempty) = true ];
+  repeated SideTxResponse side_tx_responses = 3
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
-  bytes block_hash = 2 [ (amino.dont_omitempty) = true ];
-  int64 height = 3 [ (amino.dont_omitempty) = true ];
+  heimdallv2.milestone.MilestoneProposition milestone_proposition = 4
+      [ (amino.dont_omitempty) = true ];
 }
 
 message SideTxResponse {

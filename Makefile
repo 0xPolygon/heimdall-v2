@@ -9,7 +9,7 @@ DOCKER := $(shell which docker)
 
 PACKAGE_NAME := github.com/0xPolygon/heimdall-v2
 HTTPS_GIT := https://$(PACKAGE_NAME).git
-GOLANG_CROSS_VERSION  ?= v1.23.6
+GOLANG_CROSS_VERSION  ?= v1.24.1
 
 # Fetch git latest tag
 LATEST_GIT_TAG:=$(shell git describe --tags $(git rev-list --tags --max-count=1))
@@ -64,7 +64,7 @@ vulncheck:
 .PHONY: lint-deps
 lint-deps:
 	rm -f ./build/bin/golangci-lint
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./build/bin v1.63.4
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./build/bin v2.1.5
 
 .PHONY: lint
 lint:
@@ -110,7 +110,6 @@ mock:
 	mockgen -source=x/bor/types/expected_keepers.go -destination=x/bor/testutil/expected_keepers_mocks.go  -package=testutil
 	mockgen -source=x/checkpoint/types/expected_keepers.go -destination=x/checkpoint/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -source=x/clerk/types/expected_keepers.go -destination=x/clerk/testutil/expected_keepers_mocks.go -package=testutil
-	mockgen -source=x/milestone/types/expected_keepers.go -destination=x/milestone/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -source=x/stake/types/expected_keepers.go -destination=x/stake/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -source=x/topup/types/expected_keepers.go -destination=x/topup/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -destination=helper/mocks/i_http_client.go -package=mocks --source=./helper/util.go HTTPClient
@@ -158,6 +157,7 @@ release:
 	@docker run \
 		--rm \
 		--privileged \
+		-e main=./cmd/heimdalld \
 		-e CGO_ENABLED=1 \
 		-e GITHUB_TOKEN \
 		-e DOCKER_USERNAME \

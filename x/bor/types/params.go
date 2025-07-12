@@ -5,7 +5,7 @@ import "fmt"
 // Default parameter values
 const (
 	DefaultSprintDuration    uint64 = 16
-	DefaultSpanDuration             = 100 * DefaultSprintDuration
+	DefaultSpanDuration      uint64 = 400 * DefaultSprintDuration
 	DefaultFirstSpanDuration uint64 = 256
 	DefaultProducerCount     uint64 = 4
 )
@@ -19,8 +19,8 @@ func DefaultParams() Params {
 	}
 }
 
-// Validate checks that the bor parameters have valid values.
-func (p Params) Validate() error {
+// ValidateBasic checks that the bor parameters have valid values.
+func (p Params) ValidateBasic() error {
 	if err := validatePositiveIntForParam(p.SprintDuration, "sprint duration"); err != nil {
 		return err
 	}

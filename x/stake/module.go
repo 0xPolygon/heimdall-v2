@@ -45,11 +45,11 @@ type AppModuleBasic struct{}
 // AppModule implements an application module for the stake module.
 type AppModule struct {
 	keeper         keeper.Keeper
-	contractCaller helper.ContractCaller
+	contractCaller helper.IContractCaller
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(keeper keeper.Keeper, contractCaller helper.ContractCaller) AppModule {
+func NewAppModule(keeper keeper.Keeper, contractCaller helper.IContractCaller) AppModule {
 	return AppModule{
 		keeper:         keeper,
 		contractCaller: contractCaller,
@@ -89,7 +89,7 @@ func (AppModule) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig,
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
 
-	return ValidateGenesis(&data)
+	return data.Validate()
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the stake module.

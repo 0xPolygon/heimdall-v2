@@ -15,26 +15,26 @@ const (
 	processorServiceStr = "processor-service"
 )
 
-// ProcessorService starts and stops all event processors
-type ProcessorService struct {
+// Service starts and stops all event processors
+type Service struct {
 	// Base service
 	common.BaseService
 
 	// queue connector
-	queueConnector *queue.QueueConnector
+	queueConnector *queue.Connector
 
 	processors []Processor
 }
 
-// NewProcessorService returns new service object for processing queue msg
+// NewProcessorService returns a new service object for processing queue msg
 func NewProcessorService(
 	cdc codec.Codec,
-	queueConnector *queue.QueueConnector,
+	queueConnector *queue.Connector,
 	httpClient *rpchttp.HTTP,
 	txBroadcaster *broadcaster.TxBroadcaster,
-) *ProcessorService {
-	// creating processor object
-	processorService := &ProcessorService{
+) *Service {
+	// creating the processor object
+	processorService := &Service{
 		queueConnector: queueConnector,
 	}
 
@@ -53,11 +53,6 @@ func NewProcessorService(
 	checkpointProcessor := NewCheckpointProcessor(&contractCaller.RootChainABI)
 	checkpointProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "checkpoint", checkpointProcessor)
 	checkpointProcessor.cliCtx = txBroadcaster.CliCtx
-
-	// initialize checkpoint processor
-	milestoneProcessor := &MilestoneProcessor{}
-	milestoneProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "milestone", milestoneProcessor)
-	milestoneProcessor.cliCtx = txBroadcaster.CliCtx
 
 	// initialize fee processor
 	feeProcessor := NewFeeProcessor(&contractCaller.StakingInfoABI)
@@ -79,39 +74,27 @@ func NewProcessorService(
 	spanProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "span", spanProcessor)
 	spanProcessor.cliCtx = txBroadcaster.CliCtx
 
-	// HV2 - not adding slashing
-	/*
-		// initialize slashing processor
-		slashingProcessor := NewSlashingProcessor(&contractCaller.StakingInfoABI)
-		slashingProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "slashing", slashingProcessor)
-	*/
-
 	//
 	// Select processors
 	//
 
-	// add into processor list
+	// add into the processor list
 	startAll := viper.GetBool(helper.AllProcessesFlag)
 	onlyServices := viper.GetStringSlice(helper.OnlyProcessesFlag)
 
 	if startAll {
 		processorService.processors = append(processorService.processors,
 			checkpointProcessor,
-			milestoneProcessor,
 			stakingProcessor,
 			clerkProcessor,
 			feeProcessor,
 			spanProcessor,
-			// HV2 - not adding slashing
-			// slashingProcessor,
 		)
 	} else {
 		for _, service := range onlyServices {
 			switch service {
 			case "checkpoint":
 				processorService.processors = append(processorService.processors, checkpointProcessor)
-			case "milestone":
-				processorService.processors = append(processorService.processors, milestoneProcessor)
 			case "staking":
 				processorService.processors = append(processorService.processors, stakingProcessor)
 			case "clerk":
@@ -120,11 +103,6 @@ func NewProcessorService(
 				processorService.processors = append(processorService.processors, feeProcessor)
 			case "span":
 				processorService.processors = append(processorService.processors, spanProcessor)
-				// HV2 - not adding slashing
-				/*
-					case "slashing":
-						processorService.processors = append(processorService.processors, slashingProcessor)
-				*/
 			}
 		}
 	}
@@ -136,8 +114,8 @@ func NewProcessorService(
 	return processorService
 }
 
-// OnStart starts new block subscription
-func (processorService *ProcessorService) OnStart() error {
+// OnStart starts the new block subscription
+func (processorService *Service) OnStart() error {
 	if err := processorService.BaseService.OnStart(); err != nil {
 		processorService.Logger.Error("OnStart | OnStart", "Error", err)
 	} // Always call the overridden method.
@@ -157,8 +135,8 @@ func (processorService *ProcessorService) OnStart() error {
 }
 
 // OnStop stops all necessary go routines
-func (processorService *ProcessorService) OnStop() {
-	processorService.BaseService.OnStop() // Always call the overridden method.
+func (processorService *Service) OnStop() {
+	processorService.BaseService.OnStop() // always call the overridden method.
 	// start chain listeners
 	for _, processor := range processorService.processors {
 		processor.Stop()

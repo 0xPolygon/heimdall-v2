@@ -3,11 +3,11 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/math"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -142,6 +142,31 @@ func (h *BorGRPCClient) BorBlockReceipt(ctx context.Context, txHash common.Hash)
 	log.Info("Fetched bor block receipt")
 
 	return receiptResponseToTypesReceipt(res.Receipt), nil
+}
+
+func (h *BorGRPCClient) GetStartBlockHeimdallSpanID(ctx context.Context, startBlock uint64) (uint64, error) {
+	req := &proto.GetStartBlockHeimdallSpanIDRequest{
+		StartBlock: startBlock,
+	}
+
+	log.Info("Fetching start block heimdall span ID")
+
+	res, err := h.client.GetStartBlockHeimdallSpanID(ctx, req)
+	if err != nil {
+		return 0, err
+	}
+
+	if res.HeimdallSpanID == 0 {
+		return 0, fmt.Errorf("heimdall span ID is 0")
+	}
+
+	if res.StartBlock != startBlock {
+		return 0, fmt.Errorf("start block mismatch: expected %d, got %d", startBlock, res.StartBlock)
+	}
+
+	log.Info("Fetched start block heimdall span ID")
+
+	return res.HeimdallSpanID, nil
 }
 
 func receiptResponseToTypesReceipt(receipt *proto.Receipt) *ethTypes.Receipt {

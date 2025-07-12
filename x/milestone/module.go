@@ -13,7 +13,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
@@ -26,8 +25,7 @@ var (
 	_ module.HasServices    = AppModule{}
 	_ module.AppModuleBasic = AppModule{}
 
-	_ appmodule.AppModule        = AppModule{}
-	_ sidetxs.HasSideMsgServices = AppModule{}
+	_ appmodule.AppModule = AppModule{}
 )
 
 // AppModule implements an application module for the milestone module.
@@ -72,7 +70,7 @@ func (am AppModule) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConf
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
 
-	return data.ValidateGenesis()
+	return data.Validate()
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the milestone module.
@@ -89,11 +87,6 @@ func (am AppModule) IsAppModule() {}
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.keeper))
-}
-
-// RegisterSideMsgServices registers side handler module services.
-func (am AppModule) RegisterSideMsgServices(sideCfg sidetxs.SideTxConfigurator) {
-	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(am.keeper))
 }
 
 // QuerierRoute returns the milestone module's querier route name.

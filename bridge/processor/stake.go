@@ -33,7 +33,7 @@ type StakingProcessor struct {
 	stakingInfoAbi *abi.ABI
 }
 
-// NewStakingProcessor - add  abi to staking processor
+// NewStakingProcessor adds the abi to staking processor
 func NewStakingProcessor(stakingInfoAbi *abi.ABI) *StakingProcessor {
 	return &StakingProcessor{
 		stakingInfoAbi: stakingInfoAbi,
@@ -70,7 +70,7 @@ func (sp *StakingProcessor) RegisterTasks() {
 func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logBytes string) error {
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
-		sp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
+		sp.Logger.Error("Error while unmarshalling event from rootChain", "error", err)
 		return err
 	}
 
@@ -83,7 +83,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 			signerPubKey = util.AppendPrefix(signerPubKey)
 		}
 		if isOld, _ := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event); isOld {
-			sp.Logger.Info("Ignoring task to send validatorjoin to heimdall as already processed",
+			sp.Logger.Info("Ignoring task to send validatorJoin to heimdall as already processed",
 				"event", eventName,
 				"validatorID", event.ValidatorId,
 				"activationEpoch", event.ActivationEpoch,
@@ -98,7 +98,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 			return nil
 		}
 
-		// if account doesn't exist Retry with delay for topup to process first.
+		// if the account doesn't exist, retry with delay for top-up to process first.
 		if _, err := util.GetAccount(sp.cliCtx, sdk.MustAccAddressFromHex(event.Signer.Hex()).String()); err != nil {
 			sp.Logger.Info(
 				"Heimdall Account doesn't exist. Retrying validator-join after 10 seconds",
@@ -109,7 +109,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 		}
 
 		sp.Logger.Info(
-			"✅ Received task to send validatorjoin to heimdall",
+			"✅ Received task to send validatorJoin to heimdall",
 			"event", eventName,
 			"validatorID", event.ValidatorId,
 			"activationEpoch", event.ActivationEpoch,
@@ -147,7 +147,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 		// return broadcast to heimdall
 		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(msg, event)
 		if err != nil {
-			sp.Logger.Error("Error while broadcasting unstakeInit to heimdall", "validatorId", event.ValidatorId.Uint64(), "error", err)
+			sp.Logger.Error("Error while broadcasting sendValidatorJoin to heimdall", "validatorId", event.ValidatorId.Uint64(), "error", err)
 			return err
 		}
 
@@ -164,7 +164,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes string) error {
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
-		sp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
+		sp.Logger.Error("Error while unmarshalling event from rootChain", "error", err)
 		return err
 	}
 
@@ -173,12 +173,12 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 		sp.Logger.Error("Error while parsing event", "name", eventName, "error", err)
 	} else {
 		if isOld, _ := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event); isOld {
-			sp.Logger.Info("Ignoring task to send unstakeinit to heimdall as already processed",
+			sp.Logger.Info("Ignoring task to send unStakeInit to heimdall as already processed",
 				"event", eventName,
 				"validator", event.User,
 				"validatorID", event.ValidatorId,
 				"nonce", event.Nonce,
-				"deactivatonEpoch", event.DeactivationEpoch,
+				"deactivationEpoch", event.DeactivationEpoch,
 				"amount", event.Amount,
 				"txHash", vLog.TxHash.String(),
 				"logIndex", uint64(vLog.Index),
@@ -194,17 +194,17 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 		}
 
 		if !validNonce {
-			sp.Logger.Info("Ignoring task to send unstake-init to heimdall as nonce is out of order")
+			sp.Logger.Info("Ignoring task to send unStakeInit to heimdall as nonce is out of order")
 			return tasks.NewErrRetryTaskLater("Nonce out of order", defaultDelayDuration*time.Duration(nonceDelay))
 		}
 
 		sp.Logger.Info(
-			"✅ Received task to send unstake-init to heimdall",
+			"✅ Received task to send unStakeInit to heimdall",
 			"event", eventName,
 			"validator", event.User,
 			"validatorID", event.ValidatorId,
 			"nonce", event.Nonce,
-			"deactivatonEpoch", event.DeactivationEpoch,
+			"deactivationEpoch", event.DeactivationEpoch,
 			"amount", event.Amount,
 			"txHash", vLog.TxHash.String(),
 			"logIndex", uint64(vLog.Index),
@@ -235,13 +235,13 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 		// return broadcast to heimdall
 		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(msg, event)
 		if err != nil {
-			sp.Logger.Error("Error while broadcasting unstakeInit to heimdall", "validatorId", event.ValidatorId.Uint64(), "error", err)
+			sp.Logger.Error("Error while broadcasting unStakeInit to heimdall", "validatorId", event.ValidatorId.Uint64(), "error", err)
 			return err
 		}
 
 		if txRes.Code != abci.CodeTypeOK {
-			sp.Logger.Error("unstakeInit tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
-			return fmt.Errorf("unstakeInit tx failed, tx response code: %v", txRes.Code)
+			sp.Logger.Error("unStakeInit tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+			return fmt.Errorf("unStakeInit tx failed, tx response code: %v", txRes.Code)
 		}
 
 	}
@@ -252,7 +252,7 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes string) error {
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
-		sp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
+		sp.Logger.Error("Error while unmarshalling event from rootChain", "error", err)
 		return err
 	}
 
@@ -261,7 +261,7 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 		sp.Logger.Error("Error while parsing event", "name", eventName, "error", err)
 	} else {
 		if isOld, _ := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event); isOld {
-			sp.Logger.Info("Ignoring task to send unstakeinit to heimdall as already processed",
+			sp.Logger.Info("Ignoring task to send unStakeInit to heimdall as already processed",
 				"event", eventName,
 				"validatorID", event.ValidatorId,
 				"nonce", event.Nonce,
@@ -318,12 +318,12 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 		// return broadcast to heimdall
 		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(msg, event)
 		if err != nil {
-			sp.Logger.Error("Error while broadcasting stakeupdate to heimdall", "validatorId", event.ValidatorId.Uint64(), "error", err)
+			sp.Logger.Error("Error while broadcasting stakeUpdate to heimdall", "validatorId", event.ValidatorId.Uint64(), "error", err)
 			return err
 		}
 
 		if txRes.Code != abci.CodeTypeOK {
-			sp.Logger.Error("stakeupdate tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+			sp.Logger.Error("stakeUpdate tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
 			return fmt.Errorf("stakeupdate tx failed, tx response code: %d", txRes.Code)
 		}
 
@@ -335,7 +335,7 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logBytes string) error {
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
-		sp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
+		sp.Logger.Error("Error while unmarshalling event from rootChain", "error", err)
 		return err
 	}
 
@@ -354,7 +354,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 		}
 
 		if isOld, err := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event); isOld {
-			sp.Logger.Info("Ignoring task to send unstakeinit to heimdall as already processed",
+			sp.Logger.Info("Ignoring task to send unStakeInit to heimdall as already processed",
 				"event", eventName,
 				"validatorID", event.ValidatorId,
 				"nonce", event.Nonce,
@@ -452,7 +452,7 @@ func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64)
 
 	stakingTxnCount, err := queryTxCount(sp.cliCtx, validatorId)
 	if err != nil {
-		sp.Logger.Error("Failed to query stake txns by txquery for the given validator", "validatorId", validatorId)
+		sp.Logger.Error("Failed to query stake txs by txQuery for the given validator", "validatorId", validatorId)
 		return false, 0, err
 	}
 

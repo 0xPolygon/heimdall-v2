@@ -2,8 +2,8 @@ syntax = "proto3";
 package heimdallv2.clerk;
 
 import "amino/amino.proto";
-import "cosmos/query/v1/query.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/query/v1/query.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
@@ -12,15 +12,25 @@ import "heimdallv2/clerk/clerk.proto";
 option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 
 service Query {
+  // GetRecordCount queries the total number of event records
+  rpc GetRecordCount(RecordCountRequest) returns (RecordCountResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/clerk/event-records/count";
+  }
   // GetRecordList queries a list of records
   rpc GetRecordList(RecordListRequest) returns (RecordListResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/clerk/event-record/list";
+    option (google.api.http).get = "/clerk/event-records/list";
+  }
+  // GetLatestRecordId queries the latest record id from L1.
+  rpc GetLatestRecordId(LatestRecordIdRequest)
+      returns (LatestRecordIdResponse) {
+    option (google.api.http).get = "/clerk/event-records/latest-id";
   }
   // GetRecordById retrieves a record by its id
   rpc GetRecordById(RecordRequest) returns (RecordResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/clerk/event-record/{record_id}";
+    option (google.api.http).get = "/clerk/event-records/{record_id}";
   }
   // GetRecordListWithTime queries a list of records with time
   rpc GetRecordListWithTime(RecordListWithTimeRequest)
@@ -31,15 +41,12 @@ service Query {
   // GetRecordSequence queries the sequence of the record
   rpc GetRecordSequence(RecordSequenceRequest)
       returns (RecordSequenceResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/sequence";
   }
-
   // IsClerkTxOld queries for a specific clerk tx to check its status (old
   // means already submitted)
   rpc IsClerkTxOld(RecordSequenceRequest) returns (IsClerkTxOldResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/clerk/isoldtx";
+    option (google.api.http).get = "/clerk/is-old-tx";
   }
 }
 
@@ -89,4 +96,17 @@ message RecordSequenceResponse {
 
 message IsClerkTxOldResponse {
   bool is_old = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message LatestRecordIdRequest {}
+
+message LatestRecordIdResponse {
+  uint64 latest_record_id = 1 [ (amino.dont_omitempty) = true ];
+  bool is_processed_by_heimdall = 2 [ (amino.dont_omitempty) = true ];
+}
+
+message RecordCountRequest {}
+
+message RecordCountResponse {
+  uint64 count = 1 [ (amino.dont_omitempty) = true ];
 }

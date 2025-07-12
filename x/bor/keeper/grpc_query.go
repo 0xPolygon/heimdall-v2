@@ -35,17 +35,12 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 }
 
 func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpanRequest) (*types.QueryLatestSpanResponse, error) {
-	spans, err := q.k.GetAllSpans(ctx)
+	lastSpan, err := q.k.GetLastSpan(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if len(spans) == 0 {
-		return nil, status.Error(codes.NotFound, "no spans found")
-	}
-
-	latestSpan := spans[len(spans)-1]
-	return &types.QueryLatestSpanResponse{Span: *latestSpan}, nil
+	return &types.QueryLatestSpanResponse{Span: lastSpan}, nil
 }
 
 func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRequest) (*types.QueryNextSpanResponse, error) {
@@ -101,7 +96,7 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 
 	selectedProducers = types.SortValidatorByAddress(selectedProducers)
 
-	// create next span
+	// create the next span
 	nextSpan := &types.Span{
 		Id:                req.SpanId,
 		StartBlock:        req.StartBlock,
@@ -121,7 +116,7 @@ func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSp
 	}
 	spanId := req.GetId()
 
-	// fetch next span seed
+	// fetch the next span seed
 	nextSpanSeed, nextSpanSeedAuthor, err := q.k.FetchNextSpanSeed(ctx, spanId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -184,4 +179,34 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 	}
 
 	return &types.QuerySpanListResponse{SpanList: spans, Pagination: *pageRes}, nil
+}
+
+func (q queryServer) GetProducerVotesByValidatorId(ctx context.Context, req *types.QueryProducerVotesByValidatorIdRequest) (*types.QueryProducerVotesByValidatorIdResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	producerVotes, err := q.k.GetProducerVotes(ctx, req.ValidatorId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryProducerVotesByValidatorIdResponse{Votes: producerVotes.Votes}, nil
+}
+
+func (q queryServer) GetProducerVotes(ctx context.Context, req *types.QueryProducerVotesRequest) (*types.QueryProducerVotesResponse, error) {
+	validatorSet, err := q.k.sk.GetValidatorSet(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	producerVotes := make(map[uint64]types.ProducerVotes)
+	for _, validator := range validatorSet.Validators {
+		producerVotes[validator.ValId], err = q.k.GetProducerVotes(ctx, validator.ValId)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	return &types.QueryProducerVotesResponse{AllVotes: producerVotes}, nil
 }

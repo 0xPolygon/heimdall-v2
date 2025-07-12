@@ -10,17 +10,17 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 )
 
 // MaxTotalVotingPower - the maximum allowed total voting power.
-// It needs to be sufficiently small to, in all cases:
-// 1. prevent clipping in incrementProposerPriority()
+// It needs to be small enough to, in all cases:
+// 1. Prevent clipping in incrementProposerPriority()
 // 2. let (diff+diffMax-1) not overflow in IncrementProposerPriority()
 // (Proof of 1 is tricky, left to the reader).
-// It could be higher, but this is sufficiently large for our purposes,
+// It could be higher, but this is large enough for our purposes
 // and leaves room for defensive purposes.
-// PriorityWindowSizeFactor - is a constant that when multiplied with the total voting power gives
+// PriorityWindowSizeFactor is a constant that when multiplied with the total voting power gives
 // the maximum allowed distance between validator priorities.
 
 const (
@@ -31,7 +31,7 @@ const (
 // ValidatorSet represent a set of *Validator at a given height.
 // The validators can be fetched by address or index.
 // The index is in order of .Address, so the indices are fixed
-// for all rounds of a given blockchain height - i.e. the validators
+// for all rounds of a given blockchain height - i.e., the validators
 // are sorted by their address.
 // On the other hand, the .ProposerPriority of each validator and
 // the designated .GetProposer() of a set changes every round,
@@ -40,9 +40,10 @@ const (
 // NOTE: All get/set to validators should copy the value for safety.
 
 // NewValidatorSet initializes a ValidatorSet by copying over the
-// values from `validators`, a list of Validators. If validators is nil or empty,
+// values from `validators`, a list of Validators.
+// If validators are nil or empty,
 // the new ValidatorSet will have an empty list of Validators.
-// The addresses of validators in `validators` must be unique otherwise the
+// The addresses of validators in `validators` must be unique, otherwise the
 // function panics.
 func NewValidatorSet(validators []*Validator) *ValidatorSet {
 	vals := &ValidatorSet{}
@@ -62,7 +63,7 @@ func (vals *ValidatorSet) IsNilOrEmpty() bool {
 	return vals == nil || len(vals.Validators) == 0
 }
 
-// CopyIncrementProposerPriority increments ProposerPriority and update the proposer on a copy, and return it.
+// CopyIncrementProposerPriority increments ProposerPriority and update the proposer on a copy and return it.
 func (vals *ValidatorSet) CopyIncrementProposerPriority(times int) *ValidatorSet {
 	cp := vals.Copy()
 	cp.IncrementProposerPriority(times)
@@ -70,8 +71,9 @@ func (vals *ValidatorSet) CopyIncrementProposerPriority(times int) *ValidatorSet
 	return cp
 }
 
-// IncrementProposerPriority increments ProposerPriority of each validator and updates the
-// proposer. Panics if validator set is empty. `times` must be positive.
+// IncrementProposerPriority increments ProposerPriority of each validator and updates the proposer.
+// Panics if the validator set is empty.
+// `times` must be positive.
 func (vals *ValidatorSet) IncrementProposerPriority(times int) {
 	if vals.IsNilOrEmpty() {
 		panic("empty validator set")
@@ -102,9 +104,9 @@ func (vals *ValidatorSet) RescalePriorities(diffMax int64) {
 	if vals.IsNilOrEmpty() {
 		panic("empty validator set")
 	}
-	// NOTE: This check is merely a sanity check which could be
-	// removed if all tests would init. voting power appropriately;
-	// i.e. diffMax should always be > 0
+	// NOTE: This check is merely a sanity-check that could be
+	// removed when all tests would initialize voting power appropriately;
+	// i.e., diffMax should always be > 0
 	if diffMax <= 0 {
 		return
 	}
@@ -125,7 +127,7 @@ func (vals *ValidatorSet) RescalePriorities(diffMax int64) {
 // incrementProposerPriority increments the proposer priority of each validator in a set
 func (vals *ValidatorSet) incrementProposerPriority() *Validator {
 	for _, val := range vals.Validators {
-		// Check for overflow for sum.
+		// Check for overflow for the sum
 		newPrio := safeAddClip(val.ProposerPriority, val.VotingPower)
 		val.ProposerPriority = newPrio
 	}
@@ -233,7 +235,7 @@ func (vals *ValidatorSet) Copy() *ValidatorSet {
 	}
 }
 
-// HasAddress returns true if address given is in the validator set, false otherwise.
+// HasAddress returns true if the address given is in the validator set, false otherwise.
 func (vals *ValidatorSet) HasAddress(address string) bool {
 	idx := sort.Search(len(vals.Validators), func(i int) bool {
 		return strings.Compare(util.FormatAddress(address), util.FormatAddress(vals.Validators[i].Signer)) <= 0
@@ -242,7 +244,7 @@ func (vals *ValidatorSet) HasAddress(address string) bool {
 	return idx < len(vals.Validators) && strings.EqualFold(vals.Validators[idx].Signer, address)
 }
 
-// GetByAddress returns an index of the validator with address and validator
+// GetByAddress returns an index of the validator with the address and validator
 // itself if found. Otherwise, -1 and nil are returned.
 func (vals *ValidatorSet) GetByAddress(address string) (index int, val *Validator) {
 	idx := sort.Search(len(vals.Validators), func(i int) bool {
@@ -256,8 +258,8 @@ func (vals *ValidatorSet) GetByAddress(address string) (index int, val *Validato
 	return -1, nil
 }
 
-// GetByIndex returns the validator's address and validator itself by index.
-// It returns nil values if index is less than 0 or greater or equal to
+// GetByIndex returns the validator's address and the validator itself by index.
+// It returns nil values if the index is less than 0 or greater or equal to
 // len(ValidatorSet.Validators).
 func (vals *ValidatorSet) GetByIndex(index int) (address string, val *Validator) {
 	if index < 0 || index >= len(vals.Validators) {
@@ -291,7 +293,7 @@ func (vals *ValidatorSet) updateTotalVotingPower() {
 	vals.TotalVotingPower = sum
 }
 
-// GetTotalVotingPower returns the sum of the voting powers of all validators.
+// GetTotalVotingPower returns the sum of the validators' voting powers.
 // It recomputes the total voting power if required.
 func (vals *ValidatorSet) GetTotalVotingPower() int64 {
 	if vals.TotalVotingPower == 0 {
@@ -354,7 +356,7 @@ func processChanges(origChanges []*Validator) (updates, removals []*Validator, e
 
 	var prevAddr string
 
-	// Scan changes by address and append valid validators to updates or removals lists.
+	// Scan changes by address and append valid validators to lists.
 	for _, valUpdate := range changes {
 		if strings.Compare(util.FormatAddress(valUpdate.Signer), util.FormatAddress(prevAddr)) == 0 {
 			err = fmt.Errorf("duplicate entry %v in %v", valUpdate, changes)
@@ -385,14 +387,14 @@ func processChanges(origChanges []*Validator) (updates, removals []*Validator, e
 }
 
 // verifyUpdates verifies a list of updates against a validator set, making sure the allowed
-// total voting power would not be exceeded if these updates would be applied to the set.
+// total voting power would not be exceeded if these updates were applied to the set.
 // Returns:
-// updatedTotalVotingPower - the new total voting power if these updates would be applied
+// updatedTotalVotingPower - the new total voting power if these updates were applied
 // numNewValidators - number of new validators
-// err - non-nil if the maximum allowed total voting power would be exceeded
-// 'updates' should be a list of proper validator changes, i.e. they have been verified
+// err - non-nil if the maximum allowed total voting power were exceeded
+// 'updates' should be a list of proper validator changes, i.e., they have been verified
 // by processChanges for duplicates and invalid values.
-// No changes are made to the validator set 'vals'.
+// verifyUpdates makes no changes to the validator set 'vals'.
 func verifyUpdates(updates []*Validator, vals *ValidatorSet) (updatedTotalVotingPower int64, numNewValidators int, err error) {
 	updatedTotalVotingPower = vals.GetTotalVotingPower()
 
@@ -401,7 +403,7 @@ func verifyUpdates(updates []*Validator, vals *ValidatorSet) (updatedTotalVoting
 
 		_, val := vals.GetByAddress(address)
 		if val == nil {
-			// New validator, add its voting power the total.
+			// New validator, add its voting power to the total.
 			updatedTotalVotingPower += valUpdate.VotingPower
 			numNewValidators++
 		} else {
@@ -423,8 +425,8 @@ func verifyUpdates(updates []*Validator, vals *ValidatorSet) (updatedTotalVoting
 }
 
 // computeNewPriorities computes the proposer priority for the validators not present in the set based on 'updatedTotalVotingPower'.
-// Leaves unchanged the priorities of validators that are changed.
-// 'updates' parameter must be a list of unique validators to be added or updated.
+// It leaves unchanged the priorities of validators that are changed.
+// 'Updates' parameter must be a list of unique validators to be added or updated.
 // No changes are made to the validator set 'vals'.
 func computeNewPriorities(updates []*Validator, vals *ValidatorSet, updatedTotalVotingPower int64) {
 	for _, valUpdate := range updates {
@@ -432,7 +434,7 @@ func computeNewPriorities(updates []*Validator, vals *ValidatorSet, updatedTotal
 
 		_, val := vals.GetByAddress(address)
 		if val == nil {
-			// add val
+			// Add val
 			// Set ProposerPriority to -C*totalVotingPower (with C ~= 1.125) to make sure validators can't
 			// un-bond and then re-bond to reset their (potentially previously negative) ProposerPriority to zero.
 			//
@@ -447,8 +449,8 @@ func computeNewPriorities(updates []*Validator, vals *ValidatorSet, updatedTotal
 	}
 }
 
-// applyUpdates merges the validators list with the updates list.
-// When two elements with same address are seen, the one from updates is selected.
+// applyUpdates merges the validators' list with the updates' list.
+// When two elements with the same address are seen, the one from updates is selected.
 // Expects updates to be a list of updates sorted by address with no duplicates or errors,
 // must have been validated with verifyUpdates() and priorities computed with computeNewPriorities().
 func (vals *ValidatorSet) applyUpdates(updates []*Validator) {
@@ -461,7 +463,6 @@ func (vals *ValidatorSet) applyUpdates(updates []*Validator) {
 			merged[i] = existing[0]
 			existing = existing[1:]
 		} else {
-			// Apply add or update.
 			merged[i] = updates[0]
 			if strings.Compare(util.FormatAddress(existing[0].Signer), util.FormatAddress(updates[0].Signer)) == 0 {
 				// Validator is present in both, advance existing.
@@ -536,7 +537,7 @@ func (vals *ValidatorSet) applyRemovals(deletes []*Validator) {
 }
 
 // updateWithChangeSet is the main function used by UpdateWithChangeSet() and NewValidatorSet().
-// If 'allowDeletes' is false then delete operations (identified by validators with voting power 0)
+// If 'allowDeletes' is false, then delete operations (identified by validators with voting power 0)
 // are not allowed and will trigger an error if present in 'changes'.
 // The 'allowDeletes' flag is set to false by NewValidatorSet() and to true by UpdateWithChangeSet().
 func (vals *ValidatorSet) updateWithChangeSet(changes []*Validator, allowDeletes bool) error {
@@ -554,12 +555,12 @@ func (vals *ValidatorSet) updateWithChangeSet(changes []*Validator, allowDeletes
 		return fmt.Errorf("cannot process validators with voting power 0: %v", deletes)
 	}
 
-	// Verify that applying the 'deletes' against 'vals' will not result in error.
+	// Verify that applying the 'deletes' against 'vals' will not result in an error.
 	if err = verifyRemovals(deletes, vals); err != nil {
 		return err
 	}
 
-	// Verify that applying the 'updates' against 'vals' will not result in error.
+	// Verify that applying the 'updates' against 'vals' will not result in an error.
 	updatedTotalVotingPower, numNewValidators, err := verifyUpdates(updates, vals)
 	if err != nil {
 		return err
@@ -612,7 +613,7 @@ func GetUpdatedValidators(
 	updates := make([]*Validator, 0, len(validators))
 
 	for _, v := range validators {
-		// create copy of validator
+		// create the copy of validator
 		validator := v.Copy()
 
 		address := util.FormatAddress(validator.Signer)

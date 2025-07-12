@@ -97,7 +97,7 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}) (*s
 		WithGas(authParams.MaxTxGas)
 
 	// setting this to true to as the if block in BroadcastTx
-	// might cause a cancelled transaction.
+	// might cause a canceled transaction.
 	tb.CliCtx.SkipConfirm = true
 
 	txResponse, err := helper.BroadcastTx(tb.CliCtx, txf, msg)
@@ -155,7 +155,7 @@ func updateAccountSequence(tb *TxBroadcaster) error {
 	return nil
 }
 
-// BroadcastToBorChain broadcasts a msg to bor chain
+// BroadcastToBorChain broadcasts a msg to the bor chain
 func (tb *TxBroadcaster) BroadcastToBorChain(msg ethereum.CallMsg) error {
 	tb.borMutex.Lock()
 	defer tb.borMutex.Unlock()
@@ -202,5 +202,5 @@ func (tb *TxBroadcaster) BroadcastToBorChain(msg ethereum.CallMsg) error {
 	return nil
 }
 
-// BroadcastToRootchain broadcast to rootchain
+// BroadcastToRootchain broadcast to the L1 root chain
 func (tb *TxBroadcaster) BroadcastToRootchain() {}
