@@ -23,7 +23,14 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
-const APIBodyLimit = 128 * 1024 * 1024 // 128 MB
+const (
+	APIBodyLimit              = 128 * 1024 * 1024 // 128 MB
+	mainnetChainID            = "heimdallv2-137"
+	amoyChainID               = "heimdallv2-80002"
+	mainnetInitialBlockHeight = 24404501
+	amoyInitialBlockHeight    = 8788501
+	devnetInitialBlockHeight  = 0
+)
 
 //go:generate mockgen -destination=./mocks/http_client_mock.go -package=mocks . HTTPClient
 type HTTPClient interface {
@@ -300,4 +307,15 @@ func SecureRandomInt(minValue, maxLimit int64) (int64, error) {
 	nBig.Add(nBig, minBig)
 
 	return nBig.Int64(), nil
+}
+
+func GetInitialBlockHeight(chainID string) uint64 {
+	switch chainID {
+	case mainnetChainID:
+		return mainnetInitialBlockHeight
+	case amoyChainID:
+		return amoyInitialBlockHeight
+	default:
+		return devnetInitialBlockHeight
+	}
 }
