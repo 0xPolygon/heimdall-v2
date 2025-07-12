@@ -15,9 +15,11 @@ import (
 )
 
 const (
-	defaultPageLimit          = 1
-	defaultRecordListLimit    = 50
-	maxRecordListLimitPerPage = 1000
+	// DefaultPageLimit is the default page limit for queries.
+	DefaultPageLimit = 1
+
+	// MaxRecordListLimitPerPage is the maximum record list limit per page for queries.
+	MaxRecordListLimitPerPage = 50
 )
 
 var _ types.QueryServer = queryServer{}
@@ -52,11 +54,11 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 	}
 
 	if request.Page == 0 {
-		request.Page = defaultPageLimit
+		request.Page = DefaultPageLimit
 	}
 
-	if request.Limit == 0 || request.Limit > maxRecordListLimitPerPage {
-		request.Limit = defaultRecordListLimit
+	if request.Limit == 0 || request.Limit > MaxRecordListLimitPerPage {
+		request.Limit = MaxRecordListLimitPerPage
 	}
 
 	records, err := q.k.GetEventRecordList(ctx, request.Page, request.Limit)
@@ -75,12 +77,12 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if isPaginationEmpty(request.Pagination) && request.Pagination.Limit > maxRecordListLimitPerPage {
-		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one of offset, key, or limit must be set) and limit exceeds max allowed limit %d", maxRecordListLimitPerPage)
+	if isPaginationEmpty(request.Pagination) && request.Pagination.Limit > MaxRecordListLimitPerPage {
+		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one of offset, key, or limit must be set) and limit exceeds max allowed limit %d", MaxRecordListLimitPerPage)
 	}
 
-	if request.Pagination.Limit == 0 || request.Pagination.Limit > maxRecordListLimitPerPage {
-		request.Pagination.Limit = defaultRecordListLimit
+	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimitPerPage {
+		request.Pagination.Limit = MaxRecordListLimitPerPage
 	}
 
 	if request.FromId < 1 {
@@ -98,7 +100,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 
 		if value.RecordTime.Before(request.ToTime) {
 			filtered = append(filtered, value)
-			request.FromId++ // Increment FromId until we find a valid record or run out of
+			request.FromId++ // Increment FromId until we find a valid record or run out of records.
 			continue
 		}
 
@@ -111,7 +113,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		}, nil
 	}
 
-	// apply pagination over the filtered result
+	// Apply pagination over the filtered result.
 	paginatedRecords := filterWithPage(filtered, &request.Pagination)
 
 	return &types.RecordListWithTimeResponse{

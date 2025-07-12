@@ -15,9 +15,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-const MaxPageLimit = uint64(50)
-
-// Keeper stores all related data
+// Keeper stores all the related data.
 type Keeper struct {
 	storeService storetypes.KVStoreService
 	cdc          codec.BinaryCodec
@@ -31,7 +29,7 @@ type Keeper struct {
 	RecordSequences collections.Map[string, []byte]
 }
 
-// NewKeeper create new keeper
+// NewKeeper creates a new keeper.
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,
@@ -64,7 +62,7 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 	return sdk.UnwrapSDKContext(ctx).Logger().With("module", "x/"+types.ModuleName)
 }
 
-// SetEventRecordWithTime sets event record id with time
+// SetEventRecordWithTime sets event record id with time.
 func (k *Keeper) SetEventRecordWithTime(ctx context.Context, record types.EventRecord) error {
 	isPresent, _ := k.RecordsWithTime.Has(ctx, collections.Join(record.RecordTime, record.Id))
 	if isPresent {
@@ -74,7 +72,7 @@ func (k *Keeper) SetEventRecordWithTime(ctx context.Context, record types.EventR
 	return k.RecordsWithTime.Set(ctx, collections.Join(record.RecordTime, record.Id), record.Id)
 }
 
-// SetEventRecordWithID adds record to store with ID
+// SetEventRecordWithID adds record to store with ID.
 func (k *Keeper) SetEventRecordWithID(ctx context.Context, record types.EventRecord) error {
 	if k.HasEventRecord(ctx, record.Id) {
 		return fmt.Errorf("record with id %d already exists", record.Id)
@@ -83,7 +81,7 @@ func (k *Keeper) SetEventRecordWithID(ctx context.Context, record types.EventRec
 	return k.RecordsWithID.Set(ctx, record.Id, record)
 }
 
-// SetEventRecord adds record to store
+// SetEventRecord adds record to store.
 func (k *Keeper) SetEventRecord(ctx context.Context, record types.EventRecord) error {
 	if err := k.SetEventRecordWithID(ctx, record); err != nil {
 		return err
@@ -92,9 +90,9 @@ func (k *Keeper) SetEventRecord(ctx context.Context, record types.EventRecord) e
 	return k.SetEventRecordWithTime(ctx, record)
 }
 
-// GetEventRecord returns record from store
+// GetEventRecord returns record from store.
 func (k *Keeper) GetEventRecord(ctx context.Context, stateID uint64) (*types.EventRecord, error) {
-	// check if the record exists
+	// Check if the record exists.
 	record, err := k.RecordsWithID.Get(ctx, stateID)
 	if err != nil {
 		return nil, err
@@ -103,73 +101,71 @@ func (k *Keeper) GetEventRecord(ctx context.Context, stateID uint64) (*types.Eve
 	return &record, nil
 }
 
-// HasEventRecord check if state record
+// HasEventRecord checks if state record.
 func (k *Keeper) HasEventRecord(ctx context.Context, stateID uint64) bool {
 	isPresent, _ := k.RecordsWithID.Has(ctx, stateID)
 
 	return isPresent
 }
 
-// GetAllEventRecords get all state records
+// GetAllEventRecords gets all state records.
 func (k *Keeper) GetAllEventRecords(ctx context.Context) []types.EventRecord {
 	records, _ := k.IterateRecords(ctx)
-	// iterate through state sync and append to list
+	// Iterate through state sync and append to list.
 	return records
 }
 
-// GetEventRecordList returns all records with params like page and limit
+// GetEventRecordList returns all records with params like page and limit.
 func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint64) ([]types.EventRecord, error) {
-	// create the records' slice
+	// Create the records' slice.
 	var records []types.EventRecord
 
-	// set the max limit
-	if limit > MaxPageLimit {
-		limit = MaxPageLimit
+	// Set the page limit.
+	if page == 0 {
+		page = DefaultPageLimit
+	}
+	// Set the max record list limit per page.
+	if limit == 0 || limit > MaxRecordListLimitPerPage {
+		limit = MaxRecordListLimitPerPage
 	}
 
-	startIndex := int((page - 1) * limit)
-	endIndex := int(page * limit)
+	// Calculate the starting record ID based on page and limit
+	startRecordID := (page-1)*limit + 1
+	endRecordID := page * limit
 
-	// Initialize a counter to track the number of records processed
-	counter := 0
+	// Use Range to efficiently query only the records we need.
+	rng := new(collections.Range[uint64]).
+		StartInclusive(startRecordID).
+		EndInclusive(endRecordID)
 
-	// Use Walk to iterate over the records
-	err := k.RecordsWithID.Walk(ctx, nil, func(key uint64, record types.EventRecord) (bool, error) {
-		// If the current index is within the desired range, add the record to the slice
-		if counter >= startIndex && counter < endIndex {
-			records = append(records, record)
-		}
+	iterator, err := k.RecordsWithID.Iterate(ctx, rng)
+	if err != nil {
+		return nil, err
+	}
+	defer iterator.Close()
 
-		// Increment the counter
-		counter++
-
-		// Stop walking if we've collected enough records
-		if counter >= endIndex {
-			return true, nil // Stop the walk
-		}
-
-		return false, nil // Continue walking
-	})
+	// Collect the records from the iterator.
+	records, err = iterator.Values()
 	if err != nil {
 		return nil, err
 	}
 
-	// Check if we have collected any records
-	if len(records) == 0 && startIndex > 0 {
+	// Check if we have collected any records.
+	if len(records) == 0 && page > 1 {
 		return nil, fmt.Errorf("page %d does not exist", page)
 	}
 
 	return records, nil
 }
 
-// GetEventRecordListWithTime returns all records with params like fromTime and toTime
+// GetEventRecordListWithTime returns all records with params like fromTime and toTime.
 func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTime time.Time, page, limit uint64) ([]types.EventRecord, error) {
-	// create records
+	// Create the records' slice.
 	var records []types.EventRecord
 
-	// have the max limit
-	if limit > MaxPageLimit {
-		limit = MaxPageLimit
+	// Set the max record list limit per page.
+	if limit > MaxRecordListLimitPerPage {
+		limit = MaxRecordListLimitPerPage
 	}
 
 	rng := new(collections.Range[collections.Pair[time.Time, uint64]]).
@@ -188,7 +184,7 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 
 	allRecords := make([]types.EventRecord, 0, len(stateIDs))
 
-	// loop through records to get valid records
+	// Loop through records to get valid records.
 	for _, stateID := range stateIDs {
 		record, err := k.GetEventRecord(ctx, stateID)
 		if err != nil {
@@ -205,23 +201,23 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 	startIndex := int((page - 1) * limit)
 	endIndex := int(page * limit)
 
-	// Check if the startIndex is within bounds
+	// Check if the startIndex is within bounds.
 	if startIndex >= len(allRecords) {
 		return nil, fmt.Errorf("page %d does not exist", page)
 	}
 
-	// Check if the endIndex exceeds the length of eventRecords
+	// Check if the endIndex exceeds the length of eventRecords.
 	if endIndex > len(allRecords) {
 		endIndex = len(allRecords)
 	}
 
-	// Retrieve the event records for the requested page
+	// Retrieve the event records for the requested page.
 	records = allRecords[startIndex:endIndex]
 
 	return records, nil
 }
 
-// IterateRecords iterates records and applies the given function
+// IterateRecords iterates records and applies the given function.
 func (k *Keeper) IterateRecords(ctx context.Context) ([]types.EventRecord, error) {
 	iterator, err := k.RecordsWithID.Iterate(ctx, nil)
 	if err != nil {
@@ -236,7 +232,7 @@ func (k *Keeper) IterateRecords(ctx context.Context) ([]types.EventRecord, error
 	return records, nil
 }
 
-// GetRecordSequences checks if the record already exists
+// GetRecordSequences checks if the record already exists.
 func (k *Keeper) GetRecordSequences(ctx context.Context) (sequences []string) {
 	k.IterateRecordSequencesAndApplyFn(ctx, func(sequence string) error {
 		sequences = append(sequences, sequence)
@@ -253,21 +249,21 @@ func (k *Keeper) IterateRecordSequencesAndApplyFn(ctx context.Context, f func(se
 		return
 	}
 
-	// loop through sequences
+	// Loop through sequences.
 	for ; iterator.Valid(); iterator.Next() {
 		sequence, err := iterator.Key()
 		if err != nil {
 			return
 		}
 
-		// call function and return if required
+		// Call function and return if required.
 		if err := f(sequence); err != nil {
 			return
 		}
 	}
 }
 
-// SetRecordSequence sets mapping for the sequence id to bool
+// SetRecordSequence sets mapping for the sequence id to bool.
 func (k *Keeper) SetRecordSequence(ctx context.Context, sequence string) {
 	if sequence != "" {
 		err := k.RecordSequences.Set(ctx, sequence, types.DefaultValue)
@@ -277,7 +273,7 @@ func (k *Keeper) SetRecordSequence(ctx context.Context, sequence string) {
 	}
 }
 
-// HasRecordSequence checks if the record already exists
+// HasRecordSequence checks if the record already exists.
 func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
 	isPresent, err := k.RecordSequences.Has(ctx, sequence)
 	if err != nil {
@@ -289,5 +285,25 @@ func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
 
 // GetEventRecordCount returns the total count of event records.
 func (k *Keeper) GetEventRecordCount(ctx context.Context) uint64 {
-	return uint64(len(k.GetAllEventRecords(ctx)))
+	// Create a reverse iterator to get the highest key efficiently.
+	iterator, err := k.RecordsWithID.Iterate(ctx, (&collections.Range[uint64]{}).Descending())
+	if err != nil {
+		k.Logger(ctx).Error("failed to create reverse iterator for counting records", "error", err)
+		return 0
+	}
+	defer iterator.Close()
+
+	// Get the first (highest) key from the reverse iterator.
+	if !iterator.Valid() {
+		return 0 // No records exist.
+	}
+
+	highestKey, err := iterator.Key()
+	if err != nil {
+		k.Logger(ctx).Error("failed to get highest key for counting records", "error", err)
+		return 0
+	}
+
+	// Since record IDs are sequential starting from 1, the highest key equals the count.
+	return highestKey
 }
