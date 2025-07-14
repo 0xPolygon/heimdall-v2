@@ -154,11 +154,19 @@ func (s *KeeperTestSuite) TestGetEventRecordList() {
 	require.NotNil(t, err)
 	require.Len(t, recordList, 0)
 
-	recordList, err = ck.GetEventRecordList(ctx, 1, 70)
-	require.NoError(t, err)
-	require.Len(t, recordList, 50)
+	// Page cannot be 0.
+	recordList, err = ck.GetEventRecordList(ctx, 0, 10)
+	require.Error(t, err)
 
-	recordList, err = ck.GetEventRecordList(ctx, 2, 60)
+	// Limit cannot be 0.
+	recordList, err = ck.GetEventRecordList(ctx, 1, 0)
+	require.Error(t, err)
+
+	// Limit cannot be greater than 50.
+	recordList, err = ck.GetEventRecordList(ctx, 1, 70)
+	require.Error(t, err)
+
+	recordList, err = ck.GetEventRecordList(ctx, 2, 50)
 	require.NoError(t, err)
 	require.Len(t, recordList, 10)
 }
@@ -175,16 +183,19 @@ func (s *KeeperTestSuite) TestGetEventRecordListTime() {
 		require.NoError(t, err)
 	}
 
-	recordList, err := ck.GetEventRecordListWithTime(ctx, time.Unix(1, 0), time.Unix(6, 0), 0, 0)
-	require.NoError(t, err)
-	require.Len(t, recordList, 5)
-	require.Equal(t, int64(5), recordList[len(recordList)-1].RecordTime.Unix())
+	recordList, err := ck.GetEventRecordListWithTime(ctx, time.Unix(1, 0), time.Unix(6, 0), 0, 1)
+	// Page cannot be 0.
+	require.Error(t, err)
+
+	// Limit cannot be 0.
+	recordList, err = ck.GetEventRecordListWithTime(ctx, time.Unix(1, 0), time.Unix(6, 0), 1, 0)
+	require.Error(t, err)
 
 	recordList, err = ck.GetEventRecordListWithTime(ctx, time.Unix(1, 0), time.Unix(6, 0), 1, 1)
 	require.NoError(t, err)
 	require.Len(t, recordList, 1)
 
-	recordList, err = ck.GetEventRecordListWithTime(ctx, time.Unix(10, 0), time.Unix(20, 0), 0, 0)
+	recordList, err = ck.GetEventRecordListWithTime(ctx, time.Unix(10, 0), time.Unix(20, 0), 1, 10)
 	require.NoError(t, err)
 	require.Len(t, recordList, 10)
 	require.Equal(t, int64(10), recordList[0].RecordTime.Unix())

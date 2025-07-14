@@ -73,7 +73,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Pagination() {
 	for i := uint64(1); i <= 10; i++ {
 		rec := types.NewEventRecord(
 			TxHash1, i, i, Address1, make([]byte, 1), "1",
-			now.Add(-time.Duration(i)*time.Minute), // decreasing timestamp
+			now.Add(-time.Duration(i)*time.Minute), // Decreasing timestamp.
 		)
 		require.NoError(ck.SetEventRecord(ctx, rec))
 	}
@@ -83,6 +83,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Pagination() {
 		fromID        uint64
 		toTime        time.Time
 		limit         uint64
+		offset        uint64
 		expectedIDs   []uint64
 		expectedError bool
 	}
@@ -103,11 +104,11 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Pagination() {
 			expectedIDs: []uint64{3, 4, 5, 6, 7},
 		},
 		{
-			name:        "limit beyond max (truncates)",
-			fromID:      1,
-			toTime:      now,
-			limit:       100,
-			expectedIDs: []uint64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			name:          "limit beyond max (truncates), limit cannot be greater than 50",
+			fromID:        1,
+			toTime:        now,
+			limit:         100,
+			expectedError: true,
 		},
 		{
 			name:        "skipping first 5",
@@ -131,11 +132,19 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Pagination() {
 			expectedIDs: []uint64{},
 		},
 		{
-			name:        "empty pagination default limit",
+			name:          "empty pagination limit, limit cannot be 0",
+			fromID:        1,
+			toTime:        now,
+			limit:         0,
+			expectedError: true,
+		},
+		{
+			name:        "limit 3 with offset 2",
 			fromID:      1,
 			toTime:      now,
-			limit:       0,
-			expectedIDs: []uint64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			limit:       3,
+			offset:      2,
+			expectedIDs: []uint64{3, 4, 5},
 		},
 	}
 
@@ -144,7 +153,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Pagination() {
 			req := &types.RecordListWithTimeRequest{
 				FromId:     tc.fromID,
 				ToTime:     tc.toTime,
-				Pagination: query.PageRequest{Limit: tc.limit},
+				Pagination: query.PageRequest{Key: []byte{0x00}, Limit: tc.limit, Offset: tc.offset},
 			}
 			res, err := queryClient.GetRecordListWithTime(ctx, req)
 
