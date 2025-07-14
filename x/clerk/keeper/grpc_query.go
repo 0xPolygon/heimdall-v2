@@ -16,14 +16,11 @@ import (
 )
 
 const (
-	// DefaultPageLimit is the default page limit for queries.
-	DefaultPageLimit = 1
+	// MaxRecordListLimit is the maximum record list limit for queries.
+	MaxRecordListLimit = 50
 
-	// MaxRecordListLimitPerPage is the maximum record list limit per page for queries.
-	MaxRecordListLimitPerPage = 50
-
-	// MaxRecordListOffsetPerPage is the maximum record list offset per page for queries.
-	MaxRecordListOffsetPerPage = 1000
+	// MaxRecordListOffset is the maximum record list offset for queries.
+	MaxRecordListOffset = 1000
 )
 
 var _ types.QueryServer = queryServer{}
@@ -58,10 +55,10 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 	}
 
 	if request.Page == 0 {
-		request.Page = DefaultPageLimit
+		return nil, status.Errorf(codes.InvalidArgument, "page cannot be 0")
 	}
-	if request.Limit == 0 || request.Limit > MaxRecordListLimitPerPage {
-		request.Limit = MaxRecordListLimitPerPage
+	if request.Limit == 0 || request.Limit > MaxRecordListLimit {
+		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxRecordListLimit)
 	}
 
 	records, err := q.k.GetEventRecordList(ctx, request.Page, request.Limit)
@@ -78,17 +75,16 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	}
 
 	if isPaginationEmpty(request.Pagination) {
-		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one of offset, key or limit must be set)")
+		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one argument must be set)")
 	}
-	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimitPerPage {
-		request.Pagination.Limit = MaxRecordListLimitPerPage
+	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimit {
+		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxRecordListLimit)
 	}
-	if request.Pagination.Offset > MaxRecordListOffsetPerPage {
-		return nil, status.Errorf(codes.InvalidArgument, "offset %d exceeds maximum allowed offset %d", request.Pagination.Offset, MaxRecordListOffsetPerPage)
+	if request.Pagination.Offset > MaxRecordListOffset {
+		return nil, status.Errorf(codes.InvalidArgument, "offset cannot be greater than %d", MaxRecordListOffset)
 	}
-
 	if request.FromId < 1 {
-		return nil, status.Errorf(codes.InvalidArgument, "fromId should start from at least 1")
+		return nil, status.Errorf(codes.InvalidArgument, "fromId cannot be less than 1")
 	}
 
 	// Collect the records based on pagination parameters.
@@ -159,17 +155,17 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// get main tx receipt
+	// Get the main tx receipt.
 	txHash := common.FromHex(request.TxHash)
 	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
 	if err != nil || receipt == nil {
 		return nil, status.Errorf(codes.Internal, "transaction is not confirmed yet. please wait for sometime and try again")
 	}
 
-	// sequence id
+	// Get the sequence id.
 	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(heimdallTypes.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(request.LogIndex))
-	// check if incoming tx already exists
+	// Check if the incoming tx already exists.
 	if !q.k.HasRecordSequence(ctx, sequence.String()) {
 		return nil, status.Error(codes.NotFound, "record sequence not found")
 	}
@@ -192,18 +188,18 @@ func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequ
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// get main tx receipt
+	// Get the main tx receipt.
 	txHash := common.FromHex(request.TxHash)
 	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
 	if err != nil || receipt == nil {
 		return nil, status.Errorf(codes.Internal, "transaction is not confirmed yet. please wait for sometime and try again")
 	}
 
-	// sequence id
+	// Get the sequence id.
 	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(heimdallTypes.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(request.LogIndex))
 
-	// check if incoming tx already exists
+	// Check if the incoming tx already exists.
 	if !q.k.HasRecordSequence(ctx, sequence.String()) {
 		return nil, status.Error(codes.NotFound, "record sequence not found")
 	}

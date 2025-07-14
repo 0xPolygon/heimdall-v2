@@ -120,16 +120,14 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page, limit uint64) ([]
 	// Create the records' slice.
 	var records []types.EventRecord
 
-	// Set the page limit.
 	if page == 0 {
-		page = DefaultPageLimit
+		return nil, fmt.Errorf("page cannot be 0")
 	}
-	// Set the max record list limit per page.
-	if limit == 0 || limit > MaxRecordListLimitPerPage {
-		limit = MaxRecordListLimitPerPage
+	if limit == 0 || limit > MaxRecordListLimit {
+		return nil, fmt.Errorf("limit cannot be 0 or greater than %d", MaxRecordListLimit)
 	}
 
-	// Calculate the starting record ID based on page and limit
+	// Calculate the starting record ID based on page and limit.
 	startRecordID := (page-1)*limit + 1
 	endRecordID := page*limit + 1
 
@@ -163,9 +161,11 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 	// Create the records' slice.
 	var records []types.EventRecord
 
-	// Set the max record list limit per page.
-	if limit > MaxRecordListLimitPerPage {
-		limit = MaxRecordListLimitPerPage
+	if page == 0 {
+		return nil, fmt.Errorf("page cannot be 0")
+	}
+	if limit == 0 || limit > MaxRecordListLimit {
+		return nil, fmt.Errorf("limit cannot be 0 or greater than %d", MaxRecordListLimit)
 	}
 
 	rng := new(collections.Range[collections.Pair[time.Time, uint64]]).
