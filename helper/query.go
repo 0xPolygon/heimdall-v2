@@ -99,7 +99,8 @@ func GetBeginBlockEvents(ctx context.Context, client *httpClient.HTTP, height in
 					return events, err
 				}
 			default:
-				return events, errors.New("timed out waiting for event")
+				Logger.Error("GetBeginBlockEvents", "unexpected event type", fmt.Sprintf("%+v", t))
+				return events, fmt.Errorf("unexpected event type: %T", t)
 			}
 		case <-ctx.Done():
 			// Parent context cancelled - return immediately

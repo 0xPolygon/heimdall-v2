@@ -12,7 +12,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
-const maxCheckpointListLimitPerPage = 1000
+const MaxCheckpointListLimit = 10000 // In erigon, CheckpointsFetchLimit is 10000.
 
 var _ types.QueryServer = queryServer{}
 
@@ -180,8 +180,11 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	if isPaginationEmpty(req.Pagination) && req.Pagination.Limit > maxCheckpointListLimitPerPage {
-		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 1000")
+	if isPaginationEmpty(req.Pagination) {
+		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one of offset, key or limit must be set)")
+	}
+	if req.Pagination.Limit == 0 || req.Pagination.Limit > MaxCheckpointListLimit {
+		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxCheckpointListLimit)
 	}
 
 	checkpoints, pageRes, err := query.CollectionPaginate(

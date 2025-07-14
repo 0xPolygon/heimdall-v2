@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 
+	"cosmossdk.io/collections"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
@@ -15,9 +16,11 @@ import (
 )
 
 const (
-	defaultPageLimit          = 1
-	defaultRecordListLimit    = 50
-	maxRecordListLimitPerPage = 1000
+	// MaxRecordListLimit is the maximum record list limit for queries.
+	MaxRecordListLimit = 50
+
+	// MaxRecordListOffset is the maximum record list offset for queries.
+	MaxRecordListOffset = 1000
 )
 
 var _ types.QueryServer = queryServer{}
@@ -52,11 +55,10 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 	}
 
 	if request.Page == 0 {
-		request.Page = defaultPageLimit
+		return nil, status.Errorf(codes.InvalidArgument, "page cannot be 0")
 	}
-
-	if request.Limit == 0 || request.Limit > maxRecordListLimitPerPage {
-		request.Limit = defaultRecordListLimit
+	if request.Limit == 0 || request.Limit > MaxRecordListLimit {
+		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxRecordListLimit)
 	}
 
 	records, err := q.k.GetEventRecordList(ctx, request.Page, request.Limit)
@@ -64,10 +66,7 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	newRecords := make([]types.EventRecord, len(records))
-	copy(newRecords, records)
-
-	return &types.RecordListResponse{EventRecords: newRecords}, nil
+	return &types.RecordListResponse{EventRecords: records}, nil
 }
 
 func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.RecordListWithTimeRequest) (*types.RecordListWithTimeResponse, error) {
@@ -75,53 +74,70 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if isPaginationEmpty(request.Pagination) && request.Pagination.Limit > maxRecordListLimitPerPage {
-		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one of offset, key, or limit must be set) and limit exceeds max allowed limit %d", maxRecordListLimitPerPage)
+	if isPaginationEmpty(request.Pagination) {
+		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one argument must be set)")
 	}
-
-	if request.Pagination.Limit == 0 || request.Pagination.Limit > maxRecordListLimitPerPage {
-		request.Pagination.Limit = defaultRecordListLimit
+	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimit {
+		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxRecordListLimit)
 	}
-
+	if request.Pagination.Offset > MaxRecordListOffset {
+		return nil, status.Errorf(codes.InvalidArgument, "offset cannot be greater than %d", MaxRecordListOffset)
+	}
 	if request.FromId < 1 {
-		return nil, status.Errorf(codes.InvalidArgument, "fromId should start from at least 1")
+		return nil, status.Errorf(codes.InvalidArgument, "fromId cannot be less than 1")
 	}
 
-	// fetch all records without pagination first
-	allRes, _, err := query.CollectionPaginate(
-		ctx,
-		q.k.RecordsWithID,
-		&query.PageRequest{
-			Limit:  maxRecordListLimitPerPage,
-			Offset: request.FromId - 1, // Offset is 0-based, so we subtract 1 from FromId
-		},
-		func(id uint64, record types.EventRecord) (*types.EventRecord, error) {
-			return q.k.GetEventRecord(ctx, id)
-		},
-	)
+	// Collect the records based on pagination parameters.
+	result := make([]types.EventRecord, 0, request.Pagination.Limit)
+
+	// Use a range iterator starting from FromId.
+	rng := (&collections.Range[uint64]{}).StartInclusive(request.FromId)
+
+	iterator, err := q.k.RecordsWithID.Iterate(ctx, rng)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to collect records: %v", err)
+		return nil, status.Error(codes.Internal, err.Error())
 	}
+	defer iterator.Close()
 
-	// apply filters
-	filtered := make([]types.EventRecord, 0, len(allRes))
-	for _, r := range allRes {
-		if r.Id >= request.FromId && r.RecordTime.Before(request.ToTime) {
-			filtered = append(filtered, *r)
+	skipped := uint64(0)   // Records skipped based on pagination offset.
+	collected := uint64(0) // Records collected based on pagination limit.
+
+	for ; iterator.Valid(); iterator.Next() {
+		value, err := iterator.Value()
+		if err != nil {
+			q.k.Logger(ctx).Debug("error in fetching event record from iterator", "error", err)
+			break
+		}
+
+		if !value.RecordTime.Before(request.ToTime) {
+			// Here, the time is >= ToTime, break early.
+			break
+		}
+
+		// Skip records based on the pagination offset.
+		if skipped < request.Pagination.Offset {
+			skipped++
+			continue
+		}
+
+		// Collect records up to the limit.
+		if collected < request.Pagination.Limit {
+			result = append(result, value)
+			collected++
+		} else {
+			// We have collected enough records, stop iterating.
+			break
 		}
 	}
 
-	if len(filtered) == 0 {
+	if len(result) == 0 {
 		return &types.RecordListWithTimeResponse{
 			EventRecords: []types.EventRecord{},
 		}, nil
 	}
 
-	// apply pagination over the filtered result
-	paginatedRecords := filterWithPage(filtered, &request.Pagination)
-
 	return &types.RecordListWithTimeResponse{
-		EventRecords: paginatedRecords,
+		EventRecords: result,
 	}, nil
 }
 
@@ -139,17 +155,17 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// get main tx receipt
+	// Get the main tx receipt.
 	txHash := common.FromHex(request.TxHash)
 	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
 	if err != nil || receipt == nil {
 		return nil, status.Errorf(codes.Internal, "transaction is not confirmed yet. please wait for sometime and try again")
 	}
 
-	// sequence id
+	// Get the sequence id.
 	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(heimdallTypes.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(request.LogIndex))
-	// check if incoming tx already exists
+	// Check if the incoming tx already exists.
 	if !q.k.HasRecordSequence(ctx, sequence.String()) {
 		return nil, status.Error(codes.NotFound, "record sequence not found")
 	}
@@ -172,18 +188,18 @@ func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequ
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// get main tx receipt
+	// Get the main tx receipt.
 	txHash := common.FromHex(request.TxHash)
 	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
 	if err != nil || receipt == nil {
 		return nil, status.Errorf(codes.Internal, "transaction is not confirmed yet. please wait for sometime and try again")
 	}
 
-	// sequence id
+	// Get the sequence id.
 	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(heimdallTypes.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(request.LogIndex))
 
-	// check if incoming tx already exists
+	// Check if the incoming tx already exists.
 	if !q.k.HasRecordSequence(ctx, sequence.String()) {
 		return nil, status.Error(codes.NotFound, "record sequence not found")
 	}
@@ -227,21 +243,4 @@ func isPaginationEmpty(p query.PageRequest) bool {
 		p.Limit == 0 &&
 		!p.CountTotal &&
 		!p.Reverse
-}
-
-func filterWithPage(records []types.EventRecord, pagination *query.PageRequest) []types.EventRecord {
-	if pagination == nil {
-		return records
-	}
-
-	start := int(pagination.Offset)
-	end := start + int(pagination.Limit)
-
-	if start >= len(records) {
-		return []types.EventRecord{}
-	}
-	if end > len(records) {
-		end = len(records)
-	}
-	return records[start:end]
 }
