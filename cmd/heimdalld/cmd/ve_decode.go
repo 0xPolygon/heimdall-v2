@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,6 +14,7 @@ import (
 
 	cometbftDB "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -72,7 +72,7 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	// 	return fmt.Errorf("block height must be > vote_extensions_enable_height (%d)", enableHeight)
 	// }
 
-	chainId := "heimdallv2-80002"
+	chainId := "heimdallv2-137"
 
 	host, err := cmd.Flags().GetString("host")
 	if err != nil {
@@ -147,15 +147,15 @@ func getVEs(height int64, host string, port uint64) (*abci.ExtendedCommitInfo, e
 	}
 
 	// 2) Fallback to the local block store.
-	voteExt, err2 := GetVEsFromBlockStore(height)
-	if err2 != nil {
-		fmt.Printf("warning: Block store fetch failed: %v", err2)
-	} else {
-		return voteExt, nil
-	}
+	// voteExt, err2 := GetVEsFromBlockStore(height)
+	// if err2 != nil {
+	// 	fmt.Printf("warning: Block store fetch failed: %v", err2)
+	// } else {
+	// 	return voteExt, nil
+	// }
 
 	// 3) Both failed, report a generic error
-	return nil, fmt.Errorf("cannot fetch vote extensions:\nRPC error: %w\nBlock store error: %w", err1, err2)
+	return nil, fmt.Errorf("cannot fetch vote extensions:\nRPC error: %w\nBlock store error", err1)
 }
 
 func GetVEsFromEndpoint(height int64, host string, port uint64) (*abci.ExtendedCommitInfo, error) {
@@ -163,7 +163,7 @@ func GetVEsFromEndpoint(height int64, host string, port uint64) (*abci.ExtendedC
 		return nil, fmt.Errorf("invalid RPC port: %d", port)
 	}
 	url := fmt.Sprintf("http://%s:%d/block?height=%d", host, port, height)
-
+	fmt.Println("Fetching block from:", url)
 	ctx := context.Background()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -213,6 +213,7 @@ func GetVEsFromEndpoint(height int64, host string, port uint64) (*abci.ExtendedC
 	if err := goproto.Unmarshal(veBytes, &voteExt); err != nil {
 		return nil, err
 	}
+
 	return &voteExt, nil
 }
 
@@ -253,6 +254,11 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 	}
 
 	for i, v := range ext.Votes {
+		if v.BlockIdFlag != cmtproto.BlockIDFlagCommit {
+			// Skip votes that are not BlockIDFlagCommit
+			fmt.Println("Skipping non-commit vote:", v.BlockIdFlag)
+			continue
+		}
 		// Unmarshal sideTx extension
 		var ves sidetxs.VoteExtension
 		if err := goproto.Unmarshal(v.VoteExtension, &ves); err != nil {
@@ -292,18 +298,20 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 			if isDummy, _ := IsDummyNonRpVoteExtension(height, chainId, v.NonRpVoteExtension); isDummy {
 				vote.NonRpData = util.FormatHex(v.NonRpVoteExtension)
 			} else {
-				msg, err := GetCheckpointMsg(v.NonRpVoteExtension)
-				if err != nil {
-					return nil, fmt.Errorf("error unpacking checkpoint: %w", err)
-				}
-				vote.NonRpData = CheckpointData{
-					Proposer:        common.HexToAddress(msg.Proposer).Hex(),
-					StartBlock:      msg.StartBlock,
-					EndBlock:        msg.EndBlock,
-					RootHash:        common.BytesToHash(msg.RootHash).Hex(),
-					AccountRootHash: common.BytesToHash(msg.AccountRootHash).Hex(),
-					BorChainID:      msg.BorChainId,
-				}
+				fmt.Printf("Non-RP vote extension: %s\n", util.FormatHex(v.NonRpVoteExtension))
+				vote.NonRpData = util.FormatHex(v.NonRpVoteExtension)
+				// msg, err := GetCheckpointMsg(v.NonRpVoteExtension)
+				// if err != nil {
+				// 	return nil, fmt.Errorf("error unpacking checkpoint: %w", err)
+				// }
+				// vote.NonRpData = CheckpointData{
+				// 	Proposer:        common.HexToAddress(msg.Proposer).Hex(),
+				// 	StartBlock:      msg.StartBlock,
+				// 	EndBlock:        msg.EndBlock,
+				// 	RootHash:        common.BytesToHash(msg.RootHash).Hex(),
+				// 	AccountRootHash: common.BytesToHash(msg.AccountRootHash).Hex(),
+				// 	BorChainID:      msg.BorChainId,
+				// }
 			}
 		}
 
@@ -338,10 +346,21 @@ func BuildSummaryJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo
 			return nil, err
 		}
 		if mp := ves.MilestoneProposition; mp != nil {
-			for _, h := range mp.BlockHashes {
-				milestoneVP["0x"+hex.EncodeToString(h)] += power
+			if mp.StartBlockNumber == 73812982 || mp.StartBlockNumber == 73817282 {
+				fmt.Printf("StuckValidator: %s, Power: %d, Milestone Start Block: %d\n", common.BytesToAddress(v.Validator.Address).Hex(), power, mp.StartBlockNumber)
 			}
+			milestoneVP[strconv.FormatUint(mp.StartBlockNumber, 10)] += power
 		}
+
+		if ves.MilestoneProposition == nil && len(v.NonRpVoteExtension) > 0 {
+			fmt.Printf("Validator %s at height %d has no MilestoneProposition\n", common.BytesToAddress(v.Validator.Address).Hex(), height)
+		}
+
+		// if mp := ves.MilestoneProposition; mp != nil {
+		// 	for _, h := range mp.BlockHashes {
+		// 		milestoneVP["0x"+hex.EncodeToString(h)] += power
+		// 	}
+		// }
 		for _, r := range ves.SideTxResponses {
 			txKey := common.BytesToHash(r.TxHash).Hex()
 			if sideTxVP[txKey] == nil {
@@ -359,23 +378,24 @@ func BuildSummaryJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo
 			if isDummy {
 				key = util.FormatHex(v.NonRpVoteExtension)
 			} else {
-				msg, err := GetCheckpointMsg(v.NonRpVoteExtension)
-				if err != nil {
-					return nil, fmt.Errorf("error unpacking checkpoint message: %w", err)
-				}
-				checkpointData := CheckpointData{
-					Proposer:        common.HexToAddress(msg.Proposer).Hex(),
-					StartBlock:      msg.StartBlock,
-					EndBlock:        msg.EndBlock,
-					RootHash:        common.BytesToHash(msg.RootHash).Hex(),
-					AccountRootHash: common.BytesToHash(msg.AccountRootHash).Hex(),
-					BorChainID:      msg.BorChainId,
-				}
-				b, err := json.Marshal(checkpointData)
-				if err != nil {
-					return nil, err
-				}
-				key = string(b)
+				key = util.FormatHex(v.NonRpVoteExtension)
+				// msg, err := GetCheckpointMsg(v.NonRpVoteExtension)
+				// if err != nil {
+				// 	return nil, fmt.Errorf("error unpacking checkpoint message: %w", err)
+				// }
+				// checkpointData := CheckpointData{
+				// 	Proposer:        common.HexToAddress(msg.Proposer).Hex(),
+				// 	StartBlock:      msg.StartBlock,
+				// 	EndBlock:        msg.EndBlock,
+				// 	RootHash:        common.BytesToHash(msg.RootHash).Hex(),
+				// 	AccountRootHash: common.BytesToHash(msg.AccountRootHash).Hex(),
+				// 	BorChainID:      msg.BorChainId,
+				// }
+				// b, err := json.Marshal(checkpointData)
+				// if err != nil {
+				// 	return nil, err
+				// }
+				// key = string(b)
 			}
 			nonRpVP[key] += power
 		}
