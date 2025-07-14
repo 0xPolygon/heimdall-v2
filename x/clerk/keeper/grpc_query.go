@@ -85,8 +85,8 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Errorf(codes.InvalidArgument, "fromId should start from at least 1")
 	}
 
-	// Collect all the records that match the time criteria.
-	filtered := make([]types.EventRecord, 0)
+	// Collect the records based on pagination parameters.
+	result := make([]types.EventRecord, 0, request.Pagination.Limit)
 
 	// Use a range iterator starting from FromId.
 	rng := (&collections.Range[uint64]{}).StartInclusive(request.FromId)
@@ -97,6 +97,9 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	}
 	defer iterator.Close()
 
+	skipped := uint64(0)   // Records skipped based on pagination offset.
+	collected := uint64(0) // Records collected based on pagination limit.
+
 	for ; iterator.Valid(); iterator.Next() {
 		value, err := iterator.Value()
 		if err != nil {
@@ -104,25 +107,35 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 			break
 		}
 
-		if value.RecordTime.Before(request.ToTime) {
-			filtered = append(filtered, value)
-		} else {
+		if !value.RecordTime.Before(request.ToTime) {
 			// Here, the time is >= ToTime, break early.
+			break
+		}
+
+		// Skip records based on the pagination offset.
+		if skipped < request.Pagination.Offset {
+			skipped++
+			continue
+		}
+
+		// Collect records up to the limit.
+		if collected < request.Pagination.Limit {
+			result = append(result, value)
+			collected++
+		} else {
+			// We have collected enough records, stop iterating.
 			break
 		}
 	}
 
-	if len(filtered) == 0 {
+	if len(result) == 0 {
 		return &types.RecordListWithTimeResponse{
 			EventRecords: []types.EventRecord{},
 		}, nil
 	}
 
-	// Apply pagination over the filtered result.
-	paginatedRecords := filterWithPage(filtered, &request.Pagination)
-
 	return &types.RecordListWithTimeResponse{
-		EventRecords: paginatedRecords,
+		EventRecords: result,
 	}, nil
 }
 
@@ -228,21 +241,4 @@ func isPaginationEmpty(p query.PageRequest) bool {
 		p.Limit == 0 &&
 		!p.CountTotal &&
 		!p.Reverse
-}
-
-func filterWithPage(records []types.EventRecord, pagination *query.PageRequest) []types.EventRecord {
-	if pagination == nil {
-		return records
-	}
-
-	start := int(pagination.Offset)
-	end := start + int(pagination.Limit)
-
-	if start >= len(records) {
-		return []types.EventRecord{}
-	}
-	if end > len(records) {
-		end = len(records)
-	}
-	return records[start:end]
 }
