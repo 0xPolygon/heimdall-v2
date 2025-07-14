@@ -116,7 +116,7 @@ func (k *Keeper) GetAllEventRecords(ctx context.Context) []types.EventRecord {
 }
 
 // GetEventRecordList returns all records with params like page and limit.
-func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint64) ([]types.EventRecord, error) {
+func (k *Keeper) GetEventRecordList(ctx context.Context, page, limit uint64) ([]types.EventRecord, error) {
 	// Create the records' slice.
 	var records []types.EventRecord
 
@@ -131,12 +131,12 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint
 
 	// Calculate the starting record ID based on page and limit
 	startRecordID := (page-1)*limit + 1
-	endRecordID := page * limit
+	endRecordID := page*limit + 1
 
 	// Use Range to efficiently query only the records we need.
 	rng := new(collections.Range[uint64]).
 		StartInclusive(startRecordID).
-		EndInclusive(endRecordID)
+		EndExclusive(endRecordID)
 
 	iterator, err := k.RecordsWithID.Iterate(ctx, rng)
 	if err != nil {

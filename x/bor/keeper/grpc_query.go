@@ -163,8 +163,11 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	if isPaginationEmpty(req.Pagination) && req.Pagination.Limit > maxSpanListLimitPerPage {
-		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 1000")
+	if isPaginationEmpty(req.Pagination) {
+		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one of offset, key or limit must be set)")
+	}
+	if req.Pagination.Limit == 0 || req.Pagination.Limit > maxSpanListLimitPerPage {
+		req.Pagination.Limit = maxSpanListLimitPerPage
 	}
 
 	spans, pageRes, err := query.CollectionPaginate(

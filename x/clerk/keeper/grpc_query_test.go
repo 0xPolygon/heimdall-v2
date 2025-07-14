@@ -144,7 +144,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Pagination() {
 			req := &types.RecordListWithTimeRequest{
 				FromId:     tc.fromID,
 				ToTime:     tc.toTime,
-				Pagination: query.PageRequest{Limit: tc.limit},
+				Pagination: query.PageRequest{Key: []byte{0x00}, Limit: tc.limit},
 			}
 			res, err := queryClient.GetRecordListWithTime(ctx, req)
 

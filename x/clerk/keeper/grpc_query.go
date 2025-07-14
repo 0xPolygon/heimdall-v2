@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 
+	"cosmossdk.io/collections"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
@@ -56,7 +57,6 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 	if request.Page == 0 {
 		request.Page = DefaultPageLimit
 	}
-
 	if request.Limit == 0 || request.Limit > MaxRecordListLimitPerPage {
 		request.Limit = MaxRecordListLimitPerPage
 	}
@@ -66,10 +66,7 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	newRecords := make([]types.EventRecord, len(records))
-	copy(newRecords, records)
-
-	return &types.RecordListResponse{EventRecords: newRecords}, nil
+	return &types.RecordListResponse{EventRecords: records}, nil
 }
 
 func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.RecordListWithTimeRequest) (*types.RecordListWithTimeResponse, error) {
@@ -77,10 +74,9 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if isPaginationEmpty(request.Pagination) && request.Pagination.Limit > MaxRecordListLimitPerPage {
-		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one of offset, key, or limit must be set) and limit exceeds max allowed limit %d", MaxRecordListLimitPerPage)
+	if isPaginationEmpty(request.Pagination) {
+		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one of offset, key or limit must be set)")
 	}
-
 	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimitPerPage {
 		request.Pagination.Limit = MaxRecordListLimitPerPage
 	}
@@ -89,22 +85,31 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Errorf(codes.InvalidArgument, "fromId should start from at least 1")
 	}
 
-	filtered := make([]types.EventRecord, 0, request.Pagination.Limit)
+	// Collect all the records that match the time criteria.
+	filtered := make([]types.EventRecord, 0)
 
-	for i := uint64(0); i < request.Pagination.Limit; i++ {
-		value, err := q.k.RecordsWithID.Get(ctx, request.FromId)
+	// Use a range iterator starting from FromId.
+	rng := (&collections.Range[uint64]{}).StartInclusive(request.FromId)
+
+	iterator, err := q.k.RecordsWithID.Iterate(ctx, rng)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		value, err := iterator.Value()
 		if err != nil {
-			q.k.Logger(ctx).Debug("error in fetching event record", "error", err, "fromId", request.FromId)
+			q.k.Logger(ctx).Debug("error in fetching event record from iterator", "error", err)
 			break
 		}
 
 		if value.RecordTime.Before(request.ToTime) {
 			filtered = append(filtered, value)
-			request.FromId++ // Increment FromId until we find a valid record or run out of records.
-			continue
+		} else {
+			// Here, the time is >= ToTime, break early.
+			break
 		}
-
-		break
 	}
 
 	if len(filtered) == 0 {
