@@ -12,7 +12,7 @@ import (
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-const maxSpanListLimitPerPage = 1000
+const MaxSpanListLimit = 1000
 
 var _ types.QueryServer = queryServer{}
 
@@ -164,10 +164,10 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 	}
 
 	if isPaginationEmpty(req.Pagination) {
-		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one of offset, key or limit must be set)")
+		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one argument must be set)")
 	}
-	if req.Pagination.Limit == 0 || req.Pagination.Limit > maxSpanListLimitPerPage {
-		req.Pagination.Limit = maxSpanListLimitPerPage
+	if req.Pagination.Limit == 0 || req.Pagination.Limit > MaxSpanListLimit {
+		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxSpanListLimit)
 	}
 
 	spans, pageRes, err := query.CollectionPaginate(
