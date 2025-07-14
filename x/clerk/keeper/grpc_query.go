@@ -21,6 +21,9 @@ const (
 
 	// MaxRecordListLimitPerPage is the maximum record list limit per page for queries.
 	MaxRecordListLimitPerPage = 50
+
+	// MaxRecordListOffsetPerPage is the maximum record list offset per page for queries.
+	MaxRecordListOffsetPerPage = 1000
 )
 
 var _ types.QueryServer = queryServer{}
@@ -79,6 +82,9 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	}
 	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimitPerPage {
 		request.Pagination.Limit = MaxRecordListLimitPerPage
+	}
+	if request.Pagination.Offset > MaxRecordListOffsetPerPage {
+		return nil, status.Errorf(codes.InvalidArgument, "offset %d exceeds maximum allowed offset %d", request.Pagination.Offset, MaxRecordListOffsetPerPage)
 	}
 
 	if request.FromId < 1 {
