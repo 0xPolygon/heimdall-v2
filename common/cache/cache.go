@@ -40,13 +40,16 @@ func (c *Cache[T]) Get(key string) (T, error) {
 	c.mu.RUnlock()
 
 	var zero T
-	if !found || time.Now().UnixNano() > item.Expiration {
-		if found {
-			c.mu.Lock()
-			delete(c.items, key)
-			c.mu.Unlock()
-		}
-		return zero, errors.New("item not found or expired")
+
+	if !found {
+		c.mu.Lock()
+		delete(c.items, key)
+		c.mu.Unlock()
+		return zero, errors.New("item expired")
+	}
+
+	if time.Now().UnixNano() > item.Expiration {
+		return zero, errors.New("item expired")
 	}
 
 	return item.Value, nil
