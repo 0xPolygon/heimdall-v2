@@ -42,13 +42,13 @@ func (c *Cache[T]) Get(key string) (T, error) {
 	var zero T
 
 	if !found {
-		c.mu.Lock()
-		delete(c.items, key)
-		c.mu.Unlock()
-		return zero, errors.New("item expired")
+		return zero, errors.New("item not found")
 	}
 
 	if time.Now().UnixNano() > item.Expiration {
+		c.mu.Lock()
+		delete(c.items, key)
+		c.mu.Unlock()
 		return zero, errors.New("item expired")
 	}
 
