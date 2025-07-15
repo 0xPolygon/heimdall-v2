@@ -4,6 +4,8 @@ import (
 	"errors"
 	"sync"
 	"time"
+
+	"github.com/ethereum/go-ethereum/log"
 )
 
 type CacheItem[T any] struct {
@@ -48,6 +50,8 @@ func (c *Cache[T]) Get(key string) (T, error) {
 		}
 		return zero, errors.New("item not found or expired")
 	}
+
+	log.Error("Cache hit", "key", key, "value", item.Value)
 
 	return item.Value, nil
 }
