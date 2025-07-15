@@ -50,6 +50,8 @@ func IsValidCheckpoint(start uint64, end uint64, rootHash []byte, checkpointLeng
 		if err != nil {
 			return false, borTypes.ErrFailedToQueryBor
 		}
+
+		rootCache.Set(rootKey, root)
 	}
 
 	if bytes.Equal(root, rootHash) {
