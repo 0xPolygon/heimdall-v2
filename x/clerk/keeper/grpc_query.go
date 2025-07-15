@@ -20,7 +20,7 @@ const (
 	MaxRecordListLimit = 50
 
 	// MaxRecordListOffset is the maximum record list offset for queries.
-	MaxRecordListOffset = 1000
+	MaxRecordListOffset = 1_000
 )
 
 var _ types.QueryServer = queryServer{}
@@ -77,11 +77,11 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	if isPaginationEmpty(request.Pagination) {
 		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one argument must be set)")
 	}
-	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimit {
-		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxRecordListLimit)
-	}
 	if request.Pagination.Offset > MaxRecordListOffset {
 		return nil, status.Errorf(codes.InvalidArgument, "offset cannot be greater than %d", MaxRecordListOffset)
+	}
+	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimit {
+		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxRecordListLimit)
 	}
 	if request.FromId < 1 {
 		return nil, status.Errorf(codes.InvalidArgument, "fromId cannot be less than 1")
