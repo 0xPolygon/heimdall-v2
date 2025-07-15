@@ -67,6 +67,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/client/docs"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	heimdalltypes "github.com/0xPolygon/heimdall-v2/types"
 	hversion "github.com/0xPolygon/heimdall-v2/version"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
@@ -598,24 +599,47 @@ func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 
 // EndBlocker application updates every end block
 func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
+	// Create a separate event manager for custom events
+	customEventManager := sdk.NewEventManager()
+
 	// transfer fees to current proposer
 	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
 		moduleAccount := app.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName)
-		coins := app.BankKeeper.GetBalance(ctx, moduleAccount.GetAddress(), authtypes.FeeToken)
-		if !coins.Amount.IsZero() {
-			coins := sdk.Coins{sdk.Coin{Denom: authtypes.FeeToken, Amount: coins.Amount}}
+		coin := app.BankKeeper.GetBalance(ctx, moduleAccount.GetAddress(), authtypes.FeeToken)
+
+		if !coin.Amount.IsZero() {
+			coins := sdk.Coins{sdk.Coin{Denom: authtypes.FeeToken, Amount: coin.Amount}}
 			if err := app.BankKeeper.SendCoinsFromModuleToAccount(ctx, authtypes.FeeCollectorName, proposer, coins); err != nil {
 				app.Logger().Error("EndBlocker | SendCoinsFromModuleToAccount", "error", err)
+			} else {
+				customEventManager.EmitEvent(sdk.NewEvent(
+					heimdalltypes.EventTypeFeeTransfer,
+					sdk.NewAttribute(heimdalltypes.AttributeKeyProposer, proposer.String()),
+					sdk.NewAttribute(heimdalltypes.AttributeKeyDenom, authtypes.FeeToken),
+					sdk.NewAttribute(heimdalltypes.AttributeKeyAmount, coin.Amount.String()),
+				))
 			}
-		}
-		// remove block proposer
-		err := app.AccountKeeper.RemoveBlockProposer(ctx)
-		if err != nil {
-			app.Logger().Error("EndBlocker | RemoveBlockProposer", "error", err)
+
+			// remove block proposer
+			err := app.AccountKeeper.RemoveBlockProposer(ctx)
+			if err != nil {
+				app.Logger().Error("EndBlocker | RemoveBlockProposer", "error", err)
+			}
 		}
 	}
 
-	return app.ModuleManager.EndBlock(ctx)
+	result, err := app.ModuleManager.EndBlock(ctx)
+	if err != nil {
+		customABCIEvents := customEventManager.ABCIEvents()
+		result.Events = append(result.Events, customABCIEvents...)
+		return result, err
+	}
+
+	// Add custom events to result on success
+	customABCIEvents := customEventManager.ABCIEvents()
+	result.Events = append(result.Events, customABCIEvents...)
+
+	return result, nil
 }
 
 func (app *HeimdallApp) LoadHeight(height int64) error {
