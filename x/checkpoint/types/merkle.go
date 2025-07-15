@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	time "time"
+	"time"
 
 	"github.com/0xPolygon/heimdall-v2/common/cache"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -30,6 +30,14 @@ func IsValidCheckpoint(start uint64, end uint64, rootHash []byte, checkpointLeng
 	exists, err := existsCache.Get(existsKey)
 
 	if !exists || err != nil {
+		if err != nil {
+			helper.Logger.Debug("Blocks existence not found in cache, querying contract",
+				"end", end,
+				"confirmations", confirmations,
+				"existsKey", existsKey,
+				"error", err,
+			)
+		}
 		// Check if blocks exist locally
 		exists, err := contractCaller.CheckIfBlocksExist(end + confirmations)
 		if err != nil {
@@ -45,6 +53,14 @@ func IsValidCheckpoint(start uint64, end uint64, rootHash []byte, checkpointLeng
 	rootKey := fmt.Sprintf("%d-%d-%d", start, end, checkpointLength)
 	root, err := rootCache.Get(rootKey)
 	if err != nil {
+		helper.Logger.Debug("Root hash not found in cache, querying contract",
+			"start", start,
+			"end", end,
+			"checkpointLength", checkpointLength,
+			"rootKey", rootKey,
+			"error", err,
+		)
+
 		// Compare RootHash
 		root, err = contractCaller.GetRootHash(start, end, checkpointLength)
 		if err != nil {
