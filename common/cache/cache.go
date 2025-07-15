@@ -2,6 +2,8 @@ package cache
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -51,7 +53,24 @@ func (c *Cache[T]) Get(key string) (T, error) {
 		return zero, errors.New("item not found or expired")
 	}
 
-	log.Error("Cache hit", "key", key, "value", item.Value)
+	logToFile(key, item.Value)
 
 	return item.Value, nil
+}
+
+func logToFile(key string, value any) {
+	// Open a file "/home/ubuntu/cache.log" in append mode
+	file, err := os.OpenFile("/home/ubuntu/cache.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Error("Failed to open cache log file", "error", err)
+		return
+	}
+	defer file.Close()
+	// Write the key and value to the file
+	_, err = fmt.Fprintf(file, "Cache hit: key=%s, value=%v\n", key, value)
+	if err != nil {
+		log.Error("Failed to write to cache log file", "error", err)
+		return
+	}
+	log.Info("Cache hit logged to file", "key", key, "value", value)
 }
