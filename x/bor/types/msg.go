@@ -33,3 +33,8 @@ func NewMsgProposeSpan(
 func (msg MsgProposeSpan) Type() string {
 	return EventTypeProposeSpan
 }
+
+// Type returns the type of the x/bor MsgBackfillSpans.
+func (msg MsgBackfillSpans) Type() string {
+	return EventTypeBackfillSpans
+}

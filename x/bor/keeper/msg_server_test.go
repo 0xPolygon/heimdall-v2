@@ -14,6 +14,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -417,6 +418,95 @@ func (s *KeeperTestSuite) TestVoteProducers() {
 				if tc.verifyState != nil {
 					tc.verifyState(tc.msg)
 				}
+			}
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestBackfillSpans() {
+	require, ctx, borKeeper, milestoneKeeper, cmKeeper, msgServer := s.Require(), s.ctx, s.borKeeper, s.milestoneKeeper, s.chainManagerKeeper, s.msgServer
+
+	testChainParams := chainmanagertypes.DefaultParams()
+	testSpan := s.genTestSpans(1)[0]
+	err := borKeeper.AddNewSpan(ctx, testSpan)
+	require.NoError(err)
+
+	testcases := []struct {
+		name          string
+		backfillSpans types.MsgBackfillSpans
+		expRes        *types.MsgBackfillSpansResponse
+		expErr        string
+	}{
+		{
+			name: "incorrect validator address",
+			backfillSpans: types.MsgBackfillSpans{
+				Proposer:        "ValidatorAddress",
+				ChainId:         testChainParams.ChainParams.BorChainId,
+				LatestSpanId:    1,
+				LatestBorSpanId: 7,
+			},
+			expRes: nil,
+			expErr: "invalid proposer address",
+		},
+		{
+			name: "incorrect chain id",
+			backfillSpans: types.MsgBackfillSpans{
+				Proposer:        common.HexToAddress("someProposer").String(),
+				ChainId:         "invalidChainId",
+				LatestSpanId:    1,
+				LatestBorSpanId: 7,
+			},
+			expRes: nil,
+			expErr: "invalid bor chain id",
+		},
+		{
+			name: "invalid last heimdall span id",
+			backfillSpans: types.MsgBackfillSpans{
+				Proposer:        common.HexToAddress("someProposer").String(),
+				ChainId:         testChainParams.ChainParams.BorChainId,
+				LatestSpanId:    2,
+				LatestBorSpanId: 7,
+			},
+			expRes: nil,
+			expErr: "invalid span",
+		},
+		{
+			name: "invalid last bor span id",
+			backfillSpans: types.MsgBackfillSpans{
+				Proposer:        common.HexToAddress("someProposer").String(),
+				ChainId:         testChainParams.ChainParams.BorChainId,
+				LatestSpanId:    1,
+				LatestBorSpanId: 0,
+			},
+			expErr: "invalid last bor span id",
+		},
+		{
+			name: "mismatch between calculated and provided last span id",
+			backfillSpans: types.MsgBackfillSpans{
+
+				Proposer:        common.HexToAddress("someProposer").String(),
+				ChainId:         testChainParams.ChainParams.BorChainId,
+				LatestSpanId:    1,
+				LatestBorSpanId: 3,
+			},
+			expRes: nil,
+			expErr: "invalid span",
+		},
+	}
+
+	cmKeeper.EXPECT().GetParams(ctx).Return(testChainParams, nil).AnyTimes()
+	milestoneKeeper.EXPECT().GetLastMilestone(ctx).Return(&milestoneTypes.Milestone{
+		EndBlock: 1000,
+	}, nil).AnyTimes()
+
+	for _, tc := range testcases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			res, err := msgServer.BackfillSpans(ctx, &tc.backfillSpans)
+			require.Equal(tc.expRes, res)
+			if tc.expErr == "" {
+				require.NoError(err)
+			} else {
+				require.ErrorContains(err, tc.expErr)
 			}
 		})
 	}

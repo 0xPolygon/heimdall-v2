@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"strconv"
 
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -17,6 +18,7 @@ import (
 )
 
 var SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpan{})
+var FillMissingSpansMsgTypeURL = sdk.MsgTypeURL(&types.MsgBackfillSpans{})
 
 type sideMsgServer struct {
 	k *Keeper
@@ -36,6 +38,8 @@ func (s sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 	switch methodName {
 	case SpanProposeMsgTypeURL:
 		return s.SideHandleMsgSpan
+	case FillMissingSpansMsgTypeURL:
+		return s.SideHandleMsgBackfillSpans
 	default:
 		return nil
 	}
@@ -97,6 +101,14 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	var latestMilestoneEndBlock uint64
+	latestMilestone, err := s.k.mk.GetLastMilestone(ctx)
+	if err == nil {
+		latestMilestoneEndBlock = latestMilestone.EndBlock
+	} else {
+		logger.Error("error fetching latest milestone", "error", err)
+	}
+
 	// fetch current child block
 	childBlock, err := s.k.contractCaller.GetBorChainBlock(ctx, nil)
 	if err != nil {
@@ -111,6 +123,25 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	}
 
 	currentBlock := childBlock.Number.Uint64()
+
+	maxBlockNumber := max(latestMilestoneEndBlock, currentBlock)
+
+	if types.IsBlockCloseToSpanEnd(maxBlockNumber, lastSpan.EndBlock) {
+		logger.Debug("current block is close to span end", "currentBlock", currentBlock, "lastSpanEndBlock", lastSpan.EndBlock)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// If we are past end of the last span, we need to backfill before proposing a new span
+	if msg.StartBlock <= maxBlockNumber {
+		logger.Error("span is already in the past",
+			"currentBlock", currentBlock,
+			"msgStartBlock", msg.StartBlock,
+			"msgEndBlock", msg.EndBlock,
+			"latestMilestoneEndBlock", latestMilestoneEndBlock,
+			"lastSpanEndBlock", lastSpan.EndBlock,
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
 
 	// check if the proposed span is in-turn or not
 	if !(lastSpan.StartBlock <= currentBlock && currentBlock <= lastSpan.EndBlock) {
@@ -129,11 +160,17 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	return sidetxs.Vote_VOTE_YES
 }
 
+func (s sideMsgServer) SideHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
+	return sidetxs.Vote_VOTE_NO
+}
+
 // PostTxHandler returns a side handler for span type messages.
 func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 	switch methodName {
 	case SpanProposeMsgTypeURL:
 		return s.PostHandleMsgSpan
+	case FillMissingSpansMsgTypeURL:
+		return s.PostHandleMsgBackfillSpans
 	default:
 		return nil
 	}
@@ -201,6 +238,77 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 			sdk.NewAttribute(types.AttributeKeySpanID, strconv.FormatUint(msg.SpanId, 10)),
 			sdk.NewAttribute(types.AttributeKeySpanStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeySpanEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
+		),
+	})
+
+	return nil
+}
+
+func (s sideMsgServer) PostHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+	logger := s.k.Logger(ctx)
+
+	msg, ok := msgI.(*types.MsgBackfillSpans)
+	if !ok {
+		err := errors.New("MsgBackfillSpans type mismatch")
+		logger.Error(err.Error(), "msg type received", msg)
+		return err
+	}
+
+	if helper.IsVeblop(msg.LatestSpanId) {
+		logger.Debug("skipping backfill spans msg since span id is greater than veblop height", "span id", msg.LatestSpanId, "veblop height", helper.GetVeblopHeight())
+		return nil
+	}
+
+	if sideTxResult != sidetxs.Vote_VOTE_YES {
+		logger.Debug("skipping new span since side-tx didn't get yes votes")
+		return errors.New("side-tx didn't get yes votes")
+	}
+
+	latestMilestone, err := s.k.mk.GetLastMilestone(ctx)
+	if err != nil {
+		logger.Error("failed to get latest milestone", "error", err)
+		return fmt.Errorf("failed to get latest milestone: %w", err)
+	}
+
+	if latestMilestone == nil {
+		logger.Error("latest milestone is nil")
+		return types.ErrLatestMilestoneNotFound
+	}
+
+	latestSpan, err := s.k.GetSpan(ctx, msg.LatestSpanId)
+	if err != nil {
+		logger.Error("failed to get latest span", "error", err)
+		return err
+	}
+
+	borSpans := types.GenerateBorCommittedSpans(latestMilestone.EndBlock, &latestSpan)
+	spansOverlap := 0
+	for i := range borSpans {
+		if _, err := s.k.GetSpan(ctx, borSpans[i].Id); err == nil {
+			spansOverlap++
+		}
+		if spansOverlap > 1 {
+			logger.Error("more than one span overlap detected", "span id", borSpans[i].Id)
+			return fmt.Errorf("more than one span overlap detected for span id: %d", borSpans[i].Id)
+		}
+		if err = s.k.AddNewSpan(ctx, &borSpans[i]); err != nil {
+			logger.Error("Unable to store spans", "error", err)
+			return err
+		}
+	}
+
+	txBytes := ctx.TxBytes()
+	hash := cmttypes.Tx(txBytes).Hash()
+
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.EventTypeProposeSpan,
+			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
+			sdk.NewAttribute(heimdallTypes.AttributeKeyTxHash, common.BytesToHash(hash).Hex()),
+			sdk.NewAttribute(heimdallTypes.AttributeKeySideTxResult, sideTxResult.String()),
+			sdk.NewAttribute(types.AttributesKeyLatestSpanId, strconv.FormatUint(msg.LatestSpanId, 10)),
+			sdk.NewAttribute(types.AttributesKeyLatestBorSpanId, strconv.FormatUint(borSpans[0].Id, 10)),
 		),
 	})
 
