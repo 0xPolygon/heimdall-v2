@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	MaxCheckpointListLimit   = 10_000 // In erigon, CheckpointsFetchLimit is 10_000.
-	MaxCheckpointOffsetLimit = 1_000
+	MaxCheckpointListLimit = 10_000 // In erigon, CheckpointsFetchLimit is 10_000.
 )
 
 var _ types.QueryServer = queryServer{}
@@ -185,9 +184,6 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 
 	if isPaginationEmpty(req.Pagination) {
 		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one of offset, key or limit must be set)")
-	}
-	if req.Pagination.Offset > MaxCheckpointOffsetLimit {
-		return nil, status.Errorf(codes.InvalidArgument, "offset cannot be greater than %d", MaxCheckpointOffsetLimit)
 	}
 	if req.Pagination.Limit == 0 || req.Pagination.Limit > MaxCheckpointListLimit {
 		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxCheckpointListLimit)

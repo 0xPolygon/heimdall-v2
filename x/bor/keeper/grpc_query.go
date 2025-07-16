@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	MaxSpanListLimit   = 1_000
-	MaxSpanOffsetLimit = 1_000
+	MaxSpanListLimit = 1_000
 )
 
 var _ types.QueryServer = queryServer{}
@@ -168,9 +167,6 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 
 	if isPaginationEmpty(req.Pagination) {
 		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one argument must be set)")
-	}
-	if req.Pagination.Offset > MaxSpanOffsetLimit {
-		return nil, status.Errorf(codes.InvalidArgument, "offset cannot be greater than %d", MaxSpanOffsetLimit)
 	}
 	if req.Pagination.Limit == 0 || req.Pagination.Limit > MaxSpanListLimit {
 		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxSpanListLimit)
