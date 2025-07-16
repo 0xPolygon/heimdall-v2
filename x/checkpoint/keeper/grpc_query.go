@@ -12,7 +12,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
-const MaxCheckpointListLimit = 10000 // In erigon, CheckpointsFetchLimit is 10000.
+const (
+	MaxCheckpointListLimit = 10_000 // In erigon, CheckpointsFetchLimit is 10_000.
+)
 
 var _ types.QueryServer = queryServer{}
 
@@ -174,7 +176,7 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 	return &types.QueryNextCheckpointResponse{Checkpoint: checkpointMsg}, nil
 }
 
-// GetCheckpointList returns the list of checkpoints
+// GetCheckpointList returns the list of checkpoints.
 func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryCheckpointListRequest) (*types.QueryCheckpointListResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")

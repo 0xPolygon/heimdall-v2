@@ -12,7 +12,9 @@ import (
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-const MaxSpanListLimit = 1000
+const (
+	MaxSpanListLimit = 1_000
+)
 
 var _ types.QueryServer = queryServer{}
 
