@@ -193,7 +193,7 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 		ctx,
 		q.k.checkpoints,
 		&req.Pagination, func(number uint64, checkpoint types.Checkpoint) (types.Checkpoint, error) {
-			return q.k.GetCheckpointByNumber(ctx, number)
+			return checkpoint, nil
 		},
 	)
 	if err != nil {
