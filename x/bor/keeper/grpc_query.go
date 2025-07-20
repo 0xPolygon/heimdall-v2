@@ -176,11 +176,11 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 		ctx,
 		q.k.spans,
 		&req.Pagination, func(id uint64, span types.Span) (types.Span, error) {
-			return q.k.GetSpan(ctx, id)
+			return span, nil
 		},
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
+		return nil, status.Errorf(codes.InvalidArgument, "error in pagination; please verify the pagination params: %v", err)
 	}
 
 	return &types.QuerySpanListResponse{SpanList: spans, Pagination: *pageRes}, nil
