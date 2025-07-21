@@ -14,9 +14,7 @@ import (
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
-const (
-	heimdallLastBlockKey = "heimdall-last-block" // storage key
-)
+const heimdallLastBlockKey = "heimdall-last-block" // storage key
 
 // HeimdallListener - Listens to and process events from heimdall
 type HeimdallListener struct {
@@ -120,17 +118,21 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 }
 
 func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, uint64, error) {
-	// toBlock - get the latest block height from heimdall node
-	fromBlock := uint64(0)
-	toBlock := uint64(0)
+	// fromBlock - get the initial block height from config
+	chainId := hl.cliCtx.ChainID
+	fromBlock := helper.GetInitialBlockHeight(chainId)
 
+	// toBlock - get the latest block height from heimdall node
+	toBlock := uint64(0)
 	nodeStatus, err := helper.GetNodeStatus(hl.cliCtx, ctx)
 	if err != nil {
 		hl.Logger.Error("Error while fetching heimdall node status", "error", err)
 		return fromBlock, toBlock, err
 	}
-
 	toBlock = uint64(nodeStatus.SyncInfo.LatestBlockHeight)
+	if toBlock <= fromBlock {
+		toBlock = fromBlock + 1
+	}
 
 	// fromBlock - get last block from storage
 	hasLastBlock, _ := hl.storageClient.Has([]byte(heimdallLastBlockKey), nil)
@@ -147,7 +149,6 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 		} else {
 			hl.Logger.Info("Error parsing last block bytes from storage", "error", err)
 			toBlock = 0
-
 			return fromBlock, toBlock, err
 		}
 	}

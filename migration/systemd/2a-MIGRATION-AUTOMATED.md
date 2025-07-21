@@ -53,12 +53,17 @@ sudo systemctl daemon-reload
 sudo systemctl start heimdalld
 ```
 
-Restart telemetry (if applicable):
+## 5. Upgrade And Restart telemetry (if applicable):
 
+If you're using telemetry, you need to upgrade the service to be compatible with v2.  
+Here the [instructions](https://github.com/vitwit/matic-telemetry/tree/heimdall-v2?tab=readme-ov-file#upgrading-for-heimdall-v2-version-api-change).
+
+Then you can restart the telemetry service:  
 ```bash
 sudo systemctl restart telemetry
 ```
 
+## 6. Check Heimdall Logs
 Check logs:
 
 ```bash
@@ -67,7 +72,7 @@ journalctl -fu heimdalld
 
 ---
 
-## 5. Sync from Genesis Time
+## 7. Sync from Genesis Time
 
 If the genesis time is in the future, you will see:
 
@@ -77,7 +82,7 @@ Genesis time is in the future. Sleeping until then...
 
 The node will begin syncing once the specified time is reached.
 
-## 6. Configure WebSocket for Bor ↔ Heimdall Communication
+## 8. Configure WebSocket for Bor ↔ Heimdall Communication
 
 Edit Bor's `config.toml` to include:
 
@@ -88,7 +93,7 @@ ws-address = "ws://localhost:26657/websocket"
 
 ---
 
-## 7. Restart Bor (If Step 6 Was Applied)
+## 9. Restart Bor (If Step 8 Was Applied)
 
 ```bash
 sudo systemctl restart bor

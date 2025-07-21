@@ -49,7 +49,7 @@ sudo mv /lib/systemd/system/heimdalld.service /lib/systemd/system/heimdalld.serv
 You can use the installation script:
 
 ```bash
-curl -L https://raw.githubusercontent.com/maticnetwork/install/heimdall-v2/heimdall-v2.sh | sudo bash -s -- v0.2.6 mainnet <NODE_TYPE>
+curl -L https://raw.githubusercontent.com/maticnetwork/install/heimdall-v2/heimdall-v2.sh | sudo bash -s -- v0.2.9 mainnet <NODE_TYPE>
 ```
 where: 
 - `NODE_TYPE` is `sentry` or `validator`
@@ -58,7 +58,7 @@ If the script fails, build from source:
 ```bash
 git clone https://github.com/0xPolygon/heimdall-v2.git
 cd heimdall-v2
-git checkout v0.2.6
+git checkout v0.2.9
 make build
 sudo cp build/heimdalld /usr/bin/heimdalld
 ```
@@ -71,7 +71,7 @@ sudo cp build/heimdalld /usr/bin/heimdalld
 heimdalld version
 ```
 
-Output should match the `v0.2.6` installed.
+Output should match the `v0.2.9` installed.
 
 ---
 
@@ -100,6 +100,7 @@ seeds = "..."
 persistent_peers = "..."
 max_num_inbound_peers = "..."
 max_num_outbound_peers = "..."
+pex = "..."
 ```
 
 Also set in v2
@@ -325,7 +326,11 @@ sudo systemctl start heimdalld
 
 ---
 
-## 18. Restart Telemetry (If Needed)
+## 18. Upgrade And Restart Telemetry (If Needed)
+
+If you're using telemetry, you need to upgrade the service to be compatible with v2.  
+Here the [instructions](https://github.com/vitwit/matic-telemetry/tree/heimdall-v2?tab=readme-ov-file#upgrading-for-heimdall-v2-version-api-change).
+
 
 ```bash
 sudo systemctl restart telemetry

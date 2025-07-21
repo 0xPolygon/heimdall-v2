@@ -76,7 +76,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		// create checkpoint msg
 		msgCheckpoint := types.NewMsgCheckpointBlock(
 			checkpoint.Proposer,
-			checkpoint.StartBlock,
+			checkpoint.StartBlock+1,
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
 			checkpoint.RootHash,
@@ -84,7 +84,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		)
 
 		contractCaller.On("CheckIfBlocksExist", checkpoint.EndBlock+borChainTxConfirmations).Return(true, nil)
-		contractCaller.On("GetRootHash", checkpoint.StartBlock, checkpoint.EndBlock, uint64(1024)).Return(nil, nil)
+		contractCaller.On("GetRootHash", checkpoint.StartBlock+1, checkpoint.EndBlock, uint64(1024)).Return(nil, nil)
 
 		result := sideHandler(ctx, msgCheckpoint)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
@@ -104,7 +104,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		// create checkpoint msg
 		msgCheckpoint := types.NewMsgCheckpointBlock(
 			checkpoint.Proposer,
-			checkpoint.StartBlock,
+			checkpoint.StartBlock+1,
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
 			checkpoint.RootHash,
@@ -112,7 +112,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		)
 
 		contractCaller.On("CheckIfBlocksExist", checkpoint.EndBlock+borChainTxConfirmations).Return(true, nil)
-		contractCaller.On("GetRootHash", checkpoint.StartBlock, checkpoint.EndBlock, uint64(1024)).Return([]byte{1}, nil)
+		contractCaller.On("GetRootHash", checkpoint.StartBlock+1, checkpoint.EndBlock, uint64(1024)).Return([]byte{1}, nil)
 
 		result := sideHandler(ctx, msgCheckpoint)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")

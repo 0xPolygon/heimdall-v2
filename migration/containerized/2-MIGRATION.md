@@ -8,27 +8,27 @@ and avoid any potential issue with the new network.
 
 Once instructed by the Polygon team, please start the migration.  
 
-## 1. Prepare Backup
+## 1. Stop Existing Heimdall v1 Containers
+- Gracefully shut down Heimdall v1, e.g., for docker:
+  ```bash
+  docker stop <container_id>
+  ```
+
+## 2. Prepare Backup
 - Back up the `HEIMDALL_HOME` (default `/var/lib/heimdall`), containing `config/`, `data/` and `bridge/` folders outside the container.
 - Example (for Docker):
   ```bash
   docker cp <container_id>:/var/lib/heimdall /path/to/backup
   ```
   
-You can start with the backup as soon as the halt height `24404500` has been reached.  
-
-## 2. Stop Existing Heimdall v1 Containers
-- Gracefully shut down Heimdall v1, e.g., for docker:
-  ```bash
-  docker stop <container_id>
-  ```
+You can start with the backup as soon as the halt height `24404500` has been reached.
 
 ## 3. Pull the Heimdall v2 Image
 
 Download the v2 Docker image from Docker Hub:
 
 ```bash
-docker pull 0xpolygon/heimdall-v2:0.2.6
+docker pull 0xpolygon/heimdall-v2:0.2.9
 ````
 
 ## 4. Initialize Default Configuration
@@ -36,7 +36,7 @@ docker pull 0xpolygon/heimdall-v2:0.2.6
 Run the `init` command in the container to generate default config files, e.g.,
 
 ```bash
-docker run --rm -v "<HEIMDALL_HOME>:/var/lib/heimdall" 0xpolygon/heimdall-v2:0.2.6 init <MONIKER> --chain-id heimdallv2-137
+docker run --rm -v "<HEIMDALL_HOME>:/var/lib/heimdall" 0xpolygon/heimdall-v2:0.2.9 init <MONIKER> --chain-id heimdallv2-137
 ```
 * `MONIKER` is your node name (any string), and it should match the moniker from your v1 configs (under `config.toml`)
 
@@ -68,6 +68,7 @@ seeds = "..."
 persistent_peers = "..."
 max_num_inbound_peers = "..."
 max_num_outbound_peers = "..."
+pex = "..."
 ```
 
 Also set in v2:
@@ -165,7 +166,7 @@ Place the previously downloaded genesis.json in your `HEIMDALL_HOME/config` dire
 
 Extract from the v1 file (under v1's `HEIMDALL_HOME/config`, previously backed-up) the following fields,  
 and inject into the corresponding fields of v2’s `priv_validator_key.json`.  
-**Do not change key types, as in v1 they have a tendermint namespace and in v they have a comet namespace.**
+**Do not change key types, as in v1 they have a tendermint namespace and in v2 they have a comet namespace.**
 
 Values to extract from v1's `priv_validator_key.json`:
 * `address`
@@ -262,12 +263,21 @@ Now that you have the right configuration and genesis file,
 you can run the container with the appropriate configuration.  
 For example (please adjust the `-v` and `-p` options based on your deployment needs):
 
+for non-validators:
 ```bash
 docker run -d --name heimdall-v2 \
   -v "$HEIMDALL_HOME:/var/lib/heimdall" \
   -p 26656:26656 -p 26657:26657 -p 1317:1317 \
-  0xpolygon/heimdall-v2:0.2.6 \
+  0xpolygon/heimdall-v2:0.2.9 \
   start
+```
+and for validators:
+```bash
+docker run -d --name heimdall-v2 \
+  -v "$HEIMDALL_HOME:/var/lib/heimdall" \
+  -p 26656:26656 -p 26657:26657 -p 1317:1317 \
+  0xpolygon/heimdall-v2:0.2.9 \
+  start --bridge --all --chain=amoy --rest-server
 ```
 
 If the genesis time is in the future, you will see logs like these:  
@@ -293,6 +303,9 @@ ws-address = "ws://localhost:26657/websocket"
 
 Use your container orchestration tool to restart the Bor container.  
 
+## 15. Upgrade telemetry (if used)
+If you're using telemetry, you need to upgrade the service to be compatible with v2.  
+Here the [instructions](https://github.com/vitwit/matic-telemetry/tree/heimdall-v2?tab=readme-ov-file#upgrading-for-heimdall-v2-version-api-change).   
 
 ### Keyring Info
 *Not required for the migration*  
