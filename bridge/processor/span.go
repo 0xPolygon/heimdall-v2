@@ -391,7 +391,7 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 	return &lastSpan.Span, nil
 }
 
-// getProducerVotes gets the producer votes for a given voter id
+// getProducerVotesByValidatorId gets the producer votes for a given voter id
 //
 //nolint:unused
 func (sp *SpanProcessor) getProducerVotesByValidatorId(validatorId uint64) (*types.ProducerVotes, error) {
