@@ -31,6 +31,7 @@ func NewTxCmd() *cobra.Command {
 
 	txCmd.AddCommand(
 		NewSpanProposalCmd(),
+		NewBackfillSpans(),
 	)
 
 	return txCmd
