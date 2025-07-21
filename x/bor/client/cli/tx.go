@@ -163,19 +163,21 @@ func NewBackfillSpans() *cobra.Command {
 				return fmt.Errorf("no latest span found")
 			}
 
-			contractCaller, err := helper.NewContractCaller()
-			if err != nil {
-				return err
-			}
+			// contractCaller, err := helper.NewContractCaller()
+			// if err != nil {
+			// 	return err
+			// }
 
-			borLastUsedSpanID, err := contractCaller.GetStartBlockHeimdallSpanID(clientCtx.CmdContext, latestSpanResp.Span.EndBlock+1)
-			if err != nil {
-				return fmt.Errorf("failed to get last used heimdall span id: %w", err)
-			}
+			// borLastUsedSpanID, err := contractCaller.GetStartBlockHeimdallSpanID(clientCtx.CmdContext, latestSpanResp.Span.EndBlock+1)
+			// if err != nil {
+			// 	return fmt.Errorf("failed to get last used heimdall span id: %w", err)
+			// }
 
-			if borLastUsedSpanID == 0 {
-				return fmt.Errorf("heimdall span id is 0, no backfill needed")
-			}
+			// if borLastUsedSpanID == 0 {
+			// 	return fmt.Errorf("heimdall span id is 0, no backfill needed")
+			// }
+
+			borLastUsedSpanID := latestSpanResp.Span.Id
 
 			borLastUsedSpan, err := queryClient.GetSpanById(cmd.Context(), &types.QuerySpanByIdRequest{
 				Id: strconv.FormatUint(borLastUsedSpanID, 10),
