@@ -201,12 +201,12 @@ func NewBackfillSpans() *cobra.Command {
 				return fmt.Errorf("no latest milestone found")
 			}
 
-			borSpanId, err := types.CalcCurrentBorSpanId(latestMilestoneResp.Milestone.EndBlock, borLastUsedSpan.Span)
-			if err != nil {
-				return fmt.Errorf("failed to calculate bor span id: %w", err)
-			}
+			// borSpanId, err := types.CalcCurrentBorSpanId(latestMilestoneResp.Milestone.EndBlock, borLastUsedSpan.Span)
+			// if err != nil {
+			// 	return fmt.Errorf("failed to calculate bor span id: %w", err)
+			// }
 
-			msg := types.NewMsgBackfillSpans(proposer, borChainID, borLastUsedSpanID, borSpanId)
+			msg := types.NewMsgBackfillSpans(proposer, borChainID, borLastUsedSpanID, borLastUsedSpanID+1)
 
 			return cli.BroadcastMsg(clientCtx, proposer, msg, logger)
 		},
