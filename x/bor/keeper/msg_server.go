@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"cosmossdk.io/errors"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -12,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
@@ -27,7 +29,10 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
 }
 
-func (m msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpan) (*types.MsgProposeSpanResponse, error) {
+func (m msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpan) (resp *types.MsgProposeSpanResponse, err error) {
+	start := time.Now()
+	defer recordBorTransactionMetric(api.ProposeSpanMethod, start, &err)
+
 	logger := m.Logger(ctx)
 
 	logger.Debug("✅ validating proposed span msg",
@@ -38,7 +43,7 @@ func (m msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpan) (
 		"seed", msg.Seed,
 	)
 
-	_, err := sdk.ValAddressFromHex(msg.Proposer)
+	_, err = sdk.ValAddressFromHex(msg.Proposer)
 	if err != nil {
 		logger.Error("invalid proposer address", "error", err)
 		return nil, errors.Wrapf(err, "invalid proposer address")
@@ -100,7 +105,10 @@ func (m msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpan) (
 }
 
 // UpdateParams defines a method to update the params in x/bor module.
-func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (resp *types.MsgUpdateParamsResponse, err error) {
+	start := time.Now()
+	defer recordBorTransactionMetric(api.UpdateParamsMethod, start, &err)
+
 	if m.authority != msg.Authority {
 		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", m.authority, msg.Authority)
 	}
@@ -116,7 +124,10 @@ func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams)
 	return &types.MsgUpdateParamsResponse{}, nil
 }
 
-func (m msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProducers) (*types.MsgVoteProducersResponse, error) {
+func (m msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProducers) (resp *types.MsgVoteProducersResponse, err error) {
+	start := time.Now()
+	defer recordBorTransactionMetric(api.VoteProducersMethod, start, &err)
+
 	// Validate VEBLOP phase
 	if err := m.CanVoteProducers(ctx); err != nil {
 		return nil, err
@@ -155,7 +166,10 @@ func (m msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProducer
 	return &types.MsgVoteProducersResponse{}, nil
 }
 
-func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpans) (*types.MsgBackfillSpansResponse, error) {
+func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpans) (resp *types.MsgBackfillSpansResponse, err error) {
+	start := time.Now()
+	defer recordBorTransactionMetric(api.BackfillSpansMethod, start, &err)
+
 	logger := s.Logger(ctx)
 
 	logger.Debug("✅ validating proposed backfill spans msg",
@@ -165,7 +179,7 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 		"chainId", msg.ChainId,
 	)
 
-	_, err := sdk.ValAddressFromHex(msg.Proposer)
+	_, err = sdk.ValAddressFromHex(msg.Proposer)
 	if err != nil {
 		logger.Error("invalid proposer address", "error", err)
 		return nil, errors.Wrapf(err, "invalid proposer address")
@@ -239,4 +253,10 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 	}
 
 	return &types.MsgBackfillSpansResponse{}, nil
+}
+
+// recordBorTransactionMetric is a generic function to record transaction metrics using defer pattern
+func recordBorTransactionMetric(method string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordBorTransaction(method, success, start)
 }

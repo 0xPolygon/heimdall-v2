@@ -3,11 +3,13 @@ package keeper
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -36,7 +38,10 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 	}
 }
 
-func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpanRequest) (*types.QueryLatestSpanResponse, error) {
+func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpanRequest) (resp *types.QueryLatestSpanResponse, err error) {
+	start := time.Now()
+	defer recordBorQueryMetric(api.GetLatestSpanMethod, start, &err)
+
 	lastSpan, err := q.k.GetLastSpan(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -45,7 +50,10 @@ func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpan
 	return &types.QueryLatestSpanResponse{Span: lastSpan}, nil
 }
 
-func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRequest) (*types.QueryNextSpanResponse, error) {
+func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRequest) (resp *types.QueryNextSpanResponse, err error) {
+	start := time.Now()
+	defer recordBorQueryMetric(api.GetNextSpanMethod, start, &err)
+
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -112,7 +120,10 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 }
 
 // GetNextSpanSeed returns the next span seed
-func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSpanSeedRequest) (*types.QueryNextSpanSeedResponse, error) {
+func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSpanSeedRequest) (resp *types.QueryNextSpanSeedResponse, err error) {
+	start := time.Now()
+	defer recordBorQueryMetric(api.GetNextSpanSeedMethod, start, &err)
+
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -131,7 +142,10 @@ func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSp
 }
 
 // GetBorParams returns the bor module parameters
-func (q queryServer) GetBorParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+func (q queryServer) GetBorParams(ctx context.Context, _ *types.QueryParamsRequest) (resp *types.QueryParamsResponse, err error) {
+	start := time.Now()
+	defer recordBorQueryMetric(api.GetBorParamsMethod, start, &err)
+
 	params, err := q.k.FetchParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -141,7 +155,10 @@ func (q queryServer) GetBorParams(ctx context.Context, _ *types.QueryParamsReque
 }
 
 // GetSpanById returns the span by id
-func (q queryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRequest) (*types.QuerySpanByIdResponse, error) {
+func (q queryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRequest) (resp *types.QuerySpanByIdResponse, err error) {
+	start := time.Now()
+	defer recordBorQueryMetric(api.GetSpanByIdMethod, start, &err)
+
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -160,7 +177,10 @@ func (q queryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRe
 }
 
 // GetSpanList returns the list of spans
-func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRequest) (*types.QuerySpanListResponse, error) {
+func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRequest) (resp *types.QuerySpanListResponse, err error) {
+	start := time.Now()
+	defer recordBorQueryMetric(api.GetSpanListMethod, start, &err)
+
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -186,7 +206,10 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 	return &types.QuerySpanListResponse{SpanList: spans, Pagination: *pageRes}, nil
 }
 
-func (q queryServer) GetProducerVotesByValidatorId(ctx context.Context, req *types.QueryProducerVotesByValidatorIdRequest) (*types.QueryProducerVotesByValidatorIdResponse, error) {
+func (q queryServer) GetProducerVotesByValidatorId(ctx context.Context, req *types.QueryProducerVotesByValidatorIdRequest) (resp *types.QueryProducerVotesByValidatorIdResponse, err error) {
+	start := time.Now()
+	defer recordBorQueryMetric(api.GetProducerVotesByValidatorIdMethod, start, &err)
+
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -199,7 +222,10 @@ func (q queryServer) GetProducerVotesByValidatorId(ctx context.Context, req *typ
 	return &types.QueryProducerVotesByValidatorIdResponse{Votes: producerVotes.Votes}, nil
 }
 
-func (q queryServer) GetProducerVotes(ctx context.Context, req *types.QueryProducerVotesRequest) (*types.QueryProducerVotesResponse, error) {
+func (q queryServer) GetProducerVotes(ctx context.Context, req *types.QueryProducerVotesRequest) (resp *types.QueryProducerVotesResponse, err error) {
+	start := time.Now()
+	defer recordBorQueryMetric(api.GetProducerVotesMethod, start, &err)
+
 	validatorSet, err := q.k.sk.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -214,4 +240,10 @@ func (q queryServer) GetProducerVotes(ctx context.Context, req *types.QueryProdu
 	}
 
 	return &types.QueryProducerVotesResponse{AllVotes: producerVotes}, nil
+}
+
+// recordBorQueryMetric is a generic function to record query metrics using defer pattern
+func recordBorQueryMetric(method string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordBorQuery(method, success, start)
 }
