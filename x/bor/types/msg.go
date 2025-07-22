@@ -7,6 +7,7 @@ import (
 )
 
 var _ sdk.Msg = &MsgProposeSpan{}
+var _ sdk.Msg = &MsgBackfillSpans{}
 
 // NewMsgProposeSpan creates a new MsgProposeSpan instance
 func NewMsgProposeSpan(
