@@ -22,7 +22,7 @@ mnemonic: 'clock radar mass judge dismiss just intact mind resemble fringe diary
 
 # Heimdall
 heimdallChainId: heimdall-15005
-heimdallDockerBuildContext: "../../heimdall-v2"
+heimdallDockerBuildContext: '../../heimdall-v2'
 
 # Bor
 borChainId: 15005

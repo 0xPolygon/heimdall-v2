@@ -1,0 +1,33 @@
+polygon_pos_package:
+  network_params:
+    el_block_interval_seconds: 1
+
+  participants:
+    # 3 validators with local Bor and Heimdallv2 docker builds.
+    - kind: validator
+      cl_type: heimdall-v2
+      cl_image: heimdall-v2:local
+      el_type: bor
+      el_image: bor:local
+      count: 3
+
+    # 1 validator with latest Bor and Heimdallv2 releases.
+    # Used for backward compatibility testing.
+    - kind: validator
+      cl_type: heimdall-v2
+      cl_image: 0xpolygon/heimdall-v2:latest
+      el_type: bor
+      el_image: 0xpolygon/bor:latest
+      count: 1
+
+    # 2 RPC nodes.
+    - kind: rpc
+      cl_type: heimdall-v2
+      cl_image: heimdall-v2:local
+      el_type: bor
+      el_image: bor:local
+      count: 1
+
+  additional_services:
+    - prometheus_grafana
+    - test_runner
