@@ -3,7 +3,7 @@ polygon_pos_package:
     el_block_interval_seconds: 1
 
   participants:
-    # 3 validators with local Bor and Heimdallv2 docker builds.
+    # 3 validator nodes.
     - kind: validator
       cl_type: heimdall-v2
       cl_image: heimdall-v2:local
@@ -11,16 +11,7 @@ polygon_pos_package:
       el_image: bor:local
       count: 3
 
-    # 1 validator with latest Bor and Heimdallv2 releases.
-    # Used for backward compatibility testing.
-    - kind: validator
-      cl_type: heimdall-v2
-      cl_image: 0xpolygon/heimdall-v2:latest
-      el_type: bor
-      el_image: 0xpolygon/bor:latest
-      count: 1
-
-    # 2 RPC nodes.
+    # 1 rpc node.
     - kind: rpc
       cl_type: heimdall-v2
       cl_image: heimdall-v2:local
