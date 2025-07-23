@@ -37,20 +37,3 @@ var (
 		VoteProducersMethod,
 	}
 )
-
-// InitBorModuleMetrics pre-registers all bor API metrics with zero values.
-func InitBorModuleMetrics() {
-	metrics := GetModuleMetrics(BorSubsystem)
-
-	for _, method := range AllBorQueryMethods {
-		metrics.TotalCalls.WithLabelValues(method, QueryType)
-		metrics.SuccessCalls.WithLabelValues(method, QueryType)
-		metrics.ResponseTime.WithLabelValues(method, QueryType)
-	}
-
-	for _, method := range AllBorTransactionMethods {
-		metrics.TotalCalls.WithLabelValues(method, TxType)
-		metrics.SuccessCalls.WithLabelValues(method, TxType)
-		metrics.ResponseTime.WithLabelValues(method, TxType)
-	}
-}

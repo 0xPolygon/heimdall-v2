@@ -37,20 +37,3 @@ var (
 		ValidatorExitMethod,
 	}
 )
-
-// InitStakeModuleMetrics pre-registers all stake API metrics with zero values.
-func InitStakeModuleMetrics() {
-	metrics := GetModuleMetrics(StakeSubsystem)
-
-	for _, method := range AllStakeQueryMethods {
-		metrics.TotalCalls.WithLabelValues(method, QueryType)
-		metrics.SuccessCalls.WithLabelValues(method, QueryType)
-		metrics.ResponseTime.WithLabelValues(method, QueryType)
-	}
-
-	for _, method := range AllStakeTransactionMethods {
-		metrics.TotalCalls.WithLabelValues(method, TxType)
-		metrics.SuccessCalls.WithLabelValues(method, TxType)
-		metrics.ResponseTime.WithLabelValues(method, TxType)
-	}
-}

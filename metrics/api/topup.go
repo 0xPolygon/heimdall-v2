@@ -29,20 +29,3 @@ var (
 		WithdrawFeeTxMethod,
 	}
 )
-
-// InitTopupModuleMetrics pre-registers all topup API metrics with zero values.
-func InitTopupModuleMetrics() {
-	metrics := GetModuleMetrics(TopupSubsystem)
-
-	for _, method := range AllTopupQueryMethods {
-		metrics.TotalCalls.WithLabelValues(method, QueryType)
-		metrics.SuccessCalls.WithLabelValues(method, QueryType)
-		metrics.ResponseTime.WithLabelValues(method, QueryType)
-	}
-
-	for _, method := range AllTopupTransactionMethods {
-		metrics.TotalCalls.WithLabelValues(method, TxType)
-		metrics.SuccessCalls.WithLabelValues(method, TxType)
-		metrics.ResponseTime.WithLabelValues(method, TxType)
-	}
-}
