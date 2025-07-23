@@ -191,6 +191,7 @@ func TestGetMajorityMilestoneProposition_MajorityWins(t *testing.T) {
 	resultProp, _, _, _, err := GetMajorityMilestoneProposition(
 		validatorSet,
 		extVotes,
+		1,
 		logger,
 		&lastEndBlock,
 		lastEndHash,
