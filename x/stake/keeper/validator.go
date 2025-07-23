@@ -521,6 +521,8 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 		ackCount,             // ack count
 	)
 
+	k.Logger(ctx).Error("ApplyAndReturnValidatorSetUpdates validator updates", "setUpdates", setUpdates)
+
 	if len(setUpdates) > 0 {
 		// create the new validator set
 		if err = currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
@@ -551,6 +553,8 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 				PubKey: cmtProtoPk,
 			})
 		}
+
+		k.Logger(ctx).Error("ApplyAndReturnValidatorSetUpdates validator updates", "cmtValUpdates", cmtValUpdates)
 	}
 
 	return cmtValUpdates, nil
