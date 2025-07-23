@@ -6,11 +6,12 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-
-	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 const (
+	// Namespace for all metrics.
+	Namespace = "heimdallv2"
+
 	// QueryType is the type of API call.
 	QueryType = "query"
 	// TxType is the type of API call.
@@ -41,6 +42,10 @@ var (
 	metricsMutex  sync.RWMutex
 )
 
+func InitModuleMetrics() {
+	InitBorModuleMetrics()
+}
+
 // GetModuleMetrics returns or creates metrics for a given module.
 func GetModuleMetrics(subsystem string) *ModuleMetrics {
 	metricsMutex.RLock()
@@ -57,7 +62,7 @@ func GetModuleMetrics(subsystem string) *ModuleMetrics {
 	moduleMetrics[subsystem] = &ModuleMetrics{
 		TotalCalls: promauto.NewCounterVec(
 			prometheus.CounterOpts{
-				Namespace: metrics.Namespace,
+				Namespace: Namespace,
 				Subsystem: subsystem,
 				Name:      "api_calls_total",
 				Help:      "Total number of API calls to " + subsystem + " module",
@@ -66,7 +71,7 @@ func GetModuleMetrics(subsystem string) *ModuleMetrics {
 		),
 		SuccessCalls: promauto.NewCounterVec(
 			prometheus.CounterOpts{
-				Namespace: metrics.Namespace,
+				Namespace: Namespace,
 				Subsystem: subsystem,
 				Name:      "api_calls_success_total",
 				Help:      "Total number of successful API calls to " + subsystem + " module",
@@ -75,13 +80,11 @@ func GetModuleMetrics(subsystem string) *ModuleMetrics {
 		),
 		ResponseTime: promauto.NewHistogramVec(
 			prometheus.HistogramOpts{
-				Namespace: metrics.Namespace,
+				Namespace: Namespace,
 				Subsystem: subsystem,
 				Name:      "api_response_time_seconds",
 				Help:      "Response time of API calls to " + subsystem + " module in seconds",
-				Buckets: []float64{
-					0.001, 0.01, 0.02, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0,
-				},
+				Buckets:   prometheus.ExponentialBuckets(0.01, 2, 10), // 10ms to 5.12s buckets.
 			},
 			[]string{"method", "type"},
 		),
