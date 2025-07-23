@@ -32,8 +32,8 @@ type ModuleMetrics struct {
 	TotalCalls *prometheus.CounterVec
 	// Successful API calls counter.
 	SuccessCalls *prometheus.CounterVec
-	// API response time histogram.
-	ResponseTime *prometheus.HistogramVec
+	// API response time summary.
+	ResponseTime *prometheus.SummaryVec
 }
 
 // Global registry for module metrics.
@@ -78,13 +78,17 @@ func GetModuleMetrics(subsystem string) *ModuleMetrics {
 			},
 			[]string{"method", "type"},
 		),
-		ResponseTime: promauto.NewHistogramVec(
-			prometheus.HistogramOpts{
+		ResponseTime: promauto.NewSummaryVec(
+			prometheus.SummaryOpts{
 				Namespace: Namespace,
 				Subsystem: subsystem,
 				Name:      "api_response_time_seconds",
 				Help:      "Response time of API calls to " + subsystem + " module in seconds",
-				Buckets:   prometheus.ExponentialBuckets(0.01, 2, 9), // 10ms to 2.56s buckets.
+				Objectives: map[float64]float64{
+					0.50: 0.05,  // 50th percentile +/-5% error
+					0.90: 0.01,  // 90th percentile +/-1% error
+					0.99: 0.001, // 99th percentile +/-0.1% error
+				},
 			},
 			[]string{"method", "type"},
 		),

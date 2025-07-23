@@ -157,7 +157,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*types.MsgCpAckResponse, error) {
 	var err error
 	startTime := time.Now()
-	defer recordCheckpointTransactionMetric(api.CpAckMethod, startTime, &err)
+	defer recordCheckpointTransactionMetric(api.CheckpointAckMethod, startTime, &err)
 
 	logger := m.Logger(ctx)
 
@@ -226,7 +226,7 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (*types.MsgCheckpointNoAckResponse, error) {
 	var err error
 	startTime := time.Now()
-	defer recordCheckpointTransactionMetric(api.CpNoAckMethod, startTime, &err)
+	defer recordCheckpointTransactionMetric(api.CheckpointNoAckMethod, startTime, &err)
 
 	logger := m.Logger(ctx)
 

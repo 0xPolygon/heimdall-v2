@@ -18,8 +18,8 @@ const (
 	// Transaction API methods.
 	ProposeSpanMethod     = "ProposeSpan"
 	BorUpdateParamsMethod = "UpdateParams"
-	VoteProducersMethod   = "VoteProducers"
 	BackfillSpansMethod   = "BackfillSpans"
+	VoteProducersMethod   = "VoteProducers"
 )
 
 var (
@@ -37,8 +37,8 @@ var (
 	AllBorTransactionMethods = []string{
 		ProposeSpanMethod,
 		BorUpdateParamsMethod,
-		VoteProducersMethod,
 		BackfillSpansMethod,
+		VoteProducersMethod,
 	}
 )
 

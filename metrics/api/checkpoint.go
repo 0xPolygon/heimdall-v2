@@ -19,8 +19,8 @@ const (
 
 	// Transaction API methods.
 	CheckpointMethod             = "Checkpoint"
-	CpAckMethod                  = "CpAck"
-	CpNoAckMethod                = "CpNoAck"
+	CheckpointAckMethod          = "CheckpointAck"
+	CheckpointNoAckMethod        = "CheckpointNoAck"
 	CheckpointUpdateParamsMethod = "UpdateParams"
 )
 
@@ -40,8 +40,8 @@ var (
 
 	AllCheckpointTransactionMethods = []string{
 		CheckpointMethod,
-		CpAckMethod,
-		CpNoAckMethod,
+		CheckpointAckMethod,
+		CheckpointNoAckMethod,
 		CheckpointUpdateParamsMethod,
 	}
 )
