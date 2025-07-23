@@ -84,7 +84,7 @@ func GetModuleMetrics(subsystem string) *ModuleMetrics {
 				Subsystem: subsystem,
 				Name:      "api_response_time_seconds",
 				Help:      "Response time of API calls to " + subsystem + " module in seconds",
-				Buckets:   prometheus.ExponentialBuckets(0.01, 2, 10), // 10ms to 5.12s buckets.
+				Buckets:   prometheus.ExponentialBuckets(0.01, 2, 9), // 10ms to 2.56s buckets.
 			},
 			[]string{"method", "type"},
 		),

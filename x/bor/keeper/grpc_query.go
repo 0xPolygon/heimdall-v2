@@ -38,7 +38,8 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 	}
 }
 
-func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpanRequest) (resp *types.QueryLatestSpanResponse, err error) {
+func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpanRequest) (*types.QueryLatestSpanResponse, error) {
+	var err error
 	start := time.Now()
 	defer recordBorQueryMetric(api.GetLatestSpanMethod, start, &err)
 
@@ -50,7 +51,8 @@ func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpan
 	return &types.QueryLatestSpanResponse{Span: lastSpan}, nil
 }
 
-func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRequest) (resp *types.QueryNextSpanResponse, err error) {
+func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRequest) (*types.QueryNextSpanResponse, error) {
+	var err error
 	start := time.Now()
 	defer recordBorQueryMetric(api.GetNextSpanMethod, start, &err)
 
@@ -120,7 +122,8 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 }
 
 // GetNextSpanSeed returns the next span seed
-func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSpanSeedRequest) (resp *types.QueryNextSpanSeedResponse, err error) {
+func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSpanSeedRequest) (*types.QueryNextSpanSeedResponse, error) {
+	var err error
 	start := time.Now()
 	defer recordBorQueryMetric(api.GetNextSpanSeedMethod, start, &err)
 
@@ -142,7 +145,8 @@ func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSp
 }
 
 // GetBorParams returns the bor module parameters
-func (q queryServer) GetBorParams(ctx context.Context, _ *types.QueryParamsRequest) (resp *types.QueryParamsResponse, err error) {
+func (q queryServer) GetBorParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+	var err error
 	start := time.Now()
 	defer recordBorQueryMetric(api.GetBorParamsMethod, start, &err)
 
@@ -155,7 +159,8 @@ func (q queryServer) GetBorParams(ctx context.Context, _ *types.QueryParamsReque
 }
 
 // GetSpanById returns the span by id
-func (q queryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRequest) (resp *types.QuerySpanByIdResponse, err error) {
+func (q queryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRequest) (*types.QuerySpanByIdResponse, error) {
+	var err error
 	start := time.Now()
 	defer recordBorQueryMetric(api.GetSpanByIdMethod, start, &err)
 
@@ -177,7 +182,8 @@ func (q queryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRe
 }
 
 // GetSpanList returns the list of spans
-func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRequest) (resp *types.QuerySpanListResponse, err error) {
+func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRequest) (*types.QuerySpanListResponse, error) {
+	var err error
 	start := time.Now()
 	defer recordBorQueryMetric(api.GetSpanListMethod, start, &err)
 
@@ -206,7 +212,8 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 	return &types.QuerySpanListResponse{SpanList: spans, Pagination: *pageRes}, nil
 }
 
-func (q queryServer) GetProducerVotesByValidatorId(ctx context.Context, req *types.QueryProducerVotesByValidatorIdRequest) (resp *types.QueryProducerVotesByValidatorIdResponse, err error) {
+func (q queryServer) GetProducerVotesByValidatorId(ctx context.Context, req *types.QueryProducerVotesByValidatorIdRequest) (*types.QueryProducerVotesByValidatorIdResponse, error) {
+	var err error
 	start := time.Now()
 	defer recordBorQueryMetric(api.GetProducerVotesByValidatorIdMethod, start, &err)
 
@@ -222,7 +229,8 @@ func (q queryServer) GetProducerVotesByValidatorId(ctx context.Context, req *typ
 	return &types.QueryProducerVotesByValidatorIdResponse{Votes: producerVotes.Votes}, nil
 }
 
-func (q queryServer) GetProducerVotes(ctx context.Context, req *types.QueryProducerVotesRequest) (resp *types.QueryProducerVotesResponse, err error) {
+func (q queryServer) GetProducerVotes(ctx context.Context, req *types.QueryProducerVotesRequest) (*types.QueryProducerVotesResponse, error) {
+	var err error
 	start := time.Now()
 	defer recordBorQueryMetric(api.GetProducerVotesMethod, start, &err)
 

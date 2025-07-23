@@ -29,7 +29,8 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
 }
 
-func (m msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpan) (resp *types.MsgProposeSpanResponse, err error) {
+func (m msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpan) (*types.MsgProposeSpanResponse, error) {
+	var err error
 	start := time.Now()
 	defer recordBorTransactionMetric(api.ProposeSpanMethod, start, &err)
 
@@ -105,9 +106,10 @@ func (m msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpan) (
 }
 
 // UpdateParams defines a method to update the params in x/bor module.
-func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (resp *types.MsgUpdateParamsResponse, err error) {
+func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+	var err error
 	start := time.Now()
-	defer recordBorTransactionMetric(api.UpdateParamsMethod, start, &err)
+	defer recordBorTransactionMetric(api.BorUpdateParamsMethod, start, &err)
 
 	if m.authority != msg.Authority {
 		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", m.authority, msg.Authority)
@@ -124,7 +126,8 @@ func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams)
 	return &types.MsgUpdateParamsResponse{}, nil
 }
 
-func (m msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProducers) (resp *types.MsgVoteProducersResponse, err error) {
+func (m msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProducers) (*types.MsgVoteProducersResponse, error) {
+	var err error
 	start := time.Now()
 	defer recordBorTransactionMetric(api.VoteProducersMethod, start, &err)
 
@@ -166,7 +169,8 @@ func (m msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProducer
 	return &types.MsgVoteProducersResponse{}, nil
 }
 
-func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpans) (resp *types.MsgBackfillSpansResponse, err error) {
+func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpans) (*types.MsgBackfillSpansResponse, error) {
+	var err error
 	start := time.Now()
 	defer recordBorTransactionMetric(api.BackfillSpansMethod, start, &err)
 

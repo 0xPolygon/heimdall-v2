@@ -16,10 +16,10 @@ const (
 	GetProducerVotesByValidatorIdMethod = "GetProducerVotesByValidatorId"
 
 	// Transaction API methods.
-	ProposeSpanMethod   = "ProposeSpan"
-	UpdateParamsMethod  = "UpdateParams"
-	VoteProducersMethod = "VoteProducers"
-	BackfillSpansMethod = "BackfillSpans"
+	ProposeSpanMethod     = "ProposeSpan"
+	BorUpdateParamsMethod = "UpdateParams"
+	VoteProducersMethod   = "VoteProducers"
+	BackfillSpansMethod   = "BackfillSpans"
 )
 
 var (
@@ -36,7 +36,7 @@ var (
 
 	AllBorTransactionMethods = []string{
 		ProposeSpanMethod,
-		UpdateParamsMethod,
+		BorUpdateParamsMethod,
 		VoteProducersMethod,
 		BackfillSpansMethod,
 	}

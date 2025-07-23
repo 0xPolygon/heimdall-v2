@@ -2,12 +2,14 @@ package keeper
 
 import (
 	"context"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -40,6 +42,10 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 
 // GetCheckpointParams returns the checkpoint params
 func (q queryServer) GetCheckpointParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointQueryMetric(api.GetCheckpointParamsMethod, startTime, &err)
+
 	// get the validator set
 	params, err := q.k.GetParams(ctx)
 	if err != nil {
@@ -53,6 +59,10 @@ func (q queryServer) GetCheckpointParams(ctx context.Context, _ *types.QueryPara
 
 // GetAckCount returns the checkpoint ack count
 func (q queryServer) GetAckCount(ctx context.Context, _ *types.QueryAckCountRequest) (*types.QueryAckCountResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointQueryMetric(api.GetAckCountMethod, startTime, &err)
+
 	count, err := q.k.GetAckCount(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -63,6 +73,10 @@ func (q queryServer) GetAckCount(ctx context.Context, _ *types.QueryAckCountRequ
 
 // GetCheckpoint returns the checkpoint based on its number
 func (q queryServer) GetCheckpoint(ctx context.Context, req *types.QueryCheckpointRequest) (*types.QueryCheckpointResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointQueryMetric(api.GetCheckpointMethod, startTime, &err)
+
 	checkpoint, err := q.k.GetCheckpointByNumber(ctx, req.Number)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -73,6 +87,10 @@ func (q queryServer) GetCheckpoint(ctx context.Context, req *types.QueryCheckpoi
 
 // GetCheckpointLatest returns the latest checkpoint
 func (q queryServer) GetCheckpointLatest(ctx context.Context, _ *types.QueryCheckpointLatestRequest) (*types.QueryCheckpointLatestResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointQueryMetric(api.GetCheckpointLatestMethod, startTime, &err)
+
 	checkpoint, err := q.k.GetLastCheckpoint(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -83,6 +101,10 @@ func (q queryServer) GetCheckpointLatest(ctx context.Context, _ *types.QueryChec
 
 // GetCheckpointBuffer returns the checkpoint from the buffer
 func (q queryServer) GetCheckpointBuffer(ctx context.Context, _ *types.QueryCheckpointBufferRequest) (*types.QueryCheckpointBufferResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointQueryMetric(api.GetCheckpointBufferMethod, startTime, &err)
+
 	checkpoint, err := q.k.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -93,6 +115,10 @@ func (q queryServer) GetCheckpointBuffer(ctx context.Context, _ *types.QueryChec
 
 // GetLastNoAck returns the last no ack
 func (q queryServer) GetLastNoAck(ctx context.Context, _ *types.QueryLastNoAckRequest) (*types.QueryLastNoAckResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointQueryMetric(api.GetLastNoAckMethod, startTime, &err)
+
 	noAck, err := q.k.GetLastNoAck(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -103,6 +129,10 @@ func (q queryServer) GetLastNoAck(ctx context.Context, _ *types.QueryLastNoAckRe
 
 // GetNextCheckpoint returns the next expected checkpoint
 func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNextCheckpointRequest) (*types.QueryNextCheckpointResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointQueryMetric(api.GetNextCheckpointMethod, startTime, &err)
+
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -178,6 +208,10 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 
 // GetCheckpointList returns the list of checkpoints.
 func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryCheckpointListRequest) (*types.QueryCheckpointListResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointQueryMetric(api.GetCheckpointListMethod, startTime, &err)
+
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -206,6 +240,10 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 // GetCheckpointOverview returns the checkpoint overview
 // which includes AckCount, LastNoAckId, BufferCheckpoint, ValidatorCount, and ValidatorSet
 func (q queryServer) GetCheckpointOverview(ctx context.Context, _ *types.QueryCheckpointOverviewRequest) (*types.QueryCheckpointOverviewResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointQueryMetric(api.GetCheckpointOverviewMethod, startTime, &err)
+
 	// get the validator set
 	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
@@ -238,6 +276,10 @@ func (q queryServer) GetCheckpointOverview(ctx context.Context, _ *types.QueryCh
 
 // GetCheckpointSignatures queries for the last checkpoint signatures
 func (q queryServer) GetCheckpointSignatures(ctx context.Context, req *types.QueryCheckpointSignaturesRequest) (*types.QueryCheckpointSignaturesResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointQueryMetric(api.GetCheckpointSignaturesMethod, startTime, &err)
+
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -263,4 +305,9 @@ func (q queryServer) GetCheckpointSignatures(ctx context.Context, req *types.Que
 		return nil, status.Error(codes.NotFound, "checkpoint signatures not set")
 	}
 	return &types.QueryCheckpointSignaturesResponse{Signatures: checkpointSignatures.Signatures}, nil
+}
+
+func recordCheckpointQueryMetric(method string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordCheckpointQuery(method, success, start)
 }
