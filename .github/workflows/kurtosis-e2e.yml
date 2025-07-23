@@ -84,6 +84,6 @@ jobs:
 
       - name: Post kurtosis run
         if: always()
-        uses: ./bor/.github/actions/kurtosis-post-run
+        uses: ./heimdall-v2/.github/actions/kurtosis-post-run
         with:
           enclave_name: ${{ env.ENCLAVE_NAME }}
