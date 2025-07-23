@@ -373,5 +373,5 @@ func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams)
 
 func recordCheckpointTransactionMetric(method string, start time.Time, err *error) {
 	success := *err == nil
-	api.RecordCheckpointTransaction(method, success, start)
+	api.RecordAPICallWithStart(api.CheckpointSubsystem, method, api.TxType, success, start)
 }

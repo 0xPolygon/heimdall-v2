@@ -250,8 +250,7 @@ func (q queryServer) GetProducerVotes(ctx context.Context, req *types.QueryProdu
 	return &types.QueryProducerVotesResponse{AllVotes: producerVotes}, nil
 }
 
-// recordBorQueryMetric is a generic function to record query metrics using defer pattern
 func recordBorQueryMetric(method string, start time.Time, err *error) {
 	success := *err == nil
-	api.RecordBorQuery(method, success, start)
+	api.RecordAPICallWithStart(api.BorSubsystem, method, api.QueryType, success, start)
 }

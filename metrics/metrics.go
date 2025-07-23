@@ -9,6 +9,6 @@ func InitMetrics() {
 	// Update Heimdallv2 Version Info gauge.
 	UpdateHeimdallV2Info(version.Version, version.Commit)
 
-	// Init Module Metrics.
-	api.InitModuleMetrics()
+	// Init API Module Metrics.
+	api.InitAPIModuleMetrics()
 }

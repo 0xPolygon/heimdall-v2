@@ -1,9 +1,5 @@
 package api
 
-import (
-	"time"
-)
-
 const (
 	// Query API methods.
 	GetCheckpointParamsMethod     = "GetCheckpointParams"
@@ -61,19 +57,4 @@ func InitCheckpointModuleMetrics() {
 		metrics.SuccessCalls.WithLabelValues(method, TxType)
 		metrics.ResponseTime.WithLabelValues(method, TxType)
 	}
-}
-
-// RecordCheckpointAPI is the single generic function for all Checkpoint module API calls.
-func RecordCheckpointAPI(method, apiType string, success bool, start time.Time) {
-	RecordAPICallWithStart(CheckpointSubsystem, method, apiType, success, start)
-}
-
-// RecordCheckpointQuery records a Checkpoint query API call.
-func RecordCheckpointQuery(method string, success bool, start time.Time) {
-	RecordCheckpointAPI(method, QueryType, success, start)
-}
-
-// RecordCheckpointTransaction records a Checkpoint transaction API call.
-func RecordCheckpointTransaction(method string, success bool, start time.Time) {
-	RecordCheckpointAPI(method, TxType, success, start)
 }

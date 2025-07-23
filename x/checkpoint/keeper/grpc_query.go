@@ -309,5 +309,5 @@ func (q queryServer) GetCheckpointSignatures(ctx context.Context, req *types.Que
 
 func recordCheckpointQueryMetric(method string, start time.Time, err *error) {
 	success := *err == nil
-	api.RecordCheckpointQuery(method, success, start)
+	api.RecordAPICallWithStart(api.CheckpointSubsystem, method, api.QueryType, success, start)
 }

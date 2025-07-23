@@ -42,8 +42,13 @@ var (
 	metricsMutex  sync.RWMutex
 )
 
-func InitModuleMetrics() {
+func InitAPIModuleMetrics() {
 	InitBorModuleMetrics()
+	InitCheckpointModuleMetrics()
+	InitClerkModuleMetrics()
+	InitMilestoneModuleMetrics()
+	InitStakeModuleMetrics()
+	InitTopupModuleMetrics()
 }
 
 // GetModuleMetrics returns or creates metrics for a given module.

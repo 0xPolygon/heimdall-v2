@@ -259,8 +259,7 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 	return &types.MsgBackfillSpansResponse{}, nil
 }
 
-// recordBorTransactionMetric is a generic function to record transaction metrics using defer pattern
 func recordBorTransactionMetric(method string, start time.Time, err *error) {
 	success := *err == nil
-	api.RecordBorTransaction(method, success, start)
+	api.RecordAPICallWithStart(api.BorSubsystem, method, api.TxType, success, start)
 }
