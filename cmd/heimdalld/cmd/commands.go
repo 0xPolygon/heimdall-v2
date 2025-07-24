@@ -233,6 +233,7 @@ func initRootCmd(
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
 
 	rootCmd.AddCommand(veDecodeCmd())
+	rootCmd.AddCommand(showAccountCmd())
 }
 
 func checkServerStatus(ctx client.Context, url string, resultChan chan<- string) {
