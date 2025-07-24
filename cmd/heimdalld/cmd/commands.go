@@ -233,6 +233,7 @@ func initRootCmd(
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
 
 	rootCmd.AddCommand(veDecodeCmd())
+	rootCmd.AddCommand(showAccountCmd())
 }
 
 func checkServerStatus(ctx client.Context, url string, resultChan chan<- string) {
@@ -531,6 +532,33 @@ func showPrivateKeyCmd() *cobra.Command {
 
 			account := &ValidatorAccountFormatter{
 				PrivKey: "0x" + hex.EncodeToString(privKeyObject[:]),
+			}
+
+			b, err := json.MarshalIndent(account, "", "    ")
+			if err != nil {
+				panic(err)
+			}
+
+			// prints json info
+			fmt.Printf("%s", string(b))
+		},
+	}
+}
+
+func showAccountCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "show-account",
+		Short: "Print the account's address and public key",
+		Run: func(cmd *cobra.Command, args []string) {
+			// init heimdall config
+			helper.InitHeimdallConfig("")
+
+			// get public keys
+			pubObject := helper.GetPubKey()
+
+			account := &ValidatorAccountFormatter{
+				Address: ethCommon.BytesToAddress(pubObject.Address().Bytes()).String(),
+				PubKey:  "0x" + hex.EncodeToString(pubObject[:]),
 			}
 
 			b, err := json.MarshalIndent(account, "", "    ")
