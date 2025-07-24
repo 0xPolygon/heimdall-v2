@@ -556,6 +556,33 @@ func showPrivateKeyCmd() *cobra.Command {
 	}
 }
 
+func showAccountCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "show-account",
+		Short: "Print the account's address and public key",
+		Run: func(cmd *cobra.Command, args []string) {
+			// init heimdall config
+			helper.InitHeimdallConfig("")
+
+			// get public keys
+			pubObject := helper.GetPubKey()
+
+			account := &ValidatorAccountFormatter{
+				Address: ethCommon.BytesToAddress(pubObject.Address().Bytes()).String(),
+				PubKey:  "0x" + hex.EncodeToString(pubObject[:]),
+			}
+
+			b, err := json.MarshalIndent(account, "", "    ")
+			if err != nil {
+				panic(err)
+			}
+
+			// prints json info
+			fmt.Printf("%s", string(b))
+		},
+	}
+}
+
 // VerifyGenesis verifies the genesis file and brings it to sync with the on-chain contract
 func VerifyGenesis(ctx *server.Context, hApp *app.HeimdallApp) *cobra.Command {
 	cmd := &cobra.Command{
