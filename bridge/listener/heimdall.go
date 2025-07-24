@@ -3,6 +3,7 @@ package listener
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"math/big"
 	"strconv"
 	"time"
@@ -118,17 +119,27 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 }
 
 func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, uint64, error) {
-	// fromBlock - get the initial block height from config
-	chainId := hl.cliCtx.ChainID
-	fromBlock := helper.GetInitialBlockHeight(chainId)
-
-	// toBlock - get the latest block height from heimdall node
+	fromBlock := uint64(0)
 	toBlock := uint64(0)
+
 	nodeStatus, err := helper.GetNodeStatus(hl.cliCtx, ctx)
 	if err != nil {
 		hl.Logger.Error("Error while fetching heimdall node status", "error", err)
-		return fromBlock, toBlock, err
+		return 0, 0, err
 	}
+
+	chainId := hl.cliCtx.ChainID
+	if chainId == "" {
+		hl.Logger.Debug("ChainID is empty in cliCtx")
+		if nodeStatus.NodeInfo.Network == "" {
+			return 0, 0, errors.New("network is empty in node status; cannot determine initial fromBlock")
+		}
+		chainId = nodeStatus.NodeInfo.Network
+	}
+
+	// fromBlock - get the initial block height from config
+	fromBlock = helper.GetInitialBlockHeight(chainId)
+	// toBlock - get the latest block height from heimdall node
 	toBlock = uint64(nodeStatus.SyncInfo.LatestBlockHeight)
 	if toBlock <= fromBlock {
 		toBlock = fromBlock + 1
