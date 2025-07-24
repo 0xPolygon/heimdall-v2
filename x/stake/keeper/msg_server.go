@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
+	"time"
 
 	errorsmod "cosmossdk.io/errors"
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
@@ -17,6 +18,7 @@ import (
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -32,6 +34,10 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 
 // ValidatorJoin defines a method for new validator's joining
 func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoin) (*types.MsgValidatorJoinResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeTransactionMetric(api.ValidatorJoinMethod, startTime, &err)
+
 	m.k.Logger(ctx).Debug("✅ Validating validator join msg",
 		"validatorId", msg.ValId,
 		"activationEpoch", msg.ActivationEpoch,
@@ -42,7 +48,7 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 		"blockNumber", msg.BlockNumber,
 	)
 
-	err := msg.ValidateBasic()
+	err = msg.ValidateBasic()
 	if err != nil {
 		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
@@ -108,6 +114,10 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 
 // StakeUpdate defines a method for updating the stake of a validator
 func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (*types.MsgStakeUpdateResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeTransactionMetric(api.StakeUpdateMethod, startTime, &err)
+
 	m.k.Logger(ctx).Debug("✅ Validating stake update msg",
 		"validatorID", msg.ValId,
 		"newAmount", msg.NewAmount,
@@ -116,7 +126,7 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 		"blockNumber", msg.BlockNumber,
 	)
 
-	err := msg.ValidateBasic()
+	err = msg.ValidateBasic()
 	if err != nil {
 		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
@@ -151,6 +161,10 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 
 // SignerUpdate defines a method for updating the validator's signer
 func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate) (*types.MsgSignerUpdateResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeTransactionMetric(api.SignerUpdateMethod, startTime, &err)
+
 	m.k.Logger(ctx).Debug("✅ Validating signer update msg",
 		"validatorID", msg.ValId,
 		"NewSignerPubKey", common.Bytes2Hex(msg.NewSignerPubKey),
@@ -159,7 +173,7 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 		"blockNumber", msg.BlockNumber,
 	)
 
-	err := msg.ValidateBasic()
+	err = msg.ValidateBasic()
 	if err != nil {
 		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
@@ -213,6 +227,10 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 
 // ValidatorExit defines a method for exiting the validator from the validator set
 func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExit) (*types.MsgValidatorExitResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeTransactionMetric(api.ValidatorExitMethod, startTime, &err)
+
 	m.k.Logger(ctx).Debug("✅ Validating validator exit msg",
 		"validatorID", msg.ValId,
 		"deactivationEpoch", msg.DeactivationEpoch,
@@ -221,7 +239,7 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 		"blockNumber", msg.BlockNumber,
 	)
 
-	err := msg.ValidateBasic()
+	err = msg.ValidateBasic()
 	if err != nil {
 		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
@@ -252,4 +270,9 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 	}
 
 	return &types.MsgValidatorExitResponse{}, nil
+}
+
+func recordStakeTransactionMetric(method string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordAPICallWithStart(api.StakeSubsystem, method, api.TxType, success, start)
 }
