@@ -22,7 +22,7 @@ RUN --mount=type=ssh \
     make build
 
 # ─── RUNTIME STAGE ────────────────────────────────────────────────────────────────
-FROM alpine:3.22
+FROM alpine:latest
 
 ARG HEIMDALL_DIR=/var/lib/heimdall/
 ENV HEIMDALL_DIR=${HEIMDALL_DIR}
