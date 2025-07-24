@@ -120,6 +120,7 @@ func getFastForwardMilestoneStartBlock(latestHeaderNumber, latestMilestoneEndBlo
 func GetMajorityMilestoneProposition(
 	validatorSet *stakeTypes.ValidatorSet,
 	extVoteInfo []abciTypes.ExtendedVoteInfo,
+	majorityVP int64,
 	logger log.Logger,
 	lastEndBlock *uint64,
 	lastEndBlockHash []byte,
@@ -138,9 +139,6 @@ func GetMajorityMilestoneProposition(
 
 	// Track which validators we've already processed to prevent duplicate votes
 	processedValidators := make(map[string]bool)
-
-	totalVotingPower := validatorSet.GetTotalVotingPower()
-	majorityVP := totalVotingPower*2/3 + 1
 
 	getParentChildKey := func(parent, child string) string {
 		return fmt.Sprintf("%s-%s", parent, child)
