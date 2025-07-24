@@ -456,31 +456,20 @@ func importKeyStore() *cobra.Command {
 
 // generateValidatorKey generate validator key
 func generateValidatorKey() *cobra.Command {
-	cdc := codec.NewLegacyAmino()
 	cmd := &cobra.Command{
 		Use:   "generate-validator-key",
 		Short: "Generate validator key",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			// generate private key
-			privKeyObject := secp256k1.GenPrivKey()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			s := strings.ReplaceAll(args[0], "0x", "")
 
-			// node key
-			nodeKey := privval.FilePVKey{
-				Address: privKeyObject.PubKey().Address(),
-				PubKey:  privKeyObject.PubKey(),
-				PrivKey: privKeyObject,
-			}
-
-			jsonBytes, err := cdc.MarshalJSONIndent(nodeKey, "", "  ")
+			ds, err := hex.DecodeString(s)
 			if err != nil {
 				return err
 			}
 
-			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0o600)
-			if err != nil {
-				return err
-			}
+			filepv := privval.NewFilePV(secp256k1.PrivKey(ds[:]), "priv_validator_key.json", "priv_validator_state.json")
+			filepv.Save()
 
 			return nil
 		},
