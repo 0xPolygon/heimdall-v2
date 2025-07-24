@@ -13,19 +13,3 @@ const (
 	// Transaction API methods.
 	HandleMsgEventRecordMethod = "HandleMsgEventRecord"
 )
-
-var (
-	AllClerkQueryMethods = []string{
-		GetRecordCountMethod,
-		GetRecordListMethod,
-		GetLatestRecordIdMethod,
-		GetRecordByIdMethod,
-		GetRecordListWithTimeMethod,
-		GetRecordSequenceMethod,
-		IsClerkTxOldMethod,
-	}
-
-	AllClerkTransactionMethods = []string{
-		HandleMsgEventRecordMethod,
-	}
-)

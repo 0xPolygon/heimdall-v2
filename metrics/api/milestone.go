@@ -10,16 +10,3 @@ const (
 	// Transaction API methods.
 	MilestoneUpdateParamsMethod = "UpdateParams"
 )
-
-var (
-	AllMilestoneQueryMethods = []string{
-		GetMilestoneParamsMethod,
-		GetMilestoneCountMethod,
-		GetLatestMilestoneMethod,
-		GetMilestoneByNumberMethod,
-	}
-
-	AllMilestoneTransactionMethods = []string{
-		MilestoneUpdateParamsMethod,
-	}
-)

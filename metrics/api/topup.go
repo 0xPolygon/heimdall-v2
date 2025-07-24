@@ -13,19 +13,3 @@ const (
 	HandleTopupTxMethod = "HandleTopupTx"
 	WithdrawFeeTxMethod = "WithdrawFeeTx"
 )
-
-var (
-	AllTopupQueryMethods = []string{
-		IsTopupTxOldMethod,
-		GetTopupTxSequenceMethod,
-		GetDividendAccountByAddressMethod,
-		GetDividendAccountRootHashMethod,
-		VerifyAccountProofByAddressMethod,
-		GetAccountProofByAddressMethod,
-	}
-
-	AllTopupTransactionMethods = []string{
-		HandleTopupTxMethod,
-		WithdrawFeeTxMethod,
-	}
-)

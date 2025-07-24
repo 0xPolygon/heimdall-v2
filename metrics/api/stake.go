@@ -17,23 +17,3 @@ const (
 	SignerUpdateMethod  = "SignerUpdate"
 	ValidatorExitMethod = "ValidatorExit"
 )
-
-var (
-	AllStakeQueryMethods = []string{
-		GetCurrentValidatorSetMethod,
-		GetSignerByAddressMethod,
-		GetValidatorByIdMethod,
-		GetValidatorStatusByAddressMethod,
-		GetTotalPowerMethod,
-		IsStakeTxOldMethod,
-		GetCurrentProposerMethod,
-		GetProposersByTimesMethod,
-	}
-
-	AllStakeTransactionMethods = []string{
-		ValidatorJoinMethod,
-		StakeUpdateMethod,
-		SignerUpdateMethod,
-		ValidatorExitMethod,
-	}
-)

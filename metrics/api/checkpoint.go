@@ -19,25 +19,3 @@ const (
 	CheckpointNoAckMethod        = "CheckpointNoAck"
 	CheckpointUpdateParamsMethod = "UpdateParams"
 )
-
-var (
-	AllCheckpointQueryMethods = []string{
-		GetCheckpointParamsMethod,
-		GetCheckpointOverviewMethod,
-		GetAckCountMethod,
-		GetCheckpointLatestMethod,
-		GetCheckpointBufferMethod,
-		GetLastNoAckMethod,
-		GetNextCheckpointMethod,
-		GetCheckpointListMethod,
-		GetCheckpointSignaturesMethod,
-		GetCheckpointMethod,
-	}
-
-	AllCheckpointTransactionMethods = []string{
-		CheckpointMethod,
-		CheckpointAckMethod,
-		CheckpointNoAckMethod,
-		CheckpointUpdateParamsMethod,
-	}
-)

@@ -42,34 +42,6 @@ var (
 	metricsMutex  sync.RWMutex
 )
 
-// InitModuleMetrics pre-registers all API metrics for a given module with zero values.
-func InitModuleMetrics(subsystem string, queryMethods, txMethods []string) {
-	metrics := GetModuleMetrics(subsystem)
-
-	// Initialize query method metrics
-	for _, method := range queryMethods {
-		metrics.TotalCalls.WithLabelValues(method, QueryType)
-		metrics.SuccessCalls.WithLabelValues(method, QueryType)
-		metrics.ResponseTime.WithLabelValues(method, QueryType)
-	}
-
-	// Initialize transaction method metrics
-	for _, method := range txMethods {
-		metrics.TotalCalls.WithLabelValues(method, TxType)
-		metrics.SuccessCalls.WithLabelValues(method, TxType)
-		metrics.ResponseTime.WithLabelValues(method, TxType)
-	}
-}
-
-func InitAPIModuleMetrics() {
-	InitModuleMetrics(BorSubsystem, AllBorQueryMethods, AllBorTransactionMethods)
-	InitModuleMetrics(CheckpointSubsystem, AllCheckpointQueryMethods, AllCheckpointTransactionMethods)
-	InitModuleMetrics(ClerkSubsystem, AllClerkQueryMethods, AllClerkTransactionMethods)
-	InitModuleMetrics(MilestoneSubsystem, AllMilestoneQueryMethods, AllMilestoneTransactionMethods)
-	InitModuleMetrics(StakeSubsystem, AllStakeQueryMethods, AllStakeTransactionMethods)
-	InitModuleMetrics(TopupSubsystem, AllTopupQueryMethods, AllTopupTransactionMethods)
-}
-
 // GetModuleMetrics returns or creates metrics for a given module.
 func GetModuleMetrics(subsystem string) *ModuleMetrics {
 	metricsMutex.RLock()

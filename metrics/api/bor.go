@@ -17,23 +17,3 @@ const (
 	BackfillSpansMethod   = "BackfillSpans"
 	VoteProducersMethod   = "VoteProducers"
 )
-
-var (
-	AllBorQueryMethods = []string{
-		GetSpanListMethod,
-		GetLatestSpanMethod,
-		GetNextSpanSeedMethod,
-		GetNextSpanMethod,
-		GetSpanByIdMethod,
-		GetBorParamsMethod,
-		GetProducerVotesMethod,
-		GetProducerVotesByValidatorIdMethod,
-	}
-
-	AllBorTransactionMethods = []string{
-		ProposeSpanMethod,
-		BorUpdateParamsMethod,
-		BackfillSpansMethod,
-		VoteProducersMethod,
-	}
-)
