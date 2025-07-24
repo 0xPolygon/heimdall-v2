@@ -300,6 +300,10 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 		return nil, err
 	}
 
+	if res == nil || res.Account == nil {
+		return nil, fmt.Errorf("account not found for address %s", address)
+	}
+
 	if err := cliCtx.InterfaceRegistry.UnpackAny(res.Account, &account); err != nil {
 		return nil, err
 	}
