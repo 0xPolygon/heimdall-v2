@@ -27,7 +27,7 @@ FROM alpine:3.22
 ARG HEIMDALL_DIR=/var/lib/heimdall/
 ENV HEIMDALL_DIR=${HEIMDALL_DIR}
 
-RUN apk add --no-cache ca-certificates && \
+RUN apk add --no-cache bash ca-certificates && \
     mkdir -p ${HEIMDALL_DIR}
 
 WORKDIR ${HEIMDALL_DIR}
