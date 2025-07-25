@@ -517,6 +517,7 @@ func importValidatorKey() *cobra.Command {
 				return err
 			}
 
+			fmt.Println("Private validator key saved to priv_validator_key.json")
 			return nil
 		},
 	}
