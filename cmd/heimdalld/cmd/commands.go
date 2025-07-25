@@ -19,6 +19,7 @@ import (
 	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
+	cmcrypto "github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/p2p"
@@ -482,6 +483,10 @@ func generateValidatorKey() *cobra.Command {
 // importValidatorKey imports validator private key from the given file path
 func importValidatorKey() *cobra.Command {
 	cdc := codec.NewLegacyAmino()
+	cdc.RegisterInterface((*cmcrypto.PubKey)(nil), nil)
+	cdc.RegisterInterface((*cmcrypto.PrivKey)(nil), nil)
+	cdc.RegisterConcrete(secp256k1.PubKey{}, "tendermint/PubKeySecp256k1", nil)
+	cdc.RegisterConcrete(secp256k1.PrivKey{}, "tendermint/PrivKeySecp256k1", nil)
 	return &cobra.Command{
 		Use:   "import-validator-key <private-key-file>",
 		Short: "Import private key from a private key stored in file (without 0x prefix)",
@@ -492,10 +497,8 @@ func importValidatorKey() *cobra.Command {
 			}
 
 			bz := ethcrypto.FromECDSA(pk)
-
 			// set the private object
-			var privKeyObject secp256k1.PrivKey
-			copy(privKeyObject[:], bz)
+			privKeyObject := secp256k1.PrivKey(bz)
 
 			// node key
 			nodeKey := privval.FilePVKey{
