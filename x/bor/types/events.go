@@ -28,6 +28,7 @@ func NewSpanEvent(span *Span) sdk.Event {
 		sdk.NewAttribute("id", strconv.FormatUint(span.Id, 10)),
 		sdk.NewAttribute("start_block", strconv.FormatUint(span.StartBlock, 10)),
 		sdk.NewAttribute("end_block", strconv.FormatUint(span.EndBlock, 10)),
+		// This assumes that we're post veblop where we only have a single producer in the set
 		sdk.NewAttribute("block_producer", span.SelectedProducers[0].Signer),
 	)
 }
