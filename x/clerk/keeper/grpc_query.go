@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"cosmossdk.io/collections"
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
@@ -34,6 +36,10 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 }
 
 func (q queryServer) GetRecordById(ctx context.Context, request *types.RecordRequest) (*types.RecordResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordClerkQueryMetric(api.GetRecordByIdMethod, startTime, &err)
+
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -47,6 +53,10 @@ func (q queryServer) GetRecordById(ctx context.Context, request *types.RecordReq
 }
 
 func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordListRequest) (*types.RecordListResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordClerkQueryMetric(api.GetRecordListMethod, startTime, &err)
+
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -67,6 +77,10 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 }
 
 func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.RecordListWithTimeRequest) (*types.RecordListWithTimeResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordClerkQueryMetric(api.GetRecordListWithTimeMethod, startTime, &err)
+
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -136,6 +150,10 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 }
 
 func (q queryServer) GetRecordSequence(ctx context.Context, request *types.RecordSequenceRequest) (*types.RecordSequenceResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordClerkQueryMetric(api.GetRecordSequenceMethod, startTime, &err)
+
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -169,6 +187,10 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 
 // IsClerkTxOld implements the gRPC service handler to query the status of a clerk tx
 func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequenceRequest) (*types.IsClerkTxOldResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordClerkQueryMetric(api.IsClerkTxOldMethod, startTime, &err)
+
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -203,6 +225,10 @@ func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequ
 
 // GetLatestRecordId implements the gRPC service handler to query the latest record id from L1.
 func (q queryServer) GetLatestRecordId(ctx context.Context, _ *types.LatestRecordIdRequest) (*types.LatestRecordIdResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordClerkQueryMetric(api.GetLatestRecordIdMethod, startTime, &err)
+
 	// Get chain params to get the StateSender contract address.
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
 	if err != nil {
@@ -228,6 +254,10 @@ func (q queryServer) GetLatestRecordId(ctx context.Context, _ *types.LatestRecor
 
 // GetRecordCount implements the gRPC service handler to query the total count of event records.
 func (q queryServer) GetRecordCount(ctx context.Context, _ *types.RecordCountRequest) (*types.RecordCountResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordClerkQueryMetric(api.GetRecordCountMethod, startTime, &err)
+
 	return &types.RecordCountResponse{Count: q.k.GetEventRecordCount(ctx)}, nil
 }
 
@@ -237,4 +267,9 @@ func isPaginationEmpty(p query.PageRequest) bool {
 		p.Limit == 0 &&
 		!p.CountTotal &&
 		!p.Reverse
+}
+
+func recordClerkQueryMetric(method string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordAPICallWithStart(api.ClerkSubsystem, method, api.QueryType, success, start)
 }

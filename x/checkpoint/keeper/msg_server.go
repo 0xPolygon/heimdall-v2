@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -34,6 +35,10 @@ var _ types.MsgServer = msgServer{}
 
 // Checkpoint function handles the checkpoint msg
 func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*types.MsgCheckpointResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointTransactionMetric(api.CheckpointMethod, startTime, &err)
+
 	logger := m.Logger(ctx)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -150,6 +155,10 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 
 // CheckpointAck handles the checkpoint ack msg
 func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*types.MsgCpAckResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointTransactionMetric(api.CheckpointAckMethod, startTime, &err)
+
 	logger := m.Logger(ctx)
 
 	if msg.StartBlock >= msg.EndBlock {
@@ -215,6 +224,10 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 
 // CheckpointNoAck handles checkpoint no-ack msg
 func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (*types.MsgCheckpointNoAckResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointTransactionMetric(api.CheckpointNoAckMethod, startTime, &err)
+
 	logger := m.Logger(ctx)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -339,6 +352,10 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 
 // UpdateParams defines a method to update the params in x/checkpoint module.
 func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointTransactionMetric(api.CheckpointUpdateParamsMethod, startTime, &err)
+
 	if m.authority != msg.Authority {
 		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", m.authority, msg.Authority)
 	}
@@ -352,4 +369,9 @@ func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams)
 	}
 
 	return &types.MsgUpdateParamsResponse{}, nil
+}
+
+func recordCheckpointTransactionMetric(method string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordAPICallWithStart(api.CheckpointSubsystem, method, api.TxType, success, start)
 }

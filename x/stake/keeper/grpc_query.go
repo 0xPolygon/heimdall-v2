@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"time"
 
 	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/common"
@@ -12,6 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -31,6 +33,10 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 
 // GetCurrentValidatorSet queries all validators that are currently active in the validator set
 func (q queryServer) GetCurrentValidatorSet(ctx context.Context, _ *types.QueryCurrentValidatorSetRequest) (*types.QueryCurrentValidatorSetResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeQueryMetric(api.GetCurrentValidatorSetMethod, startTime, &err)
+
 	validatorSet, err := q.k.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -41,6 +47,10 @@ func (q queryServer) GetCurrentValidatorSet(ctx context.Context, _ *types.QueryC
 
 // GetSignerByAddress queries validator info for given validator address.
 func (q queryServer) GetSignerByAddress(ctx context.Context, req *types.QuerySignerRequest) (*types.QuerySignerResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeQueryMetric(api.GetSignerByAddressMethod, startTime, &err)
+
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -51,7 +61,7 @@ func (q queryServer) GetSignerByAddress(ctx context.Context, req *types.QuerySig
 
 	// validate address
 	ac := hexCodec.NewHexCodec()
-	_, err := ac.StringToBytes(req.ValAddress)
+	_, err = ac.StringToBytes(req.ValAddress)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid validator address %s", req.ValAddress)
 	}
@@ -66,6 +76,10 @@ func (q queryServer) GetSignerByAddress(ctx context.Context, req *types.QuerySig
 
 // GetValidatorById queries validator info for a given validator id.
 func (q queryServer) GetValidatorById(ctx context.Context, req *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeQueryMetric(api.GetValidatorByIdMethod, startTime, &err)
+
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -105,6 +119,10 @@ func (q queryServer) GetValidatorStatusByAddress(ctx context.Context, req *types
 
 // GetTotalPower queries the total power of a validator set
 func (q queryServer) GetTotalPower(ctx context.Context, _ *types.QueryTotalPowerRequest) (*types.QueryTotalPowerResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeQueryMetric(api.GetTotalPowerMethod, startTime, &err)
+
 	totalPower, err := q.k.GetTotalPower(ctx)
 	if err != nil {
 		return nil, err
@@ -115,6 +133,10 @@ func (q queryServer) GetTotalPower(ctx context.Context, _ *types.QueryTotalPower
 
 // IsStakeTxOld queries for the staking sequence
 func (q queryServer) IsStakeTxOld(ctx context.Context, req *types.QueryStakeIsOldTxRequest) (*types.QueryStakeIsOldTxResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeQueryMetric(api.IsStakeTxOldMethod, startTime, &err)
+
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -154,6 +176,10 @@ func (q queryServer) IsStakeTxOld(ctx context.Context, req *types.QueryStakeIsOl
 
 // GetProposersByTimes queries for the proposers by Tendermint iterations
 func (q queryServer) GetProposersByTimes(ctx context.Context, req *types.QueryProposersRequest) (*types.QueryProposersResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeQueryMetric(api.GetProposersByTimesMethod, startTime, &err)
+
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -190,7 +216,16 @@ func (q queryServer) GetProposersByTimes(ctx context.Context, req *types.QueryPr
 
 // GetCurrentProposer queries the validator info for the current proposer
 func (q queryServer) GetCurrentProposer(ctx context.Context, _ *types.QueryCurrentProposerRequest) (*types.QueryCurrentProposerResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeQueryMetric(api.GetCurrentProposerMethod, startTime, &err)
+
 	proposer := q.k.GetCurrentProposer(ctx)
 
 	return &types.QueryCurrentProposerResponse{Validator: *proposer}, nil
+}
+
+func recordStakeQueryMetric(method string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordAPICallWithStart(api.StakeSubsystem, method, api.QueryType, success, start)
 }

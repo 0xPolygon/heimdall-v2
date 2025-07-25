@@ -2,10 +2,12 @@ package keeper
 
 import (
 	"context"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
@@ -24,6 +26,10 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 
 // GetMilestoneParams returns the milestones params
 func (q queryServer) GetMilestoneParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordMilestoneQueryMetric(api.GetMilestoneParamsMethod, startTime, &err)
+
 	params, err := q.k.GetParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -36,6 +42,10 @@ func (q queryServer) GetMilestoneParams(ctx context.Context, _ *types.QueryParam
 
 // GetMilestoneCount returns the milestone count
 func (q queryServer) GetMilestoneCount(ctx context.Context, _ *types.QueryCountRequest) (*types.QueryCountResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordMilestoneQueryMetric(api.GetMilestoneCountMethod, startTime, &err)
+
 	count, err := q.k.GetMilestoneCount(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -46,6 +56,10 @@ func (q queryServer) GetMilestoneCount(ctx context.Context, _ *types.QueryCountR
 
 // GetLatestMilestone gives the latest milestone in the database
 func (q queryServer) GetLatestMilestone(ctx context.Context, _ *types.QueryLatestMilestoneRequest) (*types.QueryLatestMilestoneResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordMilestoneQueryMetric(api.GetLatestMilestoneMethod, startTime, &err)
+
 	milestone, err := q.k.GetLastMilestone(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -59,6 +73,10 @@ func (q queryServer) GetLatestMilestone(ctx context.Context, _ *types.QueryLates
 
 // GetMilestoneByNumber return the milestone by number
 func (q queryServer) GetMilestoneByNumber(ctx context.Context, req *types.QueryMilestoneRequest) (*types.QueryMilestoneResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordMilestoneQueryMetric(api.GetMilestoneByNumberMethod, startTime, &err)
+
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -80,4 +98,9 @@ func (q queryServer) GetMilestoneByNumber(ctx context.Context, req *types.QueryM
 		return nil, status.Error(codes.NotFound, "milestone not found")
 	}
 	return &types.QueryMilestoneResponse{Milestone: *milestone}, nil
+}
+
+func recordMilestoneQueryMetric(method string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordAPICallWithStart(api.MilestoneSubsystem, method, api.QueryType, success, start)
 }

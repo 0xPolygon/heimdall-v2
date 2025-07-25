@@ -1,5 +1,6 @@
 module github.com/0xPolygon/heimdall-v2
 
+// Note: Change the go image version in Dockerfile if you change this.
 go 1.24.4
 
 require (

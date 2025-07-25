@@ -66,6 +66,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/client/docs"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	metrics "github.com/0xPolygon/heimdall-v2/metrics"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hversion "github.com/0xPolygon/heimdall-v2/version"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
@@ -451,6 +452,8 @@ func NewHeimdallApp(
 			panic(fmt.Errorf("error loading last version: %w", err))
 		}
 	}
+
+	metrics.InitMetrics()
 
 	return app
 }

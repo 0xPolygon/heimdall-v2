@@ -4,11 +4,13 @@ import (
 	"context"
 	"math/big"
 	"strconv"
+	"time"
 
 	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
@@ -26,6 +28,10 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 var _ types.MsgServer = msgServer{}
 
 func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEventRecord) (*types.MsgEventRecordResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordClerkTransactionMetric(api.HandleMsgEventRecordMethod, startTime, &err)
+
 	logger := srv.Logger(ctx)
 
 	logger.Debug("✅ Validating clerk msg",
@@ -82,4 +88,9 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	})
 
 	return &types.MsgEventRecordResponse{}, nil
+}
+
+func recordClerkTransactionMetric(method string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordAPICallWithStart(api.ClerkSubsystem, method, api.TxType, success, start)
 }

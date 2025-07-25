@@ -1,18 +1,15 @@
-FROM alpine:3.14
+FROM alpine:latest
 
-ARG HEIMDALL_DIR=/var/lib/heimdall
+ARG HEIMDALL_DIR=/var/lib/heimdall/
 ENV HEIMDALL_DIR=$HEIMDALL_DIR
 
-RUN apk add --no-cache \
-       ca-certificates \
-       tini && \
-       mkdir -p ${HEIMDALL_DIR}
+RUN apk add --no-cache ca-certificates tini && mkdir -p ${HEIMDALL_DIR}
 
 WORKDIR ${HEIMDALL_DIR}
 COPY heimdalld /usr/bin/
+COPY builder/files/genesis-amoy-v1.json ${HEIMDALL_DIR}/
 COPY builder/files/genesis-mainnet-v1.json ${HEIMDALL_DIR}/
 COPY builder/files/genesis-testnet-v4.json ${HEIMDALL_DIR}/
-COPY builder/files/genesis-amoy-v1.json ${HEIMDALL_DIR}/
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
