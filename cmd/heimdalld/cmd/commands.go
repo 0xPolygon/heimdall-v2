@@ -484,8 +484,8 @@ func importValidatorKey() *cobra.Command {
 	cdc := codec.NewLegacyAmino()
 	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
 	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
-	cdc.RegisterConcrete(secp256k1.PubKey{}, "tendermint/PubKeySecp256k1", nil)
-	cdc.RegisterConcrete(secp256k1.PrivKey{}, "tendermint/PrivKeySecp256k1", nil)
+	cdc.RegisterConcrete(secp256k1.PubKey{}, "cometbft/PubKeySecp256k1eth", nil)
+	cdc.RegisterConcrete(secp256k1.PrivKey{}, "cometbft/PrivKeySecp256k1eth", nil)
 	return &cobra.Command{
 		Use:   "import-validator-key <private-key-file>",
 		Short: "Import private key from a private key stored in file (without 0x prefix)",
