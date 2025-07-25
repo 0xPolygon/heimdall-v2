@@ -104,78 +104,29 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 		return
 	}
 
-	var latestMilestoneEndBlock uint64
-	latestMilestone, err := util.GetLatestMilestone(sp.cliCtx.Codec)
-	if err == nil {
-		latestMilestoneEndBlock = latestMilestone.EndBlock
-	} else {
-		sp.Logger.Error("Error fetching latest milestone", "error", err)
-	}
-
-	// Max of latest milestone end block and latest bor block number
-	// Handle cases where bor is syncing and latest milestone end block is greater than latest bor block number
-	maxBlockNumber := max(latestMilestoneEndBlock, latestBorBlockNumber)
-
 	sp.Logger.Debug("Found last span",
 		"lastSpan", lastSpan.Id,
 		"startBlock", lastSpan.StartBlock,
 		"endBlock", lastSpan.EndBlock,
 	)
 
-	if maxBlockNumber > lastSpan.EndBlock {
-		if latestMilestoneEndBlock > lastSpan.EndBlock {
-			sp.Logger.Debug("Bor self commmitted spans, backfill heimdall to fill missing spans",
-				"lastBlock", latestBorBlockNumber,
-				"lastFinalizedBlock", latestMilestoneEndBlock,
-				"lastSpanEndBlock", lastSpan.EndBlock,
-			)
-			go func() {
-				defer func() {
-					if r := recover(); r != nil {
-						sp.Logger.Error("Recovered panic in backfillSpans goroutine", "panic", r)
-					}
-				}()
+	nextSpanMsg, err := sp.fetchNextSpanDetails(lastSpan.Id+1, lastSpan.EndBlock+1)
+	if err != nil {
+		sp.Logger.Error("Unable to fetch next span details", "error", err, "lastSpanId", lastSpan.Id)
+		return
+	}
 
-				if err := sp.backfillSpans(ctx, latestMilestoneEndBlock, lastSpan); err != nil {
-					sp.Logger.Error("Error in backfillSpans", "error", err)
-				}
-			}()
-
-		} else {
-			sp.Logger.Debug("Will not backfill heimdall spans, as latest milestone end block is less than last span end block",
-				"lastBlock", latestBorBlockNumber,
-				"lastFinalizedBlock", latestMilestoneEndBlock,
-				"lastSpanEndBlock", lastSpan.EndBlock,
-			)
-		}
-	} else {
-		if types.IsBlockCloseToSpanEnd(maxBlockNumber, lastSpan.EndBlock) {
-			sp.Logger.Debug("Current bor block is close to last span end block, skipping proposing span",
-				"lastBlock", latestBorBlockNumber,
-				"lastFinalizedBlock", latestMilestoneEndBlock,
-				"lastSpanEndBlock", lastSpan.EndBlock,
-			)
-			return
-		}
-
-		nextSpanMsg, err := sp.fetchNextSpanDetails(lastSpan.Id+1, lastSpan.EndBlock+1)
-		if err != nil {
-			sp.Logger.Error("Unable to fetch next span details", "error", err, "lastSpanId", lastSpan.Id)
-			return
-		}
-
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					sp.Logger.Error("Recovered panic in propose goroutine", "panic", r)
-				}
-			}()
-
-			if err := sp.propose(ctx, lastSpan, nextSpanMsg); err != nil {
-				sp.Logger.Error("Error in propose", "error", err)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				sp.Logger.Error("Recovered panic in propose goroutine", "panic", r)
 			}
 		}()
-	}
+
+		if err := sp.propose(ctx, lastSpan, nextSpanMsg); err != nil {
+			sp.Logger.Error("Error in propose", "error", err)
+		}
+	}()
 }
 
 //nolint:unused
@@ -262,64 +213,6 @@ func (sp *SpanProcessor) sendProducerVotes(validatorId uint64, producerVotes []u
 		sp.Logger.Error("producer votes tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
 		return fmt.Errorf("producer votes tx failed on heimdall, code: %d", txRes.Code)
 	}
-
-	return nil
-}
-
-func (sp *SpanProcessor) backfillSpans(ctx context.Context, latestFinalizedBorBlockNumber uint64, lastHeimdallSpan *types.Span) error {
-	// Get what span bor used when heimdall was down and it tried to fetch the next span from heimdall
-	// We need to know if it managed to fetch the latest span or it used the previous one
-	// We will take it from the next start block after the last heimdall span end block
-	borLastUsedSpanID, err := sp.contractCaller.GetStartBlockHeimdallSpanID(ctx, lastHeimdallSpan.EndBlock+1)
-	if err != nil {
-		return fmt.Errorf("error while fetching last used span id for bor: %w", err)
-	}
-
-	if borLastUsedSpanID == 0 {
-		return fmt.Errorf("bor last used span id is 0, cannot backfill spans")
-	}
-
-	borLastUsedSpan, err := sp.getSpanById(borLastUsedSpanID)
-	if err != nil {
-		return fmt.Errorf("error while fetching last used span for bor: %w", err)
-	}
-
-	if borLastUsedSpan == nil {
-		return fmt.Errorf("bor last used span is nil, cannot backfill spans")
-	}
-
-	params, err := util.GetChainmanagerParams(sp.cliCtx.Codec)
-	if err != nil {
-		return fmt.Errorf("error while fetching chainmanager params: %w", err)
-	}
-
-	addrString, err := helper.GetAddressString()
-	if err != nil {
-		return fmt.Errorf("error converting address to string: %w", err)
-	}
-
-	borSpanId, err := types.CalcCurrentBorSpanId(latestFinalizedBorBlockNumber, borLastUsedSpan)
-	if err != nil {
-		return fmt.Errorf("error while calculating bor span id: %w", err)
-	}
-
-	msg := types.MsgBackfillSpans{
-		Proposer:        addrString,
-		ChainId:         params.ChainParams.BorChainId,
-		LatestSpanId:    borLastUsedSpan.Id,
-		LatestBorSpanId: borSpanId,
-	}
-
-	txRes, err := sp.txBroadcaster.BroadcastToHeimdall(&msg, nil) //nolint:contextcheck
-	if err != nil {
-		return fmt.Errorf("error while broadcasting backfill spans to heimdall: %w", err)
-	}
-
-	if txRes.Code != abci.CodeTypeOK {
-		return fmt.Errorf("backfill spans tx failed on heimdall, txHash: %s, code: %d", txRes.TxHash, txRes.Code)
-	}
-
-	sp.Logger.Info("Backfill spans tx successfully broadcasted to heimdall", "txHash", txRes.TxHash, "borLastUsedSpanId", borLastUsedSpan.Id, "borSpanId", borSpanId)
 
 	return nil
 }
