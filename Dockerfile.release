@@ -3,7 +3,7 @@ FROM alpine:latest
 ARG HEIMDALL_DIR=/var/lib/heimdall/
 ENV HEIMDALL_DIR=$HEIMDALL_DIR
 
-RUN apk add --no-cache build-base ca-certificates tini && mkdir -p ${HEIMDALL_DIR}
+RUN apk add --no-cache ca-certificates tini && mkdir -p ${HEIMDALL_DIR}
 
 WORKDIR ${HEIMDALL_DIR}
 COPY heimdalld /usr/bin/
