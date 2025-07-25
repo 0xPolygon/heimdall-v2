@@ -19,7 +19,6 @@ import (
 	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
-	cmcrypto "github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/p2p"
@@ -483,8 +482,8 @@ func generateValidatorKey() *cobra.Command {
 // importValidatorKey imports validator private key from the given file path
 func importValidatorKey() *cobra.Command {
 	cdc := codec.NewLegacyAmino()
-	cdc.RegisterInterface((*cmcrypto.PubKey)(nil), nil)
-	cdc.RegisterInterface((*cmcrypto.PrivKey)(nil), nil)
+	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
+	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
 	cdc.RegisterConcrete(secp256k1.PubKey{}, "tendermint/PubKeySecp256k1", nil)
 	cdc.RegisterConcrete(secp256k1.PrivKey{}, "tendermint/PrivKeySecp256k1", nil)
 	return &cobra.Command{
