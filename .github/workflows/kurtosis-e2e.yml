@@ -62,6 +62,7 @@ jobs:
           repository: 0xPolygon/kurtosis-pos
           ref: af046f6
           path: kurtosis-pos
+          fetch-depth: 0
 
       - name: Copy kurtosis config
         run: cp ./heimdall-v2/.github/configs/kurtosis-e2e.yml ./kurtosis-pos/kurtosis-e2e.yml
