@@ -79,6 +79,12 @@ jobs:
           ARCH: all
           NODE: sentry
           NETWORK: mainnet
+      - name: Copying config for ${{ env.NODE }} on ${{ env.NETWORK }} on ${{ env.ARCH }}
+        run: cp -rp packaging/templates/config/${{ env.NETWORK }}/client.toml packaging/deb/heimdall-${{ env.NETWORK }}-${{ env.NODE }}-config_${{ env.GIT_TAG }}-${{ env.ARCH }}/var/lib/heimdall/config/client.toml
+        env:
+          ARCH: all
+          NODE: sentry
+          NETWORK: mainnet
       - name: Copying the prerm for ${{ env.NODE }} on ${{ env.NETWORK }} on ${{ env.ARCH }}
         run: cp -rp packaging/templates/package_scripts/prerm packaging/deb/heimdall-${{ env.NETWORK }}-${{ env.NODE }}-config_${{ env.GIT_TAG }}-${{ env.ARCH }}/DEBIAN/prerm
         env:
