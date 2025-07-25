@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -10,6 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
@@ -24,6 +26,10 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 
 // HandleTopupTx handles the topup tx events for the x/topup module
 func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*types.MsgTopupTxResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordTopupTransactionMetric(api.HandleTopupTxMethod, startTime, &err)
+
 	logger := m.k.Logger(ctx)
 
 	txHash := common.BytesToHash(msg.TxHash)
@@ -91,6 +97,10 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 
 // WithdrawFeeTx handles withdraw fee tx events for the x/topup module
 func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeTx) (*types.MsgWithdrawFeeTxResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordTopupTransactionMetric(api.WithdrawFeeTxMethod, startTime, &err)
+
 	logger := m.k.Logger(ctx)
 
 	logger.Debug("WithdrawFeeTx msg received",
@@ -127,7 +137,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	coins := sdk.Coins{sdk.Coin{Denom: sdk.DefaultBondDenom, Amount: amount}}
 
 	// send coins from account to module
-	err := m.k.BankKeeper.SendCoinsFromAccountToModule(ctx, sdk.AccAddress(msg.Proposer), types.ModuleName, coins)
+	err = m.k.BankKeeper.SendCoinsFromAccountToModule(ctx, sdk.AccAddress(msg.Proposer), types.ModuleName, coins)
 	if err != nil {
 		logger.Error("error while sending coins from account to module",
 			"fromAddress", msg.Proposer,
@@ -169,4 +179,9 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	logger.Debug("event created for WithdrawFeeTx")
 
 	return &types.MsgWithdrawFeeTxResponse{}, nil
+}
+
+func recordTopupTransactionMetric(method string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordAPICallWithStart(api.TopupSubsystem, method, api.TxType, success, start)
 }

@@ -5,12 +5,14 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
@@ -31,6 +33,10 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 
 // GetTopupTxSequence implements the gRPC service handler to query the sequence of a topup tx
 func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTopupSequenceRequest) (*types.QueryTopupSequenceResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordTopupQueryMetric(api.GetTopupTxSequenceMethod, startTime, &err)
+
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -73,6 +79,10 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 
 // IsTopupTxOld implements the gRPC service handler to query the status of a topup tx
 func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequenceRequest) (*types.QueryIsTopupTxOldResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordTopupQueryMetric(api.IsTopupTxOldMethod, startTime, &err)
+
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -110,6 +120,10 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 
 // GetDividendAccountByAddress implements the gRPC service handler to query a dividend account by its address
 func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types.QueryDividendAccountRequest) (*types.QueryDividendAccountResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordTopupQueryMetric(api.GetDividendAccountByAddressMethod, startTime, &err)
+
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -136,6 +150,10 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 
 // GetDividendAccountRootHash implements the gRPC service handler to query the root hash of all dividend accounts
 func (q queryServer) GetDividendAccountRootHash(ctx context.Context, _ *types.QueryDividendAccountRootHashRequest) (*types.QueryDividendAccountRootHashResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordTopupQueryMetric(api.GetDividendAccountRootHashMethod, startTime, &err)
+
 	dividendAccounts, err := q.k.GetAllDividendAccounts(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -154,6 +172,10 @@ func (q queryServer) GetDividendAccountRootHash(ctx context.Context, _ *types.Qu
 
 // VerifyAccountProofByAddress implements the gRPC service handler to verify the account proof by its address
 func (q queryServer) VerifyAccountProofByAddress(ctx context.Context, req *types.QueryVerifyAccountProofRequest) (*types.QueryVerifyAccountProofResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordTopupQueryMetric(api.VerifyAccountProofByAddressMethod, startTime, &err)
+
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -182,6 +204,10 @@ func (q queryServer) VerifyAccountProofByAddress(ctx context.Context, req *types
 
 // GetAccountProofByAddress implements the gRPC service handler to get the account proof by its address
 func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.QueryAccountProofRequest) (*types.QueryAccountProofResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordTopupQueryMetric(api.GetAccountProofByAddressMethod, startTime, &err)
+
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -236,4 +262,9 @@ func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.Qu
 	}
 
 	return dividendAccountProof, nil
+}
+
+func recordTopupQueryMetric(method string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordAPICallWithStart(api.TopupSubsystem, method, api.QueryType, success, start)
 }
