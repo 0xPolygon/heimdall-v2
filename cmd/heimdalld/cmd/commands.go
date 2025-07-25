@@ -482,6 +482,10 @@ func generateValidatorKey() *cobra.Command {
 // importValidatorKey imports validator private key from the given file path
 func importValidatorKey() *cobra.Command {
 	cdc := codec.NewLegacyAmino()
+	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
+	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
+	cdc.RegisterConcrete(secp256k1.PubKey{}, "cometbft/PubKeySecp256k1eth", nil)
+	cdc.RegisterConcrete(secp256k1.PrivKey{}, "cometbft/PrivKeySecp256k1eth", nil)
 	return &cobra.Command{
 		Use:   "import-validator-key <private-key-file>",
 		Short: "Import private key from a private key stored in file (without 0x prefix)",
@@ -492,10 +496,8 @@ func importValidatorKey() *cobra.Command {
 			}
 
 			bz := ethcrypto.FromECDSA(pk)
-
 			// set the private object
-			var privKeyObject secp256k1.PrivKey
-			copy(privKeyObject[:], bz)
+			privKeyObject := secp256k1.PrivKey(bz)
 
 			// node key
 			nodeKey := privval.FilePVKey{
@@ -514,6 +516,7 @@ func importValidatorKey() *cobra.Command {
 				return err
 			}
 
+			fmt.Println("Private validator key saved to priv_validator_key.json")
 			return nil
 		},
 	}
