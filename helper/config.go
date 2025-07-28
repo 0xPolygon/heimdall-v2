@@ -203,6 +203,10 @@ var Logger logger.Logger
 
 var veblopHeight int64 = 0
 
+var tallyFixHeight int64 = 0
+
+var disableVPCheckHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -416,12 +420,20 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	switch conf.Custom.Chain {
 	case MainChain:
 		veblopHeight = 0
+		tallyFixHeight = 0       // TODO: TBD
+		disableVPCheckHeight = 0 // TODO: confirm with team
 	case MumbaiChain:
 		veblopHeight = 0
+		tallyFixHeight = 0
+		disableVPCheckHeight = 0
 	case AmoyChain:
 		veblopHeight = 0
+		tallyFixHeight = 0       // TODO: TBD
+		disableVPCheckHeight = 0 // TODO: confirm with team
 	default:
 		veblopHeight = 0
+		tallyFixHeight = 0
+		disableVPCheckHeight = 0
 	}
 }
 
@@ -539,6 +551,14 @@ func IsVeblop(blockNum uint64) bool {
 
 func SetVeblopHeight(height int64) {
 	veblopHeight = height
+}
+
+func GetTallyFixHeight() int64 {
+	return tallyFixHeight
+}
+
+func GetDisableVPCheckHeight() int64 {
+	return disableVPCheckHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {

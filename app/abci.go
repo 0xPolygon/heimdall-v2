@@ -21,6 +21,7 @@ import (
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 const (
@@ -712,8 +713,21 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 	}
 
+	var tallyValidatorSet *stakeTypes.ValidatorSet
+	if req.Height >= helper.GetTallyFixHeight() {
+		// use validator set from 2 blocks ago
+		tallyValidatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
+		if err != nil {
+			logger.Error("Failed to get penultimate block validator set", "error", err)
+			return nil, fmt.Errorf("failed to get penultimate block validator set: %w", err)
+		}
+	} else {
+		// use previous block validator set (legacy behavior)
+		tallyValidatorSet = validatorSet
+	}
+
 	// tally votes
-	approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validatorSet.GetTotalVotingPower(), req.Height)
+	approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, tallyValidatorSet.GetTotalVotingPower(), req.Height)
 	if err != nil {
 		logger.Error("Error occurred while tallying votes", "error", err)
 		return nil, err

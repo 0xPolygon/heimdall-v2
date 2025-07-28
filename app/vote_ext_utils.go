@@ -195,12 +195,13 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 		voteMap := voteByTxHash[txHash]
 
 		// calculate the total voting power in the voteMap
-		// power := voteMap[sidetxs.Vote_VOTE_YES] + voteMap[sidetxs.Vote_VOTE_NO] + voteMap[sidetxs.Vote_UNSPECIFIED]
+		power := voteMap[sidetxs.Vote_VOTE_YES] + voteMap[sidetxs.Vote_VOTE_NO] + voteMap[sidetxs.Vote_UNSPECIFIED]
+
 		// ensure the total votes do not exceed the total voting power
-		// if power > totalVotingPower {
-		// 	logger.Error("the votes power exceeds the total voting power", "txHash", txHash, "power", power, "totalVotingPower", totalVotingPower)
-		// 	return nil, nil, nil, fmt.Errorf("votes power %d exceeds total voting power %d for txHash %s", power, totalVotingPower, txHash)
-		// }
+		if (currentHeight < helper.GetDisableVPCheckHeight() && currentHeight >= helper.GetTallyFixHeight()) && power > totalVotingPower {
+			logger.Error("the votes power exceeds the total voting power", "txHash", txHash, "power", power, "totalVotingPower", totalVotingPower)
+			return nil, nil, nil, fmt.Errorf("votes power %d exceeds total voting power %d for txHash %s", power, totalVotingPower, txHash)
+		}
 
 		if voteMap[sidetxs.Vote_VOTE_YES] > majorityVP {
 			// approved
@@ -620,6 +621,19 @@ func getPreviousBlockValidatorSet(ctx sdk.Context, stakeKeeper stakeKeeper.Keepe
 	}
 	if len(validatorSet.Validators) == 0 {
 		return nil, errors.New("no validators found in validator set")
+	}
+	return &validatorSet, nil
+}
+
+// getPenultimateBlockValidatorSet returns the validator set from 2 blocks ago
+func getPenultimateBlockValidatorSet(ctx sdk.Context, stakeKeeper stakeKeeper.Keeper) (*stakeTypes.ValidatorSet, error) {
+	// fetch validatorSet from 2 blocks ago
+	validatorSet, err := stakeKeeper.GetPenultimateBlockValidatorSet(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(validatorSet.Validators) == 0 {
+		return nil, errors.New("no validators found in validator set from 2 blocks ago")
 	}
 	return &validatorSet, nil
 }
