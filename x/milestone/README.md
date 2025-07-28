@@ -79,6 +79,7 @@ message Milestone {
   string bor_chain_id = 5 [ (amino.dont_omitempty) = true ];
   string milestone_id = 6 [ (amino.dont_omitempty) = true ];
   uint64 timestamp = 7 [ (amino.dont_omitempty) = true ];
+  uint64 total_difficulty = 8 [ (amino.dont_omitempty) = true ];
 }
 ```
 
