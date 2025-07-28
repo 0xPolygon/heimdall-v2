@@ -104,7 +104,7 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 		)
 		return sidetxs.Vote_VOTE_NO
 	}
-	eventLogContractAddrBytes, err := ac.StringToBytes(msg.ContractAddress)
+	eventLogContractAddrBytes, err := ac.StringToBytes(eventLog.ContractAddress.String())
 	if err != nil {
 		srv.Logger(ctx).Error(
 			"Could not generate bytes from event logs contract address",
