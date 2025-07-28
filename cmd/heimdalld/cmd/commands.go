@@ -233,6 +233,7 @@ func initRootCmd(
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
 
 	rootCmd.AddCommand(veDecodeCmd())
+	rootCmd.AddCommand(showAccountCmd())
 }
 
 func checkServerStatus(ctx client.Context, url string, resultChan chan<- string) {
@@ -456,31 +457,20 @@ func importKeyStore() *cobra.Command {
 
 // generateValidatorKey generate validator key
 func generateValidatorKey() *cobra.Command {
-	cdc := codec.NewLegacyAmino()
 	cmd := &cobra.Command{
 		Use:   "generate-validator-key",
 		Short: "Generate validator key",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			// generate private key
-			privKeyObject := secp256k1.GenPrivKey()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			s := strings.ReplaceAll(args[0], "0x", "")
 
-			// node key
-			nodeKey := privval.FilePVKey{
-				Address: privKeyObject.PubKey().Address(),
-				PubKey:  privKeyObject.PubKey(),
-				PrivKey: privKeyObject,
-			}
-
-			jsonBytes, err := cdc.MarshalJSONIndent(nodeKey, "", "  ")
+			ds, err := hex.DecodeString(s)
 			if err != nil {
 				return err
 			}
 
-			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0o600)
-			if err != nil {
-				return err
-			}
+			filepv := privval.NewFilePV(secp256k1.PrivKey(ds[:]), "priv_validator_key.json", "priv_validator_state.json")
+			filepv.Save()
 
 			return nil
 		},
@@ -492,6 +482,10 @@ func generateValidatorKey() *cobra.Command {
 // importValidatorKey imports validator private key from the given file path
 func importValidatorKey() *cobra.Command {
 	cdc := codec.NewLegacyAmino()
+	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
+	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
+	cdc.RegisterConcrete(secp256k1.PubKey{}, "cometbft/PubKeySecp256k1eth", nil)
+	cdc.RegisterConcrete(secp256k1.PrivKey{}, "cometbft/PrivKeySecp256k1eth", nil)
 	return &cobra.Command{
 		Use:   "import-validator-key <private-key-file>",
 		Short: "Import private key from a private key stored in file (without 0x prefix)",
@@ -502,10 +496,8 @@ func importValidatorKey() *cobra.Command {
 			}
 
 			bz := ethcrypto.FromECDSA(pk)
-
 			// set the private object
-			var privKeyObject secp256k1.PrivKey
-			copy(privKeyObject[:], bz)
+			privKeyObject := secp256k1.PrivKey(bz)
 
 			// node key
 			nodeKey := privval.FilePVKey{
@@ -524,6 +516,7 @@ func importValidatorKey() *cobra.Command {
 				return err
 			}
 
+			fmt.Println("Private validator key saved to priv_validator_key.json")
 			return nil
 		},
 	}
@@ -542,6 +535,33 @@ func showPrivateKeyCmd() *cobra.Command {
 
 			account := &ValidatorAccountFormatter{
 				PrivKey: "0x" + hex.EncodeToString(privKeyObject[:]),
+			}
+
+			b, err := json.MarshalIndent(account, "", "    ")
+			if err != nil {
+				panic(err)
+			}
+
+			// prints json info
+			fmt.Printf("%s", string(b))
+		},
+	}
+}
+
+func showAccountCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "show-account",
+		Short: "Print the account's address and public key",
+		Run: func(cmd *cobra.Command, args []string) {
+			// init heimdall config
+			helper.InitHeimdallConfig("")
+
+			// get public keys
+			pubObject := helper.GetPubKey()
+
+			account := &ValidatorAccountFormatter{
+				Address: ethCommon.BytesToAddress(pubObject.Address().Bytes()).String(),
+				PubKey:  "0x" + hex.EncodeToString(pubObject[:]),
 			}
 
 			b, err := json.MarshalIndent(account, "", "    ")

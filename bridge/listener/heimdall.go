@@ -3,6 +3,7 @@ package listener
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"math/big"
 	"strconv"
 	"time"
@@ -118,39 +119,49 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 }
 
 func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, uint64, error) {
-	// fromBlock - get the initial block height from config
-	chainId := hl.cliCtx.ChainID
-	fromBlock := helper.GetInitialBlockHeight(chainId)
-
-	// toBlock - get the latest block height from heimdall node
-	toBlock := uint64(0)
 	nodeStatus, err := helper.GetNodeStatus(hl.cliCtx, ctx)
 	if err != nil {
 		hl.Logger.Error("Error while fetching heimdall node status", "error", err)
-		return fromBlock, toBlock, err
-	}
-	toBlock = uint64(nodeStatus.SyncInfo.LatestBlockHeight)
-	if toBlock <= fromBlock {
-		toBlock = fromBlock + 1
+		return 0, 0, err
 	}
 
+	chainId := hl.cliCtx.ChainID
+	if chainId == "" {
+		hl.Logger.Debug("ChainID is empty in cliCtx")
+		if nodeStatus.NodeInfo.Network == "" {
+			return 0, 0, errors.New("network is empty in node status; cannot determine initial fromBlock")
+		}
+		chainId = nodeStatus.NodeInfo.Network
+	}
+
+	// fromBlock - get the initial block height from config
+	fromBlock := helper.GetInitialBlockHeight(chainId)
 	// fromBlock - get last block from storage
 	hasLastBlock, _ := hl.storageClient.Has([]byte(heimdallLastBlockKey), nil)
 	if hasLastBlock {
 		lastBlockBytes, err := hl.storageClient.Get([]byte(heimdallLastBlockKey), nil)
 		if err != nil {
 			hl.Logger.Info("Error while fetching last block bytes from storage", "error", err)
-			return fromBlock, toBlock, err
+			return 0, 0, err
 		}
 
-		if result, err := strconv.ParseUint(string(lastBlockBytes), 10, 64); err == nil {
-			hl.Logger.Debug("Got last block from bridge storage", "lastBlock", result)
-			fromBlock = result + 1
-		} else {
+		result, err := strconv.ParseUint(string(lastBlockBytes), 10, 64)
+		if err != nil {
 			hl.Logger.Info("Error parsing last block bytes from storage", "error", err)
-			toBlock = 0
-			return fromBlock, toBlock, err
+			return 0, 0, err
 		}
+
+		hl.Logger.Debug("Got last block from bridge storage", "lastBlock", result)
+		if result >= fromBlock {
+			hl.Logger.Debug("Overriding fromBlock using last processed block from storage", "oldFromBlock", fromBlock, "lastProcessedBlock", result, "newFromBlock", result+1)
+			fromBlock = result + 1
+		}
+	}
+
+	// toBlock - get the latest block height from heimdall node
+	toBlock := uint64(nodeStatus.SyncInfo.LatestBlockHeight)
+	if toBlock <= fromBlock {
+		toBlock = fromBlock + 1
 	}
 
 	return fromBlock, toBlock, err
