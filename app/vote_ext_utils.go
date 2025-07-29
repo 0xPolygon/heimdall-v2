@@ -206,7 +206,7 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 		power := voteMap[sidetxs.Vote_VOTE_YES] + voteMap[sidetxs.Vote_VOTE_NO] + voteMap[sidetxs.Vote_UNSPECIFIED]
 
 		// ensure the total votes do not exceed the total voting power
-		if (currentHeight < helper.GetDisableVPCheckHeight() && currentHeight >= helper.GetTallyFixHeight()) && power > totalVotingPower {
+		if (currentHeight < helper.GetDisableVPCheckHeight() || currentHeight >= helper.GetTallyFixHeight()) && power > totalVotingPower {
 			logger.Error("the votes power exceeds the total voting power", "txHash", txHash, "power", power, "totalVotingPower", totalVotingPower)
 			return nil, nil, nil, fmt.Errorf("votes power %d exceeds total voting power %d for txHash %s", power, totalVotingPower, txHash)
 		}
