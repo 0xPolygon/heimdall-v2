@@ -16,6 +16,10 @@ const (
 	QueryType = "query"
 	// TxType is the type of API call.
 	TxType = "tx"
+	// SideType is the type of side handler call.
+	SideType = "side"
+	// PostType is the type of post handler call.
+	PostType = "post"
 
 	// Module subsystems.
 	BorSubsystem        = "bor"
@@ -85,6 +89,8 @@ func GetModuleMetrics(subsystem string) *ModuleMetrics {
 					0.90: 0.01,  // 90th percentile +/-1% error
 					0.99: 0.001, // 99th percentile +/-0.1% error
 				},
+				MaxAge:     24 * time.Hour,
+				AgeBuckets: 6,
 			},
 			[]string{"method", "type"},
 		),

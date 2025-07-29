@@ -21,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics/consensus"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	chainManagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
@@ -204,19 +205,19 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 		if voteMap[sidetxs.Vote_VOTE_YES] > majorityVP {
 			// approved
 			logger.Debug("Approved side-tx", "txHash", txHash)
-
+			consensus.RecordConsensusApproved()
 			// append to approved tx slice
 			approvedTxs = append(approvedTxs, common.FromHex(txHash))
 		} else if voteMap[sidetxs.Vote_VOTE_NO] > majorityVP {
 			// rejected
 			logger.Debug("Rejected side-tx", "txHash", txHash)
-
+			consensus.RecordConsensusRejected()
 			// append to rejected tx slice
 			rejectedTxs = append(rejectedTxs, common.FromHex(txHash))
 		} else {
-			// skipped
+			// skipped - 2/3 consensus not reached.
 			logger.Debug("Skipped side-tx", "txHash", txHash)
-
+			consensus.RecordConsensusFailure()
 			// append to rejected tx slice
 			skippedTxs = append(skippedTxs, common.FromHex(txHash))
 		}

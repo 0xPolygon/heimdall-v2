@@ -18,4 +18,12 @@ const (
 	CheckpointAckMethod          = "CheckpointAck"
 	CheckpointNoAckMethod        = "CheckpointNoAck"
 	CheckpointUpdateParamsMethod = "UpdateParams"
+
+	// Side message handler methods.
+	SideHandleMsgCheckpointMethod    = "SideHandleMsgCheckpoint"
+	SideHandleMsgCheckpointAckMethod = "SideHandleMsgCheckpointAck"
+
+	// Post message handler methods.
+	PostHandleMsgCheckpointMethod    = "PostHandleMsgCheckpoint"
+	PostHandleMsgCheckpointAckMethod = "PostHandleMsgCheckpointAck"
 )

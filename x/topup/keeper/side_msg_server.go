@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"math/big"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,6 +12,7 @@ import (
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -49,6 +51,10 @@ func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 
 // SideHandleTopupTx handles the side tx for a validator's topup tx
 func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
+	var err error
+	startTime := time.Now()
+	defer recordTopupMetric(api.SideHandleTopupTxMethod, api.SideType, startTime, &err)
+
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgTopupTx)
@@ -129,6 +135,10 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 
 // PostHandleTopupTx handles the post-handler tx for a validator's topup tx
 func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+	var err error
+	startTime := time.Now()
+	defer recordTopupMetric(api.PostHandleTopupTxMethod, api.PostType, startTime, &err)
+
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgTopupTx)
@@ -216,4 +226,10 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	})
 
 	return nil
+}
+
+// recordTopupMetric records metrics for side and post handlers.
+func recordTopupMetric(method string, apiType string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordAPICallWithStart(api.TopupSubsystem, method, apiType, success, start)
 }
