@@ -50,9 +50,17 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 	}
 
 	// Fetch validatorSet from previous block
+	var validatorSet *stakeTypes.ValidatorSet
 	validatorSet, err := getPreviousBlockValidatorSet(ctx, stakeKeeper)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get previous block validator set: %w", err)
+	}
+
+	if ctx.BlockHeight() >= helper.GetTallyFixHeight() {
+		validatorSet, err = getPenultimateBlockValidatorSet(ctx, stakeKeeper)
+		if err != nil {
+			return fmt.Errorf("failed to get penultimate block validator set: %w", err)
+		}
 	}
 
 	totalVotingPower := validatorSet.GetTotalVotingPower()
