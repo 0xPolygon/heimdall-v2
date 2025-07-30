@@ -714,7 +714,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	var tallyValidatorSet *stakeTypes.ValidatorSet
-	if req.Height >= helper.GetTallyFixHeight() {
+	if req.Height >= helper.GetTallyFixHeight() && req.Height >= 2 {
 		// use validator set from 2 blocks ago
 		tallyValidatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
 		if err != nil {
