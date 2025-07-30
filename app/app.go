@@ -598,7 +598,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 	startTime := time.Now()
-	defer metrics.BeginBlockerTimer.UpdateSince(startTime)
+	defer metrics.RecordBeginBlockerDuration(startTime)
 
 	return app.ModuleManager.BeginBlock(ctx)
 }
@@ -606,7 +606,7 @@ func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 // EndBlocker application updates every end block
 func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	startTime := time.Now()
-	defer metrics.EndBlockerTimer.UpdateSince(startTime)
+	defer metrics.RecordEndBlockerDuration(startTime)
 
 	// transfer fees to current proposer
 	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {

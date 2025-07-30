@@ -547,7 +547,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 // PreBlocker application updates every pre block
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	startTime := time.Now()
-	defer metrics.PreBlockerTimer.UpdateSince(startTime)
+	defer metrics.RecordPreBlockerDuration(startTime)
 
 	logger := app.Logger()
 
