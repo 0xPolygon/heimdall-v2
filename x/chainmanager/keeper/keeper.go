@@ -19,11 +19,11 @@ import (
 
 // Keeper stores all chainmanager related data
 type Keeper struct {
-	cdc          codec.BinaryCodec
-	storeService store.KVStoreService
-	Schema       collections.Schema
-	params       collections.Item[types.Params]
-
+	cdc                codec.BinaryCodec
+	storeService       store.KVStoreService
+	Schema             collections.Schema
+	params             collections.Item[types.Params]
+	initialChainHeight collections.Item[int64]
 	// The address capable of executing a `MsgUpdateParams` message.
 	// This should be the x/gov module account.
 	authority string
@@ -48,10 +48,11 @@ func NewKeeper(
 	sb := collections.NewSchemaBuilder(storeService)
 
 	k := Keeper{
-		cdc:          cdc,
-		storeService: storeService,
-		params:       collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
-		authority:    authority,
+		cdc:                cdc,
+		storeService:       storeService,
+		params:             collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		initialChainHeight: collections.NewItem(sb, types.InitialChainHeightKey, "initial_chain_height", collections.Int64Value),
+		authority:          authority,
 	}
 
 	schema, err := sb.Build()
@@ -90,4 +91,19 @@ func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
 		return types.Params{}, err
 	}
 	return p, nil
+}
+
+// SetInitialChainHeight sets the initial chain height.
+func (k Keeper) SetInitialChainHeight(ctx context.Context, height int64) error {
+	return k.initialChainHeight.Set(ctx, height)
+}
+
+// GetInitialChainHeight gets the initial chain height.
+func (k Keeper) GetInitialChainHeight(ctx context.Context) (int64, error) {
+	height, err := k.initialChainHeight.Get(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("failed to get initial chain height", "error", err)
+		return 0, err
+	}
+	return height, nil
 }

@@ -714,7 +714,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	var tallyValidatorSet *stakeTypes.ValidatorSet
-	if req.Height >= helper.GetTallyFixHeight() && req.Height >= 2 {
+	initialHeight, err := app.ChainManagerKeeper.GetInitialChainHeight(ctx)
+	if err != nil {
+		logger.Error("Error occurred while getting initial chain height", "error", err)
+		return nil, err
+	}
+
+	if req.Height >= helper.GetTallyFixHeight() && req.Height >= initialHeight+2 {
 		// use validator set from 2 blocks ago
 		tallyValidatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
 		if err != nil {
