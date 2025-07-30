@@ -3,18 +3,15 @@ package consensus
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-)
 
-const (
-	// Namespace is the prefix for all metrics.
-	Namespace = "heimdallv2"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 var (
 	// SideTxConsensusApproved tracks when side transactions reach 2/3 YES votes.
 	SideTxConsensusApproved = promauto.NewCounter(
 		prometheus.CounterOpts{
-			Namespace: Namespace,
+			Namespace: metrics.Namespace,
 			Name:      "sidetx_consensus_approved_total",
 			Help:      "Total number of side transactions that reached 2/3 YES consensus",
 		},
@@ -23,7 +20,7 @@ var (
 	// SideTxConsensusRejected tracks when side transactions reach 2/3 NO votes.
 	SideTxConsensusRejected = promauto.NewCounter(
 		prometheus.CounterOpts{
-			Namespace: Namespace,
+			Namespace: metrics.Namespace,
 			Name:      "sidetx_consensus_rejected_total",
 			Help:      "Total number of side transactions that reached 2/3 NO consensus",
 		},
@@ -32,7 +29,7 @@ var (
 	// SideTxConsensusFailures tracks when we cannot reach 2/3 agreement on side transactions.
 	SideTxConsensusFailures = promauto.NewCounter(
 		prometheus.CounterOpts{
-			Namespace: Namespace,
+			Namespace: metrics.Namespace,
 			Name:      "sidetx_consensus_failures_total",
 			Help:      "Total number of side transactions that failed to reach 2/3 consensus",
 		},
