@@ -34,12 +34,45 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
 
-		if err := ValidateVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper, app.MilestoneKeeper); err != nil {
+		var (
+			validatorSet *stakeTypes.ValidatorSet
+			err          error
+		)
+
+		chain := helper.GetConfig().Chain
+		initialHeight := int64(0)
+
+		// this is for UTs that have non zero initial height
+		if chain != helper.MainChain && chain != helper.AmoyChain && chain != helper.MumbaiChain {
+			initialHeight, err = app.ChainManagerKeeper.GetInitialChainHeight(ctx)
+			if err != nil {
+				logger.Error("Error occurred while getting initial chain height in PrepareProposal", "error", err)
+				return nil, err
+			}
+		}
+
+		if req.Height >= helper.GetTallyFixHeight() && req.Height >= initialHeight+2 {
+			// use validator set from 2 blocks ago
+			validatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
+			if err != nil {
+				logger.Error("Failed to get penultimate block validator set", "error", err)
+				return nil, err
+			}
+		} else {
+			// use previous block validator set (legacy behavior)
+			validatorSet, err = getPreviousBlockValidatorSet(ctx, app.StakeKeeper)
+			if err != nil {
+				logger.Error("Error occurred while getting previous block validator set", "error", err)
+				return nil, err
+			}
+		}
+
+		if err := ValidateVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, validatorSet, app.MilestoneKeeper); err != nil {
 			logger.Error("Error occurred while validating VEs in PrepareProposal", err)
 			return nil, err
 		}
 
-		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
+		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, validatorSet, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
 			logger.Error("Error occurred while validating non-rp VEs in PrepareProposal", err)
 		}
 
@@ -116,6 +149,39 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 		logger := app.Logger()
 
+		var (
+			validatorSet *stakeTypes.ValidatorSet
+			err          error
+		)
+
+		chain := helper.GetConfig().Chain
+		initialHeight := int64(0)
+
+		// this is for UTs that have non zero initial height
+		if chain != helper.MainChain && chain != helper.AmoyChain && chain != helper.MumbaiChain {
+			initialHeight, err = app.ChainManagerKeeper.GetInitialChainHeight(ctx)
+			if err != nil {
+				logger.Error("Error occurred while getting initial chain height in ProcessProposal", "error", err)
+				return nil, err
+			}
+		}
+
+		if req.Height >= helper.GetTallyFixHeight() && req.Height >= initialHeight+2 {
+			// use validator set from 2 blocks ago
+			validatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
+			if err != nil {
+				logger.Error("Failed to get penultimate block validator set", "error", err)
+				return nil, err
+			}
+		} else {
+			// use previous block validator set (legacy behavior)
+			validatorSet, err = getPreviousBlockValidatorSet(ctx, app.StakeKeeper)
+			if err != nil {
+				logger.Error("Error occurred while getting previous block validator set", "error", err)
+				return nil, err
+			}
+		}
+
 		// check if there are any txs in the request
 		if len(req.Txs) < 1 {
 			logger.Error("unexpected behaviour, no txs found in the proposal")
@@ -136,13 +202,13 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		// validate the vote extensions
-		if err := ValidateVoteExtensions(ctx, req.Height, extCommitInfo.Votes, req.ProposedLastCommit.Round, app.StakeKeeper, app.MilestoneKeeper); err != nil {
+		if err := ValidateVoteExtensions(ctx, req.Height, extCommitInfo.Votes, req.ProposedLastCommit.Round, validatorSet, app.MilestoneKeeper); err != nil {
 			logger.Error("Invalid vote extension, rejecting proposal", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
 		// validate non-RP vote extensions
-		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
+		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, validatorSet, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
 			logger.Error("Invalid non-rp vote extension proposal", "error", err)
 		}
 
@@ -752,7 +818,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 	txs := lastBlockTxs.Txs
 
-	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, app.StakeKeeper, logger)
+	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, validatorSet, logger)
 	if err != nil {
 		logger.Error("Error occurred while getting majority non-rp vote extension", "error", err)
 		return nil, err

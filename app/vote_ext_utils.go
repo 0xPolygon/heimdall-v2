@@ -35,7 +35,7 @@ import (
 // It checks the signature of each vote extension with its signer's public key
 // Also, it checks if the vote extensions are enabled, valid and have >2/3 voting power
 // It returns an error in case the validation fails
-func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper, milestoneKeeper milestoneKeeper.Keeper) error {
+func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, validatorSet *stakeTypes.ValidatorSet, milestoneKeeper milestoneKeeper.Keeper) error {
 	// check if VEs are enabled
 	if err := checkIfVoteExtensionsDisabled(ctx, reqHeight+1); err != nil {
 		return err
@@ -47,22 +47,6 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 			return fmt.Errorf("non-empty VEs received at initial height %d", reqHeight)
 		}
 		return nil
-	}
-
-	// Fetch validatorSet from previous block
-	var validatorSet *stakeTypes.ValidatorSet
-	var err error
-
-	if ctx.BlockHeight() >= helper.GetTallyFixHeight() {
-		validatorSet, err = getPenultimateBlockValidatorSet(ctx, stakeKeeper)
-		if err != nil {
-			return fmt.Errorf("failed to get penultimate block validator set: %w", err)
-		}
-	} else {
-		validatorSet, err = getPreviousBlockValidatorSet(ctx, stakeKeeper)
-		if err != nil {
-			return fmt.Errorf("failed to get previous block validator set: %w", err)
-		}
 	}
 
 	totalVotingPower := validatorSet.GetTotalVotingPower()
@@ -426,7 +410,7 @@ func ValidateNonRpVoteExtensions(
 	ctx sdk.Context,
 	height int64,
 	extVoteInfo []abciTypes.ExtendedVoteInfo,
-	stakeKeeper stakeKeeper.Keeper,
+	validatorSet *stakeTypes.ValidatorSet,
 	chainManagerKeeper chainManagerKeeper.Keeper,
 	checkpointKeeper checkpointKeeper.Keeper,
 	contractCaller helper.IContractCaller,
@@ -437,7 +421,7 @@ func ValidateNonRpVoteExtensions(
 	}
 
 	// Check if there is vote extension with majority voting power
-	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, stakeKeeper, logger)
+	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, validatorSet, logger)
 	if err != nil {
 		return err
 	}
@@ -447,7 +431,7 @@ func ValidateNonRpVoteExtensions(
 	}
 
 	// Check the signatures
-	if err := checkNonRpVoteExtensionsSignatures(ctx, extVoteInfo, stakeKeeper); err != nil {
+	if err := checkNonRpVoteExtensionsSignatures(ctx, extVoteInfo, validatorSet); err != nil {
 		return fmt.Errorf("failed to check non rp vote extensions signatures: %w", err)
 	}
 
@@ -489,22 +473,7 @@ func ValidateNonRpVoteExtension(
 const maxNonRpVoteExtensionSize = 500
 
 // checkNonRpVoteExtensionsSignatures checks the signatures of the non-rp vote extensions
-func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper) error {
-	// Fetch validatorSet from previous block
-	var validatorSet *stakeTypes.ValidatorSet
-	var err error
-	if ctx.BlockHeight() >= helper.GetTallyFixHeight() {
-		validatorSet, err = getPenultimateBlockValidatorSet(ctx, stakeKeeper)
-		if err != nil {
-			return fmt.Errorf("failed to get penultimate block validator set: %w", err)
-		}
-	} else {
-		validatorSet, err = getPreviousBlockValidatorSet(ctx, stakeKeeper)
-		if err != nil {
-			return fmt.Errorf("failed to get previous block validator set: %w", err)
-		}
-	}
-
+func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, validatorSet *stakeTypes.ValidatorSet) error {
 	ac := address.HexCodec{}
 
 	for _, vote := range extVoteInfo {
@@ -540,23 +509,7 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 }
 
 // getMajorityNonRpVoteExtension returns the non-rp vote extension with the majority voting power
-func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper, logger log.Logger) ([]byte, error) {
-	// Fetch validatorSet from previous block
-	var validatorSet *stakeTypes.ValidatorSet
-	var err error
-
-	if ctx.BlockHeight() >= helper.GetTallyFixHeight() {
-		validatorSet, err = getPenultimateBlockValidatorSet(ctx, stakeKeeper)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get penultimate block validator set: %w", err)
-		}
-	} else {
-		validatorSet, err = getPreviousBlockValidatorSet(ctx, stakeKeeper)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get previous block validator set: %w", err)
-		}
-	}
-
+func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, validatorSet *stakeTypes.ValidatorSet, logger log.Logger) ([]byte, error) {
 	ac := address.HexCodec{}
 
 	hashToExt := make(map[string][]byte)
