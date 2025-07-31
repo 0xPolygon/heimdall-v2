@@ -591,10 +591,34 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	validatorSet, err := getPreviousBlockValidatorSet(ctx, app.StakeKeeper)
-	if err != nil {
-		logger.Error("Error occurred while getting previous block validator set", "error", err)
-		return nil, err
+	chain := helper.GetConfig().Chain
+	initialHeight := int64(0)
+
+	// this is for UTs that have non zero initial height
+	if chain != helper.MainChain && chain != helper.AmoyChain && chain != helper.MumbaiChain {
+		initialHeight, err = app.ChainManagerKeeper.GetInitialChainHeight(ctx)
+		if err != nil {
+			logger.Error("Error occurred while getting initial chain height", "error", err)
+			return nil, err
+		}
+	}
+
+	var validatorSet *stakeTypes.ValidatorSet
+
+	if req.Height >= helper.GetTallyFixHeight() && req.Height >= initialHeight+2 {
+		// use validator set from 2 blocks ago
+		validatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
+		if err != nil {
+			logger.Error("Failed to get penultimate block validator set", "error", err)
+			return nil, err
+		}
+	} else {
+		// use previous block validator set (legacy behavior)
+		validatorSet, err = getPreviousBlockValidatorSet(ctx, app.StakeKeeper)
+		if err != nil {
+			logger.Error("Error occurred while getting previous block validator set", "error", err)
+			return nil, err
+		}
 	}
 
 	hasMilestone, err := app.MilestoneKeeper.HasMilestone(ctx)
@@ -616,6 +640,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	majorityMilestone, aggregatedProposers, proposer, supportingValidatorIDs, err := milestoneAbci.GetMajorityMilestoneProposition(
+		ctx,
 		validatorSet,
 		extVoteInfo,
 		logger,
@@ -713,27 +738,8 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 	}
 
-	var tallyValidatorSet *stakeTypes.ValidatorSet
-	initialHeight, err := app.ChainManagerKeeper.GetInitialChainHeight(ctx)
-	if err != nil {
-		logger.Error("Error occurred while getting initial chain height", "error", err)
-		return nil, err
-	}
-
-	if req.Height >= helper.GetTallyFixHeight() && req.Height >= initialHeight+2 {
-		// use validator set from 2 blocks ago
-		tallyValidatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
-		if err != nil {
-			logger.Error("Failed to get penultimate block validator set", "error", err)
-			return nil, fmt.Errorf("failed to get penultimate block validator set: %w", err)
-		}
-	} else {
-		// use previous block validator set (legacy behavior)
-		tallyValidatorSet = validatorSet
-	}
-
 	// tally votes
-	approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, tallyValidatorSet.GetTotalVotingPower(), req.Height)
+	approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validatorSet.GetTotalVotingPower(), req.Height)
 	if err != nil {
 		logger.Error("Error occurred while tallying votes", "error", err)
 		return nil, err

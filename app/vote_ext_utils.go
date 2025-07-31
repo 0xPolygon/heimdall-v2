@@ -51,15 +51,17 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 
 	// Fetch validatorSet from previous block
 	var validatorSet *stakeTypes.ValidatorSet
-	validatorSet, err := getPreviousBlockValidatorSet(ctx, stakeKeeper)
-	if err != nil {
-		return fmt.Errorf("failed to get previous block validator set: %w", err)
-	}
+	var err error
 
 	if ctx.BlockHeight() >= helper.GetTallyFixHeight() {
 		validatorSet, err = getPenultimateBlockValidatorSet(ctx, stakeKeeper)
 		if err != nil {
 			return fmt.Errorf("failed to get penultimate block validator set: %w", err)
+		}
+	} else {
+		validatorSet, err = getPreviousBlockValidatorSet(ctx, stakeKeeper)
+		if err != nil {
+			return fmt.Errorf("failed to get previous block validator set: %w", err)
 		}
 	}
 
@@ -131,8 +133,10 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 
 		_, validator := validatorSet.GetByAddress(valAddrStr)
 		if validator == nil {
+			if ctx.BlockHeight() < helper.GetDisableValSetCheckHeight() || ctx.BlockHeight() >= helper.GetTallyFixHeight() {
+				return fmt.Errorf("failed to get validator %s", valAddrStr)
+			}
 			continue
-			// return fmt.Errorf("failed to get validator %s", valAddrStr)
 		}
 
 		cmtPubKey, err := getValidatorPublicKey(validator)
@@ -487,9 +491,18 @@ const maxNonRpVoteExtensionSize = 500
 // checkNonRpVoteExtensionsSignatures checks the signatures of the non-rp vote extensions
 func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper) error {
 	// Fetch validatorSet from previous block
-	validatorSet, err := getPreviousBlockValidatorSet(ctx, stakeKeeper)
-	if err != nil {
-		return err
+	var validatorSet *stakeTypes.ValidatorSet
+	var err error
+	if ctx.BlockHeight() >= helper.GetTallyFixHeight() {
+		validatorSet, err = getPenultimateBlockValidatorSet(ctx, stakeKeeper)
+		if err != nil {
+			return fmt.Errorf("failed to get penultimate block validator set: %w", err)
+		}
+	} else {
+		validatorSet, err = getPreviousBlockValidatorSet(ctx, stakeKeeper)
+		if err != nil {
+			return fmt.Errorf("failed to get previous block validator set: %w", err)
+		}
 	}
 
 	ac := address.HexCodec{}
@@ -507,8 +520,10 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
+			if ctx.BlockHeight() < helper.GetDisableValSetCheckHeight() || ctx.BlockHeight() >= helper.GetTallyFixHeight() {
+				return fmt.Errorf("failed to get validator %s", valAddr)
+			}
 			continue
-			// return fmt.Errorf("failed to get validator %s", valAddr)
 		}
 
 		cmtPubKey, err := getValidatorPublicKey(validator)
@@ -527,9 +542,19 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 // getMajorityNonRpVoteExtension returns the non-rp vote extension with the majority voting power
 func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper, logger log.Logger) ([]byte, error) {
 	// Fetch validatorSet from previous block
-	validatorSet, err := getPreviousBlockValidatorSet(ctx, stakeKeeper)
-	if err != nil {
-		return nil, err
+	var validatorSet *stakeTypes.ValidatorSet
+	var err error
+
+	if ctx.BlockHeight() >= helper.GetTallyFixHeight() {
+		validatorSet, err = getPenultimateBlockValidatorSet(ctx, stakeKeeper)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get penultimate block validator set: %w", err)
+		}
+	} else {
+		validatorSet, err = getPreviousBlockValidatorSet(ctx, stakeKeeper)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get previous block validator set: %w", err)
+		}
 	}
 
 	ac := address.HexCodec{}
@@ -556,8 +581,10 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
+			if ctx.BlockHeight() < helper.GetDisableValSetCheckHeight() || ctx.BlockHeight() >= helper.GetTallyFixHeight() {
+				return nil, fmt.Errorf("failed to get validator %s", valAddr)
+			}
 			continue
-			// return nil, fmt.Errorf("failed to get validator %s", valAddr)
 		}
 
 		hashToVotingPower[hash] += validator.VotingPower
