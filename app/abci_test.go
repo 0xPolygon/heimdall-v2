@@ -1011,6 +1011,7 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
 		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+	app.ChainManagerKeeper.SetInitialChainHeight(ctx, 3)
 	app.TopupKeeper = topupKeeper.NewKeeper(
 		app.AppCodec(),
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
@@ -1285,6 +1286,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
 		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+	app.ChainManagerKeeper.SetInitialChainHeight(ctx, 3)
 	app.TopupKeeper = topupKeeper.NewKeeper(
 		app.AppCodec(),
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
@@ -1692,6 +1694,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
 		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+	app.ChainManagerKeeper.SetInitialChainHeight(ctx, 3)
 	app.TopupKeeper = topupKeeper.NewKeeper(
 		app.AppCodec(),
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
