@@ -177,7 +177,8 @@ func GetMajorityMilestoneProposition(
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
-			return nil, nil, "", nil, fmt.Errorf("failed to get validator %s", valAddr)
+			continue
+			// return nil, nil, "", nil, fmt.Errorf("failed to get validator %s", valAddr)
 		}
 
 		validatorAddresses[valAddr] = vote.Validator.Address
