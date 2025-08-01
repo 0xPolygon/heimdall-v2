@@ -39,16 +39,10 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			err          error
 		)
 
-		chain := helper.GetConfig().Chain
-		initialHeight := int64(0)
-
-		// this is for UTs that have non zero initial height
-		if chain != helper.MainChain && chain != helper.AmoyChain && chain != helper.MumbaiChain {
-			initialHeight, err = app.ChainManagerKeeper.GetInitialChainHeight(ctx)
-			if err != nil {
-				logger.Error("Error occurred while getting initial chain height in PrepareProposal", "error", err)
-				return nil, err
-			}
+		initialHeight, err := app.getInitialHeight(ctx)
+		if err != nil {
+			logger.Error("Error occurred while getting initial chain height in PrepareProposal", "error", err)
+			return nil, err
 		}
 
 		if req.Height >= helper.GetTallyFixHeight() && req.Height >= initialHeight+2 {
@@ -154,16 +148,10 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			err          error
 		)
 
-		chain := helper.GetConfig().Chain
-		initialHeight := int64(0)
-
-		// this is for UTs that have non zero initial height
-		if chain != helper.MainChain && chain != helper.AmoyChain && chain != helper.MumbaiChain {
-			initialHeight, err = app.ChainManagerKeeper.GetInitialChainHeight(ctx)
-			if err != nil {
-				logger.Error("Error occurred while getting initial chain height in ProcessProposal", "error", err)
-				return nil, err
-			}
+		initialHeight, err := app.getInitialHeight(ctx)
+		if err != nil {
+			logger.Error("Error occurred while getting initial chain height in ProcessProposal", "error", err)
+			return nil, err
 		}
 
 		if req.Height >= helper.GetTallyFixHeight() && req.Height >= initialHeight+2 {
@@ -657,16 +645,10 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	chain := helper.GetConfig().Chain
-	initialHeight := int64(0)
-
-	// this is for UTs that have non zero initial height
-	if chain != helper.MainChain && chain != helper.AmoyChain && chain != helper.MumbaiChain {
-		initialHeight, err = app.ChainManagerKeeper.GetInitialChainHeight(ctx)
-		if err != nil {
-			logger.Error("Error occurred while getting initial chain height", "error", err)
-			return nil, err
-		}
+	initialHeight, err := app.getInitialHeight(ctx)
+	if err != nil {
+		logger.Error("Error occurred while getting initial chain height in PreBlocker", "error", err)
+		return nil, err
 	}
 
 	var validatorSet *stakeTypes.ValidatorSet
@@ -903,4 +885,19 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	return app.ModuleManager.PreBlock(ctx)
+}
+
+func (app *HeimdallApp) getInitialHeight(ctx sdk.Context) (int64, error) {
+	chain := helper.GetConfig().Chain
+	initialHeight := int64(0)
+	var err error
+
+	// this is for UTs that have non zero initial height
+	if chain != helper.MainChain && chain != helper.AmoyChain && chain != helper.MumbaiChain {
+		initialHeight, err = app.ChainManagerKeeper.GetInitialChainHeight(ctx)
+		if err != nil {
+			return -1, fmt.Errorf("error occurred while getting initial chain height: %w", err)
+		}
+	}
+	return initialHeight, nil
 }

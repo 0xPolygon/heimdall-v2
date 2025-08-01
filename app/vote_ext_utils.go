@@ -117,7 +117,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 
 		_, validator := validatorSet.GetByAddress(valAddrStr)
 		if validator == nil {
-			if ctx.BlockHeight() < helper.GetDisableValSetCheckHeight() || ctx.BlockHeight() >= helper.GetTallyFixHeight() {
+			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx) {
 				return fmt.Errorf("failed to get validator %s", valAddrStr)
 			}
 			continue
@@ -489,7 +489,7 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
-			if ctx.BlockHeight() < helper.GetDisableValSetCheckHeight() || ctx.BlockHeight() >= helper.GetTallyFixHeight() {
+			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx) {
 				return fmt.Errorf("failed to get validator %s", valAddr)
 			}
 			continue
@@ -534,7 +534,7 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
-			if ctx.BlockHeight() < helper.GetDisableValSetCheckHeight() || ctx.BlockHeight() >= helper.GetTallyFixHeight() {
+			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx) {
 				return nil, fmt.Errorf("failed to get validator %s", valAddr)
 			}
 			continue

@@ -178,7 +178,7 @@ func GetMajorityMilestoneProposition(
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
-			if ctx.BlockHeight() < helper.GetDisableValSetCheckHeight() || ctx.BlockHeight() >= helper.GetTallyFixHeight() {
+			if ShouldErrorOnValidatorNotFound(ctx) {
 				return nil, nil, "", nil, fmt.Errorf("failed to get validator %s", valAddr)
 			}
 			continue
@@ -478,4 +478,8 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keepe
 	}
 
 	return nil
+}
+
+func ShouldErrorOnValidatorNotFound(ctx sdk.Context) bool {
+	return ctx.BlockHeight() >= helper.GetTallyFixHeight() || ctx.BlockHeight() < helper.GetDisableValSetCheckHeight()
 }
