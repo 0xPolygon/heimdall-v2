@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"time"
 
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -15,6 +16,7 @@ import (
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -71,6 +73,10 @@ func (s *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 
 // SideHandleMsgValidatorJoin is a side handler for validator join msg
 func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg) (result sidetxs.Vote) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeMetric(api.SideHandleMsgValidatorJoinMethod, api.SideType, startTime, &err)
+
 	msg, ok := msgI.(*types.MsgValidatorJoin)
 	if !ok {
 		s.k.Logger(ctx).Error("type mismatch for MsgValidatorJoin")
@@ -83,7 +89,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		"blockNumber", msg.BlockNumber,
 	)
 
-	err := msg.ValidateBasic()
+	err = msg.ValidateBasic()
 	if err != nil {
 		s.k.Logger(ctx).Error("failed to validate MsgValidatorJoin", "error", err)
 		return sidetxs.Vote_VOTE_NO
@@ -212,6 +218,10 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 
 // SideHandleMsgStakeUpdate handles stake update message
 func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) (result sidetxs.Vote) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeMetric(api.SideHandleMsgStakeUpdateMethod, api.SideType, startTime, &err)
+
 	msg, ok := msgI.(*types.MsgStakeUpdate)
 	if !ok {
 		s.k.Logger(ctx).Error("type mismatch for MsgStakeUpdate")
@@ -224,7 +234,7 @@ func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) 
 		"blockNumber", msg.BlockNumber,
 	)
 
-	err := msg.ValidateBasic()
+	err = msg.ValidateBasic()
 	if err != nil {
 		s.k.Logger(ctx).Error("failed to validate MsgStakeUpdate", "error", err)
 		return sidetxs.Vote_VOTE_NO
@@ -290,6 +300,10 @@ func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) 
 
 // SideHandleMsgSignerUpdate handles signer update message
 func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg) (result sidetxs.Vote) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeMetric(api.SideHandleMsgSignerUpdateMethod, api.SideType, startTime, &err)
+
 	msg, ok := msgI.(*types.MsgSignerUpdate)
 	if !ok {
 		s.k.Logger(ctx).Error("type mismatch for MsgSignerUpdate")
@@ -302,7 +316,7 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 		"blockNumber", msg.BlockNumber,
 	)
 
-	err := msg.ValidateBasic()
+	err = msg.ValidateBasic()
 	if err != nil {
 		s.k.Logger(ctx).Error("failed to validate MsgSignerUpdate", "error", err)
 		return sidetxs.Vote_VOTE_NO
@@ -384,6 +398,10 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 
 // SideHandleMsgValidatorExit handles side msg validator exit
 func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg) (result sidetxs.Vote) {
+	var err error
+	startTime := time.Now()
+	defer recordStakeMetric(api.SideHandleMsgValidatorExitMethod, api.SideType, startTime, &err)
+
 	msg, ok := msgI.(*types.MsgValidatorExit)
 	if !ok {
 		s.k.Logger(ctx).Error("type mismatch for MsgValidatorExit")
@@ -396,7 +414,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 		"blockNumber", msg.BlockNumber,
 	)
 
-	err := msg.ValidateBasic()
+	err = msg.ValidateBasic()
 	if err != nil {
 		s.k.Logger(ctx).Error("failed to validate MsgValidatorExit", "error", err)
 		return sidetxs.Vote_VOTE_NO
@@ -455,6 +473,10 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 
 // PostHandleMsgValidatorJoin handles validator join message
 func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+	var err error
+	startTime := time.Now()
+	defer recordStakeMetric(api.PostHandleMsgValidatorJoinMethod, api.PostType, startTime, &err)
+
 	msg, ok := msgI.(*types.MsgValidatorJoin)
 	if !ok {
 		err := errors.New("type mismatch for MsgValidatorJoin")
@@ -468,7 +490,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return errors.New("side-tx didn't get yes votes")
 	}
 
-	err := msg.ValidateBasic()
+	err = msg.ValidateBasic()
 	if err != nil {
 		s.k.Logger(ctx).Error("failed to validate msg", "error", err)
 		return errors.New("invalid side-tx msg for MsgValidatorJoin")
@@ -555,6 +577,10 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 
 // PostHandleMsgStakeUpdate handles stake update message
 func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+	var err error
+	startTime := time.Now()
+	defer recordStakeMetric(api.PostHandleMsgStakeUpdateMethod, api.PostType, startTime, &err)
+
 	msg, ok := msgI.(*types.MsgStakeUpdate)
 	if !ok {
 		err := errors.New("type mismatch for MsgStakeUpdate")
@@ -568,7 +594,7 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 		return errors.New("side-tx didn't get yes votes")
 	}
 
-	err := msg.ValidateBasic()
+	err = msg.ValidateBasic()
 	if err != nil {
 		s.k.Logger(ctx).Error("failed to validate msg", "error", err)
 		return errors.New("invalid side-tx msg for MsgStakeUpdate")
@@ -643,6 +669,10 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 
 // PostHandleMsgSignerUpdate handles signer update message
 func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+	var err error
+	startTime := time.Now()
+	defer recordStakeMetric(api.PostHandleMsgSignerUpdateMethod, api.PostType, startTime, &err)
+
 	msg, ok := msgI.(*types.MsgSignerUpdate)
 	if !ok {
 		err := errors.New("type mismatch for MsgSignerUpdate")
@@ -656,7 +686,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 		return errors.New("side-tx didn't get yes votes")
 	}
 
-	err := msg.ValidateBasic()
+	err = msg.ValidateBasic()
 	if err != nil {
 		s.k.Logger(ctx).Error("failed to validate msg", "error", err)
 		return errors.New("invalid side-tx msg for MsgSignerUpdate")
@@ -799,6 +829,10 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 
 // PostHandleMsgValidatorExit handles msg validator exit
 func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+	var err error
+	startTime := time.Now()
+	defer recordStakeMetric(api.PostHandleMsgValidatorExitMethod, api.PostType, startTime, &err)
+
 	msg, ok := msgI.(*types.MsgValidatorExit)
 	if !ok {
 		err := errors.New("type mismatch for MsgValidatorExit")
@@ -812,7 +846,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 		return errors.New("side-tx didn't get yes votes")
 	}
 
-	err := msg.ValidateBasic()
+	err = msg.ValidateBasic()
 	if err != nil {
 		s.k.Logger(ctx).Error("failed to validate msg", "error", err)
 		return errors.New("invalid side-tx msg for MsgValidatorExit")
@@ -875,4 +909,10 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 	})
 
 	return nil
+}
+
+// recordStakeMetric records metrics for side and post handlers.
+func recordStakeMetric(method string, apiType string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordAPICallWithStart(api.StakeSubsystem, method, apiType, success, start)
 }
