@@ -120,6 +120,12 @@ func (k *Keeper) AddNewSpan(ctx context.Context, span *types.Span) error {
 		return err
 	}
 
+	// Emit the span insertion event
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx.EventManager().EmitEvent(
+		types.NewSpanEvent(span),
+	)
+
 	return k.UpdateLastSpan(ctx, span.Id)
 }
 
