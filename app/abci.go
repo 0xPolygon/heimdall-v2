@@ -34,31 +34,16 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
 
-		var (
-			validatorSet *stakeTypes.ValidatorSet
-			err          error
-		)
-
 		initialHeight, err := app.getInitialHeight(ctx)
 		if err != nil {
 			logger.Error("Error occurred while getting initial chain height in PrepareProposal", "error", err)
 			return nil, err
 		}
 
-		if req.Height >= helper.GetTallyFixHeight() && req.Height >= initialHeight+2 {
-			// use validator set from 2 blocks ago
-			validatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
-			if err != nil {
-				logger.Error("Failed to get penultimate block validator set", "error", err)
-				return nil, err
-			}
-		} else {
-			// use previous block validator set (legacy behavior)
-			validatorSet, err = getPreviousBlockValidatorSet(ctx, app.StakeKeeper)
-			if err != nil {
-				logger.Error("Error occurred while getting previous block validator set", "error", err)
-				return nil, err
-			}
+		validatorSet, err := app.getValidatorSetForHeight(ctx, initialHeight, req.Height)
+		if err != nil {
+			logger.Error("Error occurred while getting validator set for height in PrepareProposal", "error", err)
+			return nil, err
 		}
 
 		if err := ValidateVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, validatorSet, app.MilestoneKeeper); err != nil {
@@ -143,31 +128,16 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 		logger := app.Logger()
 
-		var (
-			validatorSet *stakeTypes.ValidatorSet
-			err          error
-		)
-
 		initialHeight, err := app.getInitialHeight(ctx)
 		if err != nil {
 			logger.Error("Error occurred while getting initial chain height in ProcessProposal", "error", err)
 			return nil, err
 		}
 
-		if req.Height >= helper.GetTallyFixHeight() && req.Height >= initialHeight+2 {
-			// use validator set from 2 blocks ago
-			validatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
-			if err != nil {
-				logger.Error("Failed to get penultimate block validator set", "error", err)
-				return nil, err
-			}
-		} else {
-			// use previous block validator set (legacy behavior)
-			validatorSet, err = getPreviousBlockValidatorSet(ctx, app.StakeKeeper)
-			if err != nil {
-				logger.Error("Error occurred while getting previous block validator set", "error", err)
-				return nil, err
-			}
+		validatorSet, err := app.getValidatorSetForHeight(ctx, initialHeight, req.Height)
+		if err != nil {
+			logger.Error("Error occurred while getting validator set for height in ProcessProposal", "error", err)
+			return nil, err
 		}
 
 		// check if there are any txs in the request
@@ -651,22 +621,10 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	var validatorSet *stakeTypes.ValidatorSet
-
-	if req.Height >= helper.GetTallyFixHeight() && req.Height >= initialHeight+2 {
-		// use validator set from 2 blocks ago
-		validatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
-		if err != nil {
-			logger.Error("Failed to get penultimate block validator set", "error", err)
-			return nil, err
-		}
-	} else {
-		// use previous block validator set (legacy behavior)
-		validatorSet, err = getPreviousBlockValidatorSet(ctx, app.StakeKeeper)
-		if err != nil {
-			logger.Error("Error occurred while getting previous block validator set", "error", err)
-			return nil, err
-		}
+	validatorSet, err := app.getValidatorSetForHeight(ctx, initialHeight, req.Height)
+	if err != nil {
+		logger.Error("Error occurred while getting validator set for height in PreBlocker", "error", err)
+		return nil, err
 	}
 
 	hasMilestone, err := app.MilestoneKeeper.HasMilestone(ctx)
@@ -900,4 +858,25 @@ func (app *HeimdallApp) getInitialHeight(ctx sdk.Context) (int64, error) {
 		}
 	}
 	return initialHeight, nil
+}
+
+func (app *HeimdallApp) getValidatorSetForHeight(ctx sdk.Context, initialHeight, height int64) (*stakeTypes.ValidatorSet, error) {
+	var (
+		validatorSet *stakeTypes.ValidatorSet
+		err          error
+	)
+	if height >= helper.GetTallyFixHeight() && height >= initialHeight+2 {
+		// use validator set from 2 blocks ago
+		validatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get penultimate block validator set: %w", err)
+		}
+	} else {
+		// use previous block validator set (legacy behavior)
+		validatorSet, err = getPreviousBlockValidatorSet(ctx, app.StakeKeeper)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get previous block validator set: %w", err)
+		}
+	}
+	return validatorSet, nil
 }
