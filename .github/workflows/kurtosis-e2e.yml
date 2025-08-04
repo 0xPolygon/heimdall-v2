@@ -47,7 +47,7 @@ jobs:
       - name: Checkout Bor
         uses: actions/checkout@v4
         with:
-          repository: maticnetwork/bor
+          repository: 0xPolygon/bor
           ref: develop
           path: bor
 
