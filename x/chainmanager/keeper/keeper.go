@@ -92,18 +92,3 @@ func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
 	}
 	return p, nil
 }
-
-// SetInitialChainHeight sets the initial chain height.
-func (k Keeper) SetInitialChainHeight(ctx context.Context, height int64) error {
-	return k.initialChainHeight.Set(ctx, height)
-}
-
-// GetInitialChainHeight gets the initial chain height.
-func (k Keeper) GetInitialChainHeight(ctx context.Context) (int64, error) {
-	height, err := k.initialChainHeight.Get(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("failed to get initial chain height", "error", err)
-		return 0, err
-	}
-	return height, nil
-}

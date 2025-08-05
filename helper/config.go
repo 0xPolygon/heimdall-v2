@@ -209,6 +209,8 @@ var disableVPCheckHeight int64 = 0
 
 var disableValSetCheckHeight int64 = 0
 
+var initialHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -425,21 +427,25 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		tallyFixHeight = 0           // TODO: TBD
 		disableVPCheckHeight = 0     // TODO: confirm with team
 		disableValSetCheckHeight = 0 // TODO: confirm with team
+		initialHeight = 0
 	case MumbaiChain:
 		veblopHeight = 0
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0 // TODO: confirm with team
+		initialHeight = 0
 	case AmoyChain:
 		veblopHeight = 0
 		tallyFixHeight = 0           // TODO: TBD
 		disableVPCheckHeight = 0     // TODO: confirm with team
 		disableValSetCheckHeight = 0 // TODO: confirm with team
+		initialHeight = 0
 	default:
 		veblopHeight = 0
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0 // TODO: confirm with team
+		initialHeight = 0
 	}
 }
 
@@ -569,6 +575,10 @@ func GetDisableVPCheckHeight() int64 {
 
 func GetDisableValSetCheckHeight() int64 {
 	return disableValSetCheckHeight
+}
+
+func GetInitialHeight() int64 {
+	return initialHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
@@ -1150,4 +1160,9 @@ func SetTestPrivPubKey(privKey secp256k1.PrivKey) {
 		panic("pub key is not of type secp256k1.PrivKey")
 	}
 	pubKeyObject = pubKey
+}
+
+// SetTestInitialHeight sets test the initial height for testing
+func SetTestInitialHeight(height int64) {
+	initialHeight = height
 }

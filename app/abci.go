@@ -827,33 +827,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	return app.ModuleManager.PreBlock(ctx)
 }
 
-func (app *HeimdallApp) getInitialHeight(ctx sdk.Context) (int64, error) {
-	chain := helper.GetConfig().Chain
-	initialHeight := int64(0)
-	var err error
-
-	// this is for UTs that have non zero initial height
-	if chain != helper.MainChain && chain != helper.AmoyChain && chain != helper.MumbaiChain {
-		initialHeight, err = app.ChainManagerKeeper.GetInitialChainHeight(ctx)
-		if err != nil {
-			return -1, fmt.Errorf("error occurred while getting initial chain height: %w", err)
-		}
-	}
-	return initialHeight, nil
-}
-
 func (app *HeimdallApp) getValidatorSetForHeight(ctx sdk.Context, height int64) (*stakeTypes.ValidatorSet, error) {
 	var (
 		validatorSet *stakeTypes.ValidatorSet
 		err          error
 	)
 
-	initialHeight, err := app.getInitialHeight(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error occurred while getting initial chain height: %w", err)
-	}
-
-	if height >= helper.GetTallyFixHeight() && height >= initialHeight+2 {
+	if height >= helper.GetTallyFixHeight() && height >= helper.GetInitialHeight()+2 {
 		// use validator set from 2 blocks ago
 		validatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
 		if err != nil {
