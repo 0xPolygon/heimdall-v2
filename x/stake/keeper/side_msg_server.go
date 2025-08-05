@@ -83,7 +83,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ validating external call for validator join msg",
+	s.k.Logger(ctx).Info("✅ validating external call for validator join msg",
 		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -211,7 +211,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ successfully validated external call for validator join msg")
+	s.k.Logger(ctx).Info("✅ successfully validated external call for validator join msg")
 
 	return sidetxs.Vote_VOTE_YES
 }

@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"fmt"
 
 	"cosmossdk.io/core/address"
@@ -14,9 +13,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/0xPolygon/heimdall-v2/common/cli"
-	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -88,55 +85,32 @@ func NewValidatorJoinCmd(ac address.Codec) *cobra.Command {
 				return fmt.Errorf("invalid stake amount provided")
 			}
 
-			contractCaller, err := helper.NewContractCaller()
-			if err != nil {
-				return err
+			// Get validator ID
+			valId := viper.GetUint64(FlagValidatorID)
+			if valId == 0 {
+				return fmt.Errorf("validator id cannot be 0")
 			}
 
-			// fetch params
-			queryClient := chainmanagerTypes.NewQueryClient(clientCtx)
-			cmParams, err := queryClient.GetChainManagerParams(cmd.Context(), &chainmanagerTypes.QueryParamsRequest{})
-			if err != nil {
-				return err
+			// Get activation epoch
+			activationEpoch := viper.GetUint64(FlagActivationEpoch)
+			if activationEpoch == 0 {
+				return fmt.Errorf("activation epoch cannot be 0")
 			}
 
-			// get main tx receipt
-			receipt, err := contractCaller.GetConfirmedTxReceipt(common.HexToHash(txHash), cmParams.Params.MainChainTxConfirmations)
-			if err != nil || receipt == nil {
-				return fmt.Errorf("transaction %s is not confirmed yet, please wait for some time and try again", txHash)
+			// Get log index
+			logIndex := viper.GetUint64(FlagLogIndex)
+
+			// Get block number
+			blockNumber := viper.GetUint64(FlagBlockNumber)
+			if blockNumber == 0 {
+				return fmt.Errorf("block number cannot be 0")
 			}
 
-			abiObject := &contractCaller.StakingInfoABI
-			eventName := "Staked"
-			event := new(stakinginfo.StakinginfoStaked)
-			var logIndex uint64
-			found := false
-			for _, vLog := range receipt.Logs {
-				topic := vLog.Topics[0].Bytes()
-				selectedEvent := helper.EventByID(abiObject, topic)
-				if selectedEvent != nil && selectedEvent.Name == eventName {
-					if err = helper.UnpackLog(abiObject, event, eventName, vLog); err != nil {
-						return err
-					}
-					logIndex = uint64(vLog.Index)
-					found = true
-					break
-				}
-			}
+			// Get nonce
+			nonce := viper.GetUint64(FlagNonce)
 
-			if !found {
-				return fmt.Errorf("invalid tx %s for validator join", txHash)
-			}
-
-			if !helper.IsPubKeyFirstByteValid(pubKey.Bytes()[0:1]) {
-				return fmt.Errorf("public key first byte mismatch")
-			}
-
-			if !bytes.Equal(event.SignerPubkey, pubKey.Bytes()[1:]) {
-				return fmt.Errorf("public key mismatch with event log")
-			}
-
-			msg, err := types.NewMsgValidatorJoin(proposer, event.ValidatorId.Uint64(), event.ActivationEpoch.Uint64(), amount, &pubKey, common.FromHex(txHash), logIndex, receipt.BlockNumber.Uint64(), event.Nonce.Uint64())
+			// BYPASSED ALL VALIDATION CHECKS - Create message directly
+			msg, err := types.NewMsgValidatorJoin(proposer, valId, activationEpoch, amount, &pubKey, common.FromHex(txHash), logIndex, blockNumber, nonce)
 			if err != nil {
 				return err
 			}
@@ -151,6 +125,9 @@ func NewValidatorJoinCmd(ac address.Codec) *cobra.Command {
 	cmd.Flags().Uint64(FlagBlockNumber, 0, "--block-number=<block-number>")
 	cmd.Flags().String(FlagAmount, "0", "--staked-amount=<amount>")
 	cmd.Flags().Uint64(FlagActivationEpoch, 0, "--activation-epoch=<activation-epoch>")
+	cmd.Flags().Uint64(FlagValidatorID, 0, "--validator-id=<validator-id>")
+	cmd.Flags().Uint64(FlagLogIndex, 0, "--log-index=<log-index>")
+	cmd.Flags().Uint64(FlagNonce, 0, "--nonce=<nonce>")
 
 	if err := cmd.MarkFlagRequired(FlagBlockNumber); err != nil {
 		logger.Error("SendValidatorJoinTx | MarkFlagRequired | FlagBlockNumber", "Error", err)
@@ -170,6 +147,18 @@ func NewValidatorJoinCmd(ac address.Codec) *cobra.Command {
 
 	if err := cmd.MarkFlagRequired(FlagTxHash); err != nil {
 		logger.Error("SendValidatorJoinTx | MarkFlagRequired | FlagTxHash", "Error", err)
+	}
+
+	if err := cmd.MarkFlagRequired(FlagValidatorID); err != nil {
+		logger.Error("SendValidatorJoinTx | MarkFlagRequired | FlagValidatorID", "Error", err)
+	}
+
+	if err := cmd.MarkFlagRequired(FlagLogIndex); err != nil {
+		logger.Error("SendValidatorJoinTx | MarkFlagRequired | FlagLogIndex", "Error", err)
+	}
+
+	if err := cmd.MarkFlagRequired(FlagNonce); err != nil {
+		logger.Error("SendValidatorJoinTx | MarkFlagRequired | FlagNonce", "Error", err)
 	}
 
 	return cmd

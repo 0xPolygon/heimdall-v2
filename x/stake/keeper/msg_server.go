@@ -38,7 +38,7 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 	startTime := time.Now()
 	defer recordStakeTransactionMetric(api.ValidatorJoinMethod, startTime, &err)
 
-	m.k.Logger(ctx).Debug("✅ Validating validator join msg",
+	m.k.Logger(ctx).Info("✅ Validating validator join msg",
 		"validatorId", msg.ValId,
 		"activationEpoch", msg.ActivationEpoch,
 		"amount", msg.Amount,
