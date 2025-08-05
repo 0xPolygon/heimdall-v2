@@ -118,7 +118,7 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 	startTime := time.Now()
 	defer recordStakeTransactionMetric(api.StakeUpdateMethod, startTime, &err)
 
-	m.k.Logger(ctx).Debug("✅ Validating stake update msg",
+	m.k.Logger(ctx).Info("✅ Validating stake update msg",
 		"validatorID", msg.ValId,
 		"newAmount", msg.NewAmount,
 		"txHash", msg.TxHash,
@@ -165,7 +165,7 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 	startTime := time.Now()
 	defer recordStakeTransactionMetric(api.SignerUpdateMethod, startTime, &err)
 
-	m.k.Logger(ctx).Debug("✅ Validating signer update msg",
+	m.k.Logger(ctx).Info("✅ Validating signer update msg",
 		"validatorID", msg.ValId,
 		"NewSignerPubKey", common.Bytes2Hex(msg.NewSignerPubKey),
 		"txHash", msg.TxHash,
@@ -231,7 +231,7 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 	startTime := time.Now()
 	defer recordStakeTransactionMetric(api.ValidatorExitMethod, startTime, &err)
 
-	m.k.Logger(ctx).Debug("✅ Validating validator exit msg",
+	m.k.Logger(ctx).Info("✅ Validating validator exit msg",
 		"validatorID", msg.ValId,
 		"deactivationEpoch", msg.DeactivationEpoch,
 		"txHash", msg.TxHash,
@@ -251,7 +251,7 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 		return nil, errorsmod.Wrap(types.ErrNoValidator, "failed to fetch validator from store")
 	}
 
-	m.k.Logger(ctx).Debug("validator in store", "validator", validator)
+	m.k.Logger(ctx).Info("validator in store", "validator", validator)
 	// check if the validator deactivation period is set
 	if validator.EndEpoch != 0 {
 		m.k.Logger(ctx).Error("validator already unBonded")
