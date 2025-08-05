@@ -7,7 +7,7 @@ import (
 
 // heimdallV2InfoGauge stores the HeimdallV2 version and commit details.
 var heimdallV2InfoGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
-	Namespace: "heimdallv2",
+	Namespace: Namespace,
 	Name:      "info",
 	Help:      "HeimdallV2 version and commit details",
 }, []string{"version", "commit"})
