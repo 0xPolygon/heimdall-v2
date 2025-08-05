@@ -116,6 +116,8 @@ const (
 
 	DefaultAmoyTestnetProducers = "1,2,3"
 
+	DefaultMumbaiTestnetProducers = "1,2,3"
+
 	DefaultLocalTestnetProducers = "1,2,3"
 
 	secretFilePerm = 0o600
@@ -392,6 +394,9 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		case AmoyChain:
 			conf.Custom.ProducerVotes = DefaultAmoyTestnetProducers
 			Logger.Debug("Using default amoy producers", "producers", DefaultAmoyTestnetProducers)
+		case MumbaiChain:
+			conf.Custom.ProducerVotes = DefaultMumbaiTestnetProducers
+			Logger.Debug("Using default mumbai producers", "producers", DefaultMumbaiTestnetProducers)
 		default:
 			conf.Custom.ProducerVotes = DefaultLocalTestnetProducers
 			Logger.Debug("Using default local producers", "producers", DefaultLocalTestnetProducers)
@@ -417,7 +422,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case MainChain:
 		veblopHeight = 0
 	case MumbaiChain:
-		veblopHeight = 0
+		veblopHeight = 48614656
 	case AmoyChain:
 		veblopHeight = 0
 	default:
@@ -562,6 +567,8 @@ func GetFallbackProducerVotes() []uint64 {
 		return parseProducerVotes(DefaultMainnetProducers)
 	case AmoyChain:
 		return parseProducerVotes(DefaultAmoyTestnetProducers)
+	case MumbaiChain:
+		return parseProducerVotes(DefaultMumbaiTestnetProducers)
 	default:
 		return parseProducerVotes(DefaultLocalTestnetProducers)
 	}
