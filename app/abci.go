@@ -36,7 +36,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		validatorSet, err := app.getValidatorSetForHeight(ctx, req.Height)
 		if err != nil {
-			logger.Error("Error occurred while getting validator set for height in PrepareProposal", "error", err)
+			logger.Error("Error occurred while getting validator set for height in PrepareProposal", "error", err, "height", req.Height)
 			return nil, err
 		}
 
@@ -124,7 +124,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 
 		validatorSet, err := app.getValidatorSetForHeight(ctx, req.Height)
 		if err != nil {
-			logger.Error("Error occurred while getting validator set for height in ProcessProposal", "error", err)
+			logger.Error("Error occurred while getting validator set for height in ProcessProposal", "error", err, "height", req.Height)
 			return nil, err
 		}
 
@@ -605,7 +605,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 	validatorSet, err := app.getValidatorSetForHeight(ctx, req.Height)
 	if err != nil {
-		logger.Error("Error occurred while getting validator set for height in PreBlocker", "error", err)
+		logger.Error("Error occurred while getting validator set for height in PreBlocker", "error", err, "height", req.Height)
 		return nil, err
 	}
 
