@@ -124,8 +124,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 
 		_, validator := validatorSet.GetByAddress(valAddrStr)
 		if validator == nil {
-			continue
-			// return fmt.Errorf("failed to get validator %s", valAddrStr)
+			return fmt.Errorf("failed to get validator %s", valAddrStr)
 		}
 
 		cmtPubKey, err := getValidatorPublicKey(validator)
@@ -499,8 +498,7 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
-			continue
-			// return fmt.Errorf("failed to get validator %s", valAddr)
+			return fmt.Errorf("failed to get validator %s", valAddr)
 		}
 
 		cmtPubKey, err := getValidatorPublicKey(validator)
@@ -548,8 +546,7 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
-			continue
-			// return nil, fmt.Errorf("failed to get validator %s", valAddr)
+			return nil, fmt.Errorf("failed to get validator %s", valAddr)
 		}
 
 		hashToVotingPower[hash] += validator.VotingPower
