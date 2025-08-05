@@ -34,13 +34,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
 
-		initialHeight, err := app.getInitialHeight(ctx)
-		if err != nil {
-			logger.Error("Error occurred while getting initial chain height in PrepareProposal", "error", err)
-			return nil, err
-		}
-
-		validatorSet, err := app.getValidatorSetForHeight(ctx, initialHeight, req.Height)
+		validatorSet, err := app.getValidatorSetForHeight(ctx, req.Height)
 		if err != nil {
 			logger.Error("Error occurred while getting validator set for height in PrepareProposal", "error", err)
 			return nil, err
@@ -128,13 +122,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 		logger := app.Logger()
 
-		initialHeight, err := app.getInitialHeight(ctx)
-		if err != nil {
-			logger.Error("Error occurred while getting initial chain height in ProcessProposal", "error", err)
-			return nil, err
-		}
-
-		validatorSet, err := app.getValidatorSetForHeight(ctx, initialHeight, req.Height)
+		validatorSet, err := app.getValidatorSetForHeight(ctx, req.Height)
 		if err != nil {
 			logger.Error("Error occurred while getting validator set for height in ProcessProposal", "error", err)
 			return nil, err
@@ -615,13 +603,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	initialHeight, err := app.getInitialHeight(ctx)
-	if err != nil {
-		logger.Error("Error occurred while getting initial chain height in PreBlocker", "error", err)
-		return nil, err
-	}
-
-	validatorSet, err := app.getValidatorSetForHeight(ctx, initialHeight, req.Height)
+	validatorSet, err := app.getValidatorSetForHeight(ctx, req.Height)
 	if err != nil {
 		logger.Error("Error occurred while getting validator set for height in PreBlocker", "error", err)
 		return nil, err
@@ -860,11 +842,17 @@ func (app *HeimdallApp) getInitialHeight(ctx sdk.Context) (int64, error) {
 	return initialHeight, nil
 }
 
-func (app *HeimdallApp) getValidatorSetForHeight(ctx sdk.Context, initialHeight, height int64) (*stakeTypes.ValidatorSet, error) {
+func (app *HeimdallApp) getValidatorSetForHeight(ctx sdk.Context, height int64) (*stakeTypes.ValidatorSet, error) {
 	var (
 		validatorSet *stakeTypes.ValidatorSet
 		err          error
 	)
+
+	initialHeight, err := app.getInitialHeight(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error occurred while getting initial chain height: %w", err)
+	}
+
 	if height >= helper.GetTallyFixHeight() && height >= initialHeight+2 {
 		// use validator set from 2 blocks ago
 		validatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
