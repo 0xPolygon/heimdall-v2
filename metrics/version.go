@@ -5,11 +5,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-const (
-	// Namespace is the prefix for all metrics.
-	Namespace = "heimdallv2"
-)
-
 // heimdallV2InfoGauge stores the HeimdallV2 version and commit details.
 var heimdallV2InfoGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
 	Namespace: Namespace,
