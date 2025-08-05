@@ -172,7 +172,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 // tallyVotes tallies the votes received for the side tx
 // It returns the lists of txs which got >2/3+ YES, NO and UNSPECIFIED votes respectively
 func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, totalVotingPower int64, currentHeight int64) ([][]byte, [][]byte, [][]byte, error) {
-	logger.Debug("Tallying votes")
+	logger.Info("Tallying votes")
 
 	voteByTxHash, err := aggregateVotes(extVoteInfo, currentHeight, logger)
 	if err != nil {
@@ -198,6 +198,7 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 		power := voteMap[sidetxs.Vote_VOTE_YES] + voteMap[sidetxs.Vote_VOTE_NO] + voteMap[sidetxs.Vote_UNSPECIFIED]
 		// ensure the total votes do not exceed the total voting power
 		if power > totalVotingPower {
+			logger.Info("Entered the side tx voting power check", "blockHeight", currentHeight, "power", power, "totalVotingPower", totalVotingPower, "txHash", txHash)
 			logger.Error("the votes power exceeds the total voting power", "txHash", txHash, "power", power, "totalVotingPower", totalVotingPower)
 			return nil, nil, nil, fmt.Errorf("votes power %d exceeds total voting power %d for txHash %s", power, totalVotingPower, txHash)
 		}
