@@ -442,9 +442,9 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 0
 	default:
 		veblopHeight = 0
-		tallyFixHeight = 0
-		disableVPCheckHeight = 0
-		disableValSetCheckHeight = 0 // TODO: confirm with team
+		tallyFixHeight = 200
+		disableVPCheckHeight = 100
+		disableValSetCheckHeight = 150 // TODO: confirm with team
 		initialHeight = 0
 	}
 }
