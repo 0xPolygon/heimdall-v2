@@ -76,8 +76,8 @@ github.com/0xPolygon/bor v1.14.14-0.20250618164709-3dc7d31cdac3 h1:jVOWHi0Hh7axP
 github.com/0xPolygon/bor v1.14.14-0.20250618164709-3dc7d31cdac3/go.mod h1:aplRozrnOVZTkjCaWG4YzaPZN8KB6/j7Jv5CrFGd5JQ=
 github.com/0xPolygon/cometbft v0.2.1-polygon h1:nUQdqsEJ+/nhuTmOpPRtparnS5CX8AAGmFXO/7kgSag=
 github.com/0xPolygon/cometbft v0.2.1-polygon/go.mod h1:65PwuxvivN0GbqxcMLQ2ze5hCXvZQrR8/ds/jOBg4f8=
-github.com/0xPolygon/cosmos-sdk v0.2.2-polygon h1:wE8smhlrDzbSh50TqwvDAXo0k9PU6i+PzahXP9sg/dE=
-github.com/0xPolygon/cosmos-sdk v0.2.2-polygon/go.mod h1:tioDE1GjYEWnyOcyyi0iVlU+FvCEYmy21oCoDV0fUxQ=
+github.com/0xPolygon/cosmos-sdk v0.2.3-polygon h1:wfYCZTD20gEuAZ9dQ6R3bqHpvd5oB07kb0mhKroBkkw=
+github.com/0xPolygon/cosmos-sdk v0.2.3-polygon/go.mod h1:2SHt2bxDFWjQy+oipIMJHMyyiAYCPzSdEgcPGKfI08s=
 github.com/0xPolygon/cosmos-sdk/api v0.7.6-0.20250429154832-7177ebac408e h1:RLUwoGYtf4IahtrMHTJdesTXM+ggz+2iikaxmViCNGo=
 github.com/0xPolygon/cosmos-sdk/api v0.7.6-0.20250429154832-7177ebac408e/go.mod h1:IcxpYS5fMemZGqyYtErK7OqvdM0C8kdW3dq8Q/XIG38=
 github.com/0xPolygon/cosmos-sdk/client/v2 v2.0.0-beta.6 h1:+6AxZcMTWHaRHV0HILf/rADWexzB4FJckdO/DnUlk+s=
