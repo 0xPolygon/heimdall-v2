@@ -24,7 +24,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 func TestValidateVoteExtensions(t *testing.T) {
@@ -35,6 +35,8 @@ func TestValidateVoteExtensions(t *testing.T) {
 	vals := hApp.StakeKeeper.GetAllValidators(ctx)
 	valAddr := common.FromHex(vals[0].Signer)
 
+	valSet, err := hApp.StakeKeeper.GetPreviousBlockValidatorSet(ctx)
+	require.NoError(t, err)
 	cometVal := abci.Validator{
 		Address: valAddr,
 		Power:   vals[0].VotingPower,
@@ -45,7 +47,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 		ctx             sdk.Context
 		extVoteInfo     []abci.ExtendedVoteInfo
 		round           int32
-		keeper          stakeKeeper.Keeper
+		valSet          stakeTypes.ValidatorSet
 		milestoneKeeper milestoneKeeper.Keeper
 		shouldError     bool
 		expectedErr     string
@@ -57,7 +59,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.FromHex(TxHash1), common.FromHex(TxHash2), cometVal, validatorPrivKeys[0]),
 			},
 			round:       1,
-			keeper:      hApp.StakeKeeper,
+			valSet:      valSet,
 			shouldError: true,
 		},
 		{
@@ -67,7 +69,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.FromHex(TxHash1), common.FromHex(TxHash2), cometVal, validatorPrivKeys[0]),
 			},
 			round:       1,
-			keeper:      hApp.StakeKeeper,
+			valSet:      valSet,
 			shouldError: false,
 			expectedErr: "failed to verify validator",
 		},
@@ -76,9 +78,9 @@ func TestValidateVoteExtensions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.shouldError {
-				require.Error(t, ValidateVoteExtensions(tt.ctx, CurrentHeight, tt.extVoteInfo, tt.round, tt.keeper, tt.milestoneKeeper))
+				require.Error(t, ValidateVoteExtensions(tt.ctx, CurrentHeight, tt.extVoteInfo, tt.round, &valSet, tt.milestoneKeeper))
 			} else {
-				err := ValidateVoteExtensions(tt.ctx, CurrentHeight, tt.extVoteInfo, tt.round, tt.keeper, tt.milestoneKeeper)
+				err := ValidateVoteExtensions(tt.ctx, CurrentHeight, tt.extVoteInfo, tt.round, &valSet, tt.milestoneKeeper)
 				require.NoError(t, err)
 			}
 		})

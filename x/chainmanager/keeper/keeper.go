@@ -19,11 +19,11 @@ import (
 
 // Keeper stores all chainmanager related data
 type Keeper struct {
-	cdc          codec.BinaryCodec
-	storeService store.KVStoreService
-	Schema       collections.Schema
-	params       collections.Item[types.Params]
-
+	cdc                codec.BinaryCodec
+	storeService       store.KVStoreService
+	Schema             collections.Schema
+	params             collections.Item[types.Params]
+	initialChainHeight collections.Item[int64]
 	// The address capable of executing a `MsgUpdateParams` message.
 	// This should be the x/gov module account.
 	authority string
@@ -48,10 +48,11 @@ func NewKeeper(
 	sb := collections.NewSchemaBuilder(storeService)
 
 	k := Keeper{
-		cdc:          cdc,
-		storeService: storeService,
-		params:       collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
-		authority:    authority,
+		cdc:                cdc,
+		storeService:       storeService,
+		params:             collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		initialChainHeight: collections.NewItem(sb, types.InitialChainHeightKey, "initial_chain_height", collections.Int64Value),
+		authority:          authority,
 	}
 
 	schema, err := sb.Build()
