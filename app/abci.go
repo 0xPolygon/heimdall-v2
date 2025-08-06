@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/common/strutil"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -31,6 +33,9 @@ const (
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
+		startTime := time.Now()
+		defer metrics.RecordABCIHandlerDuration(metrics.PrepareProposalDuration, startTime)
+
 		logger := app.Logger()
 
 		if err := ValidateVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper, app.MilestoneKeeper); err != nil {
@@ -113,6 +118,9 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 // there's no majority. It is implemented by all the validators.
 func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
+		startTime := time.Now()
+		defer metrics.RecordABCIHandlerDuration(metrics.ProcessProposalDuration, startTime)
+
 		logger := app.Logger()
 
 		// check if there are any txs in the request
@@ -185,6 +193,9 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 // ExtendVoteHandler extends pre-commit vote
 func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 	return func(ctx sdk.Context, req *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
+		startTime := time.Now()
+		defer metrics.RecordABCIHandlerDuration(metrics.ExtendVoteDuration, startTime)
+
 		logger := app.Logger()
 		logger.Debug("Extending Vote!", "height", ctx.BlockHeight())
 		defer func() {
@@ -330,6 +341,9 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 // VerifyVoteExtensionHandler performs some sanity checks on the VE received from other validators
 func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHandler {
 	return func(ctx sdk.Context, req *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error) {
+		startTime := time.Now()
+		defer metrics.RecordABCIHandlerDuration(metrics.VerifyVoteExtensionDuration, startTime)
+
 		logger := app.Logger()
 		logger.Debug("Verifying vote extension", "height", ctx.BlockHeight())
 
@@ -544,6 +558,9 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 
 // PreBlocker application updates every pre block
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	startTime := time.Now()
+	defer metrics.RecordABCIHandlerDuration(metrics.PreBlockerDuration, startTime)
+
 	logger := app.Logger()
 
 	// handle the case when the VEs are disabled starting from the next block
