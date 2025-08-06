@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	cmttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,6 +13,7 @@ import (
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -47,6 +49,10 @@ func (s sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 
 // SideHandleMsgSpan validates external calls required for processing the proposed span
 func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
+	var err error
+	start := time.Now()
+	defer recordBorMetric(api.SideHandleMsgSpanMethod, api.SideType, start, &err)
+
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgProposeSpan)
@@ -178,11 +184,15 @@ func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 
 // PostHandleMsgSpan handles state persisting span msg
 func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+	var err error
+	start := time.Now()
+	defer recordBorMetric(api.PostHandleMsgSpanMethod, api.PostType, start, &err)
+
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgProposeSpan)
 	if !ok {
-		err := errors.New("MsgProposeSpan type mismatch")
+		err = errors.New("MsgProposeSpan type mismatch")
 		logger.Error(err.Error(), "msg type received", msg)
 		return err
 	}
@@ -199,7 +209,7 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	}
 
 	// check for replay
-	ok, err := s.k.HasSpan(ctx, msg.SpanId)
+	ok, err = s.k.HasSpan(ctx, msg.SpanId)
 	if err != nil {
 		logger.Error("error occurred while checking for span", "span id", msg.SpanId, "error", err)
 		return err
@@ -245,11 +255,15 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 }
 
 func (s sideMsgServer) PostHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+	var err error
+	start := time.Now()
+	defer recordBorMetric(api.PostHandleMsgBackfillSpansMethod, api.PostType, start, &err)
+
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgBackfillSpans)
 	if !ok {
-		err := errors.New("MsgBackfillSpans type mismatch")
+		err = errors.New("MsgBackfillSpans type mismatch")
 		logger.Error(err.Error(), "msg type received", msg)
 		return err
 	}
@@ -313,4 +327,10 @@ func (s sideMsgServer) PostHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg,
 	})
 
 	return nil
+}
+
+// recordBorMetric records metrics for side and post handlers.
+func recordBorMetric(method string, apiType string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordAPICallWithStart(api.BorSubsystem, method, apiType, success, start)
 }

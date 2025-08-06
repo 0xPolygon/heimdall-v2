@@ -53,15 +53,15 @@ func SendCheckpointCmd(addressCodec address.Codec) *cobra.Command {
 				return err
 			}
 
-			// Bor ChainID
-			borChainID := viper.GetString(FlagBorChainID)
-			if borChainID == "" {
-				return fmt.Errorf("bor chain ID cannot be empty")
-			}
-
 			if viper.GetBool(FlagAutoConfigure) {
+				chainManagerQueryClient := chainmanagerTypes.NewQueryClient(clientCtx)
 				stakeQueryClient := stakeTypes.NewQueryClient(clientCtx)
 				checkpointQueryClient := checkpointTypes.NewQueryClient(clientCtx)
+
+				chainManagerParams, err := chainManagerQueryClient.GetChainManagerParams(cmd.Context(), &chainmanagerTypes.QueryParamsRequest{})
+				if err != nil {
+					return fmt.Errorf("failed to fetch chain manager params: %w", err)
+				}
 				proposerResponse, err := stakeQueryClient.GetCurrentProposer(cmd.Context(), &stakeTypes.QueryCurrentProposerRequest{})
 				if err != nil {
 					return err
@@ -87,10 +87,16 @@ func SendCheckpointCmd(addressCodec address.Codec) *cobra.Command {
 					nextCheckpointResponse.Checkpoint.EndBlock,
 					nextCheckpointResponse.Checkpoint.RootHash,
 					nextCheckpointResponse.Checkpoint.AccountRootHash,
-					borChainID,
+					chainManagerParams.Params.ChainParams.BorChainId,
 				)
 
 				return cli.BroadcastMsg(clientCtx, proposerResponse.Validator.Signer, msg, logger)
+			}
+
+			// Bor ChainID
+			borChainID := viper.GetString(FlagBorChainID)
+			if borChainID == "" {
+				return fmt.Errorf("bor chain ID cannot be empty")
 			}
 
 			proposerAddress := viper.GetString(FlagProposerAddress)

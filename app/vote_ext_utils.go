@@ -21,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics/consensus"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	chainManagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
@@ -123,7 +124,8 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 
 		_, validator := validatorSet.GetByAddress(valAddrStr)
 		if validator == nil {
-			return fmt.Errorf("failed to get validator %s", valAddrStr)
+			continue
+			// return fmt.Errorf("failed to get validator %s", valAddrStr)
 		}
 
 		cmtPubKey, err := getValidatorPublicKey(validator)
@@ -194,29 +196,29 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 		voteMap := voteByTxHash[txHash]
 
 		// calculate the total voting power in the voteMap
-		power := voteMap[sidetxs.Vote_VOTE_YES] + voteMap[sidetxs.Vote_VOTE_NO] + voteMap[sidetxs.Vote_UNSPECIFIED]
+		// power := voteMap[sidetxs.Vote_VOTE_YES] + voteMap[sidetxs.Vote_VOTE_NO] + voteMap[sidetxs.Vote_UNSPECIFIED]
 		// ensure the total votes do not exceed the total voting power
-		if power > totalVotingPower {
-			logger.Error("the votes power exceeds the total voting power", "txHash", txHash, "power", power, "totalVotingPower", totalVotingPower)
-			return nil, nil, nil, fmt.Errorf("votes power %d exceeds total voting power %d for txHash %s", power, totalVotingPower, txHash)
-		}
+		// if power > totalVotingPower {
+		// 	logger.Error("the votes power exceeds the total voting power", "txHash", txHash, "power", power, "totalVotingPower", totalVotingPower)
+		// 	return nil, nil, nil, fmt.Errorf("votes power %d exceeds total voting power %d for txHash %s", power, totalVotingPower, txHash)
+		// }
 
 		if voteMap[sidetxs.Vote_VOTE_YES] > majorityVP {
 			// approved
 			logger.Debug("Approved side-tx", "txHash", txHash)
-
+			consensus.RecordConsensusApproved()
 			// append to approved tx slice
 			approvedTxs = append(approvedTxs, common.FromHex(txHash))
 		} else if voteMap[sidetxs.Vote_VOTE_NO] > majorityVP {
 			// rejected
 			logger.Debug("Rejected side-tx", "txHash", txHash)
-
+			consensus.RecordConsensusRejected()
 			// append to rejected tx slice
 			rejectedTxs = append(rejectedTxs, common.FromHex(txHash))
 		} else {
-			// skipped
+			// skipped - 2/3 consensus not reached.
 			logger.Debug("Skipped side-tx", "txHash", txHash)
-
+			consensus.RecordConsensusFailure()
 			// append to rejected tx slice
 			skippedTxs = append(skippedTxs, common.FromHex(txHash))
 		}
@@ -497,7 +499,8 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
-			return fmt.Errorf("failed to get validator %s", valAddr)
+			continue
+			// return fmt.Errorf("failed to get validator %s", valAddr)
 		}
 
 		cmtPubKey, err := getValidatorPublicKey(validator)
@@ -545,7 +548,8 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
-			return nil, fmt.Errorf("failed to get validator %s", valAddr)
+			continue
+			// return nil, fmt.Errorf("failed to get validator %s", valAddr)
 		}
 
 		hashToVotingPower[hash] += validator.VotingPower

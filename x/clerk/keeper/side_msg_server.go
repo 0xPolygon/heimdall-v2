@@ -6,12 +6,14 @@ import (
 	"errors"
 	"math/big"
 	"strconv"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
@@ -50,6 +52,10 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler
 }
 
 func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg) (result sidetxs.Vote) {
+	var err error
+	startTime := time.Now()
+	defer recordClerkMetric(api.SideHandleMsgEventRecordMethod, api.SideType, startTime, &err)
+
 	msg, ok := _msg.(*types.MsgEventRecord)
 	if !ok {
 		srv.Logger(ctx).Error("type mismatch for MsgEventRecord")
@@ -104,7 +110,7 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 		)
 		return sidetxs.Vote_VOTE_NO
 	}
-	eventLogContractAddrBytes, err := ac.StringToBytes(msg.ContractAddress)
+	eventLogContractAddrBytes, err := ac.StringToBytes(eventLog.ContractAddress.String())
 	if err != nil {
 		srv.Logger(ctx).Error(
 			"Could not generate bytes from event logs contract address",
@@ -139,6 +145,10 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 }
 
 func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg, sideTxResult sidetxs.Vote) error {
+	var err error
+	startTime := time.Now()
+	defer recordClerkMetric(api.PostHandleMsgEventRecordMethod, api.PostType, startTime, &err)
+
 	logger := srv.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgEventRecord)
@@ -205,4 +215,10 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	})
 
 	return nil
+}
+
+// recordClerkMetric records metrics for side and post handlers.
+func recordClerkMetric(method string, apiType string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordAPICallWithStart(api.ClerkSubsystem, method, apiType, success, start)
 }
