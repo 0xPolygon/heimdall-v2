@@ -334,7 +334,7 @@ replace (
 	cosmossdk.io/x/tx => github.com/0xPolygon/cosmos-sdk/x/tx v0.13.6-0.20241126102051-89dc71d02611
 	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.2.1-polygon
 	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.2.3-polygon
-	github.com/ethereum/go-ethereum => github.com/0xPolygon/bor v1.14.14-0.20250618164709-3dc7d31cdac3
+	github.com/ethereum/go-ethereum => github.com/0xPolygon/bor v1.14.14-0.20250806114541-b2f496beaf93
 	// following versions might cause unexpected behavior
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
