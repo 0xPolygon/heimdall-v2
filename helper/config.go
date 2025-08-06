@@ -422,7 +422,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case MainChain:
 		veblopHeight = 0
 	case MumbaiChain:
-		veblopHeight = 48614656
+		veblopHeight = 48473856
 	case AmoyChain:
 		veblopHeight = 0
 	default:
