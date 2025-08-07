@@ -118,7 +118,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 
 		_, validator := validatorSet.GetByAddress(valAddrStr)
 		if validator == nil {
-			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx) {
+			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx.BlockHeight()) {
 				return fmt.Errorf("failed to get validator %s", valAddrStr)
 			}
 			continue
@@ -490,7 +490,7 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
-			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx) {
+			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx.BlockHeight()) {
 				return fmt.Errorf("failed to get validator %s", valAddr)
 			}
 			continue
@@ -535,7 +535,7 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
-			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx) {
+			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx.BlockHeight()) {
 				return nil, fmt.Errorf("failed to get validator %s", valAddr)
 			}
 			continue
@@ -550,8 +550,15 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 
 	var maxVotingPower int64
 	var maxHash string
-	for hash, votingPower := range hashToVotingPower {
-		if votingPower > maxVotingPower {
+
+	hashList := make([]string, 0, len(hashToVotingPower))
+	for hash := range hashToVotingPower {
+		hashList = append(hashList, hash)
+	}
+	sort.Strings(hashList)
+
+	for _, hash := range hashList {
+		if votingPower := hashToVotingPower[hash]; votingPower > maxVotingPower {
 			maxVotingPower = votingPower
 			maxHash = hash
 		}
