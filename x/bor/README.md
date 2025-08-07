@@ -112,6 +112,21 @@ A validator can leverage the CLI to propose a span like so :
 heimdalld tx bor propose-span --proposer <VALIDATOR_ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
 ```
 
+## Events
+
+The bor module emits events on its keeper:
+
+### Keeper Events
+
+Any time we `AddNewSpan`, it will trigger a span insertion event with following attributes
+
+| Type | Attribute Key  |
+| ---- | -------------- |
+| span | id             |
+| span | start_block    |
+| span | end_block      |
+| span | block_producer |
+
 ## Query commands
 
 One can run the following query commands from the bor module:
