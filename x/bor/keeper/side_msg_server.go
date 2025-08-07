@@ -167,57 +167,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 }
 
 func (s sideMsgServer) SideHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
-	var err error
-	start := time.Now()
-	defer recordBorMetric(api.SideHandleMsgBackfillSpansMethod, api.SideType, start, &err)
-
-	logger := s.k.Logger(ctx)
-
-	msg, ok := msgI.(*types.MsgBackfillSpans)
-	if !ok {
-		logger.Error("MsgFillMissingSpans type mismatch", "msg type received", msgI)
-		return sidetxs.Vote_UNSPECIFIED
-	}
-
-	if helper.IsVeblop(msg.LatestSpanId) {
-		logger.Debug("skipping backfill spans msg since span id is greater than veblop height", "span id", msg.LatestSpanId, "veblop height", helper.GetVeblopHeight())
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	logger.Debug("✅ validating external call for fill missing spans msg",
-		"proposer", msg.Proposer,
-		"chainId", msg.ChainId,
-		"latestSpanId", msg.LatestBorSpanId,
-		"latestHeimdallSpan", msg.LatestBorSpanId,
-	)
-
-	latestSpan, err := s.k.GetLastSpan(ctx)
-	if err != nil {
-		logger.Error("failed to get latest span", "error", err)
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	borLastUsedSpanID, err := s.k.contractCaller.GetStartBlockHeimdallSpanID(ctx, latestSpan.EndBlock+1)
-	if err != nil {
-		logger.Error("failed to get last used bor span id", "error", err)
-		return sidetxs.Vote_VOTE_NO
-	}
-	if borLastUsedSpanID == 0 {
-		logger.Error("last used bor span id is 0")
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	if borLastUsedSpanID != msg.LatestSpanId {
-		logger.Error("last used bor span id does not match",
-			"expected", borLastUsedSpanID,
-			"got", msg.LatestSpanId,
-		)
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	logger.Debug("✅ successfully validated external call for fill missing spans msg")
-
-	return sidetxs.Vote_VOTE_YES
+	return sidetxs.Vote_VOTE_NO
 }
 
 // PostTxHandler returns a side handler for span type messages.
