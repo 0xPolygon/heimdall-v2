@@ -549,8 +549,15 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 
 	var maxVotingPower int64
 	var maxHash string
-	for hash, votingPower := range hashToVotingPower {
-		if votingPower > maxVotingPower {
+
+	hashList := make([]string, 0, len(hashToVotingPower))
+	for hash := range hashToVotingPower {
+		hashList = append(hashList, hash)
+	}
+	sort.Strings(hashList)
+
+	for _, hash := range hashList {
+		if votingPower := hashToVotingPower[hash]; votingPower > maxVotingPower {
 			maxVotingPower = votingPower
 			maxHash = hash
 		}
