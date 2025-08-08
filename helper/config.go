@@ -444,7 +444,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		veblopHeight = 0
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
-		disableValSetCheckHeight = 0 // TODO: confirm with team
+		disableValSetCheckHeight = 0
 		initialHeight = 0
 	}
 }
