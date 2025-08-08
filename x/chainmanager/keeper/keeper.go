@@ -23,7 +23,6 @@ type Keeper struct {
 	storeService store.KVStoreService
 	Schema       collections.Schema
 	params       collections.Item[types.Params]
-
 	// The address capable of executing a `MsgUpdateParams` message.
 	// This should be the x/gov module account.
 	authority string
