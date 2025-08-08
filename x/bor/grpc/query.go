@@ -6,13 +6,13 @@ import (
 	"math"
 	"math/big"
 
+	proto "github.com/0xPolygon/polyproto/bor"
+	protoutil "github.com/0xPolygon/polyproto/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
-	proto "github.com/maticnetwork/polyproto/bor"
-	protoutil "github.com/maticnetwork/polyproto/utils"
 )
 
 func (h *BorGRPCClient) GetRootHash(ctx context.Context, startBlock uint64, endBlock uint64) (string, error) {
