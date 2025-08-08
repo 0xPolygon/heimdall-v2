@@ -12,4 +12,10 @@ const (
 	// Transaction API methods.
 	HandleTopupTxMethod = "HandleTopupTx"
 	WithdrawFeeTxMethod = "WithdrawFeeTx"
+
+	// Side message handler methods.
+	SideHandleTopupTxMethod = "SideHandleTopupTx"
+
+	// Post message handler methods.
+	PostHandleTopupTxMethod = "PostHandleTopupTx"
 )

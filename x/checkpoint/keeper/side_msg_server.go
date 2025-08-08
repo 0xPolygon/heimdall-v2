@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -57,6 +59,10 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler
 
 // SideHandleMsgCheckpoint handles checkpoint message
 func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Msg) (result sidetxs.Vote) {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointMetric(api.SideHandleMsgCheckpointMethod, api.SideType, startTime, &err)
+
 	// logger
 	logger := srv.Logger(ctx)
 
@@ -109,6 +115,10 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 
 // SideHandleMsgCheckpointAck handles side checkpoint-ack message
 func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk.Msg) sidetxs.Vote {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointMetric(api.SideHandleMsgCheckpointAckMethod, api.SideType, startTime, &err)
+
 	// logger
 	logger := srv.Logger(ctx)
 
@@ -177,6 +187,10 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 // PostHandleMsgCheckpoint handles the checkpoint msg
 func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Msg, sideTxResult sidetxs.Vote) error {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointMetric(api.PostHandleMsgCheckpointMethod, api.PostType, startTime, &err)
+
 	logger := srv.Logger(ctx)
 
 	msg, ok := sdkMsg.(*types.MsgCheckpoint)
@@ -282,6 +296,10 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 
 // PostHandleMsgCheckpointAck handles checkpoint-ack
 func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk.Msg, sideTxResult sidetxs.Vote) error {
+	var err error
+	startTime := time.Now()
+	defer recordCheckpointMetric(api.PostHandleMsgCheckpointAckMethod, api.PostType, startTime, &err)
+
 	logger := srv.Logger(ctx)
 
 	msg, ok := sdkMsg.(*types.MsgCpAck)
@@ -378,4 +396,10 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	})
 
 	return nil
+}
+
+// recordCheckpointMetric records metrics for side and post handlers.
+func recordCheckpointMetric(method string, apiType string, start time.Time, err *error) {
+	success := *err == nil
+	api.RecordAPICallWithStart(api.CheckpointSubsystem, method, apiType, success, start)
 }

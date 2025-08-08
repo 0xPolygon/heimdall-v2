@@ -1,11 +1,11 @@
 # Repositories
-borRepo: https://github.com/maticnetwork/bor.git
+borRepo: https://github.com/0xPolygon/bor.git
 borBranch: develop
 
 contractsRepo: https://github.com/0xPolygon/pos-contracts.git
 contractsBranch: anvil-pos
 
-genesisContractsRepo: https://github.com/maticnetwork/genesis-contracts.git
+genesisContractsRepo: https://github.com/0xPolygon/genesis-contracts.git
 genesisContractsBranch: master
 
 # Defaults
@@ -26,7 +26,7 @@ heimdallDockerBuildContext: '../../heimdall-v2'
 
 # Bor
 borChainId: 15005
-borDockerBuildContext: https://github.com/maticnetwork/bor.git#develop
+borDockerBuildContext: https://github.com/0xPolygon/bor.git#develop
 
 blockTime: '2'
 blockNumber: '0'
