@@ -7,11 +7,12 @@ import (
 
 	"cosmossdk.io/collections"
 	addresscodec "cosmossdk.io/core/address"
+	abci "github.com/cometbft/cometbft/abci/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	abci "github.com/cometbft/cometbft/abci/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // AddValidator adds validator indexed with address
@@ -522,7 +523,7 @@ func (k *Keeper) ValidatorAddressCodec() addresscodec.Codec {
 	return k.validatorAddressCodec
 }
 
-func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx sdk.Context) (updates []abci.ValidatorUpdate, err error) {
+func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates []abci.ValidatorUpdate, err error) {
 	var cmtValUpdates []abci.ValidatorUpdate
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
@@ -530,7 +531,8 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx sdk.Context) (updates []ab
 		return nil, err
 	}
 
-	if ctx.BlockHeight() >= helper.GetTallyFixHeight()-1 {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if sdkCtx.BlockHeight() >= helper.GetTallyFixHeight()-1 {
 		// save the current previous block's validator set as the 2-blocks-ago validator set
 		previousValidatorSet, err := k.GetPreviousBlockValidatorSet(ctx)
 		if err != nil {
