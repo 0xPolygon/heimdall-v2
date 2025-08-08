@@ -81,12 +81,12 @@ jobs:
 
       - name: Test validator cases
         run: |
-          kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'add validator' --recursive tests/"
+          kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'add new validator' --recursive tests/"
           kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'delegate MATIC/POL to a validator' --recursive tests/"
           kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'undelegate MATIC/POL from a validator' --recursive tests/"
           kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'remove validator' --recursive tests/"
 
-      - name: Run smoke tests (Checkpoint)
+      - name: Run smoke tests (Checkpoint and Milestones)
         run: bash ./heimdall-v2/integration-tests/kurtosis_smoke_test.sh
 
       - name: Post kurtosis run
