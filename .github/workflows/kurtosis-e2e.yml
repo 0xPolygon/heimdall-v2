@@ -77,10 +77,14 @@ jobs:
           kurtosis enclave inspect ${{ env.ENCLAVE_NAME }}
 
       - name: Test state syncs
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter-tags pos,bridge,matic,pol --recursive tests/"
+        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter-tags pos,bridge,l1,l2 --recursive tests/"
 
-      - name: Test remove validator
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'remove validator' --recursive tests/"
+      - name: Test validator cases
+        run: |
+          kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'add validator' --recursive tests/"
+          kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'delegate MATIC/POL to a validator' --recursive tests/"
+          kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'undelegate MATIC/POL from a validator' --recursive tests/"
+          kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'remove validator' --recursive tests/"
 
       - name: Run smoke tests (Checkpoint)
         run: bash ./heimdall-v2/integration-tests/kurtosis_smoke_test.sh
