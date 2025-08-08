@@ -416,9 +416,11 @@ func appExport(
 func generateKeystore() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate-keystore",
-		Short: "Generates keystore file",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			pk, err := ethcrypto.GenerateKey()
+		Short: "Generates keystore file from private key",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			s := strings.ReplaceAll(args[0], "0x", "")
+			pk, err := ethcrypto.HexToECDSA(s)
 			if err != nil {
 				return err
 			}
