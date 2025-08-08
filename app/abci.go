@@ -833,6 +833,8 @@ func (app *HeimdallApp) getValidatorSetForHeight(ctx sdk.Context, height int64) 
 		err          error
 	)
 
+	// for unit tests and devnets, check whether we are at least 2 heights post the initial height
+	// before using the penultimate block validator set
 	if height >= helper.GetTallyFixHeight() && height >= helper.GetInitialHeight()+2 {
 		// use validator set from 2 blocks ago
 		validatorSet, err = getPenultimateBlockValidatorSet(ctx, app.StakeKeeper)
