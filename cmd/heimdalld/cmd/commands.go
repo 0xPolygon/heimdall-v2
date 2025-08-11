@@ -412,27 +412,44 @@ func appExport(
 	return hApp.ExportAppStateAndValidators(false, nil, modulesToExport)
 }
 
-// generateKeystore generate the keystore file from the private key
+// generateKeystore generate the keystore file from the private key or generates a new key
 func generateKeystore() *cobra.Command {
+	var generateNew bool
+
 	cmd := &cobra.Command{
-		Use:   "generate-keystore",
-		Short: "Generates keystore file from private key",
-		Args:  cobra.ExactArgs(1),
+		Use: "generate-keystore [private-key] or generate-keystore --generate-new",
+		Short: `Generates a keystore file from a private key, or generates a new key. If --generate-new is set, a new key will be created.
+		If [private-key] is provided, it will be used instead of generating a new key. If both are provided, the private key will be used.`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s := strings.ReplaceAll(args[0], "0x", "")
-			pk, err := ethcrypto.HexToECDSA(s)
-			if err != nil {
-				return err
+			var pk *ecdsa.PrivateKey
+			var err error
+
+			if len(args) > 0 {
+				s := strings.ReplaceAll(args[0], "0x", "")
+				pk, err = ethcrypto.HexToECDSA(s)
+				if err != nil {
+					return fmt.Errorf("invalid private key: %w", err)
+				}
+			} else if generateNew {
+				pk, err = ethcrypto.GenerateKey()
+				if err != nil {
+					return fmt.Errorf("failed to generate key: %w", err)
+				}
+			} else {
+				return fmt.Errorf("must provide a private key or use --generate-new flag")
 			}
 
 			if err = createKeyStore(pk); err != nil {
-				return err
+				return fmt.Errorf("failed to create keystore: %w", err)
 			}
 
+			fmt.Println("Keystore generated successfully.")
 			return nil
 		},
 	}
 
+	cmd.Flags().BoolVar(&generateNew, "generate-new", false, "Generate a new private key")
 	return cmd
 }
 
