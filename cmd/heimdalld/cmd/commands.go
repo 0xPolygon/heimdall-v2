@@ -51,7 +51,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/0xPolygon/heimdall-v2/app"
-	bridgeCmd "github.com/0xPolygon/heimdall-v2/bridge/cmd"
+	bridge "github.com/0xPolygon/heimdall-v2/bridge/service"
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/version"
@@ -176,8 +176,7 @@ func initRootCmd(
 
 			// wait for the rest server to start
 			resultChan := make(chan string)
-			// TODO take this back to 5 minutes after migration is done
-			timeout := time.After(120 * time.Minute)
+			timeout := time.After(30 * time.Minute)
 
 			go checkServerStatus(clientCtx, helper.GetHeimdallServerEndpoint(util.AccountParamsURL), resultChan)
 
@@ -198,9 +197,9 @@ func initRootCmd(
 
 			// start bridge
 			if viper.GetBool(helper.BridgeFlag) {
-				bridgeCmd.AdjustBridgeDBValue(rootCmd)
+				bridge.AdjustDBValue(rootCmd)
 				g.Go(func() error {
-					return bridgeCmd.StartBridgeWithCtx(ctx, clientCtx)
+					return bridge.StartWithCtx(ctx, clientCtx)
 				})
 			}
 
@@ -229,7 +228,6 @@ func initRootCmd(
 	)
 
 	rootCmd.AddCommand(showPrivateKeyCmd())
-	rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
 
 	rootCmd.AddCommand(veDecodeCmd())

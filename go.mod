@@ -337,4 +337,5 @@ replace (
 	github.com/ethereum/go-ethereum => github.com/0xPolygon/bor v1.14.14-0.20250811084316-f9787462a289
 	// following versions might cause unexpected behavior
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+	nhooyr.io/websocket => github.com/coder/websocket v1.8.7
 )
