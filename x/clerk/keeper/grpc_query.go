@@ -2,16 +2,11 @@ package keeper
 
 import (
 	"context"
-	"encoding/json"
 	"math/big"
-	"os"
-	"path/filepath"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -99,16 +94,12 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Errorf(codes.InvalidArgument, "fromId cannot be less than 1")
 	}
 
-	genesisTime, err := q.k.getGenesisTime(ctx)
-	if err != nil {
-		q.k.Logger(ctx).Error("Failed to get genesis time", "error", err)
-		return nil, status.Error(codes.Internal, "failed to get genesis time")
-	}
-
 	dummyContract := "0xcf73231f28b7331bbe3124b907840a94851f9f11"
 	dummyData := make([]byte, 32)
 	dummyTxHash := "0x0000000000000000000000000000000000000000000000000000000000000000"
 	dummyLogIndex := uint64(0)
+	// We are skipping reading genesis time from the genesis.json file, because the genesis file is too large and it takes too long to read it.
+	genesisTime := time.Date(2025, 8, 1, 12, 33, 48, 880_000_000, time.UTC)
 
 	// Collect the records based on pagination parameters.
 	result := make([]types.EventRecord, 0, request.Pagination.Limit)
@@ -292,31 +283,4 @@ func isPaginationEmpty(p query.PageRequest) bool {
 func recordClerkQueryMetric(method string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.ClerkSubsystem, method, api.QueryType, success, start)
-}
-
-func (k *Keeper) getGenesisTime(ctx context.Context) (time.Time, error) {
-	type SimpleGenesisDoc struct {
-		GenesisTime time.Time `json:"genesis_time"`
-	}
-
-	homeDir := viper.GetString(flags.FlagHome)
-	if homeDir == "" {
-		k.Logger(ctx).Error("Failed to get home directory")
-		return time.Time{}, status.Error(codes.Internal, "failed to get home directory")
-	}
-
-	genesisPath := filepath.Join(homeDir, "config", "genesis.json")
-	genesisBytes, err := os.ReadFile(genesisPath)
-	if err != nil {
-		k.Logger(ctx).Error("Failed to read genesis file", "path", genesisPath, "error", err)
-		return time.Time{}, status.Error(codes.Internal, "failed to read genesis file")
-	}
-
-	var genesisDoc SimpleGenesisDoc
-	if err := json.Unmarshal(genesisBytes, &genesisDoc); err != nil {
-		k.Logger(ctx).Error("Failed to parse genesis file", "path", genesisPath, "error", err)
-		return time.Time{}, status.Error(codes.Internal, "failed to parse genesis file")
-	}
-
-	return genesisDoc.GenesisTime, nil
 }
