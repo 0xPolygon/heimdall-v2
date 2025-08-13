@@ -2,12 +2,16 @@ package keeper
 
 import (
 	"context"
+	"encoding/json"
 	"math/big"
+	"os"
+	"path/filepath"
 	"time"
 
-	"cosmossdk.io/collections"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -95,29 +99,45 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Errorf(codes.InvalidArgument, "fromId cannot be less than 1")
 	}
 
+	genesisTime, err := q.k.getGenesisTime(ctx)
+	if err != nil {
+		q.k.Logger(ctx).Error("Failed to get genesis time", "error", err)
+		return nil, status.Error(codes.Internal, "failed to get genesis time")
+	}
+
+	dummyContract := "0xcf73231f28b7331bbe3124b907840a94851f9f11"
+	dummyData := make([]byte, 32)
+	dummyTxHash := "0x0000000000000000000000000000000000000000000000000000000000000000"
+	dummyLogIndex := uint64(0)
+
 	// Collect the records based on pagination parameters.
 	result := make([]types.EventRecord, 0, request.Pagination.Limit)
-
-	// Use a range iterator starting from FromId.
-	rng := (&collections.Range[uint64]{}).StartInclusive(request.FromId)
-
-	iterator, err := q.k.RecordsWithID.Iterate(ctx, rng)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	defer iterator.Close()
 
 	skipped := uint64(0)   // Records skipped based on pagination offset.
 	collected := uint64(0) // Records collected based on pagination limit.
 
-	for ; iterator.Valid(); iterator.Next() {
-		value, err := iterator.Value()
-		if err != nil {
-			q.k.Logger(ctx).Debug("error in fetching event record from iterator", "error", err)
-			break
+	// Start from the FromId and iterate through the records.
+	for recordId := request.FromId; ; recordId++ {
+		var record *types.EventRecord
+		if recordId >= 276851 && recordId <= 279428 {
+			record = &types.EventRecord{
+				Id:         recordId,
+				Contract:   dummyContract,
+				Data:       dummyData,
+				TxHash:     dummyTxHash,
+				LogIndex:   dummyLogIndex,
+				BorChainId: "80001",
+				RecordTime: genesisTime,
+			}
+		} else {
+			record, err = q.k.GetEventRecord(ctx, recordId)
+			if err != nil {
+				q.k.Logger(ctx).Error("error in fetching event record", "error", err)
+				break
+			}
 		}
 
-		if !value.RecordTime.Before(request.ToTime) {
+		if !record.RecordTime.Before(request.ToTime) {
 			// Here, the time is >= ToTime, break early.
 			break
 		}
@@ -130,7 +150,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 
 		// Collect records up to the limit.
 		if collected < request.Pagination.Limit {
-			result = append(result, value)
+			result = append(result, *record)
 			collected++
 		} else {
 			// We have collected enough records, stop iterating.
@@ -272,4 +292,31 @@ func isPaginationEmpty(p query.PageRequest) bool {
 func recordClerkQueryMetric(method string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.ClerkSubsystem, method, api.QueryType, success, start)
+}
+
+func (k *Keeper) getGenesisTime(ctx context.Context) (time.Time, error) {
+	type SimpleGenesisDoc struct {
+		GenesisTime time.Time `json:"genesis_time"`
+	}
+
+	homeDir := viper.GetString(flags.FlagHome)
+	if homeDir == "" {
+		k.Logger(ctx).Error("Failed to get home directory")
+		return time.Time{}, status.Error(codes.Internal, "failed to get home directory")
+	}
+
+	genesisPath := filepath.Join(homeDir, "config", "genesis.json")
+	genesisBytes, err := os.ReadFile(genesisPath)
+	if err != nil {
+		k.Logger(ctx).Error("Failed to read genesis file", "path", genesisPath, "error", err)
+		return time.Time{}, status.Error(codes.Internal, "failed to read genesis file")
+	}
+
+	var genesisDoc SimpleGenesisDoc
+	if err := json.Unmarshal(genesisBytes, &genesisDoc); err != nil {
+		k.Logger(ctx).Error("Failed to parse genesis file", "path", genesisPath, "error", err)
+		return time.Time{}, status.Error(codes.Internal, "failed to parse genesis file")
+	}
+
+	return genesisDoc.GenesisTime, nil
 }
