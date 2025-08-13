@@ -627,6 +627,13 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 				))
 			}
 		}
+		// TODO REMOVE - Used for tests
+		sdkCtx.EventManager().EmitEvent(sdk.NewEvent(
+			hmTypes.EventTypeFeeTransfer,
+			sdk.NewAttribute(hmTypes.AttributeKeyProposer, proposer.String()),
+			sdk.NewAttribute(hmTypes.AttributeKeyDenom, authtypes.FeeToken),
+			sdk.NewAttribute(hmTypes.AttributeKeyAmount, "0"),
+		))
 		// remove block proposer
 		err := app.AccountKeeper.RemoveBlockProposer(ctx)
 		if err != nil {
