@@ -68,7 +68,8 @@ const (
 )
 
 const (
-	nodeDirPerm = 0o755
+	nodeDirPerm                = 0o755
+	restServerTimeOutInMinutes = 30
 )
 
 var tempDir = func() string {
@@ -176,7 +177,7 @@ func initRootCmd(
 
 			// wait for the rest server to start
 			resultChan := make(chan string)
-			timeout := time.After(30 * time.Minute)
+			timeout := time.After(restServerTimeOutInMinutes * time.Minute)
 
 			go checkServerStatus(clientCtx, helper.GetHeimdallServerEndpoint(util.AccountParamsURL), resultChan)
 
@@ -184,7 +185,33 @@ func initRootCmd(
 			case result := <-resultChan:
 				fmt.Println("Fetch successful, received data:", result)
 			case <-timeout:
-				return fmt.Errorf("fetch operation timed out")
+				fmt.Printf(
+					"Fetch operation timed out - REST server did not respond within %d minutes",
+					restServerTimeOutInMinutes,
+				)
+
+				// print every 1s after timeout
+				ticker := time.NewTicker(1 * time.Second)
+				defer ticker.Stop()
+
+			waitLoop:
+				for {
+					select {
+					case result := <-resultChan:
+						fmt.Println("Fetch successful, received data:", result)
+						// exit the loop, continue with PostSetup
+						break waitLoop
+
+					case <-ticker.C:
+						// keep printing every second
+						fmt.Println("Still waiting for REST server to respond...")
+
+					case <-ctx.Done():
+						// if the app is shutting down, stop waiting
+						fmt.Println("Startup context cancelled while waiting for REST server")
+						return ctx.Err()
+					}
+				}
 			}
 
 			chainParam, err := util.GetChainmanagerParams(clientCtx.Codec)
