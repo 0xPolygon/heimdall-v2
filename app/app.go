@@ -66,8 +66,9 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/client/docs"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	metrics "github.com/0xPolygon/heimdall-v2/metrics"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	hversion "github.com/0xPolygon/heimdall-v2/version"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
@@ -601,14 +602,22 @@ func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 
 // EndBlocker application updates every end block
 func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	// transfer fees to current proposer
 	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
 		moduleAccount := app.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName)
-		coins := app.BankKeeper.GetBalance(ctx, moduleAccount.GetAddress(), authtypes.FeeToken)
-		if !coins.Amount.IsZero() {
-			coins := sdk.Coins{sdk.Coin{Denom: authtypes.FeeToken, Amount: coins.Amount}}
+		coin := app.BankKeeper.GetBalance(ctx, moduleAccount.GetAddress(), authtypes.FeeToken)
+		if !coin.Amount.IsZero() {
+			coins := sdk.Coins{sdk.Coin{Denom: authtypes.FeeToken, Amount: coin.Amount}}
 			if err := app.BankKeeper.SendCoinsFromModuleToAccount(ctx, authtypes.FeeCollectorName, proposer, coins); err != nil {
 				app.Logger().Error("EndBlocker | SendCoinsFromModuleToAccount", "error", err)
+			} else {
+				sdkCtx.EventManager().EmitEvent(sdk.NewEvent(
+					hmTypes.EventTypeFeeTransfer,
+					sdk.NewAttribute(hmTypes.AttributeKeyProposer, proposer.String()),
+					sdk.NewAttribute(hmTypes.AttributeKeyDenom, authtypes.FeeToken),
+					sdk.NewAttribute(hmTypes.AttributeKeyAmount, coin.Amount.String()),
+				))
 			}
 		}
 		// remove block proposer
@@ -618,7 +627,14 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 		}
 	}
 
-	return app.ModuleManager.EndBlock(ctx)
+	customABCIEvents := sdkCtx.EventManager().ABCIEvents()
+	result, err := app.ModuleManager.EndBlock(ctx)
+	result.Events = append(result.Events, customABCIEvents...)
+	if err != nil {
+		return result, err
+	}
+
+	return result, nil
 }
 
 func (app *HeimdallApp) LoadHeight(height int64) error {

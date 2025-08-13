@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
@@ -15,6 +16,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint"
@@ -22,6 +24,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/milestone"
 	"github.com/0xPolygon/heimdall-v2/x/stake"
 	"github.com/0xPolygon/heimdall-v2/x/topup"
+	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 func TestHeimdallAppExport(t *testing.T) {
@@ -194,4 +198,74 @@ func TestGetMaccPerms(t *testing.T) {
 
 	dup := GetMaccPerms()
 	require.Equal(t, maccPerms, dup, "duplicated module account permissions differed from actual module account permissions")
+}
+
+func TestEndBlockerEmitsTransferEvent(t *testing.T) {
+	setupAppResult := SetupApp(t, 1)
+	app := setupAppResult.App
+	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
+
+	// Create a test proposer account
+	proposerAddr := sdk.AccAddress("test_proposer")
+	proposerAcc := app.AccountKeeper.NewAccountWithAddress(ctx, proposerAddr)
+	app.AccountKeeper.SetAccount(ctx, proposerAcc)
+
+	// Set the block proposer
+	err := app.AccountKeeper.SetBlockProposer(ctx, proposerAddr)
+	require.NoError(t, err)
+
+	// Fund the fee collector
+	feeAmount := sdkmath.NewInt(1000)
+	feeCoins := sdk.NewCoins(sdk.NewCoin(authtypes.FeeToken, feeAmount))
+
+	// Use the topup module which has minting permissions
+	err = app.BankKeeper.MintCoins(ctx, topupTypes.ModuleName, feeCoins)
+	require.NoError(t, err)
+
+	// Transfer from topup to fee collector
+	err = app.BankKeeper.SendCoinsFromModuleToModule(ctx, topupTypes.ModuleName, authtypes.FeeCollectorName, feeCoins)
+	require.NoError(t, err)
+
+	// Run EndBlocker
+	result, err := app.EndBlocker(ctx)
+	require.NoError(t, err)
+
+	// Verify the fee transfer event was emitted in the EndBlocker result
+	var feeTransferEvent *abci.Event
+	for _, event := range result.Events {
+		if event.Type == hmTypes.EventTypeFeeTransfer {
+			feeTransferEvent = &event
+			break
+		}
+	}
+	require.NotNil(t, feeTransferEvent, "fee transfer event should be emitted")
+
+	// Verify event attributes
+	require.NotNil(t, feeTransferEvent, "fee transfer event should not be nil")
+	require.NotNil(t, feeTransferEvent.Attributes, "fee transfer event should have attributes")
+	require.Equal(t, 3, len(feeTransferEvent.Attributes))
+
+	var proposerAttr, denomAttr, amountAttr *abci.EventAttribute
+	for _, attr := range feeTransferEvent.Attributes {
+		switch attr.Key {
+		case hmTypes.AttributeKeyProposer:
+			proposerAttr = &attr
+		case hmTypes.AttributeKeyDenom:
+			denomAttr = &attr
+		case hmTypes.AttributeKeyAmount:
+			amountAttr = &attr
+		}
+	}
+
+	require.NotNil(t, proposerAttr)
+	require.NotNil(t, proposerAddr, "proposer address should not be nil")
+	require.Equal(t, proposerAddr.String(), proposerAttr.Value)
+
+	require.NotNil(t, denomAttr)
+	require.NotNil(t, denomAttr.Value, "denom attribute value should not be nil")
+	require.Equal(t, authtypes.FeeToken, denomAttr.Value)
+
+	require.NotNil(t, amountAttr)
+	require.NotNil(t, amountAttr.Value, "amount attribute value should not be nil")
+	require.Equal(t, feeAmount.String(), amountAttr.Value)
 }
