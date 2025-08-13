@@ -380,6 +380,7 @@ func NewHeimdallApp(
 	)
 
 	app.ModuleManager.SetOrderEndBlockers(
+		clerktypes.ModuleName,
 		govtypes.ModuleName,
 		staketypes.ModuleName,
 	)

@@ -4,14 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"time"
 
 	"cosmossdk.io/core/appmodule"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/viper"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
@@ -22,6 +30,8 @@ import (
 const ConsensusVersion = 1
 
 var (
+	_ module.HasABCIEndBlock = AppModule{}
+
 	_ module.HasGenesis     = AppModule{}
 	_ module.HasServices    = AppModule{}
 	_ module.AppModuleBasic = AppModule{}
@@ -113,4 +123,93 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 // ConsensusVersion implements AppModule/ConsensusVersion.
 func (AppModule) ConsensusVersion() uint64 {
 	return ConsensusVersion
+}
+
+// EndBlock runs at the end of every block which adds dummy event records for Mumbai.
+func (am AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	am.keeper.Logger(sdkCtx).Info("EndBlock called")
+
+	// Check if any dummy records already exists.
+	hasFirstRecord := am.keeper.HasEventRecord(sdkCtx, 276851)
+	am.keeper.Logger(sdkCtx).Info("Checking if first dummy record exists", "exists", hasFirstRecord)
+
+	if !hasFirstRecord {
+		am.keeper.Logger(sdkCtx).Info("Adding dummy event records for Mumbai in the EndBlock")
+
+		dummyData := make([]byte, 32)
+		dummyTxHash := "0x0000000000000000000000000000000000000000000000000000000000000000"
+		dummyLogIndex := uint64(0)
+
+		// Get the genesis time.
+		genesisTime, err := am.getGenesisTime(sdkCtx)
+		if err != nil {
+			am.keeper.Logger(sdkCtx).Error("Failed to get genesis time", "error", err)
+			return nil, nil
+		}
+
+		am.keeper.Logger(sdkCtx).Info("Got genesis time", "time", genesisTime)
+
+		// Add the dummy event records for Mumbai.
+		for eventID := uint64(276851); eventID <= 279428; eventID++ {
+			// Check if the event record already exists or not.
+			if am.keeper.HasEventRecord(sdkCtx, eventID) {
+				am.keeper.Logger(sdkCtx).Info("Skipping adding dummy event record; already exists", "eventID", eventID)
+				continue
+			}
+
+			am.keeper.Logger(sdkCtx).Info("Adding dummy clerk event record", "eventID", eventID)
+
+			// Add the dummy event record.
+			dummyEvent := types.EventRecord{
+				Id:         eventID,
+				Contract:   "0xcf73231f28b7331bbe3124b907840a94851f9f11",
+				Data:       dummyData,
+				TxHash:     dummyTxHash,
+				LogIndex:   dummyLogIndex,
+				BorChainId: "80001",
+				RecordTime: genesisTime,
+			}
+
+			if err := am.keeper.SetEventRecord(sdkCtx, dummyEvent); err != nil {
+				am.keeper.Logger(sdkCtx).Error("Error in storing Mumbai dummy event record", "id", eventID, "error", err)
+				return nil, nil
+			}
+			am.keeper.Logger(sdkCtx).Info("Dummy event record added", "id", eventID)
+		}
+		am.keeper.Logger(sdkCtx).Info("Dummy event records added for Mumbai in EndBlock")
+	} else {
+		am.keeper.Logger(sdkCtx).Info("Dummy event records already added for Mumbai")
+	}
+
+	return nil, nil
+}
+
+type SimpleGenesisDoc struct {
+	GenesisTime time.Time `json:"genesis_time"`
+}
+
+// getGenesisTime retrieves the genesis time from the genesis file.
+func (am AppModule) getGenesisTime(ctx sdk.Context) (time.Time, error) {
+	homeDir := viper.GetString(flags.FlagHome)
+	if homeDir == "" {
+		am.keeper.Logger(ctx).Error("Failed to get home directory")
+		return time.Time{}, status.Error(codes.Internal, "failed to get home directory")
+	}
+
+	genesisPath := filepath.Join(homeDir, "config", "genesis.json")
+	genesisBytes, err := os.ReadFile(genesisPath)
+	if err != nil {
+		am.keeper.Logger(ctx).Error("Failed to read genesis file", "path", genesisPath, "error", err)
+		return time.Time{}, status.Error(codes.Internal, "failed to read genesis file")
+	}
+
+	var genesisDoc SimpleGenesisDoc
+	if err := json.Unmarshal(genesisBytes, &genesisDoc); err != nil {
+		am.keeper.Logger(ctx).Error("Failed to parse genesis file", "path", genesisPath, "error", err)
+		return time.Time{}, status.Error(codes.Internal, "failed to parse genesis file")
+	}
+
+	return genesisDoc.GenesisTime, nil
 }
