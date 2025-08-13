@@ -98,7 +98,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	dummyData := make([]byte, 32)
 	dummyTxHash := "0x0000000000000000000000000000000000000000000000000000000000000000"
 	dummyLogIndex := uint64(0)
-	dummyTime := time.Date(2025, 8, 1, 17, 0, 0, 0, time.UTC)
+	dummyTime := time.Date(2025, 8, 13, 17, 0, 0, 0, time.UTC)
 
 	// Collect the records based on pagination parameters.
 	result := make([]types.EventRecord, 0, request.Pagination.Limit)
