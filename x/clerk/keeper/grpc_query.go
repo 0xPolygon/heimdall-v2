@@ -98,8 +98,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	dummyData := make([]byte, 32)
 	dummyTxHash := "0x0000000000000000000000000000000000000000000000000000000000000000"
 	dummyLogIndex := uint64(0)
-	// We are skipping reading genesis time from the genesis.json file, because the genesis file is too large and it takes too long to read it.
-	genesisTime := time.Date(2025, 8, 1, 12, 33, 48, 880_000_000, time.UTC)
+	dummyTime := time.Date(2025, 8, 1, 17, 0, 0, 0, time.UTC)
 
 	// Collect the records based on pagination parameters.
 	result := make([]types.EventRecord, 0, request.Pagination.Limit)
@@ -118,7 +117,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 				TxHash:     dummyTxHash,
 				LogIndex:   dummyLogIndex,
 				BorChainId: "80001",
-				RecordTime: genesisTime,
+				RecordTime: dummyTime,
 			}
 		} else {
 			record, err = q.k.GetEventRecord(ctx, recordId)
