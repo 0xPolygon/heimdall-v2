@@ -36,7 +36,7 @@ type TxBroadcaster struct {
 }
 
 // NewTxBroadcaster creates a new instance of TxBroadcaster, and waits until the account is visible locally,
-// meaning the node us synced and past join height
+// meaning the node is synced and past join height
 func NewTxBroadcaster(
 	cdc codec.Codec,
 	ctx context.Context,
