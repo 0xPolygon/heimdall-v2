@@ -2,6 +2,7 @@ package processor
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"io"
@@ -259,7 +260,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 	}
 	helper.SetTestConfig(customAppConf)
 
-	txBroadcaster := broadcaster.NewTxBroadcaster(cdc, client.Context{}, nil)
+	txBroadcaster := broadcaster.NewTxBroadcaster(cdc, context.Background(), client.Context{}, nil)
 	txBroadcaster.CliCtx.Simulate = true
 	txBroadcaster.CliCtx.SkipConfirm = true
 

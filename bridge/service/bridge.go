@@ -4,9 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
-	"github.com/0xPolygon/heimdall-v2/bridge/listener"
-	"github.com/0xPolygon/heimdall-v2/bridge/processor"
 	"path/filepath"
 	"time"
 
@@ -26,6 +23,9 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/0xPolygon/heimdall-v2/app"
+	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
+	"github.com/0xPolygon/heimdall-v2/bridge/listener"
+	"github.com/0xPolygon/heimdall-v2/bridge/processor"
 	"github.com/0xPolygon/heimdall-v2/bridge/queue"
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -42,13 +42,11 @@ const (
 	logsTypeKey   = "logs-type"
 )
 
-var (
-	logger = helper.Logger.With("module", "bridge/service/")
-)
+var logger = helper.Logger.With("module", "bridge/service/")
 
 // AdjustDBValue sets/normalizes viper-config for bridge runtime based on flags present on root/start cmd
 func AdjustDBValue(cmd *cobra.Command) {
-	cometbftNode, _ := cmd.Flags().GetString(helper.CometBFTNodeFlag)
+	cometBftNode, _ := cmd.Flags().GetString(helper.CometBFTNodeFlag)
 	withHeimdallConfigValue, _ := cmd.Flags().GetString(helper.WithHeimdallConfigFlag)
 	bridgeDBValue, _ := cmd.Flags().GetString(util.BridgeDBFlag)
 	borChainIDValue, _ := cmd.Flags().GetString(borChainIDKey)
@@ -64,7 +62,7 @@ func AdjustDBValue(cmd *cobra.Command) {
 	}
 
 	// set to viper
-	viper.Set(helper.CometBFTNodeFlag, cometbftNode)
+	viper.Set(helper.CometBFTNodeFlag, cometBftNode)
 	viper.Set(helper.WithHeimdallConfigFlag, withHeimdallConfigValue)
 	viper.Set(util.BridgeDBFlag, bridgeDBValue)
 	if borChainIDValue != "" {
@@ -138,7 +136,7 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 	} else {
 		logger.Info("ChainID set in clientCtx", "chainId", chainId)
 	}
-	
+
 	// ensure clientCtx carries the chain-id for signing/broadcast
 	clientCtx = clientCtx.WithChainID(chainId)
 

@@ -77,7 +77,7 @@ func NewTxBroadcaster(
 			default:
 			}
 
-			account, err = util.GetAccount(cliCtx, addrHex)
+			account, err = util.GetAccount(ctx, cliCtx, addrHex)
 			if err == nil && account != nil {
 				break
 			}
@@ -173,7 +173,7 @@ func updateAccountSequence(tb *TxBroadcaster) error {
 	}
 
 	// fetch from APIs
-	account, errAcc := util.GetAccount(tb.CliCtx, address)
+	account, errAcc := util.GetAccount(context.Background(), tb.CliCtx, address)
 	if errAcc != nil {
 		tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, address)))
 		return errAcc
