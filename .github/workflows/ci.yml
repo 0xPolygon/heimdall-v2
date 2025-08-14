@@ -81,8 +81,8 @@ jobs:
       - name: Checkout matic-cli
         uses: actions/checkout@v4
         with:
-          repository: maticnetwork/matic-cli
-          ref: heimdall-v2
+          repository: 0xPolygon/matic-cli
+          ref: master
           path: matic-cli
 
       - name: Install dependencies on Linux

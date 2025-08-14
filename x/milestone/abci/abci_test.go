@@ -10,6 +10,7 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	abciTypes "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
 )
@@ -134,6 +135,7 @@ func TestGetFastForwardMilestoneStartBlock(t *testing.T) {
 }
 
 func TestGetMajorityMilestoneProposition_MajorityWins(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(100) // Mock context with block height
 	// Two validators: one with 70% power, one with 30%
 	v1 := &stakeTypes.Validator{
 		Signer:      "0x1111111111111111111111111111111111111111",
@@ -189,6 +191,7 @@ func TestGetMajorityMilestoneProposition_MajorityWins(t *testing.T) {
 	lastEndHash := parentHash
 
 	resultProp, _, _, _, err := GetMajorityMilestoneProposition(
+		ctx,
 		validatorSet,
 		extVotes,
 		1,

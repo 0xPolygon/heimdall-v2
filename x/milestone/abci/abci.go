@@ -118,6 +118,7 @@ func getFastForwardMilestoneStartBlock(latestHeaderNumber, latestMilestoneEndBlo
 }
 
 func GetMajorityMilestoneProposition(
+	ctx sdk.Context,
 	validatorSet *stakeTypes.ValidatorSet,
 	extVoteInfo []abciTypes.ExtendedVoteInfo,
 	majorityVP int64,
@@ -175,8 +176,10 @@ func GetMajorityMilestoneProposition(
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
+			if ShouldErrorOnValidatorNotFound(ctx.BlockHeight()) {
+				return nil, nil, "", nil, fmt.Errorf("failed to get validator %s", valAddr)
+			}
 			continue
-			// return nil, nil, "", nil, fmt.Errorf("failed to get validator %s", valAddr)
 		}
 
 		validatorAddresses[valAddr] = vote.Validator.Address
@@ -473,4 +476,8 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keepe
 	}
 
 	return nil
+}
+
+func ShouldErrorOnValidatorNotFound(height int64) bool {
+	return height >= helper.GetTallyFixHeight() || height < helper.GetDisableValSetCheckHeight()
 }

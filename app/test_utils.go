@@ -133,6 +133,8 @@ func setupAppWithValidatorSet(t *testing.T, validatorPrivKeys []cmtcrypto.PrivKe
 		req.ChainId = testOpts[0].GetChainId()
 	}
 
+	helper.SetTestInitialHeight(VoteExtBlockHeight)
+
 	_, err = app.InitChain(req)
 	require.NoError(t, err)
 
