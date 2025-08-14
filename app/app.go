@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"io"
 	"io/fs"
 	"net/http"
@@ -68,8 +67,9 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/client/docs"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	metrics "github.com/0xPolygon/heimdall-v2/metrics"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	hversion "github.com/0xPolygon/heimdall-v2/version"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
