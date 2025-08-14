@@ -69,7 +69,7 @@ const (
 
 const (
 	nodeDirPerm                = 0o755
-	restServerTimeOutInMinutes = 30
+	restServerTimeOutInMinutes = 1
 )
 
 var tempDir = func() string {
@@ -216,8 +216,8 @@ func initRootCmd(
 
 					case <-ctx.Done():
 						// if the app is shutting down, stop waiting
-						fmt.Println("Startup context cancelled while waiting for REST server")
-						return ctx.Err()
+						fmt.Println("Startup context cancelled while waiting; continuing without REST")
+						break waitLoop
 					}
 				}
 			}
