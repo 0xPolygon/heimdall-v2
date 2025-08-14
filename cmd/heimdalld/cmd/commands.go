@@ -207,17 +207,19 @@ func initRootCmd(
 					select {
 					case result := <-resultChan:
 						fmt.Println("Fetch successful, received data:", result)
-						cancel()       // stop the poller now that we’re done
-						break waitLoop // continue PostSetup
+						// stop polling now that we’re done
+						cancel()
+						// continue with PostSetup
+						break waitLoop
 
 					case <-ticker.C:
-						// keep printing every second
-						fmt.Println("Still waiting for REST server to respond...")
+						// keep printing every second if rest-server is not responding
+						fmt.Println("Warning: still waiting for REST server to respond... Something wrong with it, please check!")
 
 					case <-ctx.Done():
-						// if the app is shutting down, stop waiting
-						fmt.Println("Startup context cancelled while waiting for REST server")
-						return ctx.Err()
+						// if the app is shutting down, stop waiting and continue without the REST server
+						fmt.Println("Startup context cancelled while waiting... Continuing without REST server")
+						break waitLoop
 					}
 				}
 			}
