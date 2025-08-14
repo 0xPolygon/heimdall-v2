@@ -1092,11 +1092,12 @@ func InitTestHeimdallConfig(chain string) {
 		Custom: GetDefaultHeimdallConfig(),
 	}
 
-	if chain == MumbaiChain {
+	switch chain {
+	case MumbaiChain:
 		customAppConf.Custom.Chain = MumbaiChain
-	} else if chain == AmoyChain {
+	case AmoyChain:
 		customAppConf.Custom.Chain = AmoyChain
-	} else if chain == MainChain {
+	case MainChain:
 		customAppConf.Custom.Chain = MainChain
 	}
 
