@@ -75,6 +75,10 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 		err = borKeeper.StoreSeedProducer(ctx, span.Id, &val1Addr)
 	}
 
+	startBlock := uint64(26657)
+	correctEndBlock := startBlock + borParams.SpanDuration - 1
+	incorrectEndBlock := correctEndBlock - 100
+
 	testcases := []struct {
 		lastSpanId       uint64
 		lastSeedProducer *common.Address
@@ -89,8 +93,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			msg: &types.MsgProposeSpan{
 				SpanId:     4,
 				Proposer:   val1Addr.String(),
-				StartBlock: 26657,
-				EndBlock:   30000,
+				StartBlock: startBlock,
+				EndBlock:   correctEndBlock,
 				ChainId:    testChainParams.ChainParams.BorChainId,
 				Seed:       []byte("someWrongSeed"),
 			},
@@ -104,12 +108,29 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			},
 		},
 		{
+			name: "span duration mismatch",
+			msg: &types.MsgProposeSpan{
+				SpanId:     4,
+				Proposer:   val1Addr.String(),
+				StartBlock: startBlock,
+				EndBlock:   incorrectEndBlock,
+				ChainId:    testChainParams.ChainParams.BorChainId,
+				Seed:       blockHash2.Bytes(),
+				SeedAuthor: val1Addr.Hex(),
+			},
+			lastSeedProducer: &val1Addr,
+			lastSpanId:       3,
+			expSeed:          blockHash2,
+			expVote:          sidetxs.Vote_VOTE_NO,
+			mockFn:           nil, // early return before any contract calls
+		},
+		{
 			name: "span is not in turn",
 			msg: &types.MsgProposeSpan{
 				SpanId:     4,
 				Proposer:   val1Addr.String(),
-				StartBlock: 26657,
-				EndBlock:   30000,
+				StartBlock: startBlock,
+				EndBlock:   correctEndBlock,
 				ChainId:    testChainParams.ChainParams.BorChainId,
 				Seed:       blockHash1.Bytes(),
 			},
@@ -120,7 +141,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			mockFn: func() {
 				contractCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
 				contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(16656)).Return(&blockHeader1, nil).Times(1)
-				contractCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&ethTypes.Header{Number: big.NewInt(0)}, nil).Times(1)
 			},
 		},
 		{
@@ -128,8 +148,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			msg: &types.MsgProposeSpan{
 				SpanId:     4,
 				Proposer:   val1Addr.String(),
-				StartBlock: 26657,
-				EndBlock:   30000,
+				StartBlock: startBlock,
+				EndBlock:   correctEndBlock,
 				ChainId:    testChainParams.ChainParams.BorChainId,
 				Seed:       blockHash2.Bytes(),
 				SeedAuthor: val1Addr.Hex(),

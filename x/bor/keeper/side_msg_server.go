@@ -68,6 +68,21 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 		"seed", msg.Seed,
 	)
 
+	params, err := s.k.GetParams(ctx)
+	if err != nil {
+		logger.Error("error fetching params", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	if params.SpanDuration != (msg.EndBlock - msg.StartBlock + 1) {
+		logger.Error("span duration of proposed span is wrong",
+			"proposedSpanDuration", msg.EndBlock-msg.StartBlock+1,
+			"paramsSpanDuration", params.SpanDuration,
+		)
+
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	// calculate next span seed locally
 	nextSpanSeed, nextSpanSeedAuthor, err := s.k.FetchNextSpanSeed(ctx, msg.SpanId)
 	if err != nil {
