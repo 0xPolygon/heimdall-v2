@@ -12,12 +12,14 @@ import (
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
+const ProducerSetLimit = uint64(3)
+
 // AddNewVeblopSpan adds a new veblop (Validator-elected block producer) span
 func (k *Keeper) AddNewVeblopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}, heimdallBlock uint64) error {
 	logger := k.Logger(ctx)
 
 	// select next producers
-	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs)
+	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, ProducerSetLimit)
 	if err != nil {
 		return err
 	}
@@ -235,8 +237,8 @@ func (k *Keeper) ClearLatestFailedProducer(ctx context.Context) error {
 
 // SelectNextSpanProducer selects the next producer for a new span.
 // It calculates candidate set, filters by active producers and selects one.
-func (k *Keeper) SelectNextSpanProducer(ctx context.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}) (uint64, error) {
-	candidates, err := k.CalculateProducerSet(ctx)
+func (k *Keeper) SelectNextSpanProducer(ctx context.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit uint64) (uint64, error) {
+	candidates, err := k.CalculateProducerSet(ctx, producerSetLimit)
 	if err != nil {
 		return 0, fmt.Errorf("failed to calculate producer set: %w", err)
 	}
@@ -269,12 +271,7 @@ func (k *Keeper) SelectNextSpanProducer(ctx context.Context, currentProducer uin
 
 // CalculateProducerSet ranks producer candidates by the sum of the stake from validators who voted for them,
 // weighted by their relative position in the candidate list.
-func (k *Keeper) CalculateProducerSet(ctx context.Context) ([]uint64, error) {
-	params, err := k.FetchParams(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch bor params: %w", err)
-	}
-
+func (k *Keeper) CalculateProducerSet(ctx context.Context, producerSetLimit uint64) ([]uint64, error) {
 	allValidators, err := k.sk.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get validator set: %w", err)
@@ -366,15 +363,9 @@ func (k *Keeper) CalculateProducerSet(ctx context.Context) ([]uint64, error) {
 		return []uint64{}, nil
 	}
 
-	producerSetLimit := int(params.ProducerCount)
-	if producerSetLimit == 0 {
-		k.Logger(ctx).Warn("ProducerCount is 0, returning empty producer set.")
-		return []uint64{}, nil
-	}
-
 	finalCandidates := make([]uint64, 0, producerSetLimit)
 	for i, sp := range rankedProducers {
-		if i >= producerSetLimit {
+		if i >= int(producerSetLimit) {
 			break // Reached producer set limit
 		}
 
