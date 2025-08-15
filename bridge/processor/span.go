@@ -284,9 +284,7 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 	return &lastSpan.Span, nil
 }
 
-// getProducerVotes gets the producer votes for a given voter id
-//
-//nolint:unused
+// getProducerVotesByValidatorId gets the producer votes for a given voter id
 func (sp *SpanProcessor) getProducerVotesByValidatorId(validatorId uint64) (*types.ProducerVotes, error) {
 	req, err := http.NewRequest("GET", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.ProducerVotesURL, validatorId)), nil)
 	if err != nil {

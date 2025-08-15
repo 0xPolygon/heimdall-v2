@@ -407,7 +407,7 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 	}), nil
 }
 
-// sendCheckpointToHeimdall - creates checkpoint msg and broadcasts to heimdall
+// createAndSendCheckpointToHeimdall - creates checkpoint msg and broadcasts to heimdall
 func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointContext *CheckpointContext, start uint64, end uint64) error {
 	cp.Logger.Debug("Initiating checkpoint to Heimdall", "start", start, "end", end)
 

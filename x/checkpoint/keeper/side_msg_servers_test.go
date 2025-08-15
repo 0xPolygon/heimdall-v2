@@ -35,11 +35,10 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 
 	checkpoint := testutil.GenRandCheckpoint(start, maxSize, uint64(1))
 
-	borChainId := "1234"
-
 	chainParams, err := cmKeeper.GetParams(ctx)
 	require.NoError(err)
 
+	borChainId := chainParams.ChainParams.BorChainId
 	borChainTxConfirmations := chainParams.BorChainTxConfirmations
 
 	s.Run("Success", func() {
@@ -117,6 +116,33 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		result := sideHandler(ctx, msgCheckpoint)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
 
+		doExist, err := keeper.HasCheckpointInBuffer(ctx)
+		require.NoError(err)
+		require.False(doExist)
+
+		res, err := keeper.GetCheckpointFromBuffer(ctx)
+		require.NoError(err)
+		require.Equal(types.Checkpoint{}, res)
+	})
+
+	s.Run("wrong borChainId", func() {
+		contractCaller.Mock = mock.Mock{}
+
+		// create checkpoint msg with wrong borChainId
+		wrongBorChainID := borChainId + "-wrong"
+		msgCheckpoint := types.NewMsgCheckpointBlock(
+			checkpoint.Proposer,
+			checkpoint.StartBlock,
+			checkpoint.EndBlock,
+			checkpoint.RootHash,
+			checkpoint.RootHash,
+			wrongBorChainID,
+		)
+
+		result := sideHandler(ctx, msgCheckpoint)
+		require.Equal(sidetxs.Vote_VOTE_NO, result, "should vote NO on borChainId mismatch")
+
+		// buffer should remain untouched
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)
 		require.False(doExist)

@@ -127,6 +127,8 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 
 	chainId := hl.cliCtx.ChainID
 	if chainId == "" {
+		// If chainId is not set in cliCtx, fetch it from node status.
+		// It should not happen because chainId is set in cliCtx during bridge initialization.
 		hl.Logger.Debug("ChainID is empty in cliCtx")
 		if nodeStatus.NodeInfo.Network == "" {
 			return 0, 0, errors.New("network is empty in node status; cannot determine initial fromBlock")

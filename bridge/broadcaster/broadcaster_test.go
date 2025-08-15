@@ -125,7 +125,7 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	encodingConfig := moduletestutil.MakeTestEncodingConfig()
 	txConfig := encodingConfig.TxConfig
 
-	txBroadcaster := NewTxBroadcaster(heimdallApp.AppCodec(), client.Context{}, func(address string) sdk.AccountI {
+	txBroadcaster := NewTxBroadcaster(heimdallApp.AppCodec(), context.Background(), client.Context{}, func(address string) sdk.AccountI {
 		return authTypes.NewBaseAccount(heimdallAddressBytes, cosmosPrivKey.PubKey(), 1, 0)
 	})
 

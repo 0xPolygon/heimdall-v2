@@ -285,7 +285,7 @@ func IsCatchingUp(cliCtx client.Context, ctx context.Context) bool {
 }
 
 // GetAccount returns heimdall auth account
-func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
+func GetAccount(ctx context.Context, cliCtx client.Context, address string) (sdk.AccountI, error) {
 	var account sdk.AccountI
 	cmt := helper.GetConfig().CometBFTRPCUrl
 	rpc, err := client.NewClientFromNode(cmt)
@@ -295,7 +295,9 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 	cliCtx = cliCtx.WithClient(rpc)
 
 	queryClient := authtypes.NewQueryClient(cliCtx)
-	res, err := queryClient.Account(context.Background(), &authtypes.QueryAccountRequest{Address: address})
+
+	// use the caller's ctx
+	res, err := queryClient.Account(ctx, &authtypes.QueryAccountRequest{Address: address})
 	if err != nil {
 		return nil, err
 	}

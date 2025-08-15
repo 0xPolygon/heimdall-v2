@@ -89,6 +89,19 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	chainParams, err = srv.ck.GetParams(ctx)
+	if err != nil {
+		logger.Error("error in getting chain manager params", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+	if msg.BorChainId != chainParams.ChainParams.BorChainId {
+		logger.Error("bor chain id mismatch",
+			"expected", chainParams.ChainParams.BorChainId,
+			"received", msg.BorChainId,
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	// validate checkpoint
 	validCheckpoint, err := types.IsValidCheckpoint(msg.StartBlock, msg.EndBlock, msg.RootHash, params.MaxCheckpointLength, contractCaller, borChainTxConfirmations)
 	if err != nil {

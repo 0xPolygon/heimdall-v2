@@ -27,7 +27,7 @@ func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger l
 	// setting this to true to as the if block in BroadcastTx
 	// might cause a canceled transaction.
 	clientCtx.SkipConfirm = true
-	account, err := util.GetAccount(clientCtx, sender)
+	account, err := util.GetAccount(context.Background(), clientCtx, sender)
 	if err != nil {
 		logger.Error("Error fetching account", "address", sender, "err", err)
 		return err
@@ -64,7 +64,7 @@ func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger l
 }
 
 func MakeTxFactory(cliCtx client.Context, address string, logger log.Logger) (tx.Factory, error) {
-	account, err := util.GetAccount(cliCtx, address)
+	account, err := util.GetAccount(context.Background(), cliCtx, address)
 	if err != nil {
 		logger.Error("Error fetching account", "address", address, "err", err)
 		return tx.Factory{}, err
