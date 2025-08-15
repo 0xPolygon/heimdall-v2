@@ -324,15 +324,15 @@ replace (
 	cosmossdk.io/api => github.com/0xPolygon/cosmos-sdk/api v0.7.6-0.20250429154832-7177ebac408e
 	cosmossdk.io/client/v2 => github.com/0xPolygon/cosmos-sdk/client/v2 v2.0.0-beta.6
 	cosmossdk.io/collections => github.com/0xPolygon/cosmos-sdk/collections v0.4.0
-	cosmossdk.io/core => github.com/0xPolygon/cosmos-sdk/core v0.11.3-0.20250814084204-6e6b8f232b2a
-	cosmossdk.io/errors => github.com/0xPolygon/cosmos-sdk/errors v1.0.0-beta.7.0.20250814084204-6e6b8f232b2a
+	cosmossdk.io/core => github.com/0xPolygon/cosmos-sdk/core v0.11.3-0.20241126102051-89dc71d02611
+	cosmossdk.io/errors => github.com/0xPolygon/cosmos-sdk/errors v1.0.0-beta.7.0.20241126102051-89dc71d02611
 	cosmossdk.io/log => github.com/0xPolygon/cosmos-sdk/log v1.4.1
 	cosmossdk.io/math => github.com/0xPolygon/cosmos-sdk/math v1.4.0
-	cosmossdk.io/store => github.com/0xPolygon/cosmos-sdk/store v1.1.2-0.20250814084204-6e6b8f232b2a
+	cosmossdk.io/store => github.com/0xPolygon/cosmos-sdk/store v1.1.2-0.20241126102051-89dc71d02611
 	cosmossdk.io/tools/confix => github.com/0xPolygon/cosmos-sdk/tools/confix v0.1.1
-	cosmossdk.io/x/tx => github.com/0xPolygon/cosmos-sdk/x/tx v0.13.6-0.20250814084204-6e6b8f232b2a
+	cosmossdk.io/x/tx => github.com/0xPolygon/cosmos-sdk/x/tx v0.13.6-0.20241126102051-89dc71d02611
 	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.2.1-polygon
-	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.2.4-polygon
+	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.2.5-polygon
 	github.com/ethereum/go-ethereum => github.com/0xPolygon/bor v1.14.14-0.20250811084316-f9787462a289
 	// Following versions might cause an unexpected behavior.
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
