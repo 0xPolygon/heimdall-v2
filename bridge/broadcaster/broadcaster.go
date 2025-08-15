@@ -22,6 +22,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
+const accountRetrieverPollingTimer = 10 * time.Second
+
 // TxBroadcaster is used to broadcast transaction to each chain
 type TxBroadcaster struct {
 	logger log.Logger
@@ -43,8 +45,6 @@ func NewTxBroadcaster(
 	cliCtx client.Context,
 	accRetriever func(address string) sdk.AccountI,
 ) *TxBroadcaster {
-	const pollEvery = 10 * time.Second
-
 	cliCtx = cliCtx.WithCodec(cdc)
 	cliCtx.BroadcastMode = flags.BroadcastSync
 
@@ -84,7 +84,7 @@ func NewTxBroadcaster(
 
 			logger.Info("Account not found yet; waiting before retry",
 				"address", addrHex, "err", err)
-			time.Sleep(pollEvery)
+			time.Sleep(accountRetrieverPollingTimer)
 		}
 	}
 
