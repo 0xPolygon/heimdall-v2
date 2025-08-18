@@ -434,7 +434,7 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 			return err
 		}
 
-		endBlock := lastSpan.EndBlock + params.SpanDuration - 1
+		endBlock := lastSpan.EndBlock + params.SpanDuration
 
 		currentProducer, err := app.BorKeeper.FindCurrentProducerID(ctx, lastSpan.EndBlock)
 		if err != nil {
