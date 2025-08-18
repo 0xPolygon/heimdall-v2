@@ -75,8 +75,52 @@ func AdjustDBValue(cmd *cobra.Command) {
 
 // StartWithCtx starts the bridge runtime as a side service of heimdalld and shuts down gracefully.
 func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
-	// codec with proper interface registry and signing options
-	interfaceRegistry, err := codectypes.NewInterfaceRegistryWithOptions(codectypes.InterfaceRegistryOptions{
+	// setup codec and registry
+	cdc, err := makeCodec()
+	if err != nil {
+		panic(err)
+	}
+	clientCtx = attachCodecIfMissing(clientCtx, cdc)
+
+	// setup queue and CometBFT RPC
+	qc := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
+	qc.StartWorker()
+
+	httpClient, err := createAndStartRPC(helper.GetConfig().CometBFTRPCUrl)
+	if err != nil {
+		logger.Error("Error connecting to server", "err", err)
+		return err
+	}
+
+	// set chain ID
+	chainID, err := resolveChainID(ctx, clientCtx)
+	if err != nil {
+		logger.Error("Error while determining chain ID", "err", err)
+		return err
+	}
+	clientCtx = clientCtx.WithChainID(chainID)
+	clientCtx.BroadcastMode = flags.BroadcastAsync
+
+	// wait until the node is synced
+	if err := waitUntilSynced(ctx, clientCtx, waitDuration); err != nil {
+		// context cancelled while waiting is not an error for shutdown
+		return err
+	}
+
+	// wire bridge services
+	txBroadcaster := broadcaster.NewTxBroadcaster(cdc, ctx, clientCtx, nil)
+	services := []common.Service{
+		listener.NewListenerService(cdc, qc, httpClient),
+		processor.NewProcessorService(cdc, qc, httpClient, txBroadcaster),
+	}
+
+	// run services and handle graceful shutdown
+	return runServices(ctx, services, httpClient)
+}
+
+// makeCodec creates a new codec with the necessary interface registry and registers all required interfaces.
+func makeCodec() (codec.Codec, error) {
+	ir, err := codectypes.NewInterfaceRegistryWithOptions(codectypes.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
 			AddressCodec:          address.HexCodec{},
@@ -84,92 +128,84 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 		},
 	})
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("interface registry: %w", err)
 	}
 
-	cryptocodec.RegisterInterfaces(interfaceRegistry)
-	authTypes.RegisterInterfaces(interfaceRegistry)
-	checkpointTypes.RegisterInterfaces(interfaceRegistry)
-	milestoneTypes.RegisterInterfaces(interfaceRegistry)
-	clerkTypes.RegisterInterfaces(interfaceRegistry)
-	stakeTypes.RegisterInterfaces(interfaceRegistry)
-	topupTypes.RegisterInterfaces(interfaceRegistry)
+	cryptocodec.RegisterInterfaces(ir)
+	authTypes.RegisterInterfaces(ir)
+	checkpointTypes.RegisterInterfaces(ir)
+	milestoneTypes.RegisterInterfaces(ir)
+	clerkTypes.RegisterInterfaces(ir)
+	stakeTypes.RegisterInterfaces(ir)
+	topupTypes.RegisterInterfaces(ir)
 
-	cdc := codec.NewProtoCodec(interfaceRegistry)
+	return codec.NewProtoCodec(ir), nil
+}
+
+// attachCodecIfMissing checks if the client context has a codec set, and if not, attaches the provided codec.
+func attachCodecIfMissing(clientCtx client.Context, cdc codec.Codec) client.Context {
 	if clientCtx.Codec == nil {
-		clientCtx = clientCtx.WithCodec(cdc)
+		return clientCtx.WithCodec(cdc)
 	}
+	return clientCtx
+}
 
-	// queue connector & cometbft http client
-	qc := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
-	qc.StartWorker()
-
-	httpClient, err := rpchttp.New(helper.GetConfig().CometBFTRPCUrl, "/websocket")
+// createAndStartRPC creates and starts a CometBFT HTTP client for the given RPC URL.
+func createAndStartRPC(rpcURL string) (*rpchttp.HTTP, error) {
+	httpClient, err := rpchttp.New(rpcURL, "/websocket")
 	if err != nil {
-		panic(fmt.Sprintf("Error connecting to server %v", err))
+		return nil, fmt.Errorf("creating cometbft http client: %w", err)
 	}
-
-	// selected services
-	var services []common.Service
-
-	// start cometbft http client
 	if err := httpClient.Start(); err != nil {
-		logger.Error("Error connecting to server", "err", err)
-		return err
+		return nil, fmt.Errorf("starting cometbft http client: %w", err)
+	}
+	return httpClient, nil
+}
+
+// resolveChainID retrieves the chain ID from the client context or node status.
+func resolveChainID(ctx context.Context, clientCtx client.Context) (string, error) {
+	if cid := clientCtx.ChainID; cid != "" {
+		logger.Info("ChainID set in clientCtx", "chainId", cid)
+		return cid, nil
 	}
 
-	// set chainId
-	chainId := clientCtx.ChainID
-	if chainId == "" {
-		logger.Info("ChainID is empty in clientCtx at bridge startup, fetching from node status")
-		// Fetch chain ID from node status
-		nodeStatus, err := helper.GetNodeStatus(clientCtx, ctx)
-		if err != nil {
-			logger.Error("Error while fetching heimdall node status", "error", err)
-			return err
-		}
-		if nodeStatus.NodeInfo.Network == "" {
-			return errors.New("network is empty in node status, cannot determine chain ID")
-		}
-		chainId = nodeStatus.NodeInfo.Network
-		logger.Info("ChainID fetched from node status", "chainId", chainId)
-	} else {
-		logger.Info("ChainID set in clientCtx", "chainId", chainId)
+	logger.Info("ChainID is empty in clientCtx at bridge startup, fetching from node status")
+
+	nodeStatus, err := helper.GetNodeStatus(clientCtx, ctx)
+	if err != nil {
+		return "", fmt.Errorf("fetching node status: %w", err)
+	}
+	if nodeStatus.NodeInfo.Network == "" {
+		return "", errors.New("network is empty in node status, cannot determine chain ID")
 	}
 
-	// ensure clientCtx carries the chain-id for signing/broadcast
-	clientCtx = clientCtx.WithChainID(chainId)
+	logger.Info("ChainID fetched from node status", "chainId", nodeStatus.NodeInfo.Network)
+	return nodeStatus.NodeInfo.Network, nil
+}
 
-	clientCtx.BroadcastMode = flags.BroadcastAsync
-
-	// start bridge services only when node fully synced
+// waitUntilSynced checks if the node is synced and waits until it is up to date.
+func waitUntilSynced(ctx context.Context, clientCtx client.Context, d time.Duration) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
-		case <-time.After(waitDuration):
+			return ctx.Err()
+		case <-time.After(d):
 			if !util.IsCatchingUp(clientCtx, ctx) {
 				logger.Info("Node up to date, starting bridge services")
-				goto startServices
+				return nil
 			}
 			logger.Info("Waiting for heimdall to be synced")
 		}
 	}
+}
 
-startServices:
+// runServices starts all the bridge services and handles graceful shutdown.
+func runServices(ctx context.Context, services []common.Service, httpClient *rpchttp.HTTP) error {
 	var g errgroup.Group
 
-	// Create the broadcaster (it will still poll for the account if needed)
-	txBroadcaster := broadcaster.NewTxBroadcaster(cdc, ctx, clientCtx, nil)
-
-	// Wire services now that we’re ready
-	services = append(services,
-		listener.NewListenerService(cdc, qc, httpClient),
-		processor.NewProcessorService(cdc, qc, httpClient, txBroadcaster),
-	)
-
+	// start each service
 	for _, svc := range services {
-		s := svc // capture
+		s := svc
 		g.Go(func() error {
 			if err := s.Start(); err != nil {
 				logger.Error("service.Start failed", "err", err)
@@ -180,11 +216,12 @@ startServices:
 		})
 	}
 
-	// shutdown phase
+	// shutdown controller
 	g.Go(func() error {
 		<-ctx.Done()
-
 		logger.Info("Received stop signal - Stopping all heimdall bridge services")
+
+		// stop services
 		for _, s := range services {
 			if s.IsRunning() {
 				if err := s.Stop(); err != nil {
@@ -193,10 +230,14 @@ startServices:
 				}
 			}
 		}
+
+		// stop comet client
 		if err := httpClient.Stop(); err != nil {
 			logger.Error("httpClient.Stop failed", "err", err)
 			return err
 		}
+
+		// close DB
 		util.CloseBridgeDBInstance()
 		return nil
 	})
@@ -205,6 +246,5 @@ startServices:
 		logger.Error("Bridge stopped", "err", err)
 		return err
 	}
-
 	return nil
 }
