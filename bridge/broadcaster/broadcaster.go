@@ -85,6 +85,12 @@ func NewTxBroadcaster(
 			logger.Info("Account not found yet; waiting before retry",
 				"address", addrHex, "err", err)
 			time.Sleep(accountRetrieverPollingTimer)
+
+			// anomaly: node is synced but account is still not found
+			if !util.IsCatchingUp(cliCtx, ctx) {
+				logger.Error("Node synced but account not found",
+					"address", addrHex, "error", err)
+			}
 		}
 	}
 
