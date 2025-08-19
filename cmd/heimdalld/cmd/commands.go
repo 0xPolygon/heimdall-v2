@@ -51,7 +51,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/0xPolygon/heimdall-v2/app"
-	bridgeCmd "github.com/0xPolygon/heimdall-v2/bridge/cmd"
+	bridge "github.com/0xPolygon/heimdall-v2/bridge/service"
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/version"
@@ -68,7 +68,8 @@ const (
 )
 
 const (
-	nodeDirPerm = 0o755
+	nodeDirPerm                = 0o755
+	restServerTimeOutInMinutes = 30
 )
 
 var tempDir = func() string {
@@ -174,18 +175,52 @@ func initRootCmd(
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
 			helper.InitHeimdallConfig("")
 
-			// wait for the rest server to start
-			resultChan := make(chan string)
-			// TODO take this back to 5 minutes after migration is done
-			timeout := time.After(120 * time.Minute)
+			// wait for the rest server to start.
+			resultChan := make(chan string, 1)
 
-			go checkServerStatus(clientCtx, helper.GetHeimdallServerEndpoint(util.AccountParamsURL), resultChan)
+			// Create a cancellable context for the server check
+			checkCtx, cancel := context.WithCancel(ctx)
+			defer cancel()
+
+			timer := time.NewTimer(restServerTimeOutInMinutes * time.Minute)
+			defer timer.Stop()
+
+			go checkServerStatus(checkCtx, helper.GetHeimdallServerEndpoint(util.AccountParamsURL), resultChan)
 
 			select {
 			case result := <-resultChan:
 				fmt.Println("Fetch successful, received data:", result)
-			case <-timeout:
-				return fmt.Errorf("fetch operation timed out")
+				cancel() // stop the poller immediately
+
+			case <-timer.C:
+				fmt.Printf(
+					"Fetch operation timed out - REST server did not respond within %d minutes\n",
+					restServerTimeOutInMinutes,
+				)
+
+				ticker := time.NewTicker(1 * time.Second)
+				defer ticker.Stop()
+
+			waitLoop:
+				for {
+					select {
+					case result := <-resultChan:
+						fmt.Println("Fetch successful, received data:", result)
+						// stop polling now that we’re done
+						cancel()
+						// continue with PostSetup
+						break waitLoop
+
+					case <-ticker.C:
+						// keep printing every second if rest-server is not responding
+						fmt.Println("Warning: still waiting for REST server to respond... Something wrong with it, please check!")
+
+					case <-ctx.Done():
+						// if the app is shutting down, stop waiting and continue without the REST server
+						fmt.Println("Startup context cancelled while waiting... Continuing without REST server")
+						break waitLoop
+					}
+				}
 			}
 
 			chainParam, err := util.GetChainmanagerParams(clientCtx.Codec)
@@ -198,9 +233,9 @@ func initRootCmd(
 
 			// start bridge
 			if viper.GetBool(helper.BridgeFlag) {
-				bridgeCmd.AdjustBridgeDBValue(rootCmd)
+				bridge.AdjustDBValue(rootCmd)
 				g.Go(func() error {
-					return bridgeCmd.StartBridgeWithCtx(ctx, clientCtx)
+					return bridge.StartWithCtx(ctx, clientCtx)
 				})
 			}
 
@@ -229,47 +264,65 @@ func initRootCmd(
 	)
 
 	rootCmd.AddCommand(showPrivateKeyCmd())
-	rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
 
 	rootCmd.AddCommand(veDecodeCmd())
 	rootCmd.AddCommand(showAccountCmd())
 }
 
-func checkServerStatus(ctx client.Context, url string, resultChan chan<- string) {
+func checkServerStatus(ctx context.Context, url string, resultChan chan<- string) {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
-	req, err := http.NewRequestWithContext(ctx.CmdContext, http.MethodGet, url, nil)
-	if err != nil {
-		panic(fmt.Sprintf("Error creating a new http request: %v", err))
+	// Create HTTP client
+	httpClient := &http.Client{
+		Timeout: 10 * time.Second,
 	}
 
-	for ; true; <-ticker.C {
-		resp, err := http.DefaultClient.Do(req)
+	for {
+		select {
+		case <-ctx.Done():
+			// Context canceled, stop checking
+			return
+		case <-ticker.C:
+			// Check the rest server
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
-			fmt.Println("Error fetching the URL:", err)
+			fmt.Printf("Error creating HTTP request: %v\n", err)
+			return
+		}
+
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			fmt.Printf("Error fetching URL %s: %v\n", url, err)
 			continue
 		}
 
 		func() {
 			defer func(Body io.ReadCloser) {
-				err := Body.Close()
-				if err != nil {
-					fmt.Println("Error closing response body:", err)
+				if closeErr := Body.Close(); closeErr != nil {
+					fmt.Printf("Error closing response body: %v\n", closeErr)
 				}
 			}(resp.Body)
+
 			if resp.StatusCode == http.StatusOK {
 				body, err := io.ReadAll(resp.Body)
 				if err != nil {
-					fmt.Println("Error reading response body:", err)
+					fmt.Printf("Error reading response body: %v\n", err)
 					return
 				}
 
-				resultChan <- string(body)
+				select {
+				case resultChan <- string(body):
+					// result successfully sent
+				case <-ctx.Done():
+					// Context canceled while trying to send the result
+				}
 				return
 			} else {
-				fmt.Println("Received non-OK HTTP status:", resp.StatusCode)
+				fmt.Printf("Received non-OK HTTP status from %s: %d\n", url, resp.StatusCode)
 			}
 		}()
 	}
