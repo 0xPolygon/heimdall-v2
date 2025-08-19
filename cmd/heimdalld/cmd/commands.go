@@ -176,7 +176,6 @@ func initRootCmd(
 			helper.InitHeimdallConfig("")
 
 			// wait for the rest server to start.
-			// buffer the channel to prevent race conditions
 			resultChan := make(chan string, 1)
 
 			// Create a cancellable context for the server check
@@ -292,7 +291,7 @@ func checkServerStatus(ctx context.Context, url string, resultChan chan<- string
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			fmt.Printf("Error creating HTTP request: %v\n", err)
-			continue
+			return
 		}
 
 		resp, err := httpClient.Do(req)
