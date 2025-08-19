@@ -85,6 +85,9 @@ func TestCheckAndAddFutureSpan(t *testing.T) {
 		mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return([]common.Address{common.HexToAddress(validators[0].Signer)}, nil)
 		app.BorKeeper.SetContractCaller(mockCaller)
 
+		params, err := app.BorKeeper.GetParams(ctx)
+		require.NoError(t, err)
+
 		// Set up producer votes so that producer selection can work
 		if len(validators) > 1 {
 			// All validators vote for the same candidate to ensure consensus
@@ -115,13 +118,15 @@ func TestCheckAndAddFutureSpan(t *testing.T) {
 			app.BorKeeper.SetParams(ctx, params)
 		}
 
-		err := app.checkAndAddFutureSpan(ctx, majorityMilestone, lastSpan, supportingValidatorIDs)
+		err = app.checkAndAddFutureSpan(ctx, majorityMilestone, lastSpan, supportingValidatorIDs)
 		require.NoError(t, err)
 
 		// Check that a new span was created
 		currentLastSpan, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
 		require.Equal(t, lastSpan.Id+1, currentLastSpan.Id, "a new span should be created with incremented ID")
+		require.Equal(t, lastSpan.EndBlock+1, currentLastSpan.StartBlock, "new span should start after the last span")
+		require.Equal(t, currentLastSpan.StartBlock+params.SpanDuration-1, currentLastSpan.EndBlock, "new span should have the exact span duration defined in params")
 	})
 }
 
@@ -335,6 +340,8 @@ func TestCheckAndRotateCurrentSpan(t *testing.T) {
 		currentLastSpan, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
 		require.Equal(t, lastSpan.Id+1, currentLastSpan.Id, "a new span should be created with incremented ID")
+		require.Equal(t, lastMilestone.EndBlock+1, currentLastSpan.StartBlock, "new span should start after the last milestone")
+		require.Equal(t, lastSpan.EndBlock, currentLastSpan.EndBlock, "new span will have the same end block as the last span")
 
 		// Verify other expected state changes
 		newLastMilestoneBlock, err := app.MilestoneKeeper.GetLastMilestoneBlock(ctx)
