@@ -119,11 +119,18 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return nil
 	}
 
+	penultimateValidatorSet, err := k.GetPenultimateBlockValidatorSet(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error in fetching penultimate validator set from store", "err", err)
+		return nil
+	}
+
 	return &types.GenesisState{
-		Validators:                k.GetAllValidators(ctx),
-		CurrentValidatorSet:       validatorSet,
-		StakingSequences:          sequences,
-		PreviousBlockValidatorSet: previousValidatorSet,
-		LastBlockTxs:              lastBlockTxs,
+		Validators:                   k.GetAllValidators(ctx),
+		CurrentValidatorSet:          validatorSet,
+		StakingSequences:             sequences,
+		PreviousBlockValidatorSet:    previousValidatorSet,
+		LastBlockTxs:                 lastBlockTxs,
+		PenultimateBlockValidatorSet: penultimateValidatorSet,
 	}
 }
