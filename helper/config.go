@@ -439,7 +439,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		tallyFixHeight = 13143851
 		disableVPCheckHeight = 10618199
 		disableValSetCheckHeight = 10618299
-		initialHeight = 0
+		initialHeight = 8788501
 	default:
 		veblopHeight = 0
 		tallyFixHeight = 0
