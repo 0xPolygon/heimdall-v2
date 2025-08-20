@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"errors"
 	"math/big"
+	"strconv"
 	"testing"
 
 	storetypes "cosmossdk.io/store/types"
@@ -105,6 +106,7 @@ func (s *KeeperTestSuite) SetupTest() {
 
 func (s *KeeperTestSuite) TestAddNewSpan() {
 	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	spans := s.genTestSpans(2)
 
 	testcases := []struct {
@@ -137,6 +139,15 @@ func (s *KeeperTestSuite) TestAddNewSpan() {
 			lastSpan, err := borKeeper.GetLastSpan(ctx)
 			require.NoError(err)
 			require.Equal(tc.span, lastSpan)
+
+			// Ensure we've captured correct span insertion event
+			events := sdkCtx.EventManager().ABCIEvents()
+			event := events[len(events)-1]
+			require.Equal(event.Type, types.EventTypeSpan)
+			require.Equal(strconv.FormatUint(tc.span.Id, 10), event.Attributes[0].Value)
+			require.Equal(strconv.FormatUint(tc.span.StartBlock, 10), event.Attributes[1].Value)
+			require.Equal(strconv.FormatUint(tc.span.EndBlock, 10), event.Attributes[2].Value)
+			require.Equal(tc.span.SelectedProducers[0].Signer, event.Attributes[3].Value)
 		})
 	}
 }
