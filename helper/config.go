@@ -437,8 +437,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case AmoyChain:
 		veblopHeight = 0
 		tallyFixHeight = 13143851
-		disableVPCheckHeight = 10618199 // TODO: confirm with team
-		disableValSetCheckHeight = 0    // TODO: confirm with team
+		disableVPCheckHeight = 10618199
+		disableValSetCheckHeight = 10618299
 		initialHeight = 0
 	default:
 		veblopHeight = 0
