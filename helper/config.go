@@ -447,6 +447,9 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 8788501
 	default:
 		veblopHeight = 384 // VeBlop height for local testnets.
+		tallyFixHeight = 0
+		disableVPCheckHeight = 0
+		disableValSetCheckHeight = 0
 		initialHeight = 0
 	}
 }

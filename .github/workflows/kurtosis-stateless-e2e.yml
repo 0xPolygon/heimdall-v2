@@ -3,10 +3,10 @@ name: Stateless Sync Tests
 on:
   push:
     branches:
-      - 'stateless_sync'
+      - 'develop'
   pull_request:
     branches:
-      - 'stateless_sync'
+      - 'develop'
     types: [opened, synchronize, reopened]
 
 concurrency:
