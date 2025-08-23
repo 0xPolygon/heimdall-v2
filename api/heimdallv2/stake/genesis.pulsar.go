@@ -112,12 +112,13 @@ func (x *_GenesisState_3_list) IsValid() bool {
 }
 
 var (
-	md_GenesisState                              protoreflect.MessageDescriptor
-	fd_GenesisState_validators                   protoreflect.FieldDescriptor
-	fd_GenesisState_current_validator_set        protoreflect.FieldDescriptor
-	fd_GenesisState_staking_sequences            protoreflect.FieldDescriptor
-	fd_GenesisState_previous_block_validator_set protoreflect.FieldDescriptor
-	fd_GenesisState_last_block_txs               protoreflect.FieldDescriptor
+	md_GenesisState                                 protoreflect.MessageDescriptor
+	fd_GenesisState_validators                      protoreflect.FieldDescriptor
+	fd_GenesisState_current_validator_set           protoreflect.FieldDescriptor
+	fd_GenesisState_staking_sequences               protoreflect.FieldDescriptor
+	fd_GenesisState_previous_block_validator_set    protoreflect.FieldDescriptor
+	fd_GenesisState_last_block_txs                  protoreflect.FieldDescriptor
+	fd_GenesisState_penultimate_block_validator_set protoreflect.FieldDescriptor
 )
 
 func init() {
@@ -128,6 +129,7 @@ func init() {
 	fd_GenesisState_staking_sequences = md_GenesisState.Fields().ByName("staking_sequences")
 	fd_GenesisState_previous_block_validator_set = md_GenesisState.Fields().ByName("previous_block_validator_set")
 	fd_GenesisState_last_block_txs = md_GenesisState.Fields().ByName("last_block_txs")
+	fd_GenesisState_penultimate_block_validator_set = md_GenesisState.Fields().ByName("penultimate_block_validator_set")
 }
 
 var _ protoreflect.Message = (*fastReflection_GenesisState)(nil)
@@ -225,6 +227,12 @@ func (x *fastReflection_GenesisState) Range(f func(protoreflect.FieldDescriptor,
 			return
 		}
 	}
+	if x.PenultimateBlockValidatorSet != nil {
+		value := protoreflect.ValueOfMessage(x.PenultimateBlockValidatorSet.ProtoReflect())
+		if !f(fd_GenesisState_penultimate_block_validator_set, value) {
+			return
+		}
+	}
 }
 
 // Has reports whether a field is populated.
@@ -250,6 +258,8 @@ func (x *fastReflection_GenesisState) Has(fd protoreflect.FieldDescriptor) bool 
 		return x.PreviousBlockValidatorSet != nil
 	case "heimdallv2.stake.GenesisState.last_block_txs":
 		return x.LastBlockTxs != nil
+	case "heimdallv2.stake.GenesisState.penultimate_block_validator_set":
+		return x.PenultimateBlockValidatorSet != nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.GenesisState"))
@@ -276,6 +286,8 @@ func (x *fastReflection_GenesisState) Clear(fd protoreflect.FieldDescriptor) {
 		x.PreviousBlockValidatorSet = nil
 	case "heimdallv2.stake.GenesisState.last_block_txs":
 		x.LastBlockTxs = nil
+	case "heimdallv2.stake.GenesisState.penultimate_block_validator_set":
+		x.PenultimateBlockValidatorSet = nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.GenesisState"))
@@ -313,6 +325,9 @@ func (x *fastReflection_GenesisState) Get(descriptor protoreflect.FieldDescripto
 	case "heimdallv2.stake.GenesisState.last_block_txs":
 		value := x.LastBlockTxs
 		return protoreflect.ValueOfMessage(value.ProtoReflect())
+	case "heimdallv2.stake.GenesisState.penultimate_block_validator_set":
+		value := x.PenultimateBlockValidatorSet
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.GenesisState"))
@@ -347,6 +362,8 @@ func (x *fastReflection_GenesisState) Set(fd protoreflect.FieldDescriptor, value
 		x.PreviousBlockValidatorSet = value.Message().Interface().(*ValidatorSet)
 	case "heimdallv2.stake.GenesisState.last_block_txs":
 		x.LastBlockTxs = value.Message().Interface().(*LastBlockTxs)
+	case "heimdallv2.stake.GenesisState.penultimate_block_validator_set":
+		x.PenultimateBlockValidatorSet = value.Message().Interface().(*ValidatorSet)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.GenesisState"))
@@ -394,6 +411,11 @@ func (x *fastReflection_GenesisState) Mutable(fd protoreflect.FieldDescriptor) p
 			x.LastBlockTxs = new(LastBlockTxs)
 		}
 		return protoreflect.ValueOfMessage(x.LastBlockTxs.ProtoReflect())
+	case "heimdallv2.stake.GenesisState.penultimate_block_validator_set":
+		if x.PenultimateBlockValidatorSet == nil {
+			x.PenultimateBlockValidatorSet = new(ValidatorSet)
+		}
+		return protoreflect.ValueOfMessage(x.PenultimateBlockValidatorSet.ProtoReflect())
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.GenesisState"))
@@ -421,6 +443,9 @@ func (x *fastReflection_GenesisState) NewField(fd protoreflect.FieldDescriptor) 
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	case "heimdallv2.stake.GenesisState.last_block_txs":
 		m := new(LastBlockTxs)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
+	case "heimdallv2.stake.GenesisState.penultimate_block_validator_set":
+		m := new(ValidatorSet)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	default:
 		if fd.IsExtension() {
@@ -515,6 +540,10 @@ func (x *fastReflection_GenesisState) ProtoMethods() *protoiface.Methods {
 			l = options.Size(x.LastBlockTxs)
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
+		if x.PenultimateBlockValidatorSet != nil {
+			l = options.Size(x.PenultimateBlockValidatorSet)
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
 		}
@@ -543,6 +572,20 @@ func (x *fastReflection_GenesisState) ProtoMethods() *protoiface.Methods {
 		if x.unknownFields != nil {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.PenultimateBlockValidatorSet != nil {
+			encoded, err := options.Marshal(x.PenultimateBlockValidatorSet)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+			i--
+			dAtA[i] = 0x32
 		}
 		if x.LastBlockTxs != nil {
 			encoded, err := options.Marshal(x.LastBlockTxs)
@@ -834,6 +877,42 @@ func (x *fastReflection_GenesisState) ProtoMethods() *protoiface.Methods {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
 				}
 				iNdEx = postIndex
+			case 6:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field PenultimateBlockValidatorSet", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.PenultimateBlockValidatorSet == nil {
+					x.PenultimateBlockValidatorSet = &ValidatorSet{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.PenultimateBlockValidatorSet); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -887,11 +966,12 @@ type GenesisState struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Validators                []*Validator  `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
-	CurrentValidatorSet       *ValidatorSet `protobuf:"bytes,2,opt,name=current_validator_set,json=currentValidatorSet,proto3" json:"current_validator_set,omitempty"`
-	StakingSequences          []string      `protobuf:"bytes,3,rep,name=staking_sequences,json=stakingSequences,proto3" json:"staking_sequences,omitempty"`
-	PreviousBlockValidatorSet *ValidatorSet `protobuf:"bytes,4,opt,name=previous_block_validator_set,json=previousBlockValidatorSet,proto3" json:"previous_block_validator_set,omitempty"`
-	LastBlockTxs              *LastBlockTxs `protobuf:"bytes,5,opt,name=last_block_txs,json=lastBlockTxs,proto3" json:"last_block_txs,omitempty"`
+	Validators                   []*Validator  `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
+	CurrentValidatorSet          *ValidatorSet `protobuf:"bytes,2,opt,name=current_validator_set,json=currentValidatorSet,proto3" json:"current_validator_set,omitempty"`
+	StakingSequences             []string      `protobuf:"bytes,3,rep,name=staking_sequences,json=stakingSequences,proto3" json:"staking_sequences,omitempty"`
+	PreviousBlockValidatorSet    *ValidatorSet `protobuf:"bytes,4,opt,name=previous_block_validator_set,json=previousBlockValidatorSet,proto3" json:"previous_block_validator_set,omitempty"`
+	LastBlockTxs                 *LastBlockTxs `protobuf:"bytes,5,opt,name=last_block_txs,json=lastBlockTxs,proto3" json:"last_block_txs,omitempty"`
+	PenultimateBlockValidatorSet *ValidatorSet `protobuf:"bytes,6,opt,name=penultimate_block_validator_set,json=penultimateBlockValidatorSet,proto3" json:"penultimate_block_validator_set,omitempty"`
 }
 
 func (x *GenesisState) Reset() {
@@ -949,6 +1029,13 @@ func (x *GenesisState) GetLastBlockTxs() *LastBlockTxs {
 	return nil
 }
 
+func (x *GenesisState) GetPenultimateBlockValidatorSet() *ValidatorSet {
+	if x != nil {
+		return x.PenultimateBlockValidatorSet
+	}
+	return nil
+}
+
 var File_heimdallv2_stake_genesis_proto protoreflect.FileDescriptor
 
 var file_heimdallv2_stake_genesis_proto_rawDesc = []byte{
@@ -962,7 +1049,7 @@ var file_heimdallv2_stake_genesis_proto_rawDesc = []byte{
 	0x73, 0x74, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x74, 0x78, 0x73, 0x2e, 0x70, 0x72, 0x6f,
 	0x74, 0x6f, 0x1a, 0x20, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x73,
 	0x74, 0x61, 0x6b, 0x65, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x22, 0xa6, 0x03, 0x0a, 0x0c, 0x47, 0x65, 0x6e, 0x65, 0x73, 0x69, 0x73,
+	0x72, 0x6f, 0x74, 0x6f, 0x22, 0x98, 0x04, 0x0a, 0x0c, 0x47, 0x65, 0x6e, 0x65, 0x73, 0x69, 0x73,
 	0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x46, 0x0a, 0x0a, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
 	0x6f, 0x72, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x68, 0x65, 0x69, 0x6d,
 	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x56, 0x61, 0x6c,
@@ -988,20 +1075,27 @@ var file_heimdallv2_stake_genesis_proto_rawDesc = []byte{
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
 	0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x4c, 0x61, 0x73, 0x74, 0x42, 0x6c, 0x6f, 0x63,
 	0x6b, 0x54, 0x78, 0x73, 0x42, 0x09, 0xc8, 0xde, 0x1f, 0x00, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52,
-	0x0c, 0x6c, 0x61, 0x73, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x54, 0x78, 0x73, 0x42, 0xbc, 0x01,
-	0x0a, 0x14, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x42, 0x0c, 0x47, 0x65, 0x6e, 0x65, 0x73, 0x69, 0x73, 0x50,
-	0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x35, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
-	0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x73, 0x74, 0x61, 0x6b, 0x65, 0xa2, 0x02, 0x03,
-	0x48, 0x53, 0x58, 0xaa, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2e, 0x53, 0x74, 0x61, 0x6b, 0x65, 0xca, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x5c, 0x53, 0x74, 0x61, 0x6b, 0x65, 0xe2, 0x02, 0x1c, 0x48, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x53, 0x74, 0x61, 0x6b, 0x65, 0x5c, 0x47, 0x50, 0x42,
-	0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x11, 0x48, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x53, 0x74, 0x61, 0x6b, 0x65, 0x62, 0x06, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x33,
+	0x0c, 0x6c, 0x61, 0x73, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x54, 0x78, 0x73, 0x12, 0x70, 0x0a,
+	0x1f, 0x70, 0x65, 0x6e, 0x75, 0x6c, 0x74, 0x69, 0x6d, 0x61, 0x74, 0x65, 0x5f, 0x62, 0x6c, 0x6f,
+	0x63, 0x6b, 0x5f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x5f, 0x73, 0x65, 0x74,
+	0x18, 0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61,
+	0x74, 0x6f, 0x72, 0x53, 0x65, 0x74, 0x42, 0x09, 0xc8, 0xde, 0x1f, 0x00, 0xa8, 0xe7, 0xb0, 0x2a,
+	0x01, 0x52, 0x1c, 0x70, 0x65, 0x6e, 0x75, 0x6c, 0x74, 0x69, 0x6d, 0x61, 0x74, 0x65, 0x42, 0x6c,
+	0x6f, 0x63, 0x6b, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x65, 0x74, 0x42,
+	0xbc, 0x01, 0x0a, 0x14, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x42, 0x0c, 0x47, 0x65, 0x6e, 0x65, 0x73, 0x69,
+	0x73, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x35, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
+	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x73, 0x74, 0x61, 0x6b, 0x65, 0xa2,
+	0x02, 0x03, 0x48, 0x53, 0x58, 0xaa, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x53, 0x74, 0x61, 0x6b, 0x65, 0xca, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64,
+	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x53, 0x74, 0x61, 0x6b, 0x65, 0xe2, 0x02, 0x1c, 0x48, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x53, 0x74, 0x61, 0x6b, 0x65, 0x5c, 0x47,
+	0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x11, 0x48, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x53, 0x74, 0x61, 0x6b, 0x65, 0x62, 0x06,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1028,11 +1122,12 @@ var file_heimdallv2_stake_genesis_proto_depIdxs = []int32{
 	2, // 1: heimdallv2.stake.GenesisState.current_validator_set:type_name -> heimdallv2.stake.ValidatorSet
 	2, // 2: heimdallv2.stake.GenesisState.previous_block_validator_set:type_name -> heimdallv2.stake.ValidatorSet
 	3, // 3: heimdallv2.stake.GenesisState.last_block_txs:type_name -> heimdallv2.stake.LastBlockTxs
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	2, // 4: heimdallv2.stake.GenesisState.penultimate_block_validator_set:type_name -> heimdallv2.stake.ValidatorSet
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_heimdallv2_stake_genesis_proto_init() }
