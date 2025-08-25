@@ -71,8 +71,8 @@ func NewTxBroadcaster(
 			case <-ctx.Done():
 				// return a minimal broadcaster so caller can shut down cleanly
 				return &TxBroadcaster{
-					logger: logger,
 					CliCtx: cliCtx.WithFromAddress(fromAddr),
+					logger: logger,
 				}
 			default:
 			}
@@ -131,6 +131,7 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}) (*s
 	// in between two bridge broadcast tx calls, but the lastSeqNo in the TxBroadcaster struct is not updated.
 	// And that causes all the subsequent txs broadcasted to fail.
 	if tb.lastSeqNo < account.GetSequence() {
+		tb.logger.Debug("Updating account sequence", "oldSeq", tb.lastSeqNo, "newSeq", account.GetSequence())
 		tb.lastSeqNo = account.GetSequence()
 	}
 
