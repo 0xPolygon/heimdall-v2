@@ -116,6 +116,8 @@ const (
 
 	DefaultAmoyTestnetProducers = "1,2,3"
 
+	DefaultMumbaiTestnetProducers = "1,2,3"
+
 	DefaultLocalTestnetProducers = "1,2,3"
 
 	secretFilePerm = 0o600
@@ -400,6 +402,9 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		case AmoyChain:
 			conf.Custom.ProducerVotes = DefaultAmoyTestnetProducers
 			Logger.Debug("Using default amoy producers", "producers", DefaultAmoyTestnetProducers)
+		case MumbaiChain:
+			conf.Custom.ProducerVotes = DefaultMumbaiTestnetProducers
+			Logger.Debug("Using default mumbai producers", "producers", DefaultMumbaiTestnetProducers)
 		default:
 			conf.Custom.ProducerVotes = DefaultLocalTestnetProducers
 			Logger.Debug("Using default local producers", "producers", DefaultLocalTestnetProducers)
@@ -429,7 +434,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 0 // TODO: confirm with team
 		initialHeight = 0
 	case MumbaiChain:
-		veblopHeight = 0
+		veblopHeight = 48473856
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0 // TODO: confirm with team
@@ -441,7 +446,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 10618299
 		initialHeight = 8788501
 	default:
-		veblopHeight = 0
+		veblopHeight = 256 // VeBlop height for local testnets.
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
@@ -449,7 +454,6 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 }
 
-// GetDefaultHeimdallConfig returns configuration with default params
 func GetDefaultHeimdallConfig() CustomConfig {
 	return CustomConfig{
 		EthRPCUrl:   DefaultMainRPCUrl,
@@ -602,6 +606,8 @@ func GetFallbackProducerVotes() []uint64 {
 		return parseProducerVotes(DefaultMainnetProducers)
 	case AmoyChain:
 		return parseProducerVotes(DefaultAmoyTestnetProducers)
+	case MumbaiChain:
+		return parseProducerVotes(DefaultMumbaiTestnetProducers)
 	default:
 		return parseProducerVotes(DefaultLocalTestnetProducers)
 	}

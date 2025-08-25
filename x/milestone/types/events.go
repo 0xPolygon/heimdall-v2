@@ -21,5 +21,6 @@ func NewMilestoneEvent(milestone Milestone, milestoneNumber uint64) sdk.Event {
 		sdk.NewAttribute("milestone_id", milestone.MilestoneId),
 		sdk.NewAttribute("timestamp", strconv.FormatUint(milestone.Timestamp, 10)),
 		sdk.NewAttribute("number", strconv.FormatUint(milestoneNumber, 10)),
+		sdk.NewAttribute("total_difficulty", strconv.FormatUint(milestone.TotalDifficulty, 10)),
 	)
 }
