@@ -446,7 +446,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 10618299
 		initialHeight = 8788501
 	default:
-		veblopHeight = 384 // VeBlop height for local testnets.
+		veblopHeight = 256 // VeBlop height for local testnets.
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
