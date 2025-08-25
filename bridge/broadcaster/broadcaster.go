@@ -3,6 +3,7 @@ package broadcaster
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -26,15 +27,14 @@ const accountRetrieverPollingTimer = 10 * time.Second
 
 // TxBroadcaster is used to broadcast transaction to each chain
 type TxBroadcaster struct {
+	CliCtx client.Context
 	logger log.Logger
 
-	CliCtx client.Context
-
-	heimdallMutex sync.Mutex
 	borMutex      sync.Mutex
+	heimdallMutex sync.Mutex
 
-	lastSeqNo uint64
 	accNum    uint64
+	lastSeqNo uint64
 }
 
 // NewTxBroadcaster creates a new instance of TxBroadcaster, and waits until the account is visible locally,
@@ -55,7 +55,7 @@ func NewTxBroadcaster(
 	}
 	fromAddr := sdk.MustAccAddressFromHex(addrHex)
 
-	logger := log.NewNopLogger().With("module", "txBroadcaster")
+	logger := log.NewLogger(os.Stdout).With("module", "txBroadcaster")
 
 	var account sdk.AccountI
 	if accRetriever != nil {
@@ -71,8 +71,8 @@ func NewTxBroadcaster(
 			case <-ctx.Done():
 				// return a minimal broadcaster so caller can shut down cleanly
 				return &TxBroadcaster{
-					logger: logger,
 					CliCtx: cliCtx.WithFromAddress(fromAddr),
+					logger: logger,
 				}
 			default:
 			}
@@ -82,23 +82,21 @@ func NewTxBroadcaster(
 				break
 			}
 
-			logger.Info("Account not found yet; waiting before retry",
-				"address", addrHex, "err", err)
+			logger.Info("Account not found yet; waiting before retry", "address", addrHex, "err", err)
 			time.Sleep(accountRetrieverPollingTimer)
 
 			// anomaly: node is synced but account is still not found
 			if !util.IsCatchingUp(cliCtx, ctx) {
-				logger.Error("Node synced but account not found",
-					"address", addrHex, "error", err)
+				logger.Error("Node synced but account not found", "address", addrHex, "error", err)
 			}
 		}
 	}
 
 	return &TxBroadcaster{
-		logger:    logger,
 		CliCtx:    cliCtx.WithFromAddress(fromAddr),
-		lastSeqNo: account.GetSequence(),
+		logger:    logger,
 		accNum:    account.GetAccountNumber(),
+		lastSeqNo: account.GetSequence(),
 	}
 }
 
@@ -119,6 +117,24 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}) (*s
 		return &sdk.TxResponse{}, err
 	}
 
+	address, err := helper.GetAddressString()
+	if err != nil {
+		tb.logger.Error("Error getting address string", "error", err)
+		return &sdk.TxResponse{}, err
+	}
+	account, err := util.GetAccount(context.Background(), tb.CliCtx, address)
+	if err != nil {
+		tb.logger.Error("Error fetching account", "error", err)
+		return &sdk.TxResponse{}, err
+	}
+	// Note: This is a special case where the sequence of an account is updated if any cli commands are executed
+	// in between two bridge broadcast tx calls, but the lastSeqNo in the TxBroadcaster struct is not updated.
+	// And that causes all the subsequent txs broadcasted to fail.
+	if tb.lastSeqNo < account.GetSequence() {
+		tb.logger.Debug("Updating account sequence", "oldSeq", tb.lastSeqNo, "newSeq", account.GetSequence())
+		tb.lastSeqNo = account.GetSequence()
+	}
+
 	// create a factory
 	txf := clienttx.Factory{}.
 		WithTxConfig(txCfg).
@@ -128,7 +144,6 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}) (*s
 		WithAccountNumber(tb.accNum).
 		WithSequence(tb.lastSeqNo).
 		WithKeybase(tb.CliCtx.Keyring).
-		WithSignMode(signMode).
 		WithFees(ante.DefaultFeeWantedPerTx.String()).
 		WithGas(authParams.MaxTxGas)
 

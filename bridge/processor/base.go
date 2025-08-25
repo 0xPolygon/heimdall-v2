@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"cosmossdk.io/log"
@@ -90,7 +91,7 @@ func NewBaseProcessor(cdc codec.Codec, queueConnector *queue.Connector, httpClie
 	}
 
 	if logger == nil {
-		logger = log.NewNopLogger()
+		logger = log.NewLogger(os.Stdout)
 	}
 
 	// creating the syncer object
