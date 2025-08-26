@@ -434,7 +434,7 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 			return err
 		}
 
-		endBlock := lastSpan.EndBlock + params.SpanDuration - 1
+		endBlock := lastSpan.EndBlock + params.SpanDuration
 
 		currentProducer, err := app.BorKeeper.FindCurrentProducerID(ctx, lastSpan.EndBlock)
 		if err != nil {
@@ -644,10 +644,14 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		lastEndHash = lastMilestone.Hash
 	}
 
+	totalVotingPower := validatorSet.GetTotalVotingPower()
+	majorityVP := totalVotingPower*2/3 + 1
+
 	majorityMilestone, aggregatedProposers, proposer, supportingValidatorIDs, err := milestoneAbci.GetMajorityMilestoneProposition(
 		ctx,
 		validatorSet,
 		extVoteInfo,
+		majorityVP,
 		logger,
 		lastEndBlock,
 		lastEndHash,
@@ -738,8 +742,29 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 		msCache.Write()
 	} else {
-		if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
+		// If we can't reach the 2/3 majority, we need to check if the there is at least 1/3 of the voting power supporting a new milestone
+		minMajorityVP := totalVotingPower/3 + 1
+
+		pendingMilestone, _, _, _, err := milestoneAbci.GetMajorityMilestoneProposition(
+			ctx,
+			validatorSet,
+			extVoteInfo,
+			minMajorityVP,
+			logger,
+			lastEndBlock,
+			lastEndHash,
+		)
+		if err != nil {
+			logger.Error("Error occurred while getting 33% majority milestone proposition", "error", err)
 			return nil, err
+		}
+
+		if pendingMilestone == nil {
+			if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
+				return nil, err
+			}
+		} else {
+			logger.Debug("33% majority milestone proposition found, skipping span rotation")
 		}
 	}
 
