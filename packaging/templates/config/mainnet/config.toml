@@ -196,6 +196,9 @@ tls_key_file = ""
 # pprof listen address (https://golang.org/pkg/net/http/pprof)
 pprof_laddr = "localhost:6060"
 
+# EnableConsensusEndpoints enables consensus related endpoints which are only meant for debugging
+enable_consensus_endpoints = "false"
+
 #######################################################
 ###           P2P Configuration Options             ###
 #######################################################
