@@ -327,8 +327,8 @@ replace (
 	cosmossdk.io/store => github.com/0xPolygon/cosmos-sdk/store v1.1.2-0.20241126102051-89dc71d02611
 	cosmossdk.io/tools/confix => github.com/0xPolygon/cosmos-sdk/tools/confix v0.1.1
 	cosmossdk.io/x/tx => github.com/0xPolygon/cosmos-sdk/x/tx v0.13.6-0.20241126102051-89dc71d02611
-	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.2.1-polygon
-	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.2.5-polygon
+	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.2.1-polygon.0.20250826082932-cb15ffef9884
+	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.50.13-0.20250826083048-97558a1fa8e1
 	github.com/ethereum/go-ethereum => github.com/0xPolygon/bor v1.14.14-0.20250811084316-f9787462a289
 	// Following version of goleveldb might cause an unexpected behavior.
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
