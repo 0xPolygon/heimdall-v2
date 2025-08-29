@@ -55,6 +55,8 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 		checkpointBufferTime := uint64(params.CheckpointBufferTime.Seconds())
 
 		if checkpointBuffer.Timestamp == 0 || ((timeStamp > checkpointBuffer.Timestamp) && (timeStamp-checkpointBuffer.Timestamp) >= checkpointBufferTime) {
+			// this is also the case when checkpoint buffer is empty (because of zero timestamp),
+			// hence no need for IsBufferedCheckpointZero check
 			logger.Debug("checkpoint has been timed out. flushing buffer.", "checkpointTimestamp", timeStamp, "prevCheckpointTimestamp", checkpointBuffer.Timestamp)
 			err := m.FlushCheckpointBuffer(ctx)
 			if err != nil {
@@ -130,8 +132,8 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	if msgProposer != valProposer {
 		logger.Error(
 			"invalid proposer in msg",
-			"proposer", validatorSet.Proposer.Signer,
-			"msgProposer", msg.Proposer,
+			"proposer", valProposer,
+			"msgProposer", msgProposer,
 		)
 
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "invalid proposer in msg")
@@ -191,9 +193,14 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 		return nil, errorsmod.Wrap(types.ErrBadAck, "unable to get checkpoint")
 	}
 
+	if IsBufferedCheckpointZero(bufCheckpoint) {
+		logger.Debug("no checkpoint in buffer, cannot process checkpoint ack in msgServer")
+		return nil, errorsmod.Wrap(types.ErrBadAck, "no checkpoint in buffer to acknowledge, cannot process checkpoint ack in msgServer")
+	}
+
 	if msg.StartBlock != bufCheckpoint.StartBlock {
-		logger.Error("invalid start block", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock)
-		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("invalid start block", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock))
+		logger.Error("invalid start block during msgServer checkpoint ack", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock)
+		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("invalid start block during msgServer checkpoint ack", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock))
 	}
 
 	// return err if start and end match, but contract root hash doesn't match
@@ -330,12 +337,21 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 		return nil, errorsmod.Wrap(err, "error in fetching the validator set")
 	}
 
+	// get the new proposer from validators set
 	newProposer := vs.GetProposer()
-	logger.Debug(
-		"New proposer selected",
-		"validator", newProposer.Signer,
-		"signer", newProposer.Signer,
-		"power", newProposer.VotingPower,
+	// should never happen
+	if newProposer == nil {
+		logger.Error("No proposer available (empty validator set!) during msgServer no-ack message",
+			"oldProposer", msg.From,
+		)
+		return nil, errorsmod.Wrap(err, "no proposer available (empty validator set!) during msgServer no-ack message")
+	}
+	// log old and new proposer
+	logger.Info(
+		"New proposer selected during msgServer no-ack message",
+		"oldProposer", msg.From,
+		"newProposer", newProposer.Signer,
+		"newProposerVotingPower", newProposer.VotingPower,
 	)
 
 	// add events
