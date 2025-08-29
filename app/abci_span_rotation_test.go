@@ -78,7 +78,7 @@ func TestCheckAndAddFutureSpan(t *testing.T) {
 			BlockHashes:      [][]byte{[]byte("hash1")},
 		}
 
-		helper.SetVeblopHeight(int64(lastSpan.EndBlock + 1))
+		helper.SetRioHeight(int64(lastSpan.EndBlock + 1))
 
 		// Mock IContractCaller to return the lowercase address.
 		mockCaller := new(helpermocks.IContractCaller)
@@ -208,7 +208,7 @@ func TestCheckAndRotateCurrentSpan(t *testing.T) {
 		require.NoError(t, err)
 
 		ctx = ctx.WithBlockHeight(int64(lastMilestoneBlock) + ChangeProducerThreshold + 1)
-		helper.SetVeblopHeight(int64(lastMilestone.EndBlock + 2)) // Makes IsVeblop false
+		helper.SetRioHeight(int64(lastMilestone.EndBlock + 2)) // Makes IsRio false
 
 		err = app.checkAndRotateCurrentSpan(ctx)
 		require.NoError(t, err)
@@ -217,7 +217,7 @@ func TestCheckAndRotateCurrentSpan(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, lastSpan.Id, currentLastSpan.Id)
 
-		helper.SetVeblopHeight(0) // reset
+		helper.SetRioHeight(0) // reset
 	})
 
 	t.Run("condition true", func(t *testing.T) {
@@ -323,7 +323,7 @@ func TestCheckAndRotateCurrentSpan(t *testing.T) {
 		}
 
 		ctx = ctx.WithBlockHeight(int64(lastMilestoneBlock) + ChangeProducerThreshold + 1) // diff > ChangeProducerThreshold
-		helper.SetVeblopHeight(int64(lastMilestone.EndBlock + 1))                          // Makes IsVeblop true
+		helper.SetRioHeight(int64(lastMilestone.EndBlock + 1))                             // Makes IsRio true
 
 		// Mock IContractCaller with proper producer mapping
 		mockCaller := new(helpermocks.IContractCaller)
@@ -408,8 +408,8 @@ func TestPreBlockerSpanRotationWithMinorityMilestone(t *testing.T) {
 	// Set context to trigger span rotation conditions
 	blockHeight := int64(milestone.EndBlock) + ChangeProducerThreshold + 1
 	ctx = ctx.WithBlockHeight(blockHeight)
-	// Set veblop height to be at or before milestone.EndBlock+1 to ensure IsVeblop check passes
-	helper.SetVeblopHeight(int64(milestone.EndBlock + 1))
+	// Set rio height to be at or before milestone.EndBlock+1 to ensure IsRio check passes
+	helper.SetRioHeight(int64(milestone.EndBlock + 1))
 
 	// Create vote extensions with 40% voting power supporting a new milestone
 	// This is more than 1/3 but less than 2/3
@@ -490,8 +490,8 @@ func TestPreBlockerSpanRotationWithoutMinorityMilestone(t *testing.T) {
 	// Set context to trigger span rotation conditions
 	blockHeight := int64(milestone.EndBlock) + ChangeProducerThreshold + 1
 	ctx = ctx.WithBlockHeight(blockHeight)
-	// Set veblop height to be at or before milestone.EndBlock+1 to ensure IsVeblop check passes
-	helper.SetVeblopHeight(int64(milestone.EndBlock + 1))
+	// Set rio height to be at or before milestone.EndBlock+1 to ensure IsRio check passes
+	helper.SetRioHeight(int64(milestone.EndBlock + 1))
 
 	// Create vote extensions with only 20% voting power supporting a new milestone
 	// This is less than 1/3
@@ -566,8 +566,8 @@ func TestPreBlockerSpanRotationWithMajorityMilestone(t *testing.T) {
 	// Set context to trigger span rotation conditions
 	blockHeight := int64(milestone.EndBlock) + ChangeProducerThreshold + 1
 	ctx = ctx.WithBlockHeight(blockHeight)
-	// Set veblop height to be at or before milestone.EndBlock+1 to ensure IsVeblop check passes
-	helper.SetVeblopHeight(int64(milestone.EndBlock + 1))
+	// Set rio height to be at or before milestone.EndBlock+1 to ensure IsRio check passes
+	helper.SetRioHeight(int64(milestone.EndBlock + 1))
 
 	// Create vote extensions with 70% voting power supporting a new milestone
 	// This is more than 2/3

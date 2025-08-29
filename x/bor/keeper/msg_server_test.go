@@ -242,7 +242,7 @@ func (s *KeeperTestSuite) TestVoteProducers() {
 		BorChainId: "1",
 	})
 
-	helper.SetVeblopHeight(1000)
+	helper.SetRioHeight(1000)
 
 	require.NoError(err)
 
@@ -353,7 +353,7 @@ func (s *KeeperTestSuite) TestVoteProducers() {
 			mockSetup: func(tc types.MsgVoteProducers) {
 				// Set VEBLOP height to be higher than next span start (1001)
 				// This simulates the case where we haven't reached VEBLOP phase yet
-				helper.SetVeblopHeight(1002) // Much higher than span end (1000) + 1
+				helper.SetRioHeight(1002) // Much higher than span end (1000) + 1
 			},
 			expectError:   true,
 			errorContains: "span is not in VEBLOP phase",
@@ -368,7 +368,7 @@ func (s *KeeperTestSuite) TestVoteProducers() {
 			mockSetup: func(tc types.MsgVoteProducers) {
 				// Set VEBLOP height exactly at next span start (1001)
 				// This should be in VEBLOP phase and allow the vote
-				helper.SetVeblopHeight(1001) // Exactly at span end (1000) + 1
+				helper.SetRioHeight(1001) // Exactly at span end (1000) + 1
 				skMock.EXPECT().GetValidatorFromValID(ctx, matchingVal.ValId).Return(matchingVal, nil).Times(1)
 			},
 			expectError: false,
@@ -388,7 +388,7 @@ func (s *KeeperTestSuite) TestVoteProducers() {
 			mockSetup: func(tc types.MsgVoteProducers) {
 				// Set VEBLOP height just below next span start (1001)
 				// This should NOT be in VEBLOP phase and reject the vote
-				helper.SetVeblopHeight(1002) // Above span end (1000) + 1, so 1001 < 1002 = not in VEBLOP phase
+				helper.SetRioHeight(1002) // Above span end (1000) + 1, so 1001 < 1002 = not in VEBLOP phase
 				// Note: No mock setup needed since this should fail at VEBLOP validation before reaching validator lookup
 			},
 			expectError:   true,
@@ -399,7 +399,7 @@ func (s *KeeperTestSuite) TestVoteProducers() {
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			// Reset VEBLOP height to default for proper test isolation
-			helper.SetVeblopHeight(1000) // Reset to span EndBlock for VEBLOP phase
+			helper.SetRioHeight(1000) // Reset to span EndBlock for VEBLOP phase
 
 			_ = borKeeper.SetProducerVotes(ctx, tc.msg.VoterId, types.ProducerVotes{})
 
@@ -526,33 +526,33 @@ func (s *KeeperTestSuite) TestCanVoteProducers() {
 
 	testCases := []struct {
 		name          string
-		veblopHeight  int64
+		rioHeight     int64
 		operation     string
 		expectError   bool
 		errorContains string
 	}{
 		{
-			name:         "VEBLOP phase active - should pass",
-			veblopHeight: 201, // Next span starts at 201, VEBLOP at 201 = active
-			operation:    "test",
-			expectError:  false,
+			name:        "VEBLOP phase active - should pass",
+			rioHeight:   201, // Next span starts at 201, VEBLOP at 201 = active
+			operation:   "test",
+			expectError: false,
 		},
 		{
 			name:          "VEBLOP phase not active - should fail",
-			veblopHeight:  300, // Next span starts at 201, VEBLOP at 300 = not active yet
+			rioHeight:     300, // Next span starts at 201, VEBLOP at 300 = not active yet
 			operation:     "test",
 			expectError:   true,
 			errorContains: "span is not in VEBLOP phase",
 		},
 		{
-			name:         "VEBLOP height exactly at boundary - should pass",
-			veblopHeight: 201, // Exactly at next span start
-			operation:    "boundary_test",
-			expectError:  false,
+			name:        "VEBLOP height exactly at boundary - should pass",
+			rioHeight:   201, // Exactly at next span start
+			operation:   "boundary_test",
+			expectError: false,
 		},
 		{
 			name:          "VEBLOP height below next span start - should fail",
-			veblopHeight:  202, // Above next span start (201), so 201 < 202 = not in VEBLOP phase
+			rioHeight:     202, // Above next span start (201), so 201 < 202 = not in VEBLOP phase
 			operation:     "below_boundary_test",
 			expectError:   true,
 			errorContains: "span is not in VEBLOP phase",
@@ -561,7 +561,7 @@ func (s *KeeperTestSuite) TestCanVoteProducers() {
 
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			helper.SetVeblopHeight(tc.veblopHeight)
+			helper.SetRioHeight(tc.rioHeight)
 
 			err := borKeeper.CanVoteProducers(ctx)
 

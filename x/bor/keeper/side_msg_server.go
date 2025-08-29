@@ -61,8 +61,8 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	if helper.IsVeblop(msg.StartBlock) {
-		logger.Debug("skipping span msg since block height is greater than veblop height", "block height", ctx.BlockHeight(), "veblop height", helper.GetVeblopHeight())
+	if helper.IsRio(msg.StartBlock) {
+		logger.Debug("skipping span msg since block height is greater than rio height", "block height", ctx.BlockHeight(), "rio height", helper.GetRioHeight())
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -212,8 +212,8 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		return err
 	}
 
-	if helper.IsVeblop(msg.StartBlock) {
-		logger.Debug("skipping span msg since block height is greater than veblop height", "block height", ctx.BlockHeight(), "veblop height", helper.GetVeblopHeight())
+	if helper.IsRio(msg.StartBlock) {
+		logger.Debug("skipping span msg since block height is greater than rio height", "block height", ctx.BlockHeight(), "rio height", helper.GetRioHeight())
 		return nil
 	}
 
@@ -283,8 +283,8 @@ func (s sideMsgServer) PostHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg,
 		return err
 	}
 
-	if helper.IsVeblop(msg.LatestSpanId) {
-		logger.Debug("skipping backfill spans msg since span id is greater than veblop height", "span id", msg.LatestSpanId, "veblop height", helper.GetVeblopHeight())
+	if helper.IsRio(msg.LatestSpanId) {
+		logger.Debug("skipping backfill spans msg since span id is greater than rio height", "span id", msg.LatestSpanId, "rio height", helper.GetRioHeight())
 		return nil
 	}
 
