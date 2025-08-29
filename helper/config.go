@@ -203,7 +203,7 @@ var producerVotes []uint64
 // Logger stores global logger object
 var Logger logger.Logger
 
-var veblopHeight int64 = 0
+var rioHeight int64 = 0
 
 var tallyFixHeight int64 = 0
 
@@ -428,25 +428,25 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	switch conf.Custom.Chain {
 	case MainChain:
-		veblopHeight = 0
+		rioHeight = 0
 		tallyFixHeight = 0           // TODO: TBD
 		disableVPCheckHeight = 0     // TODO: confirm with team
 		disableValSetCheckHeight = 0 // TODO: confirm with team
 		initialHeight = 0
 	case MumbaiChain:
-		veblopHeight = 48473856
+		rioHeight = 48473856
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0 // TODO: confirm with team
 		initialHeight = 0
 	case AmoyChain:
-		veblopHeight = 0
+		rioHeight = 0
 		tallyFixHeight = 13143851
 		disableVPCheckHeight = 10618199
 		disableValSetCheckHeight = 10618299
 		initialHeight = 8788501
 	default:
-		veblopHeight = 256 // VeBlop height for local testnets.
+		rioHeight = 256 // Rio height for local testnets.
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
@@ -554,19 +554,19 @@ func GetValidChains() []string {
 	return []string{"mainnet", "mumbai", "amoy", "local"}
 }
 
-func GetVeblopHeight() int64 {
-	return veblopHeight
+func GetRioHeight() int64 {
+	return rioHeight
 }
 
-func IsVeblop(blockNum uint64) bool {
-	if veblopHeight == 0 {
+func IsRio(blockNum uint64) bool {
+	if rioHeight == 0 {
 		return false
 	}
-	return blockNum >= uint64(veblopHeight)
+	return blockNum >= uint64(rioHeight)
 }
 
-func SetVeblopHeight(height int64) {
-	veblopHeight = height
+func SetRioHeight(height int64) {
+	rioHeight = height
 }
 
 func GetTallyFixHeight() int64 {
