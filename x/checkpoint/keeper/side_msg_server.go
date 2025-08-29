@@ -416,10 +416,12 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return errorsmod.Wrap(err, "no proposer available (empty validator set!) during postHandler ack message")
 	}
 	// log old and new proposer
+	newProposerAddr := util.FormatAddress(newProposer.Signer)
+	oldProposerAddr := util.FormatAddress(msg.From)
 	logger.Info(
 		"New proposer selected during postHandler ack message",
-		"oldProposer", msg.From,
-		"newProposer", newProposer.Signer,
+		"oldProposer", oldProposerAddr,
+		"newProposer", newProposerAddr,
 		"newProposerVotingPower", newProposer.VotingPower,
 	)
 

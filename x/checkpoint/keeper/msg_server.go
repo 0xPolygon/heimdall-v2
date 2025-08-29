@@ -346,11 +346,14 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 		)
 		return nil, errorsmod.Wrap(err, "no proposer available (empty validator set!) during msgServer no-ack message")
 	}
+
 	// log old and new proposer
+	newProposerAddr := util.FormatAddress(newProposer.Signer)
+	oldProposerAddr := util.FormatAddress(msg.From)
 	logger.Info(
 		"New proposer selected during msgServer no-ack message",
-		"oldProposer", msg.From,
-		"newProposer", newProposer.Signer,
+		"oldProposer", oldProposerAddr,
+		"newProposer", newProposerAddr,
 		"newProposerVotingPower", newProposer.VotingPower,
 	)
 
