@@ -583,11 +583,11 @@ func (k Keeper) CanVoteProducers(ctx context.Context) error {
 		return fmt.Errorf("failed to get latest span for VEBLOP validation: %w", err)
 	}
 
-	if !helper.IsVeblop(latestSpan.EndBlock + 1) {
+	if !helper.IsRio(latestSpan.EndBlock + 1) {
 		return fmt.Errorf("MsgVoteProducers not allowed: span is not in VEBLOP phase (span start block: %d, span end block: %d, veblop height: %d)",
 			latestSpan.StartBlock,
 			latestSpan.EndBlock,
-			helper.GetVeblopHeight())
+			helper.GetRioHeight())
 	}
 
 	return nil
