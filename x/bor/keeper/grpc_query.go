@@ -70,7 +70,7 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 	}
 
 	if req.StartBlock != lastSpan.EndBlock+1 {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid start block")
+		return nil, status.Errorf(codes.InvalidArgument, "invalid start block while getting next span")
 	}
 
 	if req.BorChainId != lastSpan.BorChainId {
