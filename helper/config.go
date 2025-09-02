@@ -203,6 +203,14 @@ var Logger logger.Logger
 
 var veblopHeight int64 = 0
 
+var tallyFixHeight int64 = 0
+
+var disableVPCheckHeight int64 = 0
+
+var disableValSetCheckHeight int64 = 0
+
+var initialHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -416,12 +424,28 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	switch conf.Custom.Chain {
 	case MainChain:
 		veblopHeight = 0
+		tallyFixHeight = 28913694
+		disableVPCheckHeight = 25723000
+		disableValSetCheckHeight = 25723063
+		initialHeight = 24404501
 	case MumbaiChain:
 		veblopHeight = 0
+		tallyFixHeight = 0
+		disableVPCheckHeight = 0
+		disableValSetCheckHeight = 0 // TODO: confirm with team
+		initialHeight = 0
 	case AmoyChain:
 		veblopHeight = 0
+		tallyFixHeight = 13143851
+		disableVPCheckHeight = 10618199
+		disableValSetCheckHeight = 10618299
+		initialHeight = 8788501
 	default:
 		veblopHeight = 0
+		tallyFixHeight = 0
+		disableVPCheckHeight = 0
+		disableValSetCheckHeight = 0
+		initialHeight = 0
 	}
 }
 
@@ -539,6 +563,22 @@ func IsVeblop(blockNum uint64) bool {
 
 func SetVeblopHeight(height int64) {
 	veblopHeight = height
+}
+
+func GetTallyFixHeight() int64 {
+	return tallyFixHeight
+}
+
+func GetDisableVPCheckHeight() int64 {
+	return disableVPCheckHeight
+}
+
+func GetDisableValSetCheckHeight() int64 {
+	return disableValSetCheckHeight
+}
+
+func GetInitialHeight() int64 {
+	return initialHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
@@ -1081,44 +1121,4 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 // GetBorGRPCClient returns bor gRPC client
 func GetBorGRPCClient() *borgrpc.BorGRPCClient {
 	return borGRPCClient
-}
-
-// TEST PURPOSE ONLY
-
-// InitTestHeimdallConfig initializes test config for the unit tests
-func InitTestHeimdallConfig(chain string) {
-	customAppConf := CustomAppConfig{
-		Config: *serverconfig.DefaultConfig(),
-		Custom: GetDefaultHeimdallConfig(),
-	}
-
-	switch chain {
-	case MumbaiChain:
-		customAppConf.Custom.Chain = MumbaiChain
-	case AmoyChain:
-		customAppConf.Custom.Chain = AmoyChain
-	case MainChain:
-		customAppConf.Custom.Chain = MainChain
-	}
-
-	SetTestConfig(customAppConf)
-
-	privKeyObject = secp256k1.GenPrivKey()
-	pubKeyObject = privKeyObject.PubKey().(secp256k1.PubKey)
-}
-
-// SetTestConfig sets test configuration
-func SetTestConfig(_conf CustomAppConfig) {
-	conf = _conf
-}
-
-// SetTestPrivPubKey sets test the private and public keys for testing
-func SetTestPrivPubKey(privKey secp256k1.PrivKey) {
-	privKeyObject = privKey
-	privKeyObject.PubKey()
-	pubKey, ok := privKeyObject.PubKey().(secp256k1.PubKey)
-	if !ok {
-		panic("pub key is not of type secp256k1.PrivKey")
-	}
-	pubKeyObject = pubKey
 }

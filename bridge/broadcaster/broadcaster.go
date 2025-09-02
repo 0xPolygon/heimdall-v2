@@ -22,6 +22,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
+const accountRetrieverPollingTimer = 10 * time.Second
+
 // TxBroadcaster is used to broadcast transaction to each chain
 type TxBroadcaster struct {
 	logger log.Logger
@@ -35,32 +37,66 @@ type TxBroadcaster struct {
 	accNum    uint64
 }
 
-// NewTxBroadcaster creates a new instance of TxBroadcaster
-func NewTxBroadcaster(cdc codec.Codec, cliCtx client.Context, accRetriever func(address string) sdk.AccountI) *TxBroadcaster {
+// NewTxBroadcaster creates a new instance of TxBroadcaster, and waits until the account is visible locally,
+// meaning the node is synced and past join height
+func NewTxBroadcaster(
+	cdc codec.Codec,
+	ctx context.Context,
+	cliCtx client.Context,
+	accRetriever func(address string) sdk.AccountI,
+) *TxBroadcaster {
 	cliCtx = cliCtx.WithCodec(cdc)
 	cliCtx.BroadcastMode = flags.BroadcastSync
 
-	// current address
-	address, err := helper.GetAddressString()
+	// signer address
+	addrHex, err := helper.GetAddressString()
 	if err != nil {
 		panic("Error converting address to string")
 	}
+	fromAddr := sdk.MustAccAddressFromHex(addrHex)
 
-	cliCtx.FromAddress = sdk.MustAccAddressFromHex(address)
+	logger := log.NewNopLogger().With("module", "txBroadcaster")
 
 	var account sdk.AccountI
 	if accRetriever != nil {
-		account = accRetriever(address)
+		// Test hook or custom retriever path: no polling needed
+		account = accRetriever(addrHex)
+		if account == nil {
+			panic("accRetriever returned nil account")
+		}
 	} else {
-		account, err = util.GetAccount(cliCtx, address)
-		if err != nil {
-			panic(fmt.Sprintf("Error connecting to rest-server, please start server before bridge. Error: %v", err))
+		// Poll until the account is available (node has synced far enough)
+		for {
+			select {
+			case <-ctx.Done():
+				// return a minimal broadcaster so caller can shut down cleanly
+				return &TxBroadcaster{
+					logger: logger,
+					CliCtx: cliCtx.WithFromAddress(fromAddr),
+				}
+			default:
+			}
+
+			account, err = util.GetAccount(ctx, cliCtx, addrHex)
+			if err == nil && account != nil {
+				break
+			}
+
+			logger.Info("Account not found yet; waiting before retry",
+				"address", addrHex, "err", err)
+			time.Sleep(accountRetrieverPollingTimer)
+
+			// anomaly: node is synced but account is still not found
+			if !util.IsCatchingUp(cliCtx, ctx) {
+				logger.Error("Node synced but account not found",
+					"address", addrHex, "error", err)
+			}
 		}
 	}
 
 	return &TxBroadcaster{
-		logger:    log.NewNopLogger().With("module", "txBroadcaster"),
-		CliCtx:    cliCtx,
+		logger:    logger,
+		CliCtx:    cliCtx.WithFromAddress(fromAddr),
 		lastSeqNo: account.GetSequence(),
 		accNum:    account.GetAccountNumber(),
 	}
@@ -143,7 +179,7 @@ func updateAccountSequence(tb *TxBroadcaster) error {
 	}
 
 	// fetch from APIs
-	account, errAcc := util.GetAccount(tb.CliCtx, address)
+	account, errAcc := util.GetAccount(context.Background(), tb.CliCtx, address)
 	if errAcc != nil {
 		tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, address)))
 		return errAcc

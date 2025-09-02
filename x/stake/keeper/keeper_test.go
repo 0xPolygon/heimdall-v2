@@ -575,3 +575,97 @@ func (s *KeeperTestSuite) TestGetSpanEligibleValidators() {
 	validators := keeper.GetSpanEligibleValidators(ctx)
 	require.LessOrEqual(len(validators), 4)
 }
+
+func (s *KeeperTestSuite) TestGetPenultimateBlockValidatorSet() {
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
+	// Load 4 validators into the state
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
+
+	// Get the current validator set
+	currentValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
+
+	// Update the penultimate block validator set in store
+	err = keeper.UpdatePenultimateBlockValidatorSetInStore(ctx, currentValSet)
+	require.NoError(err)
+
+	// Retrieve the penultimate block validator set
+	penultimateValSet, err := keeper.GetPenultimateBlockValidatorSet(ctx)
+	require.NoError(err)
+
+	// Check if the penultimate block validator set matches the current validator set
+	require.Equal(currentValSet, penultimateValSet, "Penultimate block validator set should match the current validator set")
+
+	// Call IncrementAccum, which affects the current validator set but not the penultimate one
+	err = keeper.IncrementAccum(ctx, 1)
+	require.NoError(err)
+
+	// Get the updated current validator set
+	updatedValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
+
+	// Retrieve the penultimate block validator set again
+	penultimateValSetAfterIncrement, err := keeper.GetPenultimateBlockValidatorSet(ctx)
+	require.NoError(err)
+
+	// Check if the penultimate block validator set has not changed
+	require.Equal(penultimateValSet, penultimateValSetAfterIncrement, "Penultimate block validator set should not change after IncrementAccum")
+
+	// Check if the current validator set has changed
+	require.NotEqual(currentValSet, updatedValSet, "Current validator set should change after IncrementAccum")
+}
+
+func (s *KeeperTestSuite) TestUpdatePenultimateBlockValidatorSetInStore() {
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
+	// Load 4 validators into the state
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
+
+	// Get the current validator set
+	currentValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
+
+	// Update the penultimate block validator set in store
+	err = keeper.UpdatePenultimateBlockValidatorSetInStore(ctx, currentValSet)
+	require.NoError(err)
+
+	// Retrieve the penultimate block validator set
+	penultimateValSet, err := keeper.GetPenultimateBlockValidatorSet(ctx)
+	require.NoError(err)
+
+	// Check if the penultimate block validator set matches the current validator set
+	require.Equal(currentValSet, penultimateValSet, "Penultimate block validator set should match the current validator set")
+
+	// Modify the current validator set
+	currentValSet.Validators[0].VotingPower += 10
+
+	// Update the penultimate block validator set in store again
+	err = keeper.UpdatePenultimateBlockValidatorSetInStore(ctx, currentValSet)
+	require.NoError(err)
+
+	// Retrieve the updated penultimate block validator set
+	updatedPenultimateValSet, err := keeper.GetPenultimateBlockValidatorSet(ctx)
+	require.NoError(err)
+
+	// Check if the updated penultimate block validator set matches the modified current validator set
+	require.Equal(currentValSet, updatedPenultimateValSet, "Updated penultimate block validator set should match the modified current validator set")
+
+	// Call IncrementAccum, which affects the current validator set but not the penultimate one
+	err = keeper.IncrementAccum(ctx, 1)
+	require.NoError(err)
+
+	// Get the updated current validator set
+	updatedValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
+
+	// Retrieve the penultimate block validator set again
+	penultimateValSetAfterIncrement, err := keeper.GetPenultimateBlockValidatorSet(ctx)
+	require.NoError(err)
+
+	// Check if the penultimate block validator set has not changed
+	require.Equal(updatedPenultimateValSet, penultimateValSetAfterIncrement, "Penultimate block validator set should not change after IncrementAccum")
+
+	// Check if the current validator set has changed
+	require.NotEqual(currentValSet, updatedValSet, "Current validator set should change after IncrementAccum")
+}

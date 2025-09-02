@@ -8,8 +8,10 @@ import (
 	"cosmossdk.io/collections"
 	addresscodec "cosmossdk.io/core/address"
 	abci "github.com/cometbft/cometbft/abci/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -277,6 +279,33 @@ func (k *Keeper) GetPreviousBlockValidatorSet(ctx context.Context) (validatorSet
 	return validatorSet, nil
 }
 
+// UpdatePenultimateBlockValidatorSetInStore adds the validator set from 2 blocks ago to store
+func (k *Keeper) UpdatePenultimateBlockValidatorSetInStore(ctx context.Context, newValidatorSet types.ValidatorSet) error {
+	k.PanicIfSetupIsIncomplete()
+	// set validator set with PenultimateBlockValidatorSetKey as the key in store
+	err := k.validatorSet.Set(ctx, types.PenultimateBlockValidatorSetKey, newValidatorSet)
+	if err != nil {
+		k.Logger(ctx).Error("error in setting the validator set from 2 blocks ago in store", "err", err)
+		return err
+	}
+
+	return nil
+}
+
+// GetPenultimateBlockValidatorSet returns the validator set from 2 blocks ago from store
+func (k *Keeper) GetPenultimateBlockValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet, err error) {
+	k.PanicIfSetupIsIncomplete()
+	// get the validator set from 2 blocks ago from store
+	validatorSet, err = k.validatorSet.Get(ctx, types.PenultimateBlockValidatorSetKey)
+	if err != nil {
+		k.Logger(ctx).Error("error in fetching the validator set from 2 blocks ago from store", "error", err)
+		return validatorSet, err
+	}
+
+	// return validator set
+	return validatorSet, nil
+}
+
 // IncrementAccum increments accum for validator set by n times and replace the validator set in store
 func (k *Keeper) IncrementAccum(ctx context.Context, times int) error {
 	k.PanicIfSetupIsIncomplete()
@@ -502,7 +531,24 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 		return nil, err
 	}
 
-	// save the previous block's validator set
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if sdkCtx.BlockHeight() >= helper.GetTallyFixHeight()-1 {
+		// save the current previous block's validator set as the 2-blocks-ago validator set
+		previousValidatorSet, err := k.GetPreviousBlockValidatorSet(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// update the penultimate validator set in store
+		err = k.UpdatePenultimateBlockValidatorSetInStore(ctx, previousValidatorSet)
+		if err != nil {
+			k.Logger(ctx).Error("unable to set validator set from 2 blocks ago in state", "error", err)
+			return nil, err
+		}
+
+	}
+
+	// save the current validator set as the previous block's validator set
 	err = k.UpdatePreviousBlockValidatorSetInStore(ctx, currentValidatorSet)
 	if err != nil {
 		k.Logger(ctx).Error("unable to set previous block's validator set in state", "error", err)

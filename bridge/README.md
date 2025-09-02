@@ -76,16 +76,6 @@ To run all the services:
 heimdalld start --bridge --all
 ```
 
-## Reset
-
-> :warning: Do this only when you are advised so, and you understand the impact of this command. 
-
-If you want to reset the bridge server data, you can use the following command:
-
-```bash
-./heimdalld unsafe-reset-all
-```
-
 ## Common Issues (FAQ)
 
 ### Connection reset by peer

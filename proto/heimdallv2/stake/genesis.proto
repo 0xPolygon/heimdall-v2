@@ -18,4 +18,6 @@ message GenesisState {
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
   LastBlockTxs last_block_txs = 5
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  ValidatorSet penultimate_block_validator_set = 6
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

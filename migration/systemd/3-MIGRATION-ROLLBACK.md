@@ -68,7 +68,7 @@ sudo mv -f /lib/systemd/system/heimdalld.service.backup /lib/systemd/system/heim
 If you don’t have the v1 binary already backed up, you can reinstall it using:
 
 ```bash
-curl -L https://raw.githubusercontent.com/maticnetwork/install/main/heimdall.sh | bash -s -- v1.6.0 mainnet <NODE_TYPE>
+curl -L https://raw.githubusercontent.com/0xPolygon/install/main/heimdall.sh | bash -s -- v1.6.0 mainnet <NODE_TYPE>
 ```
 
 Replace:

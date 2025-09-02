@@ -12,4 +12,10 @@ const (
 
 	// Transaction API methods.
 	HandleMsgEventRecordMethod = "HandleMsgEventRecord"
+
+	// Side message handler methods.
+	SideHandleMsgEventRecordMethod = "SideHandleMsgEventRecord"
+
+	// Post message handler methods.
+	PostHandleMsgEventRecordMethod = "PostHandleMsgEventRecord"
 )

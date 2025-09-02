@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -99,7 +100,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 		}
 
 		// if the account doesn't exist, retry with delay for top-up to process first.
-		if _, err := util.GetAccount(sp.cliCtx, sdk.MustAccAddressFromHex(event.Signer.Hex()).String()); err != nil {
+		if _, err := util.GetAccount(context.Background(), sp.cliCtx, sdk.MustAccAddressFromHex(event.Signer.Hex()).String()); err != nil {
 			sp.Logger.Info(
 				"Heimdall Account doesn't exist. Retrying validator-join after 10 seconds",
 				"event", eventName,

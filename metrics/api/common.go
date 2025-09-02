@@ -6,16 +6,19 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 const (
-	// Namespace for all metrics.
-	Namespace = "heimdallv2"
-
 	// QueryType is the type of API call.
 	QueryType = "query"
 	// TxType is the type of API call.
 	TxType = "tx"
+	// SideType is the type of side handler call.
+	SideType = "side"
+	// PostType is the type of post handler call.
+	PostType = "post"
 
 	// Module subsystems.
 	BorSubsystem        = "bor"
@@ -58,7 +61,7 @@ func GetModuleMetrics(subsystem string) *ModuleMetrics {
 	moduleMetrics[subsystem] = &ModuleMetrics{
 		TotalCalls: promauto.NewCounterVec(
 			prometheus.CounterOpts{
-				Namespace: Namespace,
+				Namespace: metrics.Namespace,
 				Subsystem: subsystem,
 				Name:      "api_calls_total",
 				Help:      "Total number of API calls to " + subsystem + " module",
@@ -67,7 +70,7 @@ func GetModuleMetrics(subsystem string) *ModuleMetrics {
 		),
 		SuccessCalls: promauto.NewCounterVec(
 			prometheus.CounterOpts{
-				Namespace: Namespace,
+				Namespace: metrics.Namespace,
 				Subsystem: subsystem,
 				Name:      "api_calls_success_total",
 				Help:      "Total number of successful API calls to " + subsystem + " module",
@@ -76,7 +79,7 @@ func GetModuleMetrics(subsystem string) *ModuleMetrics {
 		),
 		ResponseTime: promauto.NewSummaryVec(
 			prometheus.SummaryOpts{
-				Namespace: Namespace,
+				Namespace: metrics.Namespace,
 				Subsystem: subsystem,
 				Name:      "api_response_time_seconds",
 				Help:      "Response time of API calls to " + subsystem + " module in seconds",
@@ -85,6 +88,8 @@ func GetModuleMetrics(subsystem string) *ModuleMetrics {
 					0.90: 0.01,  // 90th percentile +/-1% error
 					0.99: 0.001, // 99th percentile +/-0.1% error
 				},
+				MaxAge:     24 * time.Hour,
+				AgeBuckets: 6,
 			},
 			[]string{"method", "type"},
 		),
