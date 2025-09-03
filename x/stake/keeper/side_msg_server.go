@@ -83,7 +83,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ validating external call for validator join msg",
+	s.k.Logger(ctx).Info("✅ validating external call for validator join msg",
 		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -211,7 +211,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ successfully validated external call for validator join msg")
+	s.k.Logger(ctx).Info("✅ successfully validated external call for validator join msg")
 
 	return sidetxs.Vote_VOTE_YES
 }
@@ -228,7 +228,7 @@ func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) 
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ validating external call for stake update msg",
+	s.k.Logger(ctx).Info("✅ validating external call for stake update msg",
 		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -293,7 +293,7 @@ func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) 
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ successfully validated external call for stake update msg")
+	s.k.Logger(ctx).Info("✅ successfully validated external call for stake update msg")
 
 	return sidetxs.Vote_VOTE_YES
 }
@@ -310,7 +310,7 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ Validating External call for signer update msg",
+	s.k.Logger(ctx).Info("✅ Validating External call for signer update msg",
 		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -391,7 +391,7 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ successfully validated external call for signer update msg")
+	s.k.Logger(ctx).Info("✅ successfully validated external call for signer update msg")
 
 	return sidetxs.Vote_VOTE_YES
 }
@@ -408,7 +408,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ validating external call for validator exit msg",
+	s.k.Logger(ctx).Info("✅ validating external call for validator exit msg",
 		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -466,7 +466,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ successfully validated external call for validator exit msg")
+	s.k.Logger(ctx).Info("✅ successfully validated external call for validator exit msg")
 
 	return sidetxs.Vote_VOTE_YES
 }
@@ -486,7 +486,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 
 	// Skip handler if validator join is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		s.k.Logger(ctx).Debug("skipping new validator-join since side-tx didn't get yes votes")
+		s.k.Logger(ctx).Info("skipping new validator-join since side-tx didn't get yes votes")
 		return errors.New("side-tx didn't get yes votes")
 	}
 
@@ -507,7 +507,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return errors.New("old events are not allowed")
 	}
 
-	s.k.Logger(ctx).Debug("adding validator to state", "sideTxResult", sideTxResult)
+	s.k.Logger(ctx).Info("adding validator to state", "sideTxResult", sideTxResult)
 
 	pubKey := secp256k1.PubKey{Key: msg.SignerPubKey}
 
@@ -538,7 +538,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	}
 
 	// add validator to store
-	s.k.Logger(ctx).Debug("adding new validator to state", "validator", newValidator.String())
+	s.k.Logger(ctx).Info("adding new validator to state", "validator", newValidator.String())
 
 	if err = s.k.AddValidator(ctx, newValidator); err != nil {
 		s.k.Logger(ctx).Error("unable to add validator to state", "validator", newValidator.String(), "error", err)
@@ -546,7 +546,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	}
 
 	// Add Validator signing info. It is required for slashing module
-	s.k.Logger(ctx).Debug("adding signing info for new validator")
+	s.k.Logger(ctx).Info("adding signing info for new validator")
 
 	// save the staking sequence
 	err = s.k.SetStakingSequence(ctx, sequence.String())
@@ -555,7 +555,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return err
 	}
 
-	s.k.Logger(ctx).Debug("✅ new validator successfully joined", "validator", strconv.FormatUint(newValidator.ValId, 10))
+	s.k.Logger(ctx).Info("✅ new validator successfully joined", "validator", strconv.FormatUint(newValidator.ValId, 10))
 
 	txBytes := ctx.TxBytes()
 
@@ -590,7 +590,7 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 
 	// skip handler if stakeUpdate is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		s.k.Logger(ctx).Debug("skipping stake update since side-tx didn't get yes votes")
+		s.k.Logger(ctx).Info("skipping stake update since side-tx didn't get yes votes")
 		return errors.New("side-tx didn't get yes votes")
 	}
 
@@ -624,7 +624,7 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 		return errors.New("incorrect validator nonce during PostHandle StakeUpdate")
 	}
 
-	s.k.Logger(ctx).Debug("updating validator stake", "sideTxResult", sideTxResult)
+	s.k.Logger(ctx).Info("updating validator stake", "sideTxResult", sideTxResult)
 
 	validator.LastUpdated = sequence.String()
 	validator.Nonce = msg.Nonce
@@ -664,6 +664,8 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 		),
 	})
 
+	s.k.Logger(ctx).Info("✅ stake update successfully processed", "validatorID", strconv.FormatUint(validator.ValId, 10), "nonce", strconv.FormatUint(msg.Nonce, 10))
+
 	return nil
 }
 
@@ -682,7 +684,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 
 	// Skip handler if signer update is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		s.k.Logger(ctx).Debug("skipping signer update since side-tx didn't get yes votes")
+		s.k.Logger(ctx).Info("skipping signer update since side-tx didn't get yes votes")
 		return errors.New("side-tx didn't get yes votes")
 	}
 
@@ -725,7 +727,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 		return errors.New("incorrect validator nonce during PostHandle SignerUpdate")
 	}
 
-	s.k.Logger(ctx).Debug("persisting signer update", "sideTxResult", sideTxResult)
+	s.k.Logger(ctx).Info("persisting signer update", "sideTxResult", sideTxResult)
 
 	oldValidator := validator.Copy()
 
@@ -737,14 +739,14 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 		validator.Signer = newSigner
 		validator.PubKey = newPubKey.Bytes()
 
-		s.k.Logger(ctx).Debug("updating new signer", "newSigner", newSigner, "oldSigner", oldValidator.Signer, "validatorID", msg.ValId)
+		s.k.Logger(ctx).Info("updating new signer", "newSigner", newSigner, "oldSigner", oldValidator.Signer, "validatorID", msg.ValId)
 
 	} else {
 		s.k.Logger(ctx).Error("no signer change", "newSigner", newSigner, "oldSigner", oldValidator.Signer, "validatorID", msg.ValId)
 		return errors.New("no signer change")
 	}
 
-	s.k.Logger(ctx).Debug("removing old validator", "validator", oldValidator.String())
+	s.k.Logger(ctx).Info("removing old validator", "validator", oldValidator.String())
 
 	// remove the old validator from the validator set
 	oldValidator.EndEpoch, err = s.k.checkpointKeeper.GetAckCount(ctx)
@@ -765,7 +767,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	}
 
 	// adding new validator
-	s.k.Logger(ctx).Debug("adding new validator", "validator", validator.String())
+	s.k.Logger(ctx).Info("adding new validator", "validator", validator.String())
 	err = s.k.AddValidator(ctx, validator)
 	if err != nil {
 		s.k.Logger(ctx).Error("unable to update signer", "validatorID", validator.ValId, "error", err)
@@ -824,6 +826,8 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 		),
 	})
 
+	s.k.Logger(ctx).Info("✅ signer update successfully processed", "validatorID", strconv.FormatUint(validator.ValId, 10), "nonce", strconv.FormatUint(msg.Nonce, 10))
+
 	return nil
 }
 
@@ -842,7 +846,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 
 	// skip handler if validator exit is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		s.k.Logger(ctx).Debug("skipping validator exit since side-tx didn't get yes votes")
+		s.k.Logger(ctx).Info("skipping validator exit since side-tx didn't get yes votes")
 		return errors.New("side-tx didn't get yes votes")
 	}
 
@@ -875,7 +879,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 		return errors.New("incorrect validator nonce during PostHandle ValidatorExit")
 	}
 
-	s.k.Logger(ctx).Debug("persisting validator exit", "sideTxResult", sideTxResult)
+	s.k.Logger(ctx).Info("persisting validator exit", "sideTxResult", sideTxResult)
 
 	validator.EndEpoch = msg.DeactivationEpoch
 	validator.LastUpdated = sequence.String()
@@ -907,6 +911,8 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
 	})
+
+	s.k.Logger(ctx).Info("✅ validator exit successfully processed", "validatorID", strconv.FormatUint(validator.ValId, 10), "nonce", strconv.FormatUint(msg.Nonce, 10))
 
 	return nil
 }

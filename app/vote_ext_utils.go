@@ -169,7 +169,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 // tallyVotes tallies the votes received for the side tx
 // It returns the lists of txs which got >2/3+ YES, NO and UNSPECIFIED votes respectively
 func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, totalVotingPower int64, currentHeight int64) ([][]byte, [][]byte, [][]byte, error) {
-	logger.Debug("Tallying votes")
+	logger.Info("Tallying votes")
 
 	voteByTxHash, err := aggregateVotes(extVoteInfo, currentHeight, logger)
 	if err != nil {
@@ -202,26 +202,26 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 
 		if voteMap[sidetxs.Vote_VOTE_YES] > majorityVP {
 			// approved
-			logger.Debug("Approved side-tx", "txHash", txHash)
+			logger.Info("Approved side-tx", "txHash", txHash)
 			consensus.RecordConsensusApproved()
 			// append to approved tx slice
 			approvedTxs = append(approvedTxs, common.FromHex(txHash))
 		} else if voteMap[sidetxs.Vote_VOTE_NO] > majorityVP {
 			// rejected
-			logger.Debug("Rejected side-tx", "txHash", txHash)
+			logger.Info("Rejected side-tx", "txHash", txHash)
 			consensus.RecordConsensusRejected()
 			// append to rejected tx slice
 			rejectedTxs = append(rejectedTxs, common.FromHex(txHash))
 		} else {
 			// skipped - 2/3 consensus not reached.
-			logger.Debug("Skipped side-tx", "txHash", txHash)
+			logger.Info("Skipped side-tx", "txHash", txHash)
 			consensus.RecordConsensusFailure()
 			// append to rejected tx slice
 			skippedTxs = append(skippedTxs, common.FromHex(txHash))
 		}
 	}
 
-	logger.Debug(fmt.Sprintf("Height %d: approved %d txs, rejected %d txs, skipped %d txs. ", currentHeight, len(approvedTxs), len(rejectedTxs), len(skippedTxs)))
+	logger.Info(fmt.Sprintf("Height %d: approved %d txs, rejected %d txs, skipped %d txs. ", currentHeight, len(approvedTxs), len(rejectedTxs), len(skippedTxs)))
 
 	// HV2: currently, there is no functional difference between a tc being rejected or skipped (only used for debugging)
 	return approvedTxs, rejectedTxs, skippedTxs, nil
