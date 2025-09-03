@@ -440,7 +440,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 0 // TODO: confirm with team
 		initialHeight = 0
 	case AmoyChain:
-		rioHeight = 26201856 // Rio height is a block number in bor chain
+		rioHeight = 26272256 // Rio height is a block number in bor chain
 		tallyFixHeight = 13143851
 		disableVPCheckHeight = 10618199
 		disableValSetCheckHeight = 10618299
