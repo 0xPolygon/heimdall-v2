@@ -92,7 +92,7 @@ func NewTxBroadcaster(
 		}
 	}
 
-	return &TxBroadcaster{
+				return &TxBroadcaster{
 		CliCtx:    cliCtx.WithFromAddress(fromAddr),
 		logger:    logger,
 		accNum:    account.GetAccountNumber(),
