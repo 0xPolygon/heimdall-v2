@@ -407,7 +407,17 @@ func GetMajorityMilestoneProposition(
 var ErrNoHeadersFound = errors.New("no header found")
 
 func getBlockInfo(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, []uint64, []common.Address, error) {
-	headers, tds, authors, err := contractCaller.GetBorChainBlockInfoInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
+	lastestBlock, err := contractCaller.GetBorChainBlock(ctx, nil)
+	if err != nil {
+		return nil, nil, nil, nil, fmt.Errorf("failed to get latest block: %w", err)
+	}
+
+	milestoneEnd := int64(startBlock + maxBlocksInProposition - 1)
+	if lastestBlock.Number.Int64() > int64(startBlock) && lastestBlock.Number.Int64() < milestoneEnd {
+		milestoneEnd = lastestBlock.Number.Int64()
+	}
+
+	headers, tds, authors, err := contractCaller.GetBorChainBlockInfoInBatch(ctx, int64(startBlock), milestoneEnd)
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
 	}
