@@ -429,10 +429,10 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	switch conf.Custom.Chain {
 	case MainChain:
 		rioHeight = 0
-		tallyFixHeight = 0           // TODO: TBD
-		disableVPCheckHeight = 0     // TODO: confirm with team
-		disableValSetCheckHeight = 0 // TODO: confirm with team
-		initialHeight = 0
+		tallyFixHeight = 28913694
+		disableVPCheckHeight = 25723000
+		disableValSetCheckHeight = 25723063
+		initialHeight = 24404501
 	case MumbaiChain:
 		rioHeight = 48473856
 		tallyFixHeight = 0
@@ -454,6 +454,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 }
 
+// GetDefaultHeimdallConfig returns configuration with default params
 func GetDefaultHeimdallConfig() CustomConfig {
 	return CustomConfig{
 		EthRPCUrl:   DefaultMainRPCUrl,
