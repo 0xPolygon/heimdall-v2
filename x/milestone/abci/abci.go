@@ -408,7 +408,7 @@ var ErrNoHeadersFound = errors.New("no header found")
 
 func getBlockInfo(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, []uint64, []common.Address, error) {
 	lastestBlock, err := contractCaller.GetBorChainBlock(ctx, nil)
-	if err != nil {
+	if err != nil || lastestBlock == nil {
 		return nil, nil, nil, nil, fmt.Errorf("failed to get latest block: %w", err)
 	}
 
