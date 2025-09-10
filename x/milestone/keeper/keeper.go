@@ -276,3 +276,42 @@ func (k *Keeper) GetMilestones(ctx context.Context) ([]types.Milestone, error) {
 
 	return milestones, nil
 }
+
+// DeleteMilestone deletes a milestone by its number.
+// It also updates the milestone count if the deleted milestone was the latest one.
+func (k *Keeper) DeleteMilestone(ctx context.Context, number uint64) error {
+	// Check if the milestone exists
+	exists, err := k.milestone.Has(ctx, number)
+	if err != nil {
+		k.Logger(ctx).Error("error checking milestone existence in store", "number", number, "err", err)
+		return err
+	}
+	if !exists {
+		return types.ErrNoMilestoneFound
+	}
+
+	// Delete the milestone from the store
+	if err := k.milestone.Remove(ctx, number); err != nil {
+		k.Logger(ctx).Error("error while deleting milestone from store", "number", number, "err", err)
+		return err
+	}
+
+	// Adjust the milestone count if we deleted the latest one
+	count, err := k.GetMilestoneCount(ctx)
+	if err != nil {
+		return err
+	}
+
+	if number == count {
+		// decrement count
+		if count > 0 {
+			if err := k.SetMilestoneCount(ctx, count-1); err != nil {
+				return err
+			}
+		}
+	}
+
+	k.Logger(ctx).Info("successfully deleted milestone", "milestoneId", number)
+
+	return nil
+}

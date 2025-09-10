@@ -211,6 +211,8 @@ var disableValSetCheckHeight int64 = 0
 
 var initialHeight int64 = 0
 
+var milestoneDeletionHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -423,24 +425,28 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	switch conf.Custom.Chain {
 	case MainChain:
+		milestoneDeletionHeight = 0 // TODO confirm with the team
 		veblopHeight = 0
 		tallyFixHeight = 28913694
 		disableVPCheckHeight = 25723000
 		disableValSetCheckHeight = 25723063
 		initialHeight = 24404501
 	case MumbaiChain:
+		milestoneDeletionHeight = 0
 		veblopHeight = 0
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
-		disableValSetCheckHeight = 0 // TODO: confirm with team
+		disableValSetCheckHeight = 0
 		initialHeight = 0
 	case AmoyChain:
+		milestoneDeletionHeight = 0
 		veblopHeight = 0
 		tallyFixHeight = 13143851
 		disableVPCheckHeight = 10618199
 		disableValSetCheckHeight = 10618299
 		initialHeight = 8788501
 	default:
+		milestoneDeletionHeight = 0
 		veblopHeight = 0
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
@@ -579,6 +585,10 @@ func GetDisableValSetCheckHeight() int64 {
 
 func GetInitialHeight() int64 {
 	return initialHeight
+}
+
+func GetMilestoneDeletionHeight() int64 {
+	return milestoneDeletionHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
