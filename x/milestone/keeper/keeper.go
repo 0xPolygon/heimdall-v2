@@ -34,6 +34,10 @@ type Keeper struct {
 	lastMilestoneBlock collections.Item[uint64]
 }
 
+const skipMilestone = 1941439
+const skipBlock = 76273070
+const beforeSkipBlock = 76273069
+
 // NewKeeper creates a new milestone Keeper instance
 func NewKeeper(
 	cdc codec.BinaryCodec,
@@ -99,6 +103,10 @@ func (k Keeper) GetLastMilestoneBlock(ctx context.Context) (uint64, error) {
 	if err != nil {
 		k.Logger(ctx).Error("error while getting last milestone block from store", "err", err)
 		return 0, err
+	}
+
+	if block == skipBlock {
+		return beforeSkipBlock, nil
 	}
 
 	return block, nil
@@ -178,6 +186,9 @@ func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone) er
 
 // GetMilestoneByNumber gets a milestone by its number
 func (k *Keeper) GetMilestoneByNumber(ctx context.Context, number uint64) (*types.Milestone, error) {
+	if number >= skipMilestone {
+		number += 1
+	}
 	milestone, err := k.milestone.Get(ctx, number)
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching milestone from store", "err", err)
@@ -211,6 +222,10 @@ func (k *Keeper) GetLastMilestone(ctx context.Context) (*types.Milestone, error)
 	if lastMilestoneNumber == 0 {
 		k.Logger(ctx).Warn("no milestones found in store yet")
 		return nil, types.ErrNoMilestoneFound
+	}
+
+	if lastMilestoneNumber >= skipMilestone {
+		lastMilestoneNumber += 1
 	}
 
 	milestone, err := k.milestone.Get(ctx, lastMilestoneNumber)
