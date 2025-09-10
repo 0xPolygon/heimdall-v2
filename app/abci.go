@@ -582,13 +582,20 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	milestoneDeletionHeight := helper.GetMilestoneDeletionHeight()
-	if req.Height == milestoneDeletionHeight && milestoneDeletionHeight != 0 {
+	if req.Height == milestoneDeletionHeight && milestoneDeletionHeight != -1 {
 		// delete faulty milestone if exists
 		milestoneNumber := helper.GetFaultyMilestoneNumber()
-		if err := app.MilestoneKeeper.DeleteMilestone(ctx, milestoneNumber); err != nil {
-			logger.Error("Error occurred while deleting milestone", "error", err, "milestoneNumber", milestoneNumber)
+		milestone, err := app.MilestoneKeeper.GetMilestoneByNumber(ctx, milestoneNumber)
+		if err != nil {
+			logger.Error("Error occurred while getting milestone by number", "error", err, "milestoneNumber", milestoneNumber)
 			return nil, err
 		}
+		if app.MilestoneKeeper.IsFaultyMilestone(*milestone) {
+			if err := app.MilestoneKeeper.DeleteMilestone(ctx, milestoneNumber); err != nil {
+				logger.Error("Error occurred while deleting milestone", "error", err, "milestoneNumber", milestoneNumber)
+			}
+		}
+
 		logger.Info("Deleted milestone matching target condition", "milestone", milestoneNumber)
 	}
 

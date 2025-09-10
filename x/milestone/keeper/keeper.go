@@ -3,7 +3,9 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
@@ -314,4 +316,20 @@ func (k *Keeper) DeleteMilestone(ctx context.Context, number uint64) error {
 	k.Logger(ctx).Info("successfully deleted milestone", "milestoneId", number)
 
 	return nil
+}
+
+// IsFaultyMilestone checks if the given milestone matches a known faulty milestone
+func (k *Keeper) IsFaultyMilestone(milestone types.Milestone) bool {
+	borChainId := "137"
+	startBlock := "76273070"
+	endBlock := "76273070"
+	hash := "eRCiCRhVhnTtuHdZorsIsxrw3g5O7w2JCb51rzWRdI8="
+	id := "809387e7dae84cce485d95f1fce3f2ac1d2b9979d1c0989df2d4309b30ef6aa6"
+	expectedHash, _ := base64.StdEncoding.DecodeString(hash)
+
+	return bytes.Equal(milestone.Hash, expectedHash) &&
+		strings.Compare(milestone.MilestoneId, id) == 0 &&
+		strings.Compare(milestone.BorChainId, borChainId) == 0 &&
+		strings.Compare(fmt.Sprint(milestone.StartBlock), startBlock) == 0 &&
+		strings.Compare(fmt.Sprint(milestone.EndBlock), endBlock) == 0
 }

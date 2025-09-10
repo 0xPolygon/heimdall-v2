@@ -436,7 +436,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 24404501
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
-		faultyMilestoneNumber = 0
+		faultyMilestoneNumber = -1
 		veblopHeight = 0
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
@@ -444,7 +444,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
-		faultyMilestoneNumber = 0
+		faultyMilestoneNumber = -1
 		veblopHeight = 0
 		tallyFixHeight = 13143851
 		disableVPCheckHeight = 10618199
@@ -452,7 +452,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 8788501
 	default:
 		milestoneDeletionHeight = 0
-		faultyMilestoneNumber = 0
+		faultyMilestoneNumber = -1
 		veblopHeight = 0
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0

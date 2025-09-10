@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"encoding/base64"
 	"testing"
 	"time"
 
@@ -245,4 +246,51 @@ func (s *KeeperTestSuite) TestDeleteMilestone_NonLast() {
 	count, err = keeper.GetMilestoneCount(ctx)
 	require.NoError(err)
 	require.Equal(uint64(2), count)
+}
+
+func (s *KeeperTestSuite) TestIsFaultyMilestone_Match() {
+	req, keeper := s.Require(), s.milestoneKeeper
+
+	// expected base64 hash
+	expectedHash, _ := base64.StdEncoding.DecodeString(
+		"eRCiCRhVhnTtuHdZorsIsxrw3g5O7w2JCb51rzWRdI8=",
+	)
+
+	// faulty milestone
+	milestone := types.Milestone{
+		Hash:        expectedHash,
+		MilestoneId: "809387e7dae84cce485d95f1fce3f2ac1d2b9979d1c0989df2d4309b30ef6aa6",
+	}
+
+	req.True(keeper.IsFaultyMilestone(milestone))
+}
+
+func (s *KeeperTestSuite) TestIsFaultyMilestone_WrongHash() {
+	req, keeper := s.Require(), s.milestoneKeeper
+
+	// random hash
+	wrongHash := testutil.RandomBytes()
+
+	milestone := types.Milestone{
+		Hash:        wrongHash,
+		MilestoneId: "809387e7dae84cce485d95f1fce3f2ac1d2b9979d1c0989df2d4309b30ef6aa6",
+	}
+
+	req.False(keeper.IsFaultyMilestone(milestone))
+}
+
+func (s *KeeperTestSuite) TestIsFaultyMilestone_WrongID() {
+	req, keeper := s.Require(), s.milestoneKeeper
+
+	expectedHash, _ := base64.StdEncoding.DecodeString(
+		"eRCiCRhVhnTtuHdZorsIsxrw3g5O7w2JCb51rzWRdI8=",
+	)
+
+	// wrong milestone ID
+	milestone := types.Milestone{
+		Hash:        expectedHash,
+		MilestoneId: "some-other-id",
+	}
+
+	req.False(keeper.IsFaultyMilestone(milestone))
 }
