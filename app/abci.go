@@ -588,7 +588,6 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		milestone, err := app.MilestoneKeeper.GetMilestoneByNumber(ctx, milestoneNumber)
 		if err != nil {
 			logger.Error("Error occurred while getting milestone by number", "error", err, "milestoneNumber", milestoneNumber)
-			return nil, err
 		}
 		if app.MilestoneKeeper.IsFaultyMilestone(*milestone) {
 			if err := app.MilestoneKeeper.DeleteMilestone(ctx, milestoneNumber); err != nil {

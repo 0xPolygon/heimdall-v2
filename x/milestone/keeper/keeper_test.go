@@ -251,7 +251,6 @@ func (s *KeeperTestSuite) TestDeleteMilestone_NonLast() {
 func (s *KeeperTestSuite) TestIsFaultyMilestone_Match() {
 	req, keeper := s.Require(), s.milestoneKeeper
 
-	// expected base64 hash
 	expectedHash, _ := base64.StdEncoding.DecodeString(
 		"eRCiCRhVhnTtuHdZorsIsxrw3g5O7w2JCb51rzWRdI8=",
 	)
@@ -260,6 +259,9 @@ func (s *KeeperTestSuite) TestIsFaultyMilestone_Match() {
 	milestone := types.Milestone{
 		Hash:        expectedHash,
 		MilestoneId: "809387e7dae84cce485d95f1fce3f2ac1d2b9979d1c0989df2d4309b30ef6aa6",
+		BorChainId:  "137",
+		StartBlock:  76273070,
+		EndBlock:    76273070,
 	}
 
 	req.True(keeper.IsFaultyMilestone(milestone))
