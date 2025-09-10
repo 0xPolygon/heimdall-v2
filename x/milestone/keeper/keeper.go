@@ -283,47 +283,58 @@ func (k *Keeper) GetMilestones(ctx context.Context) ([]types.Milestone, error) {
 // It also updates the milestone count if the deleted milestone was the latest one.
 func (k *Keeper) DeleteMilestone(ctx context.Context, number uint64) error {
 	// Check if the milestone exists
+	k.Logger(ctx).Error("DeleteMilestone", "number", number)
 	exists, err := k.milestone.Has(ctx, number)
 	if err != nil {
 		k.Logger(ctx).Error("error checking milestone existence in store", "number", number, "err", err)
 		return err
 	}
 	if !exists {
+		k.Logger(ctx).Error("DeleteMilestone 1", "number", number)
 		return types.ErrNoMilestoneFound
 	}
 
 	// Delete the milestone from the store
 	if err := k.milestone.Remove(ctx, number); err != nil {
+		k.Logger(ctx).Error("DeleteMilestone 2", "number", number)
 		k.Logger(ctx).Error("error while deleting milestone from store", "number", number, "err", err)
 		return err
 	}
+
+	k.Logger(ctx).Error("DeleteMilestone 3", "number", number)
 
 	// Adjust the milestone count if we deleted the latest one
 	count, err := k.GetMilestoneCount(ctx)
 	if err != nil {
 		return err
 	}
-
+	k.Logger(ctx).Error("DeleteMilestone 4", "number", number)
 	if number == count {
+		k.Logger(ctx).Error("DeleteMilestone 5", "number", number)
 		// decrement count
 		if count > 0 {
+			k.Logger(ctx).Error("DeleteMilestone 6", "number", number)
 			newCount := count - 1
 			if err := k.SetMilestoneCount(ctx, newCount); err != nil {
 				return err
 			}
+
+			k.Logger(ctx).Error("DeleteMilestone 7", "number", number)
 
 			newLatestMilestone, err := k.milestone.Get(ctx, newCount)
 			if err != nil {
 				k.Logger(ctx).Error("error while fetching latest milestone from store", "number", newCount, "err", err)
 				return err
 			}
-
+			k.Logger(ctx).Error("DeleteMilestone 8", "number", number)
 			if err := k.lastMilestoneBlock.Set(ctx, newLatestMilestone.EndBlock); err != nil {
 				k.Logger(ctx).Error("error while setting last milestone block in store", "err", err)
 				return err
 			}
 		}
 	}
+
+	k.Logger(ctx).Error("DeleteMilestone 1111", "number", number)
 
 	k.Logger(ctx).Info("successfully deleted milestone", "milestoneId", number)
 
