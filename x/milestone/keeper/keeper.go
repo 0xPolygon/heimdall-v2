@@ -318,7 +318,7 @@ func (k *Keeper) DeleteMilestone(ctx context.Context, number uint64) error {
 				return err
 			}
 
-			if err := k.lastMilestoneBlock.Set(ctx, newLatestMilestone.EndBlock); err != nil {
+			if err := k.SetLastMilestoneBlock(ctx, newLatestMilestone.EndBlock); err != nil {
 				k.Logger(ctx).Error("error while setting last milestone block in store", "err", err)
 				return err
 			}
