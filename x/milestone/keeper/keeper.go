@@ -307,7 +307,19 @@ func (k *Keeper) DeleteMilestone(ctx context.Context, number uint64) error {
 	if number == count {
 		// decrement count
 		if count > 0 {
-			if err := k.SetMilestoneCount(ctx, count-1); err != nil {
+			newCount := count - 1
+			if err := k.SetMilestoneCount(ctx, newCount); err != nil {
+				return err
+			}
+
+			newLatestMilestone, err := k.milestone.Get(ctx, newCount)
+			if err != nil {
+				k.Logger(ctx).Error("error while fetching latest milestone from store", "number", newCount, "err", err)
+				return err
+			}
+
+			if err := k.lastMilestoneBlock.Set(ctx, newLatestMilestone.EndBlock); err != nil {
+				k.Logger(ctx).Error("error while setting last milestone block in store", "err", err)
 				return err
 			}
 		}
