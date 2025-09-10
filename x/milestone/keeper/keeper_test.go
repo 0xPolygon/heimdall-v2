@@ -162,8 +162,8 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 func (s *KeeperTestSuite) TestDeleteMilestone_Success_Last() {
 	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
 
-	// add a milestone
-	milestone := testutil.CreateMilestone(
+	// add milestones
+	milestone1 := testutil.CreateMilestone(
 		0,
 		10,
 		testutil.RandomBytes(),
@@ -173,26 +173,44 @@ func (s *KeeperTestSuite) TestDeleteMilestone_Success_Last() {
 		uint64(time.Now().Unix()),
 	)
 
-	err := keeper.AddMilestone(ctx, milestone)
+	milestone2 := testutil.CreateMilestone(
+		11,
+		20,
+		testutil.RandomBytes(),
+		util.FormatAddress(secp256k1.GenPrivKey().PubKey().Address().String()),
+		"137",
+		TestMilestoneID,
+		uint64(time.Now().Unix()),
+	)
+
+	err := keeper.AddMilestone(ctx, milestone1)
+	require.NoError(err)
+
+	err = keeper.AddMilestone(ctx, milestone2)
 	require.NoError(err)
 
 	count, err := keeper.GetMilestoneCount(ctx)
 	require.NoError(err)
-	require.Equal(uint64(1), count)
+	require.Equal(uint64(2), count)
 
-	// delete milestone number 1
-	err = keeper.DeleteMilestone(ctx, 1)
+	// delete milestone number 2
+	err = keeper.DeleteMilestone(ctx, 2)
 	require.NoError(err)
 
-	// the count should now be 0
+	// the count should now be 1
 	count, err = keeper.GetMilestoneCount(ctx)
 	require.NoError(err)
-	require.Equal(uint64(0), count)
+	require.Equal(uint64(1), count)
 
 	// trying to fetch the deleted milestone should fail
-	result, err := keeper.GetMilestoneByNumber(ctx, 1)
+	result, err := keeper.GetMilestoneByNumber(ctx, 2)
 	require.Nil(result)
 	require.Error(err)
+
+	// the last milestone should now be milestone number 1
+	result, err = keeper.GetLastMilestone(ctx)
+	require.NoError(err)
+	require.True(milestone1.Equal(result))
 }
 
 func (s *KeeperTestSuite) TestDeleteMilestone_Fail_NotFound() {
