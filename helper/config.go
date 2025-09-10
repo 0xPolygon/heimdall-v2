@@ -428,8 +428,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	Logger.Error("CustomChain", "chain", conf.Custom.Chain)
 	switch conf.Custom.Chain {
 	case MainChain:
-		milestoneDeletionHeight = 0     // TODO confirm with the team
-		faultyMilestoneNumber = 1941439 // TODO confirm with the team
+		milestoneDeletionHeight = 6000 // TODO confirm with the team
+		faultyMilestoneNumber = 1283   // TODO confirm with the team
 		veblopHeight = 0
 		tallyFixHeight = 28913694
 		disableVPCheckHeight = 25723000
