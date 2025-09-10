@@ -213,6 +213,8 @@ var initialHeight int64 = 0
 
 var milestoneDeletionHeight int64 = 0
 
+var faultyMilestoneNumber int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -425,7 +427,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	switch conf.Custom.Chain {
 	case MainChain:
-		milestoneDeletionHeight = 0 // TODO confirm with the team
+		milestoneDeletionHeight = 0     // TODO confirm with the team
+		faultyMilestoneNumber = 1941439 // TODO confirm with the team
 		veblopHeight = 0
 		tallyFixHeight = 28913694
 		disableVPCheckHeight = 25723000
@@ -433,6 +436,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 24404501
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
+		faultyMilestoneNumber = 0
 		veblopHeight = 0
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
@@ -440,6 +444,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
+		faultyMilestoneNumber = 0
 		veblopHeight = 0
 		tallyFixHeight = 13143851
 		disableVPCheckHeight = 10618199
@@ -447,6 +452,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 8788501
 	default:
 		milestoneDeletionHeight = 0
+		faultyMilestoneNumber = 0
 		veblopHeight = 0
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
@@ -589,6 +595,9 @@ func GetInitialHeight() int64 {
 
 func GetMilestoneDeletionHeight() int64 {
 	return milestoneDeletionHeight
+}
+func GetFaultyMilestoneNumber() uint64 {
+	return uint64(faultyMilestoneNumber)
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
