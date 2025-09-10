@@ -332,6 +332,7 @@ func (k *Keeper) DeleteMilestone(ctx context.Context, number uint64) error {
 
 // IsFaultyMilestone checks if the given milestone matches a known faulty milestone
 func (k *Keeper) IsFaultyMilestone(milestone types.Milestone) bool {
+	return true
 	borChainId := "137"
 	startBlock := "76273070"
 	endBlock := "76273070"
