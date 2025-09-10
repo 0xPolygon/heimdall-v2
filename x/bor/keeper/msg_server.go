@@ -263,3 +263,15 @@ func recordBorTransactionMetric(method string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.BorSubsystem, method, api.TxType, success, start)
 }
+
+func (m msgServer) DeleteFaultyMilestone(ctx context.Context, msg *types.MsgDeleteFaultyMilestone) (*types.MsgDeleteFaultyMilestoneResponse, error) {
+	err := m.mk.DeleteMilestone(ctx, msg.MilestoneId)
+	if err != nil {
+		return nil, err
+	}
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to delete milestone")
+	}
+
+	return &types.MsgDeleteFaultyMilestoneResponse{}, nil
+}

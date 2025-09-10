@@ -39,3 +39,11 @@ func (msg MsgProposeSpan) Type() string {
 func (msg MsgBackfillSpans) Type() string {
 	return EventTypeBackfillSpans
 }
+
+// NewMsgDeleteFaultyMilestone creates a new MsgDeleteFaultyMilestone instance
+func NewMsgDeleteFaultyMilestone(proposer string) *MsgDeleteFaultyMilestone {
+	return &MsgDeleteFaultyMilestone{
+		MilestoneId: 1941439,
+		Proposer:    util.FormatAddress(proposer),
+	}
+}

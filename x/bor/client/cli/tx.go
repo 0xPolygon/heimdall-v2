@@ -122,3 +122,28 @@ func NewSpanProposalCmd() *cobra.Command {
 
 	return cmd
 }
+
+func NewDeleteFaultyMilestoneCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "delete-faulty-milestone",
+		Short: "delete faulty milestone",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			proposer := viper.GetString(FlagProposerAddress)
+			if proposer == "" {
+				proposer = clientCtx.GetFromAddress().String()
+			}
+
+			msg := types.NewMsgDeleteFaultyMilestone(proposer)
+			return cli.BroadcastMsg(clientCtx, proposer, msg, logger)
+		},
+	}
+
+	cmd.Flags().StringP(FlagProposerAddress, "p", "", "--proposer=<proposer-address>")
+
+	return cmd
+}

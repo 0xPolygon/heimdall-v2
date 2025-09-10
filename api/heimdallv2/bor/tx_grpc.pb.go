@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Msg_ProposeSpan_FullMethodName   = "/heimdallv2.bor.Msg/ProposeSpan"
-	Msg_UpdateParams_FullMethodName  = "/heimdallv2.bor.Msg/UpdateParams"
-	Msg_BackfillSpans_FullMethodName = "/heimdallv2.bor.Msg/BackfillSpans"
-	Msg_VoteProducers_FullMethodName = "/heimdallv2.bor.Msg/VoteProducers"
+	Msg_ProposeSpan_FullMethodName           = "/heimdallv2.bor.Msg/ProposeSpan"
+	Msg_UpdateParams_FullMethodName          = "/heimdallv2.bor.Msg/UpdateParams"
+	Msg_BackfillSpans_FullMethodName         = "/heimdallv2.bor.Msg/BackfillSpans"
+	Msg_VoteProducers_FullMethodName         = "/heimdallv2.bor.Msg/VoteProducers"
+	Msg_DeleteFaultyMilestone_FullMethodName = "/heimdallv2.bor.Msg/DeleteFaultyMilestone"
 )
 
 // MsgClient is the client API for Msg service.
@@ -37,6 +38,8 @@ type MsgClient interface {
 	BackfillSpans(ctx context.Context, in *MsgBackfillSpans, opts ...grpc.CallOption) (*MsgBackfillSpansResponse, error)
 	// VoteProducers defines a method to update the producer votes.
 	VoteProducers(ctx context.Context, in *MsgVoteProducers, opts ...grpc.CallOption) (*MsgVoteProducersResponse, error)
+	// DeleteFaultyMilestone defines a method to delete a faulty milestone.
+	DeleteFaultyMilestone(ctx context.Context, in *MsgDeleteFaultyMilestone, opts ...grpc.CallOption) (*MsgDeleteFaultyMilestoneResponse, error)
 }
 
 type msgClient struct {
@@ -83,6 +86,15 @@ func (c *msgClient) VoteProducers(ctx context.Context, in *MsgVoteProducers, opt
 	return out, nil
 }
 
+func (c *msgClient) DeleteFaultyMilestone(ctx context.Context, in *MsgDeleteFaultyMilestone, opts ...grpc.CallOption) (*MsgDeleteFaultyMilestoneResponse, error) {
+	out := new(MsgDeleteFaultyMilestoneResponse)
+	err := c.cc.Invoke(ctx, Msg_DeleteFaultyMilestone_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
@@ -95,6 +107,8 @@ type MsgServer interface {
 	BackfillSpans(context.Context, *MsgBackfillSpans) (*MsgBackfillSpansResponse, error)
 	// VoteProducers defines a method to update the producer votes.
 	VoteProducers(context.Context, *MsgVoteProducers) (*MsgVoteProducersResponse, error)
+	// DeleteFaultyMilestone defines a method to delete a faulty milestone.
+	DeleteFaultyMilestone(context.Context, *MsgDeleteFaultyMilestone) (*MsgDeleteFaultyMilestoneResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }
 
@@ -113,6 +127,9 @@ func (UnimplementedMsgServer) BackfillSpans(context.Context, *MsgBackfillSpans) 
 }
 func (UnimplementedMsgServer) VoteProducers(context.Context, *MsgVoteProducers) (*MsgVoteProducersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VoteProducers not implemented")
+}
+func (UnimplementedMsgServer) DeleteFaultyMilestone(context.Context, *MsgDeleteFaultyMilestone) (*MsgDeleteFaultyMilestoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteFaultyMilestone not implemented")
 }
 func (UnimplementedMsgServer) mustEmbedUnimplementedMsgServer() {}
 
@@ -199,6 +216,24 @@ func _Msg_VoteProducers_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_DeleteFaultyMilestone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgDeleteFaultyMilestone)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).DeleteFaultyMilestone(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Msg_DeleteFaultyMilestone_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).DeleteFaultyMilestone(ctx, req.(*MsgDeleteFaultyMilestone))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Msg_ServiceDesc is the grpc.ServiceDesc for Msg service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -221,6 +256,10 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "VoteProducers",
 			Handler:    _Msg_VoteProducers_Handler,
+		},
+		{
+			MethodName: "DeleteFaultyMilestone",
+			Handler:    _Msg_DeleteFaultyMilestone_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

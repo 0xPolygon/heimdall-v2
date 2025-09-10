@@ -19,7 +19,19 @@ service Msg {
   rpc BackfillSpans(MsgBackfillSpans) returns (MsgBackfillSpansResponse);
   // VoteProducers defines a method to update the producer votes.
   rpc VoteProducers(MsgVoteProducers) returns (MsgVoteProducersResponse);
+  // DeleteFaultyMilestone defines a method to delete a faulty milestone.
+  rpc DeleteFaultyMilestone(MsgDeleteFaultyMilestone)
+      returns (MsgDeleteFaultyMilestoneResponse);
 }
+
+message MsgDeleteFaultyMilestone {
+  option (cosmos.msg.v1.signer) = "proposer";
+  option (amino.name) = "heimdallv2/bor/MsgDeleteFaultyMilestone";
+  string proposer = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  uint64 milestone_id = 2;
+}
+
+message MsgDeleteFaultyMilestoneResponse {}
 
 message MsgProposeSpan {
   option (amino.name) = "heimdallv2/bor/MsgProposeSpan";

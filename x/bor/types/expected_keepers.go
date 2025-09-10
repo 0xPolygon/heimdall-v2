@@ -20,4 +20,5 @@ type ChainManagerKeeper interface {
 
 type MilestoneKeeper interface {
 	GetLastMilestone(ctx context.Context) (*milestonetypes.Milestone, error)
+	DeleteMilestone(ctx context.Context, milestoneId uint64) error
 }

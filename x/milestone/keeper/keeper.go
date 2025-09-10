@@ -176,6 +176,16 @@ func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone) er
 	return nil
 }
 
+func (k *Keeper) DeleteMilestone(ctx context.Context, milestoneId uint64) error {
+	err := k.milestone.Remove(ctx, milestoneId)
+	if err != nil {
+		k.Logger(ctx).Error("error while deleting milestone from store", "err", err)
+		return err
+	}
+
+	return nil
+}
+
 // GetMilestoneByNumber gets a milestone by its number
 func (k *Keeper) GetMilestoneByNumber(ctx context.Context, number uint64) (*types.Milestone, error) {
 	milestone, err := k.milestone.Get(ctx, number)
