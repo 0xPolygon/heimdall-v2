@@ -211,7 +211,7 @@ var disableValSetCheckHeight int64 = 0
 
 var initialHeight int64 = 0
 
-var milestoneDeletionHeight int64 = 0
+var milestoneDeletionHeight int64 = 5500
 
 var faultyMilestoneNumber int64 = 0
 
@@ -425,6 +425,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	privKeyObject = privVal.Key.PrivKey.Bytes()
 	pubKeyObject = privVal.Key.PubKey.Bytes()
 
+	Logger.Error("CustomChain", "chain", conf.Custom.Chain)
 	switch conf.Custom.Chain {
 	case MainChain:
 		milestoneDeletionHeight = 0     // TODO confirm with the team
