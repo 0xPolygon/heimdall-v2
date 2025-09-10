@@ -596,6 +596,7 @@ func GetInitialHeight() int64 {
 func GetMilestoneDeletionHeight() int64 {
 	return milestoneDeletionHeight
 }
+
 func GetFaultyMilestoneNumber() uint64 {
 	return uint64(faultyMilestoneNumber)
 }
