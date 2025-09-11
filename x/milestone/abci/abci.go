@@ -52,7 +52,7 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 		}
 
 		if isFastForwardMilestone(latestHeader.Number.Uint64(), milestone.EndBlock, params.FfMilestoneThreshold) {
-			propStartBlock = getFastForwardMilestoneStartBlock(latestHeader.Number.Uint64(), milestone.EndBlock, params.FfMilestoneBlockInterval)
+			propStartBlock = getFastForwardMilestoneStartBlock(milestone.EndBlock, params.FfMilestoneBlockInterval)
 		}
 
 		lastMilestoneHash = milestone.Hash
@@ -112,9 +112,8 @@ func isFastForwardMilestone(latestHeaderNumber, latestMilestoneEndBlock, ffMiles
 	return latestHeaderNumber > latestMilestoneEndBlock && latestHeaderNumber-latestMilestoneEndBlock > ffMilestoneThreshold
 }
 
-func getFastForwardMilestoneStartBlock(latestHeaderNumber, latestMilestoneEndBlock, ffMilestoneBlockInterval uint64) uint64 {
-	latestHeaderMilestoneDistanceInBlocks := ((latestHeaderNumber - latestMilestoneEndBlock) / ffMilestoneBlockInterval) * ffMilestoneBlockInterval
-	return latestMilestoneEndBlock + latestHeaderMilestoneDistanceInBlocks + 1
+func getFastForwardMilestoneStartBlock(latestMilestoneEndBlock, ffMilestoneBlockInterval uint64) uint64 {
+	return latestMilestoneEndBlock + ffMilestoneBlockInterval
 }
 
 func GetMajorityMilestoneProposition(
