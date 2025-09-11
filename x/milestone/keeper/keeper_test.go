@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"encoding/base64"
 	"testing"
 	"time"
 
@@ -156,4 +157,160 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 	result, err = keeper.GetMilestoneCount(ctx)
 	require.NoError(err)
 	require.Equal(uint64(1), result)
+}
+
+func (s *KeeperTestSuite) TestDeleteMilestone_Success_Last() {
+	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
+
+	// add milestones
+	milestone1 := testutil.CreateMilestone(
+		0,
+		10,
+		testutil.RandomBytes(),
+		util.FormatAddress(secp256k1.GenPrivKey().PubKey().Address().String()),
+		"137",
+		TestMilestoneID,
+		uint64(time.Now().Unix()),
+	)
+
+	milestone2 := testutil.CreateMilestone(
+		11,
+		20,
+		testutil.RandomBytes(),
+		util.FormatAddress(secp256k1.GenPrivKey().PubKey().Address().String()),
+		"137",
+		TestMilestoneID,
+		uint64(time.Now().Unix()),
+	)
+
+	err := keeper.AddMilestone(ctx, milestone1)
+	require.NoError(err)
+
+	err = keeper.AddMilestone(ctx, milestone2)
+	require.NoError(err)
+
+	count, err := keeper.GetMilestoneCount(ctx)
+	require.NoError(err)
+	require.Equal(uint64(2), count)
+
+	// delete milestone number 2
+	err = keeper.DeleteMilestone(ctx, 2)
+	require.NoError(err)
+
+	// the count should now be 1
+	count, err = keeper.GetMilestoneCount(ctx)
+	require.NoError(err)
+	require.Equal(uint64(1), count)
+
+	// trying to fetch the deleted milestone should fail
+	result, err := keeper.GetMilestoneByNumber(ctx, 2)
+	require.Nil(result)
+	require.Error(err)
+
+	// the last milestone should now be milestone number 1
+	result, err = keeper.GetLastMilestone(ctx)
+	require.NoError(err)
+	require.True(milestone1.Equal(result))
+}
+
+func (s *KeeperTestSuite) TestDeleteMilestone_Fail_NotFound() {
+	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
+
+	// try deleting a non-existent milestone
+	err := keeper.DeleteMilestone(ctx, 99)
+	require.Error(err)
+	require.Equal(types.ErrNoMilestoneFound, err)
+}
+
+func (s *KeeperTestSuite) TestDeleteMilestone_NonLast() {
+	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
+
+	// add two milestones
+	ms1 := testutil.CreateMilestone(
+		0, 10, testutil.RandomBytes(),
+		util.FormatAddress(secp256k1.GenPrivKey().PubKey().Address().String()),
+		"137", "id1", uint64(time.Now().Unix()),
+	)
+	ms2 := testutil.CreateMilestone(
+		11, 20, testutil.RandomBytes(),
+		util.FormatAddress(secp256k1.GenPrivKey().PubKey().Address().String()),
+		"137", "id2", uint64(time.Now().Unix()),
+	)
+
+	err := keeper.AddMilestone(ctx, ms1)
+	require.NoError(err)
+	err = keeper.AddMilestone(ctx, ms2)
+	require.NoError(err)
+
+	// make sure count is 2
+	count, err := keeper.GetMilestoneCount(ctx)
+	require.NoError(err)
+	require.Equal(uint64(2), count)
+
+	// delete milestone number 1 (not the latest)
+	err = keeper.DeleteMilestone(ctx, 1)
+	require.NoError(err)
+
+	// milestone number 1 should not exist anymore
+	_, err = keeper.GetMilestoneByNumber(ctx, 1)
+	require.Error(err)
+
+	// milestone number 2 should still exist
+	result, err := keeper.GetMilestoneByNumber(ctx, 2)
+	require.NoError(err)
+	require.True(ms2.Equal(result))
+
+	// count should remain 2
+	count, err = keeper.GetMilestoneCount(ctx)
+	require.NoError(err)
+	require.Equal(uint64(2), count)
+}
+
+func (s *KeeperTestSuite) TestIsFaultyMilestone_Match() {
+	req, keeper := s.Require(), s.milestoneKeeper
+
+	expectedHash, _ := base64.StdEncoding.DecodeString(
+		"eRCiCRhVhnTtuHdZorsIsxrw3g5O7w2JCb51rzWRdI8=",
+	)
+
+	// faulty milestone
+	milestone := types.Milestone{
+		Hash:        expectedHash,
+		MilestoneId: "809387e7dae84cce485d95f1fce3f2ac1d2b9979d1c0989df2d4309b30ef6aa6",
+		BorChainId:  "137",
+		StartBlock:  76273070,
+		EndBlock:    76273070,
+	}
+
+	req.True(keeper.IsFaultyMilestone(milestone))
+}
+
+func (s *KeeperTestSuite) TestIsFaultyMilestone_WrongHash() {
+	req, keeper := s.Require(), s.milestoneKeeper
+
+	// random hash
+	wrongHash := testutil.RandomBytes()
+
+	milestone := types.Milestone{
+		Hash:        wrongHash,
+		MilestoneId: "809387e7dae84cce485d95f1fce3f2ac1d2b9979d1c0989df2d4309b30ef6aa6",
+	}
+
+	req.False(keeper.IsFaultyMilestone(milestone))
+}
+
+func (s *KeeperTestSuite) TestIsFaultyMilestone_WrongID() {
+	req, keeper := s.Require(), s.milestoneKeeper
+
+	expectedHash, _ := base64.StdEncoding.DecodeString(
+		"eRCiCRhVhnTtuHdZorsIsxrw3g5O7w2JCb51rzWRdI8=",
+	)
+
+	// wrong milestone ID
+	milestone := types.Milestone{
+		Hash:        expectedHash,
+		MilestoneId: "some-other-id",
+	}
+
+	req.False(keeper.IsFaultyMilestone(milestone))
 }
