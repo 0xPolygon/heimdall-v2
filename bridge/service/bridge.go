@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	waitDuration  = 1 * time.Minute
+	waitDuration  = 10 * time.Second
 	borChainIDKey = "bor-chain-id"
 	logsTypeKey   = "logs-type"
 )
