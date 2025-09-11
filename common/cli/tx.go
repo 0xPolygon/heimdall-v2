@@ -98,7 +98,6 @@ func MakeTxFactory(cliCtx client.Context, address string, logger log.Logger) (tx
 		WithAccountNumber(accNum).
 		WithSequence(accSeq).
 		WithKeybase(cliCtx.Keyring).
-		WithSignMode(signMode).
 		WithFees(ante.DefaultFeeWantedPerTx.String()).
 		WithGas(authParams.MaxTxGas)
 

@@ -425,7 +425,7 @@ func (app *HeimdallApp) updateBlockProducerStatus(ctx sdk.Context, supportingPro
 func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone *milestoneTypes.MilestoneProposition, lastSpan borTypes.Span, supportingValidatorIDs map[uint64]struct{}) error {
 	logger := app.Logger()
 
-	if majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1) >= lastSpan.StartBlock && helper.IsVeblop(lastSpan.EndBlock+1) {
+	if majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1) >= lastSpan.StartBlock && helper.IsRio(lastSpan.EndBlock+1) {
 		logger.Info("New milestone is greater than the last span, creating a new veblop span", "lastSpan", lastSpan, "newMilestone", majorityMilestone)
 
 		params, err := app.BorKeeper.GetParams(ctx)
@@ -434,7 +434,7 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 			return err
 		}
 
-		endBlock := lastSpan.EndBlock + params.SpanDuration - 1
+		endBlock := lastSpan.EndBlock + params.SpanDuration
 
 		currentProducer, err := app.BorKeeper.FindCurrentProducerID(ctx, lastSpan.EndBlock)
 		if err != nil {
@@ -490,7 +490,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 
 	diff := ctx.BlockHeight() - int64(lastMilestoneBlock)
 
-	if lastMilestone != nil && lastMilestoneBlock != 0 && diff > ChangeProducerThreshold && helper.IsVeblop(lastMilestone.EndBlock+1) {
+	if lastMilestone != nil && lastMilestoneBlock != 0 && diff > ChangeProducerThreshold && helper.IsRio(lastMilestone.EndBlock+1) {
 		logger.Info("Block finalization time is greater than change producer threshold, creating a new veblop span", "lastMilestone", lastMilestone, "lastMilestoneBlock", lastMilestoneBlock, "diff", diff, "currentBlock", ctx.BlockHeight())
 
 		addSpanCtx, spanCache := app.cacheTxContext(ctx)
@@ -662,10 +662,14 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		lastEndHash = lastMilestone.Hash
 	}
 
+	totalVotingPower := validatorSet.GetTotalVotingPower()
+	majorityVP := totalVotingPower*2/3 + 1
+
 	majorityMilestone, aggregatedProposers, proposer, supportingValidatorIDs, err := milestoneAbci.GetMajorityMilestoneProposition(
 		ctx,
 		validatorSet,
 		extVoteInfo,
+		majorityVP,
 		logger,
 		lastEndBlock,
 		lastEndHash,
@@ -678,7 +682,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	isValidMilestone := false
 	if majorityMilestone != nil {
 		var lastSpanHeimdallBlock uint64
-		if helper.IsVeblop(majorityMilestone.StartBlockNumber) {
+		if helper.IsRio(majorityMilestone.StartBlockNumber) {
 			lastSpanHeimdallBlock, err = app.BorKeeper.GetLastSpanBlock(ctx)
 			if err != nil {
 				logger.Warn("Error occurred while getting last span block", "error", err)
@@ -688,7 +692,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, majorityMilestone); err != nil {
 			logger.Error("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
 			// We don't want to halt consensus because of invalid majority milestone proposition
-		} else if helper.IsVeblop(majorityMilestone.StartBlockNumber) && ctx.BlockHeight() == int64(lastSpanHeimdallBlock)+1 {
+		} else if helper.IsRio(majorityMilestone.StartBlockNumber) && ctx.BlockHeight() == int64(lastSpanHeimdallBlock)+1 {
 			logger.Info("Last span was created in the previous block, skipping milestone addition", "lastSpanHeimdallBlock", lastSpanHeimdallBlock, "currentBlock", ctx.BlockHeight())
 		} else {
 			isValidMilestone = true
@@ -732,7 +736,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			return nil, err
 		}
 
-		if helper.IsVeblop(lastSpan.StartBlock + 1) {
+		if helper.IsRio(lastSpan.StartBlock + 1) {
 			err = app.MilestoneKeeper.SetLastMilestoneBlock(addMilestoneCtx, uint64(ctx.BlockHeight()))
 			if err != nil {
 				logger.Error("error while setting last milestone block in store", "err", err)
@@ -756,8 +760,29 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 		msCache.Write()
 	} else {
-		if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
+		// If we can't reach the 2/3 majority, we need to check if the there is at least 1/3 of the voting power supporting a new milestone
+		minMajorityVP := totalVotingPower/3 + 1
+
+		pendingMilestone, _, _, _, err := milestoneAbci.GetMajorityMilestoneProposition(
+			ctx,
+			validatorSet,
+			extVoteInfo,
+			minMajorityVP,
+			logger,
+			lastEndBlock,
+			lastEndHash,
+		)
+		if err != nil {
+			logger.Error("Error occurred while getting 33% majority milestone proposition", "error", err)
 			return nil, err
+		}
+
+		if pendingMilestone == nil {
+			if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
+				return nil, err
+			}
+		} else {
+			logger.Debug("33% majority milestone proposition found, skipping span rotation")
 		}
 	}
 
