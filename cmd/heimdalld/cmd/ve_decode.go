@@ -8,15 +8,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 
 	cometbftDB "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/store"
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	goproto "github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
@@ -39,8 +36,8 @@ func veDecodeCmd() *cobra.Command {
 		RunE:  runVeDecode,
 	}
 
-	cmd.Flags().String("genesis-file", "", "Path to the genesis.json file")
-	cmd.Flags().String("host", "localhost", "RPC host")
+	cmd.Flags().String("chain-id", "", "Chain ID (default: empty)")
+	cmd.Flags().String("host", "localhost", "Host for CometBFT RPC endpoint (default: localhost)")
 	cmd.Flags().Uint64("cometbft-rpc-port", 26657, "Port for CometBFT RPC endpoint (default: 26657)")
 
 	return cmd
@@ -52,24 +49,26 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error parsing height: %w", err)
 	}
 
-	// Determine the genesis file path, default from SDK client context, override if the flag is provided.
-	ctx := client.GetClientContextFromCmd(cmd)
-	defaultGenPath := filepath.Join(ctx.HomeDir, "config", "genesis.json")
-	genPath, err := cmd.Flags().GetString("genesis-file")
+	chainId, err := cmd.Flags().GetString("chain-id")
 	if err != nil {
-		return fmt.Errorf("error reading genesis-file flag: %w", err)
+		return fmt.Errorf("error reading chain-id flag: %w", err)
 	}
-	if genPath == "" {
-		genPath = defaultGenPath
+	if chainId == "" {
+		return fmt.Errorf("chain-id is required")
 	}
 
-	// Parse chain_id and vote_extensions_enable_height from the genesis file.
-	chainId, enableHeight, err := extractGenesisMetadata(genPath)
-	if err != nil {
-		return fmt.Errorf("failed to parse genesis: %w", err)
+	var veEnableHeight int64
+	switch chainId {
+	case "heimdallv2-137":
+		veEnableHeight = 24404501
+	case "heimdallv2-80001":
+		veEnableHeight = 8788501
+	default:
+		veEnableHeight = 1
 	}
-	if height <= enableHeight {
-		return fmt.Errorf("block height must be > vote_extensions_enable_height (%d)", enableHeight)
+
+	if height <= veEnableHeight {
+		return fmt.Errorf("block height must be > ve_enable_height (%d)", veEnableHeight)
 	}
 
 	host, err := cmd.Flags().GetString("host")
@@ -82,13 +81,13 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error reading cometbft-rpc-port flag: %w", err)
 	}
 
-	// Fetch vote extension info
+	// Fetch vote extension info.
 	extInfo, err := getVEs(height, host, port)
 	if err != nil {
 		return fmt.Errorf("error getting vote extensions: %w", err)
 	}
 
-	// Encode to JSON and print
+	// Encode to JSON and print.
 	out, err := BuildCommitJSON(height, chainId, extInfo)
 	if err != nil {
 		return fmt.Errorf("error marshalling ExtendedCommitInfo to JSON: %w", err)
@@ -97,7 +96,7 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	fmt.Println(string(out))
 	fmt.Println()
 
-	// Print summary
+	// Print summary.
 	summary, err := BuildSummaryJSON(height, chainId, extInfo)
 	if err != nil {
 		return fmt.Errorf("error marshalling summary to JSON: %w", err)
@@ -106,33 +105,6 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	fmt.Println(string(summary))
 
 	return nil
-}
-
-// extractGenesisMetadata extracts the chain_id and vote_extensions_enable_height from the genesis.json file.
-func extractGenesisMetadata(path string) (chainID string, voteExtHeight int64, err error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return "", 0, err
-	}
-	var genesis struct {
-		ChainID   string `json:"chain_id"`
-		Consensus struct {
-			ABCI struct {
-				VoteExtHeight string `json:"vote_extensions_enable_height"`
-			} `json:"abci"`
-		} `json:"consensus_params"`
-	}
-	if err := json.Unmarshal(data, &genesis); err != nil {
-		return "", 0, err
-	}
-	if genesis.ChainID == "" {
-		return "", 0, fmt.Errorf("empty chain_id found in genesis.json")
-	}
-	enableHeight, err := strconv.ParseInt(genesis.Consensus.ABCI.VoteExtHeight, 10, 64)
-	if err != nil {
-		return "", 0, fmt.Errorf("invalid vote_extensions_enable_height: %w", err)
-	}
-	return genesis.ChainID, enableHeight, nil
 }
 
 func getVEs(height int64, host string, port uint64) (*abci.ExtendedCommitInfo, error) {
@@ -152,7 +124,7 @@ func getVEs(height int64, host string, port uint64) (*abci.ExtendedCommitInfo, e
 		return voteExt, nil
 	}
 
-	// 3) Both failed, report a generic error
+	// 3) Both failed, report a generic error.
 	return nil, fmt.Errorf("cannot fetch vote extensions:\nRPC error: %w\nBlock store error: %w", err1, err2)
 }
 
