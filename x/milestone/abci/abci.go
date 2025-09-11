@@ -41,20 +41,6 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 	if milestone != nil {
 		propStartBlock = milestone.EndBlock + 1
 
-		latestHeader, err := contractCaller.GetBorChainBlock(ctx, nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get latest header")
-		}
-
-		params, err := milestoneKeeper.GetParams(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		if isFastForwardMilestone(latestHeader.Number.Uint64(), milestone.EndBlock, params.FfMilestoneThreshold) {
-			propStartBlock = getFastForwardMilestoneStartBlock(latestHeader.Number.Uint64(), milestone.EndBlock, params.FfMilestoneBlockInterval)
-		}
-
 		lastMilestoneHash = milestone.Hash
 		lastMilestoneBlockNumber = milestone.EndBlock
 	}
@@ -106,15 +92,6 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 		ParentHash:       parentHash,
 		BlockTds:         tds,
 	}, nil
-}
-
-func isFastForwardMilestone(latestHeaderNumber, latestMilestoneEndBlock, ffMilestoneThreshold uint64) bool {
-	return latestHeaderNumber > latestMilestoneEndBlock && latestHeaderNumber-latestMilestoneEndBlock > ffMilestoneThreshold
-}
-
-func getFastForwardMilestoneStartBlock(latestHeaderNumber, latestMilestoneEndBlock, ffMilestoneBlockInterval uint64) uint64 {
-	latestHeaderMilestoneDistanceInBlocks := ((latestHeaderNumber - latestMilestoneEndBlock) / ffMilestoneBlockInterval) * ffMilestoneBlockInterval
-	return latestMilestoneEndBlock + latestHeaderMilestoneDistanceInBlocks + 1
 }
 
 func GetMajorityMilestoneProposition(
