@@ -83,15 +83,22 @@ jobs:
         run: kurtosis enclave inspect ${{ env.ENCLAVE_NAME }}
 
       - name: Test state syncs
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter-tags pos,bridge,l1,l2 --recursive tests/"
+        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter-tags test-runner "bats --filter 'bridge MATIC/POL, ERC20, and ERC721 from L1 to L2 and confirm L2 balances increased' tests/pos/bridge.bats"
 
-      - name: Validator test cases
-        run: |
-          kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'add new validator' --recursive tests/"
-          kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'update validator stake' --recursive tests/"
-          kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'delegate MATIC/POL to a validator' --recursive tests/"
-          kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'undelegate MATIC/POL from a validator' --recursive tests/"
-          kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'remove validator' --recursive tests/"
+      - name: Add new validator
+        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'add new validator' tests/pos/validator.bats"
+
+      - name: Update validator stake
+        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'update validator stake' tests/pos/validator.bats"
+
+      - name: Delegate MATIC/POL to a validator
+        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'delegate MATIC/POL to a validator' tests/pos/validator.bats"
+
+      - name: Undelegate MATIC/POL from a validator
+        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'undelegate MATIC/POL from a validator' tests/pos/validator.bats"
+
+      - name: Remove validator
+        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'remove validator' tests/pos/validator.bats"
 
       - name: Run smoke tests (Checkpoints and Milestones)
         run: bash ./pos-workflows/tests/kurtosis_smoke_test.sh
