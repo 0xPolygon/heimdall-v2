@@ -476,8 +476,7 @@ compaction_interval = 1000
 # The time period between automated background pruning operations.
 interval = "10m0s"
 
-# Indexer pruning enabling. Note that this has not been tested in production
-# It should be enabled on full nodes to confirm it is not impacting performance. 
+# Indexer pruning enabling.
 indexer_pruning_enabled = false
 
 #######################################################
