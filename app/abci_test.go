@@ -524,6 +524,11 @@ func TestExtendVoteHandler(t *testing.T) {
 
 	mockCaller := new(helpermocks.IContractCaller)
 	mockCaller.
+		On("GetBorChainBlock", mock.Anything, mock.Anything).
+		Return(&ethTypes.Header{
+			Number: big.NewInt(10),
+		}, nil)
+	mockCaller.
 		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
@@ -662,6 +667,11 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 	require.NotEmpty(t, respPrep.Txs)
 
 	mockCaller := new(helpermocks.IContractCaller)
+	mockCaller.
+		On("GetBorChainBlock", mock.Anything, mock.Anything).
+		Return(&ethTypes.Header{
+			Number: big.NewInt(10),
+		}, nil)
 	mockCaller.
 		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
@@ -823,6 +833,11 @@ func TestSidetxsHappyPath(t *testing.T) {
 	}
 
 	mockCaller := new(helpermocks.IContractCaller)
+	mockCaller.
+		On("GetBorChainBlock", mock.Anything, mock.Anything).
+		Return(&ethTypes.Header{
+			Number: big.NewInt(10),
+		}, nil)
 	mockCaller.
 		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
@@ -1377,7 +1392,11 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		)
 
 		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil).Once()
-
+		mockCaller.
+			On("GetBorChainBlock", mock.Anything, mock.Anything).
+			Return(&ethTypes.Header{
+				Number: big.NewInt(1),
+			}, nil)
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
@@ -1780,7 +1799,11 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
-
+		mockCaller.
+			On("GetBorChainBlock", mock.Anything, mock.Anything).
+			Return(&ethTypes.Header{
+				Number: big.NewInt(10),
+			}, nil)
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
@@ -2361,6 +2384,11 @@ func TestPrepareProposal(t *testing.T) {
 	ctx = ctx.WithConsensusParams(params)
 
 	mockCaller := new(helpermocks.IContractCaller)
+	mockCaller.
+		On("GetBorChainBlock", mock.Anything, mock.Anything).
+		Return(&ethTypes.Header{
+			Number: big.NewInt(1),
+		}, nil)
 	mockCaller.
 		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
