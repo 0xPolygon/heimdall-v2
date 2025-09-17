@@ -64,6 +64,7 @@ import (
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/gorilla/mux"
+	"github.com/hellofresh/health-go/v5"
 
 	"github.com/0xPolygon/heimdall-v2/client/docs"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -153,6 +154,9 @@ type HeimdallApp struct {
 
 	// SideTxConfigurator
 	sideTxCfg sidetxs.SideTxConfigurator
+
+	// Health service
+	healthService *health.Health
 }
 
 func init() {
@@ -457,6 +461,19 @@ func NewHeimdallApp(
 
 	metrics.InitMetrics()
 
+	// Initialize the health service.
+	healthService, err := health.New(
+		health.WithComponent(health.Component{
+			Name:    "heimdall",
+			Version: hversion.Version,
+		}),
+		health.WithSystemInfo(),
+	)
+	if err != nil {
+		panic(fmt.Errorf("failed to create health service: %w", err))
+	}
+	app.healthService = healthService
+
 	return app
 }
 
@@ -750,11 +767,14 @@ func (app *HeimdallApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.A
 	apiSvr.Router.HandleFunc("/status", getCometStatusHandler(clientCtx)).Methods("GET")
 
 	apiSvr.Router.HandleFunc("/version", getHeimdallV2Version()).Methods("GET")
+
+	// Register the health service endpoint.
+	apiSvr.Router.Handle("/health", app.customHealthServiceHandler(clientCtx)).Methods("GET")
 }
 
 func getCometStatusHandler(cliCtx client.Context) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		resultStatus, err := helper.GetNodeStatus(cliCtx, r.Context())
+		resultStatus, err := helper.GetNodeStatus(cliCtx)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to get node status: %v", err), http.StatusInternalServerError)
 			return
@@ -907,4 +927,81 @@ func RegisterSwaggerAPI(ctx client.Context, rtr *mux.Router, swaggerEnabled bool
 	}
 
 	return nil
+}
+
+// customHealthServiceHandler wraps the health-go handler and adds Heimdall-specific information on top of it.
+func (app *HeimdallApp) customHealthServiceHandler(clientCtx client.Context) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		recorder := &responseRecorder{
+			ResponseWriter: w,
+			body:           make([]byte, 0),
+		}
+
+		app.healthService.Handler().ServeHTTP(recorder, r)
+
+		var healthResponse map[string]any
+		if err := json.Unmarshal(recorder.body, &healthResponse); err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(recorder.statusCode)
+			w.Write(recorder.body)
+			return
+		}
+
+		// Remove the "status" field from health-go as it's always "OK" and not useful.
+		delete(healthResponse, "status")
+
+		healthResponse["heimdall_info"] = app.getHeimdallInfo(clientCtx)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(recorder.statusCode)
+
+		if err := json.NewEncoder(w).Encode(healthResponse); err != nil {
+			fmt.Printf("Failed to encode response: %v\n", err)
+			w.Write(recorder.body)
+		}
+	})
+}
+
+func (app *HeimdallApp) getHeimdallInfo(clientCtx client.Context) map[string]any {
+	heimdallInfo := map[string]any{}
+
+	heimdall_status, err := helper.GetNodeStatus(clientCtx)
+	if err != nil {
+		heimdallInfo["error"] = true
+		heimdallInfo["error_message"] = fmt.Sprintf("failed to get node status: %v", err)
+	} else {
+		heimdallInfo["chain_id"] = heimdall_status.NodeInfo.Network
+
+		heimdallInfo["catching_up"] = heimdall_status.SyncInfo.CatchingUp
+
+		heimdallInfo["latest_app_hash"] = heimdall_status.SyncInfo.LatestAppHash.String()
+
+		heimdallInfo["latest_block_hash"] = heimdall_status.SyncInfo.LatestBlockHash.String()
+		heimdallInfo["latest_block_height"] = heimdall_status.SyncInfo.LatestBlockHeight
+		heimdallInfo["latest_block_time"] = heimdall_status.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano)
+
+		heimdallInfo["earliest_block_hash"] = heimdall_status.SyncInfo.EarliestBlockHash.String()
+		heimdallInfo["earliest_block_height"] = heimdall_status.SyncInfo.EarliestBlockHeight
+		heimdallInfo["earliest_block_time"] = heimdall_status.SyncInfo.EarliestBlockTime.Format(time.RFC3339Nano)
+
+		heimdallInfo["validator_address"] = heimdall_status.ValidatorInfo.Address.String()
+		heimdallInfo["validator_voting_power"] = heimdall_status.ValidatorInfo.VotingPower
+	}
+	return heimdallInfo
+}
+
+// responseRecorder captures the response from health-go handler.
+type responseRecorder struct {
+	http.ResponseWriter
+	statusCode int
+	body       []byte
+}
+
+func (r *responseRecorder) WriteHeader(statusCode int) {
+	r.statusCode = statusCode
+}
+
+func (r *responseRecorder) Write(data []byte) (int, error) {
+	r.body = append(r.body, data...)
+	return len(data), nil
 }

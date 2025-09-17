@@ -276,7 +276,7 @@ func CreateURLWithQuery(uri string, param map[string]interface{}) (string, error
 // IsCatchingUp checks if the heimdall node you are connected to is fully synced or not
 // returns true when synced
 func IsCatchingUp(cliCtx client.Context, ctx context.Context) bool {
-	resp, err := helper.GetNodeStatus(cliCtx, ctx)
+	resp, err := helper.GetNodeStatus(cliCtx)
 	if err != nil {
 		return true
 	}
