@@ -171,6 +171,19 @@ type CustomConfig struct {
 	Chain string `mapstructure:"chain"`
 
 	ProducerVotes string `mapstructure:"producer_votes"`
+
+	// #### Health check configs ####
+	// MaxGoRoutineThreshold is the maximum number of goroutines before heimdall health check fails.
+	MaxGoRoutineThreshold int `mapstructure:"max_goroutine_threshold"`
+
+	// WarnGoRoutineThreshold is the maximum number of goroutines before heimdall health check warns.
+	WarnGoRoutineThreshold int `mapstructure:"warn_goroutine_threshold"`
+
+	// MinPeerThreshold is the minimum number of peers before heimdall health check fails.
+	MinPeerThreshold int `mapstructure:"min_peer_threshold"`
+
+	// WarnPeerThreshold is the minimum number of peers before heimdall health check warns.
+	WarnPeerThreshold int `mapstructure:"warn_peer_threshold"`
 }
 
 type CustomAppConfig struct {
@@ -504,6 +517,11 @@ func GetDefaultHeimdallConfig() CustomConfig {
 		LogsType:       DefaultLogsType,
 		Chain:          DefaultChain,
 		LogsWriterFile: "", // default to stdout
+
+		MaxGoRoutineThreshold:  0,
+		WarnGoRoutineThreshold: 0,
+		MinPeerThreshold:       0,
+		WarnPeerThreshold:      0,
 	}
 }
 

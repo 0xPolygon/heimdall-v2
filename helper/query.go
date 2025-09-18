@@ -35,6 +35,28 @@ func GetNodeStatus(cliCtx cosmosContext.Context) (*ctypes.ResultStatus, error) {
 	return node.Status(ctx) //nolint:contextcheck
 }
 
+// GetNodeNetInfo returns the network information including peers.
+func GetNodeNetInfo(cliCtx cosmosContext.Context) (*ctypes.ResultNetInfo, error) {
+	node, err := cliCtx.GetNode()
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := cliCtx.CmdContext
+
+	if ctx == nil {
+		ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		ctx = ctxWithTimeout
+	}
+
+	if httpClient, ok := node.(*httpClient.HTTP); ok {
+		return httpClient.NetInfo(ctx) //nolint:contextcheck
+	}
+
+	return nil, fmt.Errorf("unable to cast client to HTTP client for NetInfo")
+}
+
 // QueryTxWithProof query tx with proof from the node
 func QueryTxWithProof(cliCtx cosmosContext.Context, hash []byte) (*ctypes.ResultTx, error) {
 	node, err := cliCtx.GetNode()

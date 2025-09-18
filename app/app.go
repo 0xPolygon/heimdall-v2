@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"time"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
@@ -952,6 +955,10 @@ func (app *HeimdallApp) customHealthServiceHandler(clientCtx client.Context) htt
 
 		healthResponse["heimdall_info"] = app.getHeimdallInfo(clientCtx)
 
+		status, statusMessage := app.performHealthChecks(healthResponse)
+		healthResponse["status"] = status
+		healthResponse["status_message"] = statusMessage
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(recorder.statusCode)
 
@@ -962,6 +969,56 @@ func (app *HeimdallApp) customHealthServiceHandler(clientCtx client.Context) htt
 	})
 }
 
+// performHealthChecks performs threshold-based health checks and returns the overall status.
+func (app *HeimdallApp) performHealthChecks(healthResponse map[string]any) (string, string) {
+	overallStatus := "OK"
+	var status []string
+	var statusMessage []string
+
+	config := helper.GetConfig()
+
+	// Goroutines check.
+	if system, ok := healthResponse["system"].(map[string]any); ok {
+		if goroutinesCount, ok := system["goroutines_count"].(float64); ok {
+			// Check critical threshold first.
+			if config.MaxGoRoutineThreshold != 0 && int(goroutinesCount) > config.MaxGoRoutineThreshold {
+				status = append(status, "CRITICAL")
+				statusMessage = append(statusMessage, "Number of goroutines is greater than the maximum threshold.")
+			} else if config.WarnGoRoutineThreshold != 0 && int(goroutinesCount) > config.WarnGoRoutineThreshold {
+				// Only check warning threshold if we haven't already hit critical.
+				status = append(status, "WARN")
+				statusMessage = append(statusMessage, "Number of goroutines is greater than the warning threshold.")
+			}
+		}
+	}
+
+	// Peer check.
+	if heimdallInfo, ok := healthResponse["heimdall_info"].(map[string]any); ok {
+		if peerCount, ok := heimdallInfo["peer_count"].(int); ok {
+			// Check critical threshold first.
+			if config.MinPeerThreshold != 0 && peerCount < config.MinPeerThreshold {
+				status = append(status, "CRITICAL")
+				statusMessage = append(statusMessage, "Number of peers is less than the minimum threshold.")
+			} else if config.WarnPeerThreshold != 0 && peerCount < config.WarnPeerThreshold {
+				// Only check warning threshold if we haven't already hit critical.
+				status = append(status, "WARN")
+				statusMessage = append(statusMessage, "Number of peers is less than the warning threshold.")
+			}
+		}
+	}
+
+	switch {
+	case slices.Contains(status, "CRITICAL"):
+		overallStatus = "CRITICAL"
+	case slices.Contains(status, "WARN"):
+		overallStatus = "WARN"
+	default:
+		overallStatus = "OK"
+	}
+
+	return overallStatus, strings.Join(statusMessage, ", ")
+}
+
 func (app *HeimdallApp) getHeimdallInfo(clientCtx client.Context) map[string]any {
 	heimdallInfo := map[string]any{}
 
@@ -969,24 +1026,49 @@ func (app *HeimdallApp) getHeimdallInfo(clientCtx client.Context) map[string]any
 	if err != nil {
 		heimdallInfo["error"] = true
 		heimdallInfo["error_message"] = fmt.Sprintf("failed to get node status: %v", err)
-	} else {
-		heimdallInfo["chain_id"] = heimdall_status.NodeInfo.Network
-
-		heimdallInfo["catching_up"] = heimdall_status.SyncInfo.CatchingUp
-
-		heimdallInfo["latest_app_hash"] = heimdall_status.SyncInfo.LatestAppHash.String()
-
-		heimdallInfo["latest_block_hash"] = heimdall_status.SyncInfo.LatestBlockHash.String()
-		heimdallInfo["latest_block_height"] = heimdall_status.SyncInfo.LatestBlockHeight
-		heimdallInfo["latest_block_time"] = heimdall_status.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano)
-
-		heimdallInfo["earliest_block_hash"] = heimdall_status.SyncInfo.EarliestBlockHash.String()
-		heimdallInfo["earliest_block_height"] = heimdall_status.SyncInfo.EarliestBlockHeight
-		heimdallInfo["earliest_block_time"] = heimdall_status.SyncInfo.EarliestBlockTime.Format(time.RFC3339Nano)
-
-		heimdallInfo["validator_address"] = heimdall_status.ValidatorInfo.Address.String()
-		heimdallInfo["validator_voting_power"] = heimdall_status.ValidatorInfo.VotingPower
+		return heimdallInfo
 	}
+
+	comeBFTRPCUrl := helper.GetConfig().CometBFTRPCUrl
+	comeBFTRPC, err := client.NewClientFromNode(comeBFTRPCUrl)
+	if err != nil {
+		heimdallInfo["error"] = true
+		heimdallInfo["error_message"] = fmt.Sprintf("failed to get cometbft client: %v", err)
+		return heimdallInfo
+	}
+
+	ctx := clientCtx.CmdContext
+	if ctx == nil {
+		ctxWithTimeout, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		ctx = ctxWithTimeout
+	}
+
+	netInfo, err := comeBFTRPC.NetInfo(ctx)
+	if err != nil {
+		heimdallInfo["error"] = true
+		heimdallInfo["error_message"] = fmt.Sprintf("failed to get cometbft net info: %v", err)
+		return heimdallInfo
+	}
+
+	heimdallInfo["chain_id"] = heimdall_status.NodeInfo.Network
+
+	heimdallInfo["catching_up"] = heimdall_status.SyncInfo.CatchingUp
+
+	heimdallInfo["latest_app_hash"] = heimdall_status.SyncInfo.LatestAppHash.String()
+
+	heimdallInfo["latest_block_hash"] = heimdall_status.SyncInfo.LatestBlockHash.String()
+	heimdallInfo["latest_block_height"] = heimdall_status.SyncInfo.LatestBlockHeight
+	heimdallInfo["latest_block_time"] = heimdall_status.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano)
+
+	heimdallInfo["peer_count"] = netInfo.NPeers
+
+	heimdallInfo["validator_address"] = heimdall_status.ValidatorInfo.Address.String()
+	heimdallInfo["validator_voting_power"] = heimdall_status.ValidatorInfo.VotingPower
+
+	heimdallInfo["error"] = false
+	heimdallInfo["error_message"] = ""
+
 	return heimdallInfo
 }
 
