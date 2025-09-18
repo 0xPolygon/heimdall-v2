@@ -983,11 +983,11 @@ func (app *HeimdallApp) performHealthChecks(healthResponse map[string]any) (stri
 			// Check critical threshold first.
 			if config.MaxGoRoutineThreshold != 0 && int(goroutinesCount) > config.MaxGoRoutineThreshold {
 				status = append(status, "CRITICAL")
-				statusMessage = append(statusMessage, "Number of goroutines is greater than the maximum threshold.")
+				statusMessage = append(statusMessage, "Number of goroutines is greater than the maximum threshold")
 			} else if config.WarnGoRoutineThreshold != 0 && int(goroutinesCount) > config.WarnGoRoutineThreshold {
 				// Only check warning threshold if we haven't already hit critical.
 				status = append(status, "WARN")
-				statusMessage = append(statusMessage, "Number of goroutines is greater than the warning threshold.")
+				statusMessage = append(statusMessage, "Number of goroutines is greater than the warning threshold")
 			}
 		}
 	}
@@ -998,11 +998,11 @@ func (app *HeimdallApp) performHealthChecks(healthResponse map[string]any) (stri
 			// Check critical threshold first.
 			if config.MinPeerThreshold != 0 && peerCount < config.MinPeerThreshold {
 				status = append(status, "CRITICAL")
-				statusMessage = append(statusMessage, "Number of peers is less than the minimum threshold.")
+				statusMessage = append(statusMessage, "Number of peers is less than the minimum threshold")
 			} else if config.WarnPeerThreshold != 0 && peerCount < config.WarnPeerThreshold {
 				// Only check warning threshold if we haven't already hit critical.
 				status = append(status, "WARN")
-				statusMessage = append(statusMessage, "Number of peers is less than the warning threshold.")
+				statusMessage = append(statusMessage, "Number of peers is less than the warning threshold")
 			}
 		}
 	}
@@ -1016,7 +1016,7 @@ func (app *HeimdallApp) performHealthChecks(healthResponse map[string]any) (stri
 		overallStatus = "OK"
 	}
 
-	return overallStatus, strings.Join(statusMessage, ", ")
+	return overallStatus, strings.Join(statusMessage, ", and ")
 }
 
 func (app *HeimdallApp) getHeimdallInfo(clientCtx client.Context) map[string]any {
