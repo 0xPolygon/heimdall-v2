@@ -51,7 +51,7 @@ func GetNodeNetInfo(cliCtx cosmosContext.Context) (*ctypes.ResultNetInfo, error)
 	}
 
 	if httpClient, ok := node.(*httpClient.HTTP); ok {
-		return httpClient.NetInfo(ctx) //nolint:contextcheck
+		return httpClient.NetInfo(ctx)
 	}
 
 	return nil, fmt.Errorf("unable to cast client to HTTP client for NetInfo")

@@ -777,7 +777,7 @@ func (app *HeimdallApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.A
 
 func getCometStatusHandler(cliCtx client.Context) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		resultStatus, err := helper.GetNodeStatus(cliCtx)
+		resultStatus, err := helper.GetNodeStatus(cliCtx) //nolint:contextcheck
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to get node status: %v", err), http.StatusInternalServerError)
 			return
@@ -944,16 +944,19 @@ func (app *HeimdallApp) customHealthServiceHandler(clientCtx client.Context) htt
 
 		var healthResponse map[string]any
 		if err := json.Unmarshal(recorder.body, &healthResponse); err != nil {
+			app.Logger().Error("Failed to unmarshal response: %v\n", err)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(recorder.statusCode)
-			w.Write(recorder.body)
+			if _, writeErr := w.Write(recorder.body); writeErr != nil {
+				app.Logger().Error("Failed to write fallback response: %v\n", writeErr)
+			}
 			return
 		}
 
 		// Remove the "status" field from health-go as it's always "OK" and not useful.
 		delete(healthResponse, "status")
 
-		healthResponse["heimdall_info"] = app.getHeimdallInfo(clientCtx)
+		healthResponse["heimdall_info"] = app.getHeimdallInfo(clientCtx) //nolint:contextcheck
 
 		status, statusMessage := app.performHealthChecks(healthResponse)
 		healthResponse["status"] = status
@@ -963,15 +966,17 @@ func (app *HeimdallApp) customHealthServiceHandler(clientCtx client.Context) htt
 		w.WriteHeader(recorder.statusCode)
 
 		if err := json.NewEncoder(w).Encode(healthResponse); err != nil {
-			fmt.Printf("Failed to encode response: %v\n", err)
-			w.Write(recorder.body)
+			app.Logger().Error("Failed to encode response: %v\n", err)
+			if _, writeErr := w.Write(recorder.body); writeErr != nil {
+				app.Logger().Error("Failed to write fallback response: %v\n", writeErr)
+			}
 		}
 	})
 }
 
 // performHealthChecks performs threshold-based health checks and returns the overall status.
 func (app *HeimdallApp) performHealthChecks(healthResponse map[string]any) (string, string) {
-	overallStatus := "OK"
+	var overallStatus string
 	var status []string
 	var statusMessage []string
 
