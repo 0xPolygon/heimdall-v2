@@ -18,7 +18,7 @@ const (
 )
 
 // GetNodeStatus returns node status
-func GetNodeStatus(cliCtx cosmosContext.Context, _ context.Context) (*ctypes.ResultStatus, error) {
+func GetNodeStatus(cliCtx cosmosContext.Context) (*ctypes.ResultStatus, error) {
 	node, err := cliCtx.GetNode()
 	if err != nil {
 		return nil, err
