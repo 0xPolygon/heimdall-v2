@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 
@@ -935,7 +934,7 @@ func RegisterSwaggerAPI(ctx client.Context, rtr *mux.Router, swaggerEnabled bool
 // customHealthServiceHandler wraps the health-go handler and adds Heimdall-specific information on top of it.
 func (app *HeimdallApp) customHealthServiceHandler(clientCtx client.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		recorder := &responseRecorder{
+		recorder := &ResponseRecorder{
 			ResponseWriter: w,
 			body:           make([]byte, 0),
 		}
@@ -956,11 +955,18 @@ func (app *HeimdallApp) customHealthServiceHandler(clientCtx client.Context) htt
 		// Remove the "status" field from health-go as it's always "OK" and not useful.
 		delete(healthResponse, "status")
 
-		healthResponse["heimdall_info"] = app.getHeimdallInfo(clientCtx) //nolint:contextcheck
+		heimdallInfo, err := app.getHeimdallInfo(clientCtx) //nolint:contextcheck
+		if err != nil {
+			healthResponse["error"] = true
+			healthResponse["error_message"] = err.Error()
+		} else {
+			healthResponse["error"] = false
+			healthResponse["error_message"] = ""
+		}
+		healthResponse["node_info"] = heimdallInfo
 
-		status, statusMessage := app.performHealthChecks(healthResponse)
+		status := app.performHealthChecks(healthResponse)
 		healthResponse["status"] = status
-		healthResponse["status_message"] = statusMessage
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(recorder.statusCode)
@@ -975,71 +981,67 @@ func (app *HeimdallApp) customHealthServiceHandler(clientCtx client.Context) htt
 }
 
 // performHealthChecks performs threshold-based health checks and returns the overall status.
-func (app *HeimdallApp) performHealthChecks(healthResponse map[string]any) (string, string) {
-	var overallStatus string
-	var status []string
-	var statusMessage []string
+func (app *HeimdallApp) performHealthChecks(healthResponse map[string]any) HealthStatus {
+	overallStatus := StatusOK
+	var statusMessages []string
 
 	config := helper.GetConfig()
 
 	// Goroutines check.
-	if system, ok := healthResponse["system"].(map[string]any); ok {
+	if system, ok := healthResponse["system"].(map[string]any); ok && system != nil {
 		if goroutinesCount, ok := system["goroutines_count"].(float64); ok {
 			// Check critical threshold first.
 			if config.MaxGoRoutineThreshold != 0 && int(goroutinesCount) > config.MaxGoRoutineThreshold {
-				status = append(status, "CRITICAL")
-				statusMessage = append(statusMessage, "number of goroutines above the maximum threshold")
+				overallStatus = StatusCritical
+				statusMessages = append(statusMessages, "number of goroutines above the maximum threshold")
 			} else if config.WarnGoRoutineThreshold != 0 && int(goroutinesCount) > config.WarnGoRoutineThreshold {
-				// Only check warning threshold if we haven't already hit critical.
-				status = append(status, "WARN")
-				statusMessage = append(statusMessage, "number of goroutines above the warning threshold")
+				// Only set to warn if we haven't already hit critical.
+				if overallStatus != StatusCritical {
+					overallStatus = StatusWarn
+				}
+				statusMessages = append(statusMessages, "number of goroutines above the warning threshold")
 			}
 		}
 	}
 
-	// Peer check.
-	if heimdallInfo, ok := healthResponse["heimdall_info"].(map[string]any); ok {
+	// Peer check - only perform if node_info exists and has peer_count.
+	if heimdallInfo, ok := healthResponse["node_info"].(map[string]any); ok && heimdallInfo != nil {
 		if peerCount, ok := heimdallInfo["peer_count"].(int); ok {
 			// Check critical threshold first.
 			if config.MinPeerThreshold != 0 && peerCount < config.MinPeerThreshold {
-				status = append(status, "CRITICAL")
-				statusMessage = append(statusMessage, "number of peers below the minimum threshold")
+				overallStatus = StatusCritical
+				statusMessages = append(statusMessages, "number of peers below the minimum threshold")
 			} else if config.WarnPeerThreshold != 0 && peerCount < config.WarnPeerThreshold {
-				// Only check warning threshold if we haven't already hit critical.
-				status = append(status, "WARN")
-				statusMessage = append(statusMessage, "number of peers below the warning threshold")
+				// Only set to warn if we haven't already hit critical.
+				if overallStatus != StatusCritical {
+					overallStatus = StatusWarn
+				}
+				statusMessages = append(statusMessages, "number of peers below the warning threshold")
 			}
 		}
 	}
 
-	switch {
-	case slices.Contains(status, "CRITICAL"):
-		overallStatus = "CRITICAL"
-	case slices.Contains(status, "WARN"):
-		overallStatus = "WARN"
-	default:
-		overallStatus = "OK"
+	return HealthStatus{
+		Level:   overallStatus,
+		Code:    overallStatus.Code(),
+		Message: strings.Join(statusMessages, ", "),
 	}
-
-	return overallStatus, strings.Join(statusMessage, ", and ")
 }
 
-func (app *HeimdallApp) getHeimdallInfo(clientCtx client.Context) map[string]any {
+func (app *HeimdallApp) getHeimdallInfo(clientCtx client.Context) (map[string]any, error) {
 	heimdallInfo := map[string]any{}
 
 	heimdall_status, err := helper.GetNodeStatus(clientCtx)
 	if err != nil {
-		heimdallInfo["error"] = true
-		heimdallInfo["error_message"] = fmt.Sprintf("failed to get node status: %v", err)
-		return heimdallInfo
+		err = fmt.Errorf("failed to get node status: %w", err)
+		return heimdallInfo, err
 	}
 
 	comeBFTRPCUrl := helper.GetConfig().CometBFTRPCUrl
 	comeBFTRPC, err := client.NewClientFromNode(comeBFTRPCUrl)
 	if err != nil {
-		heimdallInfo["error"] = true
-		heimdallInfo["error_message"] = fmt.Sprintf("failed to get cometbft client: %v", err)
-		return heimdallInfo
+		err = fmt.Errorf("failed to get cometbft client: %w", err)
+		return heimdallInfo, err
 	}
 
 	ctx := clientCtx.CmdContext
@@ -1051,44 +1053,22 @@ func (app *HeimdallApp) getHeimdallInfo(clientCtx client.Context) map[string]any
 
 	netInfo, err := comeBFTRPC.NetInfo(ctx)
 	if err != nil {
-		heimdallInfo["error"] = true
-		heimdallInfo["error_message"] = fmt.Sprintf("failed to get cometbft net info: %v", err)
-		return heimdallInfo
+		err = fmt.Errorf("failed to get cometbft net info: %w", err)
+		return heimdallInfo, err
 	}
 
 	heimdallInfo["chain_id"] = heimdall_status.NodeInfo.Network
 
 	heimdallInfo["catching_up"] = heimdall_status.SyncInfo.CatchingUp
 
-	heimdallInfo["latest_app_hash"] = heimdall_status.SyncInfo.LatestAppHash.String()
-
 	heimdallInfo["latest_block_hash"] = heimdall_status.SyncInfo.LatestBlockHash.String()
-	heimdallInfo["latest_block_height"] = heimdall_status.SyncInfo.LatestBlockHeight
-	heimdallInfo["latest_block_time"] = heimdall_status.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano)
+	heimdallInfo["latest_block_number"] = heimdall_status.SyncInfo.LatestBlockHeight
+	heimdallInfo["latest_block_timestamp"] = heimdall_status.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano)
 
 	heimdallInfo["peer_count"] = netInfo.NPeers
 
 	heimdallInfo["validator_address"] = heimdall_status.ValidatorInfo.Address.String()
 	heimdallInfo["validator_voting_power"] = heimdall_status.ValidatorInfo.VotingPower
 
-	heimdallInfo["error"] = false
-	heimdallInfo["error_message"] = ""
-
-	return heimdallInfo
-}
-
-// responseRecorder captures the response from health-go handler.
-type responseRecorder struct {
-	http.ResponseWriter
-	statusCode int
-	body       []byte
-}
-
-func (r *responseRecorder) WriteHeader(statusCode int) {
-	r.statusCode = statusCode
-}
-
-func (r *responseRecorder) Write(data []byte) (int, error) {
-	r.body = append(r.body, data...)
-	return len(data), nil
+	return heimdallInfo, nil
 }
