@@ -114,7 +114,9 @@ const (
 
 	DefaultMainnetProducers = "91,92,93"
 
-	DefaultAmoyTestnetProducers = "1,2,3"
+	DefaultAmoyTestnetProducers = "4,5,6"
+
+	DefaultMumbaiTestnetProducers = "1,2,3"
 
 	DefaultLocalTestnetProducers = "1,2,3"
 
@@ -201,7 +203,7 @@ var producerVotes []uint64
 // Logger stores global logger object
 var Logger logger.Logger
 
-var veblopHeight int64 = 0
+var rioHeight int64 = 0
 
 var tallyFixHeight int64 = 0
 
@@ -404,6 +406,9 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		case AmoyChain:
 			conf.Custom.ProducerVotes = DefaultAmoyTestnetProducers
 			Logger.Debug("Using default amoy producers", "producers", DefaultAmoyTestnetProducers)
+		case MumbaiChain:
+			conf.Custom.ProducerVotes = DefaultMumbaiTestnetProducers
+			Logger.Debug("Using default mumbai producers", "producers", DefaultMumbaiTestnetProducers)
 		default:
 			conf.Custom.ProducerVotes = DefaultLocalTestnetProducers
 			Logger.Debug("Using default local producers", "producers", DefaultLocalTestnetProducers)
@@ -429,7 +434,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case MainChain:
 		milestoneDeletionHeight = 28525000
 		faultyMilestoneNumber = 1941439
-		veblopHeight = 0
+		rioHeight = 77369856 // Rio height is a block number in bor chain
 		tallyFixHeight = 28913694
 		disableVPCheckHeight = 25723000
 		disableValSetCheckHeight = 25723063
@@ -437,7 +442,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		veblopHeight = 0
+		rioHeight = 48473856 // Rio height is a block number in bor chain
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
@@ -445,7 +450,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		veblopHeight = 0
+		rioHeight = 26272256 // Rio height is a block number in bor chain
 		tallyFixHeight = 13143851
 		disableVPCheckHeight = 10618199
 		disableValSetCheckHeight = 10618299
@@ -453,7 +458,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		veblopHeight = 0
+		rioHeight = 256 // Rio height for local testnets.
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
@@ -461,7 +466,6 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 }
 
-// GetDefaultHeimdallConfig returns configuration with default params
 func GetDefaultHeimdallConfig() CustomConfig {
 	return CustomConfig{
 		EthRPCUrl:   DefaultMainRPCUrl,
@@ -562,19 +566,19 @@ func GetValidChains() []string {
 	return []string{"mainnet", "mumbai", "amoy", "local"}
 }
 
-func GetVeblopHeight() int64 {
-	return veblopHeight
+func GetRioHeight() int64 {
+	return rioHeight
 }
 
-func IsVeblop(blockNum uint64) bool {
-	if veblopHeight == 0 {
+func IsRio(blockNum uint64) bool {
+	if rioHeight == 0 {
 		return false
 	}
-	return blockNum >= uint64(veblopHeight)
+	return blockNum >= uint64(rioHeight)
 }
 
-func SetVeblopHeight(height int64) {
-	veblopHeight = height
+func SetRioHeight(height int64) {
+	rioHeight = height
 }
 
 func GetTallyFixHeight() int64 {
@@ -622,6 +626,8 @@ func GetFallbackProducerVotes() []uint64 {
 		return parseProducerVotes(DefaultMainnetProducers)
 	case AmoyChain:
 		return parseProducerVotes(DefaultAmoyTestnetProducers)
+	case MumbaiChain:
+		return parseProducerVotes(DefaultMumbaiTestnetProducers)
 	default:
 		return parseProducerVotes(DefaultLocalTestnetProducers)
 	}

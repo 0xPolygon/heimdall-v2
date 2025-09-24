@@ -157,7 +157,7 @@ func (s *KeeperTestSuite) TestCalculateProducerSet() {
 
 			tc.setupVotes()
 
-			candidates, err := borKeeper.CalculateProducerSet(ctx)
+			candidates, err := borKeeper.CalculateProducerSet(ctx, tc.params.ProducerCount)
 
 			if tc.expectedError {
 				require.Error(err)
@@ -198,7 +198,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 		name               string
 		setupSpan          func()
 		setupProducerVotes func()
-		setupParams        func()
+		producerSetLimit   uint64
 		setupValidatorSet  func()
 		activeValidatorIDs map[uint64]struct{}
 		expectedProducer   uint64
@@ -211,7 +211,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				// Don't set up any span
 			},
 			setupProducerVotes: func() {},
-			setupParams:        func() {},
+			producerSetLimit:   3,
 			setupValidatorSet: func() {
 				valSet := staketypes.ValidatorSet{
 					Validators: []*staketypes.Validator{
@@ -239,7 +239,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				require.NoError(borKeeper.AddNewSpan(ctx, &span))
 			},
 			setupProducerVotes: func() {},
-			setupParams:        func() {},
+			producerSetLimit:   3,
 			setupValidatorSet:  func() {},
 			activeValidatorIDs: map[uint64]struct{}{},
 			expectedProducer:   2,
@@ -260,11 +260,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			},
 			setupProducerVotes: func() {
 			},
-			setupParams: func() {
-				params := types.DefaultParams()
-				params.ProducerCount = 3
-				require.NoError(borKeeper.SetParams(ctx, params))
-			},
+			producerSetLimit: 3,
 			setupValidatorSet: func() {
 				// Scenario: No validators in the set, or they have no voting power / no votes
 				// This will make CalculateProducerSet return an empty list, triggering fallback.
@@ -305,11 +301,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				require.NoError(borKeeper.SetProducerVotes(ctx, val2.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
 				require.NoError(borKeeper.SetProducerVotes(ctx, val3.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
 			},
-			setupParams: func() {
-				params := types.DefaultParams()
-				params.ProducerCount = 2 // Limits candidate set size, so 2,3 should be the only ones
-				require.NoError(borKeeper.SetParams(ctx, params))
-			},
+			producerSetLimit: 2,
 			setupValidatorSet: func() {
 				valSet := staketypes.ValidatorSet{
 					Validators: []*staketypes.Validator{&val1, &val2, &val3}, // These are actual voters
@@ -349,11 +341,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				require.NoError(borKeeper.SetProducerVotes(ctx, val2.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
 				require.NoError(borKeeper.SetProducerVotes(ctx, val3.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
 			},
-			setupParams: func() {
-				params := types.DefaultParams()
-				params.ProducerCount = 2 // Limits candidate set size to 2,3
-				require.NoError(borKeeper.SetParams(ctx, params))
-			},
+			producerSetLimit: 2,
 			setupValidatorSet: func() {
 				valSet := staketypes.ValidatorSet{
 					Validators: []*staketypes.Validator{&val1, &val2, &val3}, // Actual voters
@@ -388,11 +376,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				require.NoError(borKeeper.AddNewSpan(ctx, &span))
 			},
 			setupProducerVotes: func() {},
-			setupParams: func() {
-				params := types.DefaultParams()
-				params.ProducerCount = 3
-				require.NoError(borKeeper.SetParams(ctx, params))
-			},
+			producerSetLimit:   3,
 			setupValidatorSet: func() {
 				// Ensure CalculateProducerSet returns an empty set initially, triggering fallback
 				valSet := staketypes.ValidatorSet{
@@ -419,10 +403,9 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			if tc.setupProducerVotes != nil {
 				tc.setupProducerVotes()
 			}
-			tc.setupParams()
 			tc.setupValidatorSet()
 
-			result, err := borKeeper.SelectNextSpanProducer(ctx, 1, tc.activeValidatorIDs)
+			result, err := borKeeper.SelectNextSpanProducer(ctx, 1, tc.activeValidatorIDs, tc.producerSetLimit)
 
 			if tc.expectedError {
 				require.Error(err)
@@ -452,10 +435,6 @@ func (s *KeeperTestSuite) TestCalculateProducerSet_TotalPotentialProducersVoteCa
 	// Clear any existing votes
 	borKeeper.ClearProducerVotes(ctx)
 
-	// Set up parameters
-	params := types.Params{ProducerCount: 2}
-	require.NoError(borKeeper.SetParams(ctx, params))
-
 	// Set up validator set with only 1 validator (totalPotentialProducers will be 1)
 	valSet := staketypes.ValidatorSet{
 		Validators: []*staketypes.Validator{&val1},
@@ -467,7 +446,7 @@ func (s *KeeperTestSuite) TestCalculateProducerSet_TotalPotentialProducersVoteCa
 	require.NoError(borKeeper.SetProducerVotes(ctx, val1.ValId, types.ProducerVotes{Votes: []uint64{prodA, prodB}}))
 
 	// Call CalculateProducerSet
-	candidates, err := borKeeper.CalculateProducerSet(ctx)
+	candidates, err := borKeeper.CalculateProducerSet(ctx, 2)
 
 	// Verify results
 	require.NoError(err)
