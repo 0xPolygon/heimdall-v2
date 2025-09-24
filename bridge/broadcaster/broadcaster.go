@@ -71,8 +71,8 @@ func NewTxBroadcaster(
 			case <-ctx.Done():
 				// return a minimal broadcaster so caller can shut down cleanly
 				return &TxBroadcaster{
-					CliCtx: cliCtx.WithFromAddress(fromAddr),
 					logger: logger,
+					CliCtx: cliCtx.WithFromAddress(fromAddr),
 				}
 			default:
 			}
@@ -82,19 +82,21 @@ func NewTxBroadcaster(
 				break
 			}
 
-			logger.Info("Account not found yet; waiting before retry", "address", addrHex, "err", err)
+			logger.Info("Account not found yet; waiting before retry",
+				"address", addrHex, "err", err)
 			time.Sleep(accountRetrieverPollingTimer)
 
 			// anomaly: node is synced but account is still not found
 			if !util.IsCatchingUp(cliCtx, ctx) {
-				logger.Error("Node synced but account not found", "address", addrHex, "error", err)
+				logger.Error("Node synced but account not found",
+					"address", addrHex, "error", err)
 			}
 		}
 	}
 
 	return &TxBroadcaster{
-		CliCtx:    cliCtx.WithFromAddress(fromAddr),
 		logger:    logger,
+		CliCtx:    cliCtx.WithFromAddress(fromAddr),
 		accNum:    account.GetAccountNumber(),
 		lastSeqNo: account.GetSequence(),
 	}

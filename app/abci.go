@@ -581,6 +581,24 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
+	milestoneDeletionHeight := helper.GetMilestoneDeletionHeight()
+	if req.Height == milestoneDeletionHeight && milestoneDeletionHeight != -1 {
+		// Delete faulty milestone if exists.
+		milestoneNumber := helper.GetFaultyMilestoneNumber()
+		milestone, err := app.MilestoneKeeper.GetMilestoneByNumber(ctx, milestoneNumber)
+		if err != nil {
+			logger.Error("Error occurred while getting milestone by number", "error", err, "milestoneNumber", milestoneNumber)
+		}
+		if milestone != nil {
+			if app.MilestoneKeeper.IsFaultyMilestone(*milestone) {
+				if err := app.MilestoneKeeper.DeleteMilestone(ctx, milestoneNumber); err != nil {
+					logger.Error("Error occurred while deleting milestone", "error", err, "milestoneNumber", milestoneNumber)
+				}
+			}
+		}
+		logger.Info("Deleted milestone matching target condition", "milestone", milestoneNumber)
+	}
+
 	// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
 	extCommitInfo := new(abci.ExtendedCommitInfo)
 
