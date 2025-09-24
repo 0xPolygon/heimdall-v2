@@ -434,7 +434,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case MainChain:
 		milestoneDeletionHeight = 28525000
 		faultyMilestoneNumber = 1941439
-		rioHeight = 77369856 // Rio height is a block number in bor chain
+		rioHeight = 77414656 // Rio height is a block number in bor chain
 		tallyFixHeight = 28913694
 		disableVPCheckHeight = 25723000
 		disableValSetCheckHeight = 25723063
