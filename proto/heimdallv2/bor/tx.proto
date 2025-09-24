@@ -19,6 +19,10 @@ service Msg {
   rpc BackfillSpans(MsgBackfillSpans) returns (MsgBackfillSpansResponse);
   // VoteProducers defines a method to update the producer votes.
   rpc VoteProducers(MsgVoteProducers) returns (MsgVoteProducersResponse);
+  // SetProducerDowntime defines a method to set planned downtime for a
+  // producer.
+  rpc SetProducerDowntime(MsgSetProducerDowntime)
+      returns (MsgSetProducerDowntimeResponse);
 }
 
 message MsgProposeSpan {

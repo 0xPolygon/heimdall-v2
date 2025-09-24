@@ -291,26 +291,20 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 		return nil, fmt.Errorf("latest milestone not found")
 	}
 
-	// TODO: Move to params?
-	minimumTimeInFuture := 432000 // 5 days
-	maxTimeInFuture := 2592000    // 30 days
-	minRange := 3600              // 1 hour
-	maxRange := 86400             // 24 hours
-
-	if msg.StartTimestamp < latestMilestone.Timestamp+uint64(minimumTimeInFuture) {
-		return nil, fmt.Errorf("start timestamp must be at least %d seconds in the future", minimumTimeInFuture)
+	if msg.StartTimestamp < latestMilestone.Timestamp+uint64(types.PlannedDowntimeMinimumTimeInFuture) {
+		return nil, fmt.Errorf("start timestamp must be at least %d seconds in the future", types.PlannedDowntimeMinimumTimeInFuture)
 	}
 
-	if msg.StartTimestamp > latestMilestone.Timestamp+uint64(maxTimeInFuture) {
-		return nil, fmt.Errorf("start timestamp must be at most %d seconds in the future", maxTimeInFuture)
+	if msg.StartTimestamp > latestMilestone.Timestamp+uint64(types.PlannedDowntimeMaximumTimeInFuture) {
+		return nil, fmt.Errorf("start timestamp must be at most %d seconds in the future", types.PlannedDowntimeMaximumTimeInFuture)
 	}
 
-	if msg.EndTimestamp-msg.StartTimestamp < uint64(minRange) {
-		return nil, fmt.Errorf("time range must be at least %d seconds", minRange)
+	if msg.EndTimestamp-msg.StartTimestamp < uint64(types.PlannedDowntimeMinRange) {
+		return nil, fmt.Errorf("time range must be at least %d seconds", types.PlannedDowntimeMinRange)
 	}
 
-	if msg.EndTimestamp-msg.StartTimestamp > uint64(maxRange) {
-		return nil, fmt.Errorf("time range must be at most %d seconds", maxRange)
+	if msg.EndTimestamp-msg.StartTimestamp > uint64(types.PlannedDowntimeMaxRange) {
+		return nil, fmt.Errorf("time range must be at most %d seconds", types.PlannedDowntimeMaxRange)
 	}
 
 	producers := make([]uint64, 0)
@@ -335,6 +329,10 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 
 	if !isProducer {
 		return nil, fmt.Errorf("producer with id %d is not a registered producer", validatorId)
+	}
+
+	if len(producers) == 1 {
+		return nil, fmt.Errorf("only one registered producer, cannot set planned downtime")
 	}
 
 	// Only return an error if the requested downtime overlaps with every other producer

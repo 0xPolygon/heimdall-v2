@@ -93,3 +93,11 @@ func CalcCurrentBorSpanId(latestBorBlock uint64, latestHeimdallSpan *Span) (uint
 
 	return spanId, nil
 }
+
+const (
+	// TODO: Move to params?
+	PlannedDowntimeMinimumTimeInFuture = 432000  // 5 days
+	PlannedDowntimeMaximumTimeInFuture = 2592000 // 30 days
+	PlannedDowntimeMinRange            = 3600    // 1 hour
+	PlannedDowntimeMaxRange            = 86400   // 24 hours
+)

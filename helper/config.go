@@ -616,6 +616,10 @@ func GetSetProducerDowntimeHeight() int64 {
 	return setProducerDowntimeHeight
 }
 
+func SetSetProducerDowntimeHeight(height int64) {
+	setProducerDowntimeHeight = height
+}
+
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
 	chainMigration := chainManagerAddressMigrations[conf.Custom.Chain]
 	if chainMigration == nil {
