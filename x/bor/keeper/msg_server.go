@@ -260,7 +260,7 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 }
 
 func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetProducerDowntime) (*types.MsgSetProducerDowntimeResponse, error) {
-	if err := s.Keeper.CanSetProducerDowntime(ctx); err != nil {
+	if err := s.CanSetProducerDowntime(ctx); err != nil {
 		return nil, err
 	}
 
@@ -308,7 +308,7 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 	}
 
 	producers := make([]uint64, 0)
-	it, err := s.Keeper.ProducerVotes.Iterate(ctx, nil)
+	it, err := s.ProducerVotes.Iterate(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +342,7 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 			continue
 		}
 
-		found, err := s.Keeper.ProducerPlannedDowntime.Has(ctx, p)
+		found, err := s.ProducerPlannedDowntime.Has(ctx, p)
 		if err != nil {
 			return nil, err
 		}
@@ -351,7 +351,7 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 			continue
 		}
 
-		downtime, err := s.Keeper.ProducerPlannedDowntime.Get(ctx, p)
+		downtime, err := s.ProducerPlannedDowntime.Get(ctx, p)
 		if err != nil {
 			return nil, err
 		}
@@ -368,7 +368,7 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 		return nil, fmt.Errorf("producer with id %d has overlapping planned downtime with all other producers", validatorId)
 	}
 
-	if err := s.Keeper.ProducerPlannedDowntime.Set(ctx, validatorId, types.TimeRange{
+	if err := s.ProducerPlannedDowntime.Set(ctx, validatorId, types.TimeRange{
 		StartTimestamp: msg.StartTimestamp,
 		EndTimestamp:   msg.EndTimestamp,
 	}); err != nil {
