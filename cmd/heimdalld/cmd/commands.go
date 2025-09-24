@@ -343,6 +343,7 @@ func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome stri
 		server.VersionCmd(),
 		cmtcmd.ResetAllCmd,
 		cmtcmd.ResetStateCmd,
+		cmtcmd.GenNodeKeyCmd,
 		server.BootstrapStateCmd(appCreator),
 	)
 
