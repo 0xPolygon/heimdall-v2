@@ -60,6 +60,19 @@ main_chain_max_gas_price = "{{ .Custom.MainChainMaxGasPrice }}"
 no_ack_wait_time = "{{ .Custom.NoACKWaitTime }}"
 
 chain = "{{ .Custom.Chain }}"
+
+#### Health check configs ####
+# Maximum number of goroutines before heimdall health check fails (0 = disabled)
+max_goroutine_threshold = "{{ .Custom.MaxGoRoutineThreshold }}"
+
+# Maximum number of goroutines before heimdall health check warns (0 = disabled)
+warn_goroutine_threshold = "{{ .Custom.WarnGoRoutineThreshold }}"
+
+# Minimum number of peers before heimdall health check fails (0 = disabled)
+min_peer_threshold = "{{ .Custom.MinPeerThreshold }}"
+
+# Minimum number of peers before heimdall health check warns (0 = disabled)
+warn_peer_threshold = "{{ .Custom.WarnPeerThreshold }}"
 `
 
 var _ *template.Template
