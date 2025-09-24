@@ -100,4 +100,5 @@ const (
 	PlannedDowntimeMaximumTimeInFuture = 2592000 // 30 days
 	PlannedDowntimeMinRange            = 3600    // 1 hour
 	PlannedDowntimeMaxRange            = 86400   // 24 hours
+	PlannedDowntimeStartOffset         = 28800   // 8 hours
 )

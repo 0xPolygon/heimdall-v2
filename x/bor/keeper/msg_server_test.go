@@ -763,7 +763,7 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 			fallbackFirst: true,
 		},
 		{
-			name: "error: overlaps with all other producers' planned downtimes",
+			name: "error: overlaps with all other producers planned downtimes",
 			msg:  newMsg(val1.hexAddr, baseTs+types.PlannedDowntimeMinimumTimeInFuture+800, baseTs+types.PlannedDowntimeMinimumTimeInFuture+800+types.PlannedDowntimeMinRange),
 			setup: func() {
 				helper.SetSetProducerDowntimeHeight(1_000_000)

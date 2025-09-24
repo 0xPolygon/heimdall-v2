@@ -369,7 +369,7 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 	}
 
 	if err := s.ProducerPlannedDowntime.Set(ctx, validatorId, types.TimeRange{
-		StartTimestamp: msg.StartTimestamp,
+		StartTimestamp: msg.StartTimestamp - types.PlannedDowntimeStartOffset,
 		EndTimestamp:   msg.EndTimestamp,
 	}); err != nil {
 		return nil, err
