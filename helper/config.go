@@ -124,6 +124,8 @@ const (
 
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hard fork
 	MaxStateSyncSize = 30000
+
+	MinimunMinRetainBlocks = 2500000
 )
 
 func init() {
@@ -1148,4 +1150,17 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 // GetBorGRPCClient returns bor gRPC client
 func GetBorGRPCClient() *borgrpc.BorGRPCClient {
 	return borGRPCClient
+}
+
+// Sanitize enforces minimums and returns notes and corrected key/values
+func (c *CustomAppConfig) Sanitize() (notes []string, kv map[string]any) {
+	kv = make(map[string]any)
+
+	if c.BaseConfig.MinRetainBlocks != 0 && c.BaseConfig.MinRetainBlocks < MinimunMinRetainBlocks {
+		c.BaseConfig.MinRetainBlocks = MinimunMinRetainBlocks
+		notes = append(notes, fmt.Sprintf("min-retain-blocks=%d (minimum enforced)", MinimunMinRetainBlocks))
+		kv["min-retain-blocks"] = MinimunMinRetainBlocks
+	}
+
+	return notes, kv
 }

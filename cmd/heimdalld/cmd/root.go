@@ -119,6 +119,11 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
+			err = SanitizeConfig(serverCtx.Viper)
+			if err != nil {
+				return err
+			}
+
 			// Overwrite default server logger
 			logger, err := server.CreateSDKLogger(serverCtx, cmd.OutOrStdout())
 			if err != nil {
