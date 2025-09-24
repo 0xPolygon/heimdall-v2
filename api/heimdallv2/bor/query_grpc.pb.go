@@ -27,6 +27,7 @@ const (
 	Query_GetBorParams_FullMethodName                  = "/heimdallv2.bor.Query/GetBorParams"
 	Query_GetProducerVotes_FullMethodName              = "/heimdallv2.bor.Query/GetProducerVotes"
 	Query_GetProducerVotesByValidatorId_FullMethodName = "/heimdallv2.bor.Query/GetProducerVotesByValidatorId"
+	Query_GetProducerPlannedDowntime_FullMethodName    = "/heimdallv2.bor.Query/GetProducerPlannedDowntime"
 )
 
 // QueryClient is the client API for Query service.
@@ -51,6 +52,9 @@ type QueryClient interface {
 	// GetProducerVotesByValidatorId queries the producer votes for a given
 	// validator id.
 	GetProducerVotesByValidatorId(ctx context.Context, in *QueryProducerVotesByValidatorIdRequest, opts ...grpc.CallOption) (*QueryProducerVotesByValidatorIdResponse, error)
+	// GetProducerPlannedDowntime queries the planned downtime for a given
+	// producer id.
+	GetProducerPlannedDowntime(ctx context.Context, in *QueryProducerPlannedDowntimeRequest, opts ...grpc.CallOption) (*QueryProducerPlannedDowntimeResponse, error)
 }
 
 type queryClient struct {
@@ -133,6 +137,15 @@ func (c *queryClient) GetProducerVotesByValidatorId(ctx context.Context, in *Que
 	return out, nil
 }
 
+func (c *queryClient) GetProducerPlannedDowntime(ctx context.Context, in *QueryProducerPlannedDowntimeRequest, opts ...grpc.CallOption) (*QueryProducerPlannedDowntimeResponse, error) {
+	out := new(QueryProducerPlannedDowntimeResponse)
+	err := c.cc.Invoke(ctx, Query_GetProducerPlannedDowntime_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -155,6 +168,9 @@ type QueryServer interface {
 	// GetProducerVotesByValidatorId queries the producer votes for a given
 	// validator id.
 	GetProducerVotesByValidatorId(context.Context, *QueryProducerVotesByValidatorIdRequest) (*QueryProducerVotesByValidatorIdResponse, error)
+	// GetProducerPlannedDowntime queries the planned downtime for a given
+	// producer id.
+	GetProducerPlannedDowntime(context.Context, *QueryProducerPlannedDowntimeRequest) (*QueryProducerPlannedDowntimeResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -185,6 +201,9 @@ func (UnimplementedQueryServer) GetProducerVotes(context.Context, *QueryProducer
 }
 func (UnimplementedQueryServer) GetProducerVotesByValidatorId(context.Context, *QueryProducerVotesByValidatorIdRequest) (*QueryProducerVotesByValidatorIdResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProducerVotesByValidatorId not implemented")
+}
+func (UnimplementedQueryServer) GetProducerPlannedDowntime(context.Context, *QueryProducerPlannedDowntimeRequest) (*QueryProducerPlannedDowntimeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProducerPlannedDowntime not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -343,6 +362,24 @@ func _Query_GetProducerVotesByValidatorId_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_GetProducerPlannedDowntime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryProducerPlannedDowntimeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetProducerPlannedDowntime(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetProducerPlannedDowntime_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetProducerPlannedDowntime(ctx, req.(*QueryProducerPlannedDowntimeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -381,6 +418,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProducerVotesByValidatorId",
 			Handler:    _Query_GetProducerVotesByValidatorId_Handler,
+		},
+		{
+			MethodName: "GetProducerPlannedDowntime",
+			Handler:    _Query_GetProducerPlannedDowntime_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

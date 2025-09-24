@@ -10,6 +10,7 @@ const (
 	GetBorParamsMethod                  = "GetBorParams"
 	GetProducerVotesMethod              = "GetProducerVotes"
 	GetProducerVotesByValidatorIdMethod = "GetProducerVotesByValidatorId"
+	GetProducerPlannedDowntimeMethod    = "GetProducerPlannedDowntime"
 
 	// Transaction API methods.
 	ProposeSpanMethod     = "ProposeSpan"

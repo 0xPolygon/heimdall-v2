@@ -259,6 +259,127 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 	return &types.MsgBackfillSpansResponse{}, nil
 }
 
+func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetProducerDowntime) (*types.MsgSetProducerDowntimeResponse, error) {
+	if err := s.Keeper.CanSetProducerDowntime(ctx); err != nil {
+		return nil, err
+	}
+
+	validators := s.sk.GetSpanEligibleValidators(ctx)
+	validatorId := uint64(0)
+	found := false
+	for _, v := range validators {
+		if v.Signer == msg.Producer {
+			validatorId = v.ValId
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return nil, fmt.Errorf("producer with address %s not found in the current validator set", msg.Producer)
+	}
+
+	if msg.StartTimestamp >= msg.EndTimestamp {
+		return nil, fmt.Errorf("start timestamp must be less than end timestamp")
+	}
+
+	latestMilestone, err := s.mk.GetLastMilestone(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get latest milestone")
+	}
+	if latestMilestone == nil {
+		return nil, fmt.Errorf("latest milestone not found")
+	}
+
+	// TODO: Move to params?
+	minimumTimeInFuture := 432000 // 5 days
+	maxTimeInFuture := 2592000    // 30 days
+	minRange := 3600              // 1 hour
+	maxRange := 86400             // 24 hours
+
+	if msg.StartTimestamp < latestMilestone.Timestamp+uint64(minimumTimeInFuture) {
+		return nil, fmt.Errorf("start timestamp must be at least %d seconds in the future", minimumTimeInFuture)
+	}
+
+	if msg.StartTimestamp > latestMilestone.Timestamp+uint64(maxTimeInFuture) {
+		return nil, fmt.Errorf("start timestamp must be at most %d seconds in the future", maxTimeInFuture)
+	}
+
+	if msg.EndTimestamp-msg.StartTimestamp < uint64(minRange) {
+		return nil, fmt.Errorf("time range must be at least %d seconds", minRange)
+	}
+
+	if msg.EndTimestamp-msg.StartTimestamp > uint64(maxRange) {
+		return nil, fmt.Errorf("time range must be at most %d seconds", maxRange)
+	}
+
+	producers := make([]uint64, 0)
+	it, err := s.Keeper.ProducerVotes.Iterate(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer it.Close()
+
+	isProducer := false
+	for ; it.Valid(); it.Next() {
+		producerId, err := it.Key()
+		if err != nil {
+			return nil, err
+		}
+		producers = append(producers, producerId)
+
+		if validatorId == producerId {
+			isProducer = true
+		}
+	}
+
+	if !isProducer {
+		return nil, fmt.Errorf("producer with id %d is not a registered producer", validatorId)
+	}
+
+	// Only return an error if the requested downtime overlaps with every other producer
+	overlapCount := 0
+	for _, p := range producers {
+		if p == validatorId {
+			continue
+		}
+
+		found, err := s.Keeper.ProducerPlannedDowntime.Has(ctx, p)
+		if err != nil {
+			return nil, err
+		}
+		if !found {
+			// no planned downtime for this producer -> cannot be overlapping with all others
+			continue
+		}
+
+		downtime, err := s.Keeper.ProducerPlannedDowntime.Get(ctx, p)
+		if err != nil {
+			return nil, err
+		}
+
+		if (msg.StartTimestamp >= downtime.StartTimestamp && msg.StartTimestamp < downtime.EndTimestamp) ||
+			(msg.EndTimestamp > downtime.StartTimestamp && msg.EndTimestamp <= downtime.EndTimestamp) ||
+			(msg.StartTimestamp <= downtime.StartTimestamp && msg.EndTimestamp >= downtime.EndTimestamp) {
+			overlapCount++
+		}
+	}
+
+	otherProducers := len(producers) - 1
+	if otherProducers > 0 && overlapCount == otherProducers {
+		return nil, fmt.Errorf("producer with id %d has overlapping planned downtime with all other producers", validatorId)
+	}
+
+	if err := s.Keeper.ProducerPlannedDowntime.Set(ctx, validatorId, types.TimeRange{
+		StartTimestamp: msg.StartTimestamp,
+		EndTimestamp:   msg.EndTimestamp,
+	}); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgSetProducerDowntimeResponse{}, nil
+}
+
 func recordBorTransactionMetric(method string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.BorSubsystem, method, api.TxType, success, start)

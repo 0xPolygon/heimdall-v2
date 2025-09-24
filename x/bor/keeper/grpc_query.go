@@ -250,6 +250,34 @@ func (q queryServer) GetProducerVotes(ctx context.Context, req *types.QueryProdu
 	return &types.QueryProducerVotesResponse{AllVotes: producerVotes}, nil
 }
 
+func (q queryServer) GetProducerPlannedDowntime(ctx context.Context, req *types.QueryProducerPlannedDowntimeRequest) (*types.QueryProducerPlannedDowntimeResponse, error) {
+	var err error
+	start := time.Now()
+	defer recordBorQueryMetric(api.GetProducerPlannedDowntimeMethod, start, &err)
+
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	found, err := q.k.ProducerPlannedDowntime.Has(ctx, req.ProducerId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !found {
+		return nil, status.Errorf(codes.NotFound, "no planned downtime found for producer id %d", req.ProducerId)
+	}
+
+	downtime, err := q.k.ProducerPlannedDowntime.Get(ctx, req.ProducerId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryProducerPlannedDowntimeResponse{
+		StartTimestamp: downtime.StartTimestamp,
+		EndTimestamp:   downtime.EndTimestamp,
+	}, nil
+}
+
 func recordBorQueryMetric(method string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.BorSubsystem, method, api.QueryType, success, start)

@@ -36,16 +36,17 @@ type Keeper struct {
 	mk             types.MilestoneKeeper
 	contractCaller helper.IContractCaller
 
-	Schema               collections.Schema
-	spans                collections.Map[uint64, types.Span]
-	latestSpan           collections.Item[uint64]
-	seedLastProducer     collections.Map[uint64, []byte]
-	Params               collections.Item[types.Params]
-	ProducerVotes        collections.Map[uint64, types.ProducerVotes]
-	PerformanceScore     collections.Map[uint64, uint64]
-	LatestActiveProducer collections.KeySet[uint64]
-	LatestFailedProducer collections.KeySet[uint64]
-	LastSpanBlock        collections.Item[uint64]
+	Schema                  collections.Schema
+	spans                   collections.Map[uint64, types.Span]
+	latestSpan              collections.Item[uint64]
+	seedLastProducer        collections.Map[uint64, []byte]
+	Params                  collections.Item[types.Params]
+	ProducerVotes           collections.Map[uint64, types.ProducerVotes]
+	PerformanceScore        collections.Map[uint64, uint64]
+	LatestActiveProducer    collections.KeySet[uint64]
+	LatestFailedProducer    collections.KeySet[uint64]
+	LastSpanBlock           collections.Item[uint64]
+	ProducerPlannedDowntime collections.Map[uint64, types.TimeRange]
 }
 
 // NewKeeper creates a new instance of the bor Keeper
@@ -588,6 +589,22 @@ func (k Keeper) CanVoteProducers(ctx context.Context) error {
 			latestSpan.StartBlock,
 			latestSpan.EndBlock,
 			helper.GetRioHeight())
+	}
+
+	return nil
+}
+
+// CanSetProducerDowntime checks if the current height is after the setProducerDowntimeHeight
+func (k Keeper) CanSetProducerDowntime(ctx context.Context) error {
+	milestone, err := k.mk.GetLastMilestone(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get latest milestone for SetProducerDowntime validation: %w", err)
+	}
+
+	if milestone.EndBlock >= uint64(helper.GetSetProducerDowntimeHeight()) {
+		return fmt.Errorf("MsgSetProducerDowntime not allowed: current milestone end block %d is before the setProducerDowntimeHeight %d",
+			milestone.EndBlock,
+			helper.GetSetProducerDowntimeHeight())
 	}
 
 	return nil

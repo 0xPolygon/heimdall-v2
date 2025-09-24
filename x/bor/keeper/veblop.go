@@ -237,7 +237,7 @@ func (k *Keeper) ClearLatestFailedProducer(ctx context.Context) error {
 
 // SelectNextSpanProducer selects the next producer for a new span.
 // It calculates candidate set, filters by active producers and selects one.
-func (k *Keeper) SelectNextSpanProducer(ctx context.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit uint64) (uint64, error) {
+func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit uint64) (uint64, error) {
 	candidates, err := k.CalculateProducerSet(ctx, producerSetLimit)
 	if err != nil {
 		return 0, fmt.Errorf("failed to calculate producer set: %w", err)
@@ -248,6 +248,10 @@ func (k *Keeper) SelectNextSpanProducer(ctx context.Context, currentProducer uin
 	}
 
 	activeCandidates := k.FilterByActiveProducerSet(ctx, candidates, activeValidatorIDs)
+	activeCandidates, err = k.FilterByDownValidatorsSet(ctx, activeCandidates)
+	if err != nil {
+		return 0, fmt.Errorf("failed to filter by down validators set: %w", err)
+	}
 
 	// If no candidate is available after threshold filtering,
 	// the candidate list will be rotated to the next producer EVEN IF the the producer is not active.
@@ -406,6 +410,43 @@ func (k *Keeper) FilterByActiveProducerSet(ctx context.Context, candidates []uin
 		}
 	}
 	return activeCandidates
+}
+
+// FilterByDownValidatorsSet filters candidates based on whether each candidate is in the down validators set.
+func (k *Keeper) FilterByDownValidatorsSet(ctx sdk.Context, candidates []uint64) ([]uint64, error) {
+	upCandidates := make([]uint64, 0, len(candidates))
+
+	for _, candidate := range candidates {
+		isDown, err := k.IsProducerDown(ctx, ctx.BlockTime().Unix(), candidate)
+		if err != nil {
+			return nil, err
+		}
+		if !isDown {
+			upCandidates = append(upCandidates, candidate)
+		}
+	}
+	return upCandidates, nil
+}
+
+func (k *Keeper) IsProducerDown(ctx sdk.Context, blockTime int64, producerID uint64) (bool, error) {
+	found, err := k.ProducerPlannedDowntime.Has(ctx, producerID)
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		return false, nil
+	}
+
+	downtime, err := k.ProducerPlannedDowntime.Get(ctx, producerID)
+	if err != nil {
+		return false, err
+	}
+
+	if int64(downtime.StartTimestamp) <= blockTime && blockTime <= int64(downtime.EndTimestamp) {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // SelectProducer selects a producer from the candidates list.

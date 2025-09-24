@@ -7266,6 +7266,862 @@ func (x *fastReflection_QueryProducerVotesByValidatorIdResponse) ProtoMethods() 
 	}
 }
 
+var (
+	md_QueryProducerPlannedDowntimeRequest             protoreflect.MessageDescriptor
+	fd_QueryProducerPlannedDowntimeRequest_producer_id protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_heimdallv2_bor_query_proto_init()
+	md_QueryProducerPlannedDowntimeRequest = File_heimdallv2_bor_query_proto.Messages().ByName("QueryProducerPlannedDowntimeRequest")
+	fd_QueryProducerPlannedDowntimeRequest_producer_id = md_QueryProducerPlannedDowntimeRequest.Fields().ByName("producer_id")
+}
+
+var _ protoreflect.Message = (*fastReflection_QueryProducerPlannedDowntimeRequest)(nil)
+
+type fastReflection_QueryProducerPlannedDowntimeRequest QueryProducerPlannedDowntimeRequest
+
+func (x *QueryProducerPlannedDowntimeRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryProducerPlannedDowntimeRequest)(x)
+}
+
+func (x *QueryProducerPlannedDowntimeRequest) slowProtoReflect() protoreflect.Message {
+	mi := &file_heimdallv2_bor_query_proto_msgTypes[16]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_QueryProducerPlannedDowntimeRequest_messageType fastReflection_QueryProducerPlannedDowntimeRequest_messageType
+var _ protoreflect.MessageType = fastReflection_QueryProducerPlannedDowntimeRequest_messageType{}
+
+type fastReflection_QueryProducerPlannedDowntimeRequest_messageType struct{}
+
+func (x fastReflection_QueryProducerPlannedDowntimeRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryProducerPlannedDowntimeRequest)(nil)
+}
+func (x fastReflection_QueryProducerPlannedDowntimeRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryProducerPlannedDowntimeRequest)
+}
+func (x fastReflection_QueryProducerPlannedDowntimeRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryProducerPlannedDowntimeRequest
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryProducerPlannedDowntimeRequest
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) Type() protoreflect.MessageType {
+	return _fastReflection_QueryProducerPlannedDowntimeRequest_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) New() protoreflect.Message {
+	return new(fastReflection_QueryProducerPlannedDowntimeRequest)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) Interface() protoreflect.ProtoMessage {
+	return (*QueryProducerPlannedDowntimeRequest)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.ProducerId != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.ProducerId)
+		if !f(fd_QueryProducerPlannedDowntimeRequest_producer_id, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeRequest.producer_id":
+		return x.ProducerId != uint64(0)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryProducerPlannedDowntimeRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryProducerPlannedDowntimeRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeRequest.producer_id":
+		x.ProducerId = uint64(0)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryProducerPlannedDowntimeRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryProducerPlannedDowntimeRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeRequest.producer_id":
+		value := x.ProducerId
+		return protoreflect.ValueOfUint64(value)
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryProducerPlannedDowntimeRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryProducerPlannedDowntimeRequest does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeRequest.producer_id":
+		x.ProducerId = value.Uint()
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryProducerPlannedDowntimeRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryProducerPlannedDowntimeRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeRequest.producer_id":
+		panic(fmt.Errorf("field producer_id of message heimdallv2.bor.QueryProducerPlannedDowntimeRequest is not mutable"))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryProducerPlannedDowntimeRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryProducerPlannedDowntimeRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeRequest.producer_id":
+		return protoreflect.ValueOfUint64(uint64(0))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryProducerPlannedDowntimeRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryProducerPlannedDowntimeRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.bor.QueryProducerPlannedDowntimeRequest", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_QueryProducerPlannedDowntimeRequest) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*QueryProducerPlannedDowntimeRequest)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if x.ProducerId != 0 {
+			n += 1 + runtime.Sov(uint64(x.ProducerId))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*QueryProducerPlannedDowntimeRequest)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.ProducerId != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.ProducerId))
+			i--
+			dAtA[i] = 0x8
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*QueryProducerPlannedDowntimeRequest)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryProducerPlannedDowntimeRequest: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryProducerPlannedDowntimeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ProducerId", wireType)
+				}
+				x.ProducerId = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.ProducerId |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var (
+	md_QueryProducerPlannedDowntimeResponse                 protoreflect.MessageDescriptor
+	fd_QueryProducerPlannedDowntimeResponse_start_timestamp protoreflect.FieldDescriptor
+	fd_QueryProducerPlannedDowntimeResponse_end_timestamp   protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_heimdallv2_bor_query_proto_init()
+	md_QueryProducerPlannedDowntimeResponse = File_heimdallv2_bor_query_proto.Messages().ByName("QueryProducerPlannedDowntimeResponse")
+	fd_QueryProducerPlannedDowntimeResponse_start_timestamp = md_QueryProducerPlannedDowntimeResponse.Fields().ByName("start_timestamp")
+	fd_QueryProducerPlannedDowntimeResponse_end_timestamp = md_QueryProducerPlannedDowntimeResponse.Fields().ByName("end_timestamp")
+}
+
+var _ protoreflect.Message = (*fastReflection_QueryProducerPlannedDowntimeResponse)(nil)
+
+type fastReflection_QueryProducerPlannedDowntimeResponse QueryProducerPlannedDowntimeResponse
+
+func (x *QueryProducerPlannedDowntimeResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryProducerPlannedDowntimeResponse)(x)
+}
+
+func (x *QueryProducerPlannedDowntimeResponse) slowProtoReflect() protoreflect.Message {
+	mi := &file_heimdallv2_bor_query_proto_msgTypes[17]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_QueryProducerPlannedDowntimeResponse_messageType fastReflection_QueryProducerPlannedDowntimeResponse_messageType
+var _ protoreflect.MessageType = fastReflection_QueryProducerPlannedDowntimeResponse_messageType{}
+
+type fastReflection_QueryProducerPlannedDowntimeResponse_messageType struct{}
+
+func (x fastReflection_QueryProducerPlannedDowntimeResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryProducerPlannedDowntimeResponse)(nil)
+}
+func (x fastReflection_QueryProducerPlannedDowntimeResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryProducerPlannedDowntimeResponse)
+}
+func (x fastReflection_QueryProducerPlannedDowntimeResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryProducerPlannedDowntimeResponse
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryProducerPlannedDowntimeResponse
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) Type() protoreflect.MessageType {
+	return _fastReflection_QueryProducerPlannedDowntimeResponse_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) New() protoreflect.Message {
+	return new(fastReflection_QueryProducerPlannedDowntimeResponse)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) Interface() protoreflect.ProtoMessage {
+	return (*QueryProducerPlannedDowntimeResponse)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.StartTimestamp != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.StartTimestamp)
+		if !f(fd_QueryProducerPlannedDowntimeResponse_start_timestamp, value) {
+			return
+		}
+	}
+	if x.EndTimestamp != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.EndTimestamp)
+		if !f(fd_QueryProducerPlannedDowntimeResponse_end_timestamp, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeResponse.start_timestamp":
+		return x.StartTimestamp != uint64(0)
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeResponse.end_timestamp":
+		return x.EndTimestamp != uint64(0)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryProducerPlannedDowntimeResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryProducerPlannedDowntimeResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeResponse.start_timestamp":
+		x.StartTimestamp = uint64(0)
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeResponse.end_timestamp":
+		x.EndTimestamp = uint64(0)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryProducerPlannedDowntimeResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryProducerPlannedDowntimeResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeResponse.start_timestamp":
+		value := x.StartTimestamp
+		return protoreflect.ValueOfUint64(value)
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeResponse.end_timestamp":
+		value := x.EndTimestamp
+		return protoreflect.ValueOfUint64(value)
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryProducerPlannedDowntimeResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryProducerPlannedDowntimeResponse does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeResponse.start_timestamp":
+		x.StartTimestamp = value.Uint()
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeResponse.end_timestamp":
+		x.EndTimestamp = value.Uint()
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryProducerPlannedDowntimeResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryProducerPlannedDowntimeResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeResponse.start_timestamp":
+		panic(fmt.Errorf("field start_timestamp of message heimdallv2.bor.QueryProducerPlannedDowntimeResponse is not mutable"))
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeResponse.end_timestamp":
+		panic(fmt.Errorf("field end_timestamp of message heimdallv2.bor.QueryProducerPlannedDowntimeResponse is not mutable"))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryProducerPlannedDowntimeResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryProducerPlannedDowntimeResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeResponse.start_timestamp":
+		return protoreflect.ValueOfUint64(uint64(0))
+	case "heimdallv2.bor.QueryProducerPlannedDowntimeResponse.end_timestamp":
+		return protoreflect.ValueOfUint64(uint64(0))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryProducerPlannedDowntimeResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryProducerPlannedDowntimeResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.bor.QueryProducerPlannedDowntimeResponse", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_QueryProducerPlannedDowntimeResponse) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*QueryProducerPlannedDowntimeResponse)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if x.StartTimestamp != 0 {
+			n += 1 + runtime.Sov(uint64(x.StartTimestamp))
+		}
+		if x.EndTimestamp != 0 {
+			n += 1 + runtime.Sov(uint64(x.EndTimestamp))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*QueryProducerPlannedDowntimeResponse)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.EndTimestamp != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.EndTimestamp))
+			i--
+			dAtA[i] = 0x10
+		}
+		if x.StartTimestamp != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.StartTimestamp))
+			i--
+			dAtA[i] = 0x8
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*QueryProducerPlannedDowntimeResponse)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryProducerPlannedDowntimeResponse: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryProducerPlannedDowntimeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field StartTimestamp", wireType)
+				}
+				x.StartTimestamp = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.StartTimestamp |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+			case 2:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field EndTimestamp", wireType)
+				}
+				x.EndTimestamp = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.EndTimestamp |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
 // Code generated by protoc-gen-go. DO NOT EDIT.
 // versions:
 // 	protoc-gen-go v1.27.0
@@ -7844,6 +8700,84 @@ func (x *QueryProducerVotesByValidatorIdResponse) GetVotes() []uint64 {
 	return nil
 }
 
+type QueryProducerPlannedDowntimeRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ProducerId uint64 `protobuf:"varint,1,opt,name=producer_id,json=producerId,proto3" json:"producer_id,omitempty"`
+}
+
+func (x *QueryProducerPlannedDowntimeRequest) Reset() {
+	*x = QueryProducerPlannedDowntimeRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_heimdallv2_bor_query_proto_msgTypes[16]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryProducerPlannedDowntimeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryProducerPlannedDowntimeRequest) ProtoMessage() {}
+
+// Deprecated: Use QueryProducerPlannedDowntimeRequest.ProtoReflect.Descriptor instead.
+func (*QueryProducerPlannedDowntimeRequest) Descriptor() ([]byte, []int) {
+	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *QueryProducerPlannedDowntimeRequest) GetProducerId() uint64 {
+	if x != nil {
+		return x.ProducerId
+	}
+	return 0
+}
+
+type QueryProducerPlannedDowntimeResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	StartTimestamp uint64 `protobuf:"varint,1,opt,name=start_timestamp,json=startTimestamp,proto3" json:"start_timestamp,omitempty"`
+	EndTimestamp   uint64 `protobuf:"varint,2,opt,name=end_timestamp,json=endTimestamp,proto3" json:"end_timestamp,omitempty"`
+}
+
+func (x *QueryProducerPlannedDowntimeResponse) Reset() {
+	*x = QueryProducerPlannedDowntimeResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_heimdallv2_bor_query_proto_msgTypes[17]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryProducerPlannedDowntimeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryProducerPlannedDowntimeResponse) ProtoMessage() {}
+
+// Deprecated: Use QueryProducerPlannedDowntimeResponse.ProtoReflect.Descriptor instead.
+func (*QueryProducerPlannedDowntimeResponse) Descriptor() ([]byte, []int) {
+	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *QueryProducerPlannedDowntimeResponse) GetStartTimestamp() uint64 {
+	if x != nil {
+		return x.StartTimestamp
+	}
+	return 0
+}
+
+func (x *QueryProducerPlannedDowntimeResponse) GetEndTimestamp() uint64 {
+	if x != nil {
+		return x.EndTimestamp
+	}
+	return 0
+}
+
 var File_heimdallv2_bor_query_proto protoreflect.FileDescriptor
 
 var file_heimdallv2_bor_query_proto_rawDesc = []byte{
@@ -7946,88 +8880,113 @@ var file_heimdallv2_bor_query_proto_rawDesc = []byte{
 	0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x42, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
 	0x6f, 0x72, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1b, 0x0a, 0x05,
 	0x76, 0x6f, 0x74, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0,
-	0x2a, 0x01, 0x52, 0x05, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x32, 0xcc, 0x08, 0x0a, 0x05, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x12, 0x78, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69,
-	0x73, 0x74, 0x12, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
-	0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73,
-	0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53,
-	0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0x1c, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x11, 0x12, 0x0f, 0x2f, 0x62,
-	0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x6c, 0x69, 0x73, 0x74, 0x12, 0x80, 0x01,
-	0x0a, 0x0d, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x12,
-	0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72,
-	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x61,
-	0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x22, 0x1e, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x13, 0x12, 0x11, 0x2f,
-	0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74,
-	0x12, 0x89, 0x01, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e,
-	0x53, 0x65, 0x65, 0x64, 0x12, 0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
-	0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53,
-	0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29,
-	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65,
-	0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x21, 0x88, 0xe7, 0xb0, 0x2a, 0x01,
-	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x16, 0x12, 0x14, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61,
-	0x6e, 0x73, 0x2f, 0x73, 0x65, 0x65, 0x64, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0x7b, 0x0a, 0x0b,
-	0x47, 0x65, 0x74, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x12, 0x24, 0x2e, 0x68, 0x65,
+	0x2a, 0x01, 0x52, 0x05, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x22, 0x4d, 0x0a, 0x23, 0x51, 0x75, 0x65,
+	0x72, 0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x50, 0x6c, 0x61, 0x6e, 0x6e, 0x65,
+	0x64, 0x44, 0x6f, 0x77, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x12, 0x26, 0x0a, 0x0b, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x5f, 0x69, 0x64, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0a, 0x70, 0x72,
+	0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x49, 0x64, 0x22, 0x82, 0x01, 0x0a, 0x24, 0x51, 0x75, 0x65,
+	0x72, 0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x50, 0x6c, 0x61, 0x6e, 0x6e, 0x65,
+	0x64, 0x44, 0x6f, 0x77, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x12, 0x2e, 0x0a, 0x0f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x73,
+	0x74, 0x61, 0x6d, 0x70, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a,
+	0x01, 0x52, 0x0e, 0x73, 0x74, 0x61, 0x72, 0x74, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d,
+	0x70, 0x12, 0x2a, 0x0a, 0x0d, 0x65, 0x6e, 0x64, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61,
+	0x6d, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52,
+	0x0c, 0x65, 0x6e, 0x64, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x32, 0x92, 0x0a,
+	0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x78, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x53, 0x70,
+	0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61,
+	0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x68,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x22, 0x1c, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x11,
+	0x12, 0x0f, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x6c, 0x69, 0x73,
+	0x74, 0x12, 0x80, 0x01, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53,
+	0x70, 0x61, 0x6e, 0x12, 0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74,
+	0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x68, 0x65,
 	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65,
-	0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x25, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62,
-	0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1f, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82,
-	0xd3, 0xe4, 0x93, 0x02, 0x14, 0x12, 0x12, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e,
-	0x73, 0x2f, 0x70, 0x72, 0x65, 0x70, 0x61, 0x72, 0x65, 0x12, 0x78, 0x0a, 0x0b, 0x47, 0x65, 0x74,
-	0x53, 0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x12, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53,
-	0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25,
-	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1c, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x11, 0x12, 0x0f, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x7b,
-	0x69, 0x64, 0x7d, 0x12, 0x71, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x42, 0x6f, 0x72, 0x50, 0x61, 0x72,
-	0x61, 0x6d, 0x73, 0x12, 0x22, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x72, 0x79, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1e, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x13, 0x12, 0x11, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x6c, 0x61,
+	0x74, 0x65, 0x73, 0x74, 0x12, 0x89, 0x01, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x4e, 0x65, 0x78, 0x74,
+	0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x12, 0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
+	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e,
+	0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x29, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61,
+	0x6e, 0x53, 0x65, 0x65, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x21, 0x88,
+	0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x16, 0x12, 0x14, 0x2f, 0x62, 0x6f, 0x72,
+	0x2f, 0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x73, 0x65, 0x65, 0x64, 0x2f, 0x7b, 0x69, 0x64, 0x7d,
+	0x12, 0x7b, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x12,
+	0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72,
+	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74,
+	0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1f, 0x88, 0xe7,
+	0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x14, 0x12, 0x12, 0x2f, 0x62, 0x6f, 0x72, 0x2f,
+	0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x70, 0x72, 0x65, 0x70, 0x61, 0x72, 0x65, 0x12, 0x78, 0x0a,
+	0x0b, 0x47, 0x65, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x12, 0x24, 0x2e, 0x68,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x25, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x42, 0x79, 0x49,
+	0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1c, 0x88, 0xe7, 0xb0, 0x2a, 0x01,
+	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x11, 0x12, 0x0f, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61,
+	0x6e, 0x73, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0x71, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x42, 0x6f,
+	0x72, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x22, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
 	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61,
-	0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x18, 0x88, 0xe7,
-	0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x0d, 0x12, 0x0b, 0x2f, 0x62, 0x6f, 0x72, 0x2f,
-	0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x8b, 0x01, 0x0a, 0x10, 0x47, 0x65, 0x74, 0x50, 0x72,
-	0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x12, 0x29, 0x2e, 0x68, 0x65,
+	0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x68, 0x65,
 	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65,
-	0x72, 0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f,
-	0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x20, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x15, 0x12,
-	0x13, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x2d, 0x76,
-	0x6f, 0x74, 0x65, 0x73, 0x12, 0xc1, 0x01, 0x0a, 0x1d, 0x47, 0x65, 0x74, 0x50, 0x72, 0x6f, 0x64,
-	0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x42, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64,
-	0x61, 0x74, 0x6f, 0x72, 0x49, 0x64, 0x12, 0x36, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f,
-	0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x42, 0x79, 0x56, 0x61, 0x6c, 0x69,
-	0x64, 0x61, 0x74, 0x6f, 0x72, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x37,
-	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74,
-	0x65, 0x73, 0x42, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x49, 0x64, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2f, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3,
-	0xe4, 0x93, 0x02, 0x24, 0x12, 0x22, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x70, 0x72, 0x6f, 0x64, 0x75,
-	0x63, 0x65, 0x72, 0x2d, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x2f, 0x7b, 0x76, 0x61, 0x6c, 0x69, 0x64,
-	0x61, 0x74, 0x6f, 0x72, 0x5f, 0x69, 0x64, 0x7d, 0x42, 0xae, 0x01, 0x0a, 0x12, 0x63, 0x6f, 0x6d,
-	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x42,
-	0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x33, 0x67,
-	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79,
-	0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f,
-	0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62,
-	0x6f, 0x72, 0xa2, 0x02, 0x03, 0x48, 0x42, 0x58, 0xaa, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x42, 0x6f, 0x72, 0xca, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72, 0xe2, 0x02, 0x1a, 0x48, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72, 0x5c, 0x47, 0x50, 0x42, 0x4d,
-	0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x42, 0x6f, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x18, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x0d, 0x12, 0x0b, 0x2f,
+	0x62, 0x6f, 0x72, 0x2f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x8b, 0x01, 0x0a, 0x10, 0x47,
+	0x65, 0x74, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x12,
+	0x29, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72,
+	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f,
+	0x74, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x68, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72,
+	0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x20, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4,
+	0x93, 0x02, 0x15, 0x12, 0x13, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63,
+	0x65, 0x72, 0x2d, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x12, 0xc1, 0x01, 0x0a, 0x1d, 0x47, 0x65, 0x74,
+	0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x42, 0x79, 0x56,
+	0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x49, 0x64, 0x12, 0x36, 0x2e, 0x68, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72,
+	0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x42, 0x79,
+	0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x37, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65,
+	0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x42, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f,
+	0x72, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2f, 0x88, 0xe7, 0xb0,
+	0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x24, 0x12, 0x22, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x70,
+	0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x2d, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x2f, 0x7b, 0x76,
+	0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x5f, 0x69, 0x64, 0x7d, 0x12, 0xc3, 0x01, 0x0a,
+	0x1a, 0x47, 0x65, 0x74, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x50, 0x6c, 0x61, 0x6e,
+	0x6e, 0x65, 0x64, 0x44, 0x6f, 0x77, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x12, 0x33, 0x2e, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65,
+	0x72, 0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x50, 0x6c, 0x61, 0x6e, 0x6e, 0x65,
+	0x64, 0x44, 0x6f, 0x77, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x34, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f,
+	0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x50,
+	0x6c, 0x61, 0x6e, 0x6e, 0x65, 0x64, 0x44, 0x6f, 0x77, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x3a, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4,
+	0x93, 0x02, 0x2f, 0x12, 0x2d, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63,
+	0x65, 0x72, 0x73, 0x2f, 0x70, 0x6c, 0x61, 0x6e, 0x6e, 0x65, 0x64, 0x2d, 0x64, 0x6f, 0x77, 0x6e,
+	0x74, 0x69, 0x6d, 0x65, 0x2f, 0x7b, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x5f, 0x69,
+	0x64, 0x7d, 0x42, 0xae, 0x01, 0x0a, 0x12, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
+	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x33, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
+	0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0xa2, 0x02, 0x03, 0x48,
+	0x42, 0x58, 0xaa, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x42, 0x6f, 0x72, 0xca, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x5c, 0x42, 0x6f, 0x72, 0xe2, 0x02, 0x1a, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x5c, 0x42, 0x6f, 0x72, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
+	0x61, 0xea, 0x02, 0x0f, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a,
+	0x42, 0x6f, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -8042,7 +9001,7 @@ func file_heimdallv2_bor_query_proto_rawDescGZIP() []byte {
 	return file_heimdallv2_bor_query_proto_rawDescData
 }
 
-var file_heimdallv2_bor_query_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_heimdallv2_bor_query_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_heimdallv2_bor_query_proto_goTypes = []interface{}{
 	(*QuerySpanByIdRequest)(nil),                    // 0: heimdallv2.bor.QuerySpanByIdRequest
 	(*QuerySpanByIdResponse)(nil),                   // 1: heimdallv2.bor.QuerySpanByIdResponse
@@ -8060,23 +9019,25 @@ var file_heimdallv2_bor_query_proto_goTypes = []interface{}{
 	(*QueryProducerVotesResponse)(nil),              // 13: heimdallv2.bor.QueryProducerVotesResponse
 	(*QueryProducerVotesByValidatorIdRequest)(nil),  // 14: heimdallv2.bor.QueryProducerVotesByValidatorIdRequest
 	(*QueryProducerVotesByValidatorIdResponse)(nil), // 15: heimdallv2.bor.QueryProducerVotesByValidatorIdResponse
-	nil,                          // 16: heimdallv2.bor.QueryProducerVotesResponse.AllVotesEntry
-	(*Span)(nil),                 // 17: heimdallv2.bor.Span
-	(*v1beta1.PageRequest)(nil),  // 18: cosmos.base.query.v1beta1.PageRequest
-	(*v1beta1.PageResponse)(nil), // 19: cosmos.base.query.v1beta1.PageResponse
-	(*Params)(nil),               // 20: heimdallv2.bor.Params
-	(*ProducerVotes)(nil),        // 21: heimdallv2.bor.ProducerVotes
+	(*QueryProducerPlannedDowntimeRequest)(nil),     // 16: heimdallv2.bor.QueryProducerPlannedDowntimeRequest
+	(*QueryProducerPlannedDowntimeResponse)(nil),    // 17: heimdallv2.bor.QueryProducerPlannedDowntimeResponse
+	nil,                          // 18: heimdallv2.bor.QueryProducerVotesResponse.AllVotesEntry
+	(*Span)(nil),                 // 19: heimdallv2.bor.Span
+	(*v1beta1.PageRequest)(nil),  // 20: cosmos.base.query.v1beta1.PageRequest
+	(*v1beta1.PageResponse)(nil), // 21: cosmos.base.query.v1beta1.PageResponse
+	(*Params)(nil),               // 22: heimdallv2.bor.Params
+	(*ProducerVotes)(nil),        // 23: heimdallv2.bor.ProducerVotes
 }
 var file_heimdallv2_bor_query_proto_depIdxs = []int32{
-	17, // 0: heimdallv2.bor.QuerySpanByIdResponse.span:type_name -> heimdallv2.bor.Span
-	18, // 1: heimdallv2.bor.QuerySpanListRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
-	17, // 2: heimdallv2.bor.QuerySpanListResponse.span_list:type_name -> heimdallv2.bor.Span
-	19, // 3: heimdallv2.bor.QuerySpanListResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
-	17, // 4: heimdallv2.bor.QueryLatestSpanResponse.span:type_name -> heimdallv2.bor.Span
-	17, // 5: heimdallv2.bor.QueryNextSpanResponse.span:type_name -> heimdallv2.bor.Span
-	20, // 6: heimdallv2.bor.QueryParamsResponse.params:type_name -> heimdallv2.bor.Params
-	16, // 7: heimdallv2.bor.QueryProducerVotesResponse.all_votes:type_name -> heimdallv2.bor.QueryProducerVotesResponse.AllVotesEntry
-	21, // 8: heimdallv2.bor.QueryProducerVotesResponse.AllVotesEntry.value:type_name -> heimdallv2.bor.ProducerVotes
+	19, // 0: heimdallv2.bor.QuerySpanByIdResponse.span:type_name -> heimdallv2.bor.Span
+	20, // 1: heimdallv2.bor.QuerySpanListRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	19, // 2: heimdallv2.bor.QuerySpanListResponse.span_list:type_name -> heimdallv2.bor.Span
+	21, // 3: heimdallv2.bor.QuerySpanListResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	19, // 4: heimdallv2.bor.QueryLatestSpanResponse.span:type_name -> heimdallv2.bor.Span
+	19, // 5: heimdallv2.bor.QueryNextSpanResponse.span:type_name -> heimdallv2.bor.Span
+	22, // 6: heimdallv2.bor.QueryParamsResponse.params:type_name -> heimdallv2.bor.Params
+	18, // 7: heimdallv2.bor.QueryProducerVotesResponse.all_votes:type_name -> heimdallv2.bor.QueryProducerVotesResponse.AllVotesEntry
+	23, // 8: heimdallv2.bor.QueryProducerVotesResponse.AllVotesEntry.value:type_name -> heimdallv2.bor.ProducerVotes
 	2,  // 9: heimdallv2.bor.Query.GetSpanList:input_type -> heimdallv2.bor.QuerySpanListRequest
 	4,  // 10: heimdallv2.bor.Query.GetLatestSpan:input_type -> heimdallv2.bor.QueryLatestSpanRequest
 	6,  // 11: heimdallv2.bor.Query.GetNextSpanSeed:input_type -> heimdallv2.bor.QueryNextSpanSeedRequest
@@ -8085,16 +9046,18 @@ var file_heimdallv2_bor_query_proto_depIdxs = []int32{
 	10, // 14: heimdallv2.bor.Query.GetBorParams:input_type -> heimdallv2.bor.QueryParamsRequest
 	12, // 15: heimdallv2.bor.Query.GetProducerVotes:input_type -> heimdallv2.bor.QueryProducerVotesRequest
 	14, // 16: heimdallv2.bor.Query.GetProducerVotesByValidatorId:input_type -> heimdallv2.bor.QueryProducerVotesByValidatorIdRequest
-	3,  // 17: heimdallv2.bor.Query.GetSpanList:output_type -> heimdallv2.bor.QuerySpanListResponse
-	5,  // 18: heimdallv2.bor.Query.GetLatestSpan:output_type -> heimdallv2.bor.QueryLatestSpanResponse
-	7,  // 19: heimdallv2.bor.Query.GetNextSpanSeed:output_type -> heimdallv2.bor.QueryNextSpanSeedResponse
-	9,  // 20: heimdallv2.bor.Query.GetNextSpan:output_type -> heimdallv2.bor.QueryNextSpanResponse
-	1,  // 21: heimdallv2.bor.Query.GetSpanById:output_type -> heimdallv2.bor.QuerySpanByIdResponse
-	11, // 22: heimdallv2.bor.Query.GetBorParams:output_type -> heimdallv2.bor.QueryParamsResponse
-	13, // 23: heimdallv2.bor.Query.GetProducerVotes:output_type -> heimdallv2.bor.QueryProducerVotesResponse
-	15, // 24: heimdallv2.bor.Query.GetProducerVotesByValidatorId:output_type -> heimdallv2.bor.QueryProducerVotesByValidatorIdResponse
-	17, // [17:25] is the sub-list for method output_type
-	9,  // [9:17] is the sub-list for method input_type
+	16, // 17: heimdallv2.bor.Query.GetProducerPlannedDowntime:input_type -> heimdallv2.bor.QueryProducerPlannedDowntimeRequest
+	3,  // 18: heimdallv2.bor.Query.GetSpanList:output_type -> heimdallv2.bor.QuerySpanListResponse
+	5,  // 19: heimdallv2.bor.Query.GetLatestSpan:output_type -> heimdallv2.bor.QueryLatestSpanResponse
+	7,  // 20: heimdallv2.bor.Query.GetNextSpanSeed:output_type -> heimdallv2.bor.QueryNextSpanSeedResponse
+	9,  // 21: heimdallv2.bor.Query.GetNextSpan:output_type -> heimdallv2.bor.QueryNextSpanResponse
+	1,  // 22: heimdallv2.bor.Query.GetSpanById:output_type -> heimdallv2.bor.QuerySpanByIdResponse
+	11, // 23: heimdallv2.bor.Query.GetBorParams:output_type -> heimdallv2.bor.QueryParamsResponse
+	13, // 24: heimdallv2.bor.Query.GetProducerVotes:output_type -> heimdallv2.bor.QueryProducerVotesResponse
+	15, // 25: heimdallv2.bor.Query.GetProducerVotesByValidatorId:output_type -> heimdallv2.bor.QueryProducerVotesByValidatorIdResponse
+	17, // 26: heimdallv2.bor.Query.GetProducerPlannedDowntime:output_type -> heimdallv2.bor.QueryProducerPlannedDowntimeResponse
+	18, // [18:27] is the sub-list for method output_type
+	9,  // [9:18] is the sub-list for method input_type
 	9,  // [9:9] is the sub-list for extension type_name
 	9,  // [9:9] is the sub-list for extension extendee
 	0,  // [0:9] is the sub-list for field type_name
@@ -8299,6 +9262,30 @@ func file_heimdallv2_bor_query_proto_init() {
 				return nil
 			}
 		}
+		file_heimdallv2_bor_query_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryProducerPlannedDowntimeRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_heimdallv2_bor_query_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryProducerPlannedDowntimeResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -8306,7 +9293,7 @@ func file_heimdallv2_bor_query_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_heimdallv2_bor_query_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
