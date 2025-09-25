@@ -1156,8 +1156,8 @@ func GetBorGRPCClient() *borgrpc.BorGRPCClient {
 func (c *CustomAppConfig) Sanitize() (notes []string, kv map[string]any) {
 	kv = make(map[string]any)
 
-	if c.BaseConfig.MinRetainBlocks != 0 && c.BaseConfig.MinRetainBlocks < MinimunMinRetainBlocks {
-		c.BaseConfig.MinRetainBlocks = MinimunMinRetainBlocks
+	if c.MinRetainBlocks != 0 && c.MinRetainBlocks < MinimunMinRetainBlocks {
+		c.MinRetainBlocks = MinimunMinRetainBlocks
 		notes = append(notes, fmt.Sprintf("min-retain-blocks=%d (minimum enforced)", MinimunMinRetainBlocks))
 		kv["min-retain-blocks"] = MinimunMinRetainBlocks
 	}

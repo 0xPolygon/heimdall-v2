@@ -3,9 +3,10 @@ package heimdalld
 import (
 	"fmt"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 func SanitizeConfig(rootViper *viper.Viper) error {
