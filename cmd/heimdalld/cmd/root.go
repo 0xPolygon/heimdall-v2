@@ -119,11 +119,6 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
-			err = SanitizeConfig(serverCtx.Viper)
-			if err != nil {
-				return err
-			}
-
 			// Overwrite default server logger
 			logger, err := server.CreateSDKLogger(serverCtx, cmd.OutOrStdout())
 			if err != nil {
@@ -143,6 +138,11 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 			helper.Logger = log.NewLogger(cmd.OutOrStdout(), log.LevelOption(logLevel))
+
+			err = helper.SanitizeConfig(serverCtx.Viper, serverCtx.Logger)
+			if err != nil {
+				return err
+			}
 
 			// Set server context
 			return server.SetCmdServerContext(cmd, serverCtx)

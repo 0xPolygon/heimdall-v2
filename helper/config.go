@@ -125,7 +125,7 @@ const (
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hard fork
 	MaxStateSyncSize = 30000
 
-	MinimunMinRetainBlocks = 2500000
+	EnforcedMinRetainBlocks = 2500000
 )
 
 func init() {
@@ -1156,10 +1156,10 @@ func GetBorGRPCClient() *borgrpc.BorGRPCClient {
 func (c *CustomAppConfig) Sanitize() (notes []string, kv map[string]any) {
 	kv = make(map[string]any)
 
-	if c.MinRetainBlocks != 0 && c.MinRetainBlocks < MinimunMinRetainBlocks {
-		c.MinRetainBlocks = MinimunMinRetainBlocks
-		notes = append(notes, fmt.Sprintf("min-retain-blocks=%d (minimum enforced)", MinimunMinRetainBlocks))
-		kv["min-retain-blocks"] = MinimunMinRetainBlocks
+	if c.MinRetainBlocks != 0 && c.MinRetainBlocks < EnforcedMinRetainBlocks {
+		c.MinRetainBlocks = EnforcedMinRetainBlocks
+		notes = append(notes, fmt.Sprintf("min-retain-blocks=%d (minimum enforced)", EnforcedMinRetainBlocks))
+		kv["min-retain-blocks"] = EnforcedMinRetainBlocks
 	}
 
 	return notes, kv

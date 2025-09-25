@@ -1,16 +1,15 @@
-package heimdalld
+package helper
 
 import (
 	"fmt"
 
+	"cosmossdk.io/log"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
-
-	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-func SanitizeConfig(rootViper *viper.Viper) error {
-	var appCfg helper.CustomAppConfig
+func SanitizeConfig(rootViper *viper.Viper, logger log.Logger) error {
+	var appCfg CustomAppConfig
 	decodeHook := mapstructure.ComposeDecodeHookFunc(
 		mapstructure.StringToTimeDurationHookFunc(),
 		mapstructure.StringToSliceHookFunc(","),
@@ -19,9 +18,9 @@ func SanitizeConfig(rootViper *viper.Viper) error {
 		return fmt.Errorf("invalid config: %w", err)
 	}
 	if notes, kv := appCfg.Sanitize(); len(notes) > 0 {
-		fmt.Println("## Detected some configuration values to be sanitized")
+		logger.Warn("Detected some configuration values to be sanitized")
 		for _, n := range notes {
-			fmt.Println("[config] adjusted:", n)
+			logger.Warn("[config] adjusted:", n)
 		}
 		// write sanitized values back into Viper
 		for k, v := range kv {
