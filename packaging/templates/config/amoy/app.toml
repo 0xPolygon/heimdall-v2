@@ -48,9 +48,10 @@ halt-time = 0
 # "pruning-*" configurations.
 #
 # Note: CometBFT block pruning is dependant on this parameter in conjunction
-# with the unbonding (safety threshold) period, state pruning and state sync
-# snapshot parameters to determine the correct minimum value of
+# with the unbonding (safety threshold) period, state pruning, state sync
+# snapshot parameters and evidence max age to determine the correct minimum value of
 # ResponseCommit.RetainHeight.
+# Minimum expected value of 2500000 (enforced by sanitization)
 min-retain-blocks = 0
 
 # InterBlockCache enables inter-block caching.
