@@ -33,7 +33,7 @@ $ heimdalld start
 Instructions on how to import your validator private key into the keyring and use it to sign transactions.
 
 Get your `base64` encoded private key from:  
-`cat /var/lib/heimdall/config/priv_validator_key.json`
+`/var/lib/heimdall/config/priv_validator_key.json`
 
 Convert the `base64` encoded key to the hex encoded key:  
 `echo "<PRIVATE_KEY_BASE64_ENCODED>" | base64 -d | xxd -p -c 256`
