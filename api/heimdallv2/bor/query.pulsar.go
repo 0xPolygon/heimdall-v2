@@ -7266,6 +7266,992 @@ func (x *fastReflection_QueryProducerVotesByValidatorIdResponse) ProtoMethods() 
 	}
 }
 
+var (
+	md_QueryValidatorPerformanceScoreRequest protoreflect.MessageDescriptor
+)
+
+func init() {
+	file_heimdallv2_bor_query_proto_init()
+	md_QueryValidatorPerformanceScoreRequest = File_heimdallv2_bor_query_proto.Messages().ByName("QueryValidatorPerformanceScoreRequest")
+}
+
+var _ protoreflect.Message = (*fastReflection_QueryValidatorPerformanceScoreRequest)(nil)
+
+type fastReflection_QueryValidatorPerformanceScoreRequest QueryValidatorPerformanceScoreRequest
+
+func (x *QueryValidatorPerformanceScoreRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryValidatorPerformanceScoreRequest)(x)
+}
+
+func (x *QueryValidatorPerformanceScoreRequest) slowProtoReflect() protoreflect.Message {
+	mi := &file_heimdallv2_bor_query_proto_msgTypes[16]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_QueryValidatorPerformanceScoreRequest_messageType fastReflection_QueryValidatorPerformanceScoreRequest_messageType
+var _ protoreflect.MessageType = fastReflection_QueryValidatorPerformanceScoreRequest_messageType{}
+
+type fastReflection_QueryValidatorPerformanceScoreRequest_messageType struct{}
+
+func (x fastReflection_QueryValidatorPerformanceScoreRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryValidatorPerformanceScoreRequest)(nil)
+}
+func (x fastReflection_QueryValidatorPerformanceScoreRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryValidatorPerformanceScoreRequest)
+}
+func (x fastReflection_QueryValidatorPerformanceScoreRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryValidatorPerformanceScoreRequest
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryValidatorPerformanceScoreRequest
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) Type() protoreflect.MessageType {
+	return _fastReflection_QueryValidatorPerformanceScoreRequest_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) New() protoreflect.Message {
+	return new(fastReflection_QueryValidatorPerformanceScoreRequest)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) Interface() protoreflect.ProtoMessage {
+	return (*QueryValidatorPerformanceScoreRequest)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryValidatorPerformanceScoreRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryValidatorPerformanceScoreRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryValidatorPerformanceScoreRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryValidatorPerformanceScoreRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryValidatorPerformanceScoreRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryValidatorPerformanceScoreRequest does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryValidatorPerformanceScoreRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryValidatorPerformanceScoreRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryValidatorPerformanceScoreRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryValidatorPerformanceScoreRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryValidatorPerformanceScoreRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryValidatorPerformanceScoreRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.bor.QueryValidatorPerformanceScoreRequest", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_QueryValidatorPerformanceScoreRequest) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*QueryValidatorPerformanceScoreRequest)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*QueryValidatorPerformanceScoreRequest)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*QueryValidatorPerformanceScoreRequest)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryValidatorPerformanceScoreRequest: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryValidatorPerformanceScoreRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var _ protoreflect.Map = (*_QueryValidatorPerformanceScoreResponse_1_map)(nil)
+
+type _QueryValidatorPerformanceScoreResponse_1_map struct {
+	m *map[uint64]uint64
+}
+
+func (x *_QueryValidatorPerformanceScoreResponse_1_map) Len() int {
+	if x.m == nil {
+		return 0
+	}
+	return len(*x.m)
+}
+
+func (x *_QueryValidatorPerformanceScoreResponse_1_map) Range(f func(protoreflect.MapKey, protoreflect.Value) bool) {
+	if x.m == nil {
+		return
+	}
+	for k, v := range *x.m {
+		mapKey := (protoreflect.MapKey)(protoreflect.ValueOfUint64(k))
+		mapValue := protoreflect.ValueOfUint64(v)
+		if !f(mapKey, mapValue) {
+			break
+		}
+	}
+}
+
+func (x *_QueryValidatorPerformanceScoreResponse_1_map) Has(key protoreflect.MapKey) bool {
+	if x.m == nil {
+		return false
+	}
+	keyUnwrapped := key.Uint()
+	concreteValue := keyUnwrapped
+	_, ok := (*x.m)[concreteValue]
+	return ok
+}
+
+func (x *_QueryValidatorPerformanceScoreResponse_1_map) Clear(key protoreflect.MapKey) {
+	if x.m == nil {
+		return
+	}
+	keyUnwrapped := key.Uint()
+	concreteKey := keyUnwrapped
+	delete(*x.m, concreteKey)
+}
+
+func (x *_QueryValidatorPerformanceScoreResponse_1_map) Get(key protoreflect.MapKey) protoreflect.Value {
+	if x.m == nil {
+		return protoreflect.Value{}
+	}
+	keyUnwrapped := key.Uint()
+	concreteKey := keyUnwrapped
+	v, ok := (*x.m)[concreteKey]
+	if !ok {
+		return protoreflect.Value{}
+	}
+	return protoreflect.ValueOfUint64(v)
+}
+
+func (x *_QueryValidatorPerformanceScoreResponse_1_map) Set(key protoreflect.MapKey, value protoreflect.Value) {
+	if !key.IsValid() || !value.IsValid() {
+		panic("invalid key or value provided")
+	}
+	keyUnwrapped := key.Uint()
+	concreteKey := keyUnwrapped
+	valueUnwrapped := value.Uint()
+	concreteValue := valueUnwrapped
+	(*x.m)[concreteKey] = concreteValue
+}
+
+func (x *_QueryValidatorPerformanceScoreResponse_1_map) Mutable(key protoreflect.MapKey) protoreflect.Value {
+	panic("should not call Mutable on protoreflect.Map whose value is not of type protoreflect.Message")
+}
+
+func (x *_QueryValidatorPerformanceScoreResponse_1_map) NewValue() protoreflect.Value {
+	v := uint64(0)
+	return protoreflect.ValueOfUint64(v)
+}
+
+func (x *_QueryValidatorPerformanceScoreResponse_1_map) IsValid() bool {
+	return x.m != nil
+}
+
+var (
+	md_QueryValidatorPerformanceScoreResponse                             protoreflect.MessageDescriptor
+	fd_QueryValidatorPerformanceScoreResponse_validator_performance_score protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_heimdallv2_bor_query_proto_init()
+	md_QueryValidatorPerformanceScoreResponse = File_heimdallv2_bor_query_proto.Messages().ByName("QueryValidatorPerformanceScoreResponse")
+	fd_QueryValidatorPerformanceScoreResponse_validator_performance_score = md_QueryValidatorPerformanceScoreResponse.Fields().ByName("validator_performance_score")
+}
+
+var _ protoreflect.Message = (*fastReflection_QueryValidatorPerformanceScoreResponse)(nil)
+
+type fastReflection_QueryValidatorPerformanceScoreResponse QueryValidatorPerformanceScoreResponse
+
+func (x *QueryValidatorPerformanceScoreResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryValidatorPerformanceScoreResponse)(x)
+}
+
+func (x *QueryValidatorPerformanceScoreResponse) slowProtoReflect() protoreflect.Message {
+	mi := &file_heimdallv2_bor_query_proto_msgTypes[17]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_QueryValidatorPerformanceScoreResponse_messageType fastReflection_QueryValidatorPerformanceScoreResponse_messageType
+var _ protoreflect.MessageType = fastReflection_QueryValidatorPerformanceScoreResponse_messageType{}
+
+type fastReflection_QueryValidatorPerformanceScoreResponse_messageType struct{}
+
+func (x fastReflection_QueryValidatorPerformanceScoreResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryValidatorPerformanceScoreResponse)(nil)
+}
+func (x fastReflection_QueryValidatorPerformanceScoreResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryValidatorPerformanceScoreResponse)
+}
+func (x fastReflection_QueryValidatorPerformanceScoreResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryValidatorPerformanceScoreResponse
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryValidatorPerformanceScoreResponse
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) Type() protoreflect.MessageType {
+	return _fastReflection_QueryValidatorPerformanceScoreResponse_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) New() protoreflect.Message {
+	return new(fastReflection_QueryValidatorPerformanceScoreResponse)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) Interface() protoreflect.ProtoMessage {
+	return (*QueryValidatorPerformanceScoreResponse)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if len(x.ValidatorPerformanceScore) != 0 {
+		value := protoreflect.ValueOfMap(&_QueryValidatorPerformanceScoreResponse_1_map{m: &x.ValidatorPerformanceScore})
+		if !f(fd_QueryValidatorPerformanceScoreResponse_validator_performance_score, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryValidatorPerformanceScoreResponse.validator_performance_score":
+		return len(x.ValidatorPerformanceScore) != 0
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryValidatorPerformanceScoreResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryValidatorPerformanceScoreResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryValidatorPerformanceScoreResponse.validator_performance_score":
+		x.ValidatorPerformanceScore = nil
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryValidatorPerformanceScoreResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryValidatorPerformanceScoreResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "heimdallv2.bor.QueryValidatorPerformanceScoreResponse.validator_performance_score":
+		if len(x.ValidatorPerformanceScore) == 0 {
+			return protoreflect.ValueOfMap(&_QueryValidatorPerformanceScoreResponse_1_map{})
+		}
+		mapValue := &_QueryValidatorPerformanceScoreResponse_1_map{m: &x.ValidatorPerformanceScore}
+		return protoreflect.ValueOfMap(mapValue)
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryValidatorPerformanceScoreResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryValidatorPerformanceScoreResponse does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryValidatorPerformanceScoreResponse.validator_performance_score":
+		mv := value.Map()
+		cmv := mv.(*_QueryValidatorPerformanceScoreResponse_1_map)
+		x.ValidatorPerformanceScore = *cmv.m
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryValidatorPerformanceScoreResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryValidatorPerformanceScoreResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryValidatorPerformanceScoreResponse.validator_performance_score":
+		if x.ValidatorPerformanceScore == nil {
+			x.ValidatorPerformanceScore = make(map[uint64]uint64)
+		}
+		value := &_QueryValidatorPerformanceScoreResponse_1_map{m: &x.ValidatorPerformanceScore}
+		return protoreflect.ValueOfMap(value)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryValidatorPerformanceScoreResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryValidatorPerformanceScoreResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.bor.QueryValidatorPerformanceScoreResponse.validator_performance_score":
+		m := make(map[uint64]uint64)
+		return protoreflect.ValueOfMap(&_QueryValidatorPerformanceScoreResponse_1_map{m: &m})
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryValidatorPerformanceScoreResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.bor.QueryValidatorPerformanceScoreResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.bor.QueryValidatorPerformanceScoreResponse", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_QueryValidatorPerformanceScoreResponse) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*QueryValidatorPerformanceScoreResponse)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if len(x.ValidatorPerformanceScore) > 0 {
+			SiZeMaP := func(k uint64, v uint64) {
+				mapEntrySize := 1 + runtime.Sov(uint64(k)) + 1 + runtime.Sov(uint64(v))
+				n += mapEntrySize + 1 + runtime.Sov(uint64(mapEntrySize))
+			}
+			if options.Deterministic {
+				sortme := make([]uint64, 0, len(x.ValidatorPerformanceScore))
+				for k := range x.ValidatorPerformanceScore {
+					sortme = append(sortme, k)
+				}
+				sort.Slice(sortme, func(i, j int) bool {
+					return sortme[i] < sortme[j]
+				})
+				for _, k := range sortme {
+					v := x.ValidatorPerformanceScore[k]
+					SiZeMaP(k, v)
+				}
+			} else {
+				for k, v := range x.ValidatorPerformanceScore {
+					SiZeMaP(k, v)
+				}
+			}
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*QueryValidatorPerformanceScoreResponse)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if len(x.ValidatorPerformanceScore) > 0 {
+			MaRsHaLmAp := func(k uint64, v uint64) (protoiface.MarshalOutput, error) {
+				baseI := i
+				i = runtime.EncodeVarint(dAtA, i, uint64(v))
+				i--
+				dAtA[i] = 0x10
+				i = runtime.EncodeVarint(dAtA, i, uint64(k))
+				i--
+				dAtA[i] = 0x8
+				i = runtime.EncodeVarint(dAtA, i, uint64(baseI-i))
+				i--
+				dAtA[i] = 0xa
+				return protoiface.MarshalOutput{}, nil
+			}
+			if options.Deterministic {
+				keysForValidatorPerformanceScore := make([]uint64, 0, len(x.ValidatorPerformanceScore))
+				for k := range x.ValidatorPerformanceScore {
+					keysForValidatorPerformanceScore = append(keysForValidatorPerformanceScore, uint64(k))
+				}
+				sort.Slice(keysForValidatorPerformanceScore, func(i, j int) bool {
+					return keysForValidatorPerformanceScore[i] < keysForValidatorPerformanceScore[j]
+				})
+				for iNdEx := len(keysForValidatorPerformanceScore) - 1; iNdEx >= 0; iNdEx-- {
+					v := x.ValidatorPerformanceScore[uint64(keysForValidatorPerformanceScore[iNdEx])]
+					out, err := MaRsHaLmAp(keysForValidatorPerformanceScore[iNdEx], v)
+					if err != nil {
+						return out, err
+					}
+				}
+			} else {
+				for k := range x.ValidatorPerformanceScore {
+					v := x.ValidatorPerformanceScore[k]
+					out, err := MaRsHaLmAp(k, v)
+					if err != nil {
+						return out, err
+					}
+				}
+			}
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*QueryValidatorPerformanceScoreResponse)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryValidatorPerformanceScoreResponse: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryValidatorPerformanceScoreResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ValidatorPerformanceScore", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.ValidatorPerformanceScore == nil {
+					x.ValidatorPerformanceScore = make(map[uint64]uint64)
+				}
+				var mapkey uint64
+				var mapvalue uint64
+				for iNdEx < postIndex {
+					entryPreIndex := iNdEx
+					var wire uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+						}
+						if iNdEx >= l {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						wire |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					fieldNum := int32(wire >> 3)
+					if fieldNum == 1 {
+						for shift := uint(0); ; shift += 7 {
+							if shift >= 64 {
+								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+							}
+							if iNdEx >= l {
+								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+							}
+							b := dAtA[iNdEx]
+							iNdEx++
+							mapkey |= uint64(b&0x7F) << shift
+							if b < 0x80 {
+								break
+							}
+						}
+					} else if fieldNum == 2 {
+						for shift := uint(0); ; shift += 7 {
+							if shift >= 64 {
+								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+							}
+							if iNdEx >= l {
+								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+							}
+							b := dAtA[iNdEx]
+							iNdEx++
+							mapvalue |= uint64(b&0x7F) << shift
+							if b < 0x80 {
+								break
+							}
+						}
+					} else {
+						iNdEx = entryPreIndex
+						skippy, err := runtime.Skip(dAtA[iNdEx:])
+						if err != nil {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+						}
+						if (skippy < 0) || (iNdEx+skippy) < 0 {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+						}
+						if (iNdEx + skippy) > postIndex {
+							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+						}
+						iNdEx += skippy
+					}
+				}
+				x.ValidatorPerformanceScore[mapkey] = mapvalue
+				iNdEx = postIndex
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
 // Code generated by protoc-gen-go. DO NOT EDIT.
 // versions:
 // 	protoc-gen-go v1.27.0
@@ -7844,6 +8830,67 @@ func (x *QueryProducerVotesByValidatorIdResponse) GetVotes() []uint64 {
 	return nil
 }
 
+type QueryValidatorPerformanceScoreRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *QueryValidatorPerformanceScoreRequest) Reset() {
+	*x = QueryValidatorPerformanceScoreRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_heimdallv2_bor_query_proto_msgTypes[16]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryValidatorPerformanceScoreRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryValidatorPerformanceScoreRequest) ProtoMessage() {}
+
+// Deprecated: Use QueryValidatorPerformanceScoreRequest.ProtoReflect.Descriptor instead.
+func (*QueryValidatorPerformanceScoreRequest) Descriptor() ([]byte, []int) {
+	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{16}
+}
+
+type QueryValidatorPerformanceScoreResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ValidatorPerformanceScore map[uint64]uint64 `protobuf:"bytes,1,rep,name=validator_performance_score,json=validatorPerformanceScore,proto3" json:"validator_performance_score,omitempty" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+}
+
+func (x *QueryValidatorPerformanceScoreResponse) Reset() {
+	*x = QueryValidatorPerformanceScoreResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_heimdallv2_bor_query_proto_msgTypes[17]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryValidatorPerformanceScoreResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryValidatorPerformanceScoreResponse) ProtoMessage() {}
+
+// Deprecated: Use QueryValidatorPerformanceScoreResponse.ProtoReflect.Descriptor instead.
+func (*QueryValidatorPerformanceScoreResponse) Descriptor() ([]byte, []int) {
+	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *QueryValidatorPerformanceScoreResponse) GetValidatorPerformanceScore() map[uint64]uint64 {
+	if x != nil {
+		return x.ValidatorPerformanceScore
+	}
+	return nil
+}
+
 var File_heimdallv2_bor_query_proto protoreflect.FileDescriptor
 
 var file_heimdallv2_bor_query_proto_rawDesc = []byte{
@@ -7946,88 +8993,120 @@ var file_heimdallv2_bor_query_proto_rawDesc = []byte{
 	0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x42, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
 	0x6f, 0x72, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1b, 0x0a, 0x05,
 	0x76, 0x6f, 0x74, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0,
-	0x2a, 0x01, 0x52, 0x05, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x32, 0xcc, 0x08, 0x0a, 0x05, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x12, 0x78, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69,
-	0x73, 0x74, 0x12, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
-	0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73,
-	0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53,
-	0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0x1c, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x11, 0x12, 0x0f, 0x2f, 0x62,
-	0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x6c, 0x69, 0x73, 0x74, 0x12, 0x80, 0x01,
-	0x0a, 0x0d, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x12,
-	0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72,
-	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x61,
-	0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x22, 0x1e, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x13, 0x12, 0x11, 0x2f,
-	0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74,
-	0x12, 0x89, 0x01, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e,
-	0x53, 0x65, 0x65, 0x64, 0x12, 0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
-	0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53,
-	0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29,
-	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65,
-	0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x21, 0x88, 0xe7, 0xb0, 0x2a, 0x01,
-	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x16, 0x12, 0x14, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61,
-	0x6e, 0x73, 0x2f, 0x73, 0x65, 0x65, 0x64, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0x7b, 0x0a, 0x0b,
-	0x47, 0x65, 0x74, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x12, 0x24, 0x2e, 0x68, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65,
-	0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x25, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62,
-	0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1f, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82,
-	0xd3, 0xe4, 0x93, 0x02, 0x14, 0x12, 0x12, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e,
-	0x73, 0x2f, 0x70, 0x72, 0x65, 0x70, 0x61, 0x72, 0x65, 0x12, 0x78, 0x0a, 0x0b, 0x47, 0x65, 0x74,
-	0x53, 0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x12, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53,
-	0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25,
-	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1c, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x11, 0x12, 0x0f, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x7b,
-	0x69, 0x64, 0x7d, 0x12, 0x71, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x42, 0x6f, 0x72, 0x50, 0x61, 0x72,
-	0x61, 0x6d, 0x73, 0x12, 0x22, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61,
-	0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x18, 0x88, 0xe7,
-	0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x0d, 0x12, 0x0b, 0x2f, 0x62, 0x6f, 0x72, 0x2f,
-	0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x8b, 0x01, 0x0a, 0x10, 0x47, 0x65, 0x74, 0x50, 0x72,
-	0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x12, 0x29, 0x2e, 0x68, 0x65,
+	0x2a, 0x01, 0x52, 0x05, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x22, 0x27, 0x0a, 0x25, 0x51, 0x75, 0x65,
+	0x72, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x50, 0x65, 0x72, 0x66, 0x6f,
+	0x72, 0x6d, 0x61, 0x6e, 0x63, 0x65, 0x53, 0x63, 0x6f, 0x72, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x22, 0x99, 0x02, 0x0a, 0x26, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x61, 0x6c, 0x69,
+	0x64, 0x61, 0x74, 0x6f, 0x72, 0x50, 0x65, 0x72, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x6e, 0x63, 0x65,
+	0x53, 0x63, 0x6f, 0x72, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0xa0, 0x01,
+	0x0a, 0x1b, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x5f, 0x70, 0x65, 0x72, 0x66,
+	0x6f, 0x72, 0x6d, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x73, 0x63, 0x6f, 0x72, 0x65, 0x18, 0x01, 0x20,
+	0x03, 0x28, 0x0b, 0x32, 0x55, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61,
+	0x74, 0x6f, 0x72, 0x50, 0x65, 0x72, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x6e, 0x63, 0x65, 0x53, 0x63,
+	0x6f, 0x72, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x56, 0x61, 0x6c, 0x69,
+	0x64, 0x61, 0x74, 0x6f, 0x72, 0x50, 0x65, 0x72, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x6e, 0x63, 0x65,
+	0x53, 0x63, 0x6f, 0x72, 0x65, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x42, 0x09, 0xc8, 0xde, 0x1f, 0x00,
+	0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x19, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72,
+	0x50, 0x65, 0x72, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x6e, 0x63, 0x65, 0x53, 0x63, 0x6f, 0x72, 0x65,
+	0x1a, 0x4c, 0x0a, 0x1e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x50, 0x65, 0x72,
+	0x66, 0x6f, 0x72, 0x6d, 0x61, 0x6e, 0x63, 0x65, 0x53, 0x63, 0x6f, 0x72, 0x65, 0x45, 0x6e, 0x74,
+	0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52,
+	0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x04, 0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x32, 0x8b,
+	0x0a, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x78, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x53,
+	0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70,
+	0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e,
+	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51,
+	0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1c, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x11, 0x12, 0x0f, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x6c, 0x69,
+	0x73, 0x74, 0x12, 0x80, 0x01, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74,
+	0x53, 0x70, 0x61, 0x6e, 0x12, 0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x61, 0x74, 0x65, 0x73,
+	0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x68,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1e, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93,
+	0x02, 0x13, 0x12, 0x11, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x6c,
+	0x61, 0x74, 0x65, 0x73, 0x74, 0x12, 0x89, 0x01, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x4e, 0x65, 0x78,
+	0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x12, 0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d,
+	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70,
+	0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x21,
+	0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x16, 0x12, 0x14, 0x2f, 0x62, 0x6f,
+	0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x73, 0x65, 0x65, 0x64, 0x2f, 0x7b, 0x69, 0x64,
+	0x7d, 0x12, 0x7b, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e,
+	0x12, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f,
+	0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78,
+	0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1f, 0x88,
+	0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x14, 0x12, 0x12, 0x2f, 0x62, 0x6f, 0x72,
+	0x2f, 0x73, 0x70, 0x61, 0x6e, 0x73, 0x2f, 0x70, 0x72, 0x65, 0x70, 0x61, 0x72, 0x65, 0x12, 0x78,
+	0x0a, 0x0b, 0x47, 0x65, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x12, 0x24, 0x2e,
+	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51,
+	0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x42, 0x79,
+	0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1c, 0x88, 0xe7, 0xb0, 0x2a,
+	0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x11, 0x12, 0x0f, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70,
+	0x61, 0x6e, 0x73, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0x71, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x42,
+	0x6f, 0x72, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x22, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
+	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50,
+	0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x68,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0x18, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x0d, 0x12, 0x0b,
+	0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x8b, 0x01, 0x0a, 0x10,
+	0x47, 0x65, 0x74, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73,
+	0x12, 0x29, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f,
+	0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56,
+	0x6f, 0x74, 0x65, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x68, 0x65,
 	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65,
 	0x72, 0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f,
-	0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x20, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x15, 0x12,
-	0x13, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x2d, 0x76,
-	0x6f, 0x74, 0x65, 0x73, 0x12, 0xc1, 0x01, 0x0a, 0x1d, 0x47, 0x65, 0x74, 0x50, 0x72, 0x6f, 0x64,
-	0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x42, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64,
-	0x61, 0x74, 0x6f, 0x72, 0x49, 0x64, 0x12, 0x36, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f,
-	0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x42, 0x79, 0x56, 0x61, 0x6c, 0x69,
-	0x64, 0x61, 0x74, 0x6f, 0x72, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x37,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x20, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3,
+	0xe4, 0x93, 0x02, 0x15, 0x12, 0x13, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x70, 0x72, 0x6f, 0x64, 0x75,
+	0x63, 0x65, 0x72, 0x2d, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x12, 0xc1, 0x01, 0x0a, 0x1d, 0x47, 0x65,
+	0x74, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x42, 0x79,
+	0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x49, 0x64, 0x12, 0x36, 0x2e, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65,
+	0x72, 0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x42,
+	0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x37, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63,
+	0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x42, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
+	0x6f, 0x72, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2f, 0x88, 0xe7,
+	0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x24, 0x12, 0x22, 0x2f, 0x62, 0x6f, 0x72, 0x2f,
+	0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x2d, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x2f, 0x7b,
+	0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x5f, 0x69, 0x64, 0x7d, 0x12, 0xbc, 0x01,
+	0x0a, 0x1c, 0x47, 0x65, 0x74, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x50, 0x65,
+	0x72, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x6e, 0x63, 0x65, 0x53, 0x63, 0x6f, 0x72, 0x65, 0x12, 0x35,
 	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74,
-	0x65, 0x73, 0x42, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x49, 0x64, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2f, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3,
-	0xe4, 0x93, 0x02, 0x24, 0x12, 0x22, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x70, 0x72, 0x6f, 0x64, 0x75,
-	0x63, 0x65, 0x72, 0x2d, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x2f, 0x7b, 0x76, 0x61, 0x6c, 0x69, 0x64,
-	0x61, 0x74, 0x6f, 0x72, 0x5f, 0x69, 0x64, 0x7d, 0x42, 0xae, 0x01, 0x0a, 0x12, 0x63, 0x6f, 0x6d,
-	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x42,
-	0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x33, 0x67,
-	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79,
-	0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f,
-	0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62,
-	0x6f, 0x72, 0xa2, 0x02, 0x03, 0x48, 0x42, 0x58, 0xaa, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x42, 0x6f, 0x72, 0xca, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72, 0xe2, 0x02, 0x1a, 0x48, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72, 0x5c, 0x47, 0x50, 0x42, 0x4d,
-	0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x42, 0x6f, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x50, 0x65,
+	0x72, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x6e, 0x63, 0x65, 0x53, 0x63, 0x6f, 0x72, 0x65, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x36, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x61, 0x6c, 0x69,
+	0x64, 0x61, 0x74, 0x6f, 0x72, 0x50, 0x65, 0x72, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x6e, 0x63, 0x65,
+	0x53, 0x63, 0x6f, 0x72, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2d, 0x88,
+	0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x22, 0x12, 0x20, 0x2f, 0x62, 0x6f, 0x72,
+	0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x2d, 0x70, 0x65, 0x72, 0x66, 0x6f,
+	0x72, 0x6d, 0x61, 0x6e, 0x63, 0x65, 0x2d, 0x73, 0x63, 0x6f, 0x72, 0x65, 0x42, 0xae, 0x01, 0x0a,
+	0x12, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x62, 0x6f, 0x72, 0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50,
+	0x01, 0x5a, 0x33, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78,
+	0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0xa2, 0x02, 0x03, 0x48, 0x42, 0x58, 0xaa, 0x02, 0x0e, 0x48,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x42, 0x6f, 0x72, 0xca, 0x02, 0x0e,
+	0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72, 0xe2, 0x02,
+	0x1a, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72, 0x5c,
+	0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x48, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x42, 0x6f, 0x72, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -8042,7 +9121,7 @@ func file_heimdallv2_bor_query_proto_rawDescGZIP() []byte {
 	return file_heimdallv2_bor_query_proto_rawDescData
 }
 
-var file_heimdallv2_bor_query_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_heimdallv2_bor_query_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_heimdallv2_bor_query_proto_goTypes = []interface{}{
 	(*QuerySpanByIdRequest)(nil),                    // 0: heimdallv2.bor.QuerySpanByIdRequest
 	(*QuerySpanByIdResponse)(nil),                   // 1: heimdallv2.bor.QuerySpanByIdResponse
@@ -8060,44 +9139,50 @@ var file_heimdallv2_bor_query_proto_goTypes = []interface{}{
 	(*QueryProducerVotesResponse)(nil),              // 13: heimdallv2.bor.QueryProducerVotesResponse
 	(*QueryProducerVotesByValidatorIdRequest)(nil),  // 14: heimdallv2.bor.QueryProducerVotesByValidatorIdRequest
 	(*QueryProducerVotesByValidatorIdResponse)(nil), // 15: heimdallv2.bor.QueryProducerVotesByValidatorIdResponse
-	nil,                          // 16: heimdallv2.bor.QueryProducerVotesResponse.AllVotesEntry
-	(*Span)(nil),                 // 17: heimdallv2.bor.Span
-	(*v1beta1.PageRequest)(nil),  // 18: cosmos.base.query.v1beta1.PageRequest
-	(*v1beta1.PageResponse)(nil), // 19: cosmos.base.query.v1beta1.PageResponse
-	(*Params)(nil),               // 20: heimdallv2.bor.Params
-	(*ProducerVotes)(nil),        // 21: heimdallv2.bor.ProducerVotes
+	(*QueryValidatorPerformanceScoreRequest)(nil),   // 16: heimdallv2.bor.QueryValidatorPerformanceScoreRequest
+	(*QueryValidatorPerformanceScoreResponse)(nil),  // 17: heimdallv2.bor.QueryValidatorPerformanceScoreResponse
+	nil,                          // 18: heimdallv2.bor.QueryProducerVotesResponse.AllVotesEntry
+	nil,                          // 19: heimdallv2.bor.QueryValidatorPerformanceScoreResponse.ValidatorPerformanceScoreEntry
+	(*Span)(nil),                 // 20: heimdallv2.bor.Span
+	(*v1beta1.PageRequest)(nil),  // 21: cosmos.base.query.v1beta1.PageRequest
+	(*v1beta1.PageResponse)(nil), // 22: cosmos.base.query.v1beta1.PageResponse
+	(*Params)(nil),               // 23: heimdallv2.bor.Params
+	(*ProducerVotes)(nil),        // 24: heimdallv2.bor.ProducerVotes
 }
 var file_heimdallv2_bor_query_proto_depIdxs = []int32{
-	17, // 0: heimdallv2.bor.QuerySpanByIdResponse.span:type_name -> heimdallv2.bor.Span
-	18, // 1: heimdallv2.bor.QuerySpanListRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
-	17, // 2: heimdallv2.bor.QuerySpanListResponse.span_list:type_name -> heimdallv2.bor.Span
-	19, // 3: heimdallv2.bor.QuerySpanListResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
-	17, // 4: heimdallv2.bor.QueryLatestSpanResponse.span:type_name -> heimdallv2.bor.Span
-	17, // 5: heimdallv2.bor.QueryNextSpanResponse.span:type_name -> heimdallv2.bor.Span
-	20, // 6: heimdallv2.bor.QueryParamsResponse.params:type_name -> heimdallv2.bor.Params
-	16, // 7: heimdallv2.bor.QueryProducerVotesResponse.all_votes:type_name -> heimdallv2.bor.QueryProducerVotesResponse.AllVotesEntry
-	21, // 8: heimdallv2.bor.QueryProducerVotesResponse.AllVotesEntry.value:type_name -> heimdallv2.bor.ProducerVotes
-	2,  // 9: heimdallv2.bor.Query.GetSpanList:input_type -> heimdallv2.bor.QuerySpanListRequest
-	4,  // 10: heimdallv2.bor.Query.GetLatestSpan:input_type -> heimdallv2.bor.QueryLatestSpanRequest
-	6,  // 11: heimdallv2.bor.Query.GetNextSpanSeed:input_type -> heimdallv2.bor.QueryNextSpanSeedRequest
-	8,  // 12: heimdallv2.bor.Query.GetNextSpan:input_type -> heimdallv2.bor.QueryNextSpanRequest
-	0,  // 13: heimdallv2.bor.Query.GetSpanById:input_type -> heimdallv2.bor.QuerySpanByIdRequest
-	10, // 14: heimdallv2.bor.Query.GetBorParams:input_type -> heimdallv2.bor.QueryParamsRequest
-	12, // 15: heimdallv2.bor.Query.GetProducerVotes:input_type -> heimdallv2.bor.QueryProducerVotesRequest
-	14, // 16: heimdallv2.bor.Query.GetProducerVotesByValidatorId:input_type -> heimdallv2.bor.QueryProducerVotesByValidatorIdRequest
-	3,  // 17: heimdallv2.bor.Query.GetSpanList:output_type -> heimdallv2.bor.QuerySpanListResponse
-	5,  // 18: heimdallv2.bor.Query.GetLatestSpan:output_type -> heimdallv2.bor.QueryLatestSpanResponse
-	7,  // 19: heimdallv2.bor.Query.GetNextSpanSeed:output_type -> heimdallv2.bor.QueryNextSpanSeedResponse
-	9,  // 20: heimdallv2.bor.Query.GetNextSpan:output_type -> heimdallv2.bor.QueryNextSpanResponse
-	1,  // 21: heimdallv2.bor.Query.GetSpanById:output_type -> heimdallv2.bor.QuerySpanByIdResponse
-	11, // 22: heimdallv2.bor.Query.GetBorParams:output_type -> heimdallv2.bor.QueryParamsResponse
-	13, // 23: heimdallv2.bor.Query.GetProducerVotes:output_type -> heimdallv2.bor.QueryProducerVotesResponse
-	15, // 24: heimdallv2.bor.Query.GetProducerVotesByValidatorId:output_type -> heimdallv2.bor.QueryProducerVotesByValidatorIdResponse
-	17, // [17:25] is the sub-list for method output_type
-	9,  // [9:17] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	20, // 0: heimdallv2.bor.QuerySpanByIdResponse.span:type_name -> heimdallv2.bor.Span
+	21, // 1: heimdallv2.bor.QuerySpanListRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	20, // 2: heimdallv2.bor.QuerySpanListResponse.span_list:type_name -> heimdallv2.bor.Span
+	22, // 3: heimdallv2.bor.QuerySpanListResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	20, // 4: heimdallv2.bor.QueryLatestSpanResponse.span:type_name -> heimdallv2.bor.Span
+	20, // 5: heimdallv2.bor.QueryNextSpanResponse.span:type_name -> heimdallv2.bor.Span
+	23, // 6: heimdallv2.bor.QueryParamsResponse.params:type_name -> heimdallv2.bor.Params
+	18, // 7: heimdallv2.bor.QueryProducerVotesResponse.all_votes:type_name -> heimdallv2.bor.QueryProducerVotesResponse.AllVotesEntry
+	19, // 8: heimdallv2.bor.QueryValidatorPerformanceScoreResponse.validator_performance_score:type_name -> heimdallv2.bor.QueryValidatorPerformanceScoreResponse.ValidatorPerformanceScoreEntry
+	24, // 9: heimdallv2.bor.QueryProducerVotesResponse.AllVotesEntry.value:type_name -> heimdallv2.bor.ProducerVotes
+	2,  // 10: heimdallv2.bor.Query.GetSpanList:input_type -> heimdallv2.bor.QuerySpanListRequest
+	4,  // 11: heimdallv2.bor.Query.GetLatestSpan:input_type -> heimdallv2.bor.QueryLatestSpanRequest
+	6,  // 12: heimdallv2.bor.Query.GetNextSpanSeed:input_type -> heimdallv2.bor.QueryNextSpanSeedRequest
+	8,  // 13: heimdallv2.bor.Query.GetNextSpan:input_type -> heimdallv2.bor.QueryNextSpanRequest
+	0,  // 14: heimdallv2.bor.Query.GetSpanById:input_type -> heimdallv2.bor.QuerySpanByIdRequest
+	10, // 15: heimdallv2.bor.Query.GetBorParams:input_type -> heimdallv2.bor.QueryParamsRequest
+	12, // 16: heimdallv2.bor.Query.GetProducerVotes:input_type -> heimdallv2.bor.QueryProducerVotesRequest
+	14, // 17: heimdallv2.bor.Query.GetProducerVotesByValidatorId:input_type -> heimdallv2.bor.QueryProducerVotesByValidatorIdRequest
+	16, // 18: heimdallv2.bor.Query.GetValidatorPerformanceScore:input_type -> heimdallv2.bor.QueryValidatorPerformanceScoreRequest
+	3,  // 19: heimdallv2.bor.Query.GetSpanList:output_type -> heimdallv2.bor.QuerySpanListResponse
+	5,  // 20: heimdallv2.bor.Query.GetLatestSpan:output_type -> heimdallv2.bor.QueryLatestSpanResponse
+	7,  // 21: heimdallv2.bor.Query.GetNextSpanSeed:output_type -> heimdallv2.bor.QueryNextSpanSeedResponse
+	9,  // 22: heimdallv2.bor.Query.GetNextSpan:output_type -> heimdallv2.bor.QueryNextSpanResponse
+	1,  // 23: heimdallv2.bor.Query.GetSpanById:output_type -> heimdallv2.bor.QuerySpanByIdResponse
+	11, // 24: heimdallv2.bor.Query.GetBorParams:output_type -> heimdallv2.bor.QueryParamsResponse
+	13, // 25: heimdallv2.bor.Query.GetProducerVotes:output_type -> heimdallv2.bor.QueryProducerVotesResponse
+	15, // 26: heimdallv2.bor.Query.GetProducerVotesByValidatorId:output_type -> heimdallv2.bor.QueryProducerVotesByValidatorIdResponse
+	17, // 27: heimdallv2.bor.Query.GetValidatorPerformanceScore:output_type -> heimdallv2.bor.QueryValidatorPerformanceScoreResponse
+	19, // [19:28] is the sub-list for method output_type
+	10, // [10:19] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_heimdallv2_bor_query_proto_init() }
@@ -8299,6 +9384,30 @@ func file_heimdallv2_bor_query_proto_init() {
 				return nil
 			}
 		}
+		file_heimdallv2_bor_query_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryValidatorPerformanceScoreRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_heimdallv2_bor_query_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryValidatorPerformanceScoreResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -8306,7 +9415,7 @@ func file_heimdallv2_bor_query_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_heimdallv2_bor_query_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
