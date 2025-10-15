@@ -331,7 +331,7 @@ replace (
 	cosmossdk.io/store => github.com/0xPolygon/cosmos-sdk/store v1.1.2-0.20241126102051-89dc71d02611
 	cosmossdk.io/tools/confix => github.com/0xPolygon/cosmos-sdk/tools/confix v0.1.1
 	cosmossdk.io/x/tx => github.com/0xPolygon/cosmos-sdk/x/tx v0.13.6-0.20241126102051-89dc71d02611
-	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.3.0-polygon
+	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.3.2-polygon
 	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.2.6-polygon
 	github.com/ethereum/go-ethereum => github.com/0xPolygon/bor v1.14.14-0.20250811084316-f9787462a289
 	// Following version of goleveldb might cause an unexpected behavior.
