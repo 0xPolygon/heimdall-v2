@@ -114,7 +114,7 @@ const (
 
 	DefaultMainnetProducers = "91,92,93"
 
-	DefaultAmoyTestnetProducers = "1,2,3"
+	DefaultAmoyTestnetProducers = "4,5,6"
 
 	DefaultMumbaiTestnetProducers = "1,2,3"
 
@@ -449,7 +449,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case MainChain:
 		milestoneDeletionHeight = 28525000
 		faultyMilestoneNumber = 1941439
-		rioHeight = 0
+		rioHeight = 77414656 // Rio height is a block number in bor chain
 		tallyFixHeight = 28913694
 		disableVPCheckHeight = 25723000
 		disableValSetCheckHeight = 25723063
@@ -457,7 +457,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 48473856
+		rioHeight = 48473856 // Rio height is a block number in bor chain
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
@@ -465,7 +465,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 0
+		rioHeight = 26272256 // Rio height is a block number in bor chain
 		tallyFixHeight = 13143851
 		disableVPCheckHeight = 10618199
 		disableValSetCheckHeight = 10618299
