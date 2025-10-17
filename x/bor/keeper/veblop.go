@@ -19,7 +19,7 @@ func (k *Keeper) AddNewVeblopSpan(ctx sdk.Context, currentProducer uint64, start
 	logger := k.Logger(ctx)
 
 	// select next producers
-	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, ProducerSetLimit)
+	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, ProducerSetLimit, startBlock, endBlock)
 	if err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func (k *Keeper) ClearLatestFailedProducer(ctx context.Context) error {
 
 // SelectNextSpanProducer selects the next producer for a new span.
 // It calculates candidate set, filters by active producers and selects one.
-func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit uint64) (uint64, error) {
+func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit, startBlock, endBlock uint64) (uint64, error) {
 	candidates, err := k.CalculateProducerSet(ctx, producerSetLimit)
 	if err != nil {
 		return 0, fmt.Errorf("failed to calculate producer set: %w", err)
@@ -248,9 +248,9 @@ func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64,
 	}
 
 	activeCandidates := k.FilterByActiveProducerSet(ctx, candidates, activeValidatorIDs)
-	activeCandidates, err = k.FilterByDownValidatorsSet(ctx, activeCandidates)
+	activeCandidates, err = k.FilterByDowntimeValidatorsSet(ctx, activeCandidates, startBlock, endBlock)
 	if err != nil {
-		return 0, fmt.Errorf("failed to filter by down validators set: %w", err)
+		return 0, fmt.Errorf("failed to filter by downtime validators set: %w", err)
 	}
 
 	// If no candidate is available after threshold filtering,
@@ -412,43 +412,6 @@ func (k *Keeper) FilterByActiveProducerSet(ctx context.Context, candidates []uin
 	return activeCandidates
 }
 
-// FilterByDownValidatorsSet filters candidates based on whether each candidate is in the down validators set.
-func (k *Keeper) FilterByDownValidatorsSet(ctx sdk.Context, candidates []uint64) ([]uint64, error) {
-	upCandidates := make([]uint64, 0, len(candidates))
-
-	for _, candidate := range candidates {
-		isDown, err := k.IsProducerDown(ctx, ctx.BlockTime().Unix(), candidate)
-		if err != nil {
-			return nil, err
-		}
-		if !isDown {
-			upCandidates = append(upCandidates, candidate)
-		}
-	}
-	return upCandidates, nil
-}
-
-func (k *Keeper) IsProducerDown(ctx sdk.Context, blockTime int64, producerID uint64) (bool, error) {
-	found, err := k.ProducerPlannedDowntime.Has(ctx, producerID)
-	if err != nil {
-		return false, err
-	}
-	if !found {
-		return false, nil
-	}
-
-	downtime, err := k.ProducerPlannedDowntime.Get(ctx, producerID)
-	if err != nil {
-		return false, err
-	}
-
-	if int64(downtime.StartTimestamp) <= blockTime && blockTime <= int64(downtime.EndTimestamp) {
-		return true, nil
-	}
-
-	return false, nil
-}
-
 // SelectProducer selects a producer from the candidates list.
 // The selected candidate will be the next candidate to the current producer.
 // If the current producer is not in the candidate list, the first candidate in the list will be chosen.
@@ -476,4 +439,42 @@ func (k *Keeper) SelectProducer(ctx context.Context, currentProducer uint64, can
 	nextIndex := (currentIndex + 1) % len(candidates)
 	k.Logger(ctx).Info("Selecting next producer in list", "currentProducer", currentProducer, "currentIndex", currentIndex, "nextIndex", nextIndex, "selected", candidates[nextIndex])
 	return candidates[nextIndex], nil
+}
+
+// FilterByDowntimeValidatorsSet filters candidates based on whether each candidate is in the down validators set.
+func (k *Keeper) FilterByDowntimeValidatorsSet(ctx sdk.Context, candidates []uint64, startBlock, endBlock uint64) ([]uint64, error) {
+	upCandidates := make([]uint64, 0, len(candidates))
+
+	for _, candidate := range candidates {
+		isDown, err := k.IsProducerDownForBlockRange(ctx, startBlock, endBlock, candidate)
+		if err != nil {
+			return nil, err
+		}
+		if !isDown {
+			upCandidates = append(upCandidates, candidate)
+		}
+	}
+	return upCandidates, nil
+}
+
+// IsProducerDownForBlockRange checks if a producer has planned downtime overlapping with the given block range.
+func (k *Keeper) IsProducerDownForBlockRange(ctx sdk.Context, startBlock, endBlock, producerID uint64) (bool, error) {
+	found, err := k.ProducerPlannedDowntime.Has(ctx, producerID)
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		return false, nil
+	}
+
+	downtime, err := k.ProducerPlannedDowntime.Get(ctx, producerID)
+	if err != nil {
+		return false, err
+	}
+
+	if startBlock <= downtime.EndBlock && endBlock >= downtime.StartBlock {
+		return true, nil
+	}
+
+	return false, nil
 }

@@ -146,6 +146,6 @@ message QueryProducerPlannedDowntimeRequest {
 }
 
 message QueryProducerPlannedDowntimeResponse {
-  uint64 start_timestamp = 1 [ (amino.dont_omitempty) = true ];
-  uint64 end_timestamp = 2 [ (amino.dont_omitempty) = true ];
+  BlockRange downtime_range = 1
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }

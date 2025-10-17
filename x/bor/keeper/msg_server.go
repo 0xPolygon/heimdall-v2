@@ -279,8 +279,8 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 		return nil, fmt.Errorf("producer with address %s not found in the current validator set", msg.Producer)
 	}
 
-	if msg.StartTimestamp >= msg.EndTimestamp {
-		return nil, fmt.Errorf("start timestamp must be less than end timestamp")
+	if msg.DowntimeRange.StartBlock >= msg.DowntimeRange.EndBlock {
+		return nil, fmt.Errorf("start block must be less than end block")
 	}
 
 	latestMilestone, err := s.mk.GetLastMilestone(ctx)
@@ -291,21 +291,25 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 		return nil, fmt.Errorf("latest milestone not found")
 	}
 
-	if msg.StartTimestamp < latestMilestone.Timestamp+uint64(types.PlannedDowntimeMinimumTimeInFuture) {
-		return nil, fmt.Errorf("start timestamp must be at least %d seconds in the future", types.PlannedDowntimeMinimumTimeInFuture)
+	if msg.DowntimeRange.StartBlock <= latestMilestone.EndBlock {
+		return nil, fmt.Errorf("start block must be greater than latest milestone end block %d", latestMilestone.EndBlock)
 	}
 
-	if msg.StartTimestamp > latestMilestone.Timestamp+uint64(types.PlannedDowntimeMaximumTimeInFuture) {
-		return nil, fmt.Errorf("start timestamp must be at most %d seconds in the future", types.PlannedDowntimeMaximumTimeInFuture)
-	}
+	// if msg.StartTimestamp < latestMilestone.Timestamp+uint64(types.PlannedDowntimeMinimumTimeInFuture) {
+	// 	return nil, fmt.Errorf("start timestamp must be at least %d seconds in the future", types.PlannedDowntimeMinimumTimeInFuture)
+	// }
 
-	if msg.EndTimestamp-msg.StartTimestamp < uint64(types.PlannedDowntimeMinRange) {
-		return nil, fmt.Errorf("time range must be at least %d seconds", types.PlannedDowntimeMinRange)
-	}
+	// if msg.StartTimestamp > latestMilestone.Timestamp+uint64(types.PlannedDowntimeMaximumTimeInFuture) {
+	// 	return nil, fmt.Errorf("start timestamp must be at most %d seconds in the future", types.PlannedDowntimeMaximumTimeInFuture)
+	// }
 
-	if msg.EndTimestamp-msg.StartTimestamp > uint64(types.PlannedDowntimeMaxRange) {
-		return nil, fmt.Errorf("time range must be at most %d seconds", types.PlannedDowntimeMaxRange)
-	}
+	// if msg.EndTimestamp-msg.StartTimestamp < uint64(types.PlannedDowntimeMinRange) {
+	// 	return nil, fmt.Errorf("time range must be at least %d seconds", types.PlannedDowntimeMinRange)
+	// }
+
+	// if msg.EndTimestamp-msg.StartTimestamp > uint64(types.PlannedDowntimeMaxRange) {
+	// 	return nil, fmt.Errorf("time range must be at most %d seconds", types.PlannedDowntimeMaxRange)
+	// }
 
 	producers := make([]uint64, 0)
 	it, err := s.ProducerVotes.Iterate(ctx, nil)
@@ -356,9 +360,9 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 			return nil, err
 		}
 
-		if (msg.StartTimestamp >= downtime.StartTimestamp && msg.StartTimestamp < downtime.EndTimestamp) ||
-			(msg.EndTimestamp > downtime.StartTimestamp && msg.EndTimestamp <= downtime.EndTimestamp) ||
-			(msg.StartTimestamp <= downtime.StartTimestamp && msg.EndTimestamp >= downtime.EndTimestamp) {
+		if (msg.DowntimeRange.StartBlock >= downtime.StartBlock && msg.DowntimeRange.StartBlock < downtime.EndBlock) ||
+			(msg.DowntimeRange.EndBlock > downtime.StartBlock && msg.DowntimeRange.EndBlock <= downtime.EndBlock) ||
+			(msg.DowntimeRange.StartBlock <= downtime.StartBlock && msg.DowntimeRange.EndBlock >= downtime.EndBlock) {
 			overlapCount++
 		}
 	}
@@ -368,9 +372,9 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 		return nil, fmt.Errorf("producer with id %d has overlapping planned downtime with all other producers", validatorId)
 	}
 
-	if err := s.ProducerPlannedDowntime.Set(ctx, validatorId, types.TimeRange{
-		StartTimestamp: msg.StartTimestamp - types.PlannedDowntimeStartOffset,
-		EndTimestamp:   msg.EndTimestamp,
+	if err := s.ProducerPlannedDowntime.Set(ctx, validatorId, types.BlockRange{
+		StartBlock: msg.DowntimeRange.StartBlock,
+		EndBlock:   msg.DowntimeRange.EndBlock,
 	}); err != nil {
 		return nil, err
 	}

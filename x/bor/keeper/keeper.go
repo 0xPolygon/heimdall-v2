@@ -46,7 +46,7 @@ type Keeper struct {
 	LatestActiveProducer    collections.KeySet[uint64]
 	LatestFailedProducer    collections.KeySet[uint64]
 	LastSpanBlock           collections.Item[uint64]
-	ProducerPlannedDowntime collections.Map[uint64, types.TimeRange]
+	ProducerPlannedDowntime collections.Map[uint64, types.BlockRange]
 }
 
 // NewKeeper creates a new instance of the bor Keeper
@@ -87,7 +87,7 @@ func NewKeeper(
 		LatestActiveProducer:    collections.NewKeySet(sb, types.LatestActiveProducerKey, "latestActiveProducer", collections.Uint64Key),
 		LatestFailedProducer:    collections.NewKeySet(sb, types.LatestFailedProducerKey, "latestFailedProducer", collections.Uint64Key),
 		LastSpanBlock:           collections.NewItem(sb, types.LastSpanBlockKey, "lastSpanBlock", collections.Uint64Value),
-		ProducerPlannedDowntime: collections.NewMap(sb, types.ProducerPlannedDowntimeKey, "producerPlannedDowntime", collections.Uint64Key, codec.CollValue[types.TimeRange](cdc)),
+		ProducerPlannedDowntime: collections.NewMap(sb, types.ProducerPlannedDowntimeKey, "producerPlannedDowntime", collections.Uint64Key, codec.CollValue[types.BlockRange](cdc)),
 	}
 
 	schema, err := sb.Build()

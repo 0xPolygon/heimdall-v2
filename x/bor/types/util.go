@@ -96,9 +96,8 @@ func CalcCurrentBorSpanId(latestBorBlock uint64, latestHeimdallSpan *Span) (uint
 
 const (
 	// TODO: Move to params?
-	PlannedDowntimeMinimumTimeInFuture = 432000  // 5 days
-	PlannedDowntimeMaximumTimeInFuture = 2592000 // 30 days
-	PlannedDowntimeMinRange            = 3600    // 1 hour
-	PlannedDowntimeMaxRange            = 86400   // 24 hours
-	PlannedDowntimeStartOffset         = 28800   // 8 hours
+	PlannedDowntimeMinimumTimeInFuture = 150
+	PlannedDowntimeMaximumTimeInFuture = 100 * DefaultSpanDuration // ~2 weeks
+	PlannedDowntimeMinRange            = DefaultSpanDuration / 2
+	PlannedDowntimeMaxRange            = 14 * DefaultSpanDuration // ~48 hours
 )

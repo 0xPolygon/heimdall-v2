@@ -43,13 +43,15 @@ func (msg MsgBackfillSpans) Type() string {
 // NewMsgSetProducerDowntime creates a new MsgSetProducerDowntime instance
 func NewMsgSetProducerDowntime(
 	producer string,
-	startTimestamp uint64,
-	endTimestamp uint64,
+	startBorBlock uint64,
+	endBorBlock uint64,
 ) *MsgSetProducerDowntime {
 	return &MsgSetProducerDowntime{
-		Producer:       util.FormatAddress(producer),
-		StartTimestamp: startTimestamp,
-		EndTimestamp:   endTimestamp,
+		Producer: util.FormatAddress(producer),
+		DowntimeRange: BlockRange{
+			StartBlock: startBorBlock,
+			EndBlock:   endBorBlock,
+		},
 	}
 }
 

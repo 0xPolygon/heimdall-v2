@@ -3825,18 +3825,16 @@ func (x *fastReflection_MsgVoteProducersResponse) ProtoMethods() *protoiface.Met
 }
 
 var (
-	md_MsgSetProducerDowntime                 protoreflect.MessageDescriptor
-	fd_MsgSetProducerDowntime_producer        protoreflect.FieldDescriptor
-	fd_MsgSetProducerDowntime_start_timestamp protoreflect.FieldDescriptor
-	fd_MsgSetProducerDowntime_end_timestamp   protoreflect.FieldDescriptor
+	md_MsgSetProducerDowntime                protoreflect.MessageDescriptor
+	fd_MsgSetProducerDowntime_producer       protoreflect.FieldDescriptor
+	fd_MsgSetProducerDowntime_downtime_range protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_bor_tx_proto_init()
 	md_MsgSetProducerDowntime = File_heimdallv2_bor_tx_proto.Messages().ByName("MsgSetProducerDowntime")
 	fd_MsgSetProducerDowntime_producer = md_MsgSetProducerDowntime.Fields().ByName("producer")
-	fd_MsgSetProducerDowntime_start_timestamp = md_MsgSetProducerDowntime.Fields().ByName("start_timestamp")
-	fd_MsgSetProducerDowntime_end_timestamp = md_MsgSetProducerDowntime.Fields().ByName("end_timestamp")
+	fd_MsgSetProducerDowntime_downtime_range = md_MsgSetProducerDowntime.Fields().ByName("downtime_range")
 }
 
 var _ protoreflect.Message = (*fastReflection_MsgSetProducerDowntime)(nil)
@@ -3910,15 +3908,9 @@ func (x *fastReflection_MsgSetProducerDowntime) Range(f func(protoreflect.FieldD
 			return
 		}
 	}
-	if x.StartTimestamp != uint64(0) {
-		value := protoreflect.ValueOfUint64(x.StartTimestamp)
-		if !f(fd_MsgSetProducerDowntime_start_timestamp, value) {
-			return
-		}
-	}
-	if x.EndTimestamp != uint64(0) {
-		value := protoreflect.ValueOfUint64(x.EndTimestamp)
-		if !f(fd_MsgSetProducerDowntime_end_timestamp, value) {
+	if x.DowntimeRange != nil {
+		value := protoreflect.ValueOfMessage(x.DowntimeRange.ProtoReflect())
+		if !f(fd_MsgSetProducerDowntime_downtime_range, value) {
 			return
 		}
 	}
@@ -3939,10 +3931,8 @@ func (x *fastReflection_MsgSetProducerDowntime) Has(fd protoreflect.FieldDescrip
 	switch fd.FullName() {
 	case "heimdallv2.bor.MsgSetProducerDowntime.producer":
 		return x.Producer != ""
-	case "heimdallv2.bor.MsgSetProducerDowntime.start_timestamp":
-		return x.StartTimestamp != uint64(0)
-	case "heimdallv2.bor.MsgSetProducerDowntime.end_timestamp":
-		return x.EndTimestamp != uint64(0)
+	case "heimdallv2.bor.MsgSetProducerDowntime.downtime_range":
+		return x.DowntimeRange != nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgSetProducerDowntime"))
@@ -3961,10 +3951,8 @@ func (x *fastReflection_MsgSetProducerDowntime) Clear(fd protoreflect.FieldDescr
 	switch fd.FullName() {
 	case "heimdallv2.bor.MsgSetProducerDowntime.producer":
 		x.Producer = ""
-	case "heimdallv2.bor.MsgSetProducerDowntime.start_timestamp":
-		x.StartTimestamp = uint64(0)
-	case "heimdallv2.bor.MsgSetProducerDowntime.end_timestamp":
-		x.EndTimestamp = uint64(0)
+	case "heimdallv2.bor.MsgSetProducerDowntime.downtime_range":
+		x.DowntimeRange = nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgSetProducerDowntime"))
@@ -3984,12 +3972,9 @@ func (x *fastReflection_MsgSetProducerDowntime) Get(descriptor protoreflect.Fiel
 	case "heimdallv2.bor.MsgSetProducerDowntime.producer":
 		value := x.Producer
 		return protoreflect.ValueOfString(value)
-	case "heimdallv2.bor.MsgSetProducerDowntime.start_timestamp":
-		value := x.StartTimestamp
-		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.bor.MsgSetProducerDowntime.end_timestamp":
-		value := x.EndTimestamp
-		return protoreflect.ValueOfUint64(value)
+	case "heimdallv2.bor.MsgSetProducerDowntime.downtime_range":
+		value := x.DowntimeRange
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgSetProducerDowntime"))
@@ -4012,10 +3997,8 @@ func (x *fastReflection_MsgSetProducerDowntime) Set(fd protoreflect.FieldDescrip
 	switch fd.FullName() {
 	case "heimdallv2.bor.MsgSetProducerDowntime.producer":
 		x.Producer = value.Interface().(string)
-	case "heimdallv2.bor.MsgSetProducerDowntime.start_timestamp":
-		x.StartTimestamp = value.Uint()
-	case "heimdallv2.bor.MsgSetProducerDowntime.end_timestamp":
-		x.EndTimestamp = value.Uint()
+	case "heimdallv2.bor.MsgSetProducerDowntime.downtime_range":
+		x.DowntimeRange = value.Message().Interface().(*BlockRange)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgSetProducerDowntime"))
@@ -4036,12 +4019,13 @@ func (x *fastReflection_MsgSetProducerDowntime) Set(fd protoreflect.FieldDescrip
 // Mutable is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_MsgSetProducerDowntime) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
+	case "heimdallv2.bor.MsgSetProducerDowntime.downtime_range":
+		if x.DowntimeRange == nil {
+			x.DowntimeRange = new(BlockRange)
+		}
+		return protoreflect.ValueOfMessage(x.DowntimeRange.ProtoReflect())
 	case "heimdallv2.bor.MsgSetProducerDowntime.producer":
 		panic(fmt.Errorf("field producer of message heimdallv2.bor.MsgSetProducerDowntime is not mutable"))
-	case "heimdallv2.bor.MsgSetProducerDowntime.start_timestamp":
-		panic(fmt.Errorf("field start_timestamp of message heimdallv2.bor.MsgSetProducerDowntime is not mutable"))
-	case "heimdallv2.bor.MsgSetProducerDowntime.end_timestamp":
-		panic(fmt.Errorf("field end_timestamp of message heimdallv2.bor.MsgSetProducerDowntime is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgSetProducerDowntime"))
@@ -4057,10 +4041,9 @@ func (x *fastReflection_MsgSetProducerDowntime) NewField(fd protoreflect.FieldDe
 	switch fd.FullName() {
 	case "heimdallv2.bor.MsgSetProducerDowntime.producer":
 		return protoreflect.ValueOfString("")
-	case "heimdallv2.bor.MsgSetProducerDowntime.start_timestamp":
-		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.bor.MsgSetProducerDowntime.end_timestamp":
-		return protoreflect.ValueOfUint64(uint64(0))
+	case "heimdallv2.bor.MsgSetProducerDowntime.downtime_range":
+		m := new(BlockRange)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgSetProducerDowntime"))
@@ -4134,11 +4117,9 @@ func (x *fastReflection_MsgSetProducerDowntime) ProtoMethods() *protoiface.Metho
 		if l > 0 {
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
-		if x.StartTimestamp != 0 {
-			n += 1 + runtime.Sov(uint64(x.StartTimestamp))
-		}
-		if x.EndTimestamp != 0 {
-			n += 1 + runtime.Sov(uint64(x.EndTimestamp))
+		if x.DowntimeRange != nil {
+			l = options.Size(x.DowntimeRange)
+			n += 1 + l + runtime.Sov(uint64(l))
 		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
@@ -4169,15 +4150,19 @@ func (x *fastReflection_MsgSetProducerDowntime) ProtoMethods() *protoiface.Metho
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
-		if x.EndTimestamp != 0 {
-			i = runtime.EncodeVarint(dAtA, i, uint64(x.EndTimestamp))
+		if x.DowntimeRange != nil {
+			encoded, err := options.Marshal(x.DowntimeRange)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
 			i--
-			dAtA[i] = 0x18
-		}
-		if x.StartTimestamp != 0 {
-			i = runtime.EncodeVarint(dAtA, i, uint64(x.StartTimestamp))
-			i--
-			dAtA[i] = 0x10
+			dAtA[i] = 0x12
 		}
 		if len(x.Producer) > 0 {
 			i -= len(x.Producer)
@@ -4268,10 +4253,10 @@ func (x *fastReflection_MsgSetProducerDowntime) ProtoMethods() *protoiface.Metho
 				x.Producer = string(dAtA[iNdEx:postIndex])
 				iNdEx = postIndex
 			case 2:
-				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field StartTimestamp", wireType)
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field DowntimeRange", wireType)
 				}
-				x.StartTimestamp = 0
+				var msglen int
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
@@ -4281,30 +4266,28 @@ func (x *fastReflection_MsgSetProducerDowntime) ProtoMethods() *protoiface.Metho
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					x.StartTimestamp |= uint64(b&0x7F) << shift
+					msglen |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
 				}
-			case 3:
-				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field EndTimestamp", wireType)
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
 				}
-				x.EndTimestamp = 0
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					x.EndTimestamp |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
 				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.DowntimeRange == nil {
+					x.DowntimeRange = &BlockRange{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.DowntimeRange); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -5054,9 +5037,8 @@ type MsgSetProducerDowntime struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Producer       string `protobuf:"bytes,1,opt,name=producer,proto3" json:"producer,omitempty"`
-	StartTimestamp uint64 `protobuf:"varint,2,opt,name=start_timestamp,json=startTimestamp,proto3" json:"start_timestamp,omitempty"`
-	EndTimestamp   uint64 `protobuf:"varint,3,opt,name=end_timestamp,json=endTimestamp,proto3" json:"end_timestamp,omitempty"`
+	Producer      string      `protobuf:"bytes,1,opt,name=producer,proto3" json:"producer,omitempty"`
+	DowntimeRange *BlockRange `protobuf:"bytes,2,opt,name=downtime_range,json=downtimeRange,proto3" json:"downtime_range,omitempty"`
 }
 
 func (x *MsgSetProducerDowntime) Reset() {
@@ -5086,18 +5068,11 @@ func (x *MsgSetProducerDowntime) GetProducer() string {
 	return ""
 }
 
-func (x *MsgSetProducerDowntime) GetStartTimestamp() uint64 {
+func (x *MsgSetProducerDowntime) GetDowntimeRange() *BlockRange {
 	if x != nil {
-		return x.StartTimestamp
+		return x.DowntimeRange
 	}
-	return 0
-}
-
-func (x *MsgSetProducerDowntime) GetEndTimestamp() uint64 {
-	if x != nil {
-		return x.EndTimestamp
-	}
-	return 0
+	return nil
 }
 
 type MsgSetProducerDowntimeResponse struct {
@@ -5210,11 +5185,11 @@ var file_heimdallv2_bor_tx_proto_rawDesc = []byte{
 	0x64, 0x75, 0x63, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d,
 	0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53,
 	0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x08, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x12,
-	0x27, 0x0a, 0x0f, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61,
-	0x6d, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0e, 0x73, 0x74, 0x61, 0x72, 0x74, 0x54,
-	0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x12, 0x23, 0x0a, 0x0d, 0x65, 0x6e, 0x64, 0x5f,
-	0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x52,
-	0x0c, 0x65, 0x6e, 0x64, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x3a, 0x37, 0x82,
+	0x4c, 0x0a, 0x0e, 0x64, 0x6f, 0x77, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x72, 0x61, 0x6e, 0x67,
+	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x61,
+	0x6e, 0x67, 0x65, 0x42, 0x09, 0xc8, 0xde, 0x1f, 0x00, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0d,
+	0x64, 0x6f, 0x77, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x52, 0x61, 0x6e, 0x67, 0x65, 0x3a, 0x37, 0x82,
 	0xe7, 0xb0, 0x2a, 0x08, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x8a, 0xe7, 0xb0, 0x2a,
 	0x25, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0x2f,
 	0x4d, 0x73, 0x67, 0x53, 0x65, 0x74, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x44, 0x6f,
@@ -5291,25 +5266,27 @@ var file_heimdallv2_bor_tx_proto_goTypes = []interface{}{
 	(*MsgSetProducerDowntimeResponse)(nil), // 9: heimdallv2.bor.MsgSetProducerDowntimeResponse
 	(*Params)(nil),                         // 10: heimdallv2.bor.Params
 	(*ProducerVotes)(nil),                  // 11: heimdallv2.bor.ProducerVotes
+	(*BlockRange)(nil),                     // 12: heimdallv2.bor.BlockRange
 }
 var file_heimdallv2_bor_tx_proto_depIdxs = []int32{
 	10, // 0: heimdallv2.bor.MsgUpdateParams.params:type_name -> heimdallv2.bor.Params
 	11, // 1: heimdallv2.bor.MsgVoteProducers.votes:type_name -> heimdallv2.bor.ProducerVotes
-	0,  // 2: heimdallv2.bor.Msg.ProposeSpan:input_type -> heimdallv2.bor.MsgProposeSpan
-	2,  // 3: heimdallv2.bor.Msg.UpdateParams:input_type -> heimdallv2.bor.MsgUpdateParams
-	4,  // 4: heimdallv2.bor.Msg.BackfillSpans:input_type -> heimdallv2.bor.MsgBackfillSpans
-	6,  // 5: heimdallv2.bor.Msg.VoteProducers:input_type -> heimdallv2.bor.MsgVoteProducers
-	8,  // 6: heimdallv2.bor.Msg.SetProducerDowntime:input_type -> heimdallv2.bor.MsgSetProducerDowntime
-	1,  // 7: heimdallv2.bor.Msg.ProposeSpan:output_type -> heimdallv2.bor.MsgProposeSpanResponse
-	3,  // 8: heimdallv2.bor.Msg.UpdateParams:output_type -> heimdallv2.bor.MsgUpdateParamsResponse
-	5,  // 9: heimdallv2.bor.Msg.BackfillSpans:output_type -> heimdallv2.bor.MsgBackfillSpansResponse
-	7,  // 10: heimdallv2.bor.Msg.VoteProducers:output_type -> heimdallv2.bor.MsgVoteProducersResponse
-	9,  // 11: heimdallv2.bor.Msg.SetProducerDowntime:output_type -> heimdallv2.bor.MsgSetProducerDowntimeResponse
-	7,  // [7:12] is the sub-list for method output_type
-	2,  // [2:7] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	12, // 2: heimdallv2.bor.MsgSetProducerDowntime.downtime_range:type_name -> heimdallv2.bor.BlockRange
+	0,  // 3: heimdallv2.bor.Msg.ProposeSpan:input_type -> heimdallv2.bor.MsgProposeSpan
+	2,  // 4: heimdallv2.bor.Msg.UpdateParams:input_type -> heimdallv2.bor.MsgUpdateParams
+	4,  // 5: heimdallv2.bor.Msg.BackfillSpans:input_type -> heimdallv2.bor.MsgBackfillSpans
+	6,  // 6: heimdallv2.bor.Msg.VoteProducers:input_type -> heimdallv2.bor.MsgVoteProducers
+	8,  // 7: heimdallv2.bor.Msg.SetProducerDowntime:input_type -> heimdallv2.bor.MsgSetProducerDowntime
+	1,  // 8: heimdallv2.bor.Msg.ProposeSpan:output_type -> heimdallv2.bor.MsgProposeSpanResponse
+	3,  // 9: heimdallv2.bor.Msg.UpdateParams:output_type -> heimdallv2.bor.MsgUpdateParamsResponse
+	5,  // 10: heimdallv2.bor.Msg.BackfillSpans:output_type -> heimdallv2.bor.MsgBackfillSpansResponse
+	7,  // 11: heimdallv2.bor.Msg.VoteProducers:output_type -> heimdallv2.bor.MsgVoteProducersResponse
+	9,  // 12: heimdallv2.bor.Msg.SetProducerDowntime:output_type -> heimdallv2.bor.MsgSetProducerDowntimeResponse
+	8,  // [8:13] is the sub-list for method output_type
+	3,  // [3:8] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_heimdallv2_bor_tx_proto_init() }

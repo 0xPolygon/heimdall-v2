@@ -153,12 +153,15 @@ paths:
           schema:
             type: object
             properties:
-              start_timestamp:
-                type: string
-                format: uint64
-              end_timestamp:
-                type: string
-                format: uint64
+              downtime_range:
+                type: object
+                properties:
+                  start_block:
+                    type: string
+                    format: uint64
+                  end_block:
+                    type: string
+                    format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -3199,6 +3202,15 @@ definitions:
             value:
               type: string
               format: byte
+  heimdallv2.bor.BlockRange:
+    type: object
+    properties:
+      start_block:
+        type: string
+        format: uint64
+      end_block:
+        type: string
+        format: uint64
   heimdallv2.bor.Params:
     type: object
     properties:
@@ -3478,12 +3490,15 @@ definitions:
   heimdallv2.bor.QueryProducerPlannedDowntimeResponse:
     type: object
     properties:
-      start_timestamp:
-        type: string
-        format: uint64
-      end_timestamp:
-        type: string
-        format: uint64
+      downtime_range:
+        type: object
+        properties:
+          start_block:
+            type: string
+            format: uint64
+          end_block:
+            type: string
+            format: uint64
   heimdallv2.bor.QueryProducerVotesByValidatorIdResponse:
     type: object
     properties:

@@ -273,8 +273,7 @@ func (q queryServer) GetProducerPlannedDowntime(ctx context.Context, req *types.
 	}
 
 	return &types.QueryProducerPlannedDowntimeResponse{
-		StartTimestamp: downtime.StartTimestamp,
-		EndTimestamp:   downtime.EndTimestamp,
+		DowntimeRange: downtime,
 	}, nil
 }
 

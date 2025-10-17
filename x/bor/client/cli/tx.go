@@ -2,7 +2,9 @@ package cli
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -173,20 +175,32 @@ func NewProducerDowntimeCmd() *cobra.Command {
 				return fmt.Errorf("end timestamp utc must be greater than start timestamp utc")
 			}
 
-			// averageBlockTime, err := calculateAverageBlocktime(clientCtx, node)
-			// if err != nil {
-			// 	return fmt.Errorf("failed to calculate average block time: %w", err)
-			// }
+			averageBlockTime, err := calculateAverageBlocktime(clientCtx, node)
+			if err != nil {
+				return fmt.Errorf("failed to calculate average block time: %w", err)
+			}
 
-			// startBlock := uint64(status.SyncInfo.LatestBlockHeight) + uint64((time.Unix(int64(startTimeUTC), 0).Sub(status.SyncInfo.LatestBlockTime).Seconds())/averageBlockTime)
-			// endBlock := uint64(status.SyncInfo.LatestBlockHeight) + uint64((time.Unix(int64(endTimeUTC), 0).Sub(status.SyncInfo.LatestBlockTime).Seconds())/averageBlockTime)
+			borClient := helper.GetBorClient()
+			currentBlock, err := borClient.BlockNumber(clientCtx.CmdContext)
+			if err != nil {
+				return fmt.Errorf("failed to get latest bor block number: %w", err)
+			}
 
-			msg := types.NewMsgSetProducerDowntime(producerAddress, uint64(startTimeUTC), uint64(endTimeUTC))
+			block, err := borClient.BlockByNumber(clientCtx.CmdContext, big.NewInt(int64(currentBlock)))
+			if err != nil {
+				return fmt.Errorf("failed to get latest bor block: %w", err)
+			}
+
+			startBlock := uint64(currentBlock) + uint64((time.Unix(int64(startTimeUTC), 0).Sub(*block.AnnouncedAt).Seconds())/averageBlockTime)
+			endBlock := uint64(currentBlock) + uint64((time.Unix(int64(endTimeUTC), 0).Sub(*block.AnnouncedAt).Seconds())/averageBlockTime)
+
+			msg := types.NewMsgSetProducerDowntime(producerAddress, startBlock, endBlock)
 
 			return cli.BroadcastMsg(clientCtx, producerAddress, msg, logger)
 		},
 	}
 
+	cmd.Flags().String(FlagProducerAddress, "", "--producer-address=<producer-address>")
 	cmd.Flags().String(FlagStartTimestampUTC, "", "--start-timestamp-utc=<start-timestamp-utc>")
 	cmd.Flags().String(FlagEndTimestampUTC, "", "--end-timestamp-utc=<end-timestamp-utc>")
 	cmd.Flags().String(flags.FlagChainID, "", "--chain-id=<chain-id>")
@@ -210,36 +224,35 @@ func NewProducerDowntimeCmd() *cobra.Command {
 	return cmd
 }
 
-// func calculateAverageBlocktime(clientCtx client.Context, node client.CometRPC) (float64, error) {
-// 	status, err := node.Status(clientCtx.CmdContext)
-// 	if err != nil {
-// 		return 0, err
-// 	}
+func calculateAverageBlocktime(clientCtx client.Context, node client.CometRPC) (float64, error) {
+	borClient := helper.GetBorClient()
+	currentBlock, err := borClient.BlockNumber(clientCtx.CmdContext)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get latest bor block number: %w", err)
+	}
 
-// 	currentHeight := status.SyncInfo.LatestBlockHeight
+	blockTimesToGet := int64(100)
+	blocksInBetween := int64(100)
+	var averageBlockTime float64
 
-// 	blockTimesToGet := int64(1000)
-// 	blocksInBetween := int64(1000)
-// 	var averageBlockTime float64
+	for i := int64(0); i < blockTimesToGet; i++ {
+		blockNumber := big.NewInt(int64(currentBlock) - (blocksInBetween * i))
+		block, err := borClient.BlockByNumber(clientCtx.CmdContext, blockNumber)
+		if err != nil {
+			return 0, err
+		}
 
-// 	for i := int64(0); i < blockTimesToGet; i++ {
-// 		height := currentHeight - (blocksInBetween * i)
-// 		block, err := node.Block(clientCtx.CmdContext, &height)
-// 		if err != nil {
-// 			return 0, err
-// 		}
+		prevBlockHeight := int64(currentBlock) - ((blocksInBetween * i) + 1)
+		prevBlock, err := node.Block(clientCtx.CmdContext, &prevBlockHeight)
+		if err != nil {
+			return 0, err
+		}
 
-// 		prevBlockHeight := currentHeight - ((blocksInBetween * i) + 1)
-// 		prevBlock, err := node.Block(clientCtx.CmdContext, &prevBlockHeight)
-// 		if err != nil {
-// 			return 0, err
-// 		}
+		blockTime := block.AnnouncedAt.Sub(prevBlock.Block.Time).Seconds()
+		averageBlockTime += blockTime
+	}
 
-// 		blockTime := block.Block.Time.Sub(prevBlock.Block.Time).Seconds()
-// 		averageBlockTime += blockTime
-// 	}
+	averageBlockTime = averageBlockTime / float64(blockTimesToGet)
 
-// 	averageBlockTime = averageBlockTime / float64(blockTimesToGet)
-
-// 	return averageBlockTime, nil
-// }
+	return averageBlockTime, nil
+}

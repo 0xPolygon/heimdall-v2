@@ -1833,27 +1833,27 @@ func (x *fastReflection_ProducerVotes) ProtoMethods() *protoiface.Methods {
 }
 
 var (
-	md_TimeRange                 protoreflect.MessageDescriptor
-	fd_TimeRange_start_timestamp protoreflect.FieldDescriptor
-	fd_TimeRange_end_timestamp   protoreflect.FieldDescriptor
+	md_BlockRange             protoreflect.MessageDescriptor
+	fd_BlockRange_start_block protoreflect.FieldDescriptor
+	fd_BlockRange_end_block   protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_bor_bor_proto_init()
-	md_TimeRange = File_heimdallv2_bor_bor_proto.Messages().ByName("TimeRange")
-	fd_TimeRange_start_timestamp = md_TimeRange.Fields().ByName("start_timestamp")
-	fd_TimeRange_end_timestamp = md_TimeRange.Fields().ByName("end_timestamp")
+	md_BlockRange = File_heimdallv2_bor_bor_proto.Messages().ByName("BlockRange")
+	fd_BlockRange_start_block = md_BlockRange.Fields().ByName("start_block")
+	fd_BlockRange_end_block = md_BlockRange.Fields().ByName("end_block")
 }
 
-var _ protoreflect.Message = (*fastReflection_TimeRange)(nil)
+var _ protoreflect.Message = (*fastReflection_BlockRange)(nil)
 
-type fastReflection_TimeRange TimeRange
+type fastReflection_BlockRange BlockRange
 
-func (x *TimeRange) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_TimeRange)(x)
+func (x *BlockRange) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_BlockRange)(x)
 }
 
-func (x *TimeRange) slowProtoReflect() protoreflect.Message {
+func (x *BlockRange) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_bor_bor_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1865,43 +1865,43 @@ func (x *TimeRange) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_TimeRange_messageType fastReflection_TimeRange_messageType
-var _ protoreflect.MessageType = fastReflection_TimeRange_messageType{}
+var _fastReflection_BlockRange_messageType fastReflection_BlockRange_messageType
+var _ protoreflect.MessageType = fastReflection_BlockRange_messageType{}
 
-type fastReflection_TimeRange_messageType struct{}
+type fastReflection_BlockRange_messageType struct{}
 
-func (x fastReflection_TimeRange_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_TimeRange)(nil)
+func (x fastReflection_BlockRange_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_BlockRange)(nil)
 }
-func (x fastReflection_TimeRange_messageType) New() protoreflect.Message {
-	return new(fastReflection_TimeRange)
+func (x fastReflection_BlockRange_messageType) New() protoreflect.Message {
+	return new(fastReflection_BlockRange)
 }
-func (x fastReflection_TimeRange_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_TimeRange
+func (x fastReflection_BlockRange_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_BlockRange
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_TimeRange) Descriptor() protoreflect.MessageDescriptor {
-	return md_TimeRange
+func (x *fastReflection_BlockRange) Descriptor() protoreflect.MessageDescriptor {
+	return md_BlockRange
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_TimeRange) Type() protoreflect.MessageType {
-	return _fastReflection_TimeRange_messageType
+func (x *fastReflection_BlockRange) Type() protoreflect.MessageType {
+	return _fastReflection_BlockRange_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_TimeRange) New() protoreflect.Message {
-	return new(fastReflection_TimeRange)
+func (x *fastReflection_BlockRange) New() protoreflect.Message {
+	return new(fastReflection_BlockRange)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_TimeRange) Interface() protoreflect.ProtoMessage {
-	return (*TimeRange)(x)
+func (x *fastReflection_BlockRange) Interface() protoreflect.ProtoMessage {
+	return (*BlockRange)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -1909,16 +1909,16 @@ func (x *fastReflection_TimeRange) Interface() protoreflect.ProtoMessage {
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_TimeRange) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.StartTimestamp != uint64(0) {
-		value := protoreflect.ValueOfUint64(x.StartTimestamp)
-		if !f(fd_TimeRange_start_timestamp, value) {
+func (x *fastReflection_BlockRange) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.StartBlock != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.StartBlock)
+		if !f(fd_BlockRange_start_block, value) {
 			return
 		}
 	}
-	if x.EndTimestamp != uint64(0) {
-		value := protoreflect.ValueOfUint64(x.EndTimestamp)
-		if !f(fd_TimeRange_end_timestamp, value) {
+	if x.EndBlock != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.EndBlock)
+		if !f(fd_BlockRange_end_block, value) {
 			return
 		}
 	}
@@ -1935,17 +1935,17 @@ func (x *fastReflection_TimeRange) Range(f func(protoreflect.FieldDescriptor, pr
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_TimeRange) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_BlockRange) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.bor.TimeRange.start_timestamp":
-		return x.StartTimestamp != uint64(0)
-	case "heimdallv2.bor.TimeRange.end_timestamp":
-		return x.EndTimestamp != uint64(0)
+	case "heimdallv2.bor.BlockRange.start_block":
+		return x.StartBlock != uint64(0)
+	case "heimdallv2.bor.BlockRange.end_block":
+		return x.EndBlock != uint64(0)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.TimeRange"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.BlockRange"))
 		}
-		panic(fmt.Errorf("message heimdallv2.bor.TimeRange does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.bor.BlockRange does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1955,17 +1955,17 @@ func (x *fastReflection_TimeRange) Has(fd protoreflect.FieldDescriptor) bool {
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_TimeRange) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_BlockRange) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.TimeRange.start_timestamp":
-		x.StartTimestamp = uint64(0)
-	case "heimdallv2.bor.TimeRange.end_timestamp":
-		x.EndTimestamp = uint64(0)
+	case "heimdallv2.bor.BlockRange.start_block":
+		x.StartBlock = uint64(0)
+	case "heimdallv2.bor.BlockRange.end_block":
+		x.EndBlock = uint64(0)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.TimeRange"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.BlockRange"))
 		}
-		panic(fmt.Errorf("message heimdallv2.bor.TimeRange does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.bor.BlockRange does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1975,19 +1975,19 @@ func (x *fastReflection_TimeRange) Clear(fd protoreflect.FieldDescriptor) {
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_TimeRange) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_BlockRange) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.bor.TimeRange.start_timestamp":
-		value := x.StartTimestamp
+	case "heimdallv2.bor.BlockRange.start_block":
+		value := x.StartBlock
 		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.bor.TimeRange.end_timestamp":
-		value := x.EndTimestamp
+	case "heimdallv2.bor.BlockRange.end_block":
+		value := x.EndBlock
 		return protoreflect.ValueOfUint64(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.TimeRange"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.BlockRange"))
 		}
-		panic(fmt.Errorf("message heimdallv2.bor.TimeRange does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.bor.BlockRange does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -2001,17 +2001,17 @@ func (x *fastReflection_TimeRange) Get(descriptor protoreflect.FieldDescriptor) 
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_TimeRange) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_BlockRange) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.TimeRange.start_timestamp":
-		x.StartTimestamp = value.Uint()
-	case "heimdallv2.bor.TimeRange.end_timestamp":
-		x.EndTimestamp = value.Uint()
+	case "heimdallv2.bor.BlockRange.start_block":
+		x.StartBlock = value.Uint()
+	case "heimdallv2.bor.BlockRange.end_block":
+		x.EndBlock = value.Uint()
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.TimeRange"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.BlockRange"))
 		}
-		panic(fmt.Errorf("message heimdallv2.bor.TimeRange does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.bor.BlockRange does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -2025,44 +2025,44 @@ func (x *fastReflection_TimeRange) Set(fd protoreflect.FieldDescriptor, value pr
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_TimeRange) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_BlockRange) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.TimeRange.start_timestamp":
-		panic(fmt.Errorf("field start_timestamp of message heimdallv2.bor.TimeRange is not mutable"))
-	case "heimdallv2.bor.TimeRange.end_timestamp":
-		panic(fmt.Errorf("field end_timestamp of message heimdallv2.bor.TimeRange is not mutable"))
+	case "heimdallv2.bor.BlockRange.start_block":
+		panic(fmt.Errorf("field start_block of message heimdallv2.bor.BlockRange is not mutable"))
+	case "heimdallv2.bor.BlockRange.end_block":
+		panic(fmt.Errorf("field end_block of message heimdallv2.bor.BlockRange is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.TimeRange"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.BlockRange"))
 		}
-		panic(fmt.Errorf("message heimdallv2.bor.TimeRange does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.bor.BlockRange does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_TimeRange) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_BlockRange) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.TimeRange.start_timestamp":
+	case "heimdallv2.bor.BlockRange.start_block":
 		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.bor.TimeRange.end_timestamp":
+	case "heimdallv2.bor.BlockRange.end_block":
 		return protoreflect.ValueOfUint64(uint64(0))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.TimeRange"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.BlockRange"))
 		}
-		panic(fmt.Errorf("message heimdallv2.bor.TimeRange does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.bor.BlockRange does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_TimeRange) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_BlockRange) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.bor.TimeRange", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.bor.BlockRange", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -2070,7 +2070,7 @@ func (x *fastReflection_TimeRange) WhichOneof(d protoreflect.OneofDescriptor) pr
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_TimeRange) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_BlockRange) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -2081,7 +2081,7 @@ func (x *fastReflection_TimeRange) GetUnknown() protoreflect.RawFields {
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_TimeRange) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_BlockRange) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -2093,7 +2093,7 @@ func (x *fastReflection_TimeRange) SetUnknown(fields protoreflect.RawFields) {
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_TimeRange) IsValid() bool {
+func (x *fastReflection_BlockRange) IsValid() bool {
 	return x != nil
 }
 
@@ -2103,9 +2103,9 @@ func (x *fastReflection_TimeRange) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_TimeRange) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_BlockRange) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*TimeRange)
+		x := input.Message.Interface().(*BlockRange)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2117,11 +2117,11 @@ func (x *fastReflection_TimeRange) ProtoMethods() *protoiface.Methods {
 		var n int
 		var l int
 		_ = l
-		if x.StartTimestamp != 0 {
-			n += 1 + runtime.Sov(uint64(x.StartTimestamp))
+		if x.StartBlock != 0 {
+			n += 1 + runtime.Sov(uint64(x.StartBlock))
 		}
-		if x.EndTimestamp != 0 {
-			n += 1 + runtime.Sov(uint64(x.EndTimestamp))
+		if x.EndBlock != 0 {
+			n += 1 + runtime.Sov(uint64(x.EndBlock))
 		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
@@ -2133,7 +2133,7 @@ func (x *fastReflection_TimeRange) ProtoMethods() *protoiface.Methods {
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*TimeRange)
+		x := input.Message.Interface().(*BlockRange)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2152,13 +2152,13 @@ func (x *fastReflection_TimeRange) ProtoMethods() *protoiface.Methods {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
-		if x.EndTimestamp != 0 {
-			i = runtime.EncodeVarint(dAtA, i, uint64(x.EndTimestamp))
+		if x.EndBlock != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.EndBlock))
 			i--
 			dAtA[i] = 0x10
 		}
-		if x.StartTimestamp != 0 {
-			i = runtime.EncodeVarint(dAtA, i, uint64(x.StartTimestamp))
+		if x.StartBlock != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.StartBlock))
 			i--
 			dAtA[i] = 0x8
 		}
@@ -2173,7 +2173,7 @@ func (x *fastReflection_TimeRange) ProtoMethods() *protoiface.Methods {
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*TimeRange)
+		x := input.Message.Interface().(*BlockRange)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2205,17 +2205,17 @@ func (x *fastReflection_TimeRange) ProtoMethods() *protoiface.Methods {
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: TimeRange: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: BlockRange: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: TimeRange: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: BlockRange: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
 				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field StartTimestamp", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field StartBlock", wireType)
 				}
-				x.StartTimestamp = 0
+				x.StartBlock = 0
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
@@ -2225,16 +2225,16 @@ func (x *fastReflection_TimeRange) ProtoMethods() *protoiface.Methods {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					x.StartTimestamp |= uint64(b&0x7F) << shift
+					x.StartBlock |= uint64(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
 				}
 			case 2:
 				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field EndTimestamp", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field EndBlock", wireType)
 				}
-				x.EndTimestamp = 0
+				x.EndBlock = 0
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
@@ -2244,7 +2244,7 @@ func (x *fastReflection_TimeRange) ProtoMethods() *protoiface.Methods {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					x.EndTimestamp |= uint64(b&0x7F) << shift
+					x.EndBlock |= uint64(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -2458,17 +2458,17 @@ func (x *ProducerVotes) GetVotes() []uint64 {
 	return nil
 }
 
-type TimeRange struct {
+type BlockRange struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	StartTimestamp uint64 `protobuf:"varint,1,opt,name=start_timestamp,json=startTimestamp,proto3" json:"start_timestamp,omitempty"`
-	EndTimestamp   uint64 `protobuf:"varint,2,opt,name=end_timestamp,json=endTimestamp,proto3" json:"end_timestamp,omitempty"`
+	StartBlock uint64 `protobuf:"varint,1,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
+	EndBlock   uint64 `protobuf:"varint,2,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
 }
 
-func (x *TimeRange) Reset() {
-	*x = TimeRange{}
+func (x *BlockRange) Reset() {
+	*x = BlockRange{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_bor_bor_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2476,27 +2476,27 @@ func (x *TimeRange) Reset() {
 	}
 }
 
-func (x *TimeRange) String() string {
+func (x *BlockRange) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*TimeRange) ProtoMessage() {}
+func (*BlockRange) ProtoMessage() {}
 
-// Deprecated: Use TimeRange.ProtoReflect.Descriptor instead.
-func (*TimeRange) Descriptor() ([]byte, []int) {
+// Deprecated: Use BlockRange.ProtoReflect.Descriptor instead.
+func (*BlockRange) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_bor_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *TimeRange) GetStartTimestamp() uint64 {
+func (x *BlockRange) GetStartBlock() uint64 {
 	if x != nil {
-		return x.StartTimestamp
+		return x.StartBlock
 	}
 	return 0
 }
 
-func (x *TimeRange) GetEndTimestamp() uint64 {
+func (x *BlockRange) GetEndBlock() uint64 {
 	if x != nil {
-		return x.EndTimestamp
+		return x.EndBlock
 	}
 	return 0
 }
@@ -2543,25 +2543,24 @@ var file_heimdallv2_bor_bor_proto_rawDesc = []byte{
 	0x72, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x3a, 0x04, 0xe8, 0xa0, 0x1f, 0x01, 0x22, 0x2c, 0x0a, 0x0d,
 	0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x56, 0x6f, 0x74, 0x65, 0x73, 0x12, 0x1b, 0x0a,
 	0x05, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7,
-	0xb0, 0x2a, 0x01, 0x52, 0x05, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x22, 0x67, 0x0a, 0x09, 0x54, 0x69,
-	0x6d, 0x65, 0x52, 0x61, 0x6e, 0x67, 0x65, 0x12, 0x2e, 0x0a, 0x0f, 0x73, 0x74, 0x61, 0x72, 0x74,
-	0x5f, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04,
-	0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0e, 0x73, 0x74, 0x61, 0x72, 0x74, 0x54, 0x69,
-	0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x12, 0x2a, 0x0a, 0x0d, 0x65, 0x6e, 0x64, 0x5f, 0x74,
-	0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05,
-	0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0c, 0x65, 0x6e, 0x64, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74,
-	0x61, 0x6d, 0x70, 0x42, 0xac, 0x01, 0x0a, 0x12, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x42, 0x08, 0x42, 0x6f, 0x72, 0x50,
-	0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x33, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
-	0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0xa2, 0x02, 0x03, 0x48, 0x42,
-	0x58, 0xaa, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x42,
-	0x6f, 0x72, 0xca, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c,
-	0x42, 0x6f, 0x72, 0xe2, 0x02, 0x1a, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x5c, 0x42, 0x6f, 0x72, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
-	0xea, 0x02, 0x0f, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x42,
-	0x6f, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0xb0, 0x2a, 0x01, 0x52, 0x05, 0x76, 0x6f, 0x74, 0x65, 0x73, 0x22, 0x58, 0x0a, 0x0a, 0x42, 0x6c,
+	0x6f, 0x63, 0x6b, 0x52, 0x61, 0x6e, 0x67, 0x65, 0x12, 0x26, 0x0a, 0x0b, 0x73, 0x74, 0x61, 0x72,
+	0x74, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8,
+	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0a, 0x73, 0x74, 0x61, 0x72, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
+	0x12, 0x22, 0x0a, 0x09, 0x65, 0x6e, 0x64, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x65, 0x6e, 0x64, 0x42,
+	0x6c, 0x6f, 0x63, 0x6b, 0x42, 0xac, 0x01, 0x0a, 0x12, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x42, 0x08, 0x42, 0x6f, 0x72,
+	0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x33, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
+	0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0xa2, 0x02, 0x03, 0x48,
+	0x42, 0x58, 0xaa, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x42, 0x6f, 0x72, 0xca, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x5c, 0x42, 0x6f, 0x72, 0xe2, 0x02, 0x1a, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x5c, 0x42, 0x6f, 0x72, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
+	0x61, 0xea, 0x02, 0x0f, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a,
+	0x42, 0x6f, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -2581,7 +2580,7 @@ var file_heimdallv2_bor_bor_proto_goTypes = []interface{}{
 	(*Span)(nil),               // 0: heimdallv2.bor.Span
 	(*Params)(nil),             // 1: heimdallv2.bor.Params
 	(*ProducerVotes)(nil),      // 2: heimdallv2.bor.ProducerVotes
-	(*TimeRange)(nil),          // 3: heimdallv2.bor.TimeRange
+	(*BlockRange)(nil),         // 3: heimdallv2.bor.BlockRange
 	(*stake.ValidatorSet)(nil), // 4: heimdallv2.stake.ValidatorSet
 	(*stake.Validator)(nil),    // 5: heimdallv2.stake.Validator
 }
@@ -2638,7 +2637,7 @@ func file_heimdallv2_bor_bor_proto_init() {
 			}
 		}
 		file_heimdallv2_bor_bor_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TimeRange); i {
+			switch v := v.(*BlockRange); i {
 			case 0:
 				return &v.state
 			case 1:

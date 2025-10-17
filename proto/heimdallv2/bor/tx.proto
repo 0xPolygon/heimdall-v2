@@ -75,8 +75,8 @@ message MsgSetProducerDowntime {
   option (cosmos.msg.v1.signer) = "producer";
   option (amino.name) = "heimdallv2/bor/MsgSetProducerDowntime";
   string producer = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-  uint64 start_timestamp = 2;
-  uint64 end_timestamp = 3;
+  BlockRange downtime_range = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
 message MsgSetProducerDowntimeResponse {}
