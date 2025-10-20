@@ -21,8 +21,10 @@ const (
 	// Side message handler methods.
 	SideHandleMsgSpanMethod          = "SideHandleMsgSpan"
 	SideHandleMsgBackfillSpansMethod = "SideHandleMsgBackfillSpans"
+	SideHandleMsgSetProducerDowntime = "SideHandleMsgSetProducerDowntime"
 
 	// Post message handler methods.
-	PostHandleMsgSpanMethod          = "PostHandleMsgSpan"
-	PostHandleMsgBackfillSpansMethod = "PostHandleMsgBackfillSpans"
+	PostHandleMsgSpanMethod                = "PostHandleMsgSpan"
+	PostHandleMsgBackfillSpansMethod       = "PostHandleMsgBackfillSpans"
+	PostHandleMsgSetProducerDowntimeMethod = "PostHandleMsgSetProducerDowntime"
 )

@@ -21,6 +21,7 @@ import (
 
 var SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpan{})
 var FillMissingSpansMsgTypeURL = sdk.MsgTypeURL(&types.MsgBackfillSpans{})
+var SetProducerDowntimeMsgTypeURL = sdk.MsgTypeURL(&types.MsgSetProducerDowntime{})
 
 type sideMsgServer struct {
 	k *Keeper
@@ -42,6 +43,8 @@ func (s sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 		return s.SideHandleMsgSpan
 	case FillMissingSpansMsgTypeURL:
 		return s.SideHandleMsgBackfillSpans
+	case SetProducerDowntimeMsgTypeURL:
+		return s.SideHandleSetProducerDowntime
 	default:
 		return nil
 	}
@@ -181,6 +184,48 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	return sidetxs.Vote_VOTE_YES
 }
 
+func (s sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
+	var err error
+	start := time.Now()
+	defer recordBorMetric(api.SideHandleMsgSpanMethod, api.SideType, start, &err)
+
+	logger := s.k.Logger(ctx)
+
+	msg, ok := msgI.(*types.MsgSetProducerDowntime)
+	if !ok {
+		logger.Error("MsgSetProducerDowntime type mismatch", "msg type received", msgI)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	childBlock, err := s.k.contractCaller.GetBorChainBlock(ctx, nil)
+	if err != nil {
+		logger.Error("error fetching current child block", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	childBlockNumber := childBlock.Number.Uint64()
+
+	if msg.DowntimeRange.StartBlock+types.PlannedDowntimeMinimumTimeInFuture <= childBlockNumber {
+		logger.Error("start block for planned downtime cannot be in the past",
+			"currentBlock", childBlockNumber,
+			"startBlock", msg.DowntimeRange.StartBlock,
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	if childBlockNumber+types.PlannedDowntimeMaximumTimeInFuture <= msg.DowntimeRange.EndBlock {
+		logger.Error("end block for planned downtime is too far in the future",
+			"currentBlock", childBlockNumber,
+			"endBlock", msg.DowntimeRange.EndBlock,
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	logger.Debug("✅ successfully validated external call for set producer downtime msg")
+
+	return sidetxs.Vote_VOTE_YES
+}
+
 func (s sideMsgServer) SideHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
 	return sidetxs.Vote_VOTE_NO
 }
@@ -192,6 +237,8 @@ func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 		return s.PostHandleMsgSpan
 	case FillMissingSpansMsgTypeURL:
 		return s.PostHandleMsgBackfillSpans
+	case SetProducerDowntimeMsgTypeURL:
+		return s.PostHandleSetProducerDowntime
 	default:
 		return nil
 	}
@@ -340,6 +387,192 @@ func (s sideMsgServer) PostHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg,
 			sdk.NewAttribute(types.AttributesKeyLatestBorSpanId, strconv.FormatUint(borSpans[0].Id, 10)),
 		),
 	})
+
+	return nil
+}
+
+func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+	var err error
+	start := time.Now()
+	defer recordBorMetric(api.PostHandleMsgSetProducerDowntimeMethod, api.PostType, start, &err)
+
+	logger := s.k.Logger(ctx)
+
+	msg, ok := msgI.(*types.MsgSetProducerDowntime)
+	if !ok {
+		err = errors.New("MsgSetProducerDowntime type mismatch")
+		logger.Error(err.Error(), "msg type received", msg)
+		return err
+	}
+
+	if sideTxResult != sidetxs.Vote_VOTE_YES {
+		logger.Debug("skipping set producer downtime since side-tx didn't get yes votes")
+		return errors.New("side-tx didn't get yes votes")
+	}
+
+	validatorId, err := s.k.sk.GetValIdFromAddress(ctx, msg.Producer)
+	if err != nil {
+		logger.Error("error fetching validator ID from address", "address", msg.Producer, "error", err)
+		return err
+	}
+
+	producers := make([]uint64, 0)
+	it, err := s.k.ProducerVotes.Iterate(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer it.Close()
+
+	isProducer := false
+	for ; it.Valid(); it.Next() {
+		producerId, err := it.Key()
+		if err != nil {
+			return err
+		}
+		producers = append(producers, producerId)
+
+		if validatorId == producerId {
+			isProducer = true
+		}
+	}
+
+	if !isProducer {
+		return fmt.Errorf("producer with id %d is not a registered producer", validatorId)
+	}
+
+	if len(producers) == 1 {
+		return fmt.Errorf("only one registered producer, cannot set planned downtime")
+	}
+
+	// Only return an error if the requested downtime overlaps with every other producer
+	overlapCount := 0
+	for _, p := range producers {
+		if p == validatorId {
+			continue
+		}
+
+		found, err := s.k.ProducerPlannedDowntime.Has(ctx, p)
+		if err != nil {
+			return err
+		}
+		if !found {
+			// no planned downtime for this producer -> cannot be overlapping with all others
+			continue
+		}
+
+		downtime, err := s.k.ProducerPlannedDowntime.Get(ctx, p)
+		if err != nil {
+			return err
+		}
+
+		if (msg.DowntimeRange.StartBlock >= downtime.StartBlock && msg.DowntimeRange.StartBlock < downtime.EndBlock) ||
+			(msg.DowntimeRange.EndBlock > downtime.StartBlock && msg.DowntimeRange.EndBlock <= downtime.EndBlock) ||
+			(msg.DowntimeRange.StartBlock <= downtime.StartBlock && msg.DowntimeRange.EndBlock >= downtime.EndBlock) {
+			overlapCount++
+		}
+	}
+
+	otherProducers := len(producers) - 1
+	if otherProducers > 0 && overlapCount == otherProducers {
+		return fmt.Errorf("producer with id %d has overlapping planned downtime with all other producers", validatorId)
+	}
+
+	if err := s.k.ProducerPlannedDowntime.Set(ctx, validatorId, types.BlockRange{
+		StartBlock: msg.DowntimeRange.StartBlock,
+		EndBlock:   msg.DowntimeRange.EndBlock,
+	}); err != nil {
+		return err
+	}
+
+	params, err := s.k.GetParams(ctx)
+	if err != nil {
+		logger.Error("error fetching params", "error", err)
+		return err
+	}
+
+	lastSpan, err := s.k.GetLastSpan(ctx)
+	if err != nil {
+		logger.Error("error fetching last span", "error", err)
+		return err
+	}
+
+	latestActiveProducer, err := s.k.GetLatestActiveProducer(ctx)
+	if err != nil {
+		logger.Error("Error occurred while getting latest active producer", "error", err)
+		return err
+	}
+
+	latestFailedProducer, err := s.k.GetLatestFailedProducer(ctx)
+	if err != nil {
+		logger.Error("Error occurred while getting latest failed producer", "error", err)
+		return err
+	}
+
+	for producerID := range latestFailedProducer {
+		delete(latestActiveProducer, producerID)
+	}
+
+	delete(latestActiveProducer, validatorId)
+
+	// Walk spans backwards from the latest until we are past the start block for the given downtime.
+	// For every span that overlaps the downtime range AND where this validator is the selected producer
+	// for that span, generate a new replacement span.
+	dtStart, dtEnd := msg.DowntimeRange.StartBlock, msg.DowntimeRange.EndBlock
+	cur := lastSpan
+
+	for {
+		// Stop once we're past the downtime start window (older than dtStart)
+		if cur.EndBlock < dtStart {
+			break
+		}
+
+		// Check overlap between this span and the downtime window (inclusive overlap)
+		overlaps := cur.StartBlock <= dtEnd && cur.EndBlock >= dtStart
+		if overlaps {
+			if cur.SelectedProducers[0].ValId == validatorId {
+				// At minimum, confirm the planned downtime applies to this producer over this span.
+				isDown, derr := s.k.IsProducerDownForBlockRange(ctx, cur.StartBlock, cur.EndBlock, validatorId)
+				if derr != nil {
+					logger.Error("failed to check producer downtime overlap", "spanId", cur.Id, "error", derr)
+					return derr
+				}
+
+				if isDown {
+					err = s.k.AddNewVeblopSpan(ctx, validatorId, lastSpan.EndBlock+1, lastSpan.EndBlock+params.SpanDuration, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()))
+					if err != nil {
+						logger.Error("Error occurred while adding new veblop span", "error", err)
+						return err
+					}
+					logger.Info("downtime overlaps span; replacement span should be generated",
+						"spanId", cur.Id,
+						"spanStart", cur.StartBlock,
+						"spanEnd", cur.EndBlock,
+						"producerId", validatorId,
+						"downtimeStart", dtStart,
+						"downtimeEnd", dtEnd,
+					)
+					lastSpan, err = s.k.GetLastSpan(ctx)
+					if err != nil {
+						logger.Error("error fetching last span", "error", err)
+						return err
+					}
+				}
+			}
+		}
+
+		// Move to the previous span by ID. Stop if we reach the first span or cannot fetch older.
+		if cur.Id == 0 {
+			break
+		}
+		prev, gerr := s.k.GetSpan(ctx, cur.Id-1)
+		if gerr != nil {
+			// If previous span isn't found or any error occurs, stop scanning.
+			logger.Debug("stopping backward scan while traversing previous spans",
+				"fromSpanId", cur.Id, "error", gerr)
+			break
+		}
+		cur = prev
+	}
 
 	return nil
 }

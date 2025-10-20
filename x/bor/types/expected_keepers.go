@@ -12,6 +12,7 @@ type StakeKeeper interface {
 	GetSpanEligibleValidators(ctx context.Context) []staketypes.Validator
 	GetValidatorSet(ctx context.Context) (staketypes.ValidatorSet, error)
 	GetValidatorFromValID(ctx context.Context, valID uint64) (staketypes.Validator, error)
+	GetValIdFromAddress(ctx context.Context, address string) (uint64, error)
 }
 
 type ChainManagerKeeper interface {

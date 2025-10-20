@@ -264,13 +264,13 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 		return nil, err
 	}
 
-	validators := s.sk.GetSpanEligibleValidators(ctx)
 	validatorId := uint64(0)
+	validators := s.sk.GetSpanEligibleValidators(ctx)
 	found := false
 	for _, v := range validators {
 		if v.Signer == msg.Producer {
-			validatorId = v.ValId
 			found = true
+			validatorId = v.ValId
 			break
 		}
 	}
@@ -279,104 +279,40 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 		return nil, fmt.Errorf("producer with address %s not found in the current validator set", msg.Producer)
 	}
 
+	lastMilestone, err := s.mk.GetLastMilestone(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching last milestone: %w", err)
+	}
+
+	if lastMilestone == nil {
+		return nil, fmt.Errorf("no milestones found")
+	}
+
+	exists, err := s.Keeper.ProducerPlannedDowntime.Has(ctx, validatorId)
+	if err != nil {
+		return nil, fmt.Errorf("error checking existing planned downtime: %w", err)
+	}
+	if exists {
+		existingDowntime, err := s.Keeper.ProducerPlannedDowntime.Get(ctx, validatorId)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching existing planned downtime: %w", err)
+		}
+
+		if existingDowntime.EndBlock >= lastMilestone.EndBlock {
+			return nil, fmt.Errorf("existing planned downtime for producer %s extends beyond the latest milestone", msg.Producer)
+		}
+	}
+
 	if msg.DowntimeRange.StartBlock >= msg.DowntimeRange.EndBlock {
 		return nil, fmt.Errorf("start block must be less than end block")
 	}
 
-	latestMilestone, err := s.mk.GetLastMilestone(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get latest milestone")
-	}
-	if latestMilestone == nil {
-		return nil, fmt.Errorf("latest milestone not found")
+	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock < uint64(types.PlannedDowntimeMinRange) {
+		return nil, fmt.Errorf("time range must be at least %d blocks", types.PlannedDowntimeMinRange)
 	}
 
-	if msg.DowntimeRange.StartBlock <= latestMilestone.EndBlock {
-		return nil, fmt.Errorf("start block must be greater than latest milestone end block %d", latestMilestone.EndBlock)
-	}
-
-	// if msg.StartTimestamp < latestMilestone.Timestamp+uint64(types.PlannedDowntimeMinimumTimeInFuture) {
-	// 	return nil, fmt.Errorf("start timestamp must be at least %d seconds in the future", types.PlannedDowntimeMinimumTimeInFuture)
-	// }
-
-	// if msg.StartTimestamp > latestMilestone.Timestamp+uint64(types.PlannedDowntimeMaximumTimeInFuture) {
-	// 	return nil, fmt.Errorf("start timestamp must be at most %d seconds in the future", types.PlannedDowntimeMaximumTimeInFuture)
-	// }
-
-	// if msg.EndTimestamp-msg.StartTimestamp < uint64(types.PlannedDowntimeMinRange) {
-	// 	return nil, fmt.Errorf("time range must be at least %d seconds", types.PlannedDowntimeMinRange)
-	// }
-
-	// if msg.EndTimestamp-msg.StartTimestamp > uint64(types.PlannedDowntimeMaxRange) {
-	// 	return nil, fmt.Errorf("time range must be at most %d seconds", types.PlannedDowntimeMaxRange)
-	// }
-
-	producers := make([]uint64, 0)
-	it, err := s.ProducerVotes.Iterate(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer it.Close()
-
-	isProducer := false
-	for ; it.Valid(); it.Next() {
-		producerId, err := it.Key()
-		if err != nil {
-			return nil, err
-		}
-		producers = append(producers, producerId)
-
-		if validatorId == producerId {
-			isProducer = true
-		}
-	}
-
-	if !isProducer {
-		return nil, fmt.Errorf("producer with id %d is not a registered producer", validatorId)
-	}
-
-	if len(producers) == 1 {
-		return nil, fmt.Errorf("only one registered producer, cannot set planned downtime")
-	}
-
-	// Only return an error if the requested downtime overlaps with every other producer
-	overlapCount := 0
-	for _, p := range producers {
-		if p == validatorId {
-			continue
-		}
-
-		found, err := s.ProducerPlannedDowntime.Has(ctx, p)
-		if err != nil {
-			return nil, err
-		}
-		if !found {
-			// no planned downtime for this producer -> cannot be overlapping with all others
-			continue
-		}
-
-		downtime, err := s.ProducerPlannedDowntime.Get(ctx, p)
-		if err != nil {
-			return nil, err
-		}
-
-		if (msg.DowntimeRange.StartBlock >= downtime.StartBlock && msg.DowntimeRange.StartBlock < downtime.EndBlock) ||
-			(msg.DowntimeRange.EndBlock > downtime.StartBlock && msg.DowntimeRange.EndBlock <= downtime.EndBlock) ||
-			(msg.DowntimeRange.StartBlock <= downtime.StartBlock && msg.DowntimeRange.EndBlock >= downtime.EndBlock) {
-			overlapCount++
-		}
-	}
-
-	otherProducers := len(producers) - 1
-	if otherProducers > 0 && overlapCount == otherProducers {
-		return nil, fmt.Errorf("producer with id %d has overlapping planned downtime with all other producers", validatorId)
-	}
-
-	if err := s.ProducerPlannedDowntime.Set(ctx, validatorId, types.BlockRange{
-		StartBlock: msg.DowntimeRange.StartBlock,
-		EndBlock:   msg.DowntimeRange.EndBlock,
-	}); err != nil {
-		return nil, err
+	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock > uint64(types.PlannedDowntimeMaxRange) {
+		return nil, fmt.Errorf("time range must be at most %d blocks", types.PlannedDowntimeMaxRange)
 	}
 
 	return &types.MsgSetProducerDowntimeResponse{}, nil
