@@ -191,8 +191,8 @@ func NewProducerDowntimeCmd() *cobra.Command {
 				return fmt.Errorf("failed to get latest bor block: %w", err)
 			}
 
-			startBlock := uint64(currentBlock) + uint64((time.Unix(int64(startTimeUTC), 0).Sub(*block.AnnouncedAt).Seconds())/averageBlockTime)
-			endBlock := uint64(currentBlock) + uint64((time.Unix(int64(endTimeUTC), 0).Sub(*block.AnnouncedAt).Seconds())/averageBlockTime)
+			startBlock := currentBlock + uint64((time.Unix(int64(startTimeUTC), 0).Sub(*block.AnnouncedAt).Seconds())/averageBlockTime)
+			endBlock := currentBlock + uint64((time.Unix(int64(endTimeUTC), 0).Sub(*block.AnnouncedAt).Seconds())/averageBlockTime)
 
 			msg := types.NewMsgSetProducerDowntime(producerAddress, startBlock, endBlock)
 

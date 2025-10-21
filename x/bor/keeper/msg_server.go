@@ -284,12 +284,12 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 		return nil, fmt.Errorf("no milestones found")
 	}
 
-	exists, err := s.Keeper.ProducerPlannedDowntime.Has(ctx, validatorId)
+	exists, err := s.ProducerPlannedDowntime.Has(ctx, validatorId)
 	if err != nil {
 		return nil, fmt.Errorf("error checking existing planned downtime: %w", err)
 	}
 	if exists {
-		existingDowntime, err := s.Keeper.ProducerPlannedDowntime.Get(ctx, validatorId)
+		existingDowntime, err := s.ProducerPlannedDowntime.Get(ctx, validatorId)
 		if err != nil {
 			return nil, fmt.Errorf("error fetching existing planned downtime: %w", err)
 		}
@@ -303,11 +303,11 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 		return nil, fmt.Errorf("start block must be less than end block")
 	}
 
-	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock < uint64(types.PlannedDowntimeMinRange) {
+	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock < types.PlannedDowntimeMinRange {
 		return nil, fmt.Errorf("time range must be at least %d blocks", types.PlannedDowntimeMinRange)
 	}
 
-	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock > uint64(types.PlannedDowntimeMaxRange) {
+	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock > types.PlannedDowntimeMaxRange {
 		return nil, fmt.Errorf("time range must be at most %d blocks", types.PlannedDowntimeMaxRange)
 	}
 

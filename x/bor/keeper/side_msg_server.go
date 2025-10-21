@@ -520,11 +520,8 @@ func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 	dtStart, dtEnd := msg.DowntimeRange.StartBlock, msg.DowntimeRange.EndBlock
 	cur := lastSpan
 
-	for {
-		// Stop once we're past the downtime start window (older than dtStart)
-		if cur.EndBlock < dtStart {
-			break
-		}
+	// Stop once we're past the downtime start window (older than dtStart)
+	for cur.EndBlock >= dtStart {
 
 		// Check overlap between this span and the downtime window (inclusive overlap)
 		overlaps := cur.StartBlock <= dtEnd && cur.EndBlock >= dtStart
