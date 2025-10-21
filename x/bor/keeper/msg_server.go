@@ -260,10 +260,6 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 }
 
 func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetProducerDowntime) (*types.MsgSetProducerDowntimeResponse, error) {
-	if err := s.CanSetProducerDowntime(ctx); err != nil {
-		return nil, err
-	}
-
 	validatorId := uint64(0)
 	validators := s.sk.GetSpanEligibleValidators(ctx)
 	found := false
