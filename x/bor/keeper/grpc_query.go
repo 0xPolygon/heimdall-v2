@@ -281,3 +281,16 @@ func recordBorQueryMetric(method string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.BorSubsystem, method, api.QueryType, success, start)
 }
+
+func (q queryServer) GetValidatorPerformanceScore(ctx context.Context, req *types.QueryValidatorPerformanceScoreRequest) (*types.QueryValidatorPerformanceScoreResponse, error) {
+	var err error
+	start := time.Now()
+	defer recordBorQueryMetric(api.GetValidatorPerformanceScoreMethod, start, &err)
+
+	validatorPerformanceScore, err := q.k.GetAllValidatorPerformanceScore(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryValidatorPerformanceScoreResponse{ValidatorPerformanceScore: validatorPerformanceScore}, nil
+}

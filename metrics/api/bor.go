@@ -11,6 +11,7 @@ const (
 	GetProducerVotesMethod              = "GetProducerVotes"
 	GetProducerVotesByValidatorIdMethod = "GetProducerVotesByValidatorId"
 	GetProducerPlannedDowntimeMethod    = "GetProducerPlannedDowntime"
+	GetValidatorPerformanceScoreMethod  = "GetValidatorPerformanceScore"
 
 	// Transaction API methods.
 	ProposeSpanMethod     = "ProposeSpan"

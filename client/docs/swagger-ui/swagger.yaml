@@ -937,6 +937,45 @@ paths:
           type: string
       tags:
         - Query
+  /bor/validator-performance-score:
+    get:
+      summary: GetValidatorPerformanceScore queries the validator performance score.
+      operationId: GetValidatorPerformanceScore
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              validator_performance_score:
+                type: object
+                additionalProperties:
+                  type: string
+                  format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      tags:
+        - Query
   /chainmanager/params:
     get:
       summary: GetChainManagerParams queries the parameters of x/chainmanager module
@@ -3782,6 +3821,14 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
+  heimdallv2.bor.QueryValidatorPerformanceScoreResponse:
+    type: object
+    properties:
+      validator_performance_score:
+        type: object
+        additionalProperties:
+          type: string
+          format: uint64
   heimdallv2.bor.Span:
     type: object
     properties:
