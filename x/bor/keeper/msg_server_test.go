@@ -10,6 +10,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/golang/mock/gomock"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -570,6 +571,156 @@ func (s *KeeperTestSuite) TestCanVoteProducers() {
 				require.Contains(err.Error(), tc.errorContains)
 			} else {
 				require.NoError(err)
+			}
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestSetProducerDowntime() {
+	require := s.Require()
+
+	type valInfo struct {
+		id      uint64
+		hexAddr string
+	}
+	val1 := valInfo{1, common.HexToAddress("0x0000000000000000000000000000000000000001").Hex()}
+	val2 := valInfo{2, common.HexToAddress("0x0000000000000000000000000000000000000002").Hex()}
+
+	minRange := uint64(types.PlannedDowntimeMinRange)
+	maxRange := uint64(types.PlannedDowntimeMaxRange)
+
+	newMsg := func(producer string, start, end uint64) *types.MsgSetProducerDowntime {
+		return &types.MsgSetProducerDowntime{
+			Producer:      producer,
+			DowntimeRange: types.BlockRange{StartBlock: start, EndBlock: end},
+		}
+	}
+
+	type testCase struct {
+		name            string
+		validators      []staketypes.Validator
+		milestone       *milestoneTypes.Milestone
+		milestoneErr    error
+		existingForVal1 *types.BlockRange // if set, pre-store existing downtime for val1
+		msg             *types.MsgSetProducerDowntime
+		expectErrSubstr string
+	}
+
+	tests := []testCase{
+		{
+			name:       "success - valid producer, milestone ok, no pre-existing, range within bounds",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
+			milestone:  &milestoneTypes.Milestone{EndBlock: 10_000},
+			msg:        newMsg(val1.hexAddr, 100, 100+minRange), // exactly minRange distance, valid
+		},
+		{
+			name:            "error - producer not found in eligible set",
+			validators:      []staketypes.Validator{{ValId: val2.id, Signer: val2.hexAddr}}, // missing val1
+			milestone:       &milestoneTypes.Milestone{EndBlock: 10_000},
+			msg:             newMsg(val1.hexAddr, 100, 100+minRange),
+			expectErrSubstr: "producer with address",
+		},
+		{
+			name:            "error - milestone fetch fails",
+			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
+			milestoneErr:    fmt.Errorf("db down"),
+			msg:             newMsg(val1.hexAddr, 100, 100+minRange),
+			expectErrSubstr: "error fetching last milestone",
+		},
+		{
+			name:            "error - milestone is nil",
+			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
+			milestone:       nil,
+			msg:             newMsg(val1.hexAddr, 100, 100+minRange),
+			expectErrSubstr: "no milestones found",
+		},
+		{
+			name:            "error - existing planned downtime extends beyond latest milestone",
+			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
+			milestone:       &milestoneTypes.Milestone{EndBlock: 10_000},
+			existingForVal1: &types.BlockRange{StartBlock: 1, EndBlock: 10_000}, // EndBlock >= milestone.EndBlock
+			msg:             newMsg(val1.hexAddr, 100, 100+minRange),
+			expectErrSubstr: "extends beyond the latest milestone",
+		},
+		{
+			name:            "error - start >= end",
+			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
+			milestone:       &milestoneTypes.Milestone{EndBlock: 10_000},
+			msg:             newMsg(val1.hexAddr, 200, 200),
+			expectErrSubstr: "start block must be less than end block",
+		},
+		{
+			name:            "error - range too short (< minRange)",
+			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
+			milestone:       &milestoneTypes.Milestone{EndBlock: 10_000},
+			msg:             newMsg(val1.hexAddr, 300, 300+(minRange-1)),
+			expectErrSubstr: fmt.Sprintf("time range must be at least %d blocks", minRange),
+		},
+		{
+			name:            "error - range too long (> maxRange)",
+			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
+			milestone:       &milestoneTypes.Milestone{EndBlock: 10_000},
+			msg:             newMsg(val1.hexAddr, 400, 400+(maxRange+1)),
+			expectErrSubstr: fmt.Sprintf("time range must be at most %d blocks", maxRange),
+		},
+		{
+			name:       "success - existing planned downtime present but before milestone end",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
+			milestone:  &milestoneTypes.Milestone{EndBlock: 10_000},
+			// existing ends before milestone end -> allowed to proceed to range checks
+			existingForVal1: &types.BlockRange{StartBlock: 1, EndBlock: 9_999},
+			msg:             newMsg(val1.hexAddr, 500, 500+minRange),
+		},
+		{
+			name:       "success - boundary case exactly maxRange",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
+			milestone:  &milestoneTypes.Milestone{EndBlock: 10_000},
+			msg:        newMsg(val1.hexAddr, 600, 600+maxRange),
+		},
+	}
+
+	for _, tc := range tests {
+		s.T().Run(tc.name, func(t *testing.T) {
+			// Fresh suite state
+			s.SetupTest()
+
+			ctx := s.ctx
+			msgServer := s.msgServer
+
+			// Default expectations: per-test validators and milestone behavior
+			s.stakeKeeper.EXPECT().
+				GetSpanEligibleValidators(gomock.Any()).
+				Return(tc.validators).
+				AnyTimes()
+
+			if tc.milestoneErr != nil {
+				s.milestoneKeeper.EXPECT().
+					GetLastMilestone(gomock.Any()).
+					Return(nil, tc.milestoneErr).
+					AnyTimes()
+			} else {
+				s.milestoneKeeper.EXPECT().
+					GetLastMilestone(gomock.Any()).
+					Return(tc.milestone, nil).
+					AnyTimes()
+			}
+
+			// Pre-store existing planned downtime for val1 if requested
+			if tc.existingForVal1 != nil {
+				err := s.borKeeper.ProducerPlannedDowntime.Set(ctx, val1.id, *tc.existingForVal1)
+				require.NoError(err)
+			}
+
+			res, err := msgServer.SetProducerDowntime(ctx, tc.msg)
+
+			if tc.expectErrSubstr != "" {
+				require.Error(err)
+				require.Nil(res)
+				require.Contains(err.Error(), tc.expectErrSubstr)
+			} else {
+				require.NoError(err)
+				require.NotNil(res)
+				require.IsType(&types.MsgSetProducerDowntimeResponse{}, res)
 			}
 		})
 	}
