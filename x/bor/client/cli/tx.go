@@ -157,25 +157,11 @@ func NewProducerDowntimeCmd() *cobra.Command {
 				return fmt.Errorf("end timestamp utc is invalid")
 			}
 
-			node, err := clientCtx.GetNode()
-			if err != nil {
-				return err
-			}
-
-			status, err := node.Status(clientCtx.CmdContext)
-			if err != nil {
-				return fmt.Errorf("failed to get node status: %w", err)
-			}
-
-			if startTimeUTC < int(status.SyncInfo.LatestBlockTime.Unix()) {
-				return fmt.Errorf("start timestamp utc cannot be in the past")
-			}
-
 			if endTimeUTC <= startTimeUTC {
 				return fmt.Errorf("end timestamp utc must be greater than start timestamp utc")
 			}
 
-			averageBlockTime, err := calculateAverageBlocktime(clientCtx, node)
+			averageBlockTime, err := calculateAverageBlocktime(clientCtx)
 			if err != nil {
 				return fmt.Errorf("failed to calculate average block time: %w", err)
 			}
@@ -224,32 +210,37 @@ func NewProducerDowntimeCmd() *cobra.Command {
 	return cmd
 }
 
-func calculateAverageBlocktime(clientCtx client.Context, node client.CometRPC) (float64, error) {
+func calculateAverageBlocktime(clientCtx client.Context) (float64, error) {
 	borClient := helper.GetBorClient()
 	currentBlock, err := borClient.BlockNumber(clientCtx.CmdContext)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get latest bor block number: %w", err)
 	}
 
-	blockTimesToGet := int64(100)
-	blocksInBetween := int64(100)
+	blockTimesToGet := uint64(100)
+	blocksInBetween := uint64(100)
+
+	if blockTimesToGet*blocksInBetween >= currentBlock {
+		blockTimesToGet = currentBlock / blocksInBetween
+	}
+
 	var averageBlockTime float64
 
-	for i := int64(0); i < blockTimesToGet; i++ {
-		blockNumber := big.NewInt(int64(currentBlock) - (blocksInBetween * i))
+	for i := uint64(0); i < blockTimesToGet; i++ {
+		blockNumber := big.NewInt(int64(currentBlock - (blocksInBetween * i)))
 		block, err := borClient.BlockByNumber(clientCtx.CmdContext, blockNumber)
 		if err != nil {
 			return 0, err
 		}
 
-		prevBlockHeight := int64(currentBlock) - ((blocksInBetween * i) + 1)
-		prevBlock, err := node.Block(clientCtx.CmdContext, &prevBlockHeight)
+		prevBlockNumber := big.NewInt(int64(currentBlock - ((blocksInBetween * i) + 1)))
+		prevBlock, err := borClient.BlockByNumber(clientCtx.CmdContext, prevBlockNumber)
 		if err != nil {
 			return 0, err
 		}
 
-		blockTime := block.AnnouncedAt.Sub(prevBlock.Block.Time).Seconds()
-		averageBlockTime += blockTime
+		blockTime := block.Header().Time - prevBlock.Header().Time
+		averageBlockTime += float64(blockTime)
 	}
 
 	averageBlockTime = averageBlockTime / float64(blockTimesToGet)
