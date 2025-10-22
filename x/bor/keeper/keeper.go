@@ -602,7 +602,7 @@ func (k Keeper) CanSetProducerDowntime(ctx context.Context) error {
 		return fmt.Errorf("failed to get latest milestone for SetProducerDowntime validation: %w", err)
 	}
 
-	if milestone.EndBlock >= uint64(helper.GetSetProducerDowntimeHeight()) {
+	if milestone.EndBlock < uint64(helper.GetSetProducerDowntimeHeight()) {
 		return fmt.Errorf("MsgSetProducerDowntime not allowed: current milestone end block %d is before the setProducerDowntimeHeight %d",
 			milestone.EndBlock,
 			helper.GetSetProducerDowntimeHeight())
