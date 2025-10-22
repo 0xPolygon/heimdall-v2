@@ -33,6 +33,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	defer recordClerkTransactionMetric(api.HandleMsgEventRecordMethod, startTime, &err)
 
 	logger := srv.Logger(ctx)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	logger.Debug("✅ Validating clerk msg",
 		"id", msg.Id,
@@ -45,6 +46,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 
 	// check if the event record exists
 	if exists := srv.HasEventRecord(ctx, msg.Id); exists {
+		logger.Info("Cosmoverse25 - StateSync - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, types.ErrEventRecordAlreadySynced
 	}
 
@@ -52,6 +54,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	params, err := srv.ChainKeeper.GetParams(ctx)
 	if err != nil {
 		logger.Error("failed to get chain manager params", "error", err)
+		logger.Info("Cosmoverse25 - StateSync - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, err
 	}
 
@@ -60,6 +63,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	// check chain id
 	if chainParams.BorChainId != msg.ChainId {
 		logger.Error("Invalid Bor chain id", "msgChainID", msg.ChainId, "borChainId", chainParams.BorChainId)
+		logger.Info("Cosmoverse25 - StateSync - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid bor chain id")
 	}
 
@@ -71,11 +75,11 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	// check if the event has already been processed
 	if srv.HasRecordSequence(ctx, sequence.String()) {
 		logger.Error("Event already processed", "Sequence", sequence.String())
+		logger.Info("Cosmoverse25 - StateSync - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
 	}
 
 	// add events
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeRecord,
@@ -86,6 +90,8 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 			sdk.NewAttribute(types.AttributeKeyRecordTxLogIndex, strconv.FormatUint(msg.LogIndex, 10)),
 		),
 	})
+
+	logger.Info("Cosmoverse25 - StateSync - msg_server: SUCCESS", "height", sdkCtx.BlockHeight())
 
 	return &types.MsgEventRecordResponse{}, nil
 }

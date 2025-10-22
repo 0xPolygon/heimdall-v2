@@ -70,6 +70,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	msg, ok := sdkMsg.(*types.MsgCheckpoint)
 	if !ok {
 		logger.Error("type mismatch for MsgCheckpoint")
+		logger.Info("Cosmoverse25 - Checkpoint - side_msg_server: failed, voting NO", "height", ctx.BlockHeight())
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -78,6 +79,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	chainParams, err := srv.ck.GetParams(ctx)
 	if err != nil {
 		logger.Error("error in getting chain manager params", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint - side_msg_server: failed, voting NO", "height", ctx.BlockHeight())
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -87,6 +89,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	params, err := srv.GetParams(ctx)
 	if err != nil {
 		logger.Error("error in getting params", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint - side_msg_server: failed, voting NO", "height", ctx.BlockHeight())
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -112,7 +115,9 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 			"rootHash", common.Bytes2Hex(msg.RootHash),
 			"error", err,
 		)
+		logger.Info("Cosmoverse25 - Checkpoint - side_msg_server: failed, voting NO", "height", ctx.BlockHeight())
 	} else if validCheckpoint {
+		logger.Info("Cosmoverse25 - Checkpoint - side_msg_server: SUCCESS, voting YES", "height", ctx.BlockHeight())
 		// vote `yes` if checkpoint is valid
 		return sidetxs.Vote_VOTE_YES
 	}
@@ -124,6 +129,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		"rootHash", common.Bytes2Hex(msg.RootHash),
 	)
 
+	logger.Info("Cosmoverse25 - Checkpoint - side_msg_server: failed, voting NO", "height", ctx.BlockHeight())
 	return sidetxs.Vote_VOTE_NO
 }
 
@@ -139,6 +145,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	msg, ok := sdkMsg.(*types.MsgCpAck)
 	if !ok {
 		logger.Error("type mismatch for MsgCpAck")
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - sideHandler: failed, voting NO", "height", ctx.BlockHeight())
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -147,6 +154,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	chainParams, err := srv.ck.GetParams(ctx)
 	if err != nil {
 		logger.Error("error in getting chain manager params", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - sideHandler: failed, voting NO", "height", ctx.BlockHeight())
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -156,6 +164,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	params, err := srv.GetParams(ctx)
 	if err != nil {
 		logger.Error("error in getting params", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - sideHandler: failed, voting NO", "height", ctx.BlockHeight())
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -165,6 +174,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 			"eth address", rootChainAddress,
 			"error", err,
 		)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - sideHandler: failed, voting NO", "height", ctx.BlockHeight())
 
 		return sidetxs.Vote_VOTE_NO
 	}
@@ -172,6 +182,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(msg.Number, rootChainInstance, params.ChildChainBlockInterval)
 	if err != nil {
 		logger.Error("unable to fetch checkpoint from rootChain", "checkpointNumber", msg.Number, "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - sideHandler: failed, voting NO", "height", ctx.BlockHeight())
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -193,9 +204,11 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 			"error", err,
 		)
 
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - sideHandler: failed, voting NO", "height", ctx.BlockHeight())
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - sideHandler: SUCCESS, voting YES", "height", ctx.BlockHeight())
 	return sidetxs.Vote_VOTE_YES
 }
 
@@ -211,12 +224,14 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	if !ok {
 		err := errors.New("type mismatch for MsgCheckpoint")
 		logger.Error(err.Error())
+		logger.Info("Cosmoverse25 - Checkpoint - side_msg_server - postHandler: failed, not submitting", "height", ctx.BlockHeight())
 		return err
 	}
 
 	// Skip handler if stakeUpdate is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		logger.Debug("skipping stake update since side-tx didn't get yes votes")
+		logger.Info("Cosmoverse25 - Checkpoint - side_msg_server - postHandler: failed, not submitting", "height", ctx.BlockHeight())
 		return errors.New("side-tx didn't get yes votes")
 	}
 
@@ -228,23 +243,26 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 			logger.Error("checkpoint not in continuity",
 				"currentTip", lastCheckpoint.EndBlock,
 				"startBlock", msg.StartBlock)
-
+			logger.Info("Cosmoverse25 - Checkpoint - side_msg_server - postHandler: failed, not submitting", "height", ctx.BlockHeight())
 			return errors.New("checkpoint not in continuity")
 		}
 	} else if errors.Is(err, types.ErrNoCheckpointFound) && msg.StartBlock != 0 {
 		logger.Error("first checkpoint to start from block 0", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint - side_msg_server - postHandler: failed, not submitting", "height", ctx.BlockHeight())
 		return err
 	}
 
 	doExist, err := srv.HasCheckpointInBuffer(ctx)
 	if err != nil {
 		logger.Error("error in checking the existence of checkpoint in buffer", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint - side_msg_server - postHandler: failed, not submitting", "height", ctx.BlockHeight())
 		return err
 	}
 
 	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		logger.Error("error in getting checkpoint from buffer", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint - side_msg_server - postHandler: failed, not submitting", "height", ctx.BlockHeight())
 		return err
 	}
 
@@ -255,13 +273,14 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		params, err := srv.GetParams(ctx)
 		if err != nil {
 			logger.Error("checkpoint params not found", "error", err)
+			logger.Info("Cosmoverse25 - Checkpoint - side_msg_server - postHandler: failed, not submitting", "height", ctx.BlockHeight())
 			return err
 		}
 
 		expiryTime := checkpointBuffer.Timestamp + uint64(params.CheckpointBufferTime.Seconds())
 
 		logger.Error(fmt.Sprintf("checkpoint already exists in buffer, ack expected, expires at %s", strconv.FormatUint(expiryTime, 10)))
-
+		logger.Info("Cosmoverse25 - Checkpoint - side_msg_server - postHandler: failed, not submitting", "height", ctx.BlockHeight())
 		return errors.New("checkpoint already exists in buffer")
 	}
 
@@ -278,6 +297,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		Timestamp:  timeStamp,
 	}); err != nil {
 		logger.Error("failed to set checkpoint buffer", "Error", err)
+		logger.Info("Cosmoverse25 - Checkpoint - side_msg_server - postHandler: failed, not submitting", "height", ctx.BlockHeight())
 		return err
 	}
 
@@ -305,6 +325,8 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		),
 	})
 
+	logger.Info("Cosmoverse25 - Checkpoint - side_msg_server - postHandler: SUCCESS, submitting", "height", ctx.BlockHeight())
+
 	return nil
 }
 
@@ -320,12 +342,14 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	if !ok {
 		err := errors.New("type mismatch for MsgCpAck")
 		logger.Error(err.Error())
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - postHandler: failed, not updating state and flushing buffer", "height", ctx.BlockHeight())
 		return err
 	}
 
 	// skip handler if ACK is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		logger.Debug("skipping stake update since side-tx didn't get yes votes")
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - postHandler: failed, not updating state and flushing buffer", "height", ctx.BlockHeight())
 		return errors.New("side-tx didn't get yes votes")
 	}
 
@@ -333,6 +357,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	checkpointObj, err := srv.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		logger.Error("unable to get checkpoint buffer", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - postHandler: failed, not updating state and flushing buffer", "height", ctx.BlockHeight())
 		return err
 	}
 
@@ -344,6 +369,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	// invalid start block
 	if msg.StartBlock != checkpointObj.StartBlock {
 		logger.Error("invalid start block during postHandler checkpoint ack", "startExpected", checkpointObj.StartBlock, "startReceived", msg.StartBlock)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - postHandler: failed, not updating state and flushing buffer", "height", ctx.BlockHeight())
 		return errors.New("invalid start block during postHandler checkpoint ack")
 	}
 
@@ -358,6 +384,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 			"rootReceived", common.Bytes2Hex(msg.RootHash),
 		)
 
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - postHandler: failed, not updating state and flushing buffer", "height", ctx.BlockHeight())
 		return errors.New("invalid ACK")
 	}
 
@@ -373,6 +400,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	checkpointObj.Id = msg.Number
 	if err = srv.AddCheckpoint(ctx, checkpointObj); err != nil {
 		logger.Error("error while adding checkpoint into store", "checkpointNumber", msg.Number)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - postHandler: failed, not updating state and flushing buffer", "height", ctx.BlockHeight())
 		return err
 	}
 
@@ -382,6 +410,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	err = srv.FlushCheckpointBuffer(ctx)
 	if err != nil {
 		logger.Error("error while flushing buffer", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - postHandler: failed, not updating state and flushing buffer", "height", ctx.BlockHeight())
 		return err
 	}
 
@@ -391,6 +420,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	err = srv.IncrementAckCount(ctx)
 	if err != nil {
 		logger.Error("error while updating the ack count", "err", err)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - postHandler: failed, not updating state and flushing buffer", "height", ctx.BlockHeight())
 		return err
 	}
 
@@ -398,6 +428,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	err = srv.stakeKeeper.IncrementAccum(ctx, 1)
 	if err != nil {
 		logger.Error("error while incrementing accum", "err", err)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - postHandler: failed, not updating state and flushing buffer", "height", ctx.BlockHeight())
 		return err
 	}
 
@@ -437,6 +468,8 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 			sdk.NewAttribute(types.AttributeKeyHeaderIndex, strconv.FormatUint(msg.Number, 10)),
 		),
 	})
+
+	logger.Info("Cosmoverse25 - Checkpoint ACK - side_msg_server - postHandler: SUCCESS, updating the state and flushing the buffer", "height", ctx.BlockHeight())
 
 	return nil
 }

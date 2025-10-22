@@ -47,6 +47,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	params, err := m.GetParams(ctx)
 	if err != nil {
 		logger.Error("error in fetching checkpoint parameter")
+		logger.Info("Cosmoverse25 - Checkpoint - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, types.ErrCheckpointParams
 	}
 
@@ -61,11 +62,13 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 			err := m.FlushCheckpointBuffer(ctx)
 			if err != nil {
 				logger.Error("error in flushing the checkpoint buffer")
+				logger.Info("Cosmoverse25 - Checkpoint - msg_server: failed", "height", sdkCtx.BlockHeight())
 				return nil, types.ErrBufferFlush
 			}
 		} else {
 			expiryTime := checkpointBuffer.Timestamp + checkpointBufferTime
 			logger.Error("checkpoint already exits in buffer", "checkpoint", checkpointBuffer.String(), "expires", expiryTime)
+			logger.Info("Cosmoverse25 - Checkpoint - msg_server: failed", "height", sdkCtx.BlockHeight())
 			return nil, errorsmod.Wrap(types.ErrNoAck, fmt.Sprint("checkpoint already exits in buffer", "checkpoint", checkpointBuffer.String(), "expires", expiryTime))
 		}
 	}
@@ -77,11 +80,12 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 			logger.Error("checkpoint not in continuity",
 				"currentTip", lastCheckpoint.EndBlock,
 				"startBlock", msg.StartBlock)
-
+			logger.Info("Cosmoverse25 - Checkpoint - msg_server: failed", "height", sdkCtx.BlockHeight())
 			return nil, types.ErrDiscontinuousCheckpoint
 		}
 	} else if errors.Is(err, types.ErrNoCheckpointFound) && msg.StartBlock != 0 {
 		logger.Error("first checkpoint to start from block 0", "checkpoint start block", msg.StartBlock, "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("first checkpoint to start from block 0", "checkpoint start block", msg.StartBlock))
 	}
 
@@ -90,6 +94,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	dividendAccounts, err := m.topupKeeper.GetAllDividendAccounts(ctx)
 	if err != nil {
 		logger.Error("error while fetching dividends accounts", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, "error while fetching dividends accounts")
 	}
 
@@ -99,6 +104,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	accountRoot, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	if err != nil {
 		logger.Error("error while fetching account root hash", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(types.ErrAccountHash, "error while fetching account root hash")
 	}
 
@@ -111,6 +117,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 			"hash", common.Bytes2Hex(accountRoot),
 			"msgHash", msg.AccountRootHash,
 		)
+		logger.Info("Cosmoverse25 - Checkpoint - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, "accountRootHash of current state doesn't match from msg")
 	}
 
@@ -118,11 +125,13 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	validatorSet, err := m.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
+		logger.Info("Cosmoverse25 - Checkpoint - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "no proposer stored in validator set")
 	}
 
 	if validatorSet.Proposer == nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
+		logger.Info("Cosmoverse25 - Checkpoint - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "no proposer stored in validator set")
 	}
 
@@ -135,6 +144,8 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 			"proposer", valProposer,
 			"msgProposer", msgProposer,
 		)
+
+		logger.Info("Cosmoverse25 - Checkpoint - msg_server: failed", "height", sdkCtx.BlockHeight())
 
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "invalid proposer in msg")
 	}
@@ -152,6 +163,8 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 		),
 	})
 
+	logger.Info("Cosmoverse25 - Checkpoint - msg_server: SUCCESS", "height", sdkCtx.BlockHeight())
+
 	return &types.MsgCheckpointResponse{}, nil
 }
 
@@ -162,6 +175,7 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 	defer recordCheckpointTransactionMetric(api.CheckpointAckMethod, startTime, &err)
 
 	logger := m.Logger(ctx)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	if msg.StartBlock >= msg.EndBlock {
 		logger.Error("end block should be greater than start block",
@@ -169,12 +183,14 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 			"endBlock", msg.EndBlock,
 			"rootHash", common.Bytes2Hex(msg.RootHash),
 		)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(types.ErrBadAck, "invalid ack")
 	}
 
 	lastCheckpoint, err := m.GetLastCheckpoint(ctx)
 	if err != nil {
 		logger.Error("unable to get last checkpoint", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, err
 	}
 
@@ -183,6 +199,7 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 			"lastCheckpointNumber", lastCheckpoint.Id,
 			"checkpointNumber", msg.Number,
 		)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(types.ErrBadAck, "invalid checkpoint number")
 
 	}
@@ -190,6 +207,7 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 	bufCheckpoint, err := m.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		logger.Error("unable to get checkpoint", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(types.ErrBadAck, "unable to get checkpoint")
 	}
 
@@ -200,6 +218,7 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 
 	if msg.StartBlock != bufCheckpoint.StartBlock {
 		logger.Error("invalid start block during msgServer checkpoint ack", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("invalid start block during msgServer checkpoint ack", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock))
 	}
 
@@ -214,10 +233,10 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 			"rootExpected", common.Bytes2Hex(bufCheckpoint.RootHash),
 			"rootReceived", common.Bytes2Hex(msg.RootHash),
 		)
+		logger.Info("Cosmoverse25 - Checkpoint ACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, types.ErrBadAck
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeCheckpointAck,
@@ -225,6 +244,8 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 			sdk.NewAttribute(types.AttributeKeyHeaderIndex, strconv.FormatUint(msg.Number, 10)),
 		),
 	})
+
+	logger.Info("Cosmoverse25 - Checkpoint ACK - msg_server: SUCCESS", "height", sdkCtx.BlockHeight())
 
 	return &types.MsgCpAckResponse{}, nil
 }
@@ -246,6 +267,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 	params, err := m.GetParams(ctx)
 	if err != nil {
 		logger.Error("error in fetching checkpoint parameter", "error", err)
+		logger.Info("Cosmoverse25 - Checkpoint NoACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(types.ErrCheckpointParams, "error in fetching checkpoint parameter")
 	}
 
@@ -267,7 +289,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 			"current time", currentTime,
 			"buffer Time", bufferTime.String(),
 		)
-
+		logger.Info("Cosmoverse25 - Checkpoint NoACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(types.ErrInvalidNoAck, "time has not expired until now")
 	}
 
@@ -280,6 +302,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 
 	currentValidatorSet, err := m.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
+		logger.Info("Cosmoverse25 - Checkpoint NoACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(err, "error while fetching validator set")
 	}
 
@@ -295,16 +318,19 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 
 	// If NoAck sender is not the valid proposer, return error
 	if !isProposer {
+		logger.Info("Cosmoverse25 - Checkpoint NoACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, types.ErrInvalidNoAckProposer
 	}
 
 	// Check last no ack - prevents repetitive no-ack
 	lastNoAck, err := m.GetLastNoAck(ctx)
 	if err != nil {
+		logger.Info("Cosmoverse25 - Checkpoint NoACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(err, "error while fetching last no ack")
 	}
 
 	if lastNoAck > math.MaxInt64 {
+		logger.Info("Cosmoverse25 - Checkpoint NoACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(types.ErrNoAck, "last no-ack timestamp is too large")
 	}
 
@@ -313,7 +339,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 	if lastNoAckTime.After(currentTime) || (currentTime.Sub(lastNoAckTime) < bufferTime) {
 		logger.Debug("too many no-ack", "lastNoAckTime", lastNoAckTime, "current time", currentTime,
 			"buffer Time", bufferTime.String())
-
+		logger.Info("Cosmoverse25 - Checkpoint NoACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, types.ErrTooManyNoAck
 	}
 
@@ -321,6 +347,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 	newLastNoAck := uint64(currentTime.Unix())
 	err = m.SetLastNoAck(ctx, newLastNoAck)
 	if err != nil {
+		logger.Info("Cosmoverse25 - Checkpoint NoACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, types.ErrNoAck
 	}
 	logger.Debug("last no-ack time set", "lastNoAck", newLastNoAck)
@@ -328,12 +355,14 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 	// increment accum (selects new proposer)
 	err = m.stakeKeeper.IncrementAccum(ctx, 1)
 	if err != nil {
+		logger.Info("Cosmoverse25 - Checkpoint NoACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(err, "error in incrementing the accum number")
 	}
 
 	// get the new proposer
 	vs, err := m.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
+		logger.Info("Cosmoverse25 - Checkpoint NoACK - msg_server: failed", "height", sdkCtx.BlockHeight())
 		return nil, errorsmod.Wrap(err, "error in fetching the validator set")
 	}
 
@@ -365,6 +394,8 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 			sdk.NewAttribute(types.AttributeKeyNewProposer, newProposer.Signer),
 		),
 	})
+
+	logger.Info("Cosmoverse25 - Checkpoint NoACK - msg_server: SUCCESS", "height", sdkCtx.BlockHeight())
 
 	return &types.MsgCheckpointNoAckResponse{}, nil
 }
