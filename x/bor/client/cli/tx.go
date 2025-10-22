@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
-	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -166,19 +165,17 @@ func NewProducerDowntimeCmd() *cobra.Command {
 				return fmt.Errorf("failed to calculate average block time: %w", err)
 			}
 
-			borClient := helper.GetBorClient()
-			currentBlock, err := borClient.BlockNumber(clientCtx.CmdContext)
-			if err != nil {
-				return fmt.Errorf("failed to get latest bor block number: %w", err)
-			}
+			fmt.Printf("Average block time calculated: %d seconds\n", averageBlockTime)
 
-			block, err := borClient.BlockByNumber(clientCtx.CmdContext, big.NewInt(int64(currentBlock)))
+			borClient := helper.GetBorClient()
+
+			block, err := borClient.BlockByNumber(clientCtx.CmdContext, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get latest bor block: %w", err)
 			}
 
-			startBlock := currentBlock + uint64((time.Unix(int64(startTimeUTC), 0).Sub(*block.AnnouncedAt).Seconds())/averageBlockTime)
-			endBlock := currentBlock + uint64((time.Unix(int64(endTimeUTC), 0).Sub(*block.AnnouncedAt).Seconds())/averageBlockTime)
+			startBlock := block.NumberU64() + uint64((uint64(startTimeUTC)-block.Header().Time)/averageBlockTime)
+			endBlock := block.NumberU64() + uint64((uint64(endTimeUTC)-block.Header().Time)/averageBlockTime)
 
 			msg := types.NewMsgSetProducerDowntime(producerAddress, startBlock, endBlock)
 
@@ -210,7 +207,7 @@ func NewProducerDowntimeCmd() *cobra.Command {
 	return cmd
 }
 
-func calculateAverageBlocktime(clientCtx client.Context) (float64, error) {
+func calculateAverageBlocktime(clientCtx client.Context) (uint64, error) {
 	borClient := helper.GetBorClient()
 	currentBlock, err := borClient.BlockNumber(clientCtx.CmdContext)
 	if err != nil {
@@ -224,7 +221,7 @@ func calculateAverageBlocktime(clientCtx client.Context) (float64, error) {
 		blockTimesToGet = currentBlock / blocksInBetween
 	}
 
-	var averageBlockTime float64
+	var averageBlockTime uint64
 
 	for i := uint64(0); i < blockTimesToGet; i++ {
 		blockNumber := big.NewInt(int64(currentBlock - (blocksInBetween * i)))
@@ -240,10 +237,10 @@ func calculateAverageBlocktime(clientCtx client.Context) (float64, error) {
 		}
 
 		blockTime := block.Header().Time - prevBlock.Header().Time
-		averageBlockTime += float64(blockTime)
+		averageBlockTime += blockTime
 	}
 
-	averageBlockTime = averageBlockTime / float64(blockTimesToGet)
+	averageBlockTime = averageBlockTime / blockTimesToGet
 
 	return averageBlockTime, nil
 }
