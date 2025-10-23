@@ -60,9 +60,9 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	var veEnableHeight int64
 	switch chainId {
 	case "heimdallv2-137":
-		veEnableHeight = 24404501
+		veEnableHeight = 1
 	case "heimdallv2-80001":
-		veEnableHeight = 8788501
+		veEnableHeight = 1
 	default:
 		veEnableHeight = 1
 	}
