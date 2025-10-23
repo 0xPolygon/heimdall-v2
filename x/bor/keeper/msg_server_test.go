@@ -621,28 +621,6 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 			expectErrSubstr: "producer with address",
 		},
 		{
-			name:            "error - milestone fetch fails",
-			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
-			milestoneErr:    fmt.Errorf("db down"),
-			msg:             newMsg(val1.hexAddr, 100, 100+minRange),
-			expectErrSubstr: "error fetching last milestone",
-		},
-		{
-			name:            "error - milestone is nil",
-			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
-			milestone:       nil,
-			msg:             newMsg(val1.hexAddr, 100, 100+minRange),
-			expectErrSubstr: "no milestones found",
-		},
-		{
-			name:            "error - existing planned downtime extends beyond latest milestone",
-			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
-			milestone:       &milestoneTypes.Milestone{EndBlock: 10_000},
-			existingForVal1: &types.BlockRange{StartBlock: 1, EndBlock: 10_000}, // EndBlock >= milestone.EndBlock
-			msg:             newMsg(val1.hexAddr, 100, 100+minRange),
-			expectErrSubstr: "extends beyond the latest milestone",
-		},
-		{
 			name:            "error - start >= end",
 			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
 			milestone:       &milestoneTypes.Milestone{EndBlock: 10_000},

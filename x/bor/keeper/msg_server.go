@@ -260,43 +260,17 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 }
 
 func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetProducerDowntime) (*types.MsgSetProducerDowntimeResponse, error) {
-	validatorId := uint64(0)
 	validators := s.sk.GetSpanEligibleValidators(ctx)
 	found := false
 	for _, v := range validators {
 		if v.Signer == msg.Producer {
 			found = true
-			validatorId = v.ValId
 			break
 		}
 	}
 
 	if !found {
 		return nil, fmt.Errorf("producer with address %s not found in the current validator set", msg.Producer)
-	}
-
-	lastMilestone, err := s.mk.GetLastMilestone(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching last milestone: %w", err)
-	}
-
-	if lastMilestone == nil {
-		return nil, fmt.Errorf("no milestones found")
-	}
-
-	exists, err := s.ProducerPlannedDowntime.Has(ctx, validatorId)
-	if err != nil {
-		return nil, fmt.Errorf("error checking existing planned downtime: %w", err)
-	}
-	if exists {
-		existingDowntime, err := s.ProducerPlannedDowntime.Get(ctx, validatorId)
-		if err != nil {
-			return nil, fmt.Errorf("error fetching existing planned downtime: %w", err)
-		}
-
-		if existingDowntime.EndBlock >= lastMilestone.EndBlock {
-			return nil, fmt.Errorf("existing planned downtime for producer %s extends beyond the latest milestone", msg.Producer)
-		}
 	}
 
 	if msg.DowntimeRange.StartBlock >= msg.DowntimeRange.EndBlock {
