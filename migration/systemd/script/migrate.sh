@@ -6,18 +6,18 @@ umask 0022
 V1_VERSION="1.6.0"
 V1_GENESIS_CHECKSUM="e5f70d0a115144d24d60f2a12fbd6fc393b23d65669327c6d422eedafb84a7a19f56adb0d8290aa9a919e0d30da167924e44daaa7244c1d213382695c313d92c"
 V2_GENESIS_CHECKSUM="38003386814a1cf6194f7e29e9b27d6e8711760cef357c500b94dda3e366899b6577a912e97a0527c96bc17174b186d269697cae3e8525022074bc83e36b4ed3"
-V2_VERSION="0.2.9"
+V2_VERSION="0.4.2-demo"
 V1_CHAIN_ID="heimdall-137"
 V2_CHAIN_ID="heimdallv2-137"
-V2_GENESIS_TIME="2025-07-10T15:20:00Z"
-V1_HALT_HEIGHT=24404500
-VERIFY_EXPORTED_DATA=false
+V2_GENESIS_TIME="2025-10-22T00:00:00Z"
+V1_HALT_HEIGHT=900
+VERIFY_EXPORTED_DATA=true
 TRUSTED_GENESIS_URL="https://storage.googleapis.com/mainnet-heimdallv2-genesis/dump-genesis.json"
 
 # -------------------- const env variables --------------------
 V2_INITIAL_HEIGHT=$(( V1_HALT_HEIGHT + 1 ))
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
-DRY_RUN=false
+DRY_RUN=true
 V2_HEIMDALL_HOME="/var/lib/heimdall"
 
 # -------------------- Script start --------------------

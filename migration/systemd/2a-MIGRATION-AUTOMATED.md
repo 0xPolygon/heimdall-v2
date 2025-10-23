@@ -37,8 +37,8 @@ sudo bash migrate.sh \
   --heimdalld-path=/usr/bin/heimdalld \
   --network=mainnet \
   --node-type=validator \
-  --service-user=heimdall \
-  --generate-genesis=false \
+  --service-user=ubuntu \  
+  --generate-genesis=true \ 
   --backup=true
 ```
 
