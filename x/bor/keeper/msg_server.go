@@ -260,6 +260,10 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 }
 
 func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetProducerDowntime) (*types.MsgSetProducerDowntimeResponse, error) {
+	var err error
+	start := time.Now()
+	defer recordBorTransactionMetric(api.ProducerDowntimeMethod, start, &err)
+
 	validators := s.sk.GetSpanEligibleValidators(ctx)
 	found := false
 	for _, v := range validators {

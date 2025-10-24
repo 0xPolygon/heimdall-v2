@@ -14,10 +14,11 @@ const (
 	GetValidatorPerformanceScoreMethod  = "GetValidatorPerformanceScore"
 
 	// Transaction API methods.
-	ProposeSpanMethod     = "ProposeSpan"
-	BorUpdateParamsMethod = "UpdateParams"
-	BackfillSpansMethod   = "BackfillSpans"
-	VoteProducersMethod   = "VoteProducers"
+	ProposeSpanMethod      = "ProposeSpan"
+	BorUpdateParamsMethod  = "UpdateParams"
+	BackfillSpansMethod    = "BackfillSpans"
+	VoteProducersMethod    = "VoteProducers"
+	ProducerDowntimeMethod = "ProducerDowntime"
 
 	// Side message handler methods.
 	SideHandleMsgSpanMethod          = "SideHandleMsgSpan"
