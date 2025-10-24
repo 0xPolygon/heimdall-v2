@@ -98,6 +98,6 @@ const (
 	// TODO: Move to params?
 	PlannedDowntimeMinimumTimeInFuture = 150
 	PlannedDowntimeMaximumTimeInFuture = 100 * DefaultSpanDuration // ~2 weeks
-	PlannedDowntimeMinRange            = DefaultSpanDuration / 2
-	PlannedDowntimeMaxRange            = 14 * DefaultSpanDuration // ~48 hours
+	PlannedDowntimeMinRange            = 150                       // It will be down minimum for whole span, this here is just for tx validation
+	PlannedDowntimeMaxRange            = 14 * DefaultSpanDuration  // ~48 hours
 )
