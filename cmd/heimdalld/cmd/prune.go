@@ -7,15 +7,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	dbm "github.com/cometbft/cometbft-db"
-	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
-
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/state"
+	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/cometbft/cometbft/store"
 	"github.com/spf13/cobra"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 func PruneCmd() *cobra.Command {
