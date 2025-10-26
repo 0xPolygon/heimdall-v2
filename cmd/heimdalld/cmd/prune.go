@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	dbm "github.com/cometbft/cometbft-db"
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 
@@ -145,6 +146,11 @@ func PruneCmd() *cobra.Command {
 
 			if height > currentHeight {
 				fmt.Fprintf(os.Stderr, "Error: requested height %d is greater than current height %d\n", height, currentHeight)
+				os.Exit(1)
+			}
+
+			if (currentHeight - height) < helper.EnforcedMinRetainBlocks {
+				fmt.Fprintf(os.Stderr, "Error: requested distance between current height %d and height %d is too short (%d). It must be at least %d\n", currentHeight, height, currentHeight-height, helper.EnforcedMinRetainBlocks)
 				os.Exit(1)
 			}
 
