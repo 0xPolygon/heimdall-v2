@@ -449,7 +449,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case MainChain:
 		milestoneDeletionHeight = 28525000
 		faultyMilestoneNumber = 1941439
-		rioHeight = 77414656 // Rio height is a block number in bor chain
+		rioHeight = 77414656 // Rio height for Mainnet.
 		tallyFixHeight = 28913694
 		disableVPCheckHeight = 25723000
 		disableValSetCheckHeight = 25723063
@@ -457,7 +457,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 48473856 // Rio height is a block number in bor chain
+		rioHeight = 48473856 // Rio height for Mumbai testnet.
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
@@ -465,7 +465,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 26272256 // Rio height is a block number in bor chain
+		rioHeight = 26272256 // Rio height for Amoy testnet.
 		tallyFixHeight = 13143851
 		disableVPCheckHeight = 10618199
 		disableValSetCheckHeight = 10618299
@@ -473,7 +473,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 256 // Rio height for local testnets.
+		rioHeight = 0 // Rio height for local devnet.
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
@@ -592,9 +592,6 @@ func GetRioHeight() int64 {
 }
 
 func IsRio(blockNum uint64) bool {
-	if rioHeight == 0 {
-		return false
-	}
 	return blockNum >= uint64(rioHeight)
 }
 
