@@ -260,6 +260,7 @@ func initRootCmd(
 		importValidatorKey(),
 		StakeCmd(),
 		ApproveCmd(),
+		PruneCmd(),
 		version.Cmd,
 	)
 
