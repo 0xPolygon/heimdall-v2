@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"cosmossdk.io/errors"
@@ -267,7 +268,7 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 	validators := s.sk.GetSpanEligibleValidators(ctx)
 	found := false
 	for _, v := range validators {
-		if v.Signer == msg.Producer {
+		if strings.ToUpper(v.Signer) == strings.ToUpper(msg.Producer) {
 			found = true
 			break
 		}

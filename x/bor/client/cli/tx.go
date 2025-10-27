@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -139,6 +140,8 @@ func NewProducerDowntimeCmd() *cobra.Command {
 			if producerAddress == "" {
 				producerAddress = clientCtx.GetFromAddress().String()
 			}
+
+			producerAddress = strings.TrimPrefix(producerAddress, "0x")
 
 			addressCodec := addresscodec.NewHexCodec()
 			_, err = addressCodec.StringToBytes(producerAddress)
