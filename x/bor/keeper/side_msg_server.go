@@ -416,23 +416,18 @@ func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 		return err
 	}
 
-	producers := make([]uint64, 0)
-	it, err := s.k.ProducerVotes.Iterate(ctx, nil)
+	isProducer := false
+
+	producers, err := s.k.CalculateProducerSet(ctx, ProducerSetLimit)
 	if err != nil {
+		logger.Error("error calculating producer set", "error", err)
 		return err
 	}
-	defer it.Close()
 
-	isProducer := false
-	for ; it.Valid(); it.Next() {
-		producerId, err := it.Key()
-		if err != nil {
-			return err
-		}
-		producers = append(producers, producerId)
-
-		if validatorId == producerId {
+	for _, p := range producers {
+		if p == validatorId {
 			isProducer = true
+			break
 		}
 	}
 
@@ -446,6 +441,7 @@ func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 
 	// Only return an error if the requested downtime overlaps with every other producer
 	overlapCount := 0
+	foundCount := 0 // number of "other" producers that actually have a planned downtime record
 	for _, p := range producers {
 		if p == validatorId {
 			continue
@@ -456,24 +452,28 @@ func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 			return err
 		}
 		if !found {
-			// no planned downtime for this producer -> cannot be overlapping with all others
+			// Another producer without planned downtime means "not everyone is down"
+			// so we won't be able to reach the "all others overlap" condition.
 			continue
 		}
+
+		foundCount++
 
 		downtime, err := s.k.ProducerPlannedDowntime.Get(ctx, p)
 		if err != nil {
 			return err
 		}
 
-		if (msg.DowntimeRange.StartBlock >= downtime.StartBlock && msg.DowntimeRange.StartBlock < downtime.EndBlock) ||
-			(msg.DowntimeRange.EndBlock > downtime.StartBlock && msg.DowntimeRange.EndBlock <= downtime.EndBlock) ||
-			(msg.DowntimeRange.StartBlock <= downtime.StartBlock && msg.DowntimeRange.EndBlock >= downtime.EndBlock) {
+		// Inclusive overlap: [reqStart, reqEnd] overlaps [dtStart, dtEnd]
+		reqStart, reqEnd := msg.DowntimeRange.StartBlock, msg.DowntimeRange.EndBlock
+		if reqStart <= downtime.EndBlock && reqEnd >= downtime.StartBlock {
 			overlapCount++
 		}
 	}
 
 	otherProducers := len(producers) - 1
-	if otherProducers > 0 && overlapCount == otherProducers {
+	// Reject only if EVERY other producer has a planned downtime AND all of them overlap the requested range
+	if otherProducers > 0 && foundCount == otherProducers && overlapCount == otherProducers {
 		return fmt.Errorf("producer with id %d has overlapping planned downtime with all other producers", validatorId)
 	}
 

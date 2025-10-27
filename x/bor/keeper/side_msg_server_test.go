@@ -16,6 +16,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
@@ -384,7 +385,6 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 	require := s.Require()
 
-	// Helpers
 	newMsg := func(prod string, start, end uint64) *types.MsgSetProducerDowntime {
 		return &types.MsgSetProducerDowntime{
 			Producer:      prod,
@@ -392,10 +392,23 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 		}
 	}
 
+	// Helpers
 	setVotes := func(ids ...uint64) {
 		require.NoError(s.borKeeper.ClearProducerVotes(s.ctx))
 		for _, id := range ids {
+			// legacy helper kept for some tests; writes empty votes (produces no candidates)
 			require.NoError(s.borKeeper.SetProducerVotes(s.ctx, id, types.ProducerVotes{}))
+		}
+	}
+
+	id1, id2, id3 := uint64(1), uint64(2), uint64(3)
+
+	// New helper: make every validator vote the same ordered candidate list.
+	// This drives CalculateProducerSet to return the given candidates (subject to threshold).
+	setVotesForAll := func(voteList []uint64) {
+		require.NoError(s.borKeeper.ClearProducerVotes(s.ctx))
+		for _, voter := range []uint64{id1, id2, id3} {
+			require.NoError(s.borKeeper.SetProducerVotes(s.ctx, voter, types.ProducerVotes{Votes: voteList}))
 		}
 	}
 
@@ -404,7 +417,6 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 			StartBlock: start, EndBlock: end,
 		}))
 	}
-
 	getPD := func(id uint64) *types.BlockRange {
 		ok, err := s.borKeeper.ProducerPlannedDowntime.Has(s.ctx, id)
 		require.NoError(err)
@@ -418,30 +430,59 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 
 	// Producer and ids
 	addr1 := common.HexToAddress("0x0000000000000000000000000000000000000001").Hex()
-	id1, id2, id3 := uint64(1), uint64(2), uint64(3)
+	addr2 := common.HexToAddress("0x0000000000000000000000000000000000000002").Hex()
+	addr3 := common.HexToAddress("0x0000000000000000000000000000000000000003").Hex()
 
-	// Add baseline params and a few spans so GetLastSpan works
-	require.NoError(s.borKeeper.SetParams(s.ctx, types.DefaultParams()))
-	// Create three spans, with first span's SelectedProducers[0] != id1 so we can avoid replacement-gen
-	valSet, vals := s.genTestValidators()
-	spans := []types.Span{
-		{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
-		{Id: 1, StartBlock: 200, EndBlock: 299, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
-		{Id: 2, StartBlock: 300, EndBlock: 399, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
-	}
-	for i := range spans {
-		require.NoError(s.borKeeper.AddNewSpan(s.ctx, &spans[i]))
+	// Prime stake mocks commonly used by CalculateProducerSet/veblop paths.
+	primeStakeMocks := func() {
+		// Non-zero voting power so thresholds can be met.
+		s.stakeKeeper.EXPECT().
+			GetValidatorSet(gomock.Any()).
+			Return(stakeTypes.ValidatorSet{
+				Validators: []*stakeTypes.Validator{
+					{ValId: id1, Signer: addr1, VotingPower: 100},
+					{ValId: id2, Signer: addr2, VotingPower: 100},
+					{ValId: id3, Signer: addr3, VotingPower: 100},
+				},
+			}, nil).
+			AnyTimes()
+
+		s.stakeKeeper.EXPECT().
+			GetSpanEligibleValidators(gomock.Any()).
+			Return([]stakeTypes.Validator{
+				{ValId: id1, Signer: addr1, VotingPower: 100},
+				{ValId: id2, Signer: addr2, VotingPower: 100},
+				{ValId: id3, Signer: addr3, VotingPower: 100},
+			}).
+			AnyTimes()
+
+		s.stakeKeeper.EXPECT().
+			GetValidatorFromValID(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ sdk.Context, vid uint64) (stakeTypes.Validator, error) {
+				switch vid {
+				case id1:
+					return stakeTypes.Validator{ValId: id1, Signer: addr1, VotingPower: 100}, nil
+				case id2:
+					return stakeTypes.Validator{ValId: id2, Signer: addr2, VotingPower: 100}, nil
+				case id3:
+					return stakeTypes.Validator{ValId: id3, Signer: addr3, VotingPower: 100}, nil
+				default:
+					return stakeTypes.Validator{}, fmt.Errorf("unknown validator id %d", vid)
+				}
+			}).
+			AnyTimes()
 	}
 
 	tests := []struct {
-		name          string
-		sideVote      sidetxs.Vote
-		msg           sdk.Msg
-		setup         func()
-		expectErr     bool
-		errContains   string
-		expectPDSet   bool // whether new PD for id1 should be stored
-		expectPDRange *types.BlockRange
+		name            string
+		sideVote        sidetxs.Vote
+		msg             sdk.Msg
+		setup           func()
+		expectErr       bool
+		errContains     string
+		expectPDSet     bool
+		expectPDRange   *types.BlockRange
+		expectSpanDelta int
 	}{
 		{
 			name:        "type mismatch",
@@ -452,12 +493,10 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 			errContains: "MsgSetProducerDowntime type mismatch",
 		},
 		{
-			name:     "side vote not YES",
-			sideVote: sidetxs.Vote_VOTE_NO,
-			msg:      newMsg(addr1, 1000, 1100),
-			setup: func() {
-				// still expect address lookup to be unused when vote != YES
-			},
+			name:        "side vote not YES",
+			sideVote:    sidetxs.Vote_VOTE_NO,
+			msg:         newMsg(addr1, 1000, 1100),
+			setup:       func() {},
 			expectErr:   true,
 			errContains: "side-tx didn't get yes votes",
 		},
@@ -479,11 +518,12 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 			sideVote: sidetxs.Vote_VOTE_YES,
 			msg:      newMsg(addr1, 1000, 1100),
 			setup: func() {
+				// id1 resolves but is not in producer set
 				s.stakeKeeper.EXPECT().
 					GetValIdFromAddress(gomock.Any(), addr1).
 					Return(id1, nil).
 					Times(1)
-				setVotes(id2, id3) // id1 missing
+				setVotes(id2, id3)
 			},
 			expectErr:   true,
 			errContains: "not a registered producer",
@@ -497,13 +537,16 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 					GetValIdFromAddress(gomock.Any(), addr1).
 					Return(id1, nil).
 					Times(1)
-				setVotes(id1) // only one
+				// Force producer set to exactly [id1]:
+				// all voters rank only id1, so only id1 gets a score and passes threshold.
+				setVotesForAll([]uint64{id1})
 			},
 			expectErr:   true,
 			errContains: "only one registered producer",
 		},
+
 		{
-			name:     "overlaps with all other producers -> error",
+			name:     "reject when all other producers have overlapping PDs",
 			sideVote: sidetxs.Vote_VOTE_YES,
 			msg:      newMsg(addr1, 1000, 1100),
 			setup: func() {
@@ -511,16 +554,25 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 					GetValIdFromAddress(gomock.Any(), addr1).
 					Return(id1, nil).
 					Times(1)
-				setVotes(id1, id2, id3)
-				// Both other producers have overlapping planned downtimes
-				setPD(id2, 1000, 1100)
-				setPD(id3, 995, 1105)
+				// Producer set [id1,id2,id3] by ranking all three
+				setVotesForAll([]uint64{id1, id2, id3})
+				setPD(id2, 995, 1105)
+				setPD(id3, 1000, 1100)
+				require.NoError(s.borKeeper.SetParams(s.ctx, types.DefaultParams()))
+				valSet, vals := s.genTestValidators()
+				for _, sp := range []types.Span{
+					{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
+					{Id: 1, StartBlock: 200, EndBlock: 299, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
+				} {
+					require.NoError(s.borKeeper.AddNewSpan(s.ctx, &sp))
+				}
 			},
 			expectErr:   true,
 			errContains: "overlapping planned downtime with all other producers",
 		},
+
 		{
-			name:     "success: no overlaps present",
+			name:     "success: no overlaps present -> PD persisted",
 			sideVote: sidetxs.Vote_VOTE_YES,
 			msg:      newMsg(addr1, 1200, 1300),
 			setup: func() {
@@ -528,15 +580,27 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 					GetValIdFromAddress(gomock.Any(), addr1).
 					Return(id1, nil).
 					Times(1)
-				setVotes(id1, id2, id3)
-				// No PDs for others -> no way to overlap with all
+				// Producer set [id1,id2,id3]
+				setVotesForAll([]uint64{id1, id2, id3})
+				require.NoError(s.borKeeper.SetParams(s.ctx, types.DefaultParams()))
+				valSet, vals := s.genTestValidators()
+				if len(vals) > 0 {
+					vals[0].ValId = id2 // avoid replacement generation
+				}
+				for _, sp := range []types.Span{
+					{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
+					{Id: 1, StartBlock: 200, EndBlock: 299, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
+				} {
+					require.NoError(s.borKeeper.AddNewSpan(s.ctx, &sp))
+				}
 			},
 			expectErr:     false,
 			expectPDSet:   true,
 			expectPDRange: &types.BlockRange{StartBlock: 1200, EndBlock: 1300},
 		},
+
 		{
-			name:     "success: overlaps exist but not with all others (one other has non-overlapping PD)",
+			name:     "success: overlaps exist but not with all others -> PD persisted",
 			sideVote: sidetxs.Vote_VOTE_YES,
 			msg:      newMsg(addr1, 1400, 1500),
 			setup: func() {
@@ -544,58 +608,113 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 					GetValIdFromAddress(gomock.Any(), addr1).
 					Return(id1, nil).
 					Times(1)
-				setVotes(id1, id2, id3)
-				// id2 overlaps, id3 does not -> should pass
-				setPD(id2, 1450, 1550) // overlaps requested [1400,1500]
+				// Producer set [id1,id2,id3]
+				setVotesForAll([]uint64{id1, id2, id3})
+				setPD(id2, 1450, 1550) // overlaps
 				setPD(id3, 2000, 2100) // no overlap
-				// Also ensure spans overlap with the downtime window but producer for spans is not id1,
-				// so replacement span generation path is not exercised here.
-				// Our pre-seeded spans have SelectedProducers[0] from genTestValidators, not tied to id1.
+				require.NoError(s.borKeeper.SetParams(s.ctx, types.DefaultParams()))
+				valSet, vals := s.genTestValidators()
+				if len(vals) > 0 {
+					vals[0].ValId = id2 // avoid replacement generation
+				}
+				for _, sp := range []types.Span{
+					{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
+					{Id: 1, StartBlock: 200, EndBlock: 299, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
+				} {
+					require.NoError(s.borKeeper.AddNewSpan(s.ctx, &sp))
+				}
 			},
 			expectErr:     false,
 			expectPDSet:   true,
 			expectPDRange: &types.BlockRange{StartBlock: 1400, EndBlock: 1500},
 		},
+
 		{
-			name:     "success: downtime does not overlap any span (no replacement span generated)",
+			name:     "success: replacement spans generated when requester is selected and overlaps",
 			sideVote: sidetxs.Vote_VOTE_YES,
-			msg:      newMsg(addr1, 10, 20), // well before any span's StartBlock
+			msg:      newMsg(addr1, 150, 350), // overlaps spans [0],[1],[2]
 			setup: func() {
 				s.stakeKeeper.EXPECT().
 					GetValIdFromAddress(gomock.Any(), addr1).
 					Return(id1, nil).
 					Times(1)
-				setVotes(id1, id2)
-				// No other PDs set; second producer ensures >1 registered
+				// Producer set [id1,id2,id3]
+				setVotesForAll([]uint64{id1, id2, id3})
+
+				params := types.DefaultParams()
+				require.NoError(s.borKeeper.SetParams(s.ctx, params))
+
+				require.NoError(s.borKeeper.UpdateLatestActiveProducer(s.ctx, map[uint64]struct{}{id2: {}, id3: {}}))
+
+				valSet, vals := s.genTestValidators()
+				require.NotEmpty(vals)
+
+				// Build per-span SelectedProducers so only spans 0 and 2 have id1 as selected producer.
+				sp0Prods := make([]stakeTypes.Validator, len(vals))
+				copy(sp0Prods, vals)
+				sp0Prods[0].ValId = id1
+
+				sp1Prods := make([]stakeTypes.Validator, len(vals))
+				copy(sp1Prods, vals)
+				sp1Prods[0].ValId = id2 // different producer -> no replacement for span 1
+
+				sp2Prods := make([]stakeTypes.Validator, len(vals))
+				copy(sp2Prods, vals)
+				sp2Prods[0].ValId = id1
+
+				spans := []types.Span{
+					{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+					{Id: 1, StartBlock: 200, EndBlock: 299, ValidatorSet: valSet, SelectedProducers: sp1Prods, BorChainId: "bor"},
+					{Id: 2, StartBlock: 300, EndBlock: 399, ValidatorSet: valSet, SelectedProducers: sp2Prods, BorChainId: "bor"},
+				}
+				for i := range spans {
+					require.NoError(s.borKeeper.AddNewSpan(s.ctx, &spans[i]))
+				}
 			},
-			expectErr:     false,
-			expectPDSet:   true,
-			expectPDRange: &types.BlockRange{StartBlock: 10, EndBlock: 20},
+			expectErr:       false,
+			expectPDSet:     true,
+			expectPDRange:   &types.BlockRange{StartBlock: 150, EndBlock: 350},
+			expectSpanDelta: 2, // spans 0 and 2 trigger replacements
 		},
 	}
 
 	for _, tc := range tests {
 		s.T().Run(tc.name, func(t *testing.T) {
-			// Fresh state per subtest
+			// Fresh state
 			s.SetupTest()
-			require.NoError(s.borKeeper.SetParams(s.ctx, types.DefaultParams()))
 
-			// Seed a few spans again so GetLastSpan works
-			valSet, vals := s.genTestValidators()
-			for i, span := range []types.Span{
-				{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
-				{Id: 1, StartBlock: 200, EndBlock: 299, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
-				{Id: 2, StartBlock: 300, EndBlock: 399, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
-			} {
-				require.NoError(s.borKeeper.AddNewSpan(s.ctx, &span), "seed span %d", i)
+			require.NoError(s.borKeeper.SetParams(s.ctx, types.DefaultParams()))
+			primeStakeMocks()
+
+			// Seed minimal spans so GetLastSpan works, unless test seeds its own
+			if tc.expectSpanDelta == 0 && tc.errContains == "" {
+				valSet, vals := s.genTestValidators()
+				if len(vals) > 0 {
+					vals[0].ValId = id2 // avoid replacements in generic tests
+				}
+				for _, sp := range []types.Span{
+					{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
+					{Id: 1, StartBlock: 200, EndBlock: 299, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
+					{Id: 2, StartBlock: 300, EndBlock: 399, ValidatorSet: valSet, SelectedProducers: vals, BorChainId: "bor"},
+				} {
+					require.NoError(s.borKeeper.AddNewSpan(s.ctx, &sp))
+				}
 			}
 
 			if tc.setup != nil {
 				tc.setup()
 			}
 
-			postHandler := s.sideMsgServer.PostTxHandler(sdk.MsgTypeURL(&types.MsgSetProducerDowntime{}))
-			err := postHandler(s.ctx, tc.msg, tc.sideVote)
+			// Snapshot initial last span if present
+			initialLastID := uint64(0)
+			hadInitialSpan := false
+			if last, err := s.borKeeper.GetLastSpan(s.ctx); err == nil {
+				hadInitialSpan = true
+				initialLastID = last.Id
+			}
+
+			handler := s.sideMsgServer.PostTxHandler(sdk.MsgTypeURL(&types.MsgSetProducerDowntime{}))
+			err := handler(s.ctx, tc.msg, tc.sideVote)
 
 			if tc.expectErr {
 				require.Error(err)
@@ -606,12 +725,18 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 				require.NoError(err)
 			}
 
-			// Validate PD persistence if expected
 			if tc.expectPDSet {
 				br := getPD(id1)
 				require.NotNil(br)
 				require.Equal(tc.expectPDRange.StartBlock, br.StartBlock)
 				require.Equal(tc.expectPDRange.EndBlock, br.EndBlock)
+			}
+
+			if tc.expectSpanDelta > 0 && !tc.expectErr {
+				require.True(hadInitialSpan, "expected an initial span to compare deltas")
+				last, err := s.borKeeper.GetLastSpan(s.ctx)
+				require.NoError(err)
+				require.Equal(initialLastID+uint64(tc.expectSpanDelta), last.Id)
 			}
 		})
 	}
