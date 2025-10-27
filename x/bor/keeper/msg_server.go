@@ -268,7 +268,7 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 	validators := s.sk.GetSpanEligibleValidators(ctx)
 	found := false
 	for _, v := range validators {
-		if strings.ToUpper(v.Signer) == strings.ToUpper(msg.Producer) {
+		if strings.EqualFold(v.Signer, strings.TrimPrefix(msg.Producer, "0x")) {
 			found = true
 			break
 		}
