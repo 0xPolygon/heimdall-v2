@@ -125,7 +125,7 @@ const (
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hard fork
 	MaxStateSyncSize = 30000
 
-	EnforcedMinRetainBlocks = 2500000
+	EnforcedMinRetainBlocks = 100000
 )
 
 func init() {
