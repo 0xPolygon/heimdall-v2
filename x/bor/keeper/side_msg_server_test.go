@@ -644,19 +644,21 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 				params := types.DefaultParams()
 				require.NoError(s.borKeeper.SetParams(s.ctx, params))
 
+				// Seed latest active producers (optional; safe even if AddNewVeblopSpan can handle nil)
 				require.NoError(s.borKeeper.UpdateLatestActiveProducer(s.ctx, map[uint64]struct{}{id2: {}, id3: {}}))
 
 				valSet, vals := s.genTestValidators()
 				require.NotEmpty(vals)
 
-				// Build per-span SelectedProducers so only spans 0 and 2 have id1 as selected producer.
+				// Build per-span SelectedProducers; selection no longer affects overlap trigger,
+				// but keep two spans with id1 for clarity.
 				sp0Prods := make([]stakeTypes.Validator, len(vals))
 				copy(sp0Prods, vals)
 				sp0Prods[0].ValId = id1
 
 				sp1Prods := make([]stakeTypes.Validator, len(vals))
 				copy(sp1Prods, vals)
-				sp1Prods[0].ValId = id2 // different producer -> no replacement for span 1
+				sp1Prods[0].ValId = id2 // different producer
 
 				sp2Prods := make([]stakeTypes.Validator, len(vals))
 				copy(sp2Prods, vals)
@@ -671,10 +673,11 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 					require.NoError(s.borKeeper.AddNewSpan(s.ctx, &spans[i]))
 				}
 			},
-			expectErr:       false,
-			expectPDSet:     true,
-			expectPDRange:   &types.BlockRange{StartBlock: 150, EndBlock: 350},
-			expectSpanDelta: 2, // spans 0 and 2 trigger replacements
+			expectErr:     false,
+			expectPDSet:   true,
+			expectPDRange: &types.BlockRange{StartBlock: 150, EndBlock: 350},
+			// New PostHandler adds exactly one veblop span when any overlap exists.
+			expectSpanDelta: 1,
 		},
 	}
 

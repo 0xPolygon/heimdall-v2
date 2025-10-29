@@ -514,61 +514,53 @@ func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 
 	delete(latestActiveProducer, validatorId)
 
-	// Walk spans backwards from the latest until we are past the start block for the given downtime.
-	// For every span that overlaps the downtime range AND where this validator is the selected producer
-	// for that span, generate a new replacement span.
-	dtStart, dtEnd := msg.DowntimeRange.StartBlock, msg.DowntimeRange.EndBlock
-	cur := lastSpan
+	hasOverlappingSpan := func() (bool, error) {
+		// Walk backwards from the last span and return the smallest ID that still overlaps [dtStart, dtEnd].
+		cur := lastSpan
 
-	// Stop once we're past the downtime start window (older than dtStart)
-	for cur.EndBlock >= dtStart {
-
-		// Check overlap between this span and the downtime window (inclusive overlap)
-		overlaps := cur.StartBlock <= dtEnd && cur.EndBlock >= dtStart
-		if overlaps {
-			if cur.SelectedProducers[0].ValId == validatorId {
-				// At minimum, confirm the planned downtime applies to this producer over this span.
-				isDown, derr := s.k.IsProducerDownForBlockRange(ctx, cur.StartBlock, cur.EndBlock, validatorId)
-				if derr != nil {
-					logger.Error("failed to check producer downtime overlap", "spanId", cur.Id, "error", derr)
-					return derr
-				}
-
-				if isDown {
-					err = s.k.AddNewVeblopSpan(ctx, validatorId, lastSpan.EndBlock+1, lastSpan.EndBlock+params.SpanDuration, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()))
-					if err != nil {
-						logger.Error("Error occurred while adding new veblop span", "error", err)
-						return err
-					}
-					logger.Info("downtime overlaps span; replacement span should be generated",
-						"spanId", cur.Id,
-						"spanStart", cur.StartBlock,
-						"spanEnd", cur.EndBlock,
-						"producerId", validatorId,
-						"downtimeStart", dtStart,
-						"downtimeEnd", dtEnd,
-					)
-					lastSpan, err = s.k.GetLastSpan(ctx)
-					if err != nil {
-						logger.Error("error fetching last span", "error", err)
-						return err
-					}
-				}
+		for {
+			isDown, derr := s.k.IsProducerDownForBlockRange(ctx, cur.StartBlock, cur.EndBlock, validatorId)
+			if derr != nil {
+				logger.Error("failed to check producer downtime overlap", "spanId", cur.Id, "error", derr)
+				return false, derr
 			}
+
+			if isDown {
+				return true, nil
+			}
+
+			// Stop once we're past the downtime start window (older spans won't overlap)
+			if cur.Id == 0 || cur.EndBlock < msg.DowntimeRange.StartBlock {
+				break
+			}
+
+			// Move to previous span; if not found, stop scanning.
+			prev, gerr := s.k.GetSpan(ctx, cur.Id-1)
+			if gerr != nil {
+				logger.Debug("stopping backward scan while traversing previous spans",
+					"fromSpanId", cur.Id, "error", gerr)
+				break
+			}
+
+			cur = prev
 		}
 
-		// Move to the previous span by ID. Stop if we reach the first span or cannot fetch older.
-		if cur.Id == 0 {
-			break
-		}
-		prev, gerr := s.k.GetSpan(ctx, cur.Id-1)
-		if gerr != nil {
-			// If previous span isn't found or any error occurs, stop scanning.
-			logger.Debug("stopping backward scan while traversing previous spans",
-				"fromSpanId", cur.Id, "error", gerr)
-			break
-		}
-		cur = prev
+		return false, nil
+	}
+
+	foundOverlappingSpan, err := hasOverlappingSpan()
+	if err != nil {
+		return err
+	}
+
+	if !foundOverlappingSpan {
+		// No spans overlap the downtime window; nothing to do.
+		return nil
+	}
+
+	if err := s.k.AddNewVeblopSpan(ctx, validatorId, msg.DowntimeRange.StartBlock, msg.DowntimeRange.StartBlock+params.SpanDuration, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight())); err != nil {
+		logger.Error("Error occurred while adding new veblop span", "error", err)
+		return err
 	}
 
 	return nil
