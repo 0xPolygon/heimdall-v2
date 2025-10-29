@@ -8,4 +8,5 @@ const (
 	FlagProducerAddress   = "producer-address"
 	FlagStartTimestampUTC = "start-timestamp-utc"
 	FlagEndTimestampUTC   = "end-timestamp-utc"
+	FlagCalcOnly          = "calc-only"
 )
