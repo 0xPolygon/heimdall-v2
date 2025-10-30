@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
@@ -264,10 +265,12 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 	start := time.Now()
 	defer recordBorTransactionMetric(api.ProducerDowntimeMethod, start, &err)
 
+	producerId := uint64(0)
 	validators := s.sk.GetSpanEligibleValidators(ctx)
 	found := false
 	for _, v := range validators {
 		if util.FormatAddress(v.Signer) == util.FormatAddress(msg.Producer) {
+			producerId = v.ValId
 			found = true
 			break
 		}
@@ -275,6 +278,27 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 
 	if !found {
 		return nil, fmt.Errorf("producer with address %s not found in the current validator set", msg.Producer)
+	}
+
+	candidates, err := s.Keeper.CalculateProducerSet(ctx, ProducerSetLimit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate producer set: %w", err)
+	}
+
+	if len(candidates) == 0 {
+		candidates = helper.GetFallbackProducerVotes()
+	}
+
+	isProducer := false
+	for _, c := range candidates {
+		if c == producerId {
+			isProducer = true
+			break
+		}
+	}
+
+	if !isProducer {
+		return nil, fmt.Errorf("producer with address %s and id %d is not in the current producer set", msg.Producer, producerId)
 	}
 
 	if msg.DowntimeRange.StartBlock >= msg.DowntimeRange.EndBlock {

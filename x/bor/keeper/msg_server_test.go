@@ -583,8 +583,10 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 		id      uint64
 		hexAddr string
 	}
-	val1 := valInfo{1, common.HexToAddress("0x0000000000000000000000000000000000000001").Hex()}
-	val2 := valInfo{2, common.HexToAddress("0x0000000000000000000000000000000000000002").Hex()}
+	id1, id2, id3 := uint64(1), uint64(2), uint64(3)
+	val1 := valInfo{id1, common.HexToAddress("0x0000000000000000000000000000000000000001").Hex()}
+	val2 := valInfo{id2, common.HexToAddress("0x0000000000000000000000000000000000000002").Hex()}
+	val3 := valInfo{id3, common.HexToAddress("0x0000000000000000000000000000000000000003").Hex()}
 
 	minRange := uint64(types.PlannedDowntimeMinRange)
 	maxRange := uint64(types.PlannedDowntimeMaxRange)
@@ -596,63 +598,106 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 		}
 	}
 
+	// Prime stake mocks for CalculateProducerSet and eligible validators.
+	primeStakeMocks := func(validators []staketypes.Validator) {
+		// GetValidatorSet (used by CalculateProducerSet)
+		s.stakeKeeper.EXPECT().
+			GetValidatorSet(gomock.Any()).
+			Return(staketypes.ValidatorSet{
+				Validators: []*staketypes.Validator{
+					{ValId: id1, Signer: val1.hexAddr, VotingPower: 100},
+					{ValId: id2, Signer: val2.hexAddr, VotingPower: 100},
+					{ValId: id3, Signer: val3.hexAddr, VotingPower: 100},
+				},
+			}, nil).
+			AnyTimes()
+
+		// Eligible validators (used to find producerId)
+		s.stakeKeeper.EXPECT().
+			GetSpanEligibleValidators(gomock.Any()).
+			Return(validators).
+			AnyTimes()
+
+		// Lookup by valID (used in producer set calc/weights)
+		s.stakeKeeper.EXPECT().
+			GetValidatorFromValID(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ sdk.Context, vid uint64) (staketypes.Validator, error) {
+				switch vid {
+				case id1:
+					return staketypes.Validator{ValId: id1, Signer: val1.hexAddr, VotingPower: 100}, nil
+				case id2:
+					return staketypes.Validator{ValId: id2, Signer: val2.hexAddr, VotingPower: 100}, nil
+				case id3:
+					return staketypes.Validator{ValId: id3, Signer: val3.hexAddr, VotingPower: 100}, nil
+				default:
+					return staketypes.Validator{}, fmt.Errorf("unknown validator id %d", vid)
+				}
+			}).
+			AnyTimes()
+	}
+
+	// Helper to set producer votes for voters (drives CalculateProducerSet output).
+	setVotesForAll := func(voteList []uint64) {
+		require.NoError(s.borKeeper.ClearProducerVotes(s.ctx))
+		for _, voter := range []uint64{id1, id2, id3} {
+			require.NoError(s.borKeeper.SetProducerVotes(s.ctx, voter, types.ProducerVotes{Votes: voteList}))
+		}
+	}
+
 	type testCase struct {
 		name            string
-		validators      []staketypes.Validator
-		milestone       *milestoneTypes.Milestone
-		milestoneErr    error
-		existingForVal1 *types.BlockRange // if set, pre-store existing downtime for val1
+		validators      []staketypes.Validator // eligible validators
+		seedVotes       []uint64               // producer ranking to control producer set
 		msg             *types.MsgSetProducerDowntime
 		expectErrSubstr string
 	}
 
 	tests := []testCase{
 		{
-			name:       "success - valid producer, milestone ok, no pre-existing, range within bounds",
-			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
-			milestone:  &milestoneTypes.Milestone{EndBlock: 10_000},
-			msg:        newMsg(val1.hexAddr, 100, 100+minRange), // exactly minRange distance, valid
+			name:       "success - valid producer in eligible and producer set, range within bounds",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3}, // include id1 in producer set
+			msg:        newMsg(val1.hexAddr, 100, 100+minRange),
 		},
 		{
 			name:            "error - producer not found in eligible set",
 			validators:      []staketypes.Validator{{ValId: val2.id, Signer: val2.hexAddr}}, // missing val1
-			milestone:       &milestoneTypes.Milestone{EndBlock: 10_000},
+			seedVotes:       []uint64{id2, id3},                                             // irrelevant, early exit
 			msg:             newMsg(val1.hexAddr, 100, 100+minRange),
 			expectErrSubstr: "producer with address",
 		},
 		{
+			name:            "error - producer found in eligible but not in current producer set",
+			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}},
+			seedVotes:       []uint64{id2, id3}, // exclude id1 from producer set
+			msg:             newMsg(val1.hexAddr, 150, 150+minRange),
+			expectErrSubstr: "not in the current producer set",
+		},
+		{
 			name:            "error - start >= end",
 			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
-			milestone:       &milestoneTypes.Milestone{EndBlock: 10_000},
+			seedVotes:       []uint64{id1, id2},
 			msg:             newMsg(val1.hexAddr, 200, 200),
 			expectErrSubstr: "start block must be less than end block",
 		},
 		{
 			name:            "error - range too short (< minRange)",
 			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
-			milestone:       &milestoneTypes.Milestone{EndBlock: 10_000},
+			seedVotes:       []uint64{id1, id2},
 			msg:             newMsg(val1.hexAddr, 300, 300+(minRange-1)),
 			expectErrSubstr: fmt.Sprintf("time range must be at least %d blocks", minRange),
 		},
 		{
 			name:            "error - range too long (> maxRange)",
 			validators:      []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
-			milestone:       &milestoneTypes.Milestone{EndBlock: 10_000},
+			seedVotes:       []uint64{id1, id2},
 			msg:             newMsg(val1.hexAddr, 400, 400+(maxRange+1)),
 			expectErrSubstr: fmt.Sprintf("time range must be at most %d blocks", maxRange),
 		},
 		{
-			name:       "success - existing planned downtime present but before milestone end",
-			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
-			milestone:  &milestoneTypes.Milestone{EndBlock: 10_000},
-			// existing ends before milestone end -> allowed to proceed to range checks
-			existingForVal1: &types.BlockRange{StartBlock: 1, EndBlock: 9_999},
-			msg:             newMsg(val1.hexAddr, 500, 500+minRange),
-		},
-		{
 			name:       "success - boundary case exactly maxRange",
 			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}},
-			milestone:  &milestoneTypes.Milestone{EndBlock: 10_000},
+			seedVotes:  []uint64{id1, id2},
 			msg:        newMsg(val1.hexAddr, 600, 600+maxRange),
 		},
 	}
@@ -661,33 +706,12 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 		s.T().Run(tc.name, func(t *testing.T) {
 			// Fresh suite state
 			s.SetupTest()
-
 			ctx := s.ctx
 			msgServer := s.msgServer
 
-			// Default expectations: per-test validators and milestone behavior
-			s.stakeKeeper.EXPECT().
-				GetSpanEligibleValidators(gomock.Any()).
-				Return(tc.validators).
-				AnyTimes()
-
-			if tc.milestoneErr != nil {
-				s.milestoneKeeper.EXPECT().
-					GetLastMilestone(gomock.Any()).
-					Return(nil, tc.milestoneErr).
-					AnyTimes()
-			} else {
-				s.milestoneKeeper.EXPECT().
-					GetLastMilestone(gomock.Any()).
-					Return(tc.milestone, nil).
-					AnyTimes()
-			}
-
-			// Pre-store existing planned downtime for val1 if requested
-			if tc.existingForVal1 != nil {
-				err := s.borKeeper.ProducerPlannedDowntime.Set(ctx, val1.id, *tc.existingForVal1)
-				require.NoError(err)
-			}
+			// Prime mocks and seed producer votes controlling producer set
+			primeStakeMocks(tc.validators)
+			setVotesForAll(tc.seedVotes)
 
 			res, err := msgServer.SetProducerDowntime(ctx, tc.msg)
 
