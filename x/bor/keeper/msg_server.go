@@ -281,7 +281,7 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	candidates, err := s.CalculateProducerSet(ctx, GetProducerSetLimit(sdkCtx))
+	candidates, err := s.CalculateProducerSet(ctx, helper.GetProducerSetLimit(sdkCtx))
 	if err != nil {
 		return nil, fmt.Errorf("failed to calculate producer set: %w", err)
 	}

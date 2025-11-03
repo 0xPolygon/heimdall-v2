@@ -17,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/rs/zerolog"
@@ -663,6 +664,18 @@ func GetFallbackProducerVotes() []uint64 {
 	default:
 		return parseProducerVotes(DefaultLocalTestnetProducers)
 	}
+}
+
+const (
+	producerSetLimit    = uint64(3)
+	newProducerSetLimit = uint64(4)
+)
+
+func GetProducerSetLimit(ctx sdk.Context) uint64 {
+	if ctx.BlockHeight() >= GetSetProducerDowntimeHeight() {
+		return newProducerSetLimit
+	}
+	return producerSetLimit
 }
 
 // DecorateWithHeimdallFlags adds persistent flags for app configs and bind flags with command

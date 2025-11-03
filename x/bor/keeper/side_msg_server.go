@@ -419,7 +419,7 @@ func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 	isProducer := false
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	producers, err := s.k.CalculateProducerSet(ctx, GetProducerSetLimit(sdkCtx))
+	producers, err := s.k.CalculateProducerSet(ctx, helper.GetProducerSetLimit(sdkCtx))
 	if err != nil {
 		logger.Error("error calculating producer set", "error", err)
 		return err
