@@ -74,8 +74,6 @@ filippo.io/edwards25519 v1.0.0 h1:0wAIcmJUqRdI8IJ/3eGi5/HwXZWPujYXXlkrQogz0Ek=
 filippo.io/edwards25519 v1.0.0/go.mod h1:N1IkdkCkiLB6tki+MYJoSx2JTY9NUlxZE7eHn5EwJns=
 github.com/0xPolygon/bor v1.14.14-0.20251010161633-ee500572b11b h1:7fgj3frpkPgIbJDCwdEOquJRT45C7RPWfhX4dE1PC1A=
 github.com/0xPolygon/bor v1.14.14-0.20251010161633-ee500572b11b/go.mod h1:QkRKJhZ17Nio52+QXY1W7b119xRLeHYrDKVGxn2YqPU=
-github.com/0xPolygon/cometbft v0.3.3-polygon h1:YFUgZIYSGWgishtBE0beXcuJRfRgwppzqPLnJz6ntlE=
-github.com/0xPolygon/cometbft v0.3.3-polygon/go.mod h1:WkWrwJWRtAMU1RVyB+5+8yfDgLP7oZVjmhjdokWvCwc=
 github.com/0xPolygon/cosmos-sdk v0.2.6-polygon h1:jLi8SR8WbUp3kXwELxwcnLEd2gvVbGXHHggBn/bjM6Q=
 github.com/0xPolygon/cosmos-sdk v0.2.6-polygon/go.mod h1:Z5578vP+IFgxslttbNf24pSGkM9wfDn9Ce8LlGQpLpk=
 github.com/0xPolygon/cosmos-sdk/api v0.7.6-0.20250429154832-7177ebac408e h1:RLUwoGYtf4IahtrMHTJdesTXM+ggz+2iikaxmViCNGo=
@@ -262,8 +260,6 @@ github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06/go.mod h1:
 github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd/go.mod h1:sE/e/2PUdi/liOCUjSTXgM1o87ZssimdTWN964YiIeI=
 github.com/coder/websocket v1.8.7 h1:jiep6gmlfP/yq2w1gBoubJEXL9gf8x3bp6lzzX8nJxE=
 github.com/coder/websocket v1.8.7/go.mod h1:B70DZP8IakI65RVQ51MsWP/8jndNma26DVA/nFSCgW0=
-github.com/cometbft/cometbft-db v0.14.1 h1:SxoamPghqICBAIcGpleHbmoPqy+crij/++eZz3DlerQ=
-github.com/cometbft/cometbft-db v0.14.1/go.mod h1:KHP1YghilyGV/xjD5DP3+2hyigWx0WTp9X+0Gnx0RxQ=
 github.com/consensys/bavard v0.1.27 h1:j6hKUrGAy/H+gpNrpLU3I26n1yc+VMGmd6ID5+gAhOs=
 github.com/consensys/bavard v0.1.27/go.mod h1:k/zVjHHC4B+PQy1Pg7fgvG3ALicQw540Crag8qx+dZs=
 github.com/consensys/gnark-crypto v0.16.0 h1:8Dl4eYmUWK9WmlP1Bj6je688gBRJCJbT8Mw4KoTAawo=
@@ -823,6 +819,8 @@ github.com/lightstep/lightstep-tracer-common/golang/gogo v0.0.0-20190605223551-b
 github.com/lightstep/lightstep-tracer-go v0.18.1/go.mod h1:jlF1pusYV4pidLvZ+XD0UBX0ZE6WURAspgAczcDHrL4=
 github.com/linxGnu/grocksdb v1.8.14 h1:HTgyYalNwBSG/1qCQUIott44wU5b2Y9Kr3z7SK5OfGQ=
 github.com/linxGnu/grocksdb v1.8.14/go.mod h1:QYiYypR2d4v63Wj1adOOfzglnoII0gLj3PNh4fZkcFA=
+github.com/lucca30/cometbft-db v0.14.1-lucca h1:TUevLhcnQ2ECzgnHP45g8GokmH//eHMF/saGGPH9/Ug=
+github.com/lucca30/cometbft-db v0.14.1-lucca/go.mod h1:KHP1YghilyGV/xjD5DP3+2hyigWx0WTp9X+0Gnx0RxQ=
 github.com/lyft/protoc-gen-validate v0.0.13/go.mod h1:XbGvPuh87YZc5TdIa2/I4pLk0QoUACkjt2znoq26NVQ=
 github.com/magiconair/properties v1.8.7 h1:IeQXZAiQcpL9mgcAe1Nu6cX9LLw6ExEHKjN0VQdvPDY=
 github.com/magiconair/properties v1.8.7/go.mod h1:Dhd985XPs7jluiymwWYZ0G4Z61jb3vdS329zhj2hYo0=
