@@ -405,18 +405,29 @@ func GetMajorityMilestoneProposition(
 
 var ErrNoHeadersFound = errors.New("no header found")
 
-func getBlockInfo(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, []uint64, []common.Address, error) {
+func getBlockInfo(ctx sdk.Context, startBlockNum, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, []uint64, []common.Address, error) {
 	latestBlock, err := contractCaller.GetBorChainBlock(ctx, nil)
 	if err != nil || latestBlock == nil {
 		return nil, nil, nil, nil, fmt.Errorf("failed to get latest block: %w", err)
 	}
 
-	milestoneEnd := int64(startBlock + maxBlocksInProposition - 1)
-	if latestBlock.Number.Int64() > int64(startBlock) && latestBlock.Number.Int64() < milestoneEnd {
-		milestoneEnd = latestBlock.Number.Int64()
+	latestBlockNum := latestBlock.Number.Uint64()
+
+	// Check if there are any new blocks available to fetch.
+	if latestBlockNum < startBlockNum {
+		return nil, nil, nil, nil, fmt.Errorf("no new blocks available: latest block %d < start block %d", latestBlockNum, startBlockNum)
 	}
 
-	headers, tds, authors, err := contractCaller.GetBorChainBlockInfoInBatch(ctx, int64(startBlock), milestoneEnd)
+	// Calculate how many blocks are actually available to fetch from the Bor chain.
+	availableBlocks := latestBlockNum - startBlockNum + 1
+
+	// Only fetch the minimum of available blocks and max blocks in proposition
+	// This optimizes RPC calls when synced (e.g., only 1-2 blocks are actually available to fetch).
+	blocksToFetch := min(availableBlocks, maxBlocksInProposition)
+
+	milestoneEnd := startBlockNum + blocksToFetch - 1
+
+	headers, tds, authors, err := contractCaller.GetBorChainBlockInfoInBatch(ctx, int64(startBlockNum), int64(milestoneEnd))
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
 	}
@@ -430,7 +441,7 @@ func getBlockInfo(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, la
 	var parentHash []byte
 	if len(headers) > 0 && len(lastMilestoneHash) > 0 {
 		parentHash = headers[0].ParentHash.Bytes()
-		if startBlock-lastMilestoneBlock > 1 {
+		if startBlockNum-lastMilestoneBlock > 1 {
 			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock+1)))
 			if err != nil {
 				return nil, nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
