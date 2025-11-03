@@ -12,8 +12,10 @@ import (
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-const producerSetLimit = uint64(3)
-const newProducerSetLimit = uint64(4)
+const (
+	producerSetLimit    = uint64(3)
+	newProducerSetLimit = uint64(4)
+)
 
 func GetProducerSetLimit(ctx sdk.Context) uint64 {
 	if ctx.BlockHeight() >= helper.GetSetProducerDowntimeHeight() {
