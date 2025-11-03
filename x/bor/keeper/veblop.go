@@ -12,14 +12,22 @@ import (
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-const ProducerSetLimit = uint64(3)
+const producerSetLimit = uint64(3)
+const newProducerSetLimit = uint64(4)
+
+func GetProducerSetLimit(ctx sdk.Context) uint64 {
+	if ctx.BlockHeight() >= helper.GetSetProducerDowntimeHeight() {
+		return newProducerSetLimit
+	}
+	return producerSetLimit
+}
 
 // AddNewVeblopSpan adds a new veblop (Validator-elected block producer) span
 func (k *Keeper) AddNewVeblopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}, heimdallBlock uint64) error {
 	logger := k.Logger(ctx)
 
 	// select next producers
-	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, ProducerSetLimit, startBlock, endBlock)
+	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, GetProducerSetLimit(ctx), startBlock, endBlock)
 	if err != nil {
 		return err
 	}
