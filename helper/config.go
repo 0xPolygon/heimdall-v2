@@ -447,13 +447,13 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	switch conf.Custom.Chain {
 	case MainChain:
-		milestoneDeletionHeight = 28525000
-		faultyMilestoneNumber = 1941439
-		rioHeight = 77414656 // Rio height for Mainnet.
-		tallyFixHeight = 28913694
-		disableVPCheckHeight = 25723000
-		disableValSetCheckHeight = 25723063
-		initialHeight = 24404501
+		milestoneDeletionHeight = 0
+		faultyMilestoneNumber = -1
+		rioHeight = 0 // Rio height for local devnet.
+		tallyFixHeight = 0
+		disableVPCheckHeight = 0
+		disableValSetCheckHeight = 0
+		initialHeight = 0
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -473,7 +473,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 256 // Rio height for local devnet.
+		rioHeight = 0 // Rio height for local devnet.
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
