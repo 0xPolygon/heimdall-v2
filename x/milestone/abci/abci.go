@@ -432,7 +432,7 @@ func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startB
 			return nil, nil, nil, nil, fmt.Errorf("failed to refresh the latest header: %w", err)
 		}
 		latestBlockNum = latestHeader.Number.Uint64()
-		// If still not available, return ErrNoHeadersFound since Bor hasn't produced the block yet.
+		// If still not available, return ErrNoNewHeadersFound since Bor hasn't produced the block yet.
 		// GenMilestoneProposition will propagate this, and app/abci.go will handle it gracefully.
 		if latestBlockNum < startBlockNum {
 			return nil, nil, nil, nil, ErrNoNewHeadersFound
