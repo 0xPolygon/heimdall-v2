@@ -243,6 +243,9 @@ func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64,
 
 	if len(candidates) == 0 {
 		candidates = helper.GetFallbackProducerVotes()
+		if producerSetLimit > 0 && uint64(len(candidates)) > producerSetLimit {
+			candidates = candidates[:producerSetLimit]
+		}
 	}
 
 	activeCandidates := k.FilterByActiveProducerSet(ctx, candidates, activeValidatorIDs)
