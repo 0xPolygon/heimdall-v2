@@ -265,7 +265,8 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 	start := time.Now()
 	defer recordBorTransactionMetric(api.ProducerDowntimeMethod, start, &err)
 
-	if err := s.CanSetProducerDowntime(ctx); err != nil {
+	sdkContext := sdk.UnwrapSDKContext(ctx)
+	if err := s.CanSetProducerDowntime(sdkContext); err != nil {
 		return nil, err
 	}
 
