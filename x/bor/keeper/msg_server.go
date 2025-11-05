@@ -285,7 +285,6 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 		return nil, fmt.Errorf("producer with address %s not found in the current validator set", msg.Producer)
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	candidates, err := s.CalculateProducerSet(ctx, helper.GetProducerSetLimit(sdkCtx))
 	if err != nil {
 		return nil, fmt.Errorf("failed to calculate producer set: %w", err)
