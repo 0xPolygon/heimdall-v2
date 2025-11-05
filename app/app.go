@@ -508,7 +508,6 @@ func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx
 			} else if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
 				// Create a context for validation
 				ctx := app.NewUncachedContext(true, cmtproto.Header{})
-				ctx.BlockHeight()
 				if err := app.BorKeeper.CanSetProducerDowntime(ctx); err != nil {
 					app.Logger().Debug("rejecting MsgSetProducerDowntime in CheckTx", "error", err)
 					return &abci.ResponseCheckTx{

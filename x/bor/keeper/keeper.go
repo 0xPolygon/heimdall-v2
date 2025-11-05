@@ -596,15 +596,10 @@ func (k Keeper) CanVoteProducers(ctx context.Context) error {
 }
 
 // CanSetProducerDowntime checks if the current height is after the setProducerDowntimeHeight
-func (k Keeper) CanSetProducerDowntime(ctx context.Context) error {
-	milestone, err := k.mk.GetLastMilestone(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get latest milestone for SetProducerDowntime validation: %w", err)
-	}
-
-	if milestone.EndBlock < uint64(helper.GetSetProducerDowntimeHeight()) {
-		return fmt.Errorf("MsgSetProducerDowntime not allowed: current milestone end block %d is before the setProducerDowntimeHeight %d",
-			milestone.EndBlock,
+func (k Keeper) CanSetProducerDowntime(ctx sdk.Context) error {
+	if uint64(ctx.BlockHeight()) < uint64(helper.GetSetProducerDowntimeHeight()) {
+		return fmt.Errorf("MsgSetProducerDowntime not allowed: block %d is before the setProducerDowntimeHeight %d",
+			ctx.BlockHeight(),
 			helper.GetSetProducerDowntimeHeight())
 	}
 
