@@ -265,6 +265,11 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 	start := time.Now()
 	defer recordBorTransactionMetric(api.ProducerDowntimeMethod, start, &err)
 
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := s.CanSetProducerDowntime(sdkCtx); err != nil {
+		return nil, err
+	}
+
 	producerId := uint64(0)
 	validators := s.sk.GetSpanEligibleValidators(ctx)
 	found := false
