@@ -678,6 +678,27 @@ func GetProducerSetLimit(ctx sdk.Context) uint64 {
 	return producerSetLimit
 }
 
+const (
+	changeProducerThreshold    = 5
+	spanRotationBuffer         = 10
+	newChangeProducerThreshold = 10
+	newSpanRotationBuffer      = 20
+)
+
+func GetChangeProducerThreshold(ctx sdk.Context) int64 {
+	if ctx.BlockHeight() >= GetSetProducerDowntimeHeight() {
+		return newChangeProducerThreshold
+	}
+	return changeProducerThreshold
+}
+
+func GetSpanRotationBuffer(ctx sdk.Context) uint64 {
+	if ctx.BlockHeight() >= GetSetProducerDowntimeHeight() {
+		return newSpanRotationBuffer
+	}
+	return spanRotationBuffer
+}
+
 // DecorateWithHeimdallFlags adds persistent flags for app configs and bind flags with command
 func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstance logger.Logger, caller string) {
 	// add the with-app-config flag

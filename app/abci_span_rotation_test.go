@@ -164,7 +164,7 @@ func TestCheckAndRotateCurrentSpan(t *testing.T) {
 		err := app.BorKeeper.AddNewSpan(ctx, &lastSpan)
 		require.NoError(t, err)
 
-		ctx = ctx.WithBlockHeight(int64(lastMilestoneBlock) + ChangeProducerThreshold) // diff == ChangeProducerThreshold
+		ctx = ctx.WithBlockHeight(int64(lastMilestoneBlock) + helper.GetChangeProducerThreshold(ctx)) // diff == ChangeProducerThreshold
 
 		err = app.checkAndRotateCurrentSpan(ctx)
 		require.NoError(t, err)
@@ -207,7 +207,7 @@ func TestCheckAndRotateCurrentSpan(t *testing.T) {
 		err := app.BorKeeper.AddNewSpan(ctx, &lastSpan)
 		require.NoError(t, err)
 
-		ctx = ctx.WithBlockHeight(int64(lastMilestoneBlock) + ChangeProducerThreshold + 1)
+		ctx = ctx.WithBlockHeight(int64(lastMilestoneBlock) + helper.GetChangeProducerThreshold(ctx) + 1)
 		helper.SetRioHeight(int64(lastMilestone.EndBlock + 2)) // Makes IsRio false
 
 		err = app.checkAndRotateCurrentSpan(ctx)
@@ -322,8 +322,8 @@ func TestCheckAndRotateCurrentSpan(t *testing.T) {
 			app.BorKeeper.SetParams(ctx, params)
 		}
 
-		ctx = ctx.WithBlockHeight(int64(lastMilestoneBlock) + ChangeProducerThreshold + 1) // diff > ChangeProducerThreshold
-		helper.SetRioHeight(int64(lastMilestone.EndBlock + 1))                             // Makes IsRio true
+		ctx = ctx.WithBlockHeight(int64(lastMilestoneBlock) + helper.GetChangeProducerThreshold(ctx) + 1) // diff > ChangeProducerThreshold
+		helper.SetRioHeight(int64(lastMilestone.EndBlock + 1))                                            // Makes IsRio true
 
 		// Mock IContractCaller with proper producer mapping
 		mockCaller := new(helpermocks.IContractCaller)
@@ -346,7 +346,7 @@ func TestCheckAndRotateCurrentSpan(t *testing.T) {
 		// Verify other expected state changes
 		newLastMilestoneBlock, err := app.MilestoneKeeper.GetLastMilestoneBlock(ctx)
 		require.NoError(t, err)
-		require.Equal(t, uint64(ctx.BlockHeight())+SpanRotationBuffer, newLastMilestoneBlock, "last milestone block should be updated")
+		require.Equal(t, uint64(ctx.BlockHeight())+helper.GetSpanRotationBuffer(ctx), newLastMilestoneBlock, "last milestone block should be updated")
 
 		failedProducers, err := app.BorKeeper.GetLatestFailedProducer(ctx)
 		require.NoError(t, err)
@@ -406,7 +406,7 @@ func TestPreBlockerSpanRotationWithMinorityMilestone(t *testing.T) {
 	app.BorKeeper.SetContractCaller(mockCaller)
 
 	// Set context to trigger span rotation conditions
-	blockHeight := int64(milestone.EndBlock) + ChangeProducerThreshold + 1
+	blockHeight := int64(milestone.EndBlock) + helper.GetChangeProducerThreshold(ctx) + 1
 	ctx = ctx.WithBlockHeight(blockHeight)
 	// Set rio height to be at or before milestone.EndBlock+1 to ensure IsRio check passes
 	helper.SetRioHeight(int64(milestone.EndBlock + 1))
@@ -488,7 +488,7 @@ func TestPreBlockerSpanRotationWithoutMinorityMilestone(t *testing.T) {
 	app.BorKeeper.SetContractCaller(mockCaller)
 
 	// Set context to trigger span rotation conditions
-	blockHeight := int64(milestone.EndBlock) + ChangeProducerThreshold + 1
+	blockHeight := int64(milestone.EndBlock) + helper.GetChangeProducerThreshold(ctx) + 1
 	ctx = ctx.WithBlockHeight(blockHeight)
 	// Set rio height to be at or before milestone.EndBlock+1 to ensure IsRio check passes
 	helper.SetRioHeight(int64(milestone.EndBlock + 1))
@@ -564,7 +564,7 @@ func TestPreBlockerSpanRotationWithMajorityMilestone(t *testing.T) {
 	require.NoError(t, err)
 
 	// Set context to trigger span rotation conditions
-	blockHeight := int64(milestone.EndBlock) + ChangeProducerThreshold + 1
+	blockHeight := int64(milestone.EndBlock) + helper.GetChangeProducerThreshold(ctx) + 1
 	ctx = ctx.WithBlockHeight(blockHeight)
 	// Set rio height to be at or before milestone.EndBlock+1 to ensure IsRio check passes
 	helper.SetRioHeight(int64(milestone.EndBlock + 1))
