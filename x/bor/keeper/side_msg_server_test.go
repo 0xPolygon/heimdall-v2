@@ -314,39 +314,41 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 			expectVote:  sidetxs.Vote_VOTE_NO,
 		},
 		{
-			name:       "start too soon - boundary (start+min == current) returns NO",
-			current:    minFuture + 50, // ensure no underflow in start calculation
-			msg:        newMsg((minFuture+50)-minFuture, (minFuture+50)-minFuture+10),
+			name:       "start too soon - boundary (start == current+min-1) returns NO",
+			current:    5_000_000,
+			msg:        newMsg((5_000_000+minFuture)-1, (5_000_000+minFuture)+10),
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
-			name:       "start too soon - strict (start+min < current) returns NO",
-			current:    minFuture + 50,
-			msg:        newMsg((minFuture+50)-minFuture-1, (minFuture+50)-minFuture+10),
+			name:       "start too soon - strict (start < current+min-1) returns NO",
+			current:    5_000_000,
+			msg:        newMsg((5_000_000+minFuture)-2, (5_000_000+minFuture)+10),
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
-			name:       "end too far - boundary (current+max == end) returns NO",
+			name:       "end too far - boundary (end == current+max) returns NO",
 			current:    2_000_000,
-			msg:        newMsg(2_000_000+1, 2_000_000+maxFuture),
+			msg:        newMsg(2_000_000+minFuture, 2_000_000+maxFuture),
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
-			name:       "end too far - strict (current+max < end) returns NO",
+			name:       "end too far - strict (end > current+max) returns NO",
 			current:    2_000_000,
-			msg:        newMsg(2_000_000+1, 2_000_000+maxFuture+1),
+			msg:        newMsg(2_000_000+minFuture, 2_000_000+maxFuture+1),
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
-			name:       "passes both checks - boundary just passing returns YES",
-			current:    3_000_000,
-			msg:        newMsg((3_000_000-minFuture)+1, (3_000_000+maxFuture)-1),
+			name:    "passes both checks - boundary just passing returns YES",
+			current: 3_000_000,
+			// start == current+min, end == current+max-1
+			msg:        newMsg(3_000_000+minFuture, (3_000_000+maxFuture)-1),
 			expectVote: sidetxs.Vote_VOTE_YES,
 		},
 		{
-			name:       "passes both checks - start well in future, end well within max returns YES",
-			current:    4_000_000,
-			msg:        newMsg(4_000_000+100, 4_000_000+maxFuture-100),
+			name:    "passes both checks - start well in future, end well within max returns YES",
+			current: 4_000_000,
+			// start >= current+min, end < current+max
+			msg:        newMsg(4_000_000+minFuture+100, 4_000_000+maxFuture-100),
 			expectVote: sidetxs.Vote_VOTE_YES,
 		},
 	}

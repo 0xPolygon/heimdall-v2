@@ -205,7 +205,7 @@ func (s sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 
 	childBlockNumber := childBlock.Number.Uint64()
 
-	if msg.DowntimeRange.StartBlock+types.PlannedDowntimeMinimumTimeInFuture <= childBlockNumber {
+	if msg.DowntimeRange.StartBlock < childBlockNumber+types.PlannedDowntimeMinimumTimeInFuture {
 		logger.Error("start block for planned downtime cannot be in the past",
 			"currentBlock", childBlockNumber,
 			"startBlock", msg.DowntimeRange.StartBlock,
