@@ -265,8 +265,8 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 	start := time.Now()
 	defer recordBorTransactionMetric(api.ProducerDowntimeMethod, start, &err)
 
-	sdkContext := sdk.UnwrapSDKContext(ctx)
-	if err := s.CanSetProducerDowntime(sdkContext); err != nil {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := s.CanSetProducerDowntime(sdkCtx); err != nil {
 		return nil, err
 	}
 
@@ -285,7 +285,7 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 		return nil, fmt.Errorf("producer with address %s not found in the current validator set", msg.Producer)
 	}
 
-	candidates, err := s.CalculateProducerSet(ctx, ProducerSetLimit)
+	candidates, err := s.CalculateProducerSet(ctx, helper.GetProducerSetLimit(sdkCtx))
 	if err != nil {
 		return nil, fmt.Errorf("failed to calculate producer set: %w", err)
 	}

@@ -12,14 +12,12 @@ import (
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-const ProducerSetLimit = uint64(3)
-
 // AddNewVeblopSpan adds a new veblop (Validator-elected block producer) span
 func (k *Keeper) AddNewVeblopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}, heimdallBlock uint64) error {
 	logger := k.Logger(ctx)
 
 	// select next producers
-	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, ProducerSetLimit, startBlock, endBlock)
+	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, helper.GetProducerSetLimit(ctx), startBlock, endBlock)
 	if err != nil {
 		return err
 	}
@@ -245,6 +243,9 @@ func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64,
 
 	if len(candidates) == 0 {
 		candidates = helper.GetFallbackProducerVotes()
+		if producerSetLimit > 0 && uint64(len(candidates)) > producerSetLimit {
+			candidates = candidates[:producerSetLimit]
+		}
 	}
 
 	activeCandidates := k.FilterByActiveProducerSet(ctx, candidates, activeValidatorIDs)

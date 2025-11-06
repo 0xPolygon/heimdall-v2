@@ -26,11 +26,6 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-const (
-	ChangeProducerThreshold = 5
-	SpanRotationBuffer      = 10
-)
-
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
@@ -490,7 +485,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 
 	diff := ctx.BlockHeight() - int64(lastMilestoneBlock)
 
-	if lastMilestone != nil && lastMilestoneBlock != 0 && diff > ChangeProducerThreshold && helper.IsRio(lastMilestone.EndBlock+1) {
+	if lastMilestone != nil && lastMilestoneBlock != 0 && diff > helper.GetChangeProducerThreshold(ctx) && helper.IsRio(lastMilestone.EndBlock+1) {
 		logger.Info("Block finalization time is greater than change producer threshold, creating a new veblop span", "lastMilestone", lastMilestone, "lastMilestoneBlock", lastMilestoneBlock, "diff", diff, "currentBlock", ctx.BlockHeight())
 
 		addSpanCtx, spanCache := app.cacheTxContext(ctx)
@@ -549,7 +544,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 			logger.Warn("Error occurred while adding new veblop span", "error", err)
 		} else {
 			// update the last milestone block to a future block height to avoid immediately rotating the span in the next block
-			err = app.MilestoneKeeper.SetLastMilestoneBlock(addSpanCtx, uint64(ctx.BlockHeight())+SpanRotationBuffer)
+			err = app.MilestoneKeeper.SetLastMilestoneBlock(addSpanCtx, uint64(ctx.BlockHeight())+helper.GetSpanRotationBuffer(ctx))
 			if err != nil {
 				logger.Error("Error occurred while setting last milestone block", "error", err)
 				return err
