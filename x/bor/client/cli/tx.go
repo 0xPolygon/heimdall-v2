@@ -168,6 +168,10 @@ func NewProducerDowntimeCmd() *cobra.Command {
 				return fmt.Errorf("failed to calculate average block time: %w", err)
 			}
 
+			if averageBlockTime == 0 {
+				return fmt.Errorf("average block time cannot be zero")
+			}
+
 			fmt.Printf("Average block time calculated: %d seconds\n", averageBlockTime)
 
 			borClient := helper.GetBorClient()
