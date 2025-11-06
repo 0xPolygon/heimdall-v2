@@ -326,10 +326,11 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
-			name:       "end too far - boundary (end == current+max) returns NO",
+			// handler rejects only if end > current+maxFuture; equality is allowed
+			name:       "end boundary (end == current+max) returns YES",
 			current:    2_000_000,
 			msg:        newMsg(2_000_000+minFuture, 2_000_000+maxFuture),
-			expectVote: sidetxs.Vote_VOTE_NO,
+			expectVote: sidetxs.Vote_VOTE_YES,
 		},
 		{
 			name:       "end too far - strict (end > current+max) returns NO",
