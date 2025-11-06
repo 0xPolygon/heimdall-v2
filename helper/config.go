@@ -457,7 +457,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
 		initialHeight = 0
-		producerDowntimeHeight = 8192
+		producerDowntimeHeight = 0
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
