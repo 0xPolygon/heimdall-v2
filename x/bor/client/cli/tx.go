@@ -195,7 +195,6 @@ func NewProducerDowntimeCmd() *cobra.Command {
 	cmd.Flags().String(FlagProducerAddress, "", "--producer-address=<producer-address>")
 	cmd.Flags().Int(FlagStartTimestampUTC, 0, "--start-timestamp-utc=<start-timestamp-utc>")
 	cmd.Flags().Int(FlagEndTimestampUTC, 0, "--end-timestamp-utc=<end-timestamp-utc>")
-	cmd.Flags().String(flags.FlagChainID, "", "--chain-id=<chain-id>")
 	cmd.Flags().Bool(FlagCalcOnly, false, "--calc-only=<true|false>")
 
 	if err := cmd.MarkFlagRequired(FlagProducerAddress); err != nil {
@@ -208,10 +207,6 @@ func NewProducerDowntimeCmd() *cobra.Command {
 
 	if err := cmd.MarkFlagRequired(FlagEndTimestampUTC); err != nil {
 		fmt.Printf("NewProducerDowntimeCmd | MarkFlagRequired | FlagEndTimestampUTC Error: %v", err)
-	}
-
-	if err := cmd.MarkFlagRequired(flags.FlagChainID); err != nil {
-		fmt.Printf("NewProducerDowntimeCmd | MarkFlagRequired | FlagChainID Error: %v", err)
 	}
 
 	return cmd
