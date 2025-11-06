@@ -181,6 +181,14 @@ func NewProducerDowntimeCmd() *cobra.Command {
 				return fmt.Errorf("failed to get latest bor block: %w", err)
 			}
 
+			if uint64(startTimeUTC) <= block.Header().Time {
+				return fmt.Errorf("start timestamp must be in the future (got %d <= %d)", startTimeUTC, block.Header().Time)
+			}
+
+			if uint64(endTimeUTC) <= block.Header().Time {
+				return fmt.Errorf("end timestamp must be in the future (got %d <= %d)", endTimeUTC, block.Header().Time)
+			}
+
 			startBlock := block.NumberU64() + ((uint64(startTimeUTC) - block.Header().Time) / averageBlockTime)
 			endBlock := block.NumberU64() + ((uint64(endTimeUTC) - block.Header().Time) / averageBlockTime)
 
