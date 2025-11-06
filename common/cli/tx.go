@@ -54,8 +54,7 @@ func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger l
 	}
 	// Now check if the transaction response is not okay
 	if txResponse.Code != abci.CodeTypeOK {
-		logger.Error("Transaction response returned a non-ok code", "txResponseCode", txResponse.Code)
-		logger.Error("Tx Response Log", "log", txResponse.RawLog)
+		logger.Error("Transaction response returned a non-ok code", "txResponseCode", txResponse.Code, "txResponseLog", txResponse.RawLog)
 		return fmt.Errorf("broadcast succeeded but received non-ok response code: %d", txResponse.Code)
 	}
 

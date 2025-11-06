@@ -21,9 +21,9 @@ const (
 	ProducerDowntimeMethod = "ProducerDowntime"
 
 	// Side message handler methods.
-	SideHandleMsgSpanMethod          = "SideHandleMsgSpan"
-	SideHandleMsgBackfillSpansMethod = "SideHandleMsgBackfillSpans"
-	SideHandleMsgSetProducerDowntime = "SideHandleMsgSetProducerDowntime"
+	SideHandleMsgSpanMethod                = "SideHandleMsgSpan"
+	SideHandleMsgBackfillSpansMethod       = "SideHandleMsgBackfillSpans"
+	SideHandleMsgSetProducerDowntimeMethod = "SideHandleMsgSetProducerDowntime"
 
 	// Post message handler methods.
 	PostHandleMsgSpanMethod                = "PostHandleMsgSpan"

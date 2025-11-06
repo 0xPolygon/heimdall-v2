@@ -95,7 +95,6 @@ func CalcCurrentBorSpanId(latestBorBlock uint64, latestHeimdallSpan *Span) (uint
 }
 
 const (
-	// TODO: Move to params?
 	PlannedDowntimeMinimumTimeInFuture = 150
 	PlannedDowntimeMaximumTimeInFuture = 100 * DefaultSpanDuration // ~2 weeks
 	PlannedDowntimeMinRange            = 150                       // It will be down minimum for whole span, this here is just for tx validation

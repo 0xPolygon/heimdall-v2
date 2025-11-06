@@ -270,6 +270,26 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 		return nil, err
 	}
 
+	if msg.DowntimeRange.StartBlock >= msg.DowntimeRange.EndBlock {
+		return nil, fmt.Errorf("start block must be less than end block")
+	}
+
+	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock < types.PlannedDowntimeMinRange {
+		return nil, fmt.Errorf("time range must be at least %d blocks. start block %d, end block %d",
+			types.PlannedDowntimeMinRange,
+			msg.DowntimeRange.StartBlock,
+			msg.DowntimeRange.EndBlock,
+		)
+	}
+
+	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock > types.PlannedDowntimeMaxRange {
+		return nil, fmt.Errorf("time range must be at most %d blocks. start block %d, end block %d",
+			types.PlannedDowntimeMaxRange,
+			msg.DowntimeRange.StartBlock,
+			msg.DowntimeRange.EndBlock,
+		)
+	}
+
 	producerId := uint64(0)
 	validators := s.sk.GetSpanEligibleValidators(ctx)
 	found := false
@@ -304,18 +324,6 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 
 	if !isProducer {
 		return nil, fmt.Errorf("producer with address %s and id %d is not in the current producer set", msg.Producer, producerId)
-	}
-
-	if msg.DowntimeRange.StartBlock >= msg.DowntimeRange.EndBlock {
-		return nil, fmt.Errorf("start block must be less than end block")
-	}
-
-	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock < types.PlannedDowntimeMinRange {
-		return nil, fmt.Errorf("time range must be at least %d blocks", types.PlannedDowntimeMinRange)
-	}
-
-	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock > types.PlannedDowntimeMaxRange {
-		return nil, fmt.Errorf("time range must be at most %d blocks", types.PlannedDowntimeMaxRange)
 	}
 
 	return &types.MsgSetProducerDowntimeResponse{}, nil

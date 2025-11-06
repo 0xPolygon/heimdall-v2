@@ -187,7 +187,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 func (s sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
 	var err error
 	start := time.Now()
-	defer recordBorMetric(api.SideHandleMsgSpanMethod, api.SideType, start, &err)
+	defer recordBorMetric(api.SideHandleMsgSetProducerDowntimeMethod, api.SideType, start, &err)
 
 	logger := s.k.Logger(ctx)
 
@@ -213,7 +213,7 @@ func (s sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	if childBlockNumber+types.PlannedDowntimeMaximumTimeInFuture <= msg.DowntimeRange.EndBlock {
+	if msg.DowntimeRange.EndBlock > childBlockNumber+types.PlannedDowntimeMaximumTimeInFuture {
 		logger.Error("end block for planned downtime is too far in the future",
 			"currentBlock", childBlockNumber,
 			"endBlock", msg.DowntimeRange.EndBlock,
