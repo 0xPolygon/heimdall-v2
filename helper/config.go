@@ -450,13 +450,13 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	switch conf.Custom.Chain {
 	case MainChain:
-		milestoneDeletionHeight = 28525000
-		faultyMilestoneNumber = 1941439
-		rioHeight = 77414656 // Rio height for Mainnet.
-		tallyFixHeight = 28913694
-		disableVPCheckHeight = 25723000
-		disableValSetCheckHeight = 25723063
-		initialHeight = 24404501
+		milestoneDeletionHeight = 0
+		faultyMilestoneNumber = 0
+		rioHeight = 0 // Rio height for Mainnet.
+		tallyFixHeight = 0
+		disableVPCheckHeight = 0
+		disableValSetCheckHeight = 0
+		initialHeight = 0
 		producerDowntimeHeight = 8192
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
