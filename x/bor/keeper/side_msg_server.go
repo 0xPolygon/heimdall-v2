@@ -206,9 +206,9 @@ func (s sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 	childBlockNumber := childBlock.Number.Uint64()
 
 	if msg.DowntimeRange.StartBlock < childBlockNumber+types.PlannedDowntimeMinimumTimeInFuture {
-		logger.Error("start block for planned downtime cannot be in the past",
-			"currentBlock", childBlockNumber,
+		logger.Error("start block must be at least minFuture in the future",
 			"startBlock", msg.DowntimeRange.StartBlock,
+			"minimumStartBlock", childBlockNumber+types.PlannedDowntimeMinimumTimeInFuture+1,
 		)
 		return sidetxs.Vote_VOTE_NO
 	}
