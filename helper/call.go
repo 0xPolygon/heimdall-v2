@@ -1011,17 +1011,21 @@ func (c *ContractCaller) CurrentStateCounter(stateSenderInstance *statesender.St
 	return result
 }
 
-// CheckIfBlocksExist - check if the given block exists on the local chain
-func (c *ContractCaller) CheckIfBlocksExist(end uint64) (bool, error) {
+// CheckIfBlocksExist - check if the given block number exists on the local chain.
+// Here we check if the block number exists by fetching the header from the bor chain.
+func (c *ContractCaller) CheckIfBlocksExist(number uint64) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
 	defer cancel()
 
-	block, err := c.GetBlockByNumber(ctx, end)
-	if block == nil {
+	header, err := c.BorChainClient.HeaderByNumber(ctx, big.NewInt(int64(number)))
+	if err != nil {
 		return false, err
 	}
+	if header == nil {
+		return false, nil
+	}
 
-	return end == block.NumberU64(), err
+	return number == header.Number.Uint64(), nil
 }
 
 // GetBlockByNumber returns blocks by number from the child chain (bor)
