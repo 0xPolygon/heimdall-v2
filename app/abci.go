@@ -320,8 +320,8 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
 		if err != nil {
-			if errors.Is(err, milestoneAbci.ErrNoHeadersFound) {
-				logger.Debug("No headers found for generating milestone proposition, continuing without it")
+			if errors.Is(err, milestoneAbci.ErrNoNewHeadersFound) {
+				logger.Debug("No new headers found for generating milestone proposition, continuing without it")
 			} else {
 				logger.Error("Error occurred while generating milestone proposition", "error", err)
 			}
