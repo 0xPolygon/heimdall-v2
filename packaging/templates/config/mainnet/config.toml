@@ -474,7 +474,7 @@ compaction_interval = 1000
 [storage.pruning]
 
 # The time period between automated background pruning operations.
-interval = "10m0s"
+interval = "3h"
 
 # Indexer pruning enabling.
 indexer_pruning_enabled = false
