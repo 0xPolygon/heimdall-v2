@@ -88,6 +88,13 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 						break
 					}
 				}
+				if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+					if err := app.BorKeeper.CanSetProducerDowntime(sdk.UnwrapSDKContext(ctx)); err != nil {
+						logger.Info("skipping MsgSetProducerDowntime in PrepareProposal", "error", err)
+						shouldSkip = true
+						break
+					}
+				}
 			}
 
 			if shouldSkip {
@@ -180,6 +187,12 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 				if _, ok := msg.(*borTypes.MsgVoteProducers); ok {
 					if err := app.BorKeeper.CanVoteProducers(ctx); err != nil {
 						logger.Error("rejecting proposal with invalid MsgVoteProducers", "error", err)
+						return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+					}
+				}
+				if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+					if err := app.BorKeeper.CanSetProducerDowntime(sdk.UnwrapSDKContext(ctx)); err != nil {
+						logger.Error("rejecting proposal with invalid MsgSetProducerDowntime", "error", err)
 						return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 					}
 				}
