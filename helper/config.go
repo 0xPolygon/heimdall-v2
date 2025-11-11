@@ -475,7 +475,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableVPCheckHeight = 10618199
 		disableValSetCheckHeight = 10618299
 		initialHeight = 8788501
-		producerDowntimeHeight = 0
+		producerDowntimeHeight = 19850000
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
