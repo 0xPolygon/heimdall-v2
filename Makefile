@@ -9,7 +9,7 @@ DOCKER := $(shell which docker)
 
 PACKAGE_NAME := github.com/0xPolygon/heimdall-v2
 HTTPS_GIT := https://$(PACKAGE_NAME).git
-GOLANG_CROSS_VERSION  ?= v1.24.9
+GOLANG_CROSS_VERSION  ?= v1.24.1
 
 # Fetch git latest tag
 LATEST_GIT_TAG:=$(shell git describe --tags $(git rev-list --tags --max-count=1))

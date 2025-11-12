@@ -40,10 +40,13 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			return nil, err
 		}
 
-		if err := ValidateVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, validatorSet, app.MilestoneKeeper); err != nil {
-			logger.Error("Error occurred while validating VEs in PrepareProposal", err)
+		validVoteExtensions, err := FilterVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, validatorSet, app.MilestoneKeeper, logger)
+		if err != nil {
+			logger.Error("Error occurred while filtering VEs in PrepareProposal", err)
 			return nil, err
 		}
+
+		req.LocalLastCommit.Votes = validVoteExtensions
 
 		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, validatorSet, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
 			logger.Error("Error occurred while validating non-rp VEs in PrepareProposal", err)
