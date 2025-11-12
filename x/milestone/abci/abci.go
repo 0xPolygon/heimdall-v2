@@ -510,10 +510,16 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keepe
 		return fmt.Errorf("len mismatch between hashes and tds: %d != %d", len(milestoneProp.BlockHashes), len(milestoneProp.BlockTds))
 	}
 
+	duplicateBlockHashes := make(map[string]struct{})
 	for _, blockHash := range milestoneProp.BlockHashes {
 		if len(blockHash) != common.HashLength {
 			return fmt.Errorf("invalid block hash length")
 		}
+		duplicateBlockHashes[string(blockHash)] = struct{}{}
+	}
+
+	if len(duplicateBlockHashes) != len(milestoneProp.BlockHashes) {
+		return fmt.Errorf("duplicate block hashes found")
 	}
 
 	return nil
