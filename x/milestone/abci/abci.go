@@ -52,7 +52,7 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 		}
 
 		if isFastForwardMilestone(latestHeader.Number.Uint64(), milestone.EndBlock, params.FfMilestoneThreshold) {
-			propStartBlock = getFastForwardMilestoneStartBlock(latestHeader.Number.Uint64(), milestone.EndBlock, params.FfMilestoneBlockInterval)
+			propStartBlock = getFastForwardMilestoneStartBlock(milestone.EndBlock, params.FfMilestoneBlockInterval)
 		}
 
 		lastMilestoneHash = milestone.Hash
@@ -112,9 +112,8 @@ func isFastForwardMilestone(latestHeaderNumber, latestMilestoneEndBlock, ffMiles
 	return latestHeaderNumber > latestMilestoneEndBlock && latestHeaderNumber-latestMilestoneEndBlock > ffMilestoneThreshold
 }
 
-func getFastForwardMilestoneStartBlock(latestHeaderNumber, latestMilestoneEndBlock, ffMilestoneBlockInterval uint64) uint64 {
-	latestHeaderMilestoneDistanceInBlocks := ((latestHeaderNumber - latestMilestoneEndBlock) / ffMilestoneBlockInterval) * ffMilestoneBlockInterval
-	return latestMilestoneEndBlock + latestHeaderMilestoneDistanceInBlocks + 1
+func getFastForwardMilestoneStartBlock(latestMilestoneEndBlock, ffMilestoneBlockInterval uint64) uint64 {
+	return latestMilestoneEndBlock + ffMilestoneBlockInterval
 }
 
 func GetMajorityMilestoneProposition(
@@ -407,7 +406,17 @@ func GetMajorityMilestoneProposition(
 var ErrNoHeadersFound = errors.New("no header found")
 
 func getBlockInfo(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, []uint64, []common.Address, error) {
-	headers, tds, authors, err := contractCaller.GetBorChainBlockInfoInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
+	latestBlock, err := contractCaller.GetBorChainBlock(ctx, nil)
+	if err != nil || latestBlock == nil {
+		return nil, nil, nil, nil, fmt.Errorf("failed to get latest block: %w", err)
+	}
+
+	milestoneEnd := int64(startBlock + maxBlocksInProposition - 1)
+	if latestBlock.Number.Int64() > int64(startBlock) && latestBlock.Number.Int64() < milestoneEnd {
+		milestoneEnd = latestBlock.Number.Int64()
+	}
+
+	headers, tds, authors, err := contractCaller.GetBorChainBlockInfoInBatch(ctx, int64(startBlock), milestoneEnd)
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
 	}

@@ -63,6 +63,13 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/producer-votes/{validator_id}";
   }
+
+  // GetValidatorPerformanceScore queries the validator performance score.
+  rpc GetValidatorPerformanceScore(QueryValidatorPerformanceScoreRequest)
+      returns (QueryValidatorPerformanceScoreResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/validator-performance-score";
+  }
 }
 
 message QuerySpanByIdRequest {
@@ -130,4 +137,11 @@ message QueryProducerVotesByValidatorIdRequest {
 
 message QueryProducerVotesByValidatorIdResponse {
   repeated uint64 votes = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryValidatorPerformanceScoreRequest {}
+
+message QueryValidatorPerformanceScoreResponse {
+  map<uint64, uint64> validator_performance_score = 1
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }

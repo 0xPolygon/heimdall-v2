@@ -124,6 +124,8 @@ const (
 
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hard fork
 	MaxStateSyncSize = 30000
+
+	EnforcedMinRetainBlocks = 2500000
 )
 
 func init() {
@@ -171,6 +173,19 @@ type CustomConfig struct {
 	Chain string `mapstructure:"chain"`
 
 	ProducerVotes string `mapstructure:"producer_votes"`
+
+	// #### Health check configs ####
+	// MaxGoRoutineThreshold is the maximum number of goroutines before heimdall health check fails.
+	MaxGoRoutineThreshold int `mapstructure:"max_goroutine_threshold"`
+
+	// WarnGoRoutineThreshold is the maximum number of goroutines before heimdall health check warns.
+	WarnGoRoutineThreshold int `mapstructure:"warn_goroutine_threshold"`
+
+	// MinPeerThreshold is the minimum number of peers before heimdall health check fails.
+	MinPeerThreshold int `mapstructure:"min_peer_threshold"`
+
+	// WarnPeerThreshold is the minimum number of peers before heimdall health check warns.
+	WarnPeerThreshold int `mapstructure:"warn_peer_threshold"`
 }
 
 type CustomAppConfig struct {
@@ -434,7 +449,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case MainChain:
 		milestoneDeletionHeight = 28525000
 		faultyMilestoneNumber = 1941439
-		rioHeight = 77414656 // Rio height is a block number in bor chain
+		rioHeight = 77414656 // Rio height for Mainnet.
 		tallyFixHeight = 28913694
 		disableVPCheckHeight = 25723000
 		disableValSetCheckHeight = 25723063
@@ -442,7 +457,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 48473856 // Rio height is a block number in bor chain
+		rioHeight = 48473856 // Rio height for Mumbai testnet.
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
@@ -450,7 +465,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 26272256 // Rio height is a block number in bor chain
+		rioHeight = 26272256 // Rio height for Amoy testnet.
 		tallyFixHeight = 13143851
 		disableVPCheckHeight = 10618199
 		disableValSetCheckHeight = 10618299
@@ -458,7 +473,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 256 // Rio height for local testnets.
+		rioHeight = 256 // Rio height for local devnet.
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
@@ -466,6 +481,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 }
 
+// GetDefaultHeimdallConfig returns configuration with default params
 func GetDefaultHeimdallConfig() CustomConfig {
 	return CustomConfig{
 		EthRPCUrl:   DefaultMainRPCUrl,
@@ -503,6 +519,11 @@ func GetDefaultHeimdallConfig() CustomConfig {
 		LogsType:       DefaultLogsType,
 		Chain:          DefaultChain,
 		LogsWriterFile: "", // default to stdout
+
+		MaxGoRoutineThreshold:  0,
+		WarnGoRoutineThreshold: 0,
+		MinPeerThreshold:       0,
+		WarnPeerThreshold:      0,
 	}
 }
 
@@ -571,9 +592,6 @@ func GetRioHeight() int64 {
 }
 
 func IsRio(blockNum uint64) bool {
-	if rioHeight == 0 {
-		return false
-	}
 	return blockNum >= uint64(rioHeight)
 }
 
@@ -1147,4 +1165,17 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 // GetBorGRPCClient returns bor gRPC client
 func GetBorGRPCClient() *borgrpc.BorGRPCClient {
 	return borGRPCClient
+}
+
+// Sanitize enforces minimums and returns notes and corrected key/values
+func (c *CustomAppConfig) Sanitize() (notes []string, kv map[string]any) {
+	kv = make(map[string]any)
+
+	if c.MinRetainBlocks != 0 && c.MinRetainBlocks < EnforcedMinRetainBlocks {
+		c.MinRetainBlocks = EnforcedMinRetainBlocks
+		notes = append(notes, fmt.Sprintf("min-retain-blocks=%d (minimum enforced)", EnforcedMinRetainBlocks))
+		kv["min-retain-blocks"] = EnforcedMinRetainBlocks
+	}
+
+	return notes, kv
 }

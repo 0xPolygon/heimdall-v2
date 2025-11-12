@@ -223,6 +223,41 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		require.Nil(t, storedEventRecord)
 		require.Error(t, err)
 	})
+
+	t.Run("ContractAddressMismatch", func(t *testing.T) {
+		s.contractCaller.Mock = mock.Mock{}
+
+		logIndex := uint64(7)
+		blockNumber := uint64(600)
+		txReceipt := &ethTypes.Receipt{
+			BlockNumber: new(big.Int).SetUint64(blockNumber),
+		}
+
+		msg := types.NewMsgEventRecord(
+			util.FormatAddress(Address1),
+			TxHash1,
+			logIndex,
+			blockNumber,
+			id,
+			addrBz2,
+			make([]byte, 0),
+			chainId,
+		)
+
+		// event has a different contract address than the msg
+		event := &statesender.StatesenderStateSynced{
+			Id:              new(big.Int).SetUint64(msg.Id),
+			ContractAddress: common.HexToAddress(Address1),
+			Data:            msg.Data,
+		}
+
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil).Once()
+
+		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
+		result := sideHandler(ctx, &msg)
+		require.Equal(t, sidetxs.Vote_VOTE_NO, result)
+	})
 }
 
 func (s *KeeperTestSuite) TestPostHandler() {

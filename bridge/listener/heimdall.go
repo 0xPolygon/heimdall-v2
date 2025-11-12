@@ -119,7 +119,7 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 }
 
 func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, uint64, error) {
-	nodeStatus, err := helper.GetNodeStatus(hl.cliCtx, ctx)
+	nodeStatus, err := helper.GetNodeStatus(hl.cliCtx) //nolint:contextcheck
 	if err != nil {
 		hl.Logger.Error("Error while fetching heimdall node status", "error", err)
 		return 0, 0, err
