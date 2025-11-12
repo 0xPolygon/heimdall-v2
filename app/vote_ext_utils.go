@@ -279,7 +279,7 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 		}
 
 		if !cmtPubKey.VerifySignature(extSignBytes, vote.ExtensionSignature) {
-			return nil, fmt.Errorf("failed to verify validator %X vote extension signature", valAddrStr)
+			return nil, fmt.Errorf("failed to verify validator %s vote extension signature", valAddrStr)
 		}
 
 		sumVPPerBlockHash[common.Bytes2Hex(voteExtension.BlockHash)] += validator.VotingPower
