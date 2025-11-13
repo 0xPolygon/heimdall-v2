@@ -115,7 +115,7 @@ const (
 
 	DefaultMainnetProducers = "91,92,93,94"
 
-	DefaultAmoyTestnetProducers = "4,5,6"
+	DefaultAmoyTestnetProducers = "4,5"
 
 	DefaultMumbaiTestnetProducers = "1,2,3"
 
