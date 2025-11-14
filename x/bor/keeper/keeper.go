@@ -36,16 +36,17 @@ type Keeper struct {
 	mk             types.MilestoneKeeper
 	contractCaller helper.IContractCaller
 
-	Schema               collections.Schema
-	spans                collections.Map[uint64, types.Span]
-	latestSpan           collections.Item[uint64]
-	seedLastProducer     collections.Map[uint64, []byte]
-	Params               collections.Item[types.Params]
-	ProducerVotes        collections.Map[uint64, types.ProducerVotes]
-	PerformanceScore     collections.Map[uint64, uint64]
-	LatestActiveProducer collections.KeySet[uint64]
-	LatestFailedProducer collections.KeySet[uint64]
-	LastSpanBlock        collections.Item[uint64]
+	Schema                  collections.Schema
+	spans                   collections.Map[uint64, types.Span]
+	latestSpan              collections.Item[uint64]
+	seedLastProducer        collections.Map[uint64, []byte]
+	Params                  collections.Item[types.Params]
+	ProducerVotes           collections.Map[uint64, types.ProducerVotes]
+	PerformanceScore        collections.Map[uint64, uint64]
+	LatestActiveProducer    collections.KeySet[uint64]
+	LatestFailedProducer    collections.KeySet[uint64]
+	LastSpanBlock           collections.Item[uint64]
+	ProducerPlannedDowntime collections.Map[uint64, types.BlockRange]
 }
 
 // NewKeeper creates a new instance of the bor Keeper
@@ -70,22 +71,23 @@ func NewKeeper(
 
 	sb := collections.NewSchemaBuilder(storeService)
 	k := Keeper{
-		cdc:                  cdc,
-		storeService:         storeService,
-		authority:            authority,
-		ck:                   chainKeeper,
-		sk:                   stakingKeeper,
-		mk:                   milestoneKeeper,
-		contractCaller:       caller,
-		spans:                collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollValue[types.Span](cdc)),
-		latestSpan:           collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
-		seedLastProducer:     collections.NewMap(sb, types.SeedLastBlockProducerKey, "seedLastProducer", collections.Uint64Key, collections.BytesValue),
-		Params:               collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
-		ProducerVotes:        collections.NewMap(sb, types.ProducerVotesKey, "producerVotes", collections.Uint64Key, codec.CollValue[types.ProducerVotes](cdc)),
-		PerformanceScore:     collections.NewMap(sb, types.PerformanceScoreKey, "performanceScore", collections.Uint64Key, collections.Uint64Value),
-		LatestActiveProducer: collections.NewKeySet(sb, types.LatestActiveProducerKey, "latestActiveProducer", collections.Uint64Key),
-		LatestFailedProducer: collections.NewKeySet(sb, types.LatestFailedProducerKey, "latestFailedProducer", collections.Uint64Key),
-		LastSpanBlock:        collections.NewItem(sb, types.LastSpanBlockKey, "lastSpanBlock", collections.Uint64Value),
+		cdc:                     cdc,
+		storeService:            storeService,
+		authority:               authority,
+		ck:                      chainKeeper,
+		sk:                      stakingKeeper,
+		mk:                      milestoneKeeper,
+		contractCaller:          caller,
+		spans:                   collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollValue[types.Span](cdc)),
+		latestSpan:              collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
+		seedLastProducer:        collections.NewMap(sb, types.SeedLastBlockProducerKey, "seedLastProducer", collections.Uint64Key, collections.BytesValue),
+		Params:                  collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		ProducerVotes:           collections.NewMap(sb, types.ProducerVotesKey, "producerVotes", collections.Uint64Key, codec.CollValue[types.ProducerVotes](cdc)),
+		PerformanceScore:        collections.NewMap(sb, types.PerformanceScoreKey, "performanceScore", collections.Uint64Key, collections.Uint64Value),
+		LatestActiveProducer:    collections.NewKeySet(sb, types.LatestActiveProducerKey, "latestActiveProducer", collections.Uint64Key),
+		LatestFailedProducer:    collections.NewKeySet(sb, types.LatestFailedProducerKey, "latestFailedProducer", collections.Uint64Key),
+		LastSpanBlock:           collections.NewItem(sb, types.LastSpanBlockKey, "lastSpanBlock", collections.Uint64Value),
+		ProducerPlannedDowntime: collections.NewMap(sb, types.ProducerPlannedDowntimeKey, "producerPlannedDowntime", collections.Uint64Key, codec.CollValue[types.BlockRange](cdc)),
 	}
 
 	schema, err := sb.Build()
@@ -588,6 +590,17 @@ func (k Keeper) CanVoteProducers(ctx context.Context) error {
 			latestSpan.StartBlock,
 			latestSpan.EndBlock,
 			helper.GetRioHeight())
+	}
+
+	return nil
+}
+
+// CanSetProducerDowntime checks if the current height is after the setProducerDowntimeHeight
+func (k Keeper) CanSetProducerDowntime(ctx sdk.Context) error {
+	if uint64(ctx.BlockHeight()) < uint64(helper.GetSetProducerDowntimeHeight()) {
+		return fmt.Errorf("MsgSetProducerDowntime not allowed: block %d is before the setProducerDowntimeHeight %d",
+			ctx.BlockHeight(),
+			helper.GetSetProducerDowntimeHeight())
 	}
 
 	return nil

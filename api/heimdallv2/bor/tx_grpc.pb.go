@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Msg_ProposeSpan_FullMethodName   = "/heimdallv2.bor.Msg/ProposeSpan"
-	Msg_UpdateParams_FullMethodName  = "/heimdallv2.bor.Msg/UpdateParams"
-	Msg_BackfillSpans_FullMethodName = "/heimdallv2.bor.Msg/BackfillSpans"
-	Msg_VoteProducers_FullMethodName = "/heimdallv2.bor.Msg/VoteProducers"
+	Msg_ProposeSpan_FullMethodName         = "/heimdallv2.bor.Msg/ProposeSpan"
+	Msg_UpdateParams_FullMethodName        = "/heimdallv2.bor.Msg/UpdateParams"
+	Msg_BackfillSpans_FullMethodName       = "/heimdallv2.bor.Msg/BackfillSpans"
+	Msg_VoteProducers_FullMethodName       = "/heimdallv2.bor.Msg/VoteProducers"
+	Msg_SetProducerDowntime_FullMethodName = "/heimdallv2.bor.Msg/SetProducerDowntime"
 )
 
 // MsgClient is the client API for Msg service.
@@ -37,6 +38,9 @@ type MsgClient interface {
 	BackfillSpans(ctx context.Context, in *MsgBackfillSpans, opts ...grpc.CallOption) (*MsgBackfillSpansResponse, error)
 	// VoteProducers defines a method to update the producer votes.
 	VoteProducers(ctx context.Context, in *MsgVoteProducers, opts ...grpc.CallOption) (*MsgVoteProducersResponse, error)
+	// SetProducerDowntime defines a method to set planned downtime for a
+	// producer.
+	SetProducerDowntime(ctx context.Context, in *MsgSetProducerDowntime, opts ...grpc.CallOption) (*MsgSetProducerDowntimeResponse, error)
 }
 
 type msgClient struct {
@@ -83,6 +87,15 @@ func (c *msgClient) VoteProducers(ctx context.Context, in *MsgVoteProducers, opt
 	return out, nil
 }
 
+func (c *msgClient) SetProducerDowntime(ctx context.Context, in *MsgSetProducerDowntime, opts ...grpc.CallOption) (*MsgSetProducerDowntimeResponse, error) {
+	out := new(MsgSetProducerDowntimeResponse)
+	err := c.cc.Invoke(ctx, Msg_SetProducerDowntime_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
@@ -95,6 +108,9 @@ type MsgServer interface {
 	BackfillSpans(context.Context, *MsgBackfillSpans) (*MsgBackfillSpansResponse, error)
 	// VoteProducers defines a method to update the producer votes.
 	VoteProducers(context.Context, *MsgVoteProducers) (*MsgVoteProducersResponse, error)
+	// SetProducerDowntime defines a method to set planned downtime for a
+	// producer.
+	SetProducerDowntime(context.Context, *MsgSetProducerDowntime) (*MsgSetProducerDowntimeResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }
 
@@ -113,6 +129,9 @@ func (UnimplementedMsgServer) BackfillSpans(context.Context, *MsgBackfillSpans) 
 }
 func (UnimplementedMsgServer) VoteProducers(context.Context, *MsgVoteProducers) (*MsgVoteProducersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VoteProducers not implemented")
+}
+func (UnimplementedMsgServer) SetProducerDowntime(context.Context, *MsgSetProducerDowntime) (*MsgSetProducerDowntimeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SetProducerDowntime not implemented")
 }
 func (UnimplementedMsgServer) mustEmbedUnimplementedMsgServer() {}
 
@@ -199,6 +218,24 @@ func _Msg_VoteProducers_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_SetProducerDowntime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgSetProducerDowntime)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).SetProducerDowntime(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Msg_SetProducerDowntime_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).SetProducerDowntime(ctx, req.(*MsgSetProducerDowntime))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Msg_ServiceDesc is the grpc.ServiceDesc for Msg service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -221,6 +258,10 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "VoteProducers",
 			Handler:    _Msg_VoteProducers_Handler,
+		},
+		{
+			MethodName: "SetProducerDowntime",
+			Handler:    _Msg_SetProducerDowntime_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

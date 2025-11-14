@@ -141,6 +141,57 @@ paths:
           format: uint64
       tags:
         - Query
+  /bor/producers/planned-downtime/{producer_id}:
+    get:
+      summary: |-
+        GetProducerPlannedDowntime queries the planned downtime for a given
+        producer id.
+      operationId: GetProducerPlannedDowntime
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              downtime_range:
+                type: object
+                properties:
+                  start_block:
+                    type: string
+                    format: uint64
+                  end_block:
+                    type: string
+                    format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: producer_id
+          in: path
+          required: true
+          type: string
+          format: uint64
+      tags:
+        - Query
   /bor/spans/latest:
     get:
       summary: GetLatestSpan queries the latest span.
@@ -3190,6 +3241,15 @@ definitions:
             value:
               type: string
               format: byte
+  heimdallv2.bor.BlockRange:
+    type: object
+    properties:
+      start_block:
+        type: string
+        format: uint64
+      end_block:
+        type: string
+        format: uint64
   heimdallv2.bor.Params:
     type: object
     properties:
@@ -3464,6 +3524,18 @@ definitions:
             type: string
             format: uint64
           producer_count:
+            type: string
+            format: uint64
+  heimdallv2.bor.QueryProducerPlannedDowntimeResponse:
+    type: object
+    properties:
+      downtime_range:
+        type: object
+        properties:
+          start_block:
+            type: string
+            format: uint64
+          end_block:
             type: string
             format: uint64
   heimdallv2.bor.QueryProducerVotesByValidatorIdResponse:

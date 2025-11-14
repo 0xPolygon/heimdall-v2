@@ -482,7 +482,6 @@ func NewHeimdallApp(
 func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
 	// Only apply VEBLOP validation during normal CheckTx (not recheck)
 	if req.Type == abci.CheckTxType_New {
-		// Decode transaction to check for MsgVoteProducers
 		tx, err := app.TxDecode(req.Tx)
 		if err != nil {
 			return &abci.ResponseCheckTx{
@@ -491,9 +490,9 @@ func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx
 			}, nil
 		}
 
-		// Check for MsgVoteProducers and apply VEBLOP validation
 		msgs := tx.GetMsgs()
 		for _, msg := range msgs {
+			// Check for MsgVoteProducers and apply VEBLOP validation
 			if _, ok := msg.(*borTypes.MsgVoteProducers); ok {
 				// Create a context for validation
 				ctx := app.NewUncachedContext(true, cmtproto.Header{})
@@ -501,6 +500,16 @@ func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx
 				// Validate VEBLOP phase using common function
 				if err := app.BorKeeper.CanVoteProducers(ctx); err != nil {
 					app.Logger().Debug("rejecting MsgVoteProducers in CheckTx", "error", err)
+					return &abci.ResponseCheckTx{
+						Code: sdkerrors.ErrInvalidRequest.ABCICode(),
+						Log:  err.Error(),
+					}, nil
+				}
+			} else if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+				// Create a context for validation
+				ctx := app.NewUncachedContext(true, cmtproto.Header{Height: app.LastBlockHeight() + 1})
+				if err := app.BorKeeper.CanSetProducerDowntime(ctx); err != nil {
+					app.Logger().Debug("rejecting MsgSetProducerDowntime in CheckTx", "error", err)
 					return &abci.ResponseCheckTx{
 						Code: sdkerrors.ErrInvalidRequest.ABCICode(),
 						Log:  err.Error(),
