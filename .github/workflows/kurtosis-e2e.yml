@@ -102,6 +102,12 @@ jobs:
 
       - name: Run smoke tests (Checkpoints and Milestones)
         run: bash ./pos-workflows/tests/kurtosis_smoke_test.sh
+      
+      - name: Run set producer downtime test
+        run: |
+          cd tests/producer_planned_downtime
+          go mod tidy
+          go run .
 
       - name: Post kurtosis run
         if: always()
