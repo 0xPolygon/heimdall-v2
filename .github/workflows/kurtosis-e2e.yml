@@ -105,7 +105,7 @@ jobs:
       
       - name: Run set producer downtime test
         run: |
-          cd tests/producer_planned_downtime
+          cd ./pos-workflows/tests/producer_planned_downtime
           go mod tidy
           go run .
 
