@@ -21,10 +21,22 @@ env:
 jobs:
   e2e-tests:
     name: E2E Tests
-    runs-on: ubuntu24.04-16core-64GB-600SSD-heimdalv2
+    runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
+      # This is needed because the job fails with "System.IO.IOException: No space left on device".
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          android: false
+          docker-images: false
+          dotnet: true
+          haskell: true
+          large-packages: false
+          swap-storage: false
+          tool-cache: true
+
       - name: Install dependencies on Linux
         if: runner.os == 'Linux'
         run: sudo apt update && sudo apt install build-essential
@@ -102,10 +114,10 @@ jobs:
 
       - name: Run smoke tests (Checkpoints and Milestones)
         run: bash ./pos-workflows/tests/kurtosis_smoke_test.sh
-      
+
       - name: Run set producer downtime test
         run: |
-          cd ./pos-workflows/tests/producer_planned_downtime
+          cd pos-workflows/tests/producer_planned_downtime
           go mod tidy
           go run .
 
