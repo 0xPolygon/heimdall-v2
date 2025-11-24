@@ -124,6 +124,17 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 			continue
 		}
 
+		// ensure proposer-supplied power matches canonical power
+		// This is not used for tallying, but a mismatch indicates potential tampering.
+		if vote.Validator.Power != validator.VotingPower {
+			return fmt.Errorf(
+				"mismatching voting power in ValidateVoteExtension for validator %s: got %d from ExtendedCommitInfo, expected %d",
+				valAddrStr,
+				vote.Validator.Power,
+				validator.VotingPower,
+			)
+		}
+
 		cmtPubKey, err := getValidatorPublicKey(validator)
 		if err != nil {
 			return err
@@ -252,6 +263,17 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 			continue
 		}
 
+		// ensure proposer-supplied power matches canonical power
+		if vote.Validator.Power != validator.VotingPower {
+			logger.Warn(
+				"mismatching voting power in FilterVoteExtension",
+				"validator", valAddrStr,
+				"receivedVotingPower", vote.Validator.Power,
+				"expectedVotingPower", validator.VotingPower,
+			)
+			continue
+		}
+
 		cmtPubKey, err := getValidatorPublicKey(validator)
 		if err != nil {
 			return nil, err
@@ -326,10 +348,13 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 
 // tallyVotes tallies the votes received for the side tx
 // It returns the lists of txs which got >2/3+ YES, NO and UNSPECIFIED votes respectively
-func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, totalVotingPower int64, currentHeight int64) ([][]byte, [][]byte, [][]byte, error) {
+func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, validatorSet *stakeTypes.ValidatorSet, currentHeight int64) ([][]byte, [][]byte, [][]byte, error) {
 	logger.Debug("Tallying votes")
 
-	voteByTxHash, err := aggregateVotes(extVoteInfo, currentHeight, logger)
+	// Always derive total voting power from the canonical validator set
+	totalVotingPower := validatorSet.GetTotalVotingPower()
+
+	voteByTxHash, err := aggregateVotes(extVoteInfo, validatorSet, currentHeight, logger)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -386,10 +411,12 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 }
 
 // aggregateVotes collates votes received for side txs
-func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int64, logger log.Logger) (map[string]map[sidetxs.Vote]int64, error) {
+func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, validatorSet *stakeTypes.ValidatorSet, currentHeight int64, logger log.Logger) (map[string]map[sidetxs.Vote]int64, error) {
 	voteByTxHash := make(map[string]map[sidetxs.Vote]int64)  // track votes for a side tx
 	validatorToTxMap := make(map[string]map[string]struct{}) // ensure a validator doesn't procure conflicting votes for a side tx
 	var blockHash []byte                                     // store the block hash to make sure all votes are for the same block
+
+	ac := address.HexCodec{}
 
 	for _, vote := range extVoteInfo {
 		// make sure the BlockIdFlag is valid
@@ -402,8 +429,7 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 		}
 
 		ve := new(sidetxs.VoteExtension)
-		err := ve.Unmarshal(vote.VoteExtension)
-		if err != nil {
+		if err := ve.Unmarshal(vote.VoteExtension); err != nil {
 			return nil, err
 		}
 
@@ -416,7 +442,6 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 			// store the block hash from the first vote
 			blockHash = ve.BlockHash
 		} else {
-			ac := address.HexCodec{}
 			valAddr, err := ac.BytesToString(vote.Validator.Address)
 			if err != nil {
 				return nil, err
@@ -431,10 +456,19 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 			}
 		}
 
-		addr, err := address.NewHexCodec().BytesToString(vote.Validator.Address)
+		addr, err := ac.BytesToString(vote.Validator.Address)
 		if err != nil {
 			return nil, err
 		}
+
+		// Look up canonical validator and voting power (don't trust the power carried in ExtendedCommitInfo)
+		_, validator := validatorSet.GetByAddress(addr)
+		if validator == nil {
+			logger.Error(
+				"validator from vote extension not found in canonical validator set", "validator", addr, "height", currentHeight)
+			continue
+		}
+		canonicalPower := validator.VotingPower
 
 		if validatorToTxMap[addr] != nil {
 			return nil, fmt.Errorf("duplicate vote received from %s", addr)
@@ -459,7 +493,8 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 				voteByTxHash[txHashStr] = make(map[sidetxs.Vote]int64)
 			}
 
-			voteByTxHash[txHashStr][res.Result] += vote.Validator.Power
+			// use canonical power from the validator set
+			voteByTxHash[txHashStr][res.Result] += canonicalPower
 
 			// validator's vote received; mark it to avoid duplicated votes
 			validatorToTxMap[addr][txHashStr] = struct{}{}
