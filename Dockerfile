@@ -6,15 +6,16 @@ ENV HEIMDALL_DIR=${HEIMDALL_DIR}
 
 RUN apk add --no-cache build-base git linux-headers
 
+COPY bor /var/lib/bor
 WORKDIR ${HEIMDALL_DIR}
 
-COPY go.mod go.sum ./
+COPY heimdall-v2/go.mod heimdall-v2/go.sum ./
 
 RUN --mount=type=ssh \
     --mount=type=cache,target=/go/pkg/mod \
     go mod download
 
-COPY . .
+COPY heimdall-v2/ .
 
 RUN --mount=type=ssh \
     --mount=type=cache,target=/go/pkg/mod \
