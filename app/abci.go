@@ -702,7 +702,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, majorityMilestone); err != nil {
 			logger.Error("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
-			// We don't want to halt consensus because of invalid majority milestone proposition
+			// We don't want to halt consensus because of an invalid majority milestone proposition
 		} else if helper.IsRio(majorityMilestone.StartBlockNumber) && ctx.BlockHeight() == int64(lastSpanHeimdallBlock)+1 {
 			logger.Info("Last span was created in the previous block, skipping milestone addition", "lastSpanHeimdallBlock", lastSpanHeimdallBlock, "currentBlock", ctx.BlockHeight())
 		} else {
@@ -798,7 +798,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	// tally votes
-	approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validatorSet.GetTotalVotingPower(), req.Height)
+	approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validatorSet, req.Height)
 	if err != nil {
 		logger.Error("Error occurred while tallying votes", "error", err)
 		return nil, err

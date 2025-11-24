@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"cosmossdk.io/log"
+	sdklog "cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtcrypto "github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/libs/protoio"
@@ -17,7 +16,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/stretchr/testify/require"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
@@ -94,18 +92,23 @@ func TestTallyVotes(t *testing.T) {
 	require.NoError(t, err)
 	val3, err := address.NewHexCodec().StringToBytes(ValAddr3)
 	require.NoError(t, err)
+
 	tests := []struct {
 		name            string
 		extVoteInfo     []abci.ExtendedVoteInfo
-		votingPower     int64
+		validatorPowers map[string]int64
 		expectedApprove [][]byte
 		expectedReject  [][]byte
 		expectedSkip    [][]byte
 		expectError     bool
 	}{
 		{
-			name:        "single tx approved with 2/3+1 majority",
-			votingPower: 31,
+			name: "single tx approved with 2/3+1 majority",
+			validatorPowers: map[string]int64{
+				addrFromBytes(t, val1): 10,
+				addrFromBytes(t, val2): 20,
+				addrFromBytes(t, val3): 1,
+			},
 			extVoteInfo: []abci.ExtendedVoteInfo{
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
 					mustMarshalSideTxResponses(t,
@@ -117,7 +120,7 @@ func TestTallyVotes(t *testing.T) {
 					[]byte("signature"),
 					abci.Validator{
 						Address: val1,
-						Power:   10,
+						Power:   10, // ignored by tally (canonical voting power from validators' set is used)
 					}),
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
 					mustMarshalSideTxResponses(t,
@@ -150,8 +153,12 @@ func TestTallyVotes(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			name:        "one tx approved one rejected one skipped",
-			votingPower: 75,
+			name: "one tx approved one rejected one skipped",
+			validatorPowers: map[string]int64{
+				addrFromBytes(t, val1): 40,
+				addrFromBytes(t, val2): 30,
+				addrFromBytes(t, val3): 5,
+			},
 			extVoteInfo: []abci.ExtendedVoteInfo{
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
 					mustMarshalSideTxResponses(t,
@@ -208,8 +215,11 @@ func TestTallyVotes(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			name:        "tx approved with just enough voting power",
-			votingPower: 9999,
+			name: "tx approved with just enough voting power",
+			validatorPowers: map[string]int64{
+				addrFromBytes(t, val1): 6667,
+				addrFromBytes(t, val2): 3332,
+			},
 			extVoteInfo: []abci.ExtendedVoteInfo{
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
 					mustMarshalSideTxResponses(t,
@@ -242,8 +252,11 @@ func TestTallyVotes(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			name:        "tx not rejected because almost enough voting power",
-			votingPower: 9999,
+			name: "tx not rejected because almost enough voting power",
+			validatorPowers: map[string]int64{
+				addrFromBytes(t, val1): 6666,
+				addrFromBytes(t, val2): 10,
+			},
 			extVoteInfo: []abci.ExtendedVoteInfo{
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
 					mustMarshalSideTxResponses(t,
@@ -274,8 +287,11 @@ func TestTallyVotes(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			name:        "sum of the votes exceeds the total voting power",
-			votingPower: 100,
+			name: "forged_validator_power_in_extcommit_is_ignored",
+			validatorPowers: map[string]int64{
+				addrFromBytes(t, val1): 90, // canonical power for Val1
+				addrFromBytes(t, val2): 11, // canonical power for Val2
+			},
 			extVoteInfo: []abci.ExtendedVoteInfo{
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
 					mustMarshalSideTxResponses(t,
@@ -287,7 +303,7 @@ func TestTallyVotes(t *testing.T) {
 					[]byte("signature"),
 					abci.Validator{
 						Address: val1,
-						Power:   90,
+						Power:   9000, // forged: should be ignored
 					}),
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
 					mustMarshalSideTxResponses(t,
@@ -299,17 +315,20 @@ func TestTallyVotes(t *testing.T) {
 					[]byte("signature"),
 					abci.Validator{
 						Address: val2,
-						Power:   11,
+						Power:   11000, // forged: should be ignored
 					}),
 			},
-			expectedApprove: make([][]byte, 0, 2),
+			expectedApprove: [][]byte{common.FromHex(TxHash1)},
 			expectedReject:  make([][]byte, 0, 2),
 			expectedSkip:    make([][]byte, 0, 2),
-			expectError:     true,
+			expectError:     false,
 		},
 		{
-			name:        "tx skipped",
-			votingPower: 100,
+			name: "tx skipped",
+			validatorPowers: map[string]int64{
+				addrFromBytes(t, val1): 50,
+				addrFromBytes(t, val2): 50,
+			},
 			extVoteInfo: []abci.ExtendedVoteInfo{
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
 					mustMarshalSideTxResponses(t,
@@ -344,13 +363,22 @@ func TestTallyVotes(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			approvedTxs, rejectedTxs, skippedTxs, err := tallyVotes(tc.extVoteInfo, log.NewTestLogger(t), tc.votingPower, CurrentHeight)
+			validatorSet := buildValidatorSet(t, tc.validatorPowers)
+
+			approvedTxs, rejectedTxs, skippedTxs, err := tallyVotes(
+				tc.extVoteInfo,
+				sdklog.NewTestLogger(t),
+				validatorSet,
+				CurrentHeight,
+			)
+
 			if tc.expectError {
 				require.Error(t, err)
 				return
 			} else {
 				require.NoError(t, err)
 			}
+
 			require.Equal(t, tc.expectedApprove, approvedTxs)
 			require.Equal(t, tc.expectedReject, rejectedTxs)
 			require.Equal(t, tc.expectedSkip, skippedTxs)
@@ -373,7 +401,7 @@ func TestTallyVotesErrorDuplicateVote(t *testing.T) {
 			[]byte("signature"),
 			abci.Validator{
 				Address: val1,
-				Power:   10,
+				Power:   10, // ignored in tally (canonical voting power from validators' set is used)
 			}),
 		returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
 			mustMarshalSideTxResponses(t,
@@ -385,11 +413,21 @@ func TestTallyVotesErrorDuplicateVote(t *testing.T) {
 			[]byte("signature"),
 			abci.Validator{
 				Address: val1,
-				Power:   20,
+				Power:   20, // ignored in tally (canonical voting power from validators' set is used)
 			}),
 	}
 
-	_, _, _, err = tallyVotes(extVoteInfo, log.NewTestLogger(t), 30, CurrentHeight)
+	// canonical validator set: the power value is irrelevant for this test
+	validatorSet := buildValidatorSet(t, map[string]int64{
+		addrFromBytes(t, val1): 30,
+	})
+
+	_, _, _, err = tallyVotes(
+		extVoteInfo,
+		sdklog.NewTestLogger(t),
+		validatorSet,
+		CurrentHeight,
+	)
 	require.Error(t, err)
 	require.Equal(t, err.Error(), fmt.Sprintf("duplicate vote received from %s", util.FormatAddress(ValAddr1)))
 }
@@ -421,7 +459,7 @@ func TestAggregateVotes(t *testing.T) {
 		{
 			Validator: abci.Validator{
 				Address: val1,
-				Power:   10,
+				Power:   10, // ignored for tally: canonical valSet defines the voting power
 			},
 			VoteExtension:      voteExtensionBytes,
 			ExtensionSignature: []byte("signature"),
@@ -431,11 +469,21 @@ func TestAggregateVotes(t *testing.T) {
 
 	expectedVotes := map[string]map[sidetxs.Vote]int64{
 		TxHash1: {
-			sidetxs.Vote_VOTE_YES: 10,
+			sidetxs.Vote_VOTE_YES: 10, // canonical power for ValAddr1
 		},
 	}
 
-	actualVotes, err := aggregateVotes(extVoteInfo, CurrentHeight, nil)
+	// canonical validator set: ValAddr1 has power 10
+	validatorSet := buildValidatorSet(t, map[string]int64{
+		addrFromBytes(t, val1): 10,
+	})
+
+	actualVotes, err := aggregateVotes(
+		extVoteInfo,
+		validatorSet,
+		CurrentHeight,
+		sdklog.NewTestLogger(t),
+	)
 	require.NoError(t, err)
 	require.NotEmpty(t, actualVotes)
 	require.Equal(t, expectedVotes, actualVotes)
@@ -544,21 +592,6 @@ func returnExtendedVoteInfo(flag cmtTypes.BlockIDFlag, extension, signature []by
 		VoteExtension:      extension,
 		ExtensionSignature: signature,
 		Validator:          validator,
-	}
-}
-
-func returnExtendedVoteInfoWithNonRp(flag cmtTypes.BlockIDFlag, extension, signature []byte, validator abci.Validator, height int64, app *HeimdallApp) abci.ExtendedVoteInfo {
-	dummyExt, err := GetDummyNonRpVoteExtension(height, app.ChainID())
-	if err != nil {
-		panic(err)
-	}
-	return abci.ExtendedVoteInfo{
-		BlockIdFlag:             flag,
-		VoteExtension:           extension,
-		ExtensionSignature:      signature,
-		Validator:               validator,
-		NonRpVoteExtension:      dummyExt,
-		NonRpExtensionSignature: signature,
 	}
 }
 
@@ -735,4 +768,30 @@ func setupExtendedVoteInfoWithMilestoneProposition(t *testing.T, flag cmtTypes.B
 		NonRpVoteExtension:      dummyExt,
 		NonRpExtensionSignature: signatureNonRpVE,
 	}
+}
+
+// buildValidatorSet is a helper method to create a validators' set for tests
+func buildValidatorSet(t *testing.T, addrToPower map[string]int64) *stakeTypes.ValidatorSet {
+	t.Helper()
+
+	validators := make([]*stakeTypes.Validator, 0, len(addrToPower))
+	for addr, power := range addrToPower {
+		validators = append(validators, &stakeTypes.Validator{
+			Signer:      addr,
+			VotingPower: power,
+		})
+	}
+
+	return &stakeTypes.ValidatorSet{
+		Validators: validators,
+	}
+}
+
+// addrFromBytes converts a byte slice representation of an address into its string format using HexCodec.
+// An error in the conversion process will cause the test to fail.
+func addrFromBytes(t *testing.T, b []byte) string {
+	t.Helper()
+	s, err := address.NewHexCodec().BytesToString(b)
+	require.NoError(t, err)
+	return s
 }
