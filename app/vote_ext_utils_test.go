@@ -771,13 +771,30 @@ func setupExtendedVoteInfoWithMilestoneProposition(t *testing.T, flag cmtTypes.B
 }
 
 // buildValidatorSet is a helper method to create a validators' set for tests
+// The map keys should be hex-encoded addresses (from addrFromBytes)
 func buildValidatorSet(t *testing.T, addrToPower map[string]int64) *stakeTypes.ValidatorSet {
 	t.Helper()
 
 	validators := make([]*stakeTypes.Validator, 0, len(addrToPower))
-	for addr, power := range addrToPower {
+
+	// Convert hex string addresses back to the format expected by ValidatorSet
+	ac := address.NewHexCodec()
+
+	for addrStr, power := range addrToPower {
+		// Verify the address format is the correct hex string
+		addrBytes, err := ac.StringToBytes(addrStr)
+		if err != nil {
+			t.Fatalf("invalid address format in test setup: %s, error: %v", addrStr, err)
+		}
+
+		// Convert back to string to ensure consistency
+		normalizedAddr, err := ac.BytesToString(addrBytes)
+		if err != nil {
+			t.Fatalf("failed to normalize address: %v", err)
+		}
+
 		validators = append(validators, &stakeTypes.Validator{
-			Signer:      addr,
+			Signer:      normalizedAddr,
 			VotingPower: power,
 		})
 	}
