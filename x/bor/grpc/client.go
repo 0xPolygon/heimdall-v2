@@ -8,14 +8,13 @@ import (
 	"strings"
 	"time"
 
+	proto "github.com/0xPolygon/polyproto/bor"
 	"github.com/ethereum/go-ethereum/log"
 	grpcRetry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
-
-	proto "github.com/0xPolygon/polyproto/bor"
 )
 
 type BorGRPCClient struct {
@@ -24,7 +23,7 @@ type BorGRPCClient struct {
 }
 
 func NewBorGRPCClient(address string) *BorGRPCClient {
-	timeout := 30 * time.Second
+	timeout := 5 * time.Second
 	addr := address
 	var dialOpts []grpc.DialOption
 	log.Info("Setting up Bor gRPC client", "address", address)
@@ -73,6 +72,7 @@ func NewBorGRPCClient(address string) *BorGRPCClient {
 			addr = "unix://" + path
 			dialOpts = append(dialOpts,
 				grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+					//nolint:noctx // used in grpc.WithContextDialer
 					return net.DialTimeout("unix", strings.TrimPrefix(addr, "unix://"), timeout)
 				}),
 				grpc.WithTransportCredentials(insecure.NewCredentials()),
