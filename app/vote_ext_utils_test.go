@@ -783,15 +783,11 @@ func buildValidatorSet(t *testing.T, addrToPower map[string]int64) *stakeTypes.V
 	for addrStr, power := range addrToPower {
 		// Verify the address format is the correct hex string
 		addrBytes, err := ac.StringToBytes(addrStr)
-		if err != nil {
-			t.Fatalf("invalid address format in test setup: %s, error: %v", addrStr, err)
-		}
+		require.NoError(t, err, "invalid address format in test setup: %s", addrStr)
 
 		// Convert back to string to ensure consistency
 		normalizedAddr, err := ac.BytesToString(addrBytes)
-		if err != nil {
-			t.Fatalf("failed to normalize address: %v", err)
-		}
+		require.NoError(t, err, "failed to normalize address")
 
 		validators = append(validators, &stakeTypes.Validator{
 			Signer:      normalizedAddr,
@@ -799,9 +795,7 @@ func buildValidatorSet(t *testing.T, addrToPower map[string]int64) *stakeTypes.V
 		})
 	}
 
-	return &stakeTypes.ValidatorSet{
-		Validators: validators,
-	}
+	return stakeTypes.NewValidatorSet(validators)
 }
 
 // addrFromBytes converts a byte slice representation of an address into its string format using HexCodec.
