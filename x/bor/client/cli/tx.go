@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -146,14 +147,25 @@ func NewProducerDowntimeCmd() *cobra.Command {
 				return fmt.Errorf("producer address is invalid: %w", err)
 			}
 
-			startTimeUTC := viper.GetInt(FlagStartTimestampUTC)
-			if startTimeUTC <= 0 {
-				return fmt.Errorf("start timestamp utc is invalid")
+			if (viper.IsSet(FlagStartTimestampUTC) && !viper.IsSet(FlagEndTimestampUTC)) ||
+				(!viper.IsSet(FlagStartTimestampUTC) && viper.IsSet(FlagEndTimestampUTC)) {
+				return fmt.Errorf("both start-timestamp-utc and end-timestamp-utc must be set")
 			}
 
-			endTimeUTC := viper.GetInt(FlagEndTimestampUTC)
-			if endTimeUTC <= 0 {
-				return fmt.Errorf("end timestamp utc is invalid")
+			var startTimeUTC, endTimeUTC int
+			if viper.IsSet(FlagStartTimestampUTC) && viper.IsSet(FlagEndTimestampUTC) {
+				startTimeUTC = viper.GetInt(FlagStartTimestampUTC)
+				if startTimeUTC <= 0 {
+					return fmt.Errorf("start timestamp utc is invalid")
+				}
+
+				endTimeUTC = viper.GetInt(FlagEndTimestampUTC)
+				if endTimeUTC <= 0 {
+					return fmt.Errorf("end timestamp utc is invalid")
+				}
+			} else {
+				startTimeUTC = int(time.Now().UTC().Unix()) + 360 // default to 6 minutes from now
+				endTimeUTC = startTimeUTC + 360                   // default to 6 minutes duration
 			}
 
 			if endTimeUTC <= startTimeUTC {
@@ -208,14 +220,6 @@ func NewProducerDowntimeCmd() *cobra.Command {
 
 	if err := cmd.MarkFlagRequired(FlagProducerAddress); err != nil {
 		fmt.Printf("NewProducerDowntimeCmd | MarkFlagRequired | FlagProducerAddress Error: %v", err)
-	}
-
-	if err := cmd.MarkFlagRequired(FlagStartTimestampUTC); err != nil {
-		fmt.Printf("NewProducerDowntimeCmd | MarkFlagRequired | FlagStartTimestampUTC Error: %v", err)
-	}
-
-	if err := cmd.MarkFlagRequired(FlagEndTimestampUTC); err != nil {
-		fmt.Printf("NewProducerDowntimeCmd | MarkFlagRequired | FlagEndTimestampUTC Error: %v", err)
 	}
 
 	return cmd
