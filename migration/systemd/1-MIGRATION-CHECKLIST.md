@@ -40,7 +40,7 @@ Please ensure they are present on your system.
 | `grep`      | Pattern matching     | Pre-installed on most systems   |
 | `id`        | User info lookup     | Pre-installed on most systems   |
 
-> Heimdall v2 will use `go 1.24.x`, so ensure your environment supports it.
+> Heimdall v2 will use `go 1.25.x`, so ensure your environment supports it.
 
 ---
 
