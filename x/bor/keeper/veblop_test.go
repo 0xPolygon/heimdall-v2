@@ -404,8 +404,16 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				tc.setupProducerVotes()
 			}
 			tc.setupValidatorSet()
+			lastSpan, err := borKeeper.GetLastSpan(ctx)
+			require.NoError(err)
 
-			result, err := borKeeper.SelectNextSpanProducer(ctx, 1, tc.activeValidatorIDs, tc.producerSetLimit)
+			params, err := borKeeper.GetParams(ctx)
+			require.NoError(err)
+
+			startBlock := lastSpan.EndBlock + 1
+			endBlock := lastSpan.EndBlock + params.SpanDuration
+
+			result, err := borKeeper.SelectNextSpanProducer(ctx, 1, tc.activeValidatorIDs, tc.producerSetLimit, startBlock, endBlock)
 
 			if tc.expectedError {
 				require.Error(err)

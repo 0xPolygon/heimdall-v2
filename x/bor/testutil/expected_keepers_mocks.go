@@ -75,10 +75,25 @@ func (m *MockStakeKeeper) GetValidatorSet(ctx context.Context) (types1.Validator
 	return ret0, ret1
 }
 
+// GetValIdFromAddress mocks base method.
+func (m *MockStakeKeeper) GetValIdFromAddress(ctx context.Context, address string) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValIdFromAddress", ctx, address)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
 // GetValidatorSet indicates an expected call of GetValidatorSet.
 func (mr *MockStakeKeeperMockRecorder) GetValidatorSet(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSet", reflect.TypeOf((*MockStakeKeeper)(nil).GetValidatorSet), ctx)
+}
+
+// GetValIdFromAddress indicates an expected call of GetValIdFromAddress.
+func (mr *MockStakeKeeperMockRecorder) GetValIdFromAddress(ctx, address interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValIdFromAddress", reflect.TypeOf((*MockStakeKeeper)(nil).GetValIdFromAddress), ctx, address)
 }
 
 // MockChainManagerKeeper is a mock of ChainManagerKeeper interface.

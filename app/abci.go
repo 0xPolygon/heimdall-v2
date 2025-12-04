@@ -26,11 +26,6 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-const (
-	ChangeProducerThreshold = 5
-	SpanRotationBuffer      = 10
-)
-
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
@@ -92,6 +87,13 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				if _, ok := msg.(*borTypes.MsgVoteProducers); ok {
 					if err := app.BorKeeper.CanVoteProducers(ctx); err != nil {
 						logger.Info("skipping MsgVoteProducers in PrepareProposal", "error", err)
+						shouldSkip = true
+						break
+					}
+				}
+				if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+					if err := app.BorKeeper.CanSetProducerDowntime(sdk.UnwrapSDKContext(ctx)); err != nil {
+						logger.Info("skipping MsgSetProducerDowntime in PrepareProposal", "error", err)
 						shouldSkip = true
 						break
 					}
@@ -188,6 +190,12 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 				if _, ok := msg.(*borTypes.MsgVoteProducers); ok {
 					if err := app.BorKeeper.CanVoteProducers(ctx); err != nil {
 						logger.Error("rejecting proposal with invalid MsgVoteProducers", "error", err)
+						return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+					}
+				}
+				if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+					if err := app.BorKeeper.CanSetProducerDowntime(sdk.UnwrapSDKContext(ctx)); err != nil {
+						logger.Error("rejecting proposal with invalid MsgSetProducerDowntime", "error", err)
 						return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 					}
 				}
@@ -323,8 +331,8 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
 		if err != nil {
-			if errors.Is(err, milestoneAbci.ErrNoHeadersFound) {
-				logger.Debug("No headers found for generating milestone proposition, continuing without it")
+			if errors.Is(err, milestoneAbci.ErrNoNewHeadersFound) {
+				logger.Debug("No new headers found for generating milestone proposition, continuing without it")
 			} else {
 				logger.Error("Error occurred while generating milestone proposition", "error", err)
 			}
@@ -493,7 +501,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 
 	diff := ctx.BlockHeight() - int64(lastMilestoneBlock)
 
-	if lastMilestone != nil && lastMilestoneBlock != 0 && diff > ChangeProducerThreshold && helper.IsRio(lastMilestone.EndBlock+1) {
+	if lastMilestone != nil && lastMilestoneBlock != 0 && diff > helper.GetChangeProducerThreshold(ctx) && helper.IsRio(lastMilestone.EndBlock+1) {
 		logger.Info("Block finalization time is greater than change producer threshold, creating a new veblop span", "lastMilestone", lastMilestone, "lastMilestoneBlock", lastMilestoneBlock, "diff", diff, "currentBlock", ctx.BlockHeight())
 
 		addSpanCtx, spanCache := app.cacheTxContext(ctx)
@@ -552,7 +560,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 			logger.Warn("Error occurred while adding new veblop span", "error", err)
 		} else {
 			// update the last milestone block to a future block height to avoid immediately rotating the span in the next block
-			err = app.MilestoneKeeper.SetLastMilestoneBlock(addSpanCtx, uint64(ctx.BlockHeight())+SpanRotationBuffer)
+			err = app.MilestoneKeeper.SetLastMilestoneBlock(addSpanCtx, uint64(ctx.BlockHeight())+helper.GetSpanRotationBuffer(ctx))
 			if err != nil {
 				logger.Error("Error occurred while setting last milestone block", "error", err)
 				return err

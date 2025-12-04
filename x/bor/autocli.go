@@ -52,6 +52,14 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:       "params",
 					Short:     "Query bor params",
 				},
+				{
+					RpcMethod: "GetProducerPlannedDowntime",
+					Use:       "producer-planned-downtime [producer_id]",
+					Short:     "Query planned downtime for a producer",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+						{ProtoField: "producer_id"},
+					},
+				},
 			},
 		},
 	}

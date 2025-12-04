@@ -12,14 +12,12 @@ import (
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-const ProducerSetLimit = uint64(3)
-
 // AddNewVeblopSpan adds a new veblop (Validator-elected block producer) span
 func (k *Keeper) AddNewVeblopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}, heimdallBlock uint64) error {
 	logger := k.Logger(ctx)
 
 	// select next producers
-	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, ProducerSetLimit)
+	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, helper.GetProducerSetLimit(ctx), startBlock, endBlock)
 	if err != nil {
 		return err
 	}
@@ -237,7 +235,7 @@ func (k *Keeper) ClearLatestFailedProducer(ctx context.Context) error {
 
 // SelectNextSpanProducer selects the next producer for a new span.
 // It calculates candidate set, filters by active producers and selects one.
-func (k *Keeper) SelectNextSpanProducer(ctx context.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit uint64) (uint64, error) {
+func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit, startBlock, endBlock uint64) (uint64, error) {
 	candidates, err := k.CalculateProducerSet(ctx, producerSetLimit)
 	if err != nil {
 		return 0, fmt.Errorf("failed to calculate producer set: %w", err)
@@ -245,14 +243,17 @@ func (k *Keeper) SelectNextSpanProducer(ctx context.Context, currentProducer uin
 
 	if len(candidates) == 0 {
 		candidates = helper.GetFallbackProducerVotes()
+		if producerSetLimit > 0 && uint64(len(candidates)) > producerSetLimit {
+			candidates = candidates[:producerSetLimit]
+		}
 	}
 
 	activeCandidates := k.FilterByActiveProducerSet(ctx, candidates, activeValidatorIDs)
 
 	// If no candidate is available after threshold filtering,
-	// the candidate list will be rotated to the next producer EVEN IF the the producer is not active.
+	// rotate the original candidate list to the next producer EVEN IF the producer is not active.
 	if len(activeCandidates) == 0 {
-		newCandidates := make([]uint64, 0)
+		newCandidates := make([]uint64, 0, len(candidates))
 		for _, validatorID := range candidates {
 			if validatorID != currentProducer {
 				newCandidates = append(newCandidates, validatorID)
@@ -261,7 +262,7 @@ func (k *Keeper) SelectNextSpanProducer(ctx context.Context, currentProducer uin
 		activeCandidates = newCandidates
 	}
 
-	nextProducer, err := k.SelectProducer(ctx, currentProducer, activeCandidates)
+	nextProducer, err := k.SelectProducer(ctx, currentProducer, activeCandidates, startBlock, endBlock)
 	if err != nil {
 		return 0, fmt.Errorf("failed to select producer: %w", err)
 	}
@@ -408,15 +409,16 @@ func (k *Keeper) FilterByActiveProducerSet(ctx context.Context, candidates []uin
 	return activeCandidates
 }
 
-// SelectProducer selects a producer from the candidates list.
-// The selected candidate will be the next candidate to the current producer.
-// If the current producer is not in the candidate list, the first candidate in the list will be chosen.
-func (k *Keeper) SelectProducer(ctx context.Context, currentProducer uint64, candidates []uint64) (uint64, error) {
+// SelectProducer selects a producer from the candidates list, starting after the current producer,
+// wrapping around. It skips any candidate that is down for the given [startBlock, endBlock].
+// If all candidates are down (full cycle), it returns candidates[0].
+func (k *Keeper) SelectProducer(ctx sdk.Context, currentProducer uint64, candidates []uint64, startBlock, endBlock uint64) (uint64, error) {
 	if len(candidates) == 0 {
 		k.Logger(ctx).Error("SelectProducer called with no candidates")
 		return 0, fmt.Errorf("no candidates found")
 	}
 
+	// Find index of current producer (if present)
 	currentIndex := -1
 	for i, candidate := range candidates {
 		if candidate == currentProducer {
@@ -425,14 +427,55 @@ func (k *Keeper) SelectProducer(ctx context.Context, currentProducer uint64, can
 		}
 	}
 
-	if currentIndex == -1 {
-		// Current producer not in the list, select the first candidate
-		k.Logger(ctx).Debug("Current producer not in candidate list, selecting first candidate", "currentProducer", currentProducer, "selected", candidates[0])
-		return candidates[0], nil
+	// Starting index: next after current, or 0 if current not present
+	startIdx := 0
+	if currentIndex != -1 {
+		startIdx = (currentIndex + 1) % len(candidates)
+	} else {
+		k.Logger(ctx).Debug("Current producer not in candidate list, starting from first candidate", "currentProducer", currentProducer, "selected", candidates[0])
 	}
 
-	// Select the next candidate in the list, wrapping around
-	nextIndex := (currentIndex + 1) % len(candidates)
-	k.Logger(ctx).Info("Selecting next producer in list", "currentProducer", currentProducer, "currentIndex", currentIndex, "nextIndex", nextIndex, "selected", candidates[nextIndex])
-	return candidates[nextIndex], nil
+	// Walk at most len(candidates) steps, skipping any candidate that is down
+	n := len(candidates)
+	for i := 0; i < n; i++ {
+		idx := (startIdx + i) % n
+		c := candidates[idx]
+
+		isDown, err := k.IsProducerDownForBlockRange(ctx, startBlock, endBlock, c)
+		if err != nil {
+			return 0, fmt.Errorf("failed checking producer %d downtime: %w", c, err)
+		}
+		if !isDown {
+			k.Logger(ctx).Debug("Selecting next producer (not down for range)", "currentProducer", currentProducer, "selected", c, "startBlock", startBlock, "endBlock", endBlock)
+			return c, nil
+		}
+
+		k.Logger(ctx).Debug("Skipping candidate producer (down for range)", "candidate", c, "startBlock", startBlock, "endBlock", endBlock)
+	}
+
+	// Full cycle and everyone is down: return the first candidate as a fallback
+	k.Logger(ctx).Error("All candidates are down for the requested range; falling back to first candidate", "fallback", candidates[0], "startBlock", startBlock, "endBlock", endBlock)
+	return candidates[0], nil
+}
+
+// IsProducerDownForBlockRange checks if a producer has planned downtime overlapping with the given block range.
+func (k *Keeper) IsProducerDownForBlockRange(ctx sdk.Context, startBlock, endBlock, producerID uint64) (bool, error) {
+	found, err := k.ProducerPlannedDowntime.Has(ctx, producerID)
+	if err != nil {
+		return false, err
+	}
+	if !found {
+		return false, nil
+	}
+
+	downtime, err := k.ProducerPlannedDowntime.Get(ctx, producerID)
+	if err != nil {
+		return false, err
+	}
+
+	if startBlock <= downtime.EndBlock && endBlock >= downtime.StartBlock {
+		return true, nil
+	}
+
+	return false, nil
 }

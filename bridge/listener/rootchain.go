@@ -2,6 +2,7 @@ package listener
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"strconv"
 	"time"
@@ -148,18 +149,33 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 		from = to
 	}
 
-	// Set the last block to storage
-	if err = rl.storageClient.Put([]byte(lastRootBlockKey), []byte(to.String()), nil); err != nil {
-		rl.Logger.Error("rl.storageClient.Put", "Error", err)
+	// process logs first
+	if err := rl.queryAndBroadcastEvents(rootChainContext, from, to); err != nil {
+		rl.Logger.Error(
+			"queryAndBroadcastEvents failed",
+			"error", err,
+			"from", from,
+			"to", to,
+		)
+		// do not advance the cursor, as we want to retry this range on the next header
+		return
 	}
 
-	// Handle events
-	rl.queryAndBroadcastEvents(rootChainContext, from, to)
+	// after successful processing the logs, advance the cursor by setting the last block to storage
+	if err := rl.storageClient.Put([]byte(lastRootBlockKey), []byte(to.String()), nil); err != nil {
+		rl.Logger.Error("failed to persist last root block", "error", err, "lastRootBlock", to.String())
+		// If this fails, we’ll reprocess [from, to] next time
+	}
 }
 
 // queryAndBroadcastEvents fetches supported events from the rootChain and handles all of them
-func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int) {
+func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int) error {
 	rl.Logger.Info("Query rootChain event logs", "fromBlock", fromBlock, "toBlock", toBlock)
+
+	if rl.contractCaller.MainChainClient == nil {
+		// don't advance the cursor if the client isn't ready.
+		return fmt.Errorf("main chain client is nil")
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), rl.contractCaller.MainChainTimeout)
 	defer cancel()
@@ -179,8 +195,10 @@ func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChain
 	})
 	if err != nil {
 		rl.Logger.Error("Error while filtering logs", "error", err)
-		return
-	} else if len(logs) > 0 {
+		return err
+	}
+
+	if len(logs) > 0 {
 		rl.Logger.Debug("New logs found", "numberOfLogs", len(logs))
 	}
 
@@ -196,6 +214,8 @@ func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChain
 			rl.handleLog(vLog, selectedEvent)
 		}
 	}
+
+	return nil
 }
 
 func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string, logBytes []byte, delay time.Duration, event interface{}) {

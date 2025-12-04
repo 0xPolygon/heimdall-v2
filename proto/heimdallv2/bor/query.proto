@@ -64,6 +64,15 @@ service Query {
     option (google.api.http).get = "/bor/producer-votes/{validator_id}";
   }
 
+  // GetProducerPlannedDowntime queries the planned downtime for a given
+  // producer id.
+  rpc GetProducerPlannedDowntime(QueryProducerPlannedDowntimeRequest)
+      returns (QueryProducerPlannedDowntimeResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get =
+        "/bor/producers/planned-downtime/{producer_id}";
+  }
+
   // GetValidatorPerformanceScore queries the validator performance score.
   rpc GetValidatorPerformanceScore(QueryValidatorPerformanceScoreRequest)
       returns (QueryValidatorPerformanceScoreResponse) {
@@ -137,6 +146,15 @@ message QueryProducerVotesByValidatorIdRequest {
 
 message QueryProducerVotesByValidatorIdResponse {
   repeated uint64 votes = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryProducerPlannedDowntimeRequest {
+  uint64 producer_id = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryProducerPlannedDowntimeResponse {
+  BlockRange downtime_range = 1
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }
 
 message QueryValidatorPerformanceScoreRequest {}

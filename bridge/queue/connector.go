@@ -6,7 +6,7 @@ import (
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
-	"github.com/streadway/amqp"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // The Connector is used to connect to the queue

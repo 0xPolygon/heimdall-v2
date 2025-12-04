@@ -5,7 +5,7 @@ using forks of [cometBFT](https://github.com/0xPolygon/cometBFT) and [cosmos-sdk
 
 ## Pre-requisites
 
-Make sure you have go1.24+ already installed.
+Make sure you have go1.25+ already installed.
 
 ## Build
 ```bash 

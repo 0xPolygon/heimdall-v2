@@ -39,3 +39,28 @@ func (msg MsgProposeSpan) Type() string {
 func (msg MsgBackfillSpans) Type() string {
 	return EventTypeBackfillSpans
 }
+
+// NewMsgSetProducerDowntime creates a new MsgSetProducerDowntime instance
+func NewMsgSetProducerDowntime(
+	producer string,
+	startBorBlock uint64,
+	endBorBlock uint64,
+) *MsgSetProducerDowntime {
+	return &MsgSetProducerDowntime{
+		Producer: util.FormatAddress(producer),
+		DowntimeRange: BlockRange{
+			StartBlock: startBorBlock,
+			EndBlock:   endBorBlock,
+		},
+	}
+}
+
+// Route returns the message route for x/bor MsgProposeSpan.
+func (msg MsgProposeSpan) Route() string {
+	return RouterKey
+}
+
+// Route returns the message route for x/bor MsgBackfillSpans.
+func (msg MsgBackfillSpans) Route() string {
+	return RouterKey
+}
