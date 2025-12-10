@@ -524,6 +524,11 @@ func TestExtendVoteHandler(t *testing.T) {
 
 	mockCaller := new(helpermocks.IContractCaller)
 	mockCaller.
+		On("GetBorChainBlock", mock.Anything, mock.Anything).
+		Return(&ethTypes.Header{
+			Number: big.NewInt(10),
+		}, nil)
+	mockCaller.
 		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
@@ -662,6 +667,11 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 	require.NotEmpty(t, respPrep.Txs)
 
 	mockCaller := new(helpermocks.IContractCaller)
+	mockCaller.
+		On("GetBorChainBlock", mock.Anything, mock.Anything).
+		Return(&ethTypes.Header{
+			Number: big.NewInt(10),
+		}, nil)
 	mockCaller.
 		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
@@ -823,6 +833,11 @@ func TestSidetxsHappyPath(t *testing.T) {
 	}
 
 	mockCaller := new(helpermocks.IContractCaller)
+	mockCaller.
+		On("GetBorChainBlock", mock.Anything, mock.Anything).
+		Return(&ethTypes.Header{
+			Number: big.NewInt(10),
+		}, nil)
 	mockCaller.
 		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
@@ -1377,7 +1392,11 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		)
 
 		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil).Once()
-
+		mockCaller.
+			On("GetBorChainBlock", mock.Anything, mock.Anything).
+			Return(&ethTypes.Header{
+				Number: big.NewInt(1),
+			}, nil)
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
@@ -1780,7 +1799,11 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
-
+		mockCaller.
+			On("GetBorChainBlock", mock.Anything, mock.Anything).
+			Return(&ethTypes.Header{
+				Number: big.NewInt(10),
+			}, nil)
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
@@ -2361,6 +2384,11 @@ func TestPrepareProposal(t *testing.T) {
 	ctx = ctx.WithConsensusParams(params)
 
 	mockCaller := new(helpermocks.IContractCaller)
+	mockCaller.
+		On("GetBorChainBlock", mock.Anything, mock.Anything).
+		Return(&ethTypes.Header{
+			Number: big.NewInt(1),
+		}, nil)
 	mockCaller.
 		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
@@ -3065,334 +3093,4 @@ func TestUpdateBlockProducerStatus(t *testing.T) {
 	latestFailed, err := app.BorKeeper.GetLatestFailedProducer(ctx)
 	require.NoError(t, err)
 	require.Empty(t, latestFailed)
-}
-
-func TestCheckAndAddFutureSpan(t *testing.T) {
-	_, app, ctx, _ := SetupAppWithABCIctxAndValidators(t, 3)
-
-	// Get validators to create proper span
-	validators := app.StakeKeeper.GetAllValidators(ctx)
-	valSlice := make([]*stakeTypes.Validator, len(validators))
-	for i := range validators {
-		valSlice[i] = validators[i]
-	}
-	valSet := stakeTypes.ValidatorSet{Validators: valSlice}
-
-	// Create validators for selected producers
-	selectedProducers := make([]stakeTypes.Validator, len(validators))
-	for i, val := range validators {
-		selectedProducers[i] = *val
-	}
-
-	lastSpan := borTypes.Span{
-		Id:                1,
-		StartBlock:        100,
-		EndBlock:          200,
-		BorChainId:        "1",
-		ValidatorSet:      valSet,
-		SelectedProducers: selectedProducers,
-	}
-	err := app.BorKeeper.AddNewSpan(ctx, &lastSpan)
-	require.NoError(t, err)
-
-	producerValID := selectedProducers[0].ValId
-	// The producer is not in the supporting set.
-	supportingValidatorIDs := make(map[uint64]struct{})
-	for _, v := range validators {
-		if v.ValId != producerValID {
-			supportingValidatorIDs[v.ValId] = struct{}{}
-		}
-	}
-
-	t.Run("condition false", func(t *testing.T) {
-		majorityMilestone := &milestoneTypes.MilestoneProposition{
-			StartBlockNumber: 50, // This will make the condition false
-			BlockHashes:      [][]byte{[]byte("hash1")},
-		}
-
-		err := app.checkAndAddFutureSpan(ctx, majorityMilestone, lastSpan, supportingValidatorIDs)
-		require.NoError(t, err)
-
-		// Check no new span was added
-		currentLastSpan, err := app.BorKeeper.GetLastSpan(ctx)
-		require.NoError(t, err)
-		require.Equal(t, lastSpan.Id, currentLastSpan.Id)
-	})
-
-	t.Run("condition true", func(t *testing.T) {
-		majorityMilestone := &milestoneTypes.MilestoneProposition{
-			StartBlockNumber: 150, // This will make the condition true
-			BlockHashes:      [][]byte{[]byte("hash1")},
-		}
-
-		helper.SetVeblopHeight(int64(lastSpan.EndBlock + 1))
-
-		// Mock IContractCaller to return the lowercase address.
-		mockCaller := new(helpermocks.IContractCaller)
-		mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return([]common.Address{common.HexToAddress(validators[0].Signer)}, nil)
-		app.BorKeeper.SetContractCaller(mockCaller)
-
-		// Set up producer votes so that producer selection can work
-		if len(validators) > 1 {
-			// All validators vote for the same candidate to ensure consensus
-			var consensusCandidateID uint64
-			for _, v := range validators {
-				if v.ValId != producerValID {
-					consensusCandidateID = v.ValId
-					break
-				}
-			}
-
-			allValidatorIDs := make(map[uint64]struct{})
-			for _, val := range validators {
-				allValidatorIDs[val.ValId] = struct{}{}
-				producerVotes := borTypes.ProducerVotes{Votes: []uint64{consensusCandidateID}}
-				err := app.BorKeeper.SetProducerVotes(ctx, val.ValId, producerVotes)
-				require.NoError(t, err)
-			}
-
-			// Set up producer performance scores
-			err := app.BorKeeper.UpdateValidatorPerformanceScore(ctx, allValidatorIDs, 1)
-			require.NoError(t, err)
-
-			// Set up minimal span state
-			params, err := app.BorKeeper.GetParams(ctx)
-			require.NoError(t, err)
-			params.ProducerCount = 1
-			app.BorKeeper.SetParams(ctx, params)
-		}
-
-		err := app.checkAndAddFutureSpan(ctx, majorityMilestone, lastSpan, supportingValidatorIDs)
-		require.NoError(t, err)
-
-		// Check that a new span was created
-		currentLastSpan, err := app.BorKeeper.GetLastSpan(ctx)
-		require.NoError(t, err)
-		require.Equal(t, lastSpan.Id+1, currentLastSpan.Id, "a new span should be created with incremented ID")
-	})
-}
-
-func TestCheckAndRotateCurrentSpan(t *testing.T) {
-	t.Run("condition false - diff too small", func(t *testing.T) {
-		_, app, ctx, _ := SetupAppWithABCIctxAndValidators(t, 3)
-
-		lastMilestone := &milestoneTypes.Milestone{EndBlock: 100}
-		app.MilestoneKeeper.AddMilestone(ctx, *lastMilestone)
-		lastMilestoneBlock := uint64(50)
-		app.MilestoneKeeper.SetLastMilestoneBlock(ctx, lastMilestoneBlock)
-
-		// Get validators to create proper span
-		validators := app.StakeKeeper.GetAllValidators(ctx)
-		valSlice := make([]*stakeTypes.Validator, len(validators))
-		for i := range validators {
-			valSlice[i] = validators[i]
-		}
-		valSet := stakeTypes.ValidatorSet{Validators: valSlice}
-
-		// Create validators for selected producers
-		selectedProducers := make([]stakeTypes.Validator, len(validators))
-		for i, val := range validators {
-			selectedProducers[i] = *val
-		}
-
-		lastSpan := borTypes.Span{
-			Id:                1,
-			StartBlock:        90,
-			EndBlock:          190,
-			BorChainId:        "1",
-			ValidatorSet:      valSet,
-			SelectedProducers: selectedProducers,
-		}
-		err := app.BorKeeper.AddNewSpan(ctx, &lastSpan)
-		require.NoError(t, err)
-
-		ctx = ctx.WithBlockHeight(int64(lastMilestoneBlock) + ChangeProducerThreshold) // diff == ChangeProducerThreshold
-
-		err = app.checkAndRotateCurrentSpan(ctx)
-		require.NoError(t, err)
-
-		currentLastSpan, err := app.BorKeeper.GetLastSpan(ctx)
-		require.NoError(t, err)
-		require.Equal(t, lastSpan.Id, currentLastSpan.Id)
-	})
-
-	t.Run("condition false - not veblop", func(t *testing.T) {
-		_, app, ctx, _ := SetupAppWithABCIctxAndValidators(t, 3)
-
-		lastMilestone := &milestoneTypes.Milestone{EndBlock: 100}
-		app.MilestoneKeeper.AddMilestone(ctx, *lastMilestone)
-		lastMilestoneBlock := uint64(50)
-		app.MilestoneKeeper.SetLastMilestoneBlock(ctx, lastMilestoneBlock)
-
-		// Get validators to create proper span
-		validators := app.StakeKeeper.GetAllValidators(ctx)
-		valSlice := make([]*stakeTypes.Validator, len(validators))
-		for i := range validators {
-			valSlice[i] = validators[i]
-		}
-		valSet := stakeTypes.ValidatorSet{Validators: valSlice}
-
-		// Create validators for selected producers
-		selectedProducers := make([]stakeTypes.Validator, len(validators))
-		for i, val := range validators {
-			selectedProducers[i] = *val
-		}
-
-		lastSpan := borTypes.Span{
-			Id:                1,
-			StartBlock:        90,
-			EndBlock:          190,
-			BorChainId:        "1",
-			ValidatorSet:      valSet,
-			SelectedProducers: selectedProducers,
-		}
-		err := app.BorKeeper.AddNewSpan(ctx, &lastSpan)
-		require.NoError(t, err)
-
-		ctx = ctx.WithBlockHeight(int64(lastMilestoneBlock) + ChangeProducerThreshold + 1)
-		helper.SetVeblopHeight(int64(lastMilestone.EndBlock + 2)) // Makes IsVeblop false
-
-		err = app.checkAndRotateCurrentSpan(ctx)
-		require.NoError(t, err)
-
-		currentLastSpan, err := app.BorKeeper.GetLastSpan(ctx)
-		require.NoError(t, err)
-		require.Equal(t, lastSpan.Id, currentLastSpan.Id)
-
-		helper.SetVeblopHeight(0) // reset
-	})
-
-	t.Run("condition true", func(t *testing.T) {
-		_, app, ctx, _ := SetupAppWithABCIctxAndValidators(t, 3)
-
-		lastMilestone := &milestoneTypes.Milestone{
-			EndBlock:   100,
-			BorChainId: "1",
-		}
-		app.MilestoneKeeper.AddMilestone(ctx, *lastMilestone)
-		lastMilestoneBlock := uint64(50)
-		app.MilestoneKeeper.SetLastMilestoneBlock(ctx, lastMilestoneBlock)
-
-		validators := app.StakeKeeper.GetAllValidators(ctx)
-		valSlice := make([]*stakeTypes.Validator, len(validators))
-		for i := range validators {
-			valSlice[i] = validators[i]
-		}
-		valSet := stakeTypes.ValidatorSet{Validators: valSlice}
-
-		// Create validators for selected producers
-		selectedProducers := make([]stakeTypes.Validator, len(validators))
-		for i, val := range validators {
-			selectedProducers[i] = *val
-		}
-
-		lastSpan := borTypes.Span{
-			Id:                1,
-			StartBlock:        90,
-			EndBlock:          190,
-			BorChainId:        "1",
-			ValidatorSet:      valSet,
-			SelectedProducers: selectedProducers,
-		}
-		err := app.BorKeeper.AddNewSpan(ctx, &lastSpan)
-		require.NoError(t, err)
-
-		initialActiveProducers := make(map[uint64]struct{})
-		for _, val := range validators {
-			initialActiveProducers[val.ValId] = struct{}{}
-		}
-
-		// Add a few extra producer IDs to ensure we have candidates after current producer is removed
-		initialActiveProducers[1] = struct{}{}
-		initialActiveProducers[2] = struct{}{}
-
-		app.BorKeeper.UpdateLatestActiveProducer(ctx, initialActiveProducers)
-		app.BorKeeper.AddLatestFailedProducer(ctx, uint64(99)) // some other producer
-
-		// Set up comprehensive producer votes and state for successful producer selection
-		if len(validators) > 0 {
-			// For 3 validators with voting power 100 each:
-			// totalPotentialProducers = 3
-			// Max possible weighted vote at position 1: totalPotentialProducers * maxVotingPower = 3 * 100 = 300
-			// Required threshold: (300 * 2/3) + 1 = 201
-			// If all 3 validators vote for same candidate at position 1: 3 * 100 = 300 > 201 ✓
-
-			// Use actual validator IDs - find one that's not the current producer
-			var consensusCandidate uint64
-			for _, val := range validators {
-				// Current producer is validators[0], so use any other validator
-				if val.ValId != validators[0].ValId {
-					consensusCandidate = val.ValId
-					break
-				}
-			}
-			if consensusCandidate == 0 {
-				// Fallback: use second validator if available
-				if len(validators) > 1 {
-					consensusCandidate = validators[1].ValId
-				}
-			}
-
-			// Set producer votes - all validators vote for the same consensus candidate
-			for _, val := range validators {
-				// All validators vote for consensus candidate in first position, then fill with other validator IDs
-				var votes []uint64
-				votes = append(votes, consensusCandidate) // First choice - consensus candidate
-				for j, otherVal := range validators {
-					if otherVal.ValId != consensusCandidate && len(votes) < 3 {
-						votes = append(votes, otherVal.ValId)
-					}
-					if len(votes) >= 3 {
-						break
-					}
-					_ = j // avoid unused variable
-				}
-
-				producerVotes := borTypes.ProducerVotes{Votes: votes}
-				err := app.BorKeeper.SetProducerVotes(ctx, val.ValId, producerVotes)
-				require.NoError(t, err)
-
-				// Include this validator in the initial active producers
-				initialActiveProducers[val.ValId] = struct{}{}
-			}
-
-			// Ensure bor params allow for proper producer selection
-			params, err := app.BorKeeper.GetParams(ctx)
-			require.NoError(t, err)
-			params.ProducerCount = 3  // Allow 3 producers
-			params.SpanDuration = 100 // Set reasonable span duration
-			app.BorKeeper.SetParams(ctx, params)
-		}
-
-		ctx = ctx.WithBlockHeight(int64(lastMilestoneBlock) + ChangeProducerThreshold + 1) // diff > ChangeProducerThreshold
-		helper.SetVeblopHeight(int64(lastMilestone.EndBlock + 1))                          // Makes IsVeblop true
-
-		// Mock IContractCaller with proper producer mapping
-		mockCaller := new(helpermocks.IContractCaller)
-		producerSignerStr := validators[0].Signer
-		producerSignerAddr := common.HexToAddress(producerSignerStr)
-		mockCaller.On("GetBorChainBlockAuthor", mock.Anything, lastMilestone.EndBlock+1).Return(&producerSignerAddr, nil)
-		app.BorKeeper.SetContractCaller(mockCaller)
-
-		// Call the function
-		err = app.checkAndRotateCurrentSpan(ctx)
-		require.NoError(t, err)
-
-		// Assert that a new span was actually created
-		currentLastSpan, err := app.BorKeeper.GetLastSpan(ctx)
-		require.NoError(t, err)
-		require.Equal(t, lastSpan.Id+1, currentLastSpan.Id, "a new span should be created with incremented ID")
-
-		// Verify other expected state changes
-		newLastMilestoneBlock, err := app.MilestoneKeeper.GetLastMilestoneBlock(ctx)
-		require.NoError(t, err)
-		require.Equal(t, uint64(ctx.BlockHeight())+SpanRotationBuffer, newLastMilestoneBlock, "last milestone block should be updated")
-
-		failedProducers, err := app.BorKeeper.GetLatestFailedProducer(ctx)
-		require.NoError(t, err)
-
-		currentProducerID := validators[0].ValId
-		_, isFailed := failedProducers[currentProducerID]
-		require.True(t, isFailed, "current producer should be added to failed list")
-	})
 }

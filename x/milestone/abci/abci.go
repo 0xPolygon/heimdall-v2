@@ -15,6 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -38,12 +39,15 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 	var lastMilestoneHash []byte
 	var lastMilestoneBlockNumber uint64
 
+	var latestHeader *ethTypes.Header
+
 	if milestone != nil {
 		propStartBlock = milestone.EndBlock + 1
 
-		latestHeader, err := contractCaller.GetBorChainBlock(ctx, nil)
+		// Fetch the latest header once and reuse it to avoid duplicate RPC calls and race conditions.
+		latestHeader, err = contractCaller.GetBorChainBlock(ctx, nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get latest header")
+			return nil, fmt.Errorf("failed to get the latest header: %w", err)
 		}
 
 		params, err := milestoneKeeper.GetParams(ctx)
@@ -52,7 +56,7 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 		}
 
 		if isFastForwardMilestone(latestHeader.Number.Uint64(), milestone.EndBlock, params.FfMilestoneThreshold) {
-			propStartBlock = getFastForwardMilestoneStartBlock(latestHeader.Number.Uint64(), milestone.EndBlock, params.FfMilestoneBlockInterval)
+			propStartBlock = getFastForwardMilestoneStartBlock(milestone.EndBlock, params.FfMilestoneBlockInterval)
 		}
 
 		lastMilestoneHash = milestone.Hash
@@ -64,8 +68,10 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 		return nil, err
 	}
 
-	parentHash, blockHashes, tds, authors, err := getBlockInfo(ctx, propStartBlock, params.MaxMilestonePropositionLength, lastMilestoneHash, lastMilestoneBlockNumber, contractCaller)
+	parentHash, blockHashes, tds, authors, err := getBlockInfo(ctx, contractCaller, propStartBlock, params.MaxMilestonePropositionLength, latestHeader, lastMilestoneHash, lastMilestoneBlockNumber)
 	if err != nil {
+		// Propagate ErrNoNewHeadersFound so the caller can handle it gracefully.
+		// Other errors are also propagated.
 		return nil, err
 	}
 
@@ -112,15 +118,15 @@ func isFastForwardMilestone(latestHeaderNumber, latestMilestoneEndBlock, ffMiles
 	return latestHeaderNumber > latestMilestoneEndBlock && latestHeaderNumber-latestMilestoneEndBlock > ffMilestoneThreshold
 }
 
-func getFastForwardMilestoneStartBlock(latestHeaderNumber, latestMilestoneEndBlock, ffMilestoneBlockInterval uint64) uint64 {
-	latestHeaderMilestoneDistanceInBlocks := ((latestHeaderNumber - latestMilestoneEndBlock) / ffMilestoneBlockInterval) * ffMilestoneBlockInterval
-	return latestMilestoneEndBlock + latestHeaderMilestoneDistanceInBlocks + 1
+func getFastForwardMilestoneStartBlock(latestMilestoneEndBlock, ffMilestoneBlockInterval uint64) uint64 {
+	return latestMilestoneEndBlock + ffMilestoneBlockInterval
 }
 
 func GetMajorityMilestoneProposition(
 	ctx sdk.Context,
 	validatorSet *stakeTypes.ValidatorSet,
 	extVoteInfo []abciTypes.ExtendedVoteInfo,
+	majorityVP int64,
 	logger log.Logger,
 	lastEndBlock *uint64,
 	lastEndBlockHash []byte,
@@ -139,9 +145,6 @@ func GetMajorityMilestoneProposition(
 
 	// Track which validators we've already processed to prevent duplicate votes
 	processedValidators := make(map[string]bool)
-
-	totalVotingPower := validatorSet.GetTotalVotingPower()
-	majorityVP := totalVotingPower*2/3 + 1
 
 	getParentChildKey := func(parent, child string) string {
 		return fmt.Sprintf("%s-%s", parent, child)
@@ -406,16 +409,52 @@ func GetMajorityMilestoneProposition(
 	return proposition, aggregatedProposersHash, supportingValidatorList[0], supportingValidatorIDs, nil
 }
 
-var ErrNoHeadersFound = errors.New("no header found")
+var ErrNoNewHeadersFound = errors.New("no new headers found for milestone proposition")
 
-func getBlockInfo(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, []uint64, []common.Address, error) {
-	headers, tds, authors, err := contractCaller.GetBorChainBlockInfoInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
+func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startBlockNum, maxBlocksInProposition uint64, latestHeader *ethTypes.Header, lastMilestoneHash []byte, lastMilestoneBlock uint64) ([]byte, [][]byte, []uint64, []common.Address, error) {
+	// Reuse the provided latestHeader if available, otherwise fetch it.
+	var err error
+	if latestHeader == nil {
+		latestHeader, err = contractCaller.GetBorChainBlock(ctx, nil)
+		if err != nil || latestHeader == nil {
+			return nil, nil, nil, nil, fmt.Errorf("failed to get the latest header: %w", err)
+		}
+	}
+
+	latestBlockNum := latestHeader.Number.Uint64()
+
+	// Check if there are any new blocks available to fetch.
+	// If the cached latestHeader is stale (latestBlockNum < startBlockNum), refresh it once in case Bor produced it in the meantime.
+	// This handles the case where Heimdall blocks faster than Bor.
+	if latestBlockNum < startBlockNum {
+		latestHeader, err = contractCaller.GetBorChainBlock(ctx, nil)
+		if err != nil || latestHeader == nil {
+			return nil, nil, nil, nil, fmt.Errorf("failed to refresh the latest header: %w", err)
+		}
+		latestBlockNum = latestHeader.Number.Uint64()
+		// If still not available, return ErrNoNewHeadersFound since Bor hasn't produced the block yet.
+		// GenMilestoneProposition will propagate this, and app/abci.go will handle it gracefully.
+		if latestBlockNum < startBlockNum {
+			return nil, nil, nil, nil, ErrNoNewHeadersFound
+		}
+	}
+
+	// Calculate how many blocks are actually available to fetch from the Bor chain.
+	availableBlocks := latestBlockNum - startBlockNum + 1
+
+	// Only fetch the minimum of available blocks and max blocks in proposition
+	// This optimizes RPC calls when synced (e.g., only 1-2 blocks are actually available to fetch).
+	blocksToFetch := min(availableBlocks, maxBlocksInProposition)
+
+	milestoneEnd := startBlockNum + blocksToFetch - 1
+
+	headers, tds, authors, err := contractCaller.GetBorChainBlockInfoInBatch(ctx, int64(startBlockNum), int64(milestoneEnd))
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("failed to get block batch info: %w", err)
 	}
 
 	if len(headers) == 0 {
-		return nil, nil, nil, nil, ErrNoHeadersFound
+		return nil, nil, nil, nil, ErrNoNewHeadersFound
 	}
 
 	result := make([][]byte, 0, len(headers))
@@ -423,10 +462,10 @@ func getBlockInfo(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, la
 	var parentHash []byte
 	if len(headers) > 0 && len(lastMilestoneHash) > 0 {
 		parentHash = headers[0].ParentHash.Bytes()
-		if startBlock-lastMilestoneBlock > 1 {
+		if startBlockNum-lastMilestoneBlock > 1 {
 			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock+1)))
 			if err != nil {
-				return nil, nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
+				return nil, nil, nil, nil, fmt.Errorf("failed to get header for parent hash: %w", err)
 			}
 
 			parentHash = header.ParentHash.Bytes()
@@ -471,10 +510,16 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keepe
 		return fmt.Errorf("len mismatch between hashes and tds: %d != %d", len(milestoneProp.BlockHashes), len(milestoneProp.BlockTds))
 	}
 
+	duplicateBlockHashes := make(map[string]struct{})
 	for _, blockHash := range milestoneProp.BlockHashes {
 		if len(blockHash) != common.HashLength {
 			return fmt.Errorf("invalid block hash length")
 		}
+		duplicateBlockHashes[string(blockHash)] = struct{}{}
+	}
+
+	if len(duplicateBlockHashes) != len(milestoneProp.BlockHashes) {
+		return fmt.Errorf("duplicate block hashes found")
 	}
 
 	return nil

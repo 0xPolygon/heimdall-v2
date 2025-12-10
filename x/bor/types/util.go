@@ -93,3 +93,10 @@ func CalcCurrentBorSpanId(latestBorBlock uint64, latestHeimdallSpan *Span) (uint
 
 	return spanId, nil
 }
+
+const (
+	PlannedDowntimeMinimumTimeInFuture = 150
+	PlannedDowntimeMaximumTimeInFuture = 100 * DefaultSpanDuration // ~2 weeks
+	PlannedDowntimeMinRange            = 150                       // It will be down minimum for whole span, this here is just for tx validation
+	PlannedDowntimeMaxRange            = 14 * DefaultSpanDuration  // ~48 hours
+)

@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	waitDuration  = 1 * time.Minute
+	waitDuration  = 10 * time.Second
 	borChainIDKey = "bor-chain-id"
 	logsTypeKey   = "logs-type"
 )
@@ -171,7 +171,7 @@ func resolveChainID(ctx context.Context, clientCtx client.Context) (string, erro
 
 	logger.Info("ChainID is empty in clientCtx at bridge startup, fetching from node status")
 
-	nodeStatus, err := helper.GetNodeStatus(clientCtx, ctx)
+	nodeStatus, err := helper.GetNodeStatus(clientCtx) //nolint:contextcheck
 	if err != nil {
 		return "", fmt.Errorf("fetching node status: %w", err)
 	}

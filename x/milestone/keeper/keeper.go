@@ -3,7 +3,9 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
@@ -275,4 +277,71 @@ func (k *Keeper) GetMilestones(ctx context.Context) ([]types.Milestone, error) {
 	}
 
 	return milestones, nil
+}
+
+// DeleteMilestone deletes a milestone by its number.
+// It also updates the milestone count if the deleted milestone was the latest one.
+func (k *Keeper) DeleteMilestone(ctx context.Context, number uint64) error {
+	// Check if the milestone exists
+	exists, err := k.milestone.Has(ctx, number)
+	if err != nil {
+		k.Logger(ctx).Error("error checking milestone existence in store", "number", number, "err", err)
+		return err
+	}
+	if !exists {
+		return types.ErrNoMilestoneFound
+	}
+
+	// Delete the milestone from the store
+	if err := k.milestone.Remove(ctx, number); err != nil {
+		k.Logger(ctx).Error("error while deleting milestone from store", "number", number, "err", err)
+		return err
+	}
+
+	// Adjust the milestone count if we deleted the latest one
+	count, err := k.GetMilestoneCount(ctx)
+	if err != nil {
+		return err
+	}
+
+	if number == count {
+		// decrement count
+		if count > 0 {
+			newCount := count - 1
+			if err := k.SetMilestoneCount(ctx, newCount); err != nil {
+				return err
+			}
+
+			newLatestMilestone, err := k.milestone.Get(ctx, newCount)
+			if err != nil {
+				k.Logger(ctx).Error("error while fetching latest milestone from store", "number", newCount, "err", err)
+				return err
+			}
+
+			if err := k.SetLastMilestoneBlock(ctx, newLatestMilestone.EndBlock); err != nil {
+				k.Logger(ctx).Error("error while setting last milestone block in store", "err", err)
+				return err
+			}
+		}
+	}
+
+	k.Logger(ctx).Info("successfully deleted milestone", "milestoneId", number)
+
+	return nil
+}
+
+// IsFaultyMilestone checks if the given milestone matches a known faulty milestone
+func (k *Keeper) IsFaultyMilestone(milestone types.Milestone) bool {
+	borChainId := "137"
+	startBlock := "76273070"
+	endBlock := "76273070"
+	hash := "eRCiCRhVhnTtuHdZorsIsxrw3g5O7w2JCb51rzWRdI8="
+	id := "809387e7dae84cce485d95f1fce3f2ac1d2b9979d1c0989df2d4309b30ef6aa6"
+	expectedHash, _ := base64.StdEncoding.DecodeString(hash)
+
+	return bytes.Equal(milestone.Hash, expectedHash) &&
+		strings.Compare(milestone.MilestoneId, id) == 0 &&
+		strings.Compare(milestone.BorChainId, borChainId) == 0 &&
+		strings.Compare(fmt.Sprint(milestone.StartBlock), startBlock) == 0 &&
+		strings.Compare(fmt.Sprint(milestone.EndBlock), endBlock) == 0
 }

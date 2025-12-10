@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
@@ -247,7 +248,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return err
 	}
 
-	if doExist {
+	if doExist && !IsBufferedCheckpointZero(checkpointBuffer) {
 		logger.Debug("checkpoint already exists in buffer")
 
 		// get checkpoint buffer time from params
@@ -335,10 +336,15 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return err
 	}
 
+	if IsBufferedCheckpointZero(checkpointObj) {
+		logger.Debug("no checkpoint in buffer, cannot process checkpoint ack in postHandler")
+		return errors.New("no checkpoint in buffer, cannot process checkpoint ack in postHandler")
+	}
+
 	// invalid start block
 	if msg.StartBlock != checkpointObj.StartBlock {
-		logger.Error("invalid start block", "startExpected", checkpointObj.StartBlock, "startReceived", msg.StartBlock)
-		return errors.New("invalid start block")
+		logger.Error("invalid start block during postHandler checkpoint ack", "startExpected", checkpointObj.StartBlock, "startReceived", msg.StartBlock)
+		return errors.New("invalid start block during postHandler checkpoint ack")
 	}
 
 	// return err if start and end match, but contract root hash doesn't match
@@ -395,6 +401,30 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return err
 	}
 
+	// get the new proposer from validators set
+	vs, err := srv.stakeKeeper.GetValidatorSet(ctx)
+	if err != nil {
+		return errorsmod.Wrap(err, "error in fetching the validator set")
+	}
+
+	newProposer := vs.GetProposer()
+	// should never happen
+	if newProposer == nil {
+		logger.Error("No proposer available (empty validator set!) during postHandler ack message",
+			"oldProposer", msg.From,
+		)
+		return errorsmod.Wrap(err, "no proposer available (empty validator set!) during postHandler ack message")
+	}
+	// log old and new proposer
+	newProposerAddr := util.FormatAddress(newProposer.Signer)
+	oldProposerAddr := util.FormatAddress(msg.From)
+	logger.Info(
+		"New proposer selected during postHandler ack message",
+		"oldProposer", oldProposerAddr,
+		"newProposer", newProposerAddr,
+		"newProposerVotingPower", newProposer.VotingPower,
+	)
+
 	txBytes := ctx.TxBytes()
 
 	// Emit event for checkpoints
@@ -415,4 +445,14 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 func recordCheckpointMetric(method string, apiType string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.CheckpointSubsystem, method, apiType, success, start)
+}
+
+func IsBufferedCheckpointZero(cp types.Checkpoint) bool {
+	return cp.Id == 0 &&
+		cp.Proposer == "" &&
+		cp.StartBlock == 0 &&
+		cp.EndBlock == 0 &&
+		len(cp.RootHash) == 0 &&
+		cp.BorChainId == "" &&
+		cp.Timestamp == 0
 }

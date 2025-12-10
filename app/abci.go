@@ -26,11 +26,6 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-const (
-	ChangeProducerThreshold = 5
-	SpanRotationBuffer      = 10
-)
-
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
@@ -45,10 +40,13 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			return nil, err
 		}
 
-		if err := ValidateVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, validatorSet, app.MilestoneKeeper); err != nil {
-			logger.Error("Error occurred while validating VEs in PrepareProposal", err)
+		validVoteExtensions, err := FilterVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, validatorSet, app.MilestoneKeeper, logger)
+		if err != nil {
+			logger.Error("Error occurred while filtering VEs in PrepareProposal", err)
 			return nil, err
 		}
+
+		req.LocalLastCommit.Votes = validVoteExtensions
 
 		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, validatorSet, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
 			logger.Error("Error occurred while validating non-rp VEs in PrepareProposal", err)
@@ -89,6 +87,13 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				if _, ok := msg.(*borTypes.MsgVoteProducers); ok {
 					if err := app.BorKeeper.CanVoteProducers(ctx); err != nil {
 						logger.Info("skipping MsgVoteProducers in PrepareProposal", "error", err)
+						shouldSkip = true
+						break
+					}
+				}
+				if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+					if err := app.BorKeeper.CanSetProducerDowntime(sdk.UnwrapSDKContext(ctx)); err != nil {
+						logger.Info("skipping MsgSetProducerDowntime in PrepareProposal", "error", err)
 						shouldSkip = true
 						break
 					}
@@ -185,6 +190,12 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 				if _, ok := msg.(*borTypes.MsgVoteProducers); ok {
 					if err := app.BorKeeper.CanVoteProducers(ctx); err != nil {
 						logger.Error("rejecting proposal with invalid MsgVoteProducers", "error", err)
+						return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+					}
+				}
+				if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+					if err := app.BorKeeper.CanSetProducerDowntime(sdk.UnwrapSDKContext(ctx)); err != nil {
+						logger.Error("rejecting proposal with invalid MsgSetProducerDowntime", "error", err)
 						return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 					}
 				}
@@ -320,8 +331,8 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
 		if err != nil {
-			if errors.Is(err, milestoneAbci.ErrNoHeadersFound) {
-				logger.Debug("No headers found for generating milestone proposition, continuing without it")
+			if errors.Is(err, milestoneAbci.ErrNoNewHeadersFound) {
+				logger.Debug("No new headers found for generating milestone proposition, continuing without it")
 			} else {
 				logger.Error("Error occurred while generating milestone proposition", "error", err)
 			}
@@ -425,7 +436,7 @@ func (app *HeimdallApp) updateBlockProducerStatus(ctx sdk.Context, supportingPro
 func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone *milestoneTypes.MilestoneProposition, lastSpan borTypes.Span, supportingValidatorIDs map[uint64]struct{}) error {
 	logger := app.Logger()
 
-	if majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1) >= lastSpan.StartBlock && helper.IsVeblop(lastSpan.EndBlock+1) {
+	if majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1) >= lastSpan.StartBlock && helper.IsRio(lastSpan.EndBlock+1) {
 		logger.Info("New milestone is greater than the last span, creating a new veblop span", "lastSpan", lastSpan, "newMilestone", majorityMilestone)
 
 		params, err := app.BorKeeper.GetParams(ctx)
@@ -434,7 +445,7 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 			return err
 		}
 
-		endBlock := lastSpan.EndBlock + params.SpanDuration - 1
+		endBlock := lastSpan.EndBlock + params.SpanDuration
 
 		currentProducer, err := app.BorKeeper.FindCurrentProducerID(ctx, lastSpan.EndBlock)
 		if err != nil {
@@ -490,7 +501,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 
 	diff := ctx.BlockHeight() - int64(lastMilestoneBlock)
 
-	if lastMilestone != nil && lastMilestoneBlock != 0 && diff > ChangeProducerThreshold && helper.IsVeblop(lastMilestone.EndBlock+1) {
+	if lastMilestone != nil && lastMilestoneBlock != 0 && diff > helper.GetChangeProducerThreshold(ctx) && helper.IsRio(lastMilestone.EndBlock+1) {
 		logger.Info("Block finalization time is greater than change producer threshold, creating a new veblop span", "lastMilestone", lastMilestone, "lastMilestoneBlock", lastMilestoneBlock, "diff", diff, "currentBlock", ctx.BlockHeight())
 
 		addSpanCtx, spanCache := app.cacheTxContext(ctx)
@@ -549,7 +560,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 			logger.Warn("Error occurred while adding new veblop span", "error", err)
 		} else {
 			// update the last milestone block to a future block height to avoid immediately rotating the span in the next block
-			err = app.MilestoneKeeper.SetLastMilestoneBlock(addSpanCtx, uint64(ctx.BlockHeight())+SpanRotationBuffer)
+			err = app.MilestoneKeeper.SetLastMilestoneBlock(addSpanCtx, uint64(ctx.BlockHeight())+helper.GetSpanRotationBuffer(ctx))
 			if err != nil {
 				logger.Error("Error occurred while setting last milestone block", "error", err)
 				return err
@@ -579,6 +590,24 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	// handle the case when the VEs are disabled starting from the next block
 	if err := checkIfVoteExtensionsDisabled(ctx, req.Height+1); err != nil {
 		return nil, err
+	}
+
+	milestoneDeletionHeight := helper.GetMilestoneDeletionHeight()
+	if req.Height == milestoneDeletionHeight && milestoneDeletionHeight != -1 {
+		// Delete faulty milestone if exists.
+		milestoneNumber := helper.GetFaultyMilestoneNumber()
+		milestone, err := app.MilestoneKeeper.GetMilestoneByNumber(ctx, milestoneNumber)
+		if err != nil {
+			logger.Error("Error occurred while getting milestone by number", "error", err, "milestoneNumber", milestoneNumber)
+		}
+		if milestone != nil {
+			if app.MilestoneKeeper.IsFaultyMilestone(*milestone) {
+				if err := app.MilestoneKeeper.DeleteMilestone(ctx, milestoneNumber); err != nil {
+					logger.Error("Error occurred while deleting milestone", "error", err, "milestoneNumber", milestoneNumber)
+				}
+			}
+		}
+		logger.Info("Deleted milestone matching target condition", "milestone", milestoneNumber)
 	}
 
 	// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
@@ -644,10 +673,14 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		lastEndHash = lastMilestone.Hash
 	}
 
+	totalVotingPower := validatorSet.GetTotalVotingPower()
+	majorityVP := totalVotingPower*2/3 + 1
+
 	majorityMilestone, aggregatedProposers, proposer, supportingValidatorIDs, err := milestoneAbci.GetMajorityMilestoneProposition(
 		ctx,
 		validatorSet,
 		extVoteInfo,
+		majorityVP,
 		logger,
 		lastEndBlock,
 		lastEndHash,
@@ -660,7 +693,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	isValidMilestone := false
 	if majorityMilestone != nil {
 		var lastSpanHeimdallBlock uint64
-		if helper.IsVeblop(majorityMilestone.StartBlockNumber) {
+		if helper.IsRio(majorityMilestone.StartBlockNumber) {
 			lastSpanHeimdallBlock, err = app.BorKeeper.GetLastSpanBlock(ctx)
 			if err != nil {
 				logger.Warn("Error occurred while getting last span block", "error", err)
@@ -669,8 +702,8 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, majorityMilestone); err != nil {
 			logger.Error("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
-			// We don't want to halt consensus because of invalid majority milestone proposition
-		} else if helper.IsVeblop(majorityMilestone.StartBlockNumber) && ctx.BlockHeight() == int64(lastSpanHeimdallBlock)+1 {
+			// We don't want to halt consensus because of an invalid majority milestone proposition
+		} else if helper.IsRio(majorityMilestone.StartBlockNumber) && ctx.BlockHeight() == int64(lastSpanHeimdallBlock)+1 {
 			logger.Info("Last span was created in the previous block, skipping milestone addition", "lastSpanHeimdallBlock", lastSpanHeimdallBlock, "currentBlock", ctx.BlockHeight())
 		} else {
 			isValidMilestone = true
@@ -714,7 +747,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			return nil, err
 		}
 
-		if helper.IsVeblop(lastSpan.StartBlock + 1) {
+		if helper.IsRio(lastSpan.StartBlock + 1) {
 			err = app.MilestoneKeeper.SetLastMilestoneBlock(addMilestoneCtx, uint64(ctx.BlockHeight()))
 			if err != nil {
 				logger.Error("error while setting last milestone block in store", "err", err)
@@ -738,13 +771,34 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 		msCache.Write()
 	} else {
-		if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
+		// If we can't reach the 2/3 majority, we need to check if the there is at least 1/3 of the voting power supporting a new milestone
+		minMajorityVP := totalVotingPower/3 + 1
+
+		pendingMilestone, _, _, _, err := milestoneAbci.GetMajorityMilestoneProposition(
+			ctx,
+			validatorSet,
+			extVoteInfo,
+			minMajorityVP,
+			logger,
+			lastEndBlock,
+			lastEndHash,
+		)
+		if err != nil {
+			logger.Error("Error occurred while getting 33% majority milestone proposition", "error", err)
 			return nil, err
+		}
+
+		if pendingMilestone == nil {
+			if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
+				return nil, err
+			}
+		} else {
+			logger.Debug("33% majority milestone proposition found, skipping span rotation")
 		}
 	}
 
 	// tally votes
-	approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validatorSet.GetTotalVotingPower(), req.Height)
+	approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validatorSet, req.Height)
 	if err != nil {
 		logger.Error("Error occurred while tallying votes", "error", err)
 		return nil, err

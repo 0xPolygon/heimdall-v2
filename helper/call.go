@@ -15,7 +15,6 @@ import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/pkg/errors"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/erc20"
@@ -120,8 +119,6 @@ type ContractCaller struct {
 	SlashManagerABI  abi.ABI
 	PolTokenABI      abi.ABI
 
-	ReceiptCache *lru.Cache
-
 	ContractInstanceCache map[common.Address]interface{}
 }
 
@@ -144,13 +141,8 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 	contractCallerObj.BorChainTimeout = config.BorRPCTimeout
 	contractCallerObj.MainChainRPC = GetMainChainRPCClient()
 	contractCallerObj.BorChainRPCClient = GetBorRPCClient()
-	contractCallerObj.ReceiptCache, err = lru.New(1000)
 	contractCallerObj.BorChainGrpcFlag = config.BorGRPCFlag
 	contractCallerObj.BorChainGrpcClient = GetBorGRPCClient()
-
-	if err != nil {
-		return contractCallerObj, err
-	}
 
 	// listeners and processors instance cache (address->ABI)
 	contractCallerObj.ContractInstanceCache = make(map[common.Address]interface{})
@@ -709,34 +701,22 @@ func (c *ContractCaller) IsTxConfirmed(txHash common.Hash, requiredConfirmations
 		return false
 	}
 
-	if receipt == nil {
-		return false
-	}
-
-	return true
+	return receipt != nil
 }
 
-// GetConfirmedTxReceipt returns confirmed tx receipt
+// GetConfirmedTxReceipt returns a tx receipt only if it is finalized (or has the required confirmations).
 func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmations uint64) (*ethTypes.Receipt, error) {
-	var receipt *ethTypes.Receipt
+	// Always fetch the receipt from the ethereum chain
+	receipt, err := c.GetMainTxReceipt(tx)
+	if err != nil {
+		Logger.Error("error while fetching receipt from ethereum", "txHash", tx.Hex(), "error", err)
+		return nil, err
+	}
 
-	receiptCache, ok := c.ReceiptCache.Get(tx.String())
-	if !ok {
-		var err error
-
-		// get main tx receipt
-		receipt, err = c.GetMainTxReceipt(tx)
-		if err != nil {
-			Logger.Error("error while fetching mainChain receipt", "txHash", tx.Hex(), "error", err)
-			return nil, err
-		}
-
-		c.ReceiptCache.Add(tx.String(), receipt)
-	} else {
-		receipt, ok = receiptCache.(*ethTypes.Receipt)
-		if !ok {
-			return nil, errors.New("error in casting the fetched receipt into eth receipt")
-		}
+	if receipt == nil {
+		// should not happen, in case treat it as tx not found, hence possibly reorged out.
+		Logger.Error("tx receipt not found on ethereum chain", "txHash", tx.Hex())
+		return nil, errors.New("ethereum tx receipt not found")
 	}
 
 	receiptBlockNumber := receipt.BlockNumber.Uint64()
@@ -752,25 +732,34 @@ func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmat
 	// If the latest finalized block is available, use it to check if the receipt is finalized or not.
 	// Else, fallback to the `requiredConfirmations` value
 	if latestFinalizedBlock != nil {
-		Logger.Debug("latest finalized block on main chain obtained", "Block", latestFinalizedBlock.Number.Uint64(), "receipt block", receiptBlockNumber)
+		Logger.Debug("latest finalized block on main chain obtained",
+			"block", latestFinalizedBlock.Number.Uint64(),
+			"receiptBlock", receiptBlockNumber,
+		)
 
 		if receiptBlockNumber > latestFinalizedBlock.Number.Uint64() {
-			return nil, errors.New("not enough confirmations")
-		}
-	} else {
-		// get the current/latest main chain block
-		latestBlk, err := c.GetMainChainBlock(nil)
-		if err != nil {
-			Logger.Error("error getting latest block from main chain", "error", err)
-			return nil, err
+			return nil, errors.New("not enough confirmations for this block")
 		}
 
-		Logger.Debug("latest block on main chain obtained", "Block", latestBlk.Number.Uint64(), "receipt block", receiptBlockNumber)
+		// At this point we trust the canonical chain
+		return receipt, nil
+	}
 
-		diff := latestBlk.Number.Uint64() - receiptBlockNumber
-		if diff < requiredConfirmations {
-			return nil, errors.New("not enough confirmations")
-		}
+	// No finalized API: fall back to N confirmations
+	latestBlk, err := c.GetMainChainBlock(nil)
+	if err != nil {
+		Logger.Error("error getting latest block from ethereum chain", "error", err)
+		return nil, err
+	}
+
+	Logger.Debug("latest block on ethereum chain obtained",
+		"block", latestBlk.Number.Uint64(),
+		"receiptBlock", receiptBlockNumber,
+	)
+
+	diff := latestBlk.Number.Uint64() - receiptBlockNumber
+	if diff < requiredConfirmations {
+		return nil, errors.New("not enough confirmations")
 	}
 
 	return receipt, nil
@@ -1011,17 +1000,21 @@ func (c *ContractCaller) CurrentStateCounter(stateSenderInstance *statesender.St
 	return result
 }
 
-// CheckIfBlocksExist - check if the given block exists on the local chain
-func (c *ContractCaller) CheckIfBlocksExist(end uint64) (bool, error) {
+// CheckIfBlocksExist - check if the given block number exists on the local chain.
+// Here we check if the block number exists by fetching the header from the bor chain.
+func (c *ContractCaller) CheckIfBlocksExist(number uint64) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
 	defer cancel()
 
-	block, err := c.GetBlockByNumber(ctx, end)
-	if block == nil {
+	header, err := c.BorChainClient.HeaderByNumber(ctx, big.NewInt(int64(number)))
+	if err != nil {
 		return false, err
 	}
+	if header == nil {
+		return false, nil
+	}
 
-	return end == block.NumberU64(), err
+	return number == header.Number.Uint64(), nil
 }
 
 // GetBlockByNumber returns blocks by number from the child chain (bor)

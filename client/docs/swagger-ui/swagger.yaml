@@ -141,6 +141,57 @@ paths:
           format: uint64
       tags:
         - Query
+  /bor/producers/planned-downtime/{producer_id}:
+    get:
+      summary: |-
+        GetProducerPlannedDowntime queries the planned downtime for a given
+        producer id.
+      operationId: GetProducerPlannedDowntime
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              downtime_range:
+                type: object
+                properties:
+                  start_block:
+                    type: string
+                    format: uint64
+                  end_block:
+                    type: string
+                    format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: producer_id
+          in: path
+          required: true
+          type: string
+          format: uint64
+      tags:
+        - Query
   /bor/spans/latest:
     get:
       summary: GetLatestSpan queries the latest span.
@@ -884,6 +935,45 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - Query
+  /bor/validator-performance-score:
+    get:
+      summary: GetValidatorPerformanceScore queries the validator performance score.
+      operationId: GetValidatorPerformanceScore
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              validator_performance_score:
+                type: object
+                additionalProperties:
+                  type: string
+                  format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
       tags:
         - Query
   /chainmanager/params:
@@ -3151,6 +3241,15 @@ definitions:
             value:
               type: string
               format: byte
+  heimdallv2.bor.BlockRange:
+    type: object
+    properties:
+      start_block:
+        type: string
+        format: uint64
+      end_block:
+        type: string
+        format: uint64
   heimdallv2.bor.Params:
     type: object
     properties:
@@ -3425,6 +3524,18 @@ definitions:
             type: string
             format: uint64
           producer_count:
+            type: string
+            format: uint64
+  heimdallv2.bor.QueryProducerPlannedDowntimeResponse:
+    type: object
+    properties:
+      downtime_range:
+        type: object
+        properties:
+          start_block:
+            type: string
+            format: uint64
+          end_block:
             type: string
             format: uint64
   heimdallv2.bor.QueryProducerVotesByValidatorIdResponse:
@@ -3710,6 +3821,14 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
+  heimdallv2.bor.QueryValidatorPerformanceScoreResponse:
+    type: object
+    properties:
+      validator_performance_score:
+        type: object
+        additionalProperties:
+          type: string
+          format: uint64
   heimdallv2.bor.Span:
     type: object
     properties:

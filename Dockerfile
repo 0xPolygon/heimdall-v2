@@ -1,5 +1,5 @@
 # ─── BUILDER STAGE ───────────────────────────────────────────────────────────────
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 ARG HEIMDALL_DIR=/var/lib/heimdall/
 ENV HEIMDALL_DIR=${HEIMDALL_DIR}
@@ -33,9 +33,7 @@ RUN apk add --no-cache bash ca-certificates && \
 WORKDIR ${HEIMDALL_DIR}
 
 COPY --from=builder ${HEIMDALL_DIR}/build/heimdalld /usr/local/bin/heimdalld
-COPY --from=builder ${HEIMDALL_DIR}/docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 1317 26656 26657
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/heimdalld"]

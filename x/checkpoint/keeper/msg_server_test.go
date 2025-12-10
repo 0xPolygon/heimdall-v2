@@ -504,7 +504,6 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		s.Run(tc.name, func() {
 			_, err := msgServer.UpdateParams(ctx, tc.input)
 

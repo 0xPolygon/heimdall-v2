@@ -1,4 +1,4 @@
-name: Kurtosis E2E Tests
+name: Stateless Sync Tests
 
 on:
   push:
@@ -12,16 +12,16 @@ on:
     types: [opened, synchronize]
 
 concurrency:
-  group: kurtosis-e2e-${{ github.event.pull_request.number || github.ref }}
+  group: stateless-sync-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
-  ENCLAVE_NAME: kurtosis-e2e
+  ENCLAVE_NAME: kurtosis-stateless-e2e
 
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       # This is needed because the job fails with "System.IO.IOException: No space left on device".
@@ -39,11 +39,6 @@ jobs:
       - name: Install dependencies on Linux
         if: runner.os == 'Linux'
         run: sudo apt update && sudo apt install build-essential
-
-      - name: Install Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: 'stable'
 
       - name: Checkout heimdall-v2
         uses: actions/checkout@v5
@@ -77,53 +72,34 @@ jobs:
           docker_username: ${{ secrets.DOCKERHUB }}
           docker_token: ${{ secrets.DOCKERHUB_KEY }}
 
-      - name: Build heimdall-v2 docker image
-        run: |
-          cd heimdall-v2
-          docker build -t heimdall-v2:local --file Dockerfile .
-
       - name: Build bor docker image
         run: |
           cd bor
           docker build -t bor:local --file Dockerfile .
 
+      - name: Build heimdall-v2 docker image
+        run: |
+          cd heimdall-v2
+          docker build -t heimdall-v2:local --file Dockerfile .
+
       - name: Copy kurtosis config
-        run: cp ./pos-workflows/.github/configs/kurtosis-e2e.yml ./kurtosis-pos/kurtosis-e2e.yml
+        run: cp ./pos-workflows/.github/configs/kurtosis-stateless-e2e.yml ./kurtosis-pos/kurtosis-stateless-e2e.yml
 
       - name: Kurtosis run
         run: |
           cd kurtosis-pos
-          kurtosis run --args-file=kurtosis-e2e.yml --enclave=${{ env.ENCLAVE_NAME }} .
+          kurtosis run --args-file=kurtosis-stateless-e2e.yml --enclave ${{ env.ENCLAVE_NAME }} .
 
       - name: Inspect enclave
         run: kurtosis enclave inspect ${{ env.ENCLAVE_NAME }}
 
-      - name: Test state syncs
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'bridge MATIC/POL, ERC20, and ERC721 from L1 to L2 and confirm L2 balances increased' tests/pos/bridge.bats"
-
-      - name: Add new validator
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'add new validator' tests/pos/validator.bats"
-
-      - name: Update validator stake
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'update validator stake' tests/pos/validator.bats"
-
-      - name: Delegate MATIC/POL to a validator
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'delegate MATIC/POL to a validator' tests/pos/validator.bats"
-
-      - name: Undelegate MATIC/POL from a validator
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'undelegate MATIC/POL from a validator' tests/pos/validator.bats"
-
-      - name: Remove validator
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'remove validator' tests/pos/validator.bats"
-
-      - name: Run smoke tests (Checkpoints and Milestones)
-        run: bash ./pos-workflows/tests/kurtosis_smoke_test.sh
-
-      - name: Run set producer downtime test
+      - name: Run stateless sync tests
         run: |
-          cd pos-workflows/tests/producer_planned_downtime
-          go mod tidy
-          go run .
+          cd pos-workflows
+          bash tests/stateless_tests/kurtosis_stateless_test.sh
+
+      - name: Test state syncs (post VeBlop HF)
+        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'bridge MATIC/POL, ERC20, and ERC721 from L1 to L2 and confirm L2 balances increased' tests/pos/bridge.bats"
 
       - name: Post kurtosis run
         if: always()

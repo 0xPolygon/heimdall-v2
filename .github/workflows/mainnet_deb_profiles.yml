@@ -2,8 +2,6 @@ name: mainnet_deb_profiles
 
 on:
   push:
-    branches:
-      - 'main'
     paths:
       - '**'
     tags:

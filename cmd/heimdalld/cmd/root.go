@@ -139,6 +139,11 @@ func NewRootCmd() *cobra.Command {
 			}
 			helper.Logger = log.NewLogger(cmd.OutOrStdout(), log.LevelOption(logLevel))
 
+			err = helper.SanitizeConfig(serverCtx.Viper, serverCtx.Logger)
+			if err != nil {
+				return err
+			}
+
 			// Set server context
 			return server.SetCmdServerContext(cmd, serverCtx)
 		},

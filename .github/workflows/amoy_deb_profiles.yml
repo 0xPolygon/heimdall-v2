@@ -2,8 +2,6 @@ name: amoy_deb_profiles
 
 on:
   push:
-    branches:
-      - 'main'
     paths:
       - '**'
     tags:

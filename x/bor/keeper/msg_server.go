@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
@@ -257,6 +258,75 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 	}
 
 	return &types.MsgBackfillSpansResponse{}, nil
+}
+
+func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetProducerDowntime) (*types.MsgSetProducerDowntimeResponse, error) {
+	var err error
+	start := time.Now()
+	defer recordBorTransactionMetric(api.ProducerDowntimeMethod, start, &err)
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := s.CanSetProducerDowntime(sdkCtx); err != nil {
+		return nil, err
+	}
+
+	if msg.DowntimeRange.StartBlock >= msg.DowntimeRange.EndBlock {
+		return nil, fmt.Errorf("start block must be less than end block")
+	}
+
+	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock < types.PlannedDowntimeMinRange {
+		return nil, fmt.Errorf("time range must be at least %d blocks. start block %d, end block %d",
+			types.PlannedDowntimeMinRange,
+			msg.DowntimeRange.StartBlock,
+			msg.DowntimeRange.EndBlock,
+		)
+	}
+
+	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock > types.PlannedDowntimeMaxRange {
+		return nil, fmt.Errorf("time range must be at most %d blocks. start block %d, end block %d",
+			types.PlannedDowntimeMaxRange,
+			msg.DowntimeRange.StartBlock,
+			msg.DowntimeRange.EndBlock,
+		)
+	}
+
+	producerId := uint64(0)
+	validators := s.sk.GetSpanEligibleValidators(ctx)
+	found := false
+	for _, v := range validators {
+		if util.FormatAddress(v.Signer) == util.FormatAddress(msg.Producer) {
+			producerId = v.ValId
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return nil, fmt.Errorf("producer with address %s not found in the current validator set", msg.Producer)
+	}
+
+	candidates, err := s.CalculateProducerSet(ctx, helper.GetProducerSetLimit(sdkCtx))
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate producer set: %w", err)
+	}
+
+	if len(candidates) == 0 {
+		candidates = helper.GetFallbackProducerVotes()
+	}
+
+	isProducer := false
+	for _, c := range candidates {
+		if c == producerId {
+			isProducer = true
+			break
+		}
+	}
+
+	if !isProducer {
+		return nil, fmt.Errorf("producer with address %s and id %d is not in the current producer set", msg.Producer, producerId)
+	}
+
+	return &types.MsgSetProducerDowntimeResponse{}, nil
 }
 
 func recordBorTransactionMetric(method string, start time.Time, err *error) {

@@ -17,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/rs/zerolog"
@@ -112,16 +113,20 @@ const (
 	DefaultMainnetSeeds     = "e019e16d4e376723f3adc58eb1761809fea9bee0@35.234.150.253:26656,7f3049e88ac7f820fd86d9120506aaec0dc54b27@34.89.75.187:26656,1f5aff3b4f3193404423c3dd1797ce60cd9fea43@34.142.43.249:26656,2d5484feef4257e56ece025633a6ea132d8cadca@35.246.99.203:26656,17e9efcbd173e81a31579310c502e8cdd8b8ff2e@35.197.233.240:26656,72a83490309f9f63fdca3a0bef16c290e5cbb09c@35.246.95.65:26656,00677b1b2c6282fb060b7bb6e9cc7d2d05cdd599@34.105.180.11:26656,721dd4cebfc4b78760c7ee5d7b1b44d29a0aa854@34.147.169.102:26656,4760b3fc04648522a0bcb2d96a10aadee141ee89@34.89.55.74:26656"
 	DefaultAmoyTestnetSeeds = "e4eabef3111155890156221f018b0ea3b8b64820@35.197.249.21:26656,811c3127677a4a34df907b021aad0c9d22f84bf4@34.89.39.114:26656,2ec15d1d33261e8cf42f57236fa93cfdc21c1cfb@35.242.167.175:26656,38120f9d2c003071a7230788da1e3129b6fb9d3f@34.89.15.223:26656,2f16f3857c6c99cc11e493c2082b744b8f36b127@34.105.128.110:26656,2833f06a5e33da2e80541fb1bfde2a7229877fcb@34.89.21.99:26656,2e6f1342416c5d758f5ae32f388bb76f7712a317@34.89.101.16:26656,a596f98b41851993c24de00a28b767c7c5ff8b42@34.89.11.233:26656"
 
-	DefaultMainnetProducers = "91,92,93"
+	DefaultMainnetProducers = "91,92,93,94"
 
-	DefaultAmoyTestnetProducers = "1,2,3"
+	DefaultAmoyTestnetProducers = "4,5"
 
-	DefaultLocalTestnetProducers = "1,2,3"
+	DefaultMumbaiTestnetProducers = "1,2,3"
+
+	DefaultLocalTestnetProducers = "1,2,3,4"
 
 	secretFilePerm = 0o600
 
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hard fork
 	MaxStateSyncSize = 30000
+
+	EnforcedMinRetainBlocks = 2500000
 )
 
 func init() {
@@ -169,6 +174,19 @@ type CustomConfig struct {
 	Chain string `mapstructure:"chain"`
 
 	ProducerVotes string `mapstructure:"producer_votes"`
+
+	// #### Health check configs ####
+	// MaxGoRoutineThreshold is the maximum number of goroutines before heimdall health check fails.
+	MaxGoRoutineThreshold int `mapstructure:"max_goroutine_threshold"`
+
+	// WarnGoRoutineThreshold is the maximum number of goroutines before heimdall health check warns.
+	WarnGoRoutineThreshold int `mapstructure:"warn_goroutine_threshold"`
+
+	// MinPeerThreshold is the minimum number of peers before heimdall health check fails.
+	MinPeerThreshold int `mapstructure:"min_peer_threshold"`
+
+	// WarnPeerThreshold is the minimum number of peers before heimdall health check warns.
+	WarnPeerThreshold int `mapstructure:"warn_peer_threshold"`
 }
 
 type CustomAppConfig struct {
@@ -201,7 +219,7 @@ var producerVotes []uint64
 // Logger stores global logger object
 var Logger logger.Logger
 
-var veblopHeight int64 = 0
+var rioHeight int64 = 0
 
 var tallyFixHeight int64 = 0
 
@@ -210,6 +228,12 @@ var disableVPCheckHeight int64 = 0
 var disableValSetCheckHeight int64 = 0
 
 var initialHeight int64 = 0
+
+var milestoneDeletionHeight int64 = 0
+
+var faultyMilestoneNumber int64 = 0
+
+var producerDowntimeHeight int64 = 0
 
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
@@ -400,6 +424,9 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		case AmoyChain:
 			conf.Custom.ProducerVotes = DefaultAmoyTestnetProducers
 			Logger.Debug("Using default amoy producers", "producers", DefaultAmoyTestnetProducers)
+		case MumbaiChain:
+			conf.Custom.ProducerVotes = DefaultMumbaiTestnetProducers
+			Logger.Debug("Using default mumbai producers", "producers", DefaultMumbaiTestnetProducers)
 		default:
 			conf.Custom.ProducerVotes = DefaultLocalTestnetProducers
 			Logger.Debug("Using default local producers", "producers", DefaultLocalTestnetProducers)
@@ -423,29 +450,41 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	switch conf.Custom.Chain {
 	case MainChain:
-		veblopHeight = 0
-		tallyFixHeight = 0           // TODO: TBD
-		disableVPCheckHeight = 0     // TODO: confirm with team
-		disableValSetCheckHeight = 0 // TODO: confirm with team
-		initialHeight = 0
+		milestoneDeletionHeight = 28525000
+		faultyMilestoneNumber = 1941439
+		rioHeight = 77414656 // Rio height for Mainnet.
+		tallyFixHeight = 28913694
+		disableVPCheckHeight = 25723000
+		disableValSetCheckHeight = 25723063
+		initialHeight = 24404501
+		producerDowntimeHeight = 34966593
 	case MumbaiChain:
-		veblopHeight = 0
-		tallyFixHeight = 0
-		disableVPCheckHeight = 0
-		disableValSetCheckHeight = 0 // TODO: confirm with team
-		initialHeight = 0
-	case AmoyChain:
-		veblopHeight = 0
-		tallyFixHeight = 13143851
-		disableVPCheckHeight = 10618199
-		disableValSetCheckHeight = 10618299
-		initialHeight = 8788501
-	default:
-		veblopHeight = 0
+		milestoneDeletionHeight = 0
+		faultyMilestoneNumber = -1
+		rioHeight = 48473856 // Rio height for Mumbai testnet.
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
 		initialHeight = 0
+		producerDowntimeHeight = 0
+	case AmoyChain:
+		milestoneDeletionHeight = 0
+		faultyMilestoneNumber = -1
+		rioHeight = 26272256 // Rio height for Amoy testnet.
+		tallyFixHeight = 13143851
+		disableVPCheckHeight = 10618199
+		disableValSetCheckHeight = 10618299
+		initialHeight = 8788501
+		producerDowntimeHeight = 20457139
+	default:
+		milestoneDeletionHeight = 0
+		faultyMilestoneNumber = -1
+		rioHeight = 256 // Rio height for local devnet.
+		tallyFixHeight = 0
+		disableVPCheckHeight = 0
+		disableValSetCheckHeight = 0
+		initialHeight = 0
+		producerDowntimeHeight = 0
 	}
 }
 
@@ -487,6 +526,11 @@ func GetDefaultHeimdallConfig() CustomConfig {
 		LogsType:       DefaultLogsType,
 		Chain:          DefaultChain,
 		LogsWriterFile: "", // default to stdout
+
+		MaxGoRoutineThreshold:  0,
+		WarnGoRoutineThreshold: 0,
+		MinPeerThreshold:       0,
+		WarnPeerThreshold:      0,
 	}
 }
 
@@ -550,19 +594,16 @@ func GetValidChains() []string {
 	return []string{"mainnet", "mumbai", "amoy", "local"}
 }
 
-func GetVeblopHeight() int64 {
-	return veblopHeight
+func GetRioHeight() int64 {
+	return rioHeight
 }
 
-func IsVeblop(blockNum uint64) bool {
-	if veblopHeight == 0 {
-		return false
-	}
-	return blockNum >= uint64(veblopHeight)
+func IsRio(blockNum uint64) bool {
+	return blockNum >= uint64(rioHeight)
 }
 
-func SetVeblopHeight(height int64) {
-	veblopHeight = height
+func SetRioHeight(height int64) {
+	rioHeight = height
 }
 
 func GetTallyFixHeight() int64 {
@@ -579,6 +620,22 @@ func GetDisableValSetCheckHeight() int64 {
 
 func GetInitialHeight() int64 {
 	return initialHeight
+}
+
+func GetMilestoneDeletionHeight() int64 {
+	return milestoneDeletionHeight
+}
+
+func GetFaultyMilestoneNumber() uint64 {
+	return uint64(faultyMilestoneNumber)
+}
+
+func GetSetProducerDowntimeHeight() int64 {
+	return producerDowntimeHeight
+}
+
+func SetSetProducerDowntimeHeight(height int64) {
+	producerDowntimeHeight = height
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
@@ -602,9 +659,44 @@ func GetFallbackProducerVotes() []uint64 {
 		return parseProducerVotes(DefaultMainnetProducers)
 	case AmoyChain:
 		return parseProducerVotes(DefaultAmoyTestnetProducers)
+	case MumbaiChain:
+		return parseProducerVotes(DefaultMumbaiTestnetProducers)
 	default:
 		return parseProducerVotes(DefaultLocalTestnetProducers)
 	}
+}
+
+const (
+	producerSetLimit    = uint64(3)
+	newProducerSetLimit = uint64(4)
+)
+
+func GetProducerSetLimit(ctx sdk.Context) uint64 {
+	if ctx.BlockHeight() >= GetSetProducerDowntimeHeight() {
+		return newProducerSetLimit
+	}
+	return producerSetLimit
+}
+
+const (
+	changeProducerThreshold    = 5
+	spanRotationBuffer         = 10
+	newChangeProducerThreshold = 10
+	newSpanRotationBuffer      = 20
+)
+
+func GetChangeProducerThreshold(ctx sdk.Context) int64 {
+	if ctx.BlockHeight() >= GetSetProducerDowntimeHeight() {
+		return newChangeProducerThreshold
+	}
+	return changeProducerThreshold
+}
+
+func GetSpanRotationBuffer(ctx sdk.Context) uint64 {
+	if ctx.BlockHeight() >= GetSetProducerDowntimeHeight() {
+		return newSpanRotationBuffer
+	}
+	return spanRotationBuffer
 }
 
 // DecorateWithHeimdallFlags adds persistent flags for app configs and bind flags with command
@@ -1121,4 +1213,17 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 // GetBorGRPCClient returns bor gRPC client
 func GetBorGRPCClient() *borgrpc.BorGRPCClient {
 	return borGRPCClient
+}
+
+// Sanitize enforces minimums and returns notes and corrected key/values
+func (c *CustomAppConfig) Sanitize() (notes []string, kv map[string]any) {
+	kv = make(map[string]any)
+
+	if c.MinRetainBlocks != 0 && c.MinRetainBlocks < EnforcedMinRetainBlocks {
+		c.MinRetainBlocks = EnforcedMinRetainBlocks
+		notes = append(notes, fmt.Sprintf("min-retain-blocks=%d (minimum enforced)", EnforcedMinRetainBlocks))
+		kv["min-retain-blocks"] = EnforcedMinRetainBlocks
+	}
+
+	return notes, kv
 }

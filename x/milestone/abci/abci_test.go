@@ -87,45 +87,16 @@ func TestGetFastForwardMilestoneStartBlock(t *testing.T) {
 		expected                 uint64
 	}{
 		{
-			name:                     "Exact multiple",
-			latestHeaderNumber:       150,
+			name:                     "Interval is 10",
 			latestMilestoneEndBlock:  100,
 			ffMilestoneBlockInterval: 10,
-			expected:                 151, // (150-100)/10=5*10=50, then 100+50+1 = 151
-		},
-		{
-			name:                     "Not an exact multiple",
-			latestHeaderNumber:       153,
-			latestMilestoneEndBlock:  100,
-			ffMilestoneBlockInterval: 10,
-			expected:                 151, // (153-100)=53/10=5*10=50, then 100+50+1 = 151
-		},
-		{
-			name:                     "Zero difference",
-			latestHeaderNumber:       100,
-			latestMilestoneEndBlock:  100,
-			ffMilestoneBlockInterval: 10,
-			expected:                 101, // 0/10=0, then 100+0+1 = 101
-		},
-		{
-			name:                     "Interval equals 1",
-			latestHeaderNumber:       150,
-			latestMilestoneEndBlock:  100,
-			ffMilestoneBlockInterval: 1,
-			expected:                 151, // every block counts; 150-100=50, then 100+50+1 = 151
-		},
-		{
-			name:                     "Interval larger than difference",
-			latestHeaderNumber:       105,
-			latestMilestoneEndBlock:  100,
-			ffMilestoneBlockInterval: 10,
-			expected:                 101, // (5/10=0) then 100+0+1 = 101
+			expected:                 110, // 100+10=110
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result := getFastForwardMilestoneStartBlock(tc.latestHeaderNumber, tc.latestMilestoneEndBlock, tc.ffMilestoneBlockInterval)
+			result := getFastForwardMilestoneStartBlock(tc.latestMilestoneEndBlock, tc.ffMilestoneBlockInterval)
 			if result != tc.expected {
 				t.Errorf("getFastForwardMilestoneStartBlock(%d, %d, %d) = %d; expected %d",
 					tc.latestHeaderNumber, tc.latestMilestoneEndBlock, tc.ffMilestoneBlockInterval, result, tc.expected)
@@ -194,6 +165,7 @@ func TestGetMajorityMilestoneProposition_MajorityWins(t *testing.T) {
 		ctx,
 		validatorSet,
 		extVotes,
+		1,
 		logger,
 		&lastEndBlock,
 		lastEndHash,
