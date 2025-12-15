@@ -777,6 +777,48 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 	}
 }
 
+func TestVerifyVoteExtensionHandler_RejectsUnknownFieldsPadding(t *testing.T) {
+	setupAppResult := SetupApp(t, 1)
+	hApp := setupAppResult.App
+	validatorPrivKeys := setupAppResult.ValidatorKeys
+
+	ctx := hApp.BaseApp.NewContext(true)
+	ctx = setupContextWithVoteExtensionsEnableHeight(ctx, 1)
+
+	vals := hApp.StakeKeeper.GetAllValidators(ctx)
+	require.NotEmpty(t, vals)
+
+	valAddrBytes := common.FromHex(vals[0].Signer)
+
+	cometVal := abci.Validator{
+		Address: valAddrBytes,
+		Power:   vals[0].VotingPower,
+	}
+
+	ext := setupExtendedVoteInfo(
+		t,
+		cmtproto.BlockIDFlagCommit,
+		common.FromHex(TxHash1),
+		common.FromHex(TxHash2),
+		cometVal,
+		validatorPrivKeys[0],
+	)
+
+	// padding
+	paddedVE := appendProtobufPadding(ext.VoteExtension, 64*1024)
+
+	req := &abci.RequestVerifyVoteExtension{
+		ValidatorAddress: valAddrBytes,
+		Height:           CurrentHeight,
+		VoteExtension:    paddedVE,
+	}
+
+	resp, err := hApp.VerifyVoteExtensionHandler()(ctx, req)
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, abci.ResponseVerifyVoteExtension_REJECT, resp.Status)
+}
+
 func TestPreBlocker(t *testing.T) {
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
