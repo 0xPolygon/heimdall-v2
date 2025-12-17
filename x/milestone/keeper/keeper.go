@@ -170,6 +170,13 @@ func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone) er
 		return err
 	}
 
+	k.Logger(ctx).Info("Milestone stored successfully",
+		"milestoneNumber", milestoneNumber,
+		"proposer", milestone.Proposer,
+		"startBlock", milestone.StartBlock,
+		"endBlock", milestone.EndBlock,
+	)
+
 	// emit milestone event
 	sdkCtx.EventManager().EmitEvent(
 		types.NewMilestoneEvent(milestone, milestoneNumber),

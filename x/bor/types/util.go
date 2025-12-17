@@ -100,3 +100,32 @@ const (
 	PlannedDowntimeMinRange            = 150                       // It will be down minimum for whole span, this here is just for tx validation
 	PlannedDowntimeMaxRange            = 14 * DefaultSpanDuration  // ~48 hours
 )
+
+// LogSpan returns a human-readable summary of the span for logging purposes.
+// It extracts the key fields without dumping the entire validator set which causes unreadable logs.
+func (s *Span) LogSpan() string {
+	if s == nil {
+		return "nil"
+	}
+
+	selectedProducers := ""
+	if len(s.SelectedProducers) > 0 {
+		producerIDs := make([]string, 0, len(s.SelectedProducers))
+		for _, p := range s.SelectedProducers {
+			producerIDs = append(producerIDs, fmt.Sprintf("valID=%d", p.ValId))
+		}
+		selectedProducers = strings.Join(producerIDs, ", ")
+	}
+
+	validatorCount := len(s.ValidatorSet.Validators)
+
+	return fmt.Sprintf(
+		"id=%d startBlock=%d endBlock=%d validatorCount=%d selectedProducers=[%s] borChainId=%s",
+		s.Id,
+		s.StartBlock,
+		s.EndBlock,
+		validatorCount,
+		selectedProducers,
+		s.BorChainId,
+	)
+}

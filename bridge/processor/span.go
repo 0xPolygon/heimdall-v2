@@ -261,8 +261,6 @@ func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, next
 			return fmt.Errorf("propose span tx failed on heimdall, txHash: %s, code: %d, spanId: %d, startBlock: %d, endBlock: %d",
 				txRes.TxHash, txRes.Code, nextSpanMsg.Id, nextSpanMsg.StartBlock, nextSpanMsg.EndBlock)
 		}
-
-		sp.Logger.Info("Span tx successfully broadcasted to heimdall", "txHash", txRes.TxHash, "spanId", nextSpanMsg.Id, "startBlock", nextSpanMsg.StartBlock, "endBlock", nextSpanMsg.EndBlock)
 	}
 
 	return nil
@@ -376,19 +374,19 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 
 // fetchNextSpanSeed - fetches seed for next span
 func (sp *SpanProcessor) fetchNextSpanSeed(id uint64) (common.Hash, string, error) {
-	sp.Logger.Info("Sending Rest call to Get Seed for next span")
+	sp.Logger.Debug("Sending REST call to get seed for the next span")
 
 	response, err := helper.FetchFromAPI(fmt.Sprintf(helper.GetHeimdallServerEndpoint(util.NextSpanSeedURL), strconv.FormatUint(id, 10)))
 	if err != nil {
-		sp.Logger.Error("Error Fetching next span seed from HeimdallServer ", "error", err)
+		sp.Logger.Error("Error fetching next span seed from HeimdallServer ", "error", err)
 		return common.Hash{}, "", err
 	}
 
-	sp.Logger.Info("Next span seed fetched")
+	sp.Logger.Debug("Next span seed fetched")
 
 	var nextSpanSeedRes types.QueryNextSpanSeedResponse
 	if err := sp.cliCtx.Codec.UnmarshalJSON(response, &nextSpanSeedRes); err != nil {
-		sp.Logger.Error("Error unmarshalling nextSpanSeed received from Heimdall Server", "error", err)
+		sp.Logger.Error("Error unmarshalling next span seed received from HeimdallServer", "error", err)
 		return common.Hash{}, "", err
 	}
 

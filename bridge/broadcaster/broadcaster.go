@@ -178,7 +178,8 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}) (*s
 
 	txHash := txResponse.TxHash
 
-	tb.logger.Info("Tx sent on heimdall", "txHash", txHash, "accSeq", tb.lastSeqNo, "accNum", tb.accNum, "txResponse", txResponse)
+	tb.logger.Info("Tx broadcasted successfully", "txHash", txHash, "txResponseCode", txResponse.Code)
+
 	// increment account sequence
 	tb.lastSeqNo += 1
 
