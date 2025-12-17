@@ -3,13 +3,14 @@ package grpc
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/url"
 	"strings"
 	"time"
 
+	"cosmossdk.io/log"
 	proto "github.com/0xPolygon/polyproto/bor"
-	"github.com/ethereum/go-ethereum/log"
 	grpcRetry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -22,18 +23,20 @@ type BorGRPCClient struct {
 	client proto.BorApiClient
 }
 
-func NewBorGRPCClient(address string) *BorGRPCClient {
+func NewBorGRPCClient(address string, logger log.Logger) (*BorGRPCClient, error) {
 	timeout := 5 * time.Second
 	addr := address
 	var dialOpts []grpc.DialOption
-	log.Info("Setting up Bor gRPC client", "address", address)
+
+	logger.Info("Setting up Bor gRPC client", "address", address)
 
 	// URL mode
 	if strings.Contains(address, "://") {
 		// Decide credentials and normalized address based on the provided scheme
 		u, err := url.Parse(address)
 		if err != nil {
-			log.Crit("Invalid Bor gRPC URL", "url", address, "err", err)
+			logger.Error("Invalid Bor gRPC URL", "url", address, "err", err)
+			return nil, err
 		}
 
 		switch u.Scheme {
@@ -41,7 +44,9 @@ func NewBorGRPCClient(address string) *BorGRPCClient {
 			// Remote secure connection
 			addr = u.Host
 			if addr == "" {
-				log.Crit("Invalid Bor gRPC https URL", "url", address)
+				err := fmt.Errorf("invalid Bor gRPC https URL %q: empty host", address)
+				logger.Error("Invalid Bor gRPC https URL", "url", address, "err", err)
+				return nil, err
 			}
 
 			tlsCfg := &tls.Config{
@@ -56,8 +61,8 @@ func NewBorGRPCClient(address string) *BorGRPCClient {
 			// plaintext only allowed for local host
 			addr = u.Host
 			if !isLocalhost(addr) {
-				log.Crit("Refusing insecure non-local Bor gRPC over http; use https or localhost only",
-					"addr", addr)
+				// allow but warn
+				logger.Warn("Using insecure non-local Bor gRPC over http. This is discouraged", "addr", addr)
 			}
 			dialOpts = append(dialOpts,
 				grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -67,7 +72,9 @@ func NewBorGRPCClient(address string) *BorGRPCClient {
 			// support unix://path for on-box Bor nodes
 			path := u.Path
 			if path == "" {
-				log.Crit("Invalid unix Bor gRPC URL", "url", address)
+				err := fmt.Errorf("invalid unix Bor gRPC URL %q: empty path", address)
+				logger.Error("Invalid unix Bor gRPC URL", "url", address, "err", err)
+				return nil, err
 			}
 			addr = "unix://" + path
 			dialOpts = append(dialOpts,
@@ -79,14 +86,17 @@ func NewBorGRPCClient(address string) *BorGRPCClient {
 			)
 
 		default:
-			log.Crit("Unsupported Bor gRPC URL scheme", "url", address, "scheme", u.Scheme)
+			err := fmt.Errorf("unsupported Bor gRPC URL scheme %q in %q", u.Scheme, address)
+			logger.Error("Unsupported Bor gRPC URL scheme", "url", address, "scheme", u.Scheme, "err", err)
+			return nil, err
 		}
 
 	} else {
 		// No scheme provided, treat as host:port, but only allow if local
 		if !isLocalhost(addr) {
-			log.Crit("Refusing insecure non-local Bor gRPC without scheme; use https://host:port",
-				"addr", addr)
+			err := fmt.Errorf("insecure non-local Bor gRPC without scheme (addr=%s); use http://localhost:port or https://host:port", addr)
+			logger.Error("Refusing insecure non-local Bor gRPC without scheme", "addr", addr, "err", err)
+			return nil, err
 		}
 		dialOpts = append(dialOpts,
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -108,23 +118,24 @@ func NewBorGRPCClient(address string) *BorGRPCClient {
 	// dial using address and dialOpts
 	conn, err := grpc.NewClient(addr, dialOpts...)
 	if err != nil {
-		log.Crit("Failed to connect to Bor gRPC", "addr", addr, "error", err)
+		logger.Error("Failed to connect to Bor gRPC", "addr", addr, "error", err)
+		return nil, err
 	}
 
-	log.Info("Connected to Bor gRPC server", "grpcAddress", address, "dialAddr", addr)
+	logger.Info("Connected to Bor gRPC server", "grpcAddress", address, "dialAddr", addr)
 
 	return &BorGRPCClient{
 		conn:   conn,
 		client: proto.NewBorApiClient(conn),
-	}
+	}, nil
 }
 
-func (h *BorGRPCClient) Close() {
-	log.Debug("Shutdown detected, Closing Bor gRPC client")
-	err := h.conn.Close()
-	if err != nil {
+func (c *BorGRPCClient) Close(logger log.Logger) {
+	if c == nil || c.conn == nil {
 		return
 	}
+	logger.Debug("Shutdown detected, closing Bor gRPC client")
+	_ = c.conn.Close()
 }
 
 // isLocalhost returns true if host/port refers to localhost/loopback.
