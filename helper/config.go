@@ -416,17 +416,9 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	if conf.Custom.BorGRPCUrl != "" {
 		client, err := borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl, Logger)
 		if err != nil {
-			Logger.Error("Failed to initialize Bor gRPC client; continuing with Bor RPC only",
-				"bor_grpc_url", conf.Custom.BorGRPCUrl,
-				"err", err,
-			)
-			borGRPCClient = nil
-		} else {
-			borGRPCClient = client
+			log.Fatal(err)
 		}
-	} else {
-		Logger.Info("bor_grpc_url not configured; Bor gRPC client disabled, using Bor RPC only")
-		borGRPCClient = nil
+		borGRPCClient = client
 	}
 
 	// Set default producers based on chain if not already set by config or flags
