@@ -80,7 +80,7 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 		case <-ticker.C:
 			fromBlock, toBlock, err := hl.fetchFromAndToBlock(ctx)
 			if err != nil {
-				hl.Logger.Error("error fetching from and to block, skipping events query", "fromBlock", fromBlock, "toBlock", toBlock, "error", err)
+				hl.Logger.Error("Error fetching from and to block, skipping events query", "fromBlock", fromBlock, "toBlock", toBlock, "error", err)
 				continue
 			} else if fromBlock < toBlock {
 				hl.Logger.Debug("Fetching new events between blocks", "fromBlock", fromBlock, "toBlock", toBlock)

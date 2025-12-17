@@ -260,7 +260,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 		checkpointNumber := big.NewInt(0).Div(event.HeaderBlockId, big.NewInt(0).SetUint64(checkpointContext.CheckpointParams.ChildChainBlockInterval))
 
 		cp.Logger.Info(
-			"received task to send checkpoint-ack to heimdall",
+			"Received task to send checkpoint-ack to heimdall",
 			"event", eventName,
 			"start", event.Start,
 			"end", event.End,
