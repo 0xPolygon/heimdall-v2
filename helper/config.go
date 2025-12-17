@@ -413,7 +413,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	borClient = ethclient.NewClient(borRPCClient)
 
-	if conf.Custom.BorGRPCUrl != "" {
+	if conf.Custom.BorGRPCFlag && conf.Custom.BorGRPCUrl != "" {
 		client, err := borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl, Logger)
 		if err != nil {
 			log.Fatal(err)
