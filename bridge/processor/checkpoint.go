@@ -425,7 +425,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 		return err
 	}
 
-	cp.Logger.Info("Root hash calculated", "rootHash", common.Bytes2Hex(root))
+	cp.Logger.Info("root hash calculated", "rootHash", common.Bytes2Hex(root))
 
 	var accountRootHash []byte
 	// get DividendAccountRoot from heimdall
@@ -585,19 +585,19 @@ func (cp *CheckpointProcessor) parseCheckpointSignatures(signatures []checkpoint
 
 // fetchDividendAccountRoot - fetches dividend account root hash
 func (cp *CheckpointProcessor) fetchDividendAccountRoot() ([]byte, error) {
-	cp.Logger.Info("Sending Rest call to Get Dividend AccountRootHash")
+	cp.Logger.Debug("sending Rest call to get dividend account root hash")
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.DividendAccountRootURL))
 	if err != nil {
-		cp.Logger.Error("error fetching AccountRootHash from HeimdallServer ", "error", err)
+		cp.Logger.Error("error fetching account root hash from HeimdallServer", "error", err)
 		return []byte{}, err
 	}
 
-	cp.Logger.Info("dividend account root fetched")
+	cp.Logger.Debug("dividend account root hash fetched")
 
 	var accountRootHashObject topuptypes.QueryDividendAccountRootHashResponse
 	if err = cp.cliCtx.Codec.UnmarshalJSON(response, &accountRootHashObject); err != nil {
-		cp.Logger.Error("error unmarshalling AccountRootHash received from Heimdall Server", "error", err)
+		cp.Logger.Error("error unmarshalling account root hash received from Heimdall Server", "error", err)
 		return accountRootHashObject.AccountRootHash, err
 	}
 
