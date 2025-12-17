@@ -47,7 +47,7 @@ func (k *Keeper) AddNewVeblopSpan(ctx sdk.Context, currentProducer uint64, start
 		BorChainId:        borChainID,
 	}
 
-	logger.Info("freezing new veblop span", "span", newSpan.LogSpan())
+	logger.Info("Freezing new veblop span", "span", newSpan.LogSpan())
 
 	err = k.AddNewSpan(ctx, newSpan)
 	if err != nil {

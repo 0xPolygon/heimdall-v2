@@ -103,7 +103,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Info("validating checkpoint proposal",
+	logger.Info("Validating checkpoint proposal",
 		"proposer", msg.Proposer,
 		"startBlock", msg.StartBlock,
 		"endBlock", msg.EndBlock,
@@ -121,7 +121,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 			"error", err,
 		)
 	} else if validCheckpoint {
-		logger.Info("checkpoint validated successfully",
+		logger.Info("Checkpoint validated successfully",
 			"startBlock", msg.StartBlock,
 			"endBlock", msg.EndBlock,
 			"rootHash", common.Bytes2Hex(msg.RootHash),
@@ -182,7 +182,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Info("validating checkpoint ack",
+	logger.Info("Validating checkpoint ack",
 		"checkpointNumber", msg.Number,
 		"proposer", msg.Proposer,
 		"startBlock", msg.StartBlock,
@@ -217,7 +217,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Info("checkpoint ack validated successfully",
+	logger.Info("Checkpoint ack validated successfully",
 		"checkpointNumber", msg.Number,
 		"proposer", msg.Proposer,
 		"startBlock", msg.StartBlock,
@@ -310,7 +310,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return err
 	}
 
-	logger.Info("new checkpoint is stored in buffer",
+	logger.Info("New checkpoint is stored in buffer",
 		"checkpointId", lastCheckpoint.Id+1,
 		"proposer", msg.Proposer,
 		"startBlock", msg.StartBlock,
@@ -407,7 +407,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return err
 	}
 
-	logger.Info("checkpoint added to the store",
+	logger.Info("Checkpoint added to the store",
 		"checkpointNumber", msg.Number,
 		"proposer", checkpointObj.Proposer,
 		"startBlock", checkpointObj.StartBlock,
@@ -422,7 +422,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return err
 	}
 
-	logger.Info("checkpoint buffer flushed after receiving checkpoint ack", "checkpointNumber", msg.Number)
+	logger.Info("Checkpoint buffer flushed after receiving checkpoint ack", "checkpointNumber", msg.Number)
 
 	// update ack count module
 	err = srv.IncrementAckCount(ctx)
@@ -447,7 +447,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	newProposer := vs.GetProposer()
 	// should never happen
 	if newProposer == nil {
-		logger.Error("no proposer available (empty validator set!) during postHandler ack message",
+		logger.Error("No proposer available (empty validator set!) during postHandler ack message",
 			"oldProposer", msg.From,
 		)
 		return errorsmod.Wrap(err, "no proposer available (empty validator set!) during postHandler ack message")
@@ -456,7 +456,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	newProposerAddr := util.FormatAddress(newProposer.Signer)
 	oldProposerAddr := util.FormatAddress(msg.From)
 	logger.Info(
-		"new proposer selected for checkpoint ack message",
+		"New proposer selected for checkpoint ack message",
 		"oldProposer", oldProposerAddr,
 		"newProposer", newProposerAddr,
 	)

@@ -139,7 +139,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "invalid proposer in msg")
 	}
 
-	logger.Info("checkpoint proposed successfully",
+	logger.Info("Checkpoint proposed successfully",
 		"proposer", msg.Proposer,
 		"startBlock", msg.StartBlock,
 		"endBlock", msg.EndBlock,
@@ -224,7 +224,7 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 		return nil, types.ErrBadAck
 	}
 
-	logger.Info("checkpoint ack received",
+	logger.Info("Checkpoint ack received",
 		"checkpointNumber", msg.Number,
 		"proposer", msg.Proposer,
 		"startBlock", msg.StartBlock,
@@ -339,7 +339,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 		return nil, types.ErrNoAck
 	}
 
-	logger.Info("checkpoint no-ack processed",
+	logger.Info("Checkpoint no-ack processed",
 		"from", msg.From,
 		"lastCheckpointTime", lastCheckpointTime,
 		"currentTime", currentTime,
@@ -372,7 +372,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 	newProposerAddr := util.FormatAddress(newProposer.Signer)
 	oldProposerAddr := util.FormatAddress(msg.From)
 	logger.Info(
-		"new proposer selected for checkpoint no-ack message",
+		"New proposer selected for checkpoint no-ack message",
 		"oldProposer", oldProposerAddr,
 		"newProposer", newProposerAddr,
 	)

@@ -339,7 +339,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			// We still want to participate in the consensus even if we fail to generate the milestone proposition
 		} else if milestoneProp != nil {
 			if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, milestoneProp); err != nil {
-				logger.Error("invalid milestone proposition generated",
+				logger.Error("Invalid milestone proposition generated",
 					"startBlock", milestoneProp.StartBlockNumber,
 					"endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)-1),
 					"blockHashes", strutil.HashesToString(milestoneProp.BlockHashes),
@@ -348,7 +348,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				// We don't want to halt consensus because of invalid milestone proposition
 			} else {
 				vt.MilestoneProposition = milestoneProp
-				logger.Info("generated a new milestone proposition",
+				logger.Info("Generated a new milestone proposition",
 					"startBlock", milestoneProp.StartBlockNumber,
 					"endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)-1),
 					"blockHashes", strutil.HashesToString(milestoneProp.BlockHashes),
@@ -446,7 +446,7 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 	logger := app.Logger()
 
 	if majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1) >= lastSpan.StartBlock && helper.IsRio(lastSpan.EndBlock+1) {
-		logger.Info("new milestone's end block reached or exceeded the last span's start block, creating a new veblop span",
+		logger.Info("New milestone's end block reached or exceeded the last span's start block, creating a new veblop span",
 			"lastSpanId", lastSpan.Id,
 			"lastSpanStartBlock", lastSpan.StartBlock,
 			"lastSpanEndBlock", lastSpan.EndBlock,
@@ -517,7 +517,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 	diff := ctx.BlockHeight() - int64(lastMilestoneBlock)
 
 	if lastMilestone != nil && lastMilestoneBlock != 0 && diff > helper.GetChangeProducerThreshold(ctx) && helper.IsRio(lastMilestone.EndBlock+1) {
-		logger.Info("block finalization time is greater than the change producer threshold, creating a new veblop span",
+		logger.Info("Block finalization time is greater than the change producer threshold, creating a new veblop span",
 			"lastMilestoneStartBlock", lastMilestone.StartBlock,
 			"lastMilestoneEndBlock", lastMilestone.EndBlock,
 			"lastMilestoneHeimdallBlock", lastMilestoneBlock,
@@ -593,7 +593,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 				return err
 			}
 
-			logger.Info("span rotated due to the current producer's ineffectiveness", "currentProducerID", currentProducer)
+			logger.Info("Span rotated due to the current producer's ineffectiveness", "currentProducerID", currentProducer)
 		}
 
 		if err == nil {
@@ -727,7 +727,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			logger.Error("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
 			// We don't want to halt consensus because of an invalid majority milestone proposition
 		} else if helper.IsRio(majorityMilestone.StartBlockNumber) && ctx.BlockHeight() == int64(lastSpanHeimdallBlock)+1 {
-			logger.Info("last span was created in the previous block, skipping milestone addition", "lastSpanHeimdallBlock", lastSpanHeimdallBlock, "currentBlock", ctx.BlockHeight())
+			logger.Info("Last span was created in the previous block, skipping milestone addition", "lastSpanHeimdallBlock", lastSpanHeimdallBlock, "currentBlock", ctx.BlockHeight())
 		} else {
 			logger.Info("2/3rd majority reached on milestone proposition",
 				"startBlock", majorityMilestone.StartBlockNumber,
@@ -809,7 +809,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 
 		if pendingMilestone == nil {
-			logger.Debug("no milestone proposition majority found, checking for span rotation")
+			logger.Debug("No milestone proposition majority found, checking for span rotation")
 			if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
 				return nil, err
 			}

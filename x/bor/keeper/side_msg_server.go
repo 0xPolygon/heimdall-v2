@@ -69,7 +69,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Debug("validating external call for span msg",
+	logger.Debug("Validating external call for span msg",
 		"proposer", msg.Proposer,
 		"spanId", msg.SpanId,
 		"startBlock", msg.StartBlock,
@@ -180,7 +180,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Debug("span proposal validated successfully",
+	logger.Debug("Span proposal validated successfully",
 		"spanId", msg.SpanId,
 		"startBlock", msg.StartBlock,
 		"endBlock", msg.EndBlock,
@@ -286,7 +286,7 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		return errors.New("span already processed")
 	}
 
-	logger.Debug("persisting span state",
+	logger.Debug("Persisting span state",
 		"spanId", msg.SpanId,
 		"startBlock", msg.StartBlock,
 		"endBlock", msg.EndBlock,
