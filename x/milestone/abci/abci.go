@@ -132,7 +132,7 @@ func GetMajorityMilestoneProposition(
 	lastEndBlockHash []byte,
 ) (*types.MilestoneProposition, []byte, string, map[uint64]struct{}, error) {
 	ac := address.HexCodec{}
-
+	logger.Error("GetMajorityMilestoneProposition", "extVoteInfo: %+v", extVoteInfo)
 	// Track voting power per block number
 	blockVotingPower := make(map[uint64]int64)
 	blockHashVotes := make(map[uint64]map[string]int64) // block -> (hash + td) -> voting power
@@ -193,6 +193,7 @@ func GetMajorityMilestoneProposition(
 
 		prop := voteExtension.MilestoneProposition
 		for i, blockHash := range prop.BlockHashes {
+			logger.Error("Iterating block hashes", "validator", valAddr, "blockHash", common.Bytes2Hex(blockHash))
 			blockTd := prop.BlockTds[i]
 			var buf bytes.Buffer
 			if err := binary.Write(&buf, binary.LittleEndian, blockTd); err != nil {
