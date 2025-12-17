@@ -233,7 +233,7 @@ func (cp *CheckpointProcessor) sendCheckpointToRootChain(eventBytes string, bloc
 		}
 	}
 
-	cp.Logger.Info("i am not the current proposer or checkpoint already sent. Ignoring", "eventType", event.Type)
+	cp.Logger.Info("i am not the current proposer or checkpoint already sent. ignoring event", "eventType", event.Type)
 
 	return nil
 }
