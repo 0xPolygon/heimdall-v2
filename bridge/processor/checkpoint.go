@@ -651,12 +651,12 @@ func (cp *CheckpointProcessor) getLastNoAckTime() uint64 {
 func (cp *CheckpointProcessor) getCheckpointSignatures(txHash string) ([]checkpointtypes.CheckpointSignature, error) {
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.CheckpointSignaturesURL, txHash)))
 	if err != nil {
-		return nil, fmt.Errorf("error while sending request for checkpoint signatures: %v", err)
+		return nil, fmt.Errorf("error while sending request for checkpoint signatures: %w", err)
 	}
 
 	var res checkpointtypes.QueryCheckpointSignaturesResponse
 	if err := cp.cliCtx.Codec.UnmarshalJSON(response, &res); err != nil {
-		return nil, fmt.Errorf("error unmarshalling checkpoint signatures: %v", err)
+		return nil, fmt.Errorf("error unmarshalling checkpoint signatures: %w", err)
 	}
 
 	return res.Signatures, nil
@@ -702,7 +702,7 @@ func (cp *CheckpointProcessor) checkIfNoAckIsRequired(checkpointContext *Checkpo
 func (cp *CheckpointProcessor) proposeCheckpointNoAck() (err error) {
 	address, err := helper.GetAddressString()
 	if err != nil {
-		return fmt.Errorf("error converting address to string: %v", err)
+		return fmt.Errorf("error converting address to string: %w", err)
 	}
 
 	// send NO ACK
