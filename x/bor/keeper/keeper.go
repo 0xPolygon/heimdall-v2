@@ -118,7 +118,7 @@ func (k *Keeper) SetContractCaller(contractCaller helper.IContractCaller) {
 func (k *Keeper) AddNewSpan(ctx context.Context, span *types.Span) error {
 	logger := k.Logger(ctx)
 	if err := k.AddNewRawSpan(ctx, span); err != nil {
-		logger.Error("error setting span", "error", err, "span", span)
+		logger.Error("error adding new span", "error", err, "span", span.LogSpan())
 		return err
 	}
 
@@ -250,7 +250,7 @@ func (k *Keeper) FreezeSet(ctx sdk.Context, id uint64, startBlock uint64, endBlo
 		BorChainId:        borChainID,
 	}
 
-	logger.Info("Freezing new span", "id", id, "span", newSpan)
+	logger.Info("freezing new span", "span", newSpan.LogSpan())
 
 	return k.AddNewSpan(ctx, newSpan)
 }

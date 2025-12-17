@@ -139,6 +139,13 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "invalid proposer in msg")
 	}
 
+	logger.Info("checkpoint proposed successfully",
+		"proposer", msg.Proposer,
+		"startBlock", msg.StartBlock,
+		"endBlock", msg.EndBlock,
+		"rootHash", common.Bytes2Hex(msg.RootHash),
+	)
+
 	// Emit event for checkpoint
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
@@ -216,6 +223,14 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 		)
 		return nil, types.ErrBadAck
 	}
+
+	logger.Info("checkpoint ack received",
+		"checkpointNumber", msg.Number,
+		"proposer", msg.Proposer,
+		"startBlock", msg.StartBlock,
+		"endBlock", msg.EndBlock,
+		"rootHash", common.Bytes2Hex(msg.RootHash),
+	)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
@@ -323,7 +338,13 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 	if err != nil {
 		return nil, types.ErrNoAck
 	}
-	logger.Debug("last no-ack time set", "lastNoAck", newLastNoAck)
+
+	logger.Info("checkpoint no-ack processed",
+		"from", msg.From,
+		"lastCheckpointTime", lastCheckpointTime,
+		"currentTime", currentTime,
+		"timeSinceLastCheckpoint", timeDiff.String(),
+	)
 
 	// increment accum (selects new proposer)
 	err = m.stakeKeeper.IncrementAccum(ctx, 1)
@@ -351,10 +372,9 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 	newProposerAddr := util.FormatAddress(newProposer.Signer)
 	oldProposerAddr := util.FormatAddress(msg.From)
 	logger.Info(
-		"New proposer selected during msgServer no-ack message",
+		"new proposer selected for checkpoint no-ack message",
 		"oldProposer", oldProposerAddr,
 		"newProposer", newProposerAddr,
-		"newProposerVotingPower", newProposer.VotingPower,
 	)
 
 	// add events

@@ -103,6 +103,14 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	logger.Info("validating checkpoint proposal",
+		"proposer", msg.Proposer,
+		"startBlock", msg.StartBlock,
+		"endBlock", msg.EndBlock,
+		"rootHash", common.Bytes2Hex(msg.RootHash),
+		"borChainId", msg.BorChainId,
+	)
+
 	// validate checkpoint
 	validCheckpoint, err := types.IsValidCheckpoint(msg.StartBlock, msg.EndBlock, msg.RootHash, params.MaxCheckpointLength, contractCaller, borChainTxConfirmations)
 	if err != nil {
@@ -113,6 +121,11 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 			"error", err,
 		)
 	} else if validCheckpoint {
+		logger.Info("checkpoint validated successfully",
+			"startBlock", msg.StartBlock,
+			"endBlock", msg.EndBlock,
+			"rootHash", common.Bytes2Hex(msg.RootHash),
+		)
 		// vote `yes` if checkpoint is valid
 		return sidetxs.Vote_VOTE_YES
 	}
@@ -169,6 +182,14 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	logger.Info("validating checkpoint ack",
+		"checkpointNumber", msg.Number,
+		"proposer", msg.Proposer,
+		"startBlock", msg.StartBlock,
+		"endBlock", msg.EndBlock,
+		"rootHash", common.Bytes2Hex(msg.RootHash),
+	)
+
 	root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(msg.Number, rootChainInstance, params.ChildChainBlockInterval)
 	if err != nil {
 		logger.Error("unable to fetch checkpoint from rootChain", "checkpointNumber", msg.Number, "error", err)
@@ -195,6 +216,14 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 		return sidetxs.Vote_VOTE_NO
 	}
+
+	logger.Info("checkpoint ack validated successfully",
+		"checkpointNumber", msg.Number,
+		"proposer", msg.Proposer,
+		"startBlock", msg.StartBlock,
+		"endBlock", msg.EndBlock,
+		"rootHash", common.Bytes2Hex(msg.RootHash),
+	)
 
 	return sidetxs.Vote_VOTE_YES
 }
@@ -281,7 +310,9 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return err
 	}
 
-	logger.Debug("new checkpoint into buffer stored",
+	logger.Info("new checkpoint is stored in buffer",
+		"checkpointId", lastCheckpoint.Id+1,
+		"proposer", msg.Proposer,
 		"startBlock", msg.StartBlock,
 		"endBlock", msg.EndBlock,
 		"rootHash", common.Bytes2Hex(msg.RootHash),
@@ -376,7 +407,13 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return err
 	}
 
-	logger.Debug("checkpoint added to store", "checkpointNumber", msg.Number)
+	logger.Info("checkpoint added to the store",
+		"checkpointNumber", msg.Number,
+		"proposer", checkpointObj.Proposer,
+		"startBlock", checkpointObj.StartBlock,
+		"endBlock", checkpointObj.EndBlock,
+		"rootHash", common.Bytes2Hex(checkpointObj.RootHash),
+	)
 
 	// flush buffer
 	err = srv.FlushCheckpointBuffer(ctx)
@@ -385,7 +422,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return err
 	}
 
-	logger.Debug("checkpoint buffer flushed after receiving checkpoint ack")
+	logger.Info("checkpoint buffer flushed after receiving checkpoint ack", "checkpointNumber", msg.Number)
 
 	// update ack count module
 	err = srv.IncrementAckCount(ctx)
@@ -410,7 +447,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	newProposer := vs.GetProposer()
 	// should never happen
 	if newProposer == nil {
-		logger.Error("No proposer available (empty validator set!) during postHandler ack message",
+		logger.Error("no proposer available (empty validator set!) during postHandler ack message",
 			"oldProposer", msg.From,
 		)
 		return errorsmod.Wrap(err, "no proposer available (empty validator set!) during postHandler ack message")
@@ -419,10 +456,9 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	newProposerAddr := util.FormatAddress(newProposer.Signer)
 	oldProposerAddr := util.FormatAddress(msg.From)
 	logger.Info(
-		"New proposer selected during postHandler ack message",
+		"new proposer selected for checkpoint ack message",
 		"oldProposer", oldProposerAddr,
 		"newProposer", newProposerAddr,
-		"newProposerVotingPower", newProposer.VotingPower,
 	)
 
 	txBytes := ctx.TxBytes()

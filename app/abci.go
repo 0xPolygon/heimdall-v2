@@ -339,11 +339,20 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			// We still want to participate in the consensus even if we fail to generate the milestone proposition
 		} else if milestoneProp != nil {
 			if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, milestoneProp); err != nil {
-				logger.Error("Invalid milestone proposition", "error", err, "height", req.Height, "milestoneProp", milestoneProp)
+				logger.Error("invalid milestone proposition generated",
+					"startBlock", milestoneProp.StartBlockNumber,
+					"endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)-1),
+					"blockHashes", strutil.HashesToString(milestoneProp.BlockHashes),
+					"error", err,
+				)
 				// We don't want to halt consensus because of invalid milestone proposition
 			} else {
 				vt.MilestoneProposition = milestoneProp
-				logger.Debug("Proposed milestone", "hash", strutil.HashesToString(milestoneProp.BlockHashes), "startBlock", milestoneProp.StartBlockNumber, "endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)))
+				logger.Info("generated a new milestone proposition",
+					"startBlock", milestoneProp.StartBlockNumber,
+					"endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)-1),
+					"blockHashes", strutil.HashesToString(milestoneProp.BlockHashes),
+				)
 			}
 		}
 
@@ -437,7 +446,13 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 	logger := app.Logger()
 
 	if majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1) >= lastSpan.StartBlock && helper.IsRio(lastSpan.EndBlock+1) {
-		logger.Info("New milestone is greater than the last span, creating a new veblop span", "lastSpan", lastSpan, "newMilestone", majorityMilestone)
+		logger.Info("new milestone's end block reached or exceeded the last span's start block, creating a new veblop span",
+			"lastSpanId", lastSpan.Id,
+			"lastSpanStartBlock", lastSpan.StartBlock,
+			"lastSpanEndBlock", lastSpan.EndBlock,
+			"milestoneStartBlock", majorityMilestone.StartBlockNumber,
+			"milestoneEndBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1),
+		)
 
 		params, err := app.BorKeeper.GetParams(ctx)
 		if err != nil {
@@ -502,7 +517,13 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 	diff := ctx.BlockHeight() - int64(lastMilestoneBlock)
 
 	if lastMilestone != nil && lastMilestoneBlock != 0 && diff > helper.GetChangeProducerThreshold(ctx) && helper.IsRio(lastMilestone.EndBlock+1) {
-		logger.Info("Block finalization time is greater than change producer threshold, creating a new veblop span", "lastMilestone", lastMilestone, "lastMilestoneBlock", lastMilestoneBlock, "diff", diff, "currentBlock", ctx.BlockHeight())
+		logger.Info("block finalization time is greater than the change producer threshold, creating a new veblop span",
+			"lastMilestoneStartBlock", lastMilestone.StartBlock,
+			"lastMilestoneEndBlock", lastMilestone.EndBlock,
+			"lastMilestoneHeimdallBlock", lastMilestoneBlock,
+			"currentBlock", ctx.BlockHeight(),
+			"diff", diff,
+		)
 
 		addSpanCtx, spanCache := app.cacheTxContext(ctx)
 
@@ -571,6 +592,8 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 				logger.Error("Error occurred while adding latest failed producer", "error", err)
 				return err
 			}
+
+			logger.Info("span rotated due to the current producer's ineffectiveness", "currentProducerID", currentProducer)
 		}
 
 		if err == nil {
@@ -704,8 +727,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			logger.Error("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
 			// We don't want to halt consensus because of an invalid majority milestone proposition
 		} else if helper.IsRio(majorityMilestone.StartBlockNumber) && ctx.BlockHeight() == int64(lastSpanHeimdallBlock)+1 {
-			logger.Info("Last span was created in the previous block, skipping milestone addition", "lastSpanHeimdallBlock", lastSpanHeimdallBlock, "currentBlock", ctx.BlockHeight())
+			logger.Info("last span was created in the previous block, skipping milestone addition", "lastSpanHeimdallBlock", lastSpanHeimdallBlock, "currentBlock", ctx.BlockHeight())
 		} else {
+			logger.Info("2/3rd majority reached on milestone proposition",
+				"startBlock", majorityMilestone.StartBlockNumber,
+				"endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1),
+				strutil.HashesToString(majorityMilestone.BlockHashes),
+			)
 			isValidMilestone = true
 		}
 	}
@@ -718,14 +746,6 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 
 		addMilestoneCtx, msCache := app.cacheTxContext(ctx)
-
-		logger.Debug("Adding milestone", "hashes",
-			strutil.HashesToString(majorityMilestone.BlockHashes),
-			"startBlock", majorityMilestone.StartBlockNumber,
-			"endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1),
-			"proposer", proposer,
-			"totalDifficulty", majorityMilestone.BlockTds[len(majorityMilestone.BlockHashes)-1],
-		)
 
 		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
 			Proposer:        proposer,
@@ -789,11 +809,16 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 
 		if pendingMilestone == nil {
+			logger.Debug("no milestone proposition majority found, checking for span rotation")
 			if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
 				return nil, err
 			}
 		} else {
-			logger.Debug("33% majority milestone proposition found, skipping span rotation")
+			logger.Info("1/3rd voting power found on milestone proposition, skipping span rotation",
+				"startBlock", pendingMilestone.StartBlockNumber,
+				"endBlock", pendingMilestone.StartBlockNumber+uint64(len(pendingMilestone.BlockHashes)-1),
+				strutil.HashesToString(pendingMilestone.BlockHashes),
+			)
 		}
 	}
 
