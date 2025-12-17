@@ -896,7 +896,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 				// make sure only one post handler is executed
 				if executedPostHandlers > 0 {
-					logger.Info("One post handler already executed, skipping others", "msg", msg)
+					logger.Info("One post handler already executed, skipping others", "msg", msg.String())
 					break
 				}
 			}

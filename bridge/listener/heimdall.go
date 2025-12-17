@@ -171,11 +171,11 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 
 // ProcessBlockEvent - process the block events (BeginBlock, EndBlock events) from heimdall.
 func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight int64) {
-	hl.Logger.Info("Received block event from Heimdall", "eventType", event.Type)
+	hl.Logger.Debug("received block event from Heimdall", "eventType", event.Type)
 
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
-		hl.Logger.Error("Error while parsing block event", "eventType", event.Type, "error", err)
+		hl.Logger.Error("error while marshalling block event", "eventType", event.Type, "error", err)
 		return
 	}
 
@@ -183,7 +183,7 @@ func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight
 	case checkpointTypes.EventTypeCheckpoint:
 		hl.sendBlockTask("sendCheckpointToRootchain", eventBytes, blockHeight)
 	default:
-		hl.Logger.Debug("BlockEvent Type mismatch", "eventType", event.Type)
+		hl.Logger.Debug("block event type mismatch", "eventType", event.Type)
 	}
 }
 
