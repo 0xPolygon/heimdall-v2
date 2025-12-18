@@ -60,6 +60,10 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 	ac := address.HexCodec{}
 
 	for _, vote := range extVoteInfo {
+		// reject unknown fields
+		if err := rejectUnknownVoteExtFields(vote.VoteExtension); err != nil {
+			return fmt.Errorf("unknown fields detected in vote extensions at height %d: %w", reqHeight, err)
+		}
 
 		// make sure the BlockIdFlag is valid
 		if !isBlockIdFlagValid(vote.BlockIdFlag) {
@@ -113,7 +117,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 		if _, found := seenValidators[valAddrStr]; found {
 			return fmt.Errorf("duplicate vote detected from validator %s at height %d", valAddrStr, reqHeight)
 		}
-		// Add validator address to the map
+		// Add the validator address to the map
 		seenValidators[valAddrStr] = struct{}{}
 
 		_, validator := validatorSet.GetByAddress(valAddrStr)
@@ -201,6 +205,12 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 	ac := address.HexCodec{}
 
 	for _, vote := range extVoteInfo {
+		// reject unknown fields and skip invalid ones
+		if err := rejectUnknownVoteExtFields(vote.VoteExtension); err != nil {
+			logger.Error("unknown fields detected in vote extensions, skipping",
+				"height", reqHeight, "error", err)
+			continue
+		}
 
 		// make sure the BlockIdFlag is valid
 		if !isBlockIdFlagValid(vote.BlockIdFlag) {
@@ -252,7 +262,7 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 		if _, found := seenValidators[valAddrStr]; found {
 			return nil, fmt.Errorf("duplicate vote detected from validator %s at height %d", valAddrStr, reqHeight)
 		}
-		// Add validator address to the map
+		// Add the validator address to the map
 		seenValidators[valAddrStr] = struct{}{}
 
 		_, validator := validatorSet.GetByAddress(valAddrStr)
@@ -614,11 +624,15 @@ func ValidateNonRpVoteExtensions(
 		return nil
 	}
 
-	// Check if there is vote extension with majority voting power
+	// Check if there is a vote extension with majority voting power
 	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, validatorSet, logger)
 	if err != nil {
 		return err
 	}
+
+	// Not running rejectUnknownVoteExtFields() here, because
+	// NonRpVoteExtension is not a protobuf-encoded sidetxs.VoteExtension and
+	// it would incorrectly reject valid non-rp VEs.
 
 	if err := ValidateNonRpVoteExtension(ctx, height-1, majorityExt, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
 		return fmt.Errorf("failed to validate majority non rp vote extension: %w", err)

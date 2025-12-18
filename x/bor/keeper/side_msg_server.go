@@ -69,12 +69,13 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Debug("✅ validating external call for span msg",
+	logger.Debug("Validating external call for span msg",
 		"proposer", msg.Proposer,
 		"spanId", msg.SpanId,
 		"startBlock", msg.StartBlock,
 		"endBlock", msg.EndBlock,
 		"seed", msg.Seed,
+		"seedAuthor", msg.SeedAuthor,
 	)
 
 	params, err := s.k.GetParams(ctx)
@@ -179,7 +180,11 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Debug("✅ successfully validated external call for span msg")
+	logger.Debug("Span proposal validated successfully",
+		"spanId", msg.SpanId,
+		"startBlock", msg.StartBlock,
+		"endBlock", msg.EndBlock,
+	)
 
 	return sidetxs.Vote_VOTE_YES
 }
@@ -281,7 +286,11 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		return errors.New("span already processed")
 	}
 
-	logger.Debug("persisting span state", "span id", msg.SpanId, "sideTxResult", sideTxResult)
+	logger.Debug("Persisting span state",
+		"spanId", msg.SpanId,
+		"startBlock", msg.StartBlock,
+		"endBlock", msg.EndBlock,
+	)
 
 	seedAuthor := common.HexToAddress(msg.SeedAuthor)
 	if err = s.k.StoreSeedProducer(ctx, msg.SpanId, &seedAuthor); err != nil {

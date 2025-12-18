@@ -99,7 +99,7 @@ newSpan := &types.Span{
 	BorChainId:        borChainID,
 }
 
-logger.Info("Freezing new span", "id", id, "span", newSpan)
+logger.Info("Freezing new span", "span", newSpan)
 
 return k.AddNewSpan(ctx, newSpan)
 ```

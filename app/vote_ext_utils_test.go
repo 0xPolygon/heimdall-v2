@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"testing"
 
@@ -578,6 +579,200 @@ func TestCheckIfVoteExtensionsDisabled(t *testing.T) {
 	}
 }
 
+func TestRejectUnknownVoteExtensionFields(t *testing.T) {
+	ve := sidetxs.VoteExtension{
+		Height: VoteExtBlockHeight,
+		SideTxResponses: []sidetxs.SideTxResponse{
+			{
+				TxHash: common.FromHex(TxHash1),
+				Result: sidetxs.Vote_VOTE_YES,
+			},
+		},
+	}
+
+	cleanBytes, err := ve.Marshal()
+	require.NoError(t, err)
+
+	// clean VE must pass
+	require.NoError(t, rejectUnknownVoteExtFields(cleanBytes))
+
+	// pad with unknown protobuf field
+	padded := appendProtobufPadding(cleanBytes, 32*1024)
+
+	// this must be rejected
+	err = rejectUnknownVoteExtFields(padded)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unknown", "error should mention unknown fields")
+}
+
+func TestValidateVoteExtensions_RejectsPaddedVoteExtension(t *testing.T) {
+	setupAppResult := SetupApp(t, 1)
+	hApp := setupAppResult.App
+	validatorPrivKeys := setupAppResult.ValidatorKeys
+
+	ctx := hApp.BaseApp.NewContext(true)
+	ctx = setupContextWithVoteExtensionsEnableHeight(ctx, 1)
+
+	vals := hApp.StakeKeeper.GetAllValidators(ctx)
+	valAddr := common.FromHex(vals[0].Signer)
+
+	valSet, err := hApp.StakeKeeper.GetPreviousBlockValidatorSet(ctx)
+	require.NoError(t, err)
+
+	cometVal := abci.Validator{
+		Address: valAddr,
+		Power:   vals[0].VotingPower,
+	}
+
+	ext := setupExtendedVoteInfo(
+		t,
+		cmtTypes.BlockIDFlagCommit,
+		common.FromHex(TxHash1),
+		common.FromHex(TxHash2),
+		cometVal,
+		validatorPrivKeys[0],
+	)
+
+	// padding with unknown protobuf field
+	ext.VoteExtension = appendProtobufPadding(ext.VoteExtension, 64*1024)
+
+	err = ValidateVoteExtensions(
+		ctx,
+		CurrentHeight,
+		[]abci.ExtendedVoteInfo{ext},
+		1,
+		&valSet,
+		hApp.MilestoneKeeper,
+	)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "unknown fields detected")
+}
+
+func TestFilterVoteExtensions_SkipsPaddedVoteExtension(t *testing.T) {
+	setupAppResult := SetupApp(t, 4)
+	hApp := setupAppResult.App
+	validatorPrivKeys := setupAppResult.ValidatorKeys
+
+	ctx := hApp.BaseApp.NewContext(true)
+	ctx = setupContextWithVoteExtensionsEnableHeight(ctx, 1)
+
+	vals := hApp.StakeKeeper.GetAllValidators(ctx)
+	require.GreaterOrEqual(t, len(vals), 4)
+
+	valSet, err := hApp.StakeKeeper.GetPreviousBlockValidatorSet(ctx)
+	require.NoError(t, err)
+
+	reqHeight := int64(3)
+	round := int32(1)
+
+	privByAddr := make(map[string]cmtcrypto.PrivKey, len(validatorPrivKeys))
+	for _, pk := range validatorPrivKeys {
+		addr := pk.PubKey().Address() // []byte
+		privByAddr[common.Bytes2Hex(addr)] = pk
+	}
+
+	// sign CanonicalVoteExtension
+	signVE := func(priv cmtcrypto.PrivKey, extension []byte) []byte {
+		cve := cmtTypes.CanonicalVoteExtension{
+			Extension: extension,
+			Height:    reqHeight - 1,
+			Round:     int64(round),
+			ChainId:   ctx.ChainID(),
+		}
+
+		var buf bytes.Buffer
+		_, err := protoio.NewDelimitedWriter(&buf).WriteMsg(&cve)
+		require.NoError(t, err)
+
+		sig, err := priv.Sign(buf.Bytes())
+		require.NoError(t, err)
+		require.NotEmpty(t, sig)
+		return sig
+	}
+
+	// Prepare a valid VoteExtension payload
+	voteExtensionProto := sidetxs.VoteExtension{
+		SideTxResponses: []sidetxs.SideTxResponse{
+			{TxHash: common.FromHex(TxHash1), Result: sidetxs.Vote_VOTE_YES},
+		},
+		BlockHash: common.FromHex(TxHash2),
+		Height:    reqHeight - 1,
+	}
+	veBytes, err := voteExtensionProto.Marshal()
+	require.NoError(t, err)
+
+	// Pick 3 honest validators + 1 malicious validator
+	type picked struct {
+		addrBytes []byte
+		power     int64
+		priv      cmtcrypto.PrivKey
+	}
+	picks := make([]picked, 0, 4)
+
+	for _, v := range vals {
+		addrBytes := common.FromHex(v.Signer)
+		addrHex := common.Bytes2Hex(addrBytes)
+
+		priv, ok := privByAddr[addrHex]
+		if !ok {
+			continue
+		}
+		picks = append(picks, picked{
+			addrBytes: addrBytes,
+			power:     v.VotingPower,
+			priv:      priv,
+		})
+		if len(picks) == 4 {
+			break
+		}
+	}
+	require.Len(t, picks, 4, "could not match 4 validators to privKeys; validator ordering may differ or address formats differ")
+
+	// Build a vote
+	mkVote := func(p picked, ext []byte, sig []byte) abci.ExtendedVoteInfo {
+		return abci.ExtendedVoteInfo{
+			BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
+			VoteExtension:      ext,
+			ExtensionSignature: sig,
+			Validator: abci.Validator{
+				Address: p.addrBytes,
+				Power:   p.power,
+			},
+		}
+	}
+
+	// 3 clean votes
+	clean0 := mkVote(picks[0], veBytes, signVE(picks[0].priv, veBytes))
+	clean1 := mkVote(picks[1], veBytes, signVE(picks[1].priv, veBytes))
+	clean2 := mkVote(picks[2], veBytes, signVE(picks[2].priv, veBytes))
+
+	// 1 padded vote (unknown field)
+	paddedBytes := appendProtobufPadding(veBytes, 64*1024)
+	padded := mkVote(picks[3], paddedBytes, signVE(picks[3].priv, paddedBytes))
+
+	extVoteInfo := []abci.ExtendedVoteInfo{clean0, clean1, clean2, padded}
+
+	filtered, err := FilterVoteExtensions(
+		ctx,
+		reqHeight,
+		extVoteInfo,
+		round,
+		&valSet,
+		hApp.MilestoneKeeper,
+		sdklog.NewTestLogger(t),
+	)
+	require.NoError(t, err)
+
+	// padded must be skipped
+	require.Len(t, filtered, 3)
+	for _, got := range filtered {
+		require.Equal(t, veBytes, got.VoteExtension)
+		// ensure the padded validator is not present
+		require.NotEqual(t, picks[3].addrBytes, got.Validator.Address)
+	}
+}
+
 func setupContextWithVoteExtensionsEnableHeight(ctx sdk.Context, vesEnableHeight int64) sdk.Context {
 	return ctx.WithConsensusParams(cmtTypes.ConsensusParams{
 		Abci: &cmtTypes.ABCIParams{
@@ -805,4 +1000,28 @@ func addrFromBytes(t *testing.T, b []byte) string {
 	s, err := address.NewHexCodec().BytesToString(b)
 	require.NoError(t, err)
 	return s
+}
+
+// appendProtobufPadding appends an unknown protobuf field with arbitrary payload.
+func appendProtobufPadding(data []byte, paddingSize int) []byte {
+	tag := byte(58)
+
+	var lenBuf [binary.MaxVarintLen64]byte
+	n := binary.PutUvarint(lenBuf[:], uint64(paddingSize))
+
+	out := make([]byte, len(data)+1+n+paddingSize)
+	copy(out, data)
+
+	offset := len(data)
+	out[offset] = tag
+	offset++
+
+	copy(out[offset:], lenBuf[:n])
+	offset += n
+
+	for i := 0; i < paddingSize; i++ {
+		out[offset+i] = byte(i)
+	}
+
+	return out
 }

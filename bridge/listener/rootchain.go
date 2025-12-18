@@ -62,7 +62,7 @@ func NewRootChainListener() *RootChainListener {
 
 // Start starts new block subscription
 func (rl *RootChainListener) Start() error {
-	rl.Logger.Info("Starting")
+	rl.Logger.Info("Starting root chain listener")
 
 	// create cancellable context
 	ctx, cancelSubscription := context.WithCancel(context.Background())
@@ -76,7 +76,7 @@ func (rl *RootChainListener) Start() error {
 	go rl.StartHeaderProcess(headerCtx)
 
 	// start go routine to poll for the new header using the client object
-	rl.Logger.Info("Start polling for rootChain header blocks", "pollInterval", helper.GetConfig().SyncerPollInterval)
+	rl.Logger.Info("Starting polling for root chain header blocks", "pollInterval", helper.GetConfig().SyncerPollInterval)
 
 	// start polling for the finalized block in the main L1 chain (available post-merge)
 	go rl.StartPolling(ctx, helper.GetConfig().SyncerPollInterval, big.NewInt(int64(rpc.FinalizedBlockNumber)))
@@ -111,7 +111,7 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 		// just for the below headerNumber -= requiredConfirmations math operation
 		confirmationBlocks := big.NewInt(0).SetUint64(requiredConfirmations)
 		if headerNumber.Cmp(confirmationBlocks) <= 0 {
-			rl.Logger.Error("Block number less than Confirmations required", "blockNumber", headerNumber.Uint64, "confirmationsRequired", confirmationBlocks.Uint64)
+			rl.Logger.Error("Block number less than confirmations required", "blockNumber", headerNumber.Uint64, "confirmationsRequired", confirmationBlocks.Uint64)
 			return
 		}
 
@@ -127,7 +127,7 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 	if hasLastBlock {
 		lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
 		if err != nil {
-			rl.Logger.Info("Error while fetching last block bytes from storage", "error", err)
+			rl.Logger.Error("Error while fetching last block bytes from storage", "error", err)
 			return
 		}
 
@@ -163,14 +163,14 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 
 	// after successful processing the logs, advance the cursor by setting the last block to storage
 	if err := rl.storageClient.Put([]byte(lastRootBlockKey), []byte(to.String()), nil); err != nil {
-		rl.Logger.Error("failed to persist last root block", "error", err, "lastRootBlock", to.String())
+		rl.Logger.Error("Error persisting last root block in storage", "error", err, "lastRootBlock", to.String())
 		// If this fails, we’ll reprocess [from, to] next time
 	}
 }
 
 // queryAndBroadcastEvents fetches supported events from the rootChain and handles all of them
 func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int) error {
-	rl.Logger.Info("Query rootChain event logs", "fromBlock", fromBlock, "toBlock", toBlock)
+	rl.Logger.Debug("Querying rootChain event logs", "fromBlock", fromBlock, "toBlock", toBlock)
 
 	if rl.contractCaller.MainChainClient == nil {
 		// don't advance the cursor if the client isn't ready.

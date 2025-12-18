@@ -40,7 +40,8 @@ func (ml *BorChainListener) Start() error {
 
 // ProcessHeader - process header block from the bor chain
 func (ml *BorChainListener) ProcessHeader(newHeader *blockHeader) {
-	ml.Logger.Debug("New block detected", "blockNumber", newHeader.header.Number)
+	ml.Logger.Debug("New header block detected", "blockNumber", newHeader.header.Number)
+
 	// Marshall header block and publish to queue
 	headerBytes, err := newHeader.header.MarshalJSON()
 	if err != nil {
