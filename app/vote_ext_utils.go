@@ -208,7 +208,7 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 		// reject unknown fields and skip invalid ones
 		if err := rejectUnknownVoteExtFields(vote.VoteExtension); err != nil {
 			logger.Error("unknown fields detected in vote extensions, skipping",
-				"height", reqHeight)
+				"height", reqHeight, "error", err)
 			continue
 		}
 

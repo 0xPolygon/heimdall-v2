@@ -61,7 +61,6 @@ func NewBorGRPCClient(address string, logger log.Logger) (*BorGRPCClient, error)
 			// plaintext only allowed for local host
 			addr = u.Host
 			if !isLocalhost(addr) {
-				// allow but warn
 				logger.Warn("Using insecure non-local Bor gRPC over http. This is discouraged", "addr", addr)
 			}
 			dialOpts = append(dialOpts,
