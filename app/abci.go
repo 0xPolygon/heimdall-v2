@@ -10,7 +10,9 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/cosmos/cosmos-sdk/codec/unknownproto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/gogoproto/jsonpb"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
 
@@ -389,6 +391,11 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		valAddr, err := ac.BytesToString(req.ValidatorAddress)
 		if err != nil {
 			return nil, err
+		}
+
+		if err := rejectUnknownVoteExtFields(req.VoteExtension); err != nil {
+			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS! Error while checking unknown fields in VoteExtension", "validator", valAddr, "error", err)
+			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
 		var voteExtension sidetxs.VoteExtension
@@ -945,4 +952,17 @@ func (app *HeimdallApp) getValidatorSetForHeight(ctx sdk.Context, height int64) 
 		}
 	}
 	return validatorSet, nil
+}
+
+// rejectUnknownVoteExtFields checks for unknown fields in the VoteExtension proto message
+func rejectUnknownVoteExtFields(bz []byte) error {
+	msg := new(sidetxs.VoteExtension)
+
+	var resolver jsonpb.AnyResolver = unknownproto.DefaultAnyResolver{}
+
+	if err := unknownproto.RejectUnknownFieldsStrict(bz, msg, resolver); err != nil {
+		return fmt.Errorf("vote extension contains unknown fields/extra bytes: %w", err)
+	}
+
+	return nil
 }

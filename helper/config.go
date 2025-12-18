@@ -413,7 +413,13 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	borClient = ethclient.NewClient(borRPCClient)
 
-	borGRPCClient = borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl)
+	if conf.Custom.BorGRPCFlag && conf.Custom.BorGRPCUrl != "" {
+		client, err := borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl, Logger)
+		if err != nil {
+			log.Fatal(err)
+		}
+		borGRPCClient = client
+	}
 
 	// Set default producers based on chain if not already set by config or flags
 	if conf.Custom.ProducerVotes == "" {
