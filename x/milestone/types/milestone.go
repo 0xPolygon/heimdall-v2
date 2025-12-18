@@ -1,6 +1,8 @@
 package types
 
-import "sort"
+import (
+	"sort"
+)
 
 // SortMilestones sorts the array of milestones on the basis for timestamps
 func SortMilestones(milestones []Milestone) []Milestone {

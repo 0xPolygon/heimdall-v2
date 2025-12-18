@@ -80,10 +80,10 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 		case <-ticker.C:
 			fromBlock, toBlock, err := hl.fetchFromAndToBlock(ctx)
 			if err != nil {
-				hl.Logger.Error("Error fetching from and toBlock, skipping events query", "fromBlock", fromBlock, "toBlock", toBlock, "error", err)
+				hl.Logger.Error("Error fetching from and to block, skipping events query", "fromBlock", fromBlock, "toBlock", toBlock, "error", err)
 				continue
 			} else if fromBlock < toBlock {
-				hl.Logger.Info("Fetching new events between", "fromBlock", fromBlock, "toBlock", toBlock)
+				hl.Logger.Debug("Fetching new events between blocks", "fromBlock", fromBlock, "toBlock", toBlock)
 
 				// Querying and processing Begin events
 				for i := fromBlock; i <= toBlock; i++ {
@@ -171,11 +171,11 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 
 // ProcessBlockEvent - process the block events (BeginBlock, EndBlock events) from heimdall.
 func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight int64) {
-	hl.Logger.Info("Received block event from Heimdall", "eventType", event.Type)
+	hl.Logger.Debug("Received block event from Heimdall", "eventType", event.Type)
 
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
-		hl.Logger.Error("Error while parsing block event", "eventType", event.Type, "error", err)
+		hl.Logger.Error("Error while marshalling block event", "eventType", event.Type, "error", err)
 		return
 	}
 
@@ -183,7 +183,7 @@ func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight
 	case checkpointTypes.EventTypeCheckpoint:
 		hl.sendBlockTask("sendCheckpointToRootchain", eventBytes, blockHeight)
 	default:
-		hl.Logger.Debug("BlockEvent Type mismatch", "eventType", event.Type)
+		hl.Logger.Debug("Block event type mismatch", "eventType", event.Type)
 	}
 }
 

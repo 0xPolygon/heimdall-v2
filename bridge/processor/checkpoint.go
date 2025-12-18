@@ -111,7 +111,7 @@ func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (
 		return err
 	}
 
-	cp.Logger.Info("Processing new header", "headerNumber", header.Number)
+	cp.Logger.Debug("Processing new header block", "headerNumber", header.Number)
 
 	isProposer, err := util.IsProposer(cp.cliCtx.Codec)
 	if err != nil {
@@ -129,11 +129,11 @@ func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (
 		// process the latest confirmed child block only
 		chainmanagerParams := checkpointContext.ChainmanagerParams
 
-		cp.Logger.Debug("no of checkpoint confirmations required", "BorChainTxConfirmations", chainmanagerParams.BorChainTxConfirmations)
+		cp.Logger.Debug("No of checkpoint confirmations required", "BorChainTxConfirmations", chainmanagerParams.BorChainTxConfirmations)
 
 		latestConfirmedChildBlock := header.Number.Uint64() - chainmanagerParams.BorChainTxConfirmations
 		if latestConfirmedChildBlock <= 0 {
-			cp.Logger.Error("no of blocks on childChain is less than confirmations required", "childChainBlocks", header.Number.Uint64(), "confirmationsRequired", chainmanagerParams.BorChainTxConfirmations)
+			cp.Logger.Error("No of blocks on childChain is less than confirmations required", "childChainBlocks", header.Number.Uint64(), "confirmationsRequired", chainmanagerParams.BorChainTxConfirmations)
 			return errors.New("no of blocks on childChain is less than confirmations required")
 		}
 
@@ -187,7 +187,7 @@ func (cp *CheckpointProcessor) sendCheckpointToRootChain(eventBytes string, bloc
 		return err
 	}
 
-	cp.Logger.Info("processing checkpoint confirmation event", "eventType", event.Type)
+	cp.Logger.Info("Processing checkpoint confirmation event", "eventType", event.Type)
 
 	isCurrentProposer, err := util.IsCurrentProposer(cp.cliCtx.Codec)
 	if err != nil {
@@ -233,7 +233,7 @@ func (cp *CheckpointProcessor) sendCheckpointToRootChain(eventBytes string, bloc
 		}
 	}
 
-	cp.Logger.Info("I am not the current proposer or checkpoint already sent. Ignoring", "eventType", event.Type)
+	cp.Logger.Info("I am not the current proposer or checkpoint already sent. Ignoring event", "eventType", event.Type)
 
 	return nil
 }
@@ -260,7 +260,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 		checkpointNumber := big.NewInt(0).Div(event.HeaderBlockId, big.NewInt(0).SetUint64(checkpointContext.CheckpointParams.ChildChainBlockInterval))
 
 		cp.Logger.Info(
-			"✅ Received task to send checkpoint-ack to heimdall",
+			"Received task to send checkpoint-ack to heimdall",
 			"event", eventName,
 			"start", event.Start,
 			"end", event.End,
@@ -298,7 +298,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 		}
 
 		if txRes.Code != abci.CodeTypeOK {
-			cp.Logger.Error("checkpoint-ack tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+			cp.Logger.Error("Checkpoint-ack tx failed", "txHash", txRes.TxHash, "code", txRes.Code)
 			return fmt.Errorf("checkpoint-ack tx failed, tx response code: %d", txRes.Code)
 		}
 
@@ -434,7 +434,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 		return err
 	}
 
-	cp.Logger.Info("✅ Creating and broadcasting new checkpoint",
+	cp.Logger.Info("Creating and broadcasting new checkpoint",
 		"start", start,
 		"end", end,
 		"root", common.Bytes2Hex(root),
@@ -467,7 +467,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 	}
 
 	if txRes.Code != abci.CodeTypeOK {
-		cp.Logger.Error("Checkpoint tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+		cp.Logger.Error("Checkpoint tx failed", "txHash", txRes.TxHash, "code", txRes.Code)
 		return fmt.Errorf("checkpoint tx failed, tx response code: %d", txRes.Code)
 	}
 
@@ -585,19 +585,19 @@ func (cp *CheckpointProcessor) parseCheckpointSignatures(signatures []checkpoint
 
 // fetchDividendAccountRoot - fetches dividend account root hash
 func (cp *CheckpointProcessor) fetchDividendAccountRoot() ([]byte, error) {
-	cp.Logger.Info("Sending Rest call to Get Dividend AccountRootHash")
+	cp.Logger.Debug("Sending Rest call to get dividend account root hash")
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.DividendAccountRootURL))
 	if err != nil {
-		cp.Logger.Error("Error Fetching AccountRootHash from HeimdallServer ", "error", err)
+		cp.Logger.Error("Error fetching account root hash from HeimdallServer", "error", err)
 		return []byte{}, err
 	}
 
-	cp.Logger.Info("Dividend account root fetched")
+	cp.Logger.Debug("Dividend account root hash fetched")
 
 	var accountRootHashObject topuptypes.QueryDividendAccountRootHashResponse
 	if err = cp.cliCtx.Codec.UnmarshalJSON(response, &accountRootHashObject); err != nil {
-		cp.Logger.Error("Error unmarshalling AccountRootHash received from Heimdall Server", "error", err)
+		cp.Logger.Error("Error unmarshalling account root hash received from Heimdall Server", "error", err)
 		return accountRootHashObject.AccountRootHash, err
 	}
 
@@ -718,7 +718,7 @@ func (cp *CheckpointProcessor) proposeCheckpointNoAck() (err error) {
 	}
 
 	if txRes.Code != abci.CodeTypeOK {
-		cp.Logger.Error("Checkpoint No-Ack tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+		cp.Logger.Error("Checkpoint No-Ack tx failed", "txHash", txRes.TxHash, "code", txRes.Code)
 		return fmt.Errorf("checkpoint-no-ack tx failed, tx response code: %d", txRes.Code)
 	}
 
@@ -751,7 +751,7 @@ func (cp *CheckpointProcessor) shouldSendCheckpoint(checkpointContext *Checkpoin
 	cp.Logger.Info("Validating if checkpoint needs to be pushed", "committedLastBlock", currentChildBlock, "startBlock", start)
 	// check if we need to send the checkpoint or not
 	if ((currentChildBlock + 1) == start) || (currentChildBlock == 0 && start == 0) {
-		cp.Logger.Info("Checkpoint Valid", "startBlock", start)
+		cp.Logger.Info("Checkpoint valid", "startBlock", start)
 
 		shouldSend = true
 	} else if currentChildBlock > start {

@@ -1,11 +1,15 @@
 package strutil
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"strings"
+
+	"github.com/ethereum/go-ethereum/common"
+)
 
 func HashesToString(hashes [][]byte) string {
-	hashesStr := ""
+	hashStrs := make([]string, 0, len(hashes))
 	for _, hash := range hashes {
-		hashesStr += common.Bytes2Hex(hash) + " "
+		hashStrs = append(hashStrs, "0x"+common.Bytes2Hex(hash))
 	}
-	return hashesStr
+	return strings.Join(hashStrs, " ")
 }
