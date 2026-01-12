@@ -32,6 +32,16 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
+var (
+	dummyNonRpVoteExtension   = []byte("\t\r\n#HEIMDALL-VOTE-EXTENSION#\r\n\t")
+	minNonRpVoteExtensionSize = len(dummyNonRpVoteExtension)
+)
+
+const (
+	maxNonRpVoteExtensionSize = 500
+	maxSideTxResponsesCount   = 50
+)
+
 // ValidateVoteExtensions verifies the vote extension correctness
 // It checks the signature of each vote extension with its signer's public key
 // Also, it checks if the vote extensions are enabled, valid and have >2/3 voting power
@@ -268,7 +278,7 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 		_, validator := validatorSet.GetByAddress(valAddrStr)
 		if validator == nil {
 			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx.BlockHeight()) {
-				return nil, fmt.Errorf("failed to get validator %s", valAddrStr)
+				logger.Error("failed to get validator", "validator", valAddrStr)
 			}
 			continue
 		}
@@ -545,8 +555,6 @@ func validateSideTxResponses(sideTxResponses []sidetxs.SideTxResponse) ([]byte, 
 	return nil, nil
 }
 
-const maxSideTxResponsesCount = 50
-
 // checkIfVoteExtensionsDisabled indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.
 // Since we are using a hard fork approach for the heimdall migration, VEs will be enabled from v2 genesis' initial height (v1 last height +1).
 // Returning error will result in CometBFT panic.
@@ -655,6 +663,10 @@ func ValidateNonRpVoteExtension(
 	checkpointKeeper checkpointKeeper.Keeper,
 	contractCaller helper.IContractCaller,
 ) error {
+	if len(extension) < minNonRpVoteExtensionSize {
+		return fmt.Errorf("non-rp vote extension size is too small: %d, min: %d", len(extension), minNonRpVoteExtensionSize)
+	}
+
 	if len(extension) > maxNonRpVoteExtensionSize {
 		return fmt.Errorf("non-rp vote extension size is too large: %d, max: %d", len(extension), maxNonRpVoteExtensionSize)
 	}
@@ -677,8 +689,6 @@ func ValidateNonRpVoteExtension(
 
 	return nil
 }
-
-const maxNonRpVoteExtensionSize = 500
 
 // checkNonRpVoteExtensionsSignatures checks the signatures of the non-rp vote extensions
 func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, validatorSet *stakeTypes.ValidatorSet) error {
@@ -776,6 +786,10 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 
 // validateCheckpointMsgData validates the extension is valid checkpoint
 func validateCheckpointMsgData(ctx sdk.Context, extension []byte, chainManagerKeeper chainManagerKeeper.Keeper, checkpointKeeper checkpointKeeper.Keeper, contractCaller helper.IContractCaller) error {
+	if len(extension) < minNonRpVoteExtensionSize {
+		return fmt.Errorf("non-rp vote extension size is too small: %d, min: %d", len(extension), minNonRpVoteExtensionSize)
+	}
+	// Unpack the checkpoint side sign bytes
 	checkpointMsg, err := checkpointTypes.UnpackCheckpointSideSignBytes(extension[1:]) // skip the first byte which is the vote
 	if err != nil {
 		return fmt.Errorf("failed to unpack checkpoint side sign bytes: %w", err)
@@ -907,8 +921,6 @@ func getCheckpointSignatures(extension []byte, extVoteInfo []abciTypes.ExtendedV
 type txDecoder interface {
 	TxDecode(txBytes []byte) (sdk.Tx, error)
 }
-
-var dummyNonRpVoteExtension = []byte("\t\r\n#HEIMDALL-VOTE-EXTENSION#\r\n\t")
 
 func packExtensionWithVote(extension []byte) []byte {
 	yesVote := []byte{0x01}
