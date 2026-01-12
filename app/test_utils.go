@@ -17,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -26,7 +27,9 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 const (
@@ -52,6 +55,38 @@ func SetupApp(t *testing.T, numOfVals uint64) SetupAppResult {
 
 	// generate validators, accounts and balances
 	validatorPrivKeys, validators, accounts, balances := generateValidators(t, numOfVals)
+
+	// setup app with validator set and respective accounts
+	app, db, logger, privKeys := setupAppWithValidatorSet(t, validatorPrivKeys, validators, accounts, balances)
+
+	return SetupAppResult{
+		App:           app,
+		DB:            db,
+		Logger:        logger,
+		ValidatorKeys: privKeys,
+	}
+}
+
+// SetupAppWithPrivKey is like SetupApp, but ensures the provided priv key's address is also
+// present as a funded auth+bank genesis account so tests can use it as a tx signer/fee payer.
+func SetupAppWithPrivKey(t *testing.T, numOfVals uint64, priv cryptotypes.PrivKey) SetupAppResult {
+	t.Helper()
+
+	// generate validators, accounts and balances
+	validatorPrivKeys, validators, accounts, balances := generateValidators(t, numOfVals)
+
+	addr := sdk.AccAddress(priv.PubKey().Address())
+	accNum := numOfVals + 1 // fee_collector is the first initialized (module) account (AccountNumber = 0)
+	genAcc := authtypes.NewBaseAccount(addr, priv.PubKey(), accNum, 0)
+	genBal := banktypes.Balance{
+		Address: genAcc.GetAddress().String(),
+		Coins: sdk.NewCoins(
+			sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewIntWithDecimal(1, 30)), // 1 * 10^30
+		),
+	}
+
+	accounts = append(accounts, genAcc)
+	balances = append(balances, genBal)
 
 	// setup app with validator set and respective accounts
 	app, db, logger, privKeys := setupAppWithValidatorSet(t, validatorPrivKeys, validators, accounts, balances)
@@ -237,6 +272,57 @@ func createSideTxResponses(vote sidetxs.Vote, txHashes ...string) []sidetxs.Side
 
 // GenesisStateWithValSet returns a new genesis state with the validator set
 func GenesisStateWithValSet(codec codec.Codec, genesisState map[string]json.RawMessage, valSet *stakeTypes.ValidatorSet, genAccs []authtypes.GenesisAccount, balances ...banktypes.Balance) (map[string]json.RawMessage, error) {
+	// Ensure each validator signer is also a funded genesis account.
+	// This makes it easy for tests to build/sign txs using validator addresses directly.
+	accByAddr := make(map[string]authtypes.GenesisAccount, len(genAccs))
+	maxAccNum := uint64(0)
+	for _, acc := range genAccs {
+		addr := acc.GetAddress().String()
+		accByAddr[addr] = acc
+		if acc.GetAccountNumber() > maxAccNum {
+			maxAccNum = acc.GetAccountNumber()
+		}
+	}
+
+	balanceByAddr := make(map[string]banktypes.Balance, len(balances))
+	for _, bal := range balances {
+		balanceByAddr[bal.Address] = bal
+	}
+
+	// Give each validator a default spendable balance if it doesn't already have one.
+	defaultCoins := sdk.NewCoins(
+		sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewIntWithDecimal(1, 30)), // 1 * 10^30
+	)
+
+	for _, val := range valSet.Validators {
+		addrBytes := common.FromHex(val.Signer)
+		if len(addrBytes) == 0 {
+			return nil, fmt.Errorf("invalid validator signer address: %q", val.Signer)
+		}
+		valAddr := sdk.AccAddress(addrBytes)
+		addrStr := valAddr.String()
+
+		if _, ok := accByAddr[addrStr]; !ok {
+			maxAccNum++
+			accByAddr[addrStr] = authtypes.NewBaseAccount(valAddr, nil, maxAccNum, 0)
+		}
+
+		if _, ok := balanceByAddr[addrStr]; !ok {
+			balanceByAddr[addrStr] = banktypes.Balance{Address: addrStr, Coins: defaultCoins}
+		}
+	}
+
+	// Rebuild slices (deduped) to feed into genesis.
+	genAccs = make([]authtypes.GenesisAccount, 0, len(accByAddr))
+	for _, acc := range accByAddr {
+		genAccs = append(genAccs, acc)
+	}
+
+	balances = make([]banktypes.Balance, 0, len(balanceByAddr))
+	for _, bal := range balanceByAddr {
+		balances = append(balances, bal)
+	}
+
 	// set genesis accounts
 	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
 	genesisState[authtypes.ModuleName] = codec.MustMarshalJSON(authGenesis)
@@ -271,6 +357,30 @@ func GenesisStateWithValSet(codec codec.Codec, genesisState map[string]json.RawM
 	// set validators and delegations
 	stakingGenesis := stakeTypes.NewGenesisState(validators, *valSet, seqs)
 	genesisState[stakeTypes.ModuleName] = codec.MustMarshalJSON(stakingGenesis)
+
+	// Ensure topup module has dividend accounts for all validator signer addresses.
+	// This keeps checkpoint-related handlers (which query dividend accounts) from seeing an empty set.
+	dividendAccByUser := make(map[string]hmTypes.DividendAccount, len(valSet.Validators))
+	if topupState, err := topupTypes.GetGenesisStateFromAppState(codec, genesisState); err == nil && topupState != nil {
+		for _, acc := range topupState.DividendAccounts {
+			dividendAccByUser[acc.User] = acc
+		}
+	}
+	for _, val := range valSet.Validators {
+		if val.Signer == "" {
+			continue
+		}
+		if _, ok := dividendAccByUser[val.Signer]; !ok {
+			dividendAccByUser[val.Signer] = hmTypes.DividendAccount{User: val.Signer, FeeAmount: "0"}
+		}
+	}
+	dividendAccounts := make([]hmTypes.DividendAccount, 0, len(dividendAccByUser))
+	for _, acc := range dividendAccByUser {
+		dividendAccounts = append(dividendAccounts, acc)
+	}
+	if _, err := topupTypes.SetGenesisStateToAppState(codec, genesisState, dividendAccounts); err != nil {
+		return nil, err
+	}
 
 	totalSupply := sdk.NewCoins()
 	for _, b := range balances {

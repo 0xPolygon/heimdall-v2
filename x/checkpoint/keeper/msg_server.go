@@ -180,14 +180,20 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 	}
 
 	lastCheckpoint, err := m.GetLastCheckpoint(ctx)
-	if err != nil {
+	if err != nil && !errors.Is(err, types.ErrNoCheckpointFound) {
 		logger.Error("unable to get last checkpoint", "error", err)
 		return nil, err
 	}
 
-	if msg.Number != lastCheckpoint.Id+1 {
+	expectedId := uint64(1)
+
+	if err == nil {
+		expectedId = lastCheckpoint.Id + 1
+	}
+
+	if msg.Number != expectedId {
 		logger.Error("checkpoint number in ack is not sequential",
-			"lastCheckpointNumber", lastCheckpoint.Id,
+			"lastCheckpointNumber", expectedId,
 			"checkpointNumber", msg.Number,
 		)
 		return nil, errorsmod.Wrap(types.ErrBadAck, "invalid checkpoint number")
