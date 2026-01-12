@@ -64,66 +64,66 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		txs = append(txs, bz)
 
 		// init totalTxBytes with the actual size of the marshaled vote info in bytes
-		totalTxBytes := len(bz)
-		handlerCtx, _ := app.cacheTxContext(ctx)
+		// totalTxBytes := len(bz)
+		// handlerCtx, _ := app.cacheTxContext(ctx)
 
-		for _, proposedTx := range req.Txs {
+		// for _, proposedTx := range req.Txs {
 
-			// check if the total tx bytes exceed the max tx bytes of the request
-			if totalTxBytes+len(proposedTx) > int(req.MaxTxBytes) {
-				continue
-			}
+		// 	// check if the total tx bytes exceed the max tx bytes of the request
+		// 	if totalTxBytes+len(proposedTx) > int(req.MaxTxBytes) {
+		// 		continue
+		// 	}
 
-			tx, err := app.TxDecode(proposedTx)
-			if err != nil {
-				return nil, fmt.Errorf("error occurred while decoding tx bytes in PrepareProposalHandler. Error: %w", err)
-			}
+		// 	tx, err := app.TxDecode(proposedTx)
+		// 	if err != nil {
+		// 		return nil, fmt.Errorf("error occurred while decoding tx bytes in PrepareProposalHandler. Error: %w", err)
+		// 	}
 
-			// ensure we allow transactions with only one side msg inside
-			if sidetxs.CountSideHandlers(app.sideTxCfg, tx) > 1 {
-				continue
-			}
+		// 	// ensure we allow transactions with only one side msg inside
+		// 	if sidetxs.CountSideHandlers(app.sideTxCfg, tx) > 1 {
+		// 		continue
+		// 	}
 
-			// Check for MsgVoteProducers and apply VEBLOP validation during PrepareProposal
-			shouldSkip := false
-			msgs := tx.GetMsgs()
-			for _, msg := range msgs {
-				if _, ok := msg.(*borTypes.MsgVoteProducers); ok {
-					if err := app.BorKeeper.CanVoteProducers(ctx); err != nil {
-						logger.Info("skipping MsgVoteProducers in PrepareProposal", "error", err)
-						shouldSkip = true
-						break
-					}
-				}
-				if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
-					if err := app.BorKeeper.CanSetProducerDowntime(sdk.UnwrapSDKContext(ctx)); err != nil {
-						logger.Info("skipping MsgSetProducerDowntime in PrepareProposal", "error", err)
-						shouldSkip = true
-						break
-					}
-				}
-			}
+		// 	// Check for MsgVoteProducers and apply VEBLOP validation during PrepareProposal
+		// 	shouldSkip := false
+		// 	msgs := tx.GetMsgs()
+		// 	for _, msg := range msgs {
+		// 		if _, ok := msg.(*borTypes.MsgVoteProducers); ok {
+		// 			if err := app.BorKeeper.CanVoteProducers(ctx); err != nil {
+		// 				logger.Info("skipping MsgVoteProducers in PrepareProposal", "error", err)
+		// 				shouldSkip = true
+		// 				break
+		// 			}
+		// 		}
+		// 		if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+		// 			if err := app.BorKeeper.CanSetProducerDowntime(sdk.UnwrapSDKContext(ctx)); err != nil {
+		// 				logger.Info("skipping MsgSetProducerDowntime in PrepareProposal", "error", err)
+		// 				shouldSkip = true
+		// 				break
+		// 			}
+		// 		}
+		// 	}
 
-			if shouldSkip {
-				continue
-			}
+		// 	if shouldSkip {
+		// 		continue
+		// 	}
 
-			// run the tx by executing the msg_server handler on the tx msgs and the ante handler
-			app.Logger().Info("prepare proposal verify tx", "tx", tx.GetMsgs())
-			_, err = app.PrepareProposalVerifyTx(tx)
-			if err != nil {
-				logger.Error("RunTx returned an error in PrepareProposal", "error", err)
-				continue
-			}
+		// 	// run the tx by executing the msg_server handler on the tx msgs and the ante handler
+		// 	app.Logger().Info("prepare proposal verify tx", "tx", tx.GetMsgs())
+		// 	_, err = app.PrepareProposalVerifyTx(tx)
+		// 	if err != nil {
+		// 		logger.Error("RunTx returned an error in PrepareProposal", "error", err)
+		// 		continue
+		// 	}
 
-			if err := execMsgHandler(handlerCtx, app, msgs); err != nil {
-				logger.Error("execMsgHandler returned an error in PrepareProposal", "error", err)
-				continue
-			}
+		// 	// if err := execMsgHandler(handlerCtx, app, msgs); err != nil {
+		// 	// 	logger.Error("execMsgHandler returned an error in PrepareProposal", "error", err)
+		// 	// 	continue
+		// 	// }
 
-			totalTxBytes += len(proposedTx)
-			txs = append(txs, proposedTx)
-		}
+		// 	totalTxBytes += len(proposedTx)
+		// 	txs = append(txs, proposedTx)
+		// }
 
 		// check if there are less than 1 txs in the request
 		if len(txs) < 1 {
