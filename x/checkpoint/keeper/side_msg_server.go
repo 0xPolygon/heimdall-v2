@@ -103,6 +103,35 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	// Make sure the latest AccountRootHash matches
+	// Calculate new account root hash
+	dividendAccounts, err := srv.topupKeeper.GetAllDividendAccounts(ctx)
+	if err != nil {
+		logger.Error("error while fetching dividends accounts", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	logger.Debug("dividendAccounts of all validators", "dividendAccountsLength", len(dividendAccounts))
+
+	// Get account root hash from dividend accounts
+	accountRoot, err := hmTypes.GetAccountRootHash(dividendAccounts)
+	if err != nil {
+		logger.Error("error while fetching account root hash", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	logger.Debug("Validator account root hash generated", "accountRootHash", common.Bytes2Hex(accountRoot))
+
+	// Compare stored root hash to msg root hash
+	if !bytes.Equal(accountRoot, msg.AccountRootHash) {
+		logger.Error(
+			"AccountRootHash of current state doesn't match from msg",
+			"hash", common.Bytes2Hex(accountRoot),
+			"msgHash", msg.AccountRootHash,
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	logger.Info("Validating checkpoint proposal",
 		"proposer", msg.Proposer,
 		"startBlock", msg.StartBlock,

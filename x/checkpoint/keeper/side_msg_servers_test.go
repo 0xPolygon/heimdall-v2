@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
@@ -27,6 +28,7 @@ func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote sidetxs
 func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 	ctx, require := s.ctx, s.Require()
 	keeper, cmKeeper, sideHandler, contractCaller := s.checkpointKeeper, s.cmKeeper, s.sideHandler, s.contractCaller
+	topupKeeper := s.topupKeeper
 
 	start := uint64(0)
 	maxSize := uint64(256)
@@ -50,12 +52,19 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			checkpoint.RootHash,
+			common.Hex2Bytes("b1c33eede53d5c39b5a2da9f1b5fe2bb49f7dbbbd98ac238b43294381eeb838a"),
 			borChainId,
 		)
 
 		contractCaller.On("CheckIfBlocksExist", checkpoint.EndBlock+borChainTxConfirmations).Return(true, nil)
 		contractCaller.On("GetRootHash", checkpoint.StartBlock, checkpoint.EndBlock, uint64(1024)).Return(checkpoint.RootHash, nil)
+
+		topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return([]hmTypes.DividendAccount{
+			{
+				User:      "0x000000000000000000000000000000000000dEaD",
+				FeeAmount: "1000",
+			},
+		}, nil)
 
 		result := sideHandler(ctx, msgCheckpoint)
 		require.Equal(result, sidetxs.Vote_VOTE_YES)
