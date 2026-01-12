@@ -65,7 +65,6 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		// init totalTxBytes with the actual size of the marshaled vote info in bytes
 		totalTxBytes := len(bz)
-		handlerCtx, _ := app.cacheTxContext(ctx)
 
 		for _, proposedTx := range req.Txs {
 
@@ -113,11 +112,6 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			_, err = app.PrepareProposalVerifyTx(tx)
 			if err != nil {
 				logger.Error("RunTx returned an error in PrepareProposal", "error", err)
-				continue
-			}
-
-			if err := execMsgHandler(handlerCtx, app, msgs); err != nil {
-				logger.Error("execMsgHandler returned an error in PrepareProposal", "error", err)
 				continue
 			}
 
@@ -180,9 +174,6 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			logger.Error("Invalid non-rp vote extension proposal", "error", err)
 		}
 
-		// run the rest of the txs
-		handlerCtx, _ := app.cacheTxContext(ctx)
-
 		for _, tx := range req.Txs[1:] {
 			txn, err := app.TxDecode(tx)
 			if err != nil {
@@ -216,12 +207,6 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			if _, err := app.ProcessProposalVerifyTx(tx); err != nil {
 				// this should never happen, as the txs have already been checked in PrepareProposal
 				logger.Error("RunTx returned an error in ProcessProposal", "error", err)
-				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
-			}
-
-			// execute the msg handlers
-			if err := execMsgHandler(handlerCtx, app, msgs); err != nil {
-				logger.Warn("execMsgHandler returned an error in ProcessProposal", "error", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 		}
@@ -977,47 +962,6 @@ func rejectUnknownVoteExtFields(bz []byte) error {
 
 	if err := unknownproto.RejectUnknownFieldsStrict(bz, msg, resolver); err != nil {
 		return fmt.Errorf("vote extension contains unknown fields/extra bytes: %w", err)
-	}
-
-	return nil
-}
-
-// execMsgHandler validates the messages and executes their handlers
-func execMsgHandler(ctx sdk.Context, app *HeimdallApp, msgs []sdk.Msg) (err error) {
-	logger := app.Logger()
-
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("panic while executing message handler: %v", r)
-			buf := make([]byte, 1<<16)
-			n := runtime.Stack(buf, false)
-			logger.Error(
-				"panic in ExtendVoteHandler",
-				"panic", r,
-				"stack", string(buf[:n]),
-			)
-		}
-	}()
-
-	for _, msg := range msgs {
-		if m, ok := msg.(sdk.HasValidateBasic); ok {
-			if err = m.ValidateBasic(); err != nil {
-				return err
-			}
-		}
-
-		if sideHandler := app.sideTxCfg.GetSideHandler(msg); sideHandler == nil {
-			continue
-		}
-
-		msgHandler := app.MsgServiceRouter().Handler(msg)
-		if msgHandler == nil {
-			return fmt.Errorf("no handler found for message type %T", msg)
-		}
-
-		if _, err = msgHandler(ctx, msg); err != nil {
-			return fmt.Errorf("error occurred while executing message handler for message type %T: %w", msg, err)
-		}
 	}
 
 	return nil

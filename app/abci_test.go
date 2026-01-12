@@ -16,7 +16,6 @@ import (
 	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec/address"
-	sdksecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
@@ -41,7 +40,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	helpermocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -411,84 +409,6 @@ func TestPrepareProposalHandler(t *testing.T) {
 	respPrep, err := app.PrepareProposal(reqPrep)
 	require.NoError(t, err)
 	require.NotEmpty(t, respPrep.Txs)
-}
-
-func TestPrepareProposalHandler_FiltersTxWhenExecMsgHandlerFails(t *testing.T) {
-	_, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
-	validators := app.StakeKeeper.GetAllValidators(ctx)
-
-	// Sign txs with the validator's private key (CometBFT secp256k1) converted into
-	// a Cosmos SDK secp256k1 key.
-	valPriv := &sdksecp256k1.PrivKey{Key: validatorPrivKeys[0].Bytes()}
-
-	_, extCommit, _, err := buildExtensionCommits(
-		t,
-		&app,
-		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
-		validators,
-		validatorPrivKeys,
-		app.LastBlockHeight(),
-	)
-	require.NoError(t, err)
-
-	// Use a fresh context after FinalizeBlock so account/balance writes are visible to PrepareProposalVerifyTx.
-	validators = app.StakeKeeper.GetAllValidators(ctx)
-
-	dividendAccounts, err := app.TopupKeeper.GetAllDividendAccounts(sdk.WrapSDKContext(ctx))
-	require.NoError(t, err)
-	require.NotEmpty(t, dividendAccounts)
-
-	accountRoot, err := hmTypes.GetAccountRootHash(dividendAccounts)
-	require.NoError(t, err)
-	require.NotEmpty(t, accountRoot)
-
-	badAccountRoot := make([]byte, len(accountRoot))
-	copy(badAccountRoot, accountRoot)
-	badAccountRoot[0] = 0x01
-
-	// First checkpoint must start at block 0 (otherwise the module msg handler rejects it).
-	// The second tx is identical except AccountRootHash, so it passes ante but fails execMsgHandler.
-	goodMsg := &types.MsgCheckpoint{
-		Proposer:        validators[0].Signer,
-		StartBlock:      0,
-		EndBlock:        1,
-		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
-		AccountRootHash: accountRoot,
-		BorChainId:      "1",
-	}
-	badMsg := &types.MsgCheckpoint{
-		Proposer:        validators[0].Signer,
-		StartBlock:      0,
-		EndBlock:        1,
-		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
-		AccountRootHash: badAccountRoot,
-		BorChainId:      "1",
-	}
-
-	propAddr := sdk.AccAddress(valPriv.PubKey().Address())
-	propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
-	var seq uint64
-	if propAcc != nil {
-		seq = propAcc.GetSequence()
-	}
-
-	goodTxBytes, err := buildSignedTxWithSequence(goodMsg, ctx, valPriv, app, seq)
-	require.NoError(t, err)
-	badTxBytes, err := buildSignedTxWithSequence(badMsg, ctx, valPriv, app, seq+1)
-	require.NoError(t, err)
-
-	reqPrep := &abci.RequestPrepareProposal{
-		Txs:             [][]byte{goodTxBytes, badTxBytes},
-		MaxTxBytes:      1_000_000,
-		LocalLastCommit: *extCommit,
-		ProposerAddress: common.FromHex(validators[0].Signer),
-		Height:          app.LastBlockHeight() + 1,
-	}
-
-	respPrep, err := app.PrepareProposal(reqPrep)
-	require.NoError(t, err)
-	require.Len(t, respPrep.Txs, 2)
-	require.Equal(t, goodTxBytes, respPrep.Txs[1])
 }
 
 func TestProcessProposalHandler(t *testing.T) {
