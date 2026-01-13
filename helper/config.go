@@ -357,11 +357,12 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		// Default to info in case of error
 		logLevel = zerolog.InfoLevel
 	}
+	logNoColor := viper.GetBool(flags.FlagLogNoColor)
 	if conf.Custom.LogsType == "json" {
 		Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logger.LevelOption(logLevel), logger.OutputJSONOption())
 	} else {
 		// default fallback
-		Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logger.LevelOption(logLevel))
+		Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logger.LevelOption(logLevel), logger.ColorOption(!logNoColor))
 	}
 
 	// perform checks for timeout

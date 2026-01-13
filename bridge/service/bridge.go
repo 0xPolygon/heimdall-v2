@@ -42,7 +42,7 @@ const (
 	logsTypeKey   = "logs-type"
 )
 
-var logger = helper.Logger.With("module", "bridge/service/")
+var logger = helper.Logger.With("module", "bridge/service")
 
 // AdjustDBValue sets/normalizes viper-config for bridge runtime based on flags present on root/start cmd
 func AdjustDBValue(cmd *cobra.Command) {

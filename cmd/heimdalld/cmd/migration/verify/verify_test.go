@@ -10,7 +10,7 @@ import (
 )
 
 func TestRunMigrationVerification(t *testing.T) {
-	logger := helper.Logger.With("module", "cmd/heimdalld")
+	logger := helper.Logger.With("module", "cmd/heimdalld/cmd/migration/verify")
 
 	genesisFilePath, err := filepath.Abs("../../testdata/dump-genesis.json")
 	require.NoError(t, err, "Failed to resolve path for dump-genesis.json")

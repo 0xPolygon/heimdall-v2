@@ -137,7 +137,8 @@ func NewRootCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			helper.Logger = log.NewLogger(cmd.OutOrStdout(), log.LevelOption(logLevel))
+			logNoColor := serverCtx.Viper.GetBool(flags.FlagLogNoColor)
+			helper.Logger = log.NewLogger(cmd.OutOrStdout(), log.LevelOption(logLevel), log.ColorOption(!logNoColor))
 
 			err = helper.SanitizeConfig(serverCtx.Viper, serverCtx.Logger)
 			if err != nil {
