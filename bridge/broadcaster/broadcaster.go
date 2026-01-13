@@ -3,7 +3,6 @@ package broadcaster
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -55,7 +54,7 @@ func NewTxBroadcaster(
 	}
 	fromAddr := sdk.MustAccAddressFromHex(addrHex)
 
-	logger := log.NewLogger(os.Stdout).With("module", "txBroadcaster")
+	logger := helper.Logger.With("module", "bridge/broadcaster")
 
 	var account sdk.AccountI
 	if accRetriever != nil {

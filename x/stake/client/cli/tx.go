@@ -20,7 +20,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-var logger = helper.Logger.With("module", "stake/client/cli")
+var logger = helper.Logger.With("module", "x/stake/cli")
 
 // NewTxCmd returns a root CLI command handler for all x/stake transaction commands.
 func NewTxCmd() *cobra.Command {

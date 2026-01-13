@@ -350,19 +350,25 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		log.Fatalln("unable to read flag values. Check log for details.", "Error", err)
 	}
 
-	// perform check for json logging
 	logLevelStr := viper.GetString(flags.FlagLogLevel)
 	logLevel, err := zerolog.ParseLevel(logLevelStr)
 	if err != nil {
-		// Default to info in case of error
 		logLevel = zerolog.InfoLevel
 	}
+
+	logNoColor := viper.GetBool(flags.FlagLogNoColor)
+	var logOpts []logger.Option
 	if conf.Custom.LogsType == "json" {
-		Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logger.LevelOption(logLevel), logger.OutputJSONOption())
+		logOpts = append(logOpts, logger.OutputJSONOption())
 	} else {
-		// default fallback
-		Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logger.LevelOption(logLevel))
+		logOpts = append(logOpts, logger.ColorOption(!logNoColor))
 	}
+	logOpts = append(logOpts,
+		logger.LevelOption(logLevel),
+		logger.TimeFormatOption(time.RFC3339Nano),
+	)
+
+	Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logOpts...)
 
 	// perform checks for timeout
 	if conf.Custom.EthRPCTimeout == 0 {

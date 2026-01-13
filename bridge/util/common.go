@@ -73,7 +73,7 @@ const (
 
 // Logger returns logger singleton instance
 func Logger() log.Logger {
-	return helper.Logger.With("module", "bridge")
+	return helper.Logger.With("module", "bridge/util")
 }
 
 // IsProposer checks if the current is the proposer
