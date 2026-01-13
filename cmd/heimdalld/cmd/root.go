@@ -2,6 +2,7 @@ package heimdalld
 
 import (
 	"os"
+	"time"
 
 	"cosmossdk.io/log"
 	"github.com/cometbft/cometbft/cmd/cometbft/commands"
@@ -119,25 +120,31 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
-			// Overwrite default server logger
-			logger, err := server.CreateSDKLogger(serverCtx, cmd.OutOrStdout())
-			if err != nil {
-				return err
-			}
-			serverCtx.Logger = logger.With(log.ModuleKey, "server")
-
 			// Get log_level from serverCtx.Viper
 			logLevelStr := serverCtx.Viper.GetString(flags.FlagLogLevel)
 
 			// Set log_level value to viper
 			viper.Set(flags.FlagLogLevel, logLevelStr)
 
-			// Overwrite default heimdall logger
 			logLevel, err := zerolog.ParseLevel(logLevelStr)
 			if err != nil {
 				return err
 			}
-			helper.Logger = log.NewLogger(cmd.OutOrStdout(), log.LevelOption(logLevel))
+
+			logNoColor := serverCtx.Viper.GetBool(flags.FlagLogNoColor)
+			var logOpts []log.Option
+			if serverCtx.Viper.GetString(flags.FlagLogFormat) == flags.OutputFormatJSON {
+				logOpts = append(logOpts, log.OutputJSONOption())
+			} else {
+				logOpts = append(logOpts, log.ColorOption(!logNoColor))
+			}
+			logOpts = append(logOpts,
+				log.LevelOption(logLevel),
+				log.TimeFormatOption(time.RFC3339Nano),
+			)
+
+			serverCtx.Logger = log.NewLogger(cmd.OutOrStdout(), logOpts...).With(log.ModuleKey, "server")
+			helper.Logger = log.NewLogger(cmd.OutOrStdout(), logOpts...)
 
 			err = helper.SanitizeConfig(serverCtx.Viper, serverCtx.Logger)
 			if err != nil {

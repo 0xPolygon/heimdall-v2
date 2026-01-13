@@ -1,12 +1,12 @@
 package queue
 
 import (
-	"os"
-
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
 	amqp "github.com/rabbitmq/amqp091-go"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 // The Connector is used to connect to the queue
@@ -45,7 +45,7 @@ func NewQueueConnector(dialer string) *Connector {
 	}
 
 	connector := Connector{
-		logger: log.NewLogger(os.Stdout).With("module", "QueueConnector"),
+		logger: helper.Logger.With("module", "bridge/queue"),
 		Server: server,
 	}
 

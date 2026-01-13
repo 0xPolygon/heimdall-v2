@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"cosmossdk.io/log"
 	"cosmossdk.io/x/tx/signing"
 	common "github.com/cometbft/cometbft/libs/service"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
@@ -42,7 +43,7 @@ const (
 	logsTypeKey   = "logs-type"
 )
 
-var logger = helper.Logger.With("module", "bridge/service/")
+func logger() log.Logger { return helper.Logger.With("module", "bridge/service") }
 
 // AdjustDBValue sets/normalizes viper-config for bridge runtime based on flags present on root/start cmd
 func AdjustDBValue(cmd *cobra.Command) {
@@ -88,14 +89,14 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 
 	httpClient, err := createAndStartRPC(helper.GetConfig().CometBFTRPCUrl)
 	if err != nil {
-		logger.Error("Error connecting to server", "err", err)
+		logger().Error("Error connecting to server", "err", err)
 		return err
 	}
 
 	// set chain ID
 	chainID, err := resolveChainID(ctx, clientCtx)
 	if err != nil {
-		logger.Error("Error while determining chain ID", "err", err)
+		logger().Error("Error while determining chain ID", "err", err)
 		return err
 	}
 	clientCtx = clientCtx.WithChainID(chainID)
@@ -165,11 +166,11 @@ func createAndStartRPC(rpcURL string) (*rpchttp.HTTP, error) {
 // resolveChainID retrieves the chain ID from the client context or node status.
 func resolveChainID(ctx context.Context, clientCtx client.Context) (string, error) {
 	if cid := clientCtx.ChainID; cid != "" {
-		logger.Info("ChainID set in clientCtx", "chainId", cid)
+		logger().Info("ChainID set in clientCtx", "chainId", cid)
 		return cid, nil
 	}
 
-	logger.Info("ChainID is empty in clientCtx at bridge startup, fetching from node status")
+	logger().Info("ChainID is empty in clientCtx at bridge startup, fetching from node status")
 
 	nodeStatus, err := helper.GetNodeStatus(clientCtx) //nolint:contextcheck
 	if err != nil {
@@ -179,7 +180,7 @@ func resolveChainID(ctx context.Context, clientCtx client.Context) (string, erro
 		return "", errors.New("network is empty in node status, cannot determine chain ID")
 	}
 
-	logger.Info("ChainID fetched from node status", "chainId", nodeStatus.NodeInfo.Network)
+	logger().Info("ChainID fetched from node status", "chainId", nodeStatus.NodeInfo.Network)
 	return nodeStatus.NodeInfo.Network, nil
 }
 
@@ -191,10 +192,10 @@ func waitUntilSynced(ctx context.Context, clientCtx client.Context, d time.Durat
 			return ctx.Err()
 		case <-time.After(d):
 			if !util.IsCatchingUp(clientCtx, ctx) {
-				logger.Info("Node up to date, starting bridge services")
+				logger().Info("Node up to date, starting bridge services")
 				return nil
 			}
-			logger.Info("Waiting for heimdall to be synced")
+			logger().Info("Waiting for heimdall to be synced")
 		}
 	}
 }
@@ -208,7 +209,7 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 		s := svc
 		g.Go(func() error {
 			if err := s.Start(); err != nil {
-				logger.Error("service.Start failed", "err", err)
+				logger().Error("service.Start failed", "err", err)
 				return err
 			}
 			<-s.Quit()
@@ -219,13 +220,13 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 	// shutdown controller
 	g.Go(func() error {
 		<-ctx.Done()
-		logger.Info("Received stop signal - Stopping all heimdall bridge services")
+		logger().Info("Received stop signal - Stopping all heimdall bridge services")
 
 		// stop services
 		for _, s := range services {
 			if s.IsRunning() {
 				if err := s.Stop(); err != nil {
-					logger.Error("service.Stop failed", "err", err)
+					logger().Error("service.Stop failed", "err", err)
 					return err
 				}
 			}
@@ -233,7 +234,7 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 
 		// stop comet client
 		if err := httpClient.Stop(); err != nil {
-			logger.Error("httpClient.Stop failed", "err", err)
+			logger().Error("httpClient.Stop failed", "err", err)
 			return err
 		}
 
@@ -243,7 +244,7 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 	})
 
 	if err := g.Wait(); err != nil {
-		logger.Error("Bridge stopped", "err", err)
+		logger().Error("Bridge stopped", "err", err)
 		return err
 	}
 	return nil

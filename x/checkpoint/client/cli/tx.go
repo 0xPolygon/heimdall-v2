@@ -20,7 +20,7 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-var logger = helper.Logger.With("module", "checkpoint/client/cli")
+var logger = helper.Logger.With("module", "x/checkpoint/cli")
 
 // NewTxCmd returns a root CLI command handler for all x/checkpoint transaction commands.
 func NewTxCmd() *cobra.Command {

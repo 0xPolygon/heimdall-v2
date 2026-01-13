@@ -18,7 +18,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
-var logger = helper.Logger.With("module", "bor/client/cli")
+var logger = helper.Logger.With("module", "x/bor/cli")
 
 // NewTxCmd returns a root CLI command handler for all x/bor transaction commands.
 func NewTxCmd() *cobra.Command {
