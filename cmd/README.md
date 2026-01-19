@@ -1,6 +1,5 @@
 # cmd
 
-
 The `cmd` package is responsible for starting the heimdall application and provides the CLI framework (based on [cobra](https://github.com/spf13/cobra)).
 
 ## heimdalld
@@ -68,8 +67,8 @@ Flags:
       --log_level string                  The logging level (trace|debug|info|warn|error|fatal|panic|disabled) (default "info")
       --log_no_color                      Disable colored logs
       --logs_writer_file string           Set logs writer file, Default is os.Stdout
-      --main_chain_gas_limit uint         Set main chain gas limit
-      --main_chain_max_gas_price int      Set main chain max gas limit
+      --main_chain_gas_fee_cap int        Set main chain max gas fee cap for EIP-1559 transactions (in wei)
+      --main_chain_gas_tip_cap int        Set main chain max priority fee (tip) for EIP-1559 transactions (in wei)
       --milestone_poll_interval string    Set milestone interval (default "30s")
       --no_ack_wait_time string           Set time ack service waits to clear buffer and elect new proposer
       --noack_poll_interval string        Set no acknowledge pull interval
