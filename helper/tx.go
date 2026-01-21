@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 
@@ -20,7 +21,23 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/stakemanager"
 )
 
+// EthClient defines the interface for Ethereum client operations needed for transaction creation.
+type EthClient interface {
+	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
+	SuggestGasTipCap(ctx context.Context) (*big.Int, error)
+	PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
+	EstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error)
+	ChainID(ctx context.Context) (*big.Int, error)
+}
+
+// GenerateAuthObj creates a transaction auth object with EIP-1559 gas pricing.
 func GenerateAuthObj(client *ethclient.Client, address common.Address, data []byte) (auth *bind.TransactOpts, err error) {
+	return generateAuthObjWithClient(client, address, data)
+}
+
+// generateAuthObjWithClient creates a transaction auth object using the EthClient interface.
+// This function is used internally and allows for easier testing with mock clients.
+func generateAuthObjWithClient(client EthClient, address common.Address, data []byte) (auth *bind.TransactOpts, err error) {
 	ctx := context.Background()
 
 	callMsg := ethereum.CallMsg{
@@ -73,6 +90,11 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 	// The configured tip cap acts as a maximum we're willing to pay.
 	gasTipCap := suggestedTipCap
 	if gasTipCap.Cmp(big.NewInt(configGasTipCap)) > 0 {
+		Logger.Warn(
+			"suggested tip cap exceeds configured maximum, using configured maximum",
+			"suggested", suggestedTipCap.String(),
+			"configured", configGasTipCap,
+		)
 		gasTipCap = big.NewInt(configGasTipCap)
 	}
 

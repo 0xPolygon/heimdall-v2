@@ -406,14 +406,22 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		conf.Custom.SHMaxDepthDuration = DefaultSHMaxDepthDuration
 	}
 
+	// validate EIP-1559 gas config: tip cap must not exceed fee cap
+	if conf.Custom.MainChainGasTipCap > conf.Custom.MainChainGasFeeCap {
+		log.Fatal("invalid gas config: main_chain_gas_tip_cap must not exceed main_chain_gas_fee_cap",
+			"tip_cap", conf.Custom.MainChainGasTipCap,
+			"fee_cap", conf.Custom.MainChainGasFeeCap,
+		)
+	}
+
 	if mainRPCClient, err = rpc.Dial(conf.Custom.EthRPCUrl); err != nil {
-		log.Fatalln("Unable to dial via ethClient", "URL", conf.Custom.EthRPCUrl, "chain", "eth", "error", err)
+		log.Fatal("unable to dial main chain RPC client", "URL", conf.Custom.EthRPCUrl, "error", err)
 	}
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
 
 	if borRPCClient, err = rpc.Dial(conf.Custom.BorRPCUrl); err != nil {
-		log.Fatal(err)
+		log.Fatal("unable to dial bor chain RPC client", "URL", conf.Custom.BorRPCUrl, "error", err)
 	}
 
 	borClient = ethclient.NewClient(borRPCClient)
@@ -421,7 +429,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	if conf.Custom.BorGRPCFlag && conf.Custom.BorGRPCUrl != "" {
 		client, err := borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl, Logger)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("unable to create bor gRPC client", "URL", conf.Custom.BorGRPCUrl, "error", err)
 		}
 		borGRPCClient = client
 	}
