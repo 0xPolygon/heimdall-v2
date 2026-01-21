@@ -83,6 +83,13 @@ x/<module>/
    go test -v ./path/to/package
    ```
 
+## Before Making Changes
+
+1. **Identify impact**: What other modules or components depend on this code?
+2. **Plan implementation**: Outline the approach before writing code
+3. **Plan testing**: How will you verify correctness? What edge cases exist?
+4. **Check for breaking changes**: Will this affect APIs, proto definitions, or stored state?
+
 ## Common Pitfalls
 
 1. **Proto Changes**: Always run `make proto-all` after modifying `.proto` files
