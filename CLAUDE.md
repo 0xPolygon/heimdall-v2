@@ -66,13 +66,13 @@ Each module in `x/` follows standard Cosmos SDK layout:
 
 ```markdown
 x/<module>/
-├── keeper/       # State management and business logic
-├── types/        # Messages, events, genesis, queries
-├── client/       # CLI commands and query handlers
-├── testutil/     # Mock interfaces and test setup
-├── module.go     # Module registration
-├── depinject.go  # Dependency injection config
-└── README.md     # Module documentation
+├── keeper/ # State management and business logic
+├── types/ # Messages, events, genesis, queries
+├── client/ # CLI commands and query handlers
+├── testutil/ # Mock interfaces and test setup
+├── module.go # Module registration
+├── depinject.go # Dependency injection config
+└── README.md # Module documentation
 ```
 
 ## Testing Guidelines
@@ -167,3 +167,13 @@ Prefix with module name: `x/checkpoint: fix vote extension validation`
 
 - **develop** - Main development branch, PRs target here
 - **main** - Stable release branch
+
+## Maintaining This File
+
+Update CLAUDE.md when:
+
+- Claude makes a mistake or wrong assumption → Add clarifying context
+- New patterns or conventions are established → Document them
+- Frequently asked questions arise → Add answers here
+
+This file should evolve over time to capture project-specific knowledge that helps AI agents work more effectively.
