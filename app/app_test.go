@@ -7,6 +7,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -79,7 +80,6 @@ func TestRunMigrations(t *testing.T) {
 		},
 	}
 
-	//nolint:paralleltest
 	for _, tc := range testCases {
 		t.Run(tc.name, func(tt *testing.T) {
 			var err error
@@ -109,8 +109,8 @@ func TestRunMigrations(t *testing.T) {
 				}
 			}
 
-			// Run migrations only for bank. That's why we put the initial
-			// version for bank as 1, and for all other modules, we put as
+			// Run migrations only for bank module. That's why we put the initial
+			// version for bank module as 1, and for all other modules, we put as
 			// their latest ConsensusVersion.
 			_, err = hApp.ModuleManager.RunMigrations(
 				hApp.NewContextLegacy(true, cmtproto.Header{Height: hApp.LastBlockHeight()}), configurator,
@@ -205,13 +205,17 @@ func TestEndBlockerEmitsTransferEvent(t *testing.T) {
 	app := setupAppResult.App
 	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
 
+	testAddr := "0x1234567890abcdef1234567890abcdef12345678"
+	ac := address.NewHexCodec()
+	proposer, err := ac.StringToBytes(testAddr)
+	require.NoError(t, err)
+
 	// Create a test proposer account
-	proposerAddr := sdk.AccAddress("test_proposer")
-	proposerAcc := app.AccountKeeper.NewAccountWithAddress(ctx, proposerAddr)
+	proposerAcc := app.AccountKeeper.NewAccountWithAddress(ctx, proposer)
 	app.AccountKeeper.SetAccount(ctx, proposerAcc)
 
 	// Set the block proposer
-	err := app.AccountKeeper.SetBlockProposer(ctx, proposerAddr)
+	err = app.AccountKeeper.SetBlockProposer(ctx, proposerAcc.GetAddress())
 	require.NoError(t, err)
 
 	// Fund the fee collector
@@ -258,8 +262,8 @@ func TestEndBlockerEmitsTransferEvent(t *testing.T) {
 	}
 
 	require.NotNil(t, proposerAttr)
-	require.NotNil(t, proposerAddr, "proposer address should not be nil")
-	require.Equal(t, proposerAddr.String(), proposerAttr.Value)
+	require.NotNil(t, proposerAcc.GetAddress(), "proposer address should not be nil")
+	require.Equal(t, proposerAcc.GetAddress().String(), proposerAttr.Value)
 
 	require.NotNil(t, denomAttr)
 	require.NotNil(t, denomAttr.Value, "denom attribute value should not be nil")

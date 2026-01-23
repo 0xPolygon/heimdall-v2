@@ -21,6 +21,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
+const errFetchingCheckpointParams = "error in fetching checkpoint parameter"
+
 type msgServer struct {
 	*Keeper
 }
@@ -34,71 +36,71 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 var _ types.MsgServer = msgServer{}
 
 // Checkpoint function handles the checkpoint msg
-func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*types.MsgCheckpointResponse, error) {
+func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*types.MsgCheckpointResponse, error) {
 	var err error
 	startTime := time.Now()
 	defer recordCheckpointTransactionMetric(api.CheckpointMethod, startTime, &err)
 
-	logger := m.Logger(ctx)
+	logger := srv.Logger(ctx)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	timeStamp := uint64(sdkCtx.BlockTime().Unix())
 
-	params, err := m.GetParams(ctx)
+	params, err := srv.GetParams(ctx)
 	if err != nil {
-		logger.Error("error in fetching checkpoint parameter")
+		logger.Error(errFetchingCheckpointParams)
 		return nil, types.ErrCheckpointParams
 	}
 
-	checkpointBuffer, err := m.GetCheckpointFromBuffer(ctx)
+	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
 	if err == nil {
 		checkpointBufferTime := uint64(params.CheckpointBufferTime.Seconds())
 
 		if checkpointBuffer.Timestamp == 0 || ((timeStamp > checkpointBuffer.Timestamp) && (timeStamp-checkpointBuffer.Timestamp) >= checkpointBufferTime) {
-			// this is also the case when checkpoint buffer is empty (because of zero timestamp),
+			// this is also the case when the checkpoint buffer is empty (because of zero timestamp),
 			// hence no need for IsBufferedCheckpointZero check
-			logger.Debug("checkpoint has been timed out. flushing buffer.", "checkpointTimestamp", timeStamp, "prevCheckpointTimestamp", checkpointBuffer.Timestamp)
-			err := m.FlushCheckpointBuffer(ctx)
+			logger.Debug("Checkpoint has been timed out. flushing buffer.", "checkpointTimestamp", timeStamp, "prevCheckpointTimestamp", checkpointBuffer.Timestamp)
+			err := srv.FlushCheckpointBuffer(ctx)
 			if err != nil {
-				logger.Error("error in flushing the checkpoint buffer")
+				logger.Error("Error in flushing the checkpoint buffer")
 				return nil, types.ErrBufferFlush
 			}
 		} else {
 			expiryTime := checkpointBuffer.Timestamp + checkpointBufferTime
-			logger.Error("checkpoint already exits in buffer", "checkpoint", checkpointBuffer.String(), "expires", expiryTime)
+			logger.Error("Checkpoint already exits in buffer", "checkpoint", checkpointBuffer.String(), "expires", expiryTime)
 			return nil, errorsmod.Wrap(types.ErrNoAck, fmt.Sprint("checkpoint already exits in buffer", "checkpoint", checkpointBuffer.String(), "expires", expiryTime))
 		}
 	}
 
 	// fetch the last checkpoint from the store
-	if lastCheckpoint, err := m.GetLastCheckpoint(ctx); err == nil {
+	if lastCheckpoint, err := srv.GetLastCheckpoint(ctx); err == nil {
 		// check if the new checkpoint's start block starts from the current tip
 		if lastCheckpoint.EndBlock+1 != msg.StartBlock {
-			logger.Error("checkpoint not in continuity",
+			logger.Error("Checkpoint not in continuity",
 				"currentTip", lastCheckpoint.EndBlock,
 				"startBlock", msg.StartBlock)
 
 			return nil, types.ErrDiscontinuousCheckpoint
 		}
 	} else if errors.Is(err, types.ErrNoCheckpointFound) && msg.StartBlock != 0 {
-		logger.Error("first checkpoint to start from block 0", "checkpoint start block", msg.StartBlock, "error", err)
+		logger.Error("First checkpoint to start from block 0", "checkpoint start block", msg.StartBlock, "error", err)
 		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("first checkpoint to start from block 0", "checkpoint start block", msg.StartBlock))
 	}
 
 	// Make sure the latest AccountRootHash matches
 	// Calculate new account root hash
-	dividendAccounts, err := m.topupKeeper.GetAllDividendAccounts(ctx)
+	dividendAccounts, err := srv.topupKeeper.GetAllDividendAccounts(ctx)
 	if err != nil {
-		logger.Error("error while fetching dividends accounts", "error", err)
+		logger.Error("Error while fetching dividends accounts", "error", err)
 		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, "error while fetching dividends accounts")
 	}
 
-	logger.Debug("dividendAccounts of all validators", "dividendAccountsLength", len(dividendAccounts))
+	logger.Debug("DividendAccounts of all validators", "dividendAccountsLength", len(dividendAccounts))
 
 	// Get account root hash from dividend accounts
 	accountRoot, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	if err != nil {
-		logger.Error("error while fetching account root hash", "error", err)
+		logger.Error("Error while fetching account root hash", "error", err)
 		return nil, errorsmod.Wrap(types.ErrAccountHash, "error while fetching account root hash")
 	}
 
@@ -115,14 +117,14 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	}
 
 	// Check the proposer in the message
-	validatorSet, err := m.stakeKeeper.GetValidatorSet(ctx)
+	validatorSet, err := srv.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
-		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
+		logger.Error(hmTypes.ErrMsgNoProposerInValidatorSet, "msgProposer", msg.Proposer)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "no proposer stored in validator set")
 	}
 
 	if validatorSet.Proposer == nil {
-		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
+		logger.Error(hmTypes.ErrMsgNoProposerInValidatorSet, "msgProposer", msg.Proposer)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "no proposer stored in validator set")
 	}
 
@@ -163,15 +165,15 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 }
 
 // CheckpointAck handles the checkpoint ack msg
-func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*types.MsgCpAckResponse, error) {
+func (srv msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*types.MsgCpAckResponse, error) {
 	var err error
 	startTime := time.Now()
 	defer recordCheckpointTransactionMetric(api.CheckpointAckMethod, startTime, &err)
 
-	logger := m.Logger(ctx)
+	logger := srv.Logger(ctx)
 
 	if msg.StartBlock >= msg.EndBlock {
-		logger.Error("end block should be greater than start block",
+		logger.Error("End block should be greater than start block",
 			"startBlock", msg.StartBlock,
 			"endBlock", msg.EndBlock,
 			"rootHash", common.Bytes2Hex(msg.RootHash),
@@ -179,9 +181,9 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 		return nil, errorsmod.Wrap(types.ErrBadAck, "invalid ack")
 	}
 
-	lastCheckpoint, err := m.GetLastCheckpoint(ctx)
+	lastCheckpoint, err := srv.GetLastCheckpoint(ctx)
 	if err != nil && !errors.Is(err, types.ErrNoCheckpointFound) {
-		logger.Error("unable to get last checkpoint", "error", err)
+		logger.Error("Unable to get last checkpoint", "error", err)
 		return nil, err
 	}
 
@@ -192,7 +194,7 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 	}
 
 	if msg.Number != expectedId {
-		logger.Error("checkpoint number in ack is not sequential",
+		logger.Error("Checkpoint number in ack is not sequential",
 			"lastCheckpointNumber", expectedId,
 			"checkpointNumber", msg.Number,
 		)
@@ -200,23 +202,23 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 
 	}
 	// get the last checkpoint from the buffer
-	bufCheckpoint, err := m.GetCheckpointFromBuffer(ctx)
+	bufCheckpoint, err := srv.GetCheckpointFromBuffer(ctx)
 	if err != nil {
-		logger.Error("unable to get checkpoint", "error", err)
+		logger.Error("Unable to get checkpoint", "error", err)
 		return nil, errorsmod.Wrap(types.ErrBadAck, "unable to get checkpoint")
 	}
 
 	if IsBufferedCheckpointZero(bufCheckpoint) {
-		logger.Debug("no checkpoint in buffer, cannot process checkpoint ack in msgServer")
+		logger.Debug("No checkpoint in buffer, cannot process checkpoint ack in msgServer")
 		return nil, errorsmod.Wrap(types.ErrBadAck, "no checkpoint in buffer to acknowledge, cannot process checkpoint ack in msgServer")
 	}
 
 	if msg.StartBlock != bufCheckpoint.StartBlock {
-		logger.Error("invalid start block during msgServer checkpoint ack", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock)
+		logger.Error("Invalid start block during msgServer checkpoint ack", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock)
 		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("invalid start block during msgServer checkpoint ack", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock))
 	}
 
-	// return err if start and end match, but contract root hash doesn't match
+	// return an error if start and end match, but contract root hash doesn't match
 	if msg.EndBlock == bufCheckpoint.EndBlock &&
 		!bytes.Equal(msg.RootHash, bufCheckpoint.RootHash) {
 		logger.Error("Invalid ACK",
@@ -251,12 +253,12 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 }
 
 // CheckpointNoAck handles checkpoint no-ack msg
-func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (*types.MsgCheckpointNoAckResponse, error) {
+func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (*types.MsgCheckpointNoAckResponse, error) {
 	var err error
 	startTime := time.Now()
 	defer recordCheckpointTransactionMetric(api.CheckpointNoAckMethod, startTime, &err)
 
-	logger := m.Logger(ctx)
+	logger := srv.Logger(ctx)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
@@ -264,17 +266,17 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 	currentTime := sdkCtx.BlockTime()
 
 	// Get buffer time from params
-	params, err := m.GetParams(ctx)
+	params, err := srv.GetParams(ctx)
 	if err != nil {
-		logger.Error("error in fetching checkpoint parameter", "error", err)
-		return nil, errorsmod.Wrap(types.ErrCheckpointParams, "error in fetching checkpoint parameter")
+		logger.Error(errFetchingCheckpointParams, "error", err)
+		return nil, errorsmod.Wrap(types.ErrCheckpointParams, errFetchingCheckpointParams)
 	}
 
 	bufferTime := params.CheckpointBufferTime
 
 	var lastCheckpointTime time.Time
 
-	lastCheckpoint, err := m.GetLastCheckpoint(ctx)
+	lastCheckpoint, err := srv.GetLastCheckpoint(ctx)
 	if err != nil {
 		lastCheckpointTime = time.Unix(0, 0)
 	} else {
@@ -283,7 +285,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 
 	// If the last checkpoint is not present or the last checkpoint happens before checkpoint buffer time,throw an error
 	if lastCheckpointTime.After(currentTime) || (currentTime.Sub(lastCheckpointTime) < bufferTime) {
-		logger.Debug("invalid no ack, waiting for last checkpoint ack",
+		logger.Debug("Invalid no ack, waiting for last checkpoint ack",
 			"lastCheckpointTime", lastCheckpointTime,
 			"current time", currentTime,
 			"buffer Time", bufferTime.String(),
@@ -299,7 +301,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 
 	isProposer := false
 
-	currentValidatorSet, err := m.stakeKeeper.GetValidatorSet(ctx)
+	currentValidatorSet, err := srv.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error while fetching validator set")
 	}
@@ -320,7 +322,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 	}
 
 	// Check last no ack - prevents repetitive no-ack
-	lastNoAck, err := m.GetLastNoAck(ctx)
+	lastNoAck, err := srv.GetLastNoAck(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error while fetching last no ack")
 	}
@@ -332,7 +334,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 	lastNoAckTime := time.Unix(int64(lastNoAck), 0)
 
 	if lastNoAckTime.After(currentTime) || (currentTime.Sub(lastNoAckTime) < bufferTime) {
-		logger.Debug("too many no-ack", "lastNoAckTime", lastNoAckTime, "current time", currentTime,
+		logger.Debug("Too many no-ack", "lastNoAckTime", lastNoAckTime, "current time", currentTime,
 			"buffer Time", bufferTime.String())
 
 		return nil, types.ErrTooManyNoAck
@@ -340,7 +342,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 
 	// Set new last no-ack
 	newLastNoAck := uint64(currentTime.Unix())
-	err = m.SetLastNoAck(ctx, newLastNoAck)
+	err = srv.SetLastNoAck(ctx, newLastNoAck)
 	if err != nil {
 		return nil, types.ErrNoAck
 	}
@@ -353,13 +355,13 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 	)
 
 	// increment accum (selects new proposer)
-	err = m.stakeKeeper.IncrementAccum(ctx, 1)
+	err = srv.stakeKeeper.IncrementAccum(ctx, 1)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error in incrementing the accum number")
 	}
 
 	// get the new proposer
-	vs, err := m.stakeKeeper.GetValidatorSet(ctx)
+	vs, err := srv.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error in fetching the validator set")
 	}
@@ -396,20 +398,20 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 }
 
 // UpdateParams defines a method to update the params in x/checkpoint module.
-func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+func (srv msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
 	var err error
 	startTime := time.Now()
 	defer recordCheckpointTransactionMetric(api.CheckpointUpdateParamsMethod, startTime, &err)
 
-	if m.authority != msg.Authority {
-		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", m.authority, msg.Authority)
+	if srv.authority != msg.Authority {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", srv.authority, msg.Authority)
 	}
 
 	if err := msg.Params.ValidateBasic(); err != nil {
 		return nil, err
 	}
 
-	if err := m.SetParams(ctx, msg.Params); err != nil {
+	if err := srv.SetParams(ctx, msg.Params); err != nil {
 		return nil, err
 	}
 

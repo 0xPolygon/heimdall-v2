@@ -9,7 +9,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-// The Connector is used to connect to the queue
+// Connector is used to connect to the queue
 type Connector struct {
 	logger log.Logger
 	Server *machinery.Server
@@ -23,7 +23,13 @@ const (
 // NewQueueConnector creates a new queue connector
 func NewQueueConnector(dialer string) *Connector {
 	// amqp dialer
-	_, err := amqp.Dial(dialer)
+	c, err := amqp.Dial(dialer)
+	defer func(c *amqp.Connection) {
+		err := c.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(c)
 	if err != nil {
 		panic(err)
 	}

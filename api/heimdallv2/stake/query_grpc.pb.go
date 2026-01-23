@@ -33,22 +33,21 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
-	// GetCurrentValidatorSet queries for the current validator set
+	// GetCurrentValidatorSet queries the current active validator set.
 	GetCurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error)
-	// GetSignerByAddress queries validator info for a given validator address
+	// GetSignerByAddress queries validator information by signer address.
 	GetSignerByAddress(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error)
-	// GetValidatorById queries validator info for a given validator id
+	// GetValidatorById queries validator information by validator ID.
 	GetValidatorById(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error)
-	// GetValidatorStatusByAddress queries validator status for given validator
-	// val_address
+	// GetValidatorStatusByAddress queries whether a validator is active or old.
 	GetValidatorStatusByAddress(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error)
-	// GetTotalPower queries the total power of a validator set
+	// GetTotalPower queries the sum of all validators' voting power.
 	GetTotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error)
-	// IsStakeTxOld queries for the staking sequence
+	// IsStakeTxOld checks if a stake transaction has already been processed.
 	IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakeIsOldTxResponse, error)
-	// GetCurrentProposer queries validator info for the current proposer
+	// GetCurrentProposer queries the validator currently designated as proposer.
 	GetCurrentProposer(ctx context.Context, in *QueryCurrentProposerRequest, opts ...grpc.CallOption) (*QueryCurrentProposerResponse, error)
-	// GetProposersByTimes queries for the proposers by Tendermint iterations
+	// GetProposersByTimes returns the next N proposers in the rotation sequence.
 	GetProposersByTimes(ctx context.Context, in *QueryProposersRequest, opts ...grpc.CallOption) (*QueryProposersResponse, error)
 }
 
@@ -136,22 +135,21 @@ func (c *queryClient) GetProposersByTimes(ctx context.Context, in *QueryProposer
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
-	// GetCurrentValidatorSet queries for the current validator set
+	// GetCurrentValidatorSet queries the current active validator set.
 	GetCurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error)
-	// GetSignerByAddress queries validator info for a given validator address
+	// GetSignerByAddress queries validator information by signer address.
 	GetSignerByAddress(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error)
-	// GetValidatorById queries validator info for a given validator id
+	// GetValidatorById queries validator information by validator ID.
 	GetValidatorById(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error)
-	// GetValidatorStatusByAddress queries validator status for given validator
-	// val_address
+	// GetValidatorStatusByAddress queries whether a validator is active or old.
 	GetValidatorStatusByAddress(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error)
-	// GetTotalPower queries the total power of a validator set
+	// GetTotalPower queries the sum of all validators' voting power.
 	GetTotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error)
-	// IsStakeTxOld queries for the staking sequence
+	// IsStakeTxOld checks if a stake transaction has already been processed.
 	IsStakeTxOld(context.Context, *QueryStakeIsOldTxRequest) (*QueryStakeIsOldTxResponse, error)
-	// GetCurrentProposer queries validator info for the current proposer
+	// GetCurrentProposer queries the validator currently designated as proposer.
 	GetCurrentProposer(context.Context, *QueryCurrentProposerRequest) (*QueryCurrentProposerResponse, error)
-	// GetProposersByTimes queries for the proposers by Tendermint iterations
+	// GetProposersByTimes returns the next N proposers in the rotation sequence.
 	GetProposersByTimes(context.Context, *QueryProposersRequest) (*QueryProposersResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }

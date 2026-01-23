@@ -91,7 +91,8 @@ const (
 
 	DefaultMilestonePollInterval = 30 * time.Second
 
-	// Self healing defaults
+	// Self-healing defaults
+
 	DefaultEnableSH                = false
 	DefaultSHStateSyncedInterval   = 3 * time.Hour
 	DefaultSHStakeUpdateInterval   = 3 * time.Hour
@@ -107,8 +108,6 @@ const (
 
 	DefaultLogsType = "json"
 	DefaultChain    = MainChain
-
-	DefaultCometBFTNode = "tcp://0.0.0.0:26657"
 
 	DefaultMainnetSeeds     = "e019e16d4e376723f3adc58eb1761809fea9bee0@35.234.150.253:26656,7f3049e88ac7f820fd86d9120506aaec0dc54b27@34.89.75.187:26656,1f5aff3b4f3193404423c3dd1797ce60cd9fea43@34.142.43.249:26656,2d5484feef4257e56ece025633a6ea132d8cadca@35.246.99.203:26656,17e9efcbd173e81a31579310c502e8cdd8b8ff2e@35.197.233.240:26656,72a83490309f9f63fdca3a0bef16c290e5cbb09c@35.246.95.65:26656,00677b1b2c6282fb060b7bb6e9cc7d2d05cdd599@34.105.180.11:26656,721dd4cebfc4b78760c7ee5d7b1b44d29a0aa854@34.147.169.102:26656,4760b3fc04648522a0bcb2d96a10aadee141ee89@34.89.55.74:26656"
 	DefaultAmoyTestnetSeeds = "e4eabef3111155890156221f018b0ea3b8b64820@35.197.249.21:26656,811c3127677a4a34df907b021aad0c9d22f84bf4@34.89.39.114:26656,2ec15d1d33261e8cf42f57236fa93cfdc21c1cfb@35.242.167.175:26656,38120f9d2c003071a7230788da1e3129b6fb9d3f@34.89.15.223:26656,2f16f3857c6c99cc11e493c2082b744b8f36b127@34.105.128.110:26656,2833f06a5e33da2e80541fb1bfde2a7229877fcb@34.89.21.99:26656,2e6f1342416c5d758f5ae32f388bb76f7712a317@34.89.101.16:26656,a596f98b41851993c24de00a28b767c7c5ff8b42@34.89.11.233:26656"
@@ -127,6 +126,10 @@ const (
 	MaxStateSyncSize = 30000
 
 	EnforcedMinRetainBlocks = 2500000
+
+	privValJsonFile = "priv_validator_key.json"
+
+	bindPFlagLog = "%v | BindPFlag | %v"
 )
 
 func init() {
@@ -427,7 +430,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		borGRPCClient = client
 	}
 
-	// Set default producers based on chain if not already set by config or flags
+	// Set default producers based on the chain if not already set by config or flags
 	if conf.Custom.ProducerVotes == "" {
 		switch conf.Custom.Chain {
 		case MainChain:
@@ -451,12 +454,12 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 
 	// load pv file, unmarshall and set to privKeyObject
-	err = file.PermCheck(file.Rootify("priv_validator_key.json", configDir), secretFilePerm)
+	err = file.PermCheck(file.Rootify(privValJsonFile, configDir), secretFilePerm)
 	if err != nil {
 		Logger.Error(err.Error())
 	}
 
-	privVal := privval.LoadFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(configDir, "priv_validator_key.json"))
+	privVal := privval.LoadFilePV(filepath.Join(configDir, privValJsonFile), filepath.Join(configDir, privValJsonFile))
 	privKeyObject = privVal.Key.PrivKey.Bytes()
 	pubKeyObject = privVal.Key.PubKey.Bytes()
 
@@ -646,10 +649,6 @@ func GetSetProducerDowntimeHeight() int64 {
 	return producerDowntimeHeight
 }
 
-func SetSetProducerDowntimeHeight(height int64) {
-	producerDowntimeHeight = height
-}
-
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
 	chainMigration := chainManagerAddressMigrations[conf.Custom.Chain]
 	if chainMigration == nil {
@@ -721,7 +720,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(WithHeimdallConfigFlag, cmd.PersistentFlags().Lookup(WithHeimdallConfigFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, WithHeimdallConfigFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, WithHeimdallConfigFlag), "Error", err)
 	}
 
 	// add MainRPCUrlFlag flag
@@ -732,7 +731,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(MainRPCUrlFlag, cmd.PersistentFlags().Lookup(MainRPCUrlFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, MainRPCUrlFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, MainRPCUrlFlag), "Error", err)
 	}
 
 	// add BorRPCUrlFlag flag
@@ -743,7 +742,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(BorRPCUrlFlag, cmd.PersistentFlags().Lookup(BorRPCUrlFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorRPCUrlFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, BorRPCUrlFlag), "Error", err)
 	}
 
 	// add BorGRPCUrlFlag flag
@@ -754,7 +753,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(BorGRPCUrlFlag, cmd.PersistentFlags().Lookup(BorGRPCUrlFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorGRPCUrlFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, BorGRPCUrlFlag), "Error", err)
 	}
 
 	// add BorGRPCFlagFlag flag
@@ -765,7 +764,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(BorGRPCFlagFlag, cmd.PersistentFlags().Lookup(BorGRPCFlagFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorGRPCFlagFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, BorGRPCFlagFlag), "Error", err)
 	}
 
 	// add CometBFTNodeURLFlag flag
@@ -776,7 +775,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(CometBFTNodeURLFlag, cmd.PersistentFlags().Lookup(CometBFTNodeURLFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, CometBFTNodeURLFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, CometBFTNodeURLFlag), "Error", err)
 	}
 
 	// add HeimdallServerURLFlag flag
@@ -787,7 +786,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(HeimdallServerURLFlag, cmd.PersistentFlags().Lookup(HeimdallServerURLFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, HeimdallServerURLFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, HeimdallServerURLFlag), "Error", err)
 	}
 
 	// add GRPCServerURL flag
@@ -798,7 +797,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(GRPCServerURLFlag, cmd.PersistentFlags().Lookup(GRPCServerURLFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, GRPCServerURLFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, GRPCServerURLFlag), "Error", err)
 	}
 
 	// add AmqpURLFlag flag
@@ -809,7 +808,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(AmqpURLFlag, cmd.PersistentFlags().Lookup(AmqpURLFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, AmqpURLFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, AmqpURLFlag), "Error", err)
 	}
 
 	// add CheckpointerPollIntervalFlag flag
@@ -820,7 +819,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(CheckpointerPollIntervalFlag, cmd.PersistentFlags().Lookup(CheckpointerPollIntervalFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, CheckpointerPollIntervalFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, CheckpointerPollIntervalFlag), "Error", err)
 	}
 
 	// add SyncerPollIntervalFlag flag
@@ -831,7 +830,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(SyncerPollIntervalFlag, cmd.PersistentFlags().Lookup(SyncerPollIntervalFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, SyncerPollIntervalFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, SyncerPollIntervalFlag), "Error", err)
 	}
 
 	// add NoACKPollIntervalFlag flag
@@ -842,7 +841,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(NoACKPollIntervalFlag, cmd.PersistentFlags().Lookup(NoACKPollIntervalFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, NoACKPollIntervalFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, NoACKPollIntervalFlag), "Error", err)
 	}
 
 	// add ClerkPollIntervalFlag flag
@@ -853,7 +852,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(ClerkPollIntervalFlag, cmd.PersistentFlags().Lookup(ClerkPollIntervalFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, ClerkPollIntervalFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, ClerkPollIntervalFlag), "Error", err)
 	}
 
 	// add SpanPollIntervalFlag flag
@@ -864,7 +863,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(SpanPollIntervalFlag, cmd.PersistentFlags().Lookup(SpanPollIntervalFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, SpanPollIntervalFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, SpanPollIntervalFlag), "Error", err)
 	}
 
 	// add MilestonePollIntervalFlag flag
@@ -875,7 +874,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(MilestonePollIntervalFlag, cmd.PersistentFlags().Lookup(MilestonePollIntervalFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, MilestonePollIntervalFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, MilestonePollIntervalFlag), "Error", err)
 	}
 
 	// add MainChainGasLimitFlag flag
@@ -886,7 +885,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(MainChainGasLimitFlag, cmd.PersistentFlags().Lookup(MainChainGasLimitFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, MainChainGasLimitFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, MainChainGasLimitFlag), "Error", err)
 	}
 
 	// add MainChainMaxGasPriceFlag flag
@@ -897,7 +896,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(MainChainMaxGasPriceFlag, cmd.PersistentFlags().Lookup(MainChainMaxGasPriceFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, MainChainMaxGasPriceFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, MainChainMaxGasPriceFlag), "Error", err)
 	}
 
 	// add NoACKWaitTimeFlag flag
@@ -908,7 +907,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(NoACKWaitTimeFlag, cmd.PersistentFlags().Lookup(NoACKWaitTimeFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, NoACKWaitTimeFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, NoACKWaitTimeFlag), "Error", err)
 	}
 
 	// add chain flag
@@ -919,7 +918,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(ChainFlag, cmd.PersistentFlags().Lookup(ChainFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, ChainFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, ChainFlag), "Error", err)
 	}
 
 	// add logsWriterFile flag
@@ -930,7 +929,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(LogsWriterFileFlag, cmd.PersistentFlags().Lookup(LogsWriterFileFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, LogsWriterFileFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, LogsWriterFileFlag), "Error", err)
 	}
 
 	// add producers flag
@@ -941,7 +940,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(ProducerVotesFlag, cmd.PersistentFlags().Lookup(ProducerVotesFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, ProducerVotesFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, ProducerVotesFlag), "Error", err)
 	}
 }
 
@@ -1170,8 +1169,8 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 	}
 
 	// Add merge logic for Producers if necessary, though flags and direct config usually take precedence.
-	// If direct config file sets it, it's already in c.Custom.Producers before merge.
-	// If override file (cc) sets it, we might want to let it override.
+	// If the direct config file sets it, it's already in c.Custom.Producers before merge.
+	// If the override file (cc) sets it, we might want to let it override.
 	if cc.ProducerVotes != "" {
 		c.Custom.ProducerVotes = cc.ProducerVotes
 	}
@@ -1187,7 +1186,7 @@ func DecorateWithCometBFTFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	)
 
 	if err := v.BindPFlag(SeedsFlag, cmd.PersistentFlags().Lookup(SeedsFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", message, SeedsFlag), "Error", err)
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, message, SeedsFlag), "Error", err)
 	}
 }
 
@@ -1217,9 +1216,8 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 		}
 
 		return logWriter
-	} else {
-		return os.Stdout
 	}
+	return os.Stdout
 }
 
 // GetBorGRPCClient returns bor gRPC client

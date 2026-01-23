@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"math/big"
 	"strconv"
 	"time"
 
@@ -79,11 +78,11 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 
 	msg, ok := msgI.(*types.MsgValidatorJoin)
 	if !ok {
-		s.k.Logger(ctx).Error("type mismatch for MsgValidatorJoin")
+		s.k.Logger(ctx).Error(helper.ErrTypeMismatch("MsgValidatorJoin"))
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ validating external call for validator join msg",
+	s.k.Logger(ctx).Debug(helper.LogValidatingExternalCall("ValidatorJoin"),
 		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -91,7 +90,27 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 
 	err = msg.ValidateBasic()
 	if err != nil {
-		s.k.Logger(ctx).Error("failed to validate MsgValidatorJoin", "error", err)
+		s.k.Logger(ctx).Error("Failed to validate MsgValidatorJoin", hmTypes.LogKeyError, err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// check if the validator has been validator before
+	if ok, err := s.k.DoesValIdExist(ctx, msg.ValId); ok {
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgValidatorAlreadyExists, hmTypes.LogKeyValidatorID, msg.ValId, hmTypes.LogKeyError, err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// validate voting power
+	if !helper.ValidateVotingPower(msg.Amount.BigInt(), s.k.Logger(ctx), msg.ValId, "stake") {
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// add the sequence
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+
+	// check if the event has already been processed
+	if s.k.HasStakingSequence(ctx, sequence) {
+		s.k.Logger(ctx).Error(helper.LogEventAlreadyProcessedIn("stake"), hmTypes.LogKeySequence, sequence)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -100,27 +119,41 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	// chainManager params
 	params, err := s.k.cmKeeper.GetParams(ctx)
 	if err != nil {
-		s.k.Logger(ctx).Error("error in fetching chain manager params", "err", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgErrorInGettingChainManagerParams, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	chainParams := params.ChainParams
 
-	// get main tx receipt
-	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
-	if err != nil || receipt == nil {
-		s.k.Logger(ctx).Error("can't get confirmed tx receipt", "err", err)
+	// get and validate the main tx receipt
+	receipt := helper.FetchAndValidateReceipt(
+		contractCaller,
+		helper.ReceiptValidationParams{
+			TxHash:         msg.TxHash,
+			MsgBlockNumber: msg.BlockNumber,
+			Confirmations:  params.MainChainTxConfirmations,
+			ModuleName:     "stake",
+		},
+		s.k.Logger(ctx),
+	)
+	if receipt == nil {
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// decode validator join event
 	eventLog, err := contractCaller.DecodeValidatorJoinEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		s.k.Logger(ctx).Error("error while decoding the validator join event receipt receipt")
+		s.k.Logger(ctx).Error("Error while decoding the validator join event receipt receipt")
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	// Generate PubKey from PubKey in message and signer
+	// validate msg.SignerPubKey length
+	if len(msg.SignerPubKey) != secp256k1.PubKeySize {
+		s.k.Logger(ctx).Error("Invalid signer pubkey length in MsgValidatorJoin: " + strconv.Itoa(len(msg.SignerPubKey)) + ", expected length: " + fmt.Sprint(secp256k1.PubKeySize))
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// Generate PubKey from PubKey in the message and signer
 	pk := msg.SignerPubKey
 	pubKey := secp256k1.PubKey{Key: pk}
 
@@ -128,12 +161,12 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	ac := addrCodec.NewHexCodec()
 	signerBytes, err := ac.StringToBytes(signer.String())
 	if err != nil {
-		s.k.Logger(ctx).Error("error in converting signer address to bytes", "err", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertSignerToBytes, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 	eventLogSignerBytes, err := ac.StringToBytes(eventLog.Signer.String())
 	if err != nil {
-		s.k.Logger(ctx).Error("error in converting event log signer address to bytes", "err", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertEventLogSignerToBytes, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -150,7 +183,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	// check the public key first byte
 	if !helper.IsPubKeyFirstByteValid(pubKey.Bytes()[0:1]) {
 		s.k.Logger(ctx).Error(
-			"public key first byte mismatch",
+			hmTypes.ErrMsgPubKeyFirstByteMismatch,
 			"expected", "0x04",
 			"received", pubKey.Bytes()[0:1])
 		return sidetxs.Vote_VOTE_NO
@@ -169,9 +202,9 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	// check msg id
 	if eventLog.ValidatorId.Uint64() != msg.ValId {
 		s.k.Logger(ctx).Error(
-			"id in message doesn't match with id in log",
-			"msgId", msg.ValId,
-			"validatorIdFromTx", eventLog.ValidatorId)
+			hmTypes.ErrMsgIDMismatch,
+			hmTypes.LogKeyMsgID, msg.ValId,
+			hmTypes.LogKeyValidatorIdFromTx, eventLog.ValidatorId)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -187,31 +220,31 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	// check Amount
 	if eventLog.Amount.Cmp(msg.Amount.BigInt()) != 0 {
 		s.k.Logger(ctx).Error(
-			"amount in message doesn't match Amount in event logs",
-			"msgAmount", msg.Amount,
-			"amountFromEvent", eventLog.Amount)
+			hmTypes.ErrMsgAmountMismatch,
+			hmTypes.LogKeyMsgAmount, msg.Amount,
+			hmTypes.LogKeyAmountFromEvent, eventLog.Amount)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// check BlockNumber
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
 		s.k.Logger(ctx).Error(
-			"blockNumber in message doesn't match blockNumber in receipt",
-			"msgBlockNumber", msg.BlockNumber,
-			"receiptBlockNumber", receipt.BlockNumber.Uint64)
+			hmTypes.ErrMsgBlockNumberMismatch,
+			hmTypes.LogKeyMsgBlockNumber, msg.BlockNumber,
+			hmTypes.LogKeyReceiptBlockNumber, receipt.BlockNumber.Uint64)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// check nonce
 	if eventLog.Nonce.Uint64() != msg.Nonce {
 		s.k.Logger(ctx).Error(
-			"nonce in message doesn't match with nonce in log",
-			"msgNonce", msg.Nonce,
-			"nonceFromTx", eventLog.Nonce)
+			hmTypes.ErrMsgNonceMismatch,
+			hmTypes.LogKeyMsgNonce, msg.Nonce,
+			hmTypes.LogKeyNonceFromTx, eventLog.Nonce)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ successfully validated external call for validator join msg")
+	s.k.Logger(ctx).Debug(helper.LogSuccessfullyValidated("ValidatorJoin"))
 
 	return sidetxs.Vote_VOTE_YES
 }
@@ -224,11 +257,11 @@ func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) 
 
 	msg, ok := msgI.(*types.MsgStakeUpdate)
 	if !ok {
-		s.k.Logger(ctx).Error("type mismatch for MsgStakeUpdate")
+		s.k.Logger(ctx).Error(helper.ErrTypeMismatch("MsgStakeUpdate"))
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ validating external call for stake update msg",
+	s.k.Logger(ctx).Debug(helper.LogValidatingExternalCall("MsgStakeUpdate"),
 		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -236,64 +269,85 @@ func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) 
 
 	err = msg.ValidateBasic()
 	if err != nil {
-		s.k.Logger(ctx).Error("failed to validate MsgStakeUpdate", "error", err)
+		s.k.Logger(ctx).Error("Failed to validate MsgStakeUpdate", hmTypes.LogKeyError, err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// pull validator from store
+	_, err = s.k.GetValidatorFromValID(ctx, msg.ValId)
+	if err != nil {
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgFailedToFetchValidator, hmTypes.LogKeyValidatorID, msg.ValId, hmTypes.LogKeyError, err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// add the sequence
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+
+	// check if the event has already been processed
+	if s.k.HasStakingSequence(ctx, sequence) {
+		s.k.Logger(ctx).Error(helper.LogEventAlreadyProcessedIn("stake"), hmTypes.LogKeySequence, sequence)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// set validator amount
+	if !helper.ValidateVotingPower(msg.NewAmount.BigInt(), s.k.Logger(ctx), msg.ValId, "stake") {
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	params, err := s.k.cmKeeper.GetParams(ctx)
 	if err != nil {
-		s.k.Logger(ctx).Error("error in fetching params from store", "err", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgFailedToFetchParams, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	// get main tx receipt
+	// get and validate the main tx receipt
 	contractCaller := s.k.contractCaller
-	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
-	if err != nil || receipt == nil {
-		s.k.Logger(ctx).Error("error in getting event receipt from ethereum ", "err", err)
+	receipt := helper.FetchAndValidateReceipt(
+		contractCaller,
+		helper.ReceiptValidationParams{
+			TxHash:         msg.TxHash,
+			MsgBlockNumber: msg.BlockNumber,
+			Confirmations:  params.MainChainTxConfirmations,
+			ModuleName:     "stake",
+		},
+		s.k.Logger(ctx),
+	)
+	if receipt == nil {
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	chainParams := params.ChainParams
 	eventLog, err := contractCaller.DecodeValidatorStakeUpdateEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		s.k.Logger(ctx).Error("error fetching log from txHash", "err", err)
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
-		s.k.Logger(ctx).Error(
-			"blockNumber in message doesn't match blockNumber in receipt",
-			"msgBlockNumber", msg.BlockNumber,
-			"receiptBlockNumber", receipt.BlockNumber.Uint64)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgErrorFetchingLog, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if eventLog.ValidatorId.Uint64() != msg.ValId {
 		s.k.Logger(ctx).Error(
-			"id in message doesn't match with id in log",
-			"msgId", msg.ValId,
-			"validatorIdFromTx", eventLog.ValidatorId)
+			hmTypes.ErrMsgIDMismatch,
+			hmTypes.LogKeyMsgID, msg.ValId,
+			hmTypes.LogKeyValidatorIdFromTx, eventLog.ValidatorId)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// check amount
 	if eventLog.NewAmount.Cmp(msg.NewAmount.BigInt()) != 0 {
-		s.k.Logger(ctx).Error("newAmount in message doesn't match newAmount in event logs",
-			"msgNewAmount", msg.NewAmount,
-			"newAmountFromEvent", eventLog.NewAmount)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgAmountMismatch,
+			hmTypes.LogKeyNewAmount, msg.NewAmount,
+			hmTypes.LogKeyAmountFromEvent, eventLog.NewAmount)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// check nonce
 	if eventLog.Nonce.Uint64() != msg.Nonce {
-		s.k.Logger(ctx).Error("nonce in message doesn't match with nonce in log",
-			"msgNonce", msg.Nonce,
-			"nonceFromTx", eventLog.Nonce)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgNonceMismatch,
+			hmTypes.LogKeyMsgNonce, msg.Nonce,
+			hmTypes.LogKeyNonceFromTx, eventLog.Nonce)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ successfully validated external call for stake update msg")
+	s.k.Logger(ctx).Debug(helper.LogSuccessfullyValidated("MsgStakeUpdate"))
 
 	return sidetxs.Vote_VOTE_YES
 }
@@ -306,11 +360,11 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 
 	msg, ok := msgI.(*types.MsgSignerUpdate)
 	if !ok {
-		s.k.Logger(ctx).Error("type mismatch for MsgSignerUpdate")
+		s.k.Logger(ctx).Error(helper.ErrTypeMismatch("MsgSignerUpdate"))
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ Validating External call for signer update msg",
+	s.k.Logger(ctx).Debug(helper.LogValidatingMsg("MsgSignerUpdate"),
 		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -318,49 +372,75 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 
 	err = msg.ValidateBasic()
 	if err != nil {
-		s.k.Logger(ctx).Error("failed to validate MsgSignerUpdate", "error", err)
+		s.k.Logger(ctx).Error("Failed to validate MsgSignerUpdate", hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// chainManager params
 	params, err := s.k.cmKeeper.GetParams(ctx)
 	if err != nil {
-		s.k.Logger(ctx).Error("error in fetching params from store", "err", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgFailedToFetchParams, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	// get main tx receipt
+	// pull validator from store
+	validator, err := s.k.GetValidatorFromValID(ctx, msg.ValId)
+	if err != nil {
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgFailedToFetchValidator, hmTypes.LogKeyValidatorID, msg.ValId, hmTypes.LogKeyError, err)
+		return sidetxs.Vote_VOTE_NO
+	}
+	oldSigner := util.FormatAddress(validator.Signer)
+
+	// add the sequence
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+
+	// check if the event has already been processed
+	if s.k.HasStakingSequence(ctx, sequence) {
+		s.k.Logger(ctx).Error(helper.LogEventAlreadyProcessedIn("stake"), hmTypes.LogKeySequence, sequence)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// get and validate the main tx receipt
 	contractCaller := s.k.contractCaller
-	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
-	if err != nil || receipt == nil {
-		s.k.Logger(ctx).Error("error in getting event receipt from ethereum ", "err", err)
+	receipt := helper.FetchAndValidateReceipt(
+		contractCaller,
+		helper.ReceiptValidationParams{
+			TxHash:         msg.TxHash,
+			MsgBlockNumber: msg.BlockNumber,
+			Confirmations:  params.MainChainTxConfirmations,
+			ModuleName:     "stake",
+		},
+		s.k.Logger(ctx),
+	)
+	if receipt == nil {
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	chainParams := params.ChainParams
 	eventLog, err := contractCaller.DecodeSignerUpdateEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		s.k.Logger(ctx).Error("error fetching log from txHash", "err", err)
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
-		s.k.Logger(ctx).Error("blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgErrorFetchingLog, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if eventLog.ValidatorId.Uint64() != msg.ValId {
-		s.k.Logger(ctx).Error("id in message doesn't match with id in log", "msgId", msg.ValId, "validatorIdFromTx", eventLog.ValidatorId)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgIDMismatch, hmTypes.LogKeyMsgID, msg.ValId, hmTypes.LogKeyValidatorIdFromTx, eventLog.ValidatorId)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// validate msg.NewSignerPubKey length
+	if len(msg.NewSignerPubKey) != secp256k1.PubKeySize {
+		s.k.Logger(ctx).Error("Invalid signer pubkey length in MsgSignerUpdate: " + strconv.Itoa(len(msg.NewSignerPubKey)) + ", expected length: " + fmt.Sprint(secp256k1.PubKeySize))
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if !helper.IsPubKeyFirstByteValid(msg.NewSignerPubKey[0:1]) {
-		s.k.Logger(ctx).Error("public key first byte mismatch", "expected", "0x04", "received", msg.NewSignerPubKey[0:1])
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgPubKeyFirstByteMismatch, "expected", "0x04", "received", msg.NewSignerPubKey[0:1])
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if !bytes.Equal(eventLog.SignerPubkey, msg.NewSignerPubKey[1:]) {
-		s.k.Logger(ctx).Error("newSigner pubKey in txHash and msg don't match", "msgPubKey", common.Bytes2Hex(msg.NewSignerPubKey), "pubKeyTx", eventLog.SignerPubkey[:])
+		s.k.Logger(ctx).Error("NewSigner pubKey in txHash and msg don't match", "msgPubKey", common.Bytes2Hex(msg.NewSignerPubKey), "pubKeyTx", eventLog.SignerPubkey[:])
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -370,28 +450,36 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 	ac := addrCodec.NewHexCodec()
 	signerBytes, err := ac.StringToBytes(newSigner.String())
 	if err != nil {
-		s.k.Logger(ctx).Error("error in converting signer address to bytes", "err", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertSignerToBytes, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
+
+	// check if the new signer address is the same as the existing signer
+	if newSigner.String() == oldSigner {
+		// No signer change
+		s.k.Logger(ctx).Error("NewSigner is the same as old signer in stake side handler")
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	eventLogSignerBytes, err := ac.StringToBytes(eventLog.NewSigner.String())
 	if err != nil {
-		s.k.Logger(ctx).Error("error in converting event log signer address to bytes", "err", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertEventLogSignerToBytes, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// check signer corresponding to pubKey matches signer from event
 	if !bytes.Equal(signerBytes, eventLogSignerBytes) {
-		s.k.Logger(ctx).Error("signer address does not match event log signer address", "validator", newSigner.String(), "mainChainValidator", eventLog.NewSigner.Hex())
+		s.k.Logger(ctx).Error("Signer address does not match event log signer address", hmTypes.LogKeySigner, newSigner.String(), "mainChainValidator", eventLog.NewSigner.Hex())
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// check nonce
 	if eventLog.Nonce.Uint64() != msg.Nonce {
-		s.k.Logger(ctx).Error("nonce in message doesn't match with nonce in log", "msgNonce", msg.Nonce, "nonceFromTx", eventLog.Nonce)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgNonceMismatch, hmTypes.LogKeyMsgNonce, msg.Nonce, hmTypes.LogKeyNonceFromTx, eventLog.Nonce)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ successfully validated external call for signer update msg")
+	s.k.Logger(ctx).Debug(helper.LogSuccessfullyValidated("MsgSignerUpdate"))
 
 	return sidetxs.Vote_VOTE_YES
 }
@@ -404,11 +492,11 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 
 	msg, ok := msgI.(*types.MsgValidatorExit)
 	if !ok {
-		s.k.Logger(ctx).Error("type mismatch for MsgValidatorExit")
+		s.k.Logger(ctx).Error(helper.ErrTypeMismatch("MsgValidatorExit"))
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ validating external call for validator exit msg",
+	s.k.Logger(ctx).Debug(helper.LogValidatingExternalCall("MsgValidatorExit"),
 		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -416,7 +504,29 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 
 	err = msg.ValidateBasic()
 	if err != nil {
-		s.k.Logger(ctx).Error("failed to validate MsgValidatorExit", "error", err)
+		s.k.Logger(ctx).Error("Failed to validate MsgValidatorExit", hmTypes.LogKeyError, err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	validator, err := s.k.GetValidatorFromValID(ctx, msg.ValId)
+	if err != nil {
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgFailedToFetchValidator, hmTypes.LogKeyValidatorID, msg.ValId, hmTypes.LogKeyError, err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	s.k.Logger(ctx).Debug("Validator in store", "validator", validator)
+	// check if the validator deactivation period is set
+	if validator.EndEpoch != 0 {
+		s.k.Logger(ctx).Error("Validator already unBonded in stake side handler")
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// add the sequence
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+
+	// check if the event has already been processed
+	if s.k.HasStakingSequence(ctx, sequence) {
+		s.k.Logger(ctx).Error(helper.LogEventAlreadyProcessedIn("stake"), hmTypes.LogKeySequence, sequence)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -425,48 +535,51 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 	// chainManager params
 	params, err := s.k.cmKeeper.GetParams(ctx)
 	if err != nil {
-		s.k.Logger(ctx).Error("error in fetching params from store", "err", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgFailedToFetchParams, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	chainParams := params.ChainParams
 
-	// get main tx receipt
-	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
-	if err != nil || receipt == nil {
-		s.k.Logger(ctx).Error("error in getting event receipt from ethereum ", "err", err)
+	// get and validate the main tx receipt
+	receipt := helper.FetchAndValidateReceipt(
+		contractCaller,
+		helper.ReceiptValidationParams{
+			TxHash:         msg.TxHash,
+			MsgBlockNumber: msg.BlockNumber,
+			Confirmations:  params.MainChainTxConfirmations,
+			ModuleName:     "stake",
+		},
+		s.k.Logger(ctx),
+	)
+	if receipt == nil {
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// decode validator exit
 	eventLog, err := contractCaller.DecodeValidatorExitEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		s.k.Logger(ctx).Error("error fetching log from txHash", "err", err)
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
-		s.k.Logger(ctx).Error("blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgErrorFetchingLog, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if eventLog.ValidatorId.Uint64() != msg.ValId {
-		s.k.Logger(ctx).Error("id in message doesn't match with id in log", "msgId", msg.ValId, "validatorIdFromTx", eventLog.ValidatorId)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgIDMismatch, hmTypes.LogKeyMsgID, msg.ValId, hmTypes.LogKeyValidatorIdFromTx, eventLog.ValidatorId)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if eventLog.DeactivationEpoch.Uint64() != msg.DeactivationEpoch {
-		s.k.Logger(ctx).Error("deactivationEpoch in message doesn't match with deactivationEpoch in log", "msgDeactivationEpoch", msg.DeactivationEpoch, "deactivationEpochFromTx", eventLog.DeactivationEpoch.Uint64)
+		s.k.Logger(ctx).Error("DeactivationEpoch in message doesn't match with deactivationEpoch in log", "msgDeactivationEpoch", msg.DeactivationEpoch, "deactivationEpochFromTx", eventLog.DeactivationEpoch.Uint64)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// check nonce
 	if eventLog.Nonce.Uint64() != msg.Nonce {
-		s.k.Logger(ctx).Error("nonce in message doesn't match with nonce in log", "msgNonce", msg.Nonce, "nonceFromTx", eventLog.Nonce)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgNonceMismatch, hmTypes.LogKeyMsgNonce, msg.Nonce, hmTypes.LogKeyNonceFromTx, eventLog.Nonce)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ successfully validated external call for validator exit msg")
+	s.k.Logger(ctx).Debug(helper.LogSuccessfullyValidated("ValidatorExit"))
 
 	return sidetxs.Vote_VOTE_YES
 }
@@ -479,41 +592,39 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 
 	msg, ok := msgI.(*types.MsgValidatorJoin)
 	if !ok {
-		err := errors.New("type mismatch for MsgValidatorJoin")
+		err := errors.New(helper.ErrTypeMismatch("MsgValidatorJoin"))
 		s.k.Logger(ctx).Error(err.Error())
 		return err
 	}
 
 	// Skip handler if validator join is not approved
-	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		s.k.Logger(ctx).Debug("skipping new validator-join since side-tx didn't get yes votes")
-		return errors.New("side-tx didn't get yes votes")
+	if !helper.IsSideTxApproved(sideTxResult) {
+		s.k.Logger(ctx).Debug(helper.ErrSkippingMsg("ValidatorJoin"))
+		return errors.New(hmTypes.ErrMsgSideTxRejected)
 	}
 
 	err = msg.ValidateBasic()
 	if err != nil {
-		s.k.Logger(ctx).Error("failed to validate msg", "error", err)
-		return errors.New("invalid side-tx msg for MsgValidatorJoin")
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgValidationFailed, hmTypes.LogKeyError, err)
+		return errors.New(helper.ErrInvalidSideTxMsg("ValidatorJoin"))
 	}
 
 	// Check for replay attack
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
-	if s.k.HasStakingSequence(ctx, sequence.String()) {
-		s.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
-		return errors.New("old events are not allowed")
+	if s.k.HasStakingSequence(ctx, sequence) {
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence)
+		return errors.New(hmTypes.ErrMsgOldEventsNotAllowed)
 	}
 
-	s.k.Logger(ctx).Debug("adding validator to state", "sideTxResult", sideTxResult)
+	s.k.Logger(ctx).Debug("Adding validator to state", "sideTxResult", sideTxResult)
 
 	pubKey := secp256k1.PubKey{Key: msg.SignerPubKey}
 
 	if pubKey.Type() != types.Secp256k1Type {
-		s.k.Logger(ctx).Error("public key is invalid")
-		return errors.New("public key is invalid")
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgInvalidPubKey)
+		return errors.New(hmTypes.ErrMsgInvalidPubKey)
 	}
 
 	signer := util.FormatAddress(pubKey.Address().String())
@@ -521,7 +632,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	// get voting power from amount
 	votingPower, err := helper.GetPowerFromAmount(msg.Amount.BigInt())
 	if err != nil {
-		s.k.Logger(ctx).Error(fmt.Sprintf("invalid amount %v for validator %v", msg.Amount, msg.ValId))
+		s.k.Logger(ctx).Error(fmt.Sprintf("%s %v for validator %v", hmTypes.ErrMsgInvalidAmount, msg.Amount, msg.ValId))
 		return err
 	}
 
@@ -534,28 +645,28 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		VotingPower: votingPower.Int64(),
 		PubKey:      pubKey.Bytes(),
 		Signer:      signer,
-		LastUpdated: sequence.String(),
+		LastUpdated: sequence,
 	}
 
 	// add validator to store
-	s.k.Logger(ctx).Debug("adding new validator to state", "validator", newValidator.String())
+	s.k.Logger(ctx).Debug("Adding new validator to state", "validator", newValidator.String())
 
 	if err = s.k.AddValidator(ctx, newValidator); err != nil {
-		s.k.Logger(ctx).Error("unable to add validator to state", "validator", newValidator.String(), "error", err)
+		s.k.Logger(ctx).Error("Unable to add validator to state", "validator", newValidator.String(), hmTypes.LogKeyError, err)
 		return err
 	}
 
 	// Add Validator signing info. It is required for slashing module
-	s.k.Logger(ctx).Debug("adding signing info for new validator")
+	s.k.Logger(ctx).Debug("Adding signing info for new validator")
 
 	// save the staking sequence
-	err = s.k.SetStakingSequence(ctx, sequence.String())
+	err = s.k.SetStakingSequence(ctx, sequence)
 	if err != nil {
-		s.k.Logger(ctx).Error("unable to set the sequence", "error", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgUnableToSetSequence, hmTypes.LogKeyError, err)
 		return err
 	}
 
-	s.k.Logger(ctx).Debug("✅ new validator successfully joined", "validator", strconv.FormatUint(newValidator.ValId, 10))
+	s.k.Logger(ctx).Debug("New validator successfully joined", "validator", strconv.FormatUint(newValidator.ValId, 10))
 
 	txBytes := ctx.TxBytes()
 
@@ -583,56 +694,54 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 
 	msg, ok := msgI.(*types.MsgStakeUpdate)
 	if !ok {
-		err := errors.New("type mismatch for MsgStakeUpdate")
+		err := errors.New(helper.ErrTypeMismatch("MsgStakeUpdate"))
 		s.k.Logger(ctx).Error(err.Error())
 		return err
 	}
 
 	// skip handler if stakeUpdate is not approved
-	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		s.k.Logger(ctx).Debug("skipping stake update since side-tx didn't get yes votes")
-		return errors.New("side-tx didn't get yes votes")
+	if !helper.IsSideTxApproved(sideTxResult) {
+		s.k.Logger(ctx).Debug(helper.ErrSkippingMsg("MsgSignerUpdate"))
+		return errors.New(hmTypes.ErrMsgSideTxRejected)
 	}
 
 	err = msg.ValidateBasic()
 	if err != nil {
-		s.k.Logger(ctx).Error("failed to validate msg", "error", err)
-		return errors.New("invalid side-tx msg for MsgStakeUpdate")
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgValidationFailed, hmTypes.LogKeyError, err)
+		return errors.New(helper.ErrInvalidSideTxMsg("MsgStakeUpdate"))
 	}
 
 	// check for replay attack
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
-	if s.k.HasStakingSequence(ctx, sequence.String()) {
-		s.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
-		return errors.New("old events are not allowed")
+	if s.k.HasStakingSequence(ctx, sequence) {
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence)
+		return errors.New(hmTypes.ErrMsgOldEventsNotAllowed)
 	}
 
 	// pull validator from store
 	validator, err := s.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
-		s.k.Logger(ctx).Error("failed to fetch validator from store", "validatorId", msg.ValId)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgFailedToFetchValidator, hmTypes.LogKeyValidatorID, msg.ValId)
 		return err
 	}
 
 	// Check nonce validity just before applying the state update
 	if msg.Nonce != validator.Nonce+1 {
-		s.k.Logger(ctx).Error("Incorrect validator nonce during PostHandle StakeUpdate", "ValidatorNonce", validator.Nonce, "MsgNonce", msg.Nonce)
-		return errors.New("incorrect validator nonce during PostHandle StakeUpdate")
+		s.k.Logger(ctx).Error(helper.ErrIncorrectNonceDuringPostHandle("StakeUpdate"), hmTypes.LogKeyValidatorNonce, validator.Nonce, hmTypes.LogKeyMsgNonce, msg.Nonce)
+		return errors.New(helper.ErrIncorrectNonceDuringPostHandle("StakeUpdate"))
 	}
 
-	s.k.Logger(ctx).Debug("updating validator stake", "sideTxResult", sideTxResult)
+	s.k.Logger(ctx).Debug("Updating validator stake", "sideTxResult", sideTxResult)
 
-	validator.LastUpdated = sequence.String()
+	validator.LastUpdated = sequence
 	validator.Nonce = msg.Nonce
 
 	// set validator amount
 	p, err := helper.GetPowerFromAmount(msg.NewAmount.BigInt())
 	if err != nil {
-		s.k.Logger(ctx).Error("error in calculating power value from amount", "err", err)
+		s.k.Logger(ctx).Error("Error in calculating power value from amount", hmTypes.LogKeyError, err)
 		return err
 	}
 
@@ -640,14 +749,14 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 
 	err = s.k.AddValidator(ctx, validator)
 	if err != nil {
-		s.k.Logger(ctx).Error("unable to update signer", "validatorID", validator.ValId, "error", err)
+		s.k.Logger(ctx).Error("Unable to update signer", hmTypes.LogKeyValidatorID, validator.ValId, hmTypes.LogKeyError, err)
 		return err
 	}
 
 	// save the staking sequence
-	err = s.k.SetStakingSequence(ctx, sequence.String())
+	err = s.k.SetStakingSequence(ctx, sequence)
 	if err != nil {
-		s.k.Logger(ctx).Error("unable to set the sequence", "error", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgUnableToSetSequence, hmTypes.LogKeyError, err)
 		return err
 	}
 
@@ -675,39 +784,37 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 
 	msg, ok := msgI.(*types.MsgSignerUpdate)
 	if !ok {
-		err := errors.New("type mismatch for MsgSignerUpdate")
+		err := errors.New(helper.ErrTypeMismatch("MsgSignerUpdate"))
 		s.k.Logger(ctx).Error(err.Error())
 		return err
 	}
 
 	// Skip handler if signer update is not approved
-	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		s.k.Logger(ctx).Debug("skipping signer update since side-tx didn't get yes votes")
-		return errors.New("side-tx didn't get yes votes")
+	if !helper.IsSideTxApproved(sideTxResult) {
+		s.k.Logger(ctx).Debug(helper.ErrSkippingMsg("MsgSignerUpdate"))
+		return errors.New(hmTypes.ErrMsgSideTxRejected)
 	}
 
 	err = msg.ValidateBasic()
 	if err != nil {
-		s.k.Logger(ctx).Error("failed to validate msg", "error", err)
-		return errors.New("invalid side-tx msg for MsgSignerUpdate")
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgValidationFailed, hmTypes.LogKeyError, err)
+		return errors.New(helper.ErrInvalidSideTxMsg("MsgSignerUpdate"))
 	}
 
 	// Check for replay attack
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
 	// check if the event has already been processed
-	if s.k.HasStakingSequence(ctx, sequence.String()) {
-		s.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
-		return errors.New("old events are not allowed")
+	if s.k.HasStakingSequence(ctx, sequence) {
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence)
+		return errors.New(hmTypes.ErrMsgOldEventsNotAllowed)
 	}
 
-	// Generate PubKey from PubKey in message and signer
+	// Generate PubKey from PubKey in the message and signer
 	newPubKey := secp256k1.PubKey{Key: msg.NewSignerPubKey}
 
 	if newPubKey.Type() != types.Secp256k1Type {
-		s.k.Logger(ctx).Error("public key is invalid")
-		return errors.New("public key is invalid")
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgInvalidPubKey)
+		return errors.New(hmTypes.ErrMsgInvalidPubKey)
 	}
 
 	newSigner := util.FormatAddress(newPubKey.Address().String())
@@ -715,21 +822,21 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	// pull validator from store
 	validator, err := s.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
-		s.k.Logger(ctx).Error("fetching of validator from store failed", "validatorId", msg.ValId)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgFailedToFetchValidator, hmTypes.LogKeyValidatorID, msg.ValId)
 		return err
 	}
 
 	// Check nonce validity just before applying the state update
 	if msg.Nonce != validator.Nonce+1 {
-		s.k.Logger(ctx).Error("Incorrect validator nonce during PostHandle SignerUpdate", "ValidatorNonce", validator.Nonce, "MsgNonce", msg.Nonce)
-		return errors.New("incorrect validator nonce during PostHandle SignerUpdate")
+		s.k.Logger(ctx).Error(helper.ErrIncorrectNonceDuringPostHandle("SignerUpdate"), hmTypes.LogKeyValidatorNonce, validator.Nonce, hmTypes.LogKeyMsgNonce, msg.Nonce)
+		return errors.New(helper.ErrIncorrectNonceDuringPostHandle("SignerUpdate"))
 	}
 
-	s.k.Logger(ctx).Debug("persisting signer update", "sideTxResult", sideTxResult)
+	s.k.Logger(ctx).Debug("Persisting signer update", "sideTxResult", sideTxResult)
 
 	oldValidator := validator.Copy()
 
-	validator.LastUpdated = sequence.String()
+	validator.LastUpdated = sequence
 	validator.Nonce = msg.Nonce
 
 	// check if we are actually updating signer
@@ -737,58 +844,58 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 		validator.Signer = newSigner
 		validator.PubKey = newPubKey.Bytes()
 
-		s.k.Logger(ctx).Debug("updating new signer", "newSigner", newSigner, "oldSigner", oldValidator.Signer, "validatorID", msg.ValId)
+		s.k.Logger(ctx).Debug("Updating new signer", "newSigner", newSigner, "oldSigner", oldValidator.Signer, "validatorID", msg.ValId)
 
 	} else {
-		s.k.Logger(ctx).Error("no signer change", "newSigner", newSigner, "oldSigner", oldValidator.Signer, "validatorID", msg.ValId)
+		s.k.Logger(ctx).Error("No signer change", "newSigner", newSigner, "oldSigner", oldValidator.Signer, "validatorID", msg.ValId)
 		return errors.New("no signer change")
 	}
 
-	s.k.Logger(ctx).Debug("removing old validator", "validator", oldValidator.String())
+	s.k.Logger(ctx).Debug("Removing old validator", "validator", oldValidator.String())
 
 	// remove the old validator from the validator set
 	oldValidator.EndEpoch, err = s.k.checkpointKeeper.GetAckCount(ctx)
 	if err != nil {
-		s.k.Logger(ctx).Error("unable to get ack count", "error", err)
+		s.k.Logger(ctx).Error("Unable to get ack count", "error", err)
 		return err
 	}
 
 	oldValidator.VotingPower = 0
-	oldValidator.LastUpdated = sequence.String()
+	oldValidator.LastUpdated = sequence
 
 	oldValidator.Nonce = msg.Nonce
 
 	// save old validator
 	if err := s.k.AddValidator(ctx, *oldValidator); err != nil {
-		s.k.Logger(ctx).Error("unable to update signer", "validatorId", validator.ValId, "error", err)
+		s.k.Logger(ctx).Error("Unable to update signer", hmTypes.LogKeyValidatorID, validator.ValId, hmTypes.LogKeyError, err)
 		return err
 	}
 
 	// adding new validator
-	s.k.Logger(ctx).Debug("adding new validator", "validator", validator.String())
+	s.k.Logger(ctx).Debug("Adding new validator", "validator", validator.String())
 	err = s.k.AddValidator(ctx, validator)
 	if err != nil {
-		s.k.Logger(ctx).Error("unable to update signer", "validatorID", validator.ValId, "error", err)
+		s.k.Logger(ctx).Error("Unable to update signer", hmTypes.LogKeyValidatorID, validator.ValId, hmTypes.LogKeyError, err)
 		return err
 	}
 
 	// save the staking sequence
-	err = s.k.SetStakingSequence(ctx, sequence.String())
+	err = s.k.SetStakingSequence(ctx, sequence)
 	if err != nil {
-		s.k.Logger(ctx).Error("unable to set the sequence", "error", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgUnableToSetSequence, hmTypes.LogKeyError, err)
 		return err
 	}
 
 	// Move heimdall fee to new signer
 	oldAccAddress, err := addrCodec.NewHexCodec().StringToBytes(oldValidator.Signer)
 	if err != nil {
-		s.k.Logger(ctx).Error("error in converting hex address to bytes", "error", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertHexToBytes, hmTypes.LogKeyError, err)
 		return err
 	}
 
 	newAccAddress, err := addrCodec.NewHexCodec().StringToBytes(validator.Signer)
 	if err != nil {
-		s.k.Logger(ctx).Error("error in converting hex address to bytes", "error", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertHexToBytes, hmTypes.LogKeyError, err)
 		return err
 	}
 
@@ -796,7 +903,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 
 	// validate balance
 	if coins.IsNegative() {
-		s.k.Logger(ctx).Error("negative balance for fee token", "address", oldValidator.Signer, "balance", coins.String())
+		s.k.Logger(ctx).Error("Negative balance for fee token", "address", oldValidator.Signer, "balance", coins.String())
 		return errors.New("negative balance for fee token")
 	}
 
@@ -835,63 +942,61 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 
 	msg, ok := msgI.(*types.MsgValidatorExit)
 	if !ok {
-		err := errors.New("type mismatch for MsgValidatorExit")
+		err := errors.New(helper.ErrTypeMismatch("MsgValidatorExit"))
 		s.k.Logger(ctx).Error(err.Error())
 		return err
 	}
 
 	// skip handler if validator exit is not approved
-	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		s.k.Logger(ctx).Debug("skipping validator exit since side-tx didn't get yes votes")
-		return errors.New("side-tx didn't get yes votes")
+	if !helper.IsSideTxApproved(sideTxResult) {
+		s.k.Logger(ctx).Debug(helper.ErrSkippingMsg("ValidatorExit"))
+		return errors.New(hmTypes.ErrMsgSideTxRejected)
 	}
 
 	err = msg.ValidateBasic()
 	if err != nil {
-		s.k.Logger(ctx).Error("failed to validate msg", "error", err)
-		return errors.New("invalid side-tx msg for MsgValidatorExit")
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgValidationFailed, hmTypes.LogKeyError, err)
+		return errors.New(helper.ErrInvalidSideTxMsg("MsgValidatorExit"))
 	}
 
 	// check for replay attack
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
-	if s.k.HasStakingSequence(ctx, sequence.String()) {
-		s.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
-		return errors.New("old events are not allowed")
+	if s.k.HasStakingSequence(ctx, sequence) {
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence)
+		return errors.New(hmTypes.ErrMsgOldEventsNotAllowed)
 	}
 
 	validator, err := s.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
-		s.k.Logger(ctx).Error("fetching of validator from store failed", "validatorID", msg.ValId)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgFailedToFetchValidator, hmTypes.LogKeyValidatorID, msg.ValId)
 		return err
 	}
 
 	// Check nonce validity just before applying the state update
 	if msg.Nonce != validator.Nonce+1 {
-		s.k.Logger(ctx).Error("Incorrect validator nonce during PostHandle ValidatorExit", "ValidatorNonce", validator.Nonce, "MsgNonce", msg.Nonce)
-		return errors.New("incorrect validator nonce during PostHandle ValidatorExit")
+		s.k.Logger(ctx).Error(helper.ErrIncorrectNonceDuringPostHandle("ValidatorExit"), hmTypes.LogKeyValidatorNonce, validator.Nonce, hmTypes.LogKeyMsgNonce, msg.Nonce)
+		return errors.New(helper.ErrIncorrectNonceDuringPostHandle("ValidatorExit"))
 	}
 
-	s.k.Logger(ctx).Debug("persisting validator exit", "sideTxResult", sideTxResult)
+	s.k.Logger(ctx).Debug("Persisting validator exit", "sideTxResult", sideTxResult)
 
 	validator.EndEpoch = msg.DeactivationEpoch
-	validator.LastUpdated = sequence.String()
+	validator.LastUpdated = sequence
 	validator.Nonce = msg.Nonce
 	validator.VotingPower = 0
 
 	// add deactivation time for validator
 	if err := s.k.AddValidator(ctx, validator); err != nil {
-		s.k.Logger(ctx).Error("error while setting deactivation epoch to validator", "error", err, "validatorID", validator.ValId)
+		s.k.Logger(ctx).Error("Error while setting deactivation epoch to validator", hmTypes.LogKeyError, err, hmTypes.LogKeyValidatorID, validator.ValId)
 		return err
 	}
 
 	// save the staking sequence
-	err = s.k.SetStakingSequence(ctx, sequence.String())
+	err = s.k.SetStakingSequence(ctx, sequence)
 	if err != nil {
-		s.k.Logger(ctx).Error("unable to set the sequence", "error", err)
+		s.k.Logger(ctx).Error(hmTypes.ErrMsgUnableToSetSequence, hmTypes.LogKeyError, err)
 		return err
 	}
 
@@ -911,7 +1016,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 	return nil
 }
 
-// recordStakeMetric records metrics for side and post handlers.
+// recordStakeMetric records metrics for side and post-handlers.
 func recordStakeMetric(method string, apiType string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.StakeSubsystem, method, apiType, success, start)

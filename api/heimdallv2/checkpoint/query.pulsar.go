@@ -8490,13 +8490,14 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// QueryCheckpointSignaturesRequest is request type for
-// QueryCheckpointSignatures RPC method
+// QueryCheckpointSignaturesRequest is the request type for the
+// GetCheckpointSignatures query.
 type QueryCheckpointSignaturesRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Transaction hash of the checkpoint to query signatures for.
 	TxHash string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
 }
 
@@ -8527,13 +8528,14 @@ func (x *QueryCheckpointSignaturesRequest) GetTxHash() string {
 	return ""
 }
 
-// QueryCheckpointSignaturesResponse is response type for
-// QueryCheckpointSignatures RPC method
+// QueryCheckpointSignaturesResponse is the response type for the
+// GetCheckpointSignatures query.
 type QueryCheckpointSignaturesResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// List of validator signatures for the requested checkpoint.
 	Signatures []*CheckpointSignature `protobuf:"bytes,1,rep,name=signatures,proto3" json:"signatures,omitempty"`
 }
 
@@ -8564,6 +8566,7 @@ func (x *QueryCheckpointSignaturesResponse) GetSignatures() []*CheckpointSignatu
 	return nil
 }
 
+// QueryParamsRequest is the request type for the GetCheckpointParams query.
 type QueryParamsRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -8590,11 +8593,13 @@ func (*QueryParamsRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_query_proto_rawDescGZIP(), []int{2}
 }
 
+// QueryParamsResponse is the response type for the GetCheckpointParams query.
 type QueryParamsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Current checkpoint module parameters.
 	Params *Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
 }
 
@@ -8625,6 +8630,7 @@ func (x *QueryParamsResponse) GetParams() *Params {
 	return nil
 }
 
+// QueryAckCountRequest is the request type for the GetAckCount query.
 type QueryAckCountRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -8651,11 +8657,13 @@ func (*QueryAckCountRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_query_proto_rawDescGZIP(), []int{4}
 }
 
+// QueryAckCountResponse is the response type for the GetAckCount query.
 type QueryAckCountResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Total number of checkpoint acknowledgments.
 	AckCount uint64 `protobuf:"varint,1,opt,name=ack_count,json=ackCount,proto3" json:"ack_count,omitempty"`
 }
 
@@ -8686,6 +8694,7 @@ func (x *QueryAckCountResponse) GetAckCount() uint64 {
 	return 0
 }
 
+// QueryLastNoAckRequest is the request type for the GetLastNoAck query.
 type QueryLastNoAckRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -8712,11 +8721,13 @@ func (*QueryLastNoAckRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_query_proto_rawDescGZIP(), []int{6}
 }
 
+// QueryLastNoAckResponse is the response type for the GetLastNoAck query.
 type QueryLastNoAckResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// ID of the last checkpoint that received a no-ack.
 	LastNoAckId uint64 `protobuf:"varint,1,opt,name=last_no_ack_id,json=lastNoAckId,proto3" json:"last_no_ack_id,omitempty"`
 }
 
@@ -8747,6 +8758,8 @@ func (x *QueryLastNoAckResponse) GetLastNoAckId() uint64 {
 	return 0
 }
 
+// QueryCheckpointBufferRequest is the request type for the GetCheckpointBuffer
+// query.
 type QueryCheckpointBufferRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -8773,11 +8786,14 @@ func (*QueryCheckpointBufferRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_query_proto_rawDescGZIP(), []int{8}
 }
 
+// QueryCheckpointBufferResponse is the response type for the
+// GetCheckpointBuffer query.
 type QueryCheckpointBufferResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Checkpoint currently in the buffer awaiting finalization.
 	Checkpoint *Checkpoint `protobuf:"bytes,1,opt,name=checkpoint,proto3" json:"checkpoint,omitempty"`
 }
 
@@ -8808,11 +8824,13 @@ func (x *QueryCheckpointBufferResponse) GetCheckpoint() *Checkpoint {
 	return nil
 }
 
+// QueryCheckpointRequest is the request type for the GetCheckpoint query.
 type QueryCheckpointRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Checkpoint ID number to retrieve.
 	Number uint64 `protobuf:"varint,1,opt,name=number,proto3" json:"number,omitempty"`
 }
 
@@ -8843,11 +8861,13 @@ func (x *QueryCheckpointRequest) GetNumber() uint64 {
 	return 0
 }
 
+// QueryCheckpointResponse is the response type for the GetCheckpoint query.
 type QueryCheckpointResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The requested checkpoint.
 	Checkpoint *Checkpoint `protobuf:"bytes,1,opt,name=checkpoint,proto3" json:"checkpoint,omitempty"`
 }
 
@@ -8878,6 +8898,8 @@ func (x *QueryCheckpointResponse) GetCheckpoint() *Checkpoint {
 	return nil
 }
 
+// QueryCheckpointLatestRequest is the request type for the GetCheckpointLatest
+// query.
 type QueryCheckpointLatestRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -8904,11 +8926,14 @@ func (*QueryCheckpointLatestRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_query_proto_rawDescGZIP(), []int{12}
 }
 
+// QueryCheckpointLatestResponse is the response type for the
+// GetCheckpointLatest query.
 type QueryCheckpointLatestResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The most recently finalized checkpoint.
 	Checkpoint *Checkpoint `protobuf:"bytes,1,opt,name=checkpoint,proto3" json:"checkpoint,omitempty"`
 }
 
@@ -8939,6 +8964,8 @@ func (x *QueryCheckpointLatestResponse) GetCheckpoint() *Checkpoint {
 	return nil
 }
 
+// QueryNextCheckpointRequest is the request type for the GetNextCheckpoint
+// query.
 type QueryNextCheckpointRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -8965,11 +8992,14 @@ func (*QueryNextCheckpointRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_query_proto_rawDescGZIP(), []int{14}
 }
 
+// QueryNextCheckpointResponse is the response type for the GetNextCheckpoint
+// query.
 type QueryNextCheckpointResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The prepared next checkpoint ready to be proposed.
 	Checkpoint *MsgCheckpoint `protobuf:"bytes,1,opt,name=checkpoint,proto3" json:"checkpoint,omitempty"`
 }
 
@@ -9000,11 +9030,14 @@ func (x *QueryNextCheckpointResponse) GetCheckpoint() *MsgCheckpoint {
 	return nil
 }
 
+// QueryCheckpointListRequest is the request type for the GetCheckpointList
+// query.
 type QueryCheckpointListRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Pagination parameters.
 	Pagination *v1beta1.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
@@ -9035,13 +9068,17 @@ func (x *QueryCheckpointListRequest) GetPagination() *v1beta1.PageRequest {
 	return nil
 }
 
+// QueryCheckpointListResponse is the response type for the GetCheckpointList
+// query.
 type QueryCheckpointListResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	CheckpointList []*Checkpoint         `protobuf:"bytes,1,rep,name=checkpoint_list,json=checkpointList,proto3" json:"checkpoint_list,omitempty"`
-	Pagination     *v1beta1.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	// List of checkpoints matching the query.
+	CheckpointList []*Checkpoint `protobuf:"bytes,1,rep,name=checkpoint_list,json=checkpointList,proto3" json:"checkpoint_list,omitempty"`
+	// Pagination response with next page token.
+	Pagination *v1beta1.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (x *QueryCheckpointListResponse) Reset() {
@@ -9078,6 +9115,8 @@ func (x *QueryCheckpointListResponse) GetPagination() *v1beta1.PageResponse {
 	return nil
 }
 
+// QueryCheckpointOverviewRequest is the request type for the
+// GetCheckpointOverview query.
 type QueryCheckpointOverviewRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -9104,16 +9143,23 @@ func (*QueryCheckpointOverviewRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_query_proto_rawDescGZIP(), []int{18}
 }
 
+// QueryCheckpointOverviewResponse is the response type for the
+// GetCheckpointOverview query.
 type QueryCheckpointOverviewResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	AckCount         uint64              `protobuf:"varint,1,opt,name=ack_count,json=ackCount,proto3" json:"ack_count,omitempty"`
-	LastNoAckId      uint64              `protobuf:"varint,2,opt,name=last_no_ack_id,json=lastNoAckId,proto3" json:"last_no_ack_id,omitempty"`
-	BufferCheckpoint *Checkpoint         `protobuf:"bytes,3,opt,name=buffer_checkpoint,json=bufferCheckpoint,proto3" json:"buffer_checkpoint,omitempty"`
-	ValidatorCount   uint64              `protobuf:"varint,4,opt,name=validator_count,json=validatorCount,proto3" json:"validator_count,omitempty"`
-	ValidatorSet     *stake.ValidatorSet `protobuf:"bytes,5,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set,omitempty"`
+	// Total number of checkpoint acknowledgments.
+	AckCount uint64 `protobuf:"varint,1,opt,name=ack_count,json=ackCount,proto3" json:"ack_count,omitempty"`
+	// ID of the last checkpoint that received a no-ack.
+	LastNoAckId uint64 `protobuf:"varint,2,opt,name=last_no_ack_id,json=lastNoAckId,proto3" json:"last_no_ack_id,omitempty"`
+	// Checkpoint currently in the buffer.
+	BufferCheckpoint *Checkpoint `protobuf:"bytes,3,opt,name=buffer_checkpoint,json=bufferCheckpoint,proto3" json:"buffer_checkpoint,omitempty"`
+	// Total number of active validators.
+	ValidatorCount uint64 `protobuf:"varint,4,opt,name=validator_count,json=validatorCount,proto3" json:"validator_count,omitempty"`
+	// Current validator set.
+	ValidatorSet *stake.ValidatorSet `protobuf:"bytes,5,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set,omitempty"`
 }
 
 func (x *QueryCheckpointOverviewResponse) Reset() {

@@ -17,6 +17,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
+const errorFetchingAccount = "error fetching account"
+
 func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger log.Logger) error {
 	// create tx factory
 	txf, err := MakeTxFactory(clientCtx, sender, logger)
@@ -29,7 +31,7 @@ func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger l
 	clientCtx.SkipConfirm = true
 	account, err := util.GetAccount(context.Background(), clientCtx, sender)
 	if err != nil {
-		logger.Error("Error fetching account", "address", sender, "err", err)
+		logger.Error(errorFetchingAccount, "address", sender, "err", err)
 		return err
 	}
 	clientCtx = clientCtx.WithFromAddress(account.GetAddress())
@@ -37,7 +39,7 @@ func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger l
 	authQueryClient := authtypes.NewQueryClient(clientCtx)
 	_, err = authQueryClient.Account(context.Background(), &authtypes.QueryAccountRequest{Address: from.String()})
 	if err != nil {
-		logger.Error("Error fetching account", "Error", err)
+		logger.Error(errorFetchingAccount, "Error", err)
 		return err
 	}
 

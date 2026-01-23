@@ -8,39 +8,52 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
+// Msg defines the gRPC message service for the topup module.
 service Msg {
   option (cosmos.msg.v1.service) = true;
-  // HandleTopupTx defines a RPC method for handling a topup tx for a validator
+  // HandleTopupTx processes a fee topup transaction for a validator.
   rpc HandleTopupTx(MsgTopupTx) returns (MsgTopupTxResponse);
-  // WithdrawFeeTx defines a RPC method for withdrawing the fees for a validator
+  // WithdrawFeeTx processes a fee withdrawal request from a validator.
   rpc WithdrawFeeTx(MsgWithdrawFeeTx) returns (MsgWithdrawFeeTxResponse);
 }
 
+// MsgTopupTx defines the message for topping up fees for a validator.
+// This is triggered by topup events from the root chain.
 message MsgTopupTx {
   option (cosmos.msg.v1.signer) = "proposer";
   option (amino.name) = "heimdallv2/topup/MsgTopupTx";
+  // Address of the validator proposing this topup transaction.
   string proposer = 1 [
     (cosmos_proto.scalar) = "cosmos.AddressString",
     (amino.dont_omitempty) = true
   ];
+  // Address of the user receiving the fee topup.
   string user = 2 [
     (cosmos_proto.scalar) = "cosmos.AddressString",
     (amino.dont_omitempty) = true
   ];
+  // Amount of fees to add to the user's account.
   string fee = 3 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
   ];
+  // Root chain transaction hash.
   bytes tx_hash = 4 [ (amino.dont_omitempty) = true ];
+  // Log index in root chain transaction.
   uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
+  // Root chain block number.
   uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
 }
 
+// MsgWithdrawFeeTx defines the message for withdrawing fees from a validator's
+// account.
 message MsgWithdrawFeeTx {
   option (cosmos.msg.v1.signer) = "proposer";
   option (amino.name) = "heimdallv2/topup/MsgWithdrawFeeTx";
+  // Address of the validator proposing this withdrawal.
   string proposer = 1 [ (amino.dont_omitempty) = true ];
+  // Amount of fees to withdraw.
   string amount = 2 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false,
@@ -48,6 +61,8 @@ message MsgWithdrawFeeTx {
   ];
 }
 
+// MsgTopupTxResponse defines the response for MsgTopupTx.
 message MsgTopupTxResponse {}
 
+// MsgWithdrawFeeTxResponse defines the response for MsgWithdrawFeeTx.
 message MsgWithdrawFeeTxResponse {}

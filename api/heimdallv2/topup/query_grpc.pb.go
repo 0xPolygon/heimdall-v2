@@ -31,20 +31,18 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
-	// IsTopupTxOld queries for a specific topup tx to check its status (old
-	// means already submitted)
+	// IsTopupTxOld checks if a topup transaction has already been processed.
 	IsTopupTxOld(ctx context.Context, in *QueryTopupSequenceRequest, opts ...grpc.CallOption) (*QueryIsTopupTxOldResponse, error)
-	// GetTopupTxSequence queries for a specific topup tx and returns its sequence
+	// GetTopupTxSequence returns the sequence number for a topup transaction.
 	GetTopupTxSequence(ctx context.Context, in *QueryTopupSequenceRequest, opts ...grpc.CallOption) (*QueryTopupSequenceResponse, error)
-	// GetDividendAccountByAddress queries for a specific DividendAccount by its
-	// address
+	// GetDividendAccountByAddress queries a dividend account by address.
 	GetDividendAccountByAddress(ctx context.Context, in *QueryDividendAccountRequest, opts ...grpc.CallOption) (*QueryDividendAccountResponse, error)
-	// GetDividendAccountRootHash calculates and returns the dividend account root
-	// hash
+	// GetDividendAccountRootHash calculates the Merkle root of all dividend
+	// accounts.
 	GetDividendAccountRootHash(ctx context.Context, in *QueryDividendAccountRootHashRequest, opts ...grpc.CallOption) (*QueryDividendAccountRootHashResponse, error)
-	// VerifyAccountProof queries for the proof of an account given its address
+	// VerifyAccountProofByAddress verifies an account proof for a given address.
 	VerifyAccountProofByAddress(ctx context.Context, in *QueryVerifyAccountProofRequest, opts ...grpc.CallOption) (*QueryVerifyAccountProofResponse, error)
-	// GetAccountProof queries for the account proof of a given address
+	// GetAccountProofByAddress retrieves the account proof for a given address.
 	GetAccountProofByAddress(ctx context.Context, in *QueryAccountProofRequest, opts ...grpc.CallOption) (*QueryAccountProofResponse, error)
 }
 
@@ -114,20 +112,18 @@ func (c *queryClient) GetAccountProofByAddress(ctx context.Context, in *QueryAcc
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
-	// IsTopupTxOld queries for a specific topup tx to check its status (old
-	// means already submitted)
+	// IsTopupTxOld checks if a topup transaction has already been processed.
 	IsTopupTxOld(context.Context, *QueryTopupSequenceRequest) (*QueryIsTopupTxOldResponse, error)
-	// GetTopupTxSequence queries for a specific topup tx and returns its sequence
+	// GetTopupTxSequence returns the sequence number for a topup transaction.
 	GetTopupTxSequence(context.Context, *QueryTopupSequenceRequest) (*QueryTopupSequenceResponse, error)
-	// GetDividendAccountByAddress queries for a specific DividendAccount by its
-	// address
+	// GetDividendAccountByAddress queries a dividend account by address.
 	GetDividendAccountByAddress(context.Context, *QueryDividendAccountRequest) (*QueryDividendAccountResponse, error)
-	// GetDividendAccountRootHash calculates and returns the dividend account root
-	// hash
+	// GetDividendAccountRootHash calculates the Merkle root of all dividend
+	// accounts.
 	GetDividendAccountRootHash(context.Context, *QueryDividendAccountRootHashRequest) (*QueryDividendAccountRootHashResponse, error)
-	// VerifyAccountProof queries for the proof of an account given its address
+	// VerifyAccountProofByAddress verifies an account proof for a given address.
 	VerifyAccountProofByAddress(context.Context, *QueryVerifyAccountProofRequest) (*QueryVerifyAccountProofResponse, error)
-	// GetAccountProof queries for the account proof of a given address
+	// GetAccountProofByAddress retrieves the account proof for a given address.
 	GetAccountProofByAddress(context.Context, *QueryAccountProofRequest) (*QueryAccountProofResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }

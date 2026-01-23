@@ -44,7 +44,7 @@ const (
 
 // ValidateVoteExtensions verifies the vote extension correctness
 // It checks the signature of each vote extension with its signer's public key
-// Also, it checks if the vote extensions are enabled, valid and have >2/3 voting power
+// Also, it checks if the vote extensions are enabled, valid, and have >2/3 voting power.
 // It returns an error in case the validation fails
 func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, validatorSet *stakeTypes.ValidatorSet, milestoneKeeper milestoneKeeper.Keeper) error {
 	// check if VEs are enabled
@@ -133,7 +133,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 		_, validator := validatorSet.GetByAddress(valAddrStr)
 		if validator == nil {
 			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx.BlockHeight()) {
-				return fmt.Errorf("failed to get validator %s", valAddrStr)
+				return errors.New(helper.ErrFailedToGetValidator(valAddrStr))
 			}
 			continue
 		}
@@ -217,21 +217,21 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 	for _, vote := range extVoteInfo {
 		// reject unknown fields and skip invalid ones
 		if err := rejectUnknownVoteExtFields(vote.VoteExtension); err != nil {
-			logger.Error("unknown fields detected in vote extensions, skipping",
+			logger.Error("Unknown fields detected in vote extensions, skipping",
 				"height", reqHeight, "error", err)
 			continue
 		}
 
 		// make sure the BlockIdFlag is valid
 		if !isBlockIdFlagValid(vote.BlockIdFlag) {
-			logger.Error("received vote with invalid block ID flag at height, skipping",
+			logger.Error("Received vote with invalid block ID flag at height, skipping",
 				"blockIDFlag", vote.BlockIdFlag.String(),
 				"height", reqHeight)
 			continue
 		}
 		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
 		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
-			logger.Error("wrong block id flag, skipping",
+			logger.Error("Wrong block id flag, skipping",
 				"blockIDFlag", vote.BlockIdFlag.String(),
 				"height", reqHeight)
 			continue
@@ -248,29 +248,29 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 
 		voteExtension := new(sidetxs.VoteExtension)
 		if err = voteExtension.Unmarshal(vote.VoteExtension); err != nil {
-			logger.Error("error while unmarshalling vote extension", "error", err)
+			logger.Error("Error while unmarshalling vote extension", "error", err)
 			continue
 		}
 
 		if voteExtension.Height != reqHeight-1 {
-			logger.Error("invalid height received for vote extension", "expected", reqHeight-1, "got", voteExtension.Height)
+			logger.Error("Invalid height received for vote extension", "expected", reqHeight-1, "got", voteExtension.Height)
 			continue
 		}
 
 		txHash, err := validateSideTxResponses(voteExtension.SideTxResponses)
 		if err != nil {
-			logger.Error("invalid sideTxResponses detected for validator", "validator", valAddrStr, "txHash", common.Bytes2Hex(txHash), "error", err)
+			logger.Error("Invalid sideTxResponses detected for validator", "validator", valAddrStr, "txHash", common.Bytes2Hex(txHash), "error", err)
 			continue
 		}
 
 		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &milestoneKeeper, voteExtension.MilestoneProposition); err != nil {
-			logger.Error("invalid milestone proposition detected for validator", "validator", valAddrStr, "error", err)
+			logger.Error("Invalid milestone proposition detected for validator", "validator", valAddrStr, "error", err)
 			continue
 		}
 
 		// Check for duplicate votes by the same validator
 		if _, found := seenValidators[valAddrStr]; found {
-			return nil, fmt.Errorf("duplicate vote detected from validator %s at height %d", valAddrStr, reqHeight)
+			return nil, fmt.Errorf("duplicated vote detected from validator %s at height %d", valAddrStr, reqHeight)
 		}
 		// Add the validator address to the map
 		seenValidators[valAddrStr] = struct{}{}
@@ -278,7 +278,7 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 		_, validator := validatorSet.GetByAddress(valAddrStr)
 		if validator == nil {
 			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx.BlockHeight()) {
-				logger.Error("failed to get validator", "validator", valAddrStr)
+				logger.Error(helper.ErrFailedToGetValidator(valAddrStr))
 			}
 			continue
 		}
@@ -286,7 +286,7 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 		// ensure proposer-supplied power matches canonical power
 		if vote.Validator.Power != validator.VotingPower {
 			logger.Warn(
-				"mismatching voting power in FilterVoteExtension",
+				"Mismatching voting power in FilterVoteExtension",
 				"validator", valAddrStr,
 				"receivedVotingPower", vote.Validator.Power,
 				"expectedVotingPower", validator.VotingPower,
@@ -347,7 +347,7 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 		return nil, fmt.Errorf("insufficient cumulative voting power received to verify vote extensions; got: %d, expected: >%d", sumVP, majorityVP)
 	}
 
-	logger.Debug("majority block hash selected",
+	logger.Debug("Majority block hash selected",
 		"blockHash", majorityBlockHash,
 		"votingPower", sumVP,
 		"majorityThreshold", majorityVP)
@@ -367,7 +367,7 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 }
 
 // tallyVotes tallies the votes received for the side tx
-// It returns the lists of txs which got >2/3+ YES, NO and UNSPECIFIED votes respectively
+// It returns the lists of txs which got >2/3+ YES, NO, and UNSPECIFIED votes respectively
 func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, validatorSet *stakeTypes.ValidatorSet, currentHeight int64) ([][]byte, [][]byte, [][]byte, error) {
 	logger.Debug("Tallying votes")
 
@@ -379,7 +379,7 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, val
 		return nil, nil, nil, err
 	}
 
-	// check for vote majority
+	// check for the votes majority
 	txHashList := make([]string, 0, len(voteByTxHash))
 	for txHash := range voteByTxHash {
 		txHashList = append(txHashList, txHash)
@@ -399,7 +399,7 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, val
 
 		// ensure the total votes do not exceed the total voting power
 		if shouldCheckVotingPower(currentHeight) && power > totalVotingPower {
-			logger.Error("the votes power exceeds the total voting power", "txHash", txHash, "power", power, "totalVotingPower", totalVotingPower)
+			logger.Error("The votes power exceeds the total voting power", "txHash", txHash, "power", power, "totalVotingPower", totalVotingPower)
 			return nil, nil, nil, fmt.Errorf("votes power %d exceeds total voting power %d for txHash %s", power, totalVotingPower, txHash)
 		}
 
@@ -468,7 +468,7 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, validatorSet *stak
 			}
 			// compare the current block hash with the stored block hash
 			if !bytes.Equal(blockHash, ve.BlockHash) {
-				logger.Error("invalid block hash found for vote extension",
+				logger.Error("Invalid block hash found for vote extension",
 					"expectedBlockHash", common.Bytes2Hex(blockHash),
 					"receivedBlockHash", common.Bytes2Hex(ve.BlockHash),
 					"validator", valAddr)
@@ -500,7 +500,7 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, validatorSet *stak
 			txHashStr := common.Bytes2Hex(res.TxHash)
 
 			if _, hasVoted := validatorToTxMap[addr][txHashStr]; hasVoted {
-				logger.Error("multiple votes received for side tx",
+				logger.Error("Multiple votes received for side tx",
 					"txHash", txHashStr, "validatorAddress", addr)
 				return nil, fmt.Errorf("multiple votes received for side tx %s from validator %s", txHashStr, addr)
 			}
@@ -557,7 +557,7 @@ func validateSideTxResponses(sideTxResponses []sidetxs.SideTxResponse) ([]byte, 
 
 // checkIfVoteExtensionsDisabled indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.
 // Since we are using a hard fork approach for the heimdall migration, VEs will be enabled from v2 genesis' initial height (v1 last height +1).
-// Returning error will result in CometBFT panic.
+// Returning an error will result in CometBFT panic.
 func checkIfVoteExtensionsDisabled(ctx sdk.Context, height int64) error {
 	// voteExtensionsEnableHeight is the height from which the vote extensions are enabled, and it's (v1_last_height +1)
 	voteExtensionsEnableHeight := retrieveVoteExtensionsEnableHeight(ctx)
@@ -578,7 +578,7 @@ func isBlockIdFlagValid(flag cmtTypes.BlockIDFlag) bool {
 	return flag == cmtTypes.BlockIDFlagAbsent || flag == cmtTypes.BlockIDFlagCommit || flag == cmtTypes.BlockIDFlagNil
 }
 
-// retrieveVoteExtensionsEnableHeight returns the height from which the vote extensions are enabled, which is equal to initial height of the v2 genesis
+// retrieveVoteExtensionsEnableHeight returns the height from which the vote extensions are enabled, which is equal to the initial height of the v2 genesis
 func retrieveVoteExtensionsEnableHeight(ctx sdk.Context) int64 {
 	consensusParams := ctx.ConsensusParams()
 	return consensusParams.GetAbci().GetVoteExtensionsEnableHeight()
@@ -678,7 +678,7 @@ func ValidateNonRpVoteExtension(
 	}
 
 	if bytes.Equal(extension, dummyExt) {
-		// This is dummy vote extension, we have nothing else to check
+		// This is a dummy vote extension, so we have nothing else to check
 		return nil
 	}
 
@@ -708,7 +708,7 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
 			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx.BlockHeight()) {
-				return fmt.Errorf("failed to get validator %s", valAddr)
+				return errors.New(helper.ErrFailedToGetValidator(valAddr))
 			}
 			continue
 		}
@@ -753,7 +753,7 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
 			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx.BlockHeight()) {
-				return nil, fmt.Errorf("failed to get validator %s", valAddr)
+				return nil, errors.New(helper.ErrFailedToGetValidator(valAddr))
 			}
 			continue
 		}
@@ -762,7 +762,7 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 	}
 
 	if len(hashToVotingPower) > 1 {
-		logger.Error("MULTIPLE NON-RP VOTE EXTENSIONS DETECTED, THERE SHOULD BE ONLY ONE - POSSIBLE MALICIOUS ACTIVITY")
+		logger.Error("Multiple non-rp vote extensions detected, there should be only one: potential malicious activity")
 	}
 
 	var maxVotingPower int64
@@ -784,7 +784,7 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 	return hashToExt[maxHash], nil
 }
 
-// validateCheckpointMsgData validates the extension is valid checkpoint
+// validateCheckpointMsgData validates the extension is a valid checkpoint
 func validateCheckpointMsgData(ctx sdk.Context, extension []byte, chainManagerKeeper chainManagerKeeper.Keeper, checkpointKeeper checkpointKeeper.Keeper, contractCaller helper.IContractCaller) error {
 	if len(extension) < minNonRpVoteExtensionSize {
 		return fmt.Errorf("non-rp vote extension size is too small: %d, min: %d", len(extension), minNonRpVoteExtensionSize)
@@ -831,7 +831,7 @@ func validateCheckpointMsgData(ctx sdk.Context, extension []byte, chainManagerKe
 
 // getPreviousBlockValidatorSet returns the validator set from the previous block
 func getPreviousBlockValidatorSet(ctx sdk.Context, stakeKeeper stakeKeeper.Keeper) (*stakeTypes.ValidatorSet, error) {
-	// Fetch validatorSet from previous block
+	// Fetch validatorSet from the previous block
 	validatorSet, err := stakeKeeper.GetPreviousBlockValidatorSet(ctx)
 	if err != nil {
 		return nil, err
@@ -859,7 +859,7 @@ func getPenultimateBlockValidatorSet(ctx sdk.Context, stakeKeeper stakeKeeper.Ke
 func getValidatorPublicKey(validator *stakeTypes.Validator) (cmtCrypto.PubKey, error) {
 	cmtPubKeyProto, err := validator.CmtConsPublicKey()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get validator %s public key: %w", validator.Signer, err)
+		return nil, fmt.Errorf("%s: %w", helper.ErrFailedToGetValidatorPublicKey(validator.Signer), err)
 	}
 
 	cmtPubKey, err := cryptoenc.PubKeyFromProto(cmtPubKeyProto)
@@ -870,13 +870,13 @@ func getValidatorPublicKey(validator *stakeTypes.Validator) (cmtCrypto.PubKey, e
 	return cmtPubKey, nil
 }
 
-// FindCheckpointTx finds the checkpoint tx from the given txs that generated the given extension
-// If no such tx is found empty string is returned
+// findCheckpointTx finds the checkpoint tx from the given txs that generated the given extension
+// If no such tx is found, an empty string is returned
 func findCheckpointTx(txs [][]byte, extension []byte, txDecoder txDecoder, logger log.Logger) string {
 	for _, rawTx := range txs {
 		tx, err := txDecoder.TxDecode(rawTx)
 		if err != nil {
-			logger.Error("failed to decode tx", "error", err)
+			logger.Error("Failed to decode tx", "error", err)
 			continue
 		}
 
@@ -885,7 +885,7 @@ func findCheckpointTx(txs [][]byte, extension []byte, txDecoder txDecoder, logge
 			if checkpointTypes.IsCheckpointMsg(msg) {
 				checkpointMsg, ok := msg.(*checkpointTypes.MsgCheckpoint)
 				if !ok {
-					logger.Error("type mismatch for MsgCheckpoint")
+					logger.Error("Type mismatch for MsgCheckpoint")
 					continue
 				}
 

@@ -118,14 +118,14 @@ func TestBroadcastToHeimdall(t *testing.T) {
 		return authTypes.NewBaseAccount(heimdallAddressBytes, cosmosPrivKey.PubKey(), 0, 0), nil
 	}
 
-	srvconf := serverconfig.DefaultConfig()
+	srvConf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
 	configuration.CometBFTRPCUrl = dummyCometBFTNodeUrl
-	configuration.Chain = "testchain"
-	srvconf.API.Enable = true
-	srvconf.API.Address = dummyHeimdallServerUrl
+	configuration.Chain = "testChain"
+	srvConf.API.Enable = true
+	srvConf.API.Address = dummyHeimdallServerUrl
 	customAppConf := helper.CustomAppConfig{
-		Config: *srvconf,
+		Config: *srvConf,
 		Custom: configuration,
 	}
 	helper.SetTestConfig(customAppConf)
@@ -200,7 +200,6 @@ func TestBroadcastToHeimdall(t *testing.T) {
 		},
 	}
 
-	//nolint:paralleltest
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.expErr {
@@ -447,7 +446,7 @@ func (tb *TxBroadcaster) testBroadcastToHeimdall(msg sdk.Msg, event any) (*sdk.T
 	}
 	// Note: This is a special case where the sequence of an account is updated if any cli commands are executed
 	// in between two bridge broadcast tx calls, but the lastSeqNo in the TxBroadcaster struct is not updated.
-	// And that causes all the subsequent txs broadcasted to fail.
+	// And that causes all the sequent txs broadcasted to fail.
 	if tb.lastSeqNo < account.GetSequence() {
 		tb.lastSeqNo = account.GetSequence()
 	}

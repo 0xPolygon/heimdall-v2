@@ -646,12 +646,15 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// GenesisState defines the topup module's genesis state.
 type GenesisState struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TopupSequences   []string                 `protobuf:"bytes,1,rep,name=topup_sequences,json=topupSequences,proto3" json:"topup_sequences,omitempty"`
+	// Topup transaction sequences for replay protection.
+	TopupSequences []string `protobuf:"bytes,1,rep,name=topup_sequences,json=topupSequences,proto3" json:"topup_sequences,omitempty"`
+	// Initial dividend accounts at genesis.
 	DividendAccounts []*types.DividendAccount `protobuf:"bytes,2,rep,name=dividend_accounts,json=dividendAccounts,proto3" json:"dividend_accounts,omitempty"`
 }
 

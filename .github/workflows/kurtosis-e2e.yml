@@ -46,26 +46,26 @@ jobs:
           go-version: 'stable'
 
       - name: Checkout heimdall-v2
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: heimdall-v2
 
       - name: Checkout bor
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: 0xPolygon/bor
           ref: develop
           path: bor
 
       - name: Checkout pos-workflows
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: 0xPolygon/pos-workflows
           ref: main
           path: pos-workflows
 
       - name: Checkout kurtosis-pos
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: 0xPolygon/kurtosis-pos
           ref: v1.2.7

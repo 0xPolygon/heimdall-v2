@@ -83,7 +83,7 @@ func (k *Keeper) GetAllTopupSequences(ctx context.Context) (seq []string, e erro
 	defer func(iter collections.KeySetIterator[string]) {
 		err := iter.Close()
 		if err != nil {
-			logger.Error("error closing topup sequences iterator", "err", err)
+			logger.Error("Error closing topup sequences iterator", "err", err)
 			seq = nil
 			e = err
 		}
@@ -92,7 +92,7 @@ func (k *Keeper) GetAllTopupSequences(ctx context.Context) (seq []string, e erro
 	// iterate over sequences' keys and return them
 	sequences, err := iter.Keys()
 	if err != nil {
-		logger.Error("error getting topup sequences from the iterator", "err", err)
+		logger.Error("Error getting topup sequences from the iterator", "err", err)
 		e = err
 		return nil, err
 	}
@@ -106,11 +106,11 @@ func (k *Keeper) SetTopupSequence(ctx context.Context, sequence string) error {
 
 	err := k.sequences.Set(ctx, sequence)
 	if err != nil {
-		logger.Error("error setting topup sequence", "sequence", sequence, "err", err)
+		logger.Error("Error setting topup sequence", "sequence", sequence, "err", err)
 		return err
 	}
 
-	logger.Debug("topup sequence set", "sequence", sequence)
+	logger.Debug("Topup sequence set", "sequence", sequence)
 
 	return nil
 }
@@ -121,11 +121,11 @@ func (k *Keeper) HasTopupSequence(ctx context.Context, sequence string) (bool, e
 
 	isSequencePresent, err := k.sequences.Has(ctx, sequence)
 	if err != nil {
-		logger.Error("error checking if topup sequence exists", "sequence", sequence, "err", err)
+		logger.Error("Error checking if topup sequence exists", "sequence", sequence, "err", err)
 		return false, err
 	}
 
-	logger.Debug("topup sequence exists", "sequence", sequence, "isSequencePresent", isSequencePresent)
+	logger.Debug("Topup sequence exists", "sequence", sequence, "isSequencePresent", isSequencePresent)
 
 	return isSequencePresent, nil
 }
@@ -145,7 +145,7 @@ func (k *Keeper) GetAllDividendAccounts(ctx context.Context) (da []hTypes.Divide
 	defer func(iter collections.Iterator[string, hTypes.DividendAccount]) {
 		err := iter.Close()
 		if err != nil {
-			logger.Error("error closing dividend accounts iterator", "err", err)
+			logger.Error("Error closing dividend accounts iterator", "err", err)
 			da = nil
 			e = err
 		}
@@ -154,7 +154,7 @@ func (k *Keeper) GetAllDividendAccounts(ctx context.Context) (da []hTypes.Divide
 	// iterate over dividend accounts' values and return them
 	dividendAccounts, err := iter.Values()
 	if err != nil {
-		logger.Error("error getting dividend accounts from the iterator", "err", err)
+		logger.Error("Error getting dividend accounts from the iterator", "err", err)
 		e = err
 		return nil, e
 	}
@@ -169,11 +169,11 @@ func (k *Keeper) SetDividendAccount(ctx context.Context, dividendAccount hTypes.
 	dividendAccount.User = util.FormatAddress(dividendAccount.User)
 	err := k.dividendAccounts.Set(ctx, dividendAccount.User, dividendAccount)
 	if err != nil {
-		logger.Error("error adding dividend account", "dividendAccount", dividendAccount, "err", err)
+		logger.Error("Error adding dividend account", "dividendAccount", dividendAccount, "err", err)
 		return err
 	}
 
-	logger.Debug("dividend account added", "dividendAccount", dividendAccount)
+	logger.Debug("Dividend account added", "dividendAccount", dividendAccount)
 
 	return nil
 }
@@ -184,11 +184,11 @@ func (k *Keeper) HasDividendAccount(ctx context.Context, user string) (bool, err
 
 	isDividendAccountPresent, err := k.dividendAccounts.Has(ctx, util.FormatAddress(user))
 	if err != nil {
-		logger.Error("error checking if dividend account exists", "user", user, "err", err)
+		logger.Error("Error checking if dividend account exists", "user", user, "err", err)
 		return false, err
 	}
 
-	logger.Debug("dividend account exists", "user", user, "isDividendAccountPresent", isDividendAccountPresent)
+	logger.Debug("Dividend account exists", "user", user, "isDividendAccountPresent", isDividendAccountPresent)
 
 	return isDividendAccountPresent, nil
 }
@@ -199,11 +199,11 @@ func (k *Keeper) GetDividendAccount(ctx context.Context, user string) (hTypes.Di
 
 	dividendAccount, err := k.dividendAccounts.Get(ctx, util.FormatAddress(user))
 	if err != nil {
-		logger.Error("error getting dividend account", "user", user, "err", err)
+		logger.Error("Error getting dividend account", "user", user, "err", err)
 		return hTypes.DividendAccount{}, err
 	}
 
-	logger.Debug("dividend account retrieved", "user", user, "dividendAccount", dividendAccount)
+	logger.Debug("Dividend account retrieved", "user", user, "dividendAccount", dividendAccount)
 
 	return dividendAccount, nil
 }
@@ -221,7 +221,7 @@ func (k *Keeper) AddFeeToDividendAccount(ctx context.Context, user string, fee *
 	var dividendAccount hTypes.DividendAccount
 	if !exist {
 		// create a new dividend account
-		logger.Debug("dividend account not found, creating one", "user", user)
+		logger.Debug("Dividend account not found, creating one", "user", user)
 		dividendAccount = hTypes.DividendAccount{
 			User:      util.FormatAddress(user),
 			FeeAmount: big.NewInt(0).String(),
@@ -237,17 +237,17 @@ func (k *Keeper) AddFeeToDividendAccount(ctx context.Context, user string, fee *
 	// update the fee
 	oldFee, ok := big.NewInt(0).SetString(dividendAccount.FeeAmount, 10)
 	if !ok {
-		logger.Error("failed to set the old fee", "feeAmount", dividendAccount.FeeAmount, "account", dividendAccount.User)
+		logger.Error("Failed to set the old fee", "feeAmount", dividendAccount.FeeAmount, "account", dividendAccount.User)
 		return errors.New("failed to set the old fee for dividend account")
 	}
 	totalFee := big.NewInt(0).Add(oldFee, fee).String()
 	dividendAccount.FeeAmount = totalFee
-	logger.Info("fee added to dividend account", "user", user, "oldFee", oldFee, "addedFee", fee, "totalFee", totalFee)
+	logger.Info("Fee added to dividend account", "user", user, "oldFee", oldFee, "addedFee", fee, "totalFee", totalFee)
 
 	// set the updated dividend account
 	err = k.SetDividendAccount(ctx, dividendAccount)
 	if err != nil {
-		logger.Error("error adding fee to dividend account", "user", user, "fee", fee, "err", err)
+		logger.Error("Error adding fee to dividend account", "user", user, "fee", fee, "err", err)
 		return err
 	}
 

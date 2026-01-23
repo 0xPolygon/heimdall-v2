@@ -7,29 +7,56 @@ import "heimdallv2/stake/validator.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
 
+// Span represents a range of blocks on the Bor chain with an associated
+// validator set. Spans are used to organize block production into epochs, with
+// each span having a specific set of selected producers who take turns
+// producing blocks.
 message Span {
+  // Unique identifier for this span. Spans are numbered sequentially starting
+  // from 0.
   uint64 id = 1 [ (amino.dont_omitempty) = true ];
+  // First block number included in this span (inclusive).
   uint64 start_block = 2 [ (amino.dont_omitempty) = true ];
+  // Last block number included in this span (inclusive).
   uint64 end_block = 3 [ (amino.dont_omitempty) = true ];
+  // Complete validator set at the time this span was created.
+  // This represents all active validators, not just the selected producers.
   heimdallv2.stake.ValidatorSet validator_set = 4
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  // Subset of validators selected to produce blocks during this span.
+  // The number of producers is determined by the producer_count parameter.
   repeated heimdallv2.stake.Validator selected_producers = 5
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  // Chain ID of the Bor chain this span applies to.
   string bor_chain_id = 6 [ (amino.dont_omitempty) = true ];
 }
 
+// Params defines the parameters for the bor module.
 message Params {
   option (gogoproto.equal) = true;
+  // Duration of a sprint in blocks. A sprint is a period where a single
+  // producer creates all blocks before the next producer takes over.
   uint64 sprint_duration = 1 [ (amino.dont_omitempty) = true ];
+  // Duration of a span in blocks. A span typically contains multiple sprints.
   uint64 span_duration = 2 [ (amino.dont_omitempty) = true ];
+  // Number of producers to select from the validator set for each span.
+  // Producers are selected based on their voting power.
   uint64 producer_count = 3 [ (amino.dont_omitempty) = true ];
 }
 
+// ProducerVotes contains the validator IDs that a validator has voted for
+// to be included in the next span's producer set.
 message ProducerVotes {
+  // List of validator IDs that this validator votes for.
+  // Validators can vote for up to producer_count validators.
   repeated uint64 votes = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// BlockRange represents a contiguous range of blocks, used for tracking
+// planned downtime periods for producers.
 message BlockRange {
+  // First block number in the range (inclusive).
   uint64 start_block = 1 [ (amino.dont_omitempty) = true ];
+  // Last block number in the range (inclusive).
   uint64 end_block = 2 [ (amino.dont_omitempty) = true ];
 }

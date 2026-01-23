@@ -106,7 +106,7 @@ func (k Keeper) GetAuthority() string {
 func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 	err := k.params.Set(ctx, params)
 	if err != nil {
-		k.Logger(ctx).Error("error in setting the checkpoint params", "error", err)
+		k.Logger(ctx).Error("Error in setting the checkpoint params", "error", err)
 		return err
 	}
 
@@ -117,7 +117,7 @@ func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) {
 	params, err = k.params.Get(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching the checkpoint params", "error", err)
+		k.Logger(ctx).Error("Error in fetching the checkpoint params", "error", err)
 		return params, err
 	}
 
@@ -128,14 +128,14 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 func (k *Keeper) AddCheckpoint(ctx context.Context, checkpoint types.Checkpoint) error {
 	exists, _ := k.checkpoints.Has(ctx, checkpoint.Id)
 	if exists {
-		k.Logger(ctx).Error("checkpoint already exists", "checkpoint id", checkpoint.Id)
+		k.Logger(ctx).Error("Checkpoint already exists", "checkpointId", checkpoint.Id)
 		return types.ErrAlreadyExists
 	}
 
 	checkpoint.Proposer = util.FormatAddress(checkpoint.Proposer)
 	err := k.checkpoints.Set(ctx, checkpoint.Id, checkpoint)
 	if err != nil {
-		k.Logger(ctx).Error("error in adding the checkpoint to the store", "error", err)
+		k.Logger(ctx).Error("Error in adding the checkpoint to the store", "error", err)
 		return err
 	}
 
@@ -148,14 +148,14 @@ func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint types.Check
 	if checkpoint.Id == 0 {
 		cp, err := k.GetLastCheckpoint(ctx)
 		if err != nil {
-			k.Logger(ctx).Error("error while fetching the last checkpoint", "err", err)
+			k.Logger(ctx).Error("Error while fetching the last checkpoint", "err", err)
 			return err
 		}
 		checkpoint.Id = cp.Id + 1
 	}
 	err := k.bufferedCheckpoint.Set(ctx, checkpoint)
 	if err != nil {
-		k.Logger(ctx).Error("error in setting the buffered checkpoint in the store", "error", err)
+		k.Logger(ctx).Error("Error in setting the buffered checkpoint in the store", "error", err)
 		return err
 	}
 
@@ -166,7 +166,7 @@ func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint types.Check
 func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (types.Checkpoint, error) {
 	checkpoint, err := k.checkpoints.Get(ctx, number)
 	if err != nil {
-		k.Logger(ctx).Error("error while fetching checkpoint from store", "err", err)
+		k.Logger(ctx).Error("Error while fetching checkpoint from store", "err", err)
 		return types.Checkpoint{}, err
 	}
 
@@ -177,7 +177,7 @@ func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (type
 func (k *Keeper) GetLastCheckpoint(ctx context.Context) (checkpoint types.Checkpoint, err error) {
 	ackCount, err := k.GetAckCount(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while fetching the ack count", "err", err)
+		k.Logger(ctx).Error("Error while fetching the ack count", "err", err)
 		return types.Checkpoint{}, err
 	}
 
@@ -187,7 +187,7 @@ func (k *Keeper) GetLastCheckpoint(ctx context.Context) (checkpoint types.Checkp
 
 	checkpoint, err = k.checkpoints.Get(ctx, ackCount)
 	if err != nil {
-		k.Logger(ctx).Error("error while fetching last checkpoint from store", "err", err)
+		k.Logger(ctx).Error("Error while fetching last checkpoint from store", "err", err)
 		return types.Checkpoint{}, err
 	}
 
@@ -198,7 +198,7 @@ func (k *Keeper) GetLastCheckpoint(ctx context.Context) (checkpoint types.Checkp
 func (k *Keeper) FlushCheckpointBuffer(ctx context.Context) error {
 	err := k.bufferedCheckpoint.Remove(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in flushing the checkpoint buffer", "error", err)
+		k.Logger(ctx).Error("Error in flushing the checkpoint buffer", "error", err)
 		return err
 	}
 	return nil
@@ -210,14 +210,14 @@ func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (types.Checkpoint,
 
 	exists, err := k.HasCheckpointInBuffer(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while checking for existence of the buffered checkpoint in store", "err", err)
+		k.Logger(ctx).Error("Error while checking for existence of the buffered checkpoint in store", "err", err)
 		return checkpoint, err
 	}
 
 	if exists {
 		checkpoint, err = k.bufferedCheckpoint.Get(ctx)
 		if err != nil {
-			k.Logger(ctx).Error("error while fetching the buffered checkpoint from store", "err", err)
+			k.Logger(ctx).Error("Error while fetching the buffered checkpoint from store", "err", err)
 			return checkpoint, err
 		}
 	}
@@ -229,7 +229,7 @@ func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (types.Checkpoint,
 func (k *Keeper) HasCheckpointInBuffer(ctx context.Context) (bool, error) {
 	res, err := k.bufferedCheckpoint.Has(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while checking the buffered checkpoint from store", "err", err)
+		k.Logger(ctx).Error("Error while checking the buffered checkpoint from store", "err", err)
 		return false, err
 	}
 
@@ -245,7 +245,7 @@ func (k *Keeper) SetLastNoAck(ctx context.Context, timestamp uint64) error {
 func (k *Keeper) GetLastNoAck(ctx context.Context) (uint64, error) {
 	exists, err := k.lastNoAck.Has(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while checking for existence of the last no-ack in store", "err", err)
+		k.Logger(ctx).Error("Error while checking for existence of the last no-ack in store", "err", err)
 		return uint64(0), err
 	}
 
@@ -255,7 +255,7 @@ func (k *Keeper) GetLastNoAck(ctx context.Context) (uint64, error) {
 
 	res, err := k.lastNoAck.Get(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while fetching the last no-ack from store", "err", err)
+		k.Logger(ctx).Error("Error while fetching the last no-ack from store", "err", err)
 		return uint64(0), err
 	}
 
@@ -266,19 +266,19 @@ func (k *Keeper) GetLastNoAck(ctx context.Context) (uint64, error) {
 func (k *Keeper) GetCheckpoints(ctx context.Context) ([]types.Checkpoint, error) {
 	iterator, err := k.checkpoints.Iterate(ctx, nil)
 	if err != nil {
-		k.Logger(ctx).Error("error in getting the iterator", "err", err)
+		k.Logger(ctx).Error("Error in getting the iterator", "err", err)
 		return nil, err
 	}
 	defer func(iterator collections.Iterator[uint64, types.Checkpoint]) {
 		err := iterator.Close()
 		if err != nil {
-			k.Logger(ctx).Error("error in closing iterator", "err", err)
+			k.Logger(ctx).Error("Error in closing iterator", "err", err)
 		}
 	}(iterator)
 
 	checkpoints, err := iterator.Values()
 	if err != nil {
-		k.Logger(ctx).Error("error in getting the iterator values", "err", err)
+		k.Logger(ctx).Error("Error in getting the iterator values", "err", err)
 		return nil, err
 	}
 
@@ -289,7 +289,7 @@ func (k *Keeper) GetCheckpoints(ctx context.Context) ([]types.Checkpoint, error)
 func (k Keeper) GetAckCount(ctx context.Context) (uint64, error) {
 	exists, err := k.ackCount.Has(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while checking for existence of the ack count in store", "err", err)
+		k.Logger(ctx).Error("Error while checking for existence of the ack count in store", "err", err)
 		return uint64(0), err
 	}
 
@@ -299,7 +299,7 @@ func (k Keeper) GetAckCount(ctx context.Context) (uint64, error) {
 
 	res, err := k.ackCount.Get(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while fetching the ack count from the store", "err", err)
+		k.Logger(ctx).Error("Error while fetching the ack count from the store", "err", err)
 		return uint64(0), err
 	}
 

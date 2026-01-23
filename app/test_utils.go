@@ -56,7 +56,7 @@ func SetupApp(t *testing.T, numOfVals uint64) SetupAppResult {
 	// generate validators, accounts and balances
 	validatorPrivKeys, validators, accounts, balances := generateValidators(t, numOfVals)
 
-	// setup app with validator set and respective accounts
+	// set up the app with a validator set and respective accounts
 	app, db, logger, privKeys := setupAppWithValidatorSet(t, validatorPrivKeys, validators, accounts, balances)
 
 	return SetupAppResult{
@@ -67,7 +67,7 @@ func SetupApp(t *testing.T, numOfVals uint64) SetupAppResult {
 	}
 }
 
-// SetupAppWithPrivKey is like SetupApp, but ensures the provided priv key's address is also
+// SetupAppWithPrivKey is like SetupApp but ensures the provided priv key's address is also
 // present as a funded auth+bank genesis account so tests can use it as a tx signer/fee payer.
 func SetupAppWithPrivKey(t *testing.T, numOfVals uint64, priv cryptotypes.PrivKey) SetupAppResult {
 	t.Helper()
@@ -88,7 +88,7 @@ func SetupAppWithPrivKey(t *testing.T, numOfVals uint64, priv cryptotypes.PrivKe
 	accounts = append(accounts, genAcc)
 	balances = append(balances, genBal)
 
-	// setup app with validator set and respective accounts
+	// set up the app with a validator set and respective accounts
 	app, db, logger, privKeys := setupAppWithValidatorSet(t, validatorPrivKeys, validators, accounts, balances)
 
 	return SetupAppResult{
@@ -116,7 +116,7 @@ func generateValidators(t *testing.T, numOfVals uint64) ([]cmtcrypto.PrivKey, []
 			_ = fmt.Errorf("failed to convert pubkey: %w", err)
 		}
 
-		// create validator set
+		// create the validator set
 		val, _ := stakeTypes.NewValidator(i, 0, 0, i, 100, pk, pubKey.Address().String())
 
 		validatorPrivKeys = append(validatorPrivKeys, privKey)
@@ -157,7 +157,7 @@ func setupAppWithValidatorSet(t *testing.T, validatorPrivKeys []cmtcrypto.PrivKe
 	stateBytes, err := json.Marshal(genesisState)
 	require.NoError(t, err)
 
-	// initialize chain with the validator set and genesis accounts
+	// initialize the chain with the validator set and genesis accounts
 	req := &abci.RequestInitChain{
 		Validators:      []abci.ValidatorUpdate{},
 		ConsensusParams: simtestutil.DefaultConsensusParams,
@@ -225,21 +225,6 @@ func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validato
 		ProposerAddress: common.FromHex(validators[0].Signer),
 	})
 	require.NoError(t, err)
-}
-
-func RequestFinalizeBlockWithTxs(t *testing.T, app *HeimdallApp, height int64, txs ...[]byte) *abci.ResponseFinalizeBlock {
-	t.Helper()
-	extCommitInfo := new(abci.ExtendedCommitInfo)
-	commitInfo, err := extCommitInfo.Marshal()
-	require.NoError(t, err)
-	allTxs := [][]byte{commitInfo}
-	allTxs = append(allTxs, txs...)
-	res, err := app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Txs:    allTxs,
-		Height: height,
-	})
-	require.NoError(t, err)
-	return res
 }
 
 func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]sidetxs.SideTxResponse) []byte {
@@ -358,7 +343,7 @@ func GenesisStateWithValSet(codec codec.Codec, genesisState map[string]json.RawM
 	stakingGenesis := stakeTypes.NewGenesisState(validators, *valSet, seqs)
 	genesisState[stakeTypes.ModuleName] = codec.MustMarshalJSON(stakingGenesis)
 
-	// Ensure topup module has dividend accounts for all validator signer addresses.
+	// Ensure the topup module has dividend accounts for all validator signer addresses.
 	// This keeps checkpoint-related handlers (which query dividend accounts) from seeing an empty set.
 	dividendAccByUser := make(map[string]hmTypes.DividendAccount, len(valSet.Validators))
 	if topupState, err := topupTypes.GetGenesisStateFromAppState(codec, genesisState); err == nil && topupState != nil {

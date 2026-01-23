@@ -31,6 +31,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// MsgEventRecordResponse defines the response for HandleMsgEventRecord.
 type MsgEventRecordResponse struct {
 }
 
@@ -67,15 +68,24 @@ func (m *MsgEventRecordResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgEventRecordResponse proto.InternalMessageInfo
 
+// MsgEventRecord defines the message for submitting a state sync event record.
 type MsgEventRecord struct {
-	From            string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
-	TxHash          string `protobuf:"bytes,2,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	LogIndex        uint64 `protobuf:"varint,3,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
-	BlockNumber     uint64 `protobuf:"varint,4,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
+	// Address of the validator submitting this event record.
+	From string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
+	// Transaction hash on the root chain where the event was emitted.
+	TxHash string `protobuf:"bytes,2,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Index of the log entry within the transaction.
+	LogIndex uint64 `protobuf:"varint,3,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
+	// Block number on the root chain where the event occurred.
+	BlockNumber uint64 `protobuf:"varint,4,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
+	// Address of the contract that emitted the event.
 	ContractAddress string `protobuf:"bytes,5,opt,name=contract_address,json=contractAddress,proto3" json:"contract_address,omitempty"`
-	Data            []byte `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
-	Id              uint64 `protobuf:"varint,7,opt,name=id,proto3" json:"id,omitempty"`
-	ChainId         string `protobuf:"bytes,8,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// Encoded event data from the contract log.
+	Data []byte `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
+	// Unique ID for this event record.
+	Id uint64 `protobuf:"varint,7,opt,name=id,proto3" json:"id,omitempty"`
+	// Chain ID of the Bor chain this event applies to.
+	ChainId string `protobuf:"bytes,8,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 }
 
 func (m *MsgEventRecord) Reset()         { *m = MsgEventRecord{} }
@@ -164,7 +174,8 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// HandleMsgEventRecord defines a clerk operation for handling an event record
+	// HandleMsgEventRecord processes a state sync event record from the root
+	// chain.
 	HandleMsgEventRecord(ctx context.Context, in *MsgEventRecord, opts ...grpc.CallOption) (*MsgEventRecordResponse, error)
 }
 
@@ -187,7 +198,8 @@ func (c *msgClient) HandleMsgEventRecord(ctx context.Context, in *MsgEventRecord
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// HandleMsgEventRecord defines a clerk operation for handling an event record
+	// HandleMsgEventRecord processes a state sync event record from the root
+	// chain.
 	HandleMsgEventRecord(context.Context, *MsgEventRecord) (*MsgEventRecordResponse, error)
 }
 

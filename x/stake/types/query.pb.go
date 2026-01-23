@@ -31,6 +31,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// QueryCurrentValidatorSetRequest is the request type for the
+// GetCurrentValidatorSet query.
 type QueryCurrentValidatorSetRequest struct {
 }
 
@@ -67,7 +69,10 @@ func (m *QueryCurrentValidatorSetRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryCurrentValidatorSetRequest proto.InternalMessageInfo
 
+// QueryCurrentValidatorSetResponse is the response type for the
+// GetCurrentValidatorSet query.
 type QueryCurrentValidatorSetResponse struct {
+	// The current active validator set.
 	ValidatorSet ValidatorSet `protobuf:"bytes,1,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set"`
 }
 
@@ -111,7 +116,9 @@ func (m *QueryCurrentValidatorSetResponse) GetValidatorSet() ValidatorSet {
 	return ValidatorSet{}
 }
 
+// QuerySignerRequest is the request type for the GetSignerByAddress query.
 type QuerySignerRequest struct {
+	// Signer address to query for.
 	ValAddress string `protobuf:"bytes,1,opt,name=val_address,json=valAddress,proto3" json:"val_address,omitempty"`
 }
 
@@ -155,7 +162,9 @@ func (m *QuerySignerRequest) GetValAddress() string {
 	return ""
 }
 
+// QuerySignerResponse is the response type for the GetSignerByAddress query.
 type QuerySignerResponse struct {
+	// Validator information for the requested signer.
 	Validator Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator"`
 }
 
@@ -199,7 +208,9 @@ func (m *QuerySignerResponse) GetValidator() Validator {
 	return Validator{}
 }
 
+// QueryValidatorRequest is the request type for the GetValidatorById query.
 type QueryValidatorRequest struct {
+	// Validator ID to query for.
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
@@ -243,7 +254,9 @@ func (m *QueryValidatorRequest) GetId() uint64 {
 	return 0
 }
 
+// QueryValidatorResponse is the response type for the GetValidatorById query.
 type QueryValidatorResponse struct {
+	// Validator information for the requested ID.
 	Validator Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator"`
 }
 
@@ -287,6 +300,7 @@ func (m *QueryValidatorResponse) GetValidator() Validator {
 	return Validator{}
 }
 
+// QueryTotalPowerRequest is the request type for the GetTotalPower query.
 type QueryTotalPowerRequest struct {
 }
 
@@ -323,7 +337,9 @@ func (m *QueryTotalPowerRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryTotalPowerRequest proto.InternalMessageInfo
 
+// QueryTotalPowerResponse is the response type for the GetTotalPower query.
 type QueryTotalPowerResponse struct {
+	// Total voting power across all active validators.
 	TotalPower int64 `protobuf:"varint,1,opt,name=total_power,json=totalPower,proto3" json:"total_power,omitempty"`
 }
 
@@ -367,7 +383,10 @@ func (m *QueryTotalPowerResponse) GetTotalPower() int64 {
 	return 0
 }
 
+// QueryValidatorStatusRequest is the request type for the
+// GetValidatorStatusByAddress query.
 type QueryValidatorStatusRequest struct {
+	// Validator address to check status for.
 	ValAddress string `protobuf:"bytes,1,opt,name=val_address,json=valAddress,proto3" json:"val_address,omitempty"`
 }
 
@@ -411,7 +430,10 @@ func (m *QueryValidatorStatusRequest) GetValAddress() string {
 	return ""
 }
 
+// QueryValidatorStatusResponse is the response type for the
+// GetValidatorStatusByAddress query.
 type QueryValidatorStatusResponse struct {
+	// True if the validator is no longer active (exited or not yet joined).
 	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
 
@@ -455,8 +477,11 @@ func (m *QueryValidatorStatusResponse) GetIsOld() bool {
 	return false
 }
 
+// QueryStakeIsOldTxRequest is the request type for the IsStakeTxOld query.
 type QueryStakeIsOldTxRequest struct {
-	TxHash   string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Transaction hash on the root chain.
+	TxHash string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Log index within the transaction.
 	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 }
 
@@ -507,7 +532,9 @@ func (m *QueryStakeIsOldTxRequest) GetLogIndex() uint64 {
 	return 0
 }
 
+// QueryStakeIsOldTxResponse is the response type for the IsStakeTxOld query.
 type QueryStakeIsOldTxResponse struct {
+	// True if this stake transaction has already been processed.
 	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
 
@@ -551,7 +578,9 @@ func (m *QueryStakeIsOldTxResponse) GetIsOld() bool {
 	return false
 }
 
+// QueryProposersRequest is the request type for the GetProposersByTimes query.
 type QueryProposersRequest struct {
+	// Number of future proposers to return in the rotation sequence.
 	Times uint64 `protobuf:"varint,1,opt,name=times,proto3" json:"times,omitempty"`
 }
 
@@ -595,7 +624,10 @@ func (m *QueryProposersRequest) GetTimes() uint64 {
 	return 0
 }
 
+// QueryProposersResponse is the response type for the GetProposersByTimes
+// query.
 type QueryProposersResponse struct {
+	// List of validators in proposer rotation order.
 	Proposers []Validator `protobuf:"bytes,1,rep,name=proposers,proto3" json:"proposers"`
 }
 
@@ -639,6 +671,8 @@ func (m *QueryProposersResponse) GetProposers() []Validator {
 	return nil
 }
 
+// QueryCurrentProposerRequest is the request type for the GetCurrentProposer
+// query.
 type QueryCurrentProposerRequest struct {
 }
 
@@ -675,7 +709,10 @@ func (m *QueryCurrentProposerRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryCurrentProposerRequest proto.InternalMessageInfo
 
+// QueryCurrentProposerResponse is the response type for the GetCurrentProposer
+// query.
 type QueryCurrentProposerResponse struct {
+	// The validator currently designated as proposer.
 	Validator Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator"`
 }
 
@@ -811,22 +848,21 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	// GetCurrentValidatorSet queries for the current validator set
+	// GetCurrentValidatorSet queries the current active validator set.
 	GetCurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error)
-	// GetSignerByAddress queries validator info for a given validator address
+	// GetSignerByAddress queries validator information by signer address.
 	GetSignerByAddress(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error)
-	// GetValidatorById queries validator info for a given validator id
+	// GetValidatorById queries validator information by validator ID.
 	GetValidatorById(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error)
-	// GetValidatorStatusByAddress queries validator status for given validator
-	// val_address
+	// GetValidatorStatusByAddress queries whether a validator is active or old.
 	GetValidatorStatusByAddress(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error)
-	// GetTotalPower queries the total power of a validator set
+	// GetTotalPower queries the sum of all validators' voting power.
 	GetTotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error)
-	// IsStakeTxOld queries for the staking sequence
+	// IsStakeTxOld checks if a stake transaction has already been processed.
 	IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakeIsOldTxResponse, error)
-	// GetCurrentProposer queries validator info for the current proposer
+	// GetCurrentProposer queries the validator currently designated as proposer.
 	GetCurrentProposer(ctx context.Context, in *QueryCurrentProposerRequest, opts ...grpc.CallOption) (*QueryCurrentProposerResponse, error)
-	// GetProposersByTimes queries for the proposers by Tendermint iterations
+	// GetProposersByTimes returns the next N proposers in the rotation sequence.
 	GetProposersByTimes(ctx context.Context, in *QueryProposersRequest, opts ...grpc.CallOption) (*QueryProposersResponse, error)
 }
 
@@ -912,22 +948,21 @@ func (c *queryClient) GetProposersByTimes(ctx context.Context, in *QueryProposer
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	// GetCurrentValidatorSet queries for the current validator set
+	// GetCurrentValidatorSet queries the current active validator set.
 	GetCurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error)
-	// GetSignerByAddress queries validator info for a given validator address
+	// GetSignerByAddress queries validator information by signer address.
 	GetSignerByAddress(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error)
-	// GetValidatorById queries validator info for a given validator id
+	// GetValidatorById queries validator information by validator ID.
 	GetValidatorById(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error)
-	// GetValidatorStatusByAddress queries validator status for given validator
-	// val_address
+	// GetValidatorStatusByAddress queries whether a validator is active or old.
 	GetValidatorStatusByAddress(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error)
-	// GetTotalPower queries the total power of a validator set
+	// GetTotalPower queries the sum of all validators' voting power.
 	GetTotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error)
-	// IsStakeTxOld queries for the staking sequence
+	// IsStakeTxOld checks if a stake transaction has already been processed.
 	IsStakeTxOld(context.Context, *QueryStakeIsOldTxRequest) (*QueryStakeIsOldTxResponse, error)
-	// GetCurrentProposer queries validator info for the current proposer
+	// GetCurrentProposer queries the validator currently designated as proposer.
 	GetCurrentProposer(context.Context, *QueryCurrentProposerRequest) (*QueryCurrentProposerResponse, error)
-	// GetProposersByTimes queries for the proposers by Tendermint iterations
+	// GetProposersByTimes returns the next N proposers in the rotation sequence.
 	GetProposersByTimes(context.Context, *QueryProposersRequest) (*QueryProposersResponse, error)
 }
 

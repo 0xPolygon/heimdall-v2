@@ -9,22 +9,28 @@ import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/chainmanager/types";
 
+// Msg defines the gRPC message service for the chainmanager module.
 service Msg {
   option (cosmos.msg.v1.service) = true;
-  // UpdateParams defines a governance operation for updating the x/chainmanager
-  // module parameters. The authority is defined in the keeper.
+  // UpdateParams defines a governance operation for updating the chainmanager
+  // module parameters. Only the governance authority can execute this.
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
 }
 
+// MsgUpdateParams defines the message for updating chainmanager module
+// parameters.
 message MsgUpdateParams {
   option (amino.name) = "heimdallv2/chainmanager/MsgUpdateParams";
   option (cosmos.msg.v1.signer) = "authority";
+  // Address of the governance authority (typically the governance module).
   string authority = 1 [
     (cosmos_proto.scalar) = "cosmos.AddressString",
     (amino.dont_omitempty) = true
   ];
+  // New parameters to set.
   Params params = 2
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// MsgUpdateParamsResponse defines the response for MsgUpdateParams.
 message MsgUpdateParamsResponse {}

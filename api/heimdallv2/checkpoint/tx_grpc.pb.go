@@ -29,13 +29,14 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MsgClient interface {
-	// Checkpoint defines a method for the new checkpoint
+	// Checkpoint defines a method for proposing a new checkpoint.
 	Checkpoint(ctx context.Context, in *MsgCheckpoint, opts ...grpc.CallOption) (*MsgCheckpointResponse, error)
-	// CheckpointAck defines a method for checkpoint ack
+	// CheckpointAck defines a method for validators to acknowledge a checkpoint.
 	CheckpointAck(ctx context.Context, in *MsgCpAck, opts ...grpc.CallOption) (*MsgCpAckResponse, error)
-	// CheckpointNoAck defines a method for checkpoint no ack
+	// CheckpointNoAck defines a method for validators to reject a checkpoint.
 	CheckpointNoAck(ctx context.Context, in *MsgCpNoAck, opts ...grpc.CallOption) (*MsgCheckpointNoAckResponse, error)
-	// CheckpointNoAck defines a method for checkpoint no ack
+	// UpdateParams defines a method for updating checkpoint module parameters.
+	// Only the governance authority can execute this.
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 }
 
@@ -87,13 +88,14 @@ func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts 
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
-	// Checkpoint defines a method for the new checkpoint
+	// Checkpoint defines a method for proposing a new checkpoint.
 	Checkpoint(context.Context, *MsgCheckpoint) (*MsgCheckpointResponse, error)
-	// CheckpointAck defines a method for checkpoint ack
+	// CheckpointAck defines a method for validators to acknowledge a checkpoint.
 	CheckpointAck(context.Context, *MsgCpAck) (*MsgCpAckResponse, error)
-	// CheckpointNoAck defines a method for checkpoint no ack
+	// CheckpointNoAck defines a method for validators to reject a checkpoint.
 	CheckpointNoAck(context.Context, *MsgCpNoAck) (*MsgCheckpointNoAckResponse, error)
-	// CheckpointNoAck defines a method for checkpoint no ack
+	// UpdateParams defines a method for updating checkpoint module parameters.
+	// Only the governance authority can execute this.
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }

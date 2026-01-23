@@ -197,6 +197,11 @@ func GetVEsFromBlockStore(height int64) (*abci.ExtendedCommitInfo, error) {
 		return nil, err
 	}
 	blockStore := store.NewBlockStore(cometbftdb)
+	defer func() {
+		if err := blockStore.Close(); err != nil {
+			fmt.Printf("Error closing block store DB: %v\n", err)
+		}
+	}()
 	block := blockStore.LoadBlock(height)
 	if block == nil {
 		return nil, fmt.Errorf("block at height %d not found", height)

@@ -35,28 +35,32 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
-	// GetSpanList queries a list of spans.
+	// GetSpanList queries a paginated list of spans.
 	GetSpanList(ctx context.Context, in *QuerySpanListRequest, opts ...grpc.CallOption) (*QuerySpanListResponse, error)
 	// GetLatestSpan queries the latest span.
 	GetLatestSpan(ctx context.Context, in *QueryLatestSpanRequest, opts ...grpc.CallOption) (*QueryLatestSpanResponse, error)
-	// GetNextSpanSeed queries the next span seed given a
-	// QueryNextSpanSeedRequest.
+	// GetNextSpanSeed queries the seed for generating the next span.
+	// The seed is used for deterministic random selection of producers.
 	GetNextSpanSeed(ctx context.Context, in *QueryNextSpanSeedRequest, opts ...grpc.CallOption) (*QueryNextSpanSeedResponse, error)
-	// GetNextSpan queries the next span given a QueryNextSpanRequest.
+	// GetNextSpan prepares and returns the next span based on the current
+	// validator set. This is used by proposers to create span proposals.
 	GetNextSpan(ctx context.Context, in *QueryNextSpanRequest, opts ...grpc.CallOption) (*QueryNextSpanResponse, error)
-	// GetSpanById retrieves a span by its id.
+	// GetSpanById retrieves a specific span by its ID.
 	GetSpanById(ctx context.Context, in *QuerySpanByIdRequest, opts ...grpc.CallOption) (*QuerySpanByIdResponse, error)
 	// GetBorParams queries the parameters of x/bor module.
 	GetBorParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 	// GetProducerVotes queries producer votes from all validators.
+	// Returns a map of validator ID to their producer votes.
 	GetProducerVotes(ctx context.Context, in *QueryProducerVotesRequest, opts ...grpc.CallOption) (*QueryProducerVotesResponse, error)
-	// GetProducerVotesByValidatorId queries the producer votes for a given
-	// validator id.
+	// GetProducerVotesByValidatorId queries the producer votes cast by a specific
+	// validator.
 	GetProducerVotesByValidatorId(ctx context.Context, in *QueryProducerVotesByValidatorIdRequest, opts ...grpc.CallOption) (*QueryProducerVotesByValidatorIdResponse, error)
-	// GetProducerPlannedDowntime queries the planned downtime for a given
-	// producer id.
+	// GetProducerPlannedDowntime queries the planned downtime window for a
+	// specific producer. Producers can signal planned maintenance periods during
+	// which they won't produce blocks.
 	GetProducerPlannedDowntime(ctx context.Context, in *QueryProducerPlannedDowntimeRequest, opts ...grpc.CallOption) (*QueryProducerPlannedDowntimeResponse, error)
-	// GetValidatorPerformanceScore queries the validator performance score.
+	// GetValidatorPerformanceScore queries the performance scores of all
+	// validators. Performance scores track block production reliability.
 	GetValidatorPerformanceScore(ctx context.Context, in *QueryValidatorPerformanceScoreRequest, opts ...grpc.CallOption) (*QueryValidatorPerformanceScoreResponse, error)
 }
 
@@ -162,28 +166,32 @@ func (c *queryClient) GetValidatorPerformanceScore(ctx context.Context, in *Quer
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
-	// GetSpanList queries a list of spans.
+	// GetSpanList queries a paginated list of spans.
 	GetSpanList(context.Context, *QuerySpanListRequest) (*QuerySpanListResponse, error)
 	// GetLatestSpan queries the latest span.
 	GetLatestSpan(context.Context, *QueryLatestSpanRequest) (*QueryLatestSpanResponse, error)
-	// GetNextSpanSeed queries the next span seed given a
-	// QueryNextSpanSeedRequest.
+	// GetNextSpanSeed queries the seed for generating the next span.
+	// The seed is used for deterministic random selection of producers.
 	GetNextSpanSeed(context.Context, *QueryNextSpanSeedRequest) (*QueryNextSpanSeedResponse, error)
-	// GetNextSpan queries the next span given a QueryNextSpanRequest.
+	// GetNextSpan prepares and returns the next span based on the current
+	// validator set. This is used by proposers to create span proposals.
 	GetNextSpan(context.Context, *QueryNextSpanRequest) (*QueryNextSpanResponse, error)
-	// GetSpanById retrieves a span by its id.
+	// GetSpanById retrieves a specific span by its ID.
 	GetSpanById(context.Context, *QuerySpanByIdRequest) (*QuerySpanByIdResponse, error)
 	// GetBorParams queries the parameters of x/bor module.
 	GetBorParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	// GetProducerVotes queries producer votes from all validators.
+	// Returns a map of validator ID to their producer votes.
 	GetProducerVotes(context.Context, *QueryProducerVotesRequest) (*QueryProducerVotesResponse, error)
-	// GetProducerVotesByValidatorId queries the producer votes for a given
-	// validator id.
+	// GetProducerVotesByValidatorId queries the producer votes cast by a specific
+	// validator.
 	GetProducerVotesByValidatorId(context.Context, *QueryProducerVotesByValidatorIdRequest) (*QueryProducerVotesByValidatorIdResponse, error)
-	// GetProducerPlannedDowntime queries the planned downtime for a given
-	// producer id.
+	// GetProducerPlannedDowntime queries the planned downtime window for a
+	// specific producer. Producers can signal planned maintenance periods during
+	// which they won't produce blocks.
 	GetProducerPlannedDowntime(context.Context, *QueryProducerPlannedDowntimeRequest) (*QueryProducerPlannedDowntimeResponse, error)
-	// GetValidatorPerformanceScore queries the validator performance score.
+	// GetValidatorPerformanceScore queries the performance scores of all
+	// validators. Performance scores track block production reliability.
 	GetValidatorPerformanceScore(context.Context, *QueryValidatorPerformanceScoreRequest) (*QueryValidatorPerformanceScoreResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }

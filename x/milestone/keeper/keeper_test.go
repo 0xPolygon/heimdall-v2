@@ -242,7 +242,7 @@ func (s *KeeperTestSuite) TestDeleteMilestone_NonLast() {
 	err = keeper.AddMilestone(ctx, ms2)
 	require.NoError(err)
 
-	// make sure count is 2
+	// make sure the count is 2
 	count, err := keeper.GetMilestoneCount(ctx)
 	require.NoError(err)
 	require.Equal(uint64(2), count)
@@ -260,7 +260,7 @@ func (s *KeeperTestSuite) TestDeleteMilestone_NonLast() {
 	require.NoError(err)
 	require.True(ms2.Equal(result))
 
-	// count should remain 2
+	// the count should remain 2
 	count, err = keeper.GetMilestoneCount(ctx)
 	require.NoError(err)
 	require.Equal(uint64(2), count)

@@ -3,7 +3,6 @@ package keeper
 import (
 	"bytes"
 	"errors"
-	"math/big"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -12,6 +11,7 @@ import (
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
@@ -59,20 +59,43 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 
 	msg, ok := msgI.(*types.MsgTopupTx)
 	if !ok {
-		logger.Error("type mismatch for MsgTopupTx")
+		logger.Error(helper.ErrTypeMismatch("MsgTopupTx"))
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Debug("validating external call for topup msg",
+	logger.Debug(helper.LogValidatingExternalCall("Topup"),
 		"txHash", string(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
 
+	// check if send is enabled for default denom
+	if !s.k.BankKeeper.IsSendEnabledDenom(ctx, sdk.DefaultBondDenom) {
+		logger.Error("Send not enabled in bank keeper for topup side handler")
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	// check the feasibility of topup tx based on msg fee
 	if msg.Fee.LT(ante.DefaultFeeWantedPerTx[0].Amount) {
-		logger.Error("default fee exceeds amount to topup", "user", msg.User,
+		logger.Error("Default fee exceeds amount to topup", "user", msg.User,
 			"amount", msg.Fee, "defaultFeeWantedPerTx", ante.DefaultFeeWantedPerTx[0])
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// calculate sequence
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+
+	// check if incoming tx already exists
+	exists, err := s.k.HasTopupSequence(ctx, sequence)
+	if err != nil {
+		return sidetxs.Vote_VOTE_NO
+	}
+	if exists {
+		logger.Error("Older tx found in topup side handler",
+			"sequence", sequence,
+			"logIndex", msg.LogIndex,
+			"blockNumber", msg.BlockNumber,
+			"txHash", msg.TxHash)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -82,34 +105,38 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	}
 	chainParams := params.ChainParams
 
-	// get main tx receipt
-	receipt, err := s.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
-	if err != nil || receipt == nil {
+	// get and validate the main tx receipt
+	receipt := helper.FetchAndValidateReceipt(
+		s.k.contractCaller,
+		helper.ReceiptValidationParams{
+			TxHash:         msg.TxHash,
+			MsgBlockNumber: msg.BlockNumber,
+			Confirmations:  params.MainChainTxConfirmations,
+			ModuleName:     "topup",
+		},
+		logger,
+	)
+	if receipt == nil {
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// get event log for topup
 	eventLog, err := s.k.contractCaller.DecodeValidatorTopupFeesEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		logger.Error("error fetching log from txHash for DecodeValidatorTopupFeesEvent")
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
-		logger.Error("blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
+		logger.Error(heimdallTypes.ErrMsgErrorFetchingLog)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	ac := address.NewHexCodec()
 	msgAddrBytes, err := ac.StringToBytes(msg.User)
 	if err != nil {
-		logger.Error("error converting msg.User to bytes", "error", err)
+		logger.Error("Error converting msg.User to bytes", heimdallTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	eventLogBytes, err := ac.StringToBytes(eventLog.User.String())
 	if err != nil {
-		logger.Error("error converting eventLog.User to bytes", "error", err)
+		logger.Error("Error converting eventLog.User to bytes", heimdallTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -124,11 +151,11 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	}
 
 	if eventLog.Fee.Cmp(msg.Fee.BigInt()) != 0 {
-		logger.Error("fee in message doesn't match fee in event logs", "msgFee", msg.Fee, "eventFee", eventLog.Fee)
+		logger.Error("Fee in message doesn't match fee in event logs", "msgFee", msg.Fee, "eventFee", eventLog.Fee)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Debug("Successfully validated external call for topup msg")
+	logger.Debug(helper.LogSuccessfullyValidated("Topup"))
 
 	return sidetxs.Vote_VOTE_YES
 }
@@ -143,41 +170,40 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 
 	msg, ok := msgI.(*types.MsgTopupTx)
 	if !ok {
-		err := errors.New("type mismatch for MsgTopupTx")
+		err := errors.New(helper.ErrTypeMismatch("MsgTopupTx"))
 		logger.Error(err.Error())
 		return err
 	}
 
 	// skip handler if topup is not approved
-	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		logger.Debug("skipping new topup tx since side-tx didn't get yes votes")
-		return errors.New("side-tx didn't get yes votes")
+	if !helper.IsSideTxApproved(sideTxResult) {
+		logger.Debug(helper.ErrSkippingMsg("NewTopupTx"))
+		return errors.New(heimdallTypes.ErrMsgSideTxRejected)
 	}
 
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+	// calculate sequence
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
-	exists, err := s.k.HasTopupSequence(ctx, sequence.String())
+	exists, err := s.k.HasTopupSequence(ctx, sequence)
 	if err != nil {
-		logger.Error("error while fetching older topup sequence",
-			"sequence", sequence.String(),
-			"logIndex", msg.LogIndex,
-			"blockNumber", msg.BlockNumber,
-			"error", err)
+		logger.Error("Error while fetching older topup sequence",
+			heimdallTypes.LogKeySequence, sequence,
+			heimdallTypes.LogKeyLogIndex, msg.LogIndex,
+			heimdallTypes.LogKeyBlockNumber, msg.BlockNumber,
+			heimdallTypes.LogKeyError, err)
 		return err
 	}
 	if exists {
-		logger.Error("older tx found",
-			"sequence", sequence.String(),
+		logger.Error("Older tx found for topup in post handler",
+			"sequence", sequence,
 			"logIndex", msg.LogIndex,
 			"blockNumber", msg.BlockNumber,
 			"txHash", msg.TxHash)
 		return errors.New("older tx found")
 	}
 
-	logger.Debug("persisting topup state", "sideTxResult", sideTxResult)
+	logger.Debug("Persisting topup state", "sideTxResult", sideTxResult)
 
 	// create topup event
 	user := msg.User
@@ -185,28 +211,28 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 
 	err = s.k.BankKeeper.MintCoins(ctx, types.ModuleName, topupAmount)
 	if err != nil {
-		logger.Error("error while minting coins to x/topup module", "topupAmount", topupAmount, "error", err)
+		logger.Error("Error while minting coins to x/topup module", "topupAmount", topupAmount, heimdallTypes.LogKeyError, err)
 		return err
 	}
 
 	err = s.k.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.MustAccAddressFromHex(user), topupAmount)
 	if err != nil {
-		logger.Error("error while sending coins from x/topup module to user", "user", user, "topupAmount", topupAmount, "error", err)
+		logger.Error("Error while sending coins from x/topup module to user", "user", user, "topupAmount", topupAmount, heimdallTypes.LogKeyError, err)
 		return err
 	}
 
 	err = s.k.BankKeeper.SendCoins(ctx, sdk.MustAccAddressFromHex(user), sdk.MustAccAddressFromHex(msg.Proposer), ante.DefaultFeeWantedPerTx)
 	if err != nil {
-		logger.Error("error while sending coins from user to proposer", "user", user, "proposer", msg.Proposer, "topupAmount", topupAmount, "error", err)
+		logger.Error("Error while sending coins from user to proposer", "user", user, heimdallTypes.LogKeyProposer, msg.Proposer, "topupAmount", topupAmount, heimdallTypes.LogKeyError, err)
 		return err
 	}
 
-	logger.Debug("persisted topup state for", "user", user, "topupAmount", topupAmount.String())
+	logger.Debug("Persisted topup state for", "user", user, "topupAmount", topupAmount.String())
 
 	// save topup
-	err = s.k.SetTopupSequence(ctx, sequence.String())
+	err = s.k.SetTopupSequence(ctx, sequence)
 	if err != nil {
-		logger.Error("error while saving topup sequence", "sequence", sequence.String(), "error", err)
+		logger.Error("Error while saving topup sequence", heimdallTypes.LogKeySequence, sequence, heimdallTypes.LogKeyError, err)
 		return err
 	}
 
@@ -228,7 +254,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	return nil
 }
 
-// recordTopupMetric records metrics for side and post handlers.
+// recordTopupMetric records metrics for side and post-handlers.
 func recordTopupMetric(method string, apiType string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.TopupSubsystem, method, apiType, success, start)

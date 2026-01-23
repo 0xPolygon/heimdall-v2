@@ -25,10 +25,10 @@ func (c ContractCheckpoint) String() string {
 }
 
 // NewContractCheckpoint creates contract checkpoint
-func NewContractCheckpoint(_newStart uint64, _newEnd uint64, _currentHeaderBlock *HeaderBlock) *ContractCheckpoint {
+func NewContractCheckpoint(start uint64, end uint64, headerBlock *HeaderBlock) *ContractCheckpoint {
 	return &ContractCheckpoint{
-		newStart:           _newStart,
-		newEnd:             _newEnd,
-		currentHeaderBlock: _currentHeaderBlock,
+		newStart:           start,
+		newEnd:             end,
+		currentHeaderBlock: headerBlock,
 	}
 }

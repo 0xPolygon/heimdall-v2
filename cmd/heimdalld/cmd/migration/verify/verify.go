@@ -346,7 +346,7 @@ func verifyDataLists(hv1Path, hv2Path string, logger log.Logger) error {
 		if km.moduleV1 == "auth" && km.keyV1 == "accounts" {
 			// in v1, the accounts also consider the module accounts, which are not present in v2
 			if count1 < count2 {
-				logger.Error("count mismatch",
+				logger.Error("Count mismatch",
 					"v1_module", km.moduleV1, "v1_key", km.keyV1, "v1_count", count1,
 					"v2_module", km.moduleV2, "v2_key", km.keyV2, "v2_count", count2)
 				return fmt.Errorf("mismatch in auth accounts: %s.%s=%d > %s.%s=%d",
@@ -356,7 +356,7 @@ func verifyDataLists(hv1Path, hv2Path string, logger log.Logger) error {
 		} else if km.moduleV1 == "staking" && km.keyV1 == "validators" {
 			// in v1, the accounts also consider the module accounts, which are not present in v2
 			if count1 < count2 {
-				logger.Error("count mismatch",
+				logger.Error("Count mismatch",
 					"v1_module", km.moduleV1, "v1_key", km.keyV1, "v1_count", count1,
 					"v2_module", km.moduleV2, "v2_key", km.keyV2, "v2_count", count2)
 				return fmt.Errorf("mismatch in auth accounts: %s.%s=%d > %s.%s=%d",
@@ -365,15 +365,14 @@ func verifyDataLists(hv1Path, hv2Path string, logger log.Logger) error {
 			}
 		} else {
 			if count1 != count2 {
-				logger.Error("count mismatch",
+				logger.Error("Count mismatch",
 					"v1_module", km.moduleV1, "v1_key", km.keyV1, "v1_count", count1,
 					"v2_module", km.moduleV2, "v2_key", km.keyV2, "v2_count", count2)
 				return fmt.Errorf("mismatch: %s.%s=%d ≠ %s.%s=%d",
 					km.moduleV1, km.keyV1, count1,
 					km.moduleV2, km.keyV2, count2)
-			} else {
-				fmt.Printf("found %d entries for key %s in module %s for v1 and %d entries for key %s in module %s in v2\n", count1, km.keyV1, km.moduleV1, count2, km.keyV2, km.moduleV2)
 			}
+			fmt.Printf("found %d entries for key %s in module %s for v1 and %d entries for key %s in module %s in v2\n", count1, km.keyV1, km.moduleV1, count2, km.keyV2, km.moduleV2)
 		}
 	}
 
@@ -622,7 +621,7 @@ func verifyClerkEventRecords(ctx types.Context, app *heimdallApp.HeimdallApp, hv
 			return fmt.Errorf("event_records key is not a list")
 		}
 	}
-	// If recordsRaw == nil → records is nil → OK, treated as zero records
+	// If recordsRaw == nil → records are nil → OK, treated as zero records
 
 	dbRecords := app.ClerkKeeper.GetAllEventRecords(ctx)
 

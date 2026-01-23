@@ -6,12 +6,20 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
 
+// CheckpointSignature represents a single validator's signature on a
+// checkpoint.
 message CheckpointSignature {
+  // Address of the validator who created this signature.
   bytes validator_address = 1 [ (amino.dont_omitempty) = true ];
+  // Cryptographic signature over the checkpoint data.
   bytes signature = 2 [ (amino.dont_omitempty) = true ];
 }
 
+// CheckpointSignatures is a collection of validator signatures for a
+// checkpoint. Multiple signatures are aggregated to prove consensus before
+// submitting to the root chain.
 message CheckpointSignatures {
+  // List of validator signatures for this checkpoint.
   repeated CheckpointSignature signatures = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

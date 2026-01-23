@@ -9,22 +9,27 @@ import "heimdallv2/milestone/milestone.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
+// Msg defines the gRPC message service for the milestone module.
 service Msg {
   option (cosmos.msg.v1.service) = true;
-  // UpdateParams defines an operation for updating the x/milestone module
-  // parameters.
+  // UpdateParams defines a method for updating the milestone module parameters.
+  // Only the governance authority can execute this.
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
 }
 
+// MsgUpdateParams defines the message for updating milestone module parameters.
 message MsgUpdateParams {
   option (cosmos.msg.v1.signer) = "authority";
   option (amino.name) = "heimdallv2/milestone/MsgUpdateParams";
+  // Address of the governance authority (typically the governance module).
   string authority = 1 [
     (cosmos_proto.scalar) = "cosmos.AddressString",
     (amino.dont_omitempty) = true
   ];
+  // New parameters to set.
   Params params = 2
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// MsgUpdateParamsResponse defines the response for MsgUpdateParams.
 message MsgUpdateParamsResponse {}

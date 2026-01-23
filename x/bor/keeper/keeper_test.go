@@ -615,7 +615,7 @@ func (s *KeeperTestSuite) TestSpanByBlockNumber() {
 		{
 			name:           "Edge case - end of a span",
 			blockNumber:    100,
-			expectedSpanID: 6, // In spans 1, 3, 4, 6. Highest ID is 6.
+			expectedSpanID: 6, // In spans 1, 3, 4, 6. The highest ID is 6.
 		},
 		{
 			name:           "Edge case - end of last span",

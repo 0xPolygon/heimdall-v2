@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	// PreBlockerDuration tracks the time taken by PreBlocker function.
+	// PreBlockerDuration tracks the time taken by the PreBlocker function.
 	PreBlockerDuration = promauto.NewSummary(
 		prometheus.SummaryOpts{
 			Namespace: Namespace,
@@ -23,7 +23,7 @@ var (
 		},
 	)
 
-	// BeginBlockerDuration tracks the time taken by BeginBlocker function.
+	// BeginBlockerDuration tracks the time taken by the BeginBlocker function.
 	BeginBlockerDuration = promauto.NewSummary(
 		prometheus.SummaryOpts{
 			Namespace: Namespace,
@@ -38,7 +38,7 @@ var (
 		},
 	)
 
-	// EndBlockerDuration tracks the time taken by EndBlocker function.
+	// EndBlockerDuration tracks the time taken by the EndBlocker function.
 	EndBlockerDuration = promauto.NewSummary(
 		prometheus.SummaryOpts{
 			Namespace: Namespace,
@@ -53,7 +53,7 @@ var (
 		},
 	)
 
-	// PrepareProposalDuration tracks the time taken by PrepareProposal handler.
+	// PrepareProposalDuration tracks the time taken by the PrepareProposal handler.
 	PrepareProposalDuration = promauto.NewSummary(
 		prometheus.SummaryOpts{
 			Namespace: Namespace,
@@ -68,7 +68,7 @@ var (
 		},
 	)
 
-	// ProcessProposalDuration tracks the time taken by ProcessProposal handler.
+	// ProcessProposalDuration tracks the time taken by the ProcessProposal handler.
 	ProcessProposalDuration = promauto.NewSummary(
 		prometheus.SummaryOpts{
 			Namespace: Namespace,

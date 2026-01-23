@@ -26,6 +26,8 @@ import (
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
+const errorUnmarshallingTxStatus = "BaseProcessor: error unmarshalling tx status received from heimdall server"
+
 // Processor defines a block header listener for RootChain, BorChain, Heimdall
 type Processor interface {
 	Start() error
@@ -78,14 +80,14 @@ func NewBaseProcessor(cdc codec.Codec, queueConnector *queue.Connector, httpClie
 	cmt := helper.GetConfig().CometBFTRPCUrl
 	rpc, err := client.NewClientFromNode(cmt)
 	if err != nil {
-		logger.Error("Error while creating rpc client", "error", err)
+		logger.Error("BaseProcessor: error while creating rpc client", "error", err)
 		panic(err)
 	}
 	cliCtx = cliCtx.WithClient(rpc)
 
 	contractCaller, err := helper.NewContractCaller()
 	if err != nil {
-		logger.Error("Error while getting root chain instance", "error", err)
+		logger.Error("BaseProcessor: error while getting root chain instance", "error", err)
 		panic(err)
 	}
 
@@ -140,18 +142,18 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 	case util.ClerkEvent:
 		endpoint = helper.GetHeimdallServerEndpoint(util.ClerkTxStatusURL)
 	default:
-		bp.Logger.Error("Invalid event type", "event", eventType)
+		bp.Logger.Error("BaseProcessor: invalid event type", "event", eventType)
 	}
 
 	url, err := util.CreateURLWithQuery(endpoint, queryParam)
 	if err != nil {
-		bp.Logger.Error("Error in creating url", "endpoint", endpoint, "error", err)
+		bp.Logger.Error("BaseProcessor: error in creating url", "endpoint", endpoint, "error", err)
 		return false, err
 	}
 
 	res, err := helper.FetchFromAPI(url)
 	if err != nil {
-		bp.Logger.Error("Error fetching tx status", "url", url, "error", err)
+		bp.Logger.Error("BaseProcessor: error fetching tx status", "url", url, "error", err)
 		return false, err
 	}
 
@@ -159,26 +161,26 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 	case util.StakingEvent:
 		var response staketypes.QueryStakeIsOldTxResponse
 		if err := bp.cliCtx.Codec.UnmarshalJSON(res, &response); err != nil {
-			bp.Logger.Error("Error unmarshalling tx status received from Heimdall Server", "error", err)
+			bp.Logger.Error(errorUnmarshallingTxStatus, "error", err)
 			return false, err
 		}
 		return response.IsOld, nil
 	case util.TopupEvent:
 		var response topupTypes.QueryIsTopupTxOldResponse
 		if err := bp.cliCtx.Codec.UnmarshalJSON(res, &response); err != nil {
-			bp.Logger.Error("Error unmarshalling tx status received from Heimdall Server", "error", err)
+			bp.Logger.Error(errorUnmarshallingTxStatus, "error", err)
 			return false, err
 		}
 		return response.IsOld, nil
 	case util.ClerkEvent:
 		var response clerkTypes.IsClerkTxOldResponse
 		if err := bp.cliCtx.Codec.UnmarshalJSON(res, &response); err != nil {
-			bp.Logger.Error("Error unmarshalling tx status received from Heimdall Server", "error", err)
+			bp.Logger.Error(errorUnmarshallingTxStatus, "error", err)
 			return false, err
 		}
 		return response.IsOld, nil
 	default:
-		bp.Logger.Error("Invalid event type", "event", eventType)
+		bp.Logger.Error("BaseProcessor: invalid event type", "event", eventType)
 	}
 
 	return false, nil
@@ -193,21 +195,27 @@ func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{})
 
 	resp, err := helper.Client.Get(endpoint)
 	if err != nil || resp.StatusCode != http.StatusOK {
-		bp.Logger.Error("Error fetching mempool tx", "url", endpoint, "error", err)
+		bp.Logger.Error("BaseProcessor: error fetching mempool tx", "url", endpoint, "error", err)
 		return false, err
 	}
 
 	// Limit the number of bytes read from the response body
 	limitedBody := http.MaxBytesReader(nil, resp.Body, helper.APIBodyLimit)
+	defer func(limitedBody io.ReadCloser) {
+		err := limitedBody.Close()
+		if err != nil {
+			bp.Logger.Error("BaseProcessor: error closing limited response body:", err)
+		}
+	}(limitedBody)
 
 	body, err := io.ReadAll(limitedBody)
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			bp.Logger.Error("Error closing response body:", err)
+			bp.Logger.Error("BaseProcessor: error closing response body:", err)
 		}
 	}()
 	if err != nil {
-		bp.Logger.Error("Error reading response body for mempool tx", "error", err)
+		bp.Logger.Error("BaseProcessor: error reading response body for mempool tx", "error", err)
 		return false, err
 	}
 
@@ -216,7 +224,7 @@ func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{})
 
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		bp.Logger.Error("Error unmarshalling response received from Heimdall Server", "error", err)
+		bp.Logger.Error("BaseProcessor: error unmarshalling response received from Heimdall Server", "error", err)
 		return false, err
 	}
 
@@ -231,14 +239,14 @@ Loop:
 		// CometBFT encodes the transactions with base64 encoding. Decode it first.
 		txBytes, err := base64.StdEncoding.DecodeString(txn)
 		if err != nil {
-			bp.Logger.Error("Error decoding tx (base64 decoder) while checking against mempool", "error", err)
+			bp.Logger.Error("BaseProcessor: error decoding tx (base64 decoder) while checking against mempool", "error", err)
 			continue
 		}
 
 		// Unmarshal the transaction from bytes
 		decodedTx, err := authlegacytx.DefaultTxDecoder(bp.cliCtx.Codec)(txBytes)
 		if err != nil {
-			bp.Logger.Error("Error decoding tx (tx decoder) while checking against mempool", "error", err)
+			bp.Logger.Error("BaseProcessor: error decoding tx (tx decoder) while checking against mempool", "error", err)
 			continue
 		}
 		txMsg := decodedTx.GetMsgs()[0]
@@ -250,14 +258,14 @@ Loop:
 			// typecast the txs for the clerk type message
 			mempoolTxMsg, ok := txMsg.(*clerkTypes.MsgEventRecord)
 			if !ok {
-				bp.Logger.Error("Unable to typecast message to clerk event record while checking against mempool")
+				bp.Logger.Error("BaseProcessor: unable to typecast message to clerk event record while checking against mempool")
 				continue Loop
 			}
 
 			// typecast the msg for the clerk type message
 			clerkMsg, ok := msg.(*clerkTypes.MsgEventRecord)
 			if !ok {
-				bp.Logger.Error("Unable to typecast message to clerk event record while checking against mempool")
+				bp.Logger.Error("BaseProcessor: unable to typecast message to clerk event record while checking against mempool")
 				continue Loop
 			}
 

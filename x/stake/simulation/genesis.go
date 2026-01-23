@@ -14,7 +14,7 @@ import (
 
 func RandomizedGenState(simState *module.SimulationState) {
 	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1) //nolint
+	r1 := rand.New(s1) //nolint:gosec // weak random is acceptable for simulations
 	n := 5
 	stakingSequence := make([]string, n)
 

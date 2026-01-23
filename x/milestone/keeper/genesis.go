@@ -27,7 +27,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 		sortedMilestones := types.SortMilestones(data.Milestones)
 		for _, milestone := range sortedMilestones {
 			if err := k.AddMilestone(ctx, milestone); err != nil {
-				k.Logger(ctx).Error("error while adding the milestone to store",
+				k.Logger(ctx).Error("Error while adding the milestone to store",
 					"milestone", milestone.String(),
 					"error", err)
 			}
@@ -39,12 +39,12 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 	params, err := k.GetParams(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while getting milestone params")
+		k.Logger(ctx).Error("Error while getting milestone params")
 	}
 
 	milestones, err := k.GetMilestones(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while getting milestones")
+		k.Logger(ctx).Error("Error while getting milestones")
 	}
 
 	return &types.GenesisState{

@@ -1935,16 +1935,24 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// MsgTopupTx defines the message for topping up fees for a validator.
+// This is triggered by topup events from the root chain.
 type MsgTopupTx struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Proposer    string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
-	User        string `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
-	Fee         string `protobuf:"bytes,3,opt,name=fee,proto3" json:"fee,omitempty"`
-	TxHash      []byte `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	LogIndex    uint64 `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
+	// Address of the validator proposing this topup transaction.
+	Proposer string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// Address of the user receiving the fee topup.
+	User string `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
+	// Amount of fees to add to the user's account.
+	Fee string `protobuf:"bytes,3,opt,name=fee,proto3" json:"fee,omitempty"`
+	// Root chain transaction hash.
+	TxHash []byte `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Log index in root chain transaction.
+	LogIndex uint64 `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
+	// Root chain block number.
 	BlockNumber uint64 `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
 }
 
@@ -2010,13 +2018,17 @@ func (x *MsgTopupTx) GetBlockNumber() uint64 {
 	return 0
 }
 
+// MsgWithdrawFeeTx defines the message for withdrawing fees from a validator's
+// account.
 type MsgWithdrawFeeTx struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Address of the validator proposing this withdrawal.
 	Proposer string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
-	Amount   string `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
+	// Amount of fees to withdraw.
+	Amount string `protobuf:"bytes,2,opt,name=amount,proto3" json:"amount,omitempty"`
 }
 
 func (x *MsgWithdrawFeeTx) Reset() {
@@ -2053,6 +2065,7 @@ func (x *MsgWithdrawFeeTx) GetAmount() string {
 	return ""
 }
 
+// MsgTopupTxResponse defines the response for MsgTopupTx.
 type MsgTopupTxResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2079,6 +2092,7 @@ func (*MsgTopupTxResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_tx_proto_rawDescGZIP(), []int{2}
 }
 
+// MsgWithdrawFeeTxResponse defines the response for MsgWithdrawFeeTx.
 type MsgWithdrawFeeTxResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

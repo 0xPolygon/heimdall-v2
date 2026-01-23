@@ -17,6 +17,11 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
+const (
+	errEmptyRequest   = "empty request"
+	errInvalidAddress = "invalid address"
+)
+
 var _ types.QueryServer = queryServer{}
 
 type queryServer struct {
@@ -38,7 +43,7 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 	defer recordTopupQueryMetric(api.GetTopupTxSequenceMethod, startTime, &err)
 
 	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if !hex.IsTxHashNonEmpty(req.TxHash) {
@@ -70,7 +75,7 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 	}
 
 	if !exists {
-		q.k.Logger(ctx).Error("sequence does not exist", "txHash", req.TxHash, "index", req.LogIndex)
+		q.k.Logger(ctx).Error("Sequence does not exist", "txHash", req.TxHash, "index", req.LogIndex)
 		return nil, status.Errorf(codes.NotFound, "sequence with hash %s not found", req.TxHash)
 	}
 
@@ -84,7 +89,7 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 	defer recordTopupQueryMetric(api.IsTopupTxOldMethod, startTime, &err)
 
 	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if !hex.IsTxHashNonEmpty(req.TxHash) {
@@ -125,11 +130,11 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 	defer recordTopupQueryMetric(api.GetDividendAccountByAddressMethod, startTime, &err)
 
 	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if !common.IsHexAddress(req.Address) {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid address")
+		return nil, status.Errorf(codes.InvalidArgument, errInvalidAddress)
 	}
 
 	exists, err := q.k.HasDividendAccount(ctx, req.Address)
@@ -177,11 +182,11 @@ func (q queryServer) VerifyAccountProofByAddress(ctx context.Context, req *types
 	defer recordTopupQueryMetric(api.VerifyAccountProofByAddressMethod, startTime, &err)
 
 	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if !common.IsHexAddress(req.Address) {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid address")
+		return nil, status.Errorf(codes.InvalidArgument, errInvalidAddress)
 	}
 
 	if err := hex.ValidateProof(req.Proof); err != nil {
@@ -209,11 +214,11 @@ func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.Qu
 	defer recordTopupQueryMetric(api.GetAccountProofByAddressMethod, startTime, &err)
 
 	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if !common.IsHexAddress(req.Address) {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid address")
+		return nil, status.Errorf(codes.InvalidArgument, errInvalidAddress)
 	}
 
 	// Fetch the AccountRoot from RootChainContract, then the AccountRoot from the current account

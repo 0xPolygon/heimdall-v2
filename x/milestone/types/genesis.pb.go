@@ -24,8 +24,11 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// GenesisState defines the milestone module's genesis state.
 type GenesisState struct {
-	Params     Params      `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
+	// Module parameters at genesis.
+	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
+	// Initial milestones loaded at genesis.
 	Milestones []Milestone `protobuf:"bytes,2,rep,name=milestones,proto3" json:"milestones"`
 }
 

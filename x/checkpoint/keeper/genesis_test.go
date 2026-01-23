@@ -52,6 +52,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 
 	actualParams := keeper.ExportGenesis(ctx)
 
+	require.NotNil(actualParams)
 	require.Equal(genesisState.AckCount, actualParams.AckCount)
 	require.Equal(genesisState.BufferedCheckpoint, actualParams.BufferedCheckpoint)
 	require.Equal(genesisState.LastNoAck, actualParams.LastNoAck)

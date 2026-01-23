@@ -62,7 +62,7 @@ func NewRootChainListener() *RootChainListener {
 
 // Start starts new block subscription
 func (rl *RootChainListener) Start() error {
-	rl.Logger.Info("Starting root chain listener")
+	rl.Logger.Info("RootChainListener: starting")
 
 	// create cancellable context
 	ctx, cancelSubscription := context.WithCancel(context.Background())
@@ -76,7 +76,7 @@ func (rl *RootChainListener) Start() error {
 	go rl.StartHeaderProcess(headerCtx)
 
 	// start go routine to poll for the new header using the client object
-	rl.Logger.Info("Starting polling for root chain header blocks", "pollInterval", helper.GetConfig().SyncerPollInterval)
+	rl.Logger.Info("RootChainListener: starting polling for root chain header blocks", "pollInterval", helper.GetConfig().SyncerPollInterval)
 
 	// start polling for the finalized block in the main L1 chain (available post-merge)
 	go rl.StartPolling(ctx, helper.GetConfig().SyncerPollInterval, big.NewInt(int64(rpc.FinalizedBlockNumber)))
@@ -89,7 +89,7 @@ func (rl *RootChainListener) Start() error {
 
 // ProcessHeader - process header block from rootChain
 func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
-	rl.Logger.Debug("New block detected", "blockNumber", newHeader.header.Number)
+	rl.Logger.Debug("RootChainListener: new block detected", "blockNumber", newHeader.header.Number)
 
 	// fetch context
 	rootChainContext, err := rl.getRootChainContext()
@@ -111,7 +111,7 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 		// just for the below headerNumber -= requiredConfirmations math operation
 		confirmationBlocks := big.NewInt(0).SetUint64(requiredConfirmations)
 		if headerNumber.Cmp(confirmationBlocks) <= 0 {
-			rl.Logger.Error("Block number less than confirmations required", "blockNumber", headerNumber.Uint64, "confirmationsRequired", confirmationBlocks.Uint64)
+			rl.Logger.Error("RootChainListener: block number less than confirmations required", "blockNumber", headerNumber.Uint64, "confirmationsRequired", confirmationBlocks.Uint64)
 			return
 		}
 
@@ -127,11 +127,11 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 	if hasLastBlock {
 		lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
 		if err != nil {
-			rl.Logger.Error("Error while fetching last block bytes from storage", "error", err)
+			rl.Logger.Error("RootChainListener: error while fetching last block bytes from storage", "error", err)
 			return
 		}
 
-		rl.Logger.Debug("Got last block from bridge storage", "lastBlock", string(lastBlockBytes))
+		rl.Logger.Debug("RootChainListener: got last block from bridge storage", "lastBlock", string(lastBlockBytes))
 
 		if result, err := strconv.ParseUint(string(lastBlockBytes), 10, 64); err == nil {
 			if result >= headerNumber.Uint64() {
@@ -161,16 +161,16 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 		return
 	}
 
-	// after successful processing the logs, advance the cursor by setting the last block to storage
+	// after successfully processing the logs, advance the cursor by setting the last block to storage
 	if err := rl.storageClient.Put([]byte(lastRootBlockKey), []byte(to.String()), nil); err != nil {
-		rl.Logger.Error("Error persisting last root block in storage", "error", err, "lastRootBlock", to.String())
+		rl.Logger.Error("RootChainListener: error persisting last root block in storage", "error", err, "lastRootBlock", to.String())
 		// If this fails, we’ll reprocess [from, to] next time
 	}
 }
 
 // queryAndBroadcastEvents fetches supported events from the rootChain and handles all of them
 func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int) error {
-	rl.Logger.Debug("Querying rootChain event logs", "fromBlock", fromBlock, "toBlock", toBlock)
+	rl.Logger.Debug("RootChainListener: querying rootChain event logs", "fromBlock", fromBlock, "toBlock", toBlock)
 
 	if rl.contractCaller.MainChainClient == nil {
 		// don't advance the cursor if the client isn't ready.
@@ -194,12 +194,12 @@ func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChain
 		},
 	})
 	if err != nil {
-		rl.Logger.Error("Error while filtering logs", "error", err)
+		rl.Logger.Error("RootChainListener: error while filtering logs", "error", err)
 		return err
 	}
 
 	if len(logs) > 0 {
-		rl.Logger.Debug("New logs found", "numberOfLogs", len(logs))
+		rl.Logger.Debug("RootChainListener: new logs found", "numberOfLogs", len(logs))
 	}
 
 	// Process filtered log
@@ -239,11 +239,11 @@ func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string
 	// add delay for the task so that multiple validators won't send same transaction at same time
 	eta := time.Now().Add(delay)
 	signature.ETA = &eta
-	rl.Logger.Info("Sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)
+	rl.Logger.Info("RootChainListener: Sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)
 
 	_, err := rl.queueConnector.Server.SendTask(signature)
 	if err != nil {
-		rl.Logger.Error("Error sending task", "taskName", taskName, "error", err)
+		rl.Logger.Error("RootChainListener: error sending task", "taskName", taskName, "error", err)
 	}
 }
 
@@ -251,7 +251,7 @@ func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string
 func (rl *RootChainListener) getRootChainContext() (*RootChainListenerContext, error) {
 	chainmanagerParams, err := util.GetChainmanagerParams(rl.cliCtx.Codec)
 	if err != nil {
-		rl.Logger.Error("Error while fetching chain manager params", "error", err)
+		rl.Logger.Error("RootChainListener: error while fetching chain manager params", "error", err)
 		return nil, err
 	}
 
