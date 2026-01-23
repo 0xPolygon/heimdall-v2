@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM mirror.gcr.io/library/alpine:3.21
 
 ARG HEIMDALL_DIR=/var/lib/heimdall/
 ENV HEIMDALL_DIR=$HEIMDALL_DIR
