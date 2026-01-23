@@ -35,8 +35,8 @@ func TestDefaultConfigTemplate_ContainsRequiredSections(t *testing.T) {
 		"sh_stake_update_interval",
 		"sh_checkpoint_ack_interval",
 		"sh_max_depth_duration",
-		"main_chain_gas_limit",
-		"main_chain_max_gas_price",
+		"main_chain_gas_fee_cap",
+		"main_chain_gas_tip_cap",
 		"no_ack_wait_time",
 		"chain",
 		"max_goroutine_threshold",
@@ -72,8 +72,8 @@ func TestDefaultConfigTemplate_ContainsTemplateVariables(t *testing.T) {
 		"{{ .Custom.SHStakeUpdateInterval }}",
 		"{{ .Custom.SHCheckpointAckInterval }}",
 		"{{ .Custom.SHMaxDepthDuration }}",
-		"{{ .Custom.MainChainGasLimit }}",
-		"{{ .Custom.MainChainMaxGasPrice }}",
+		"{{ .Custom.MainChainGasFeeCap }}",
+		"{{ .Custom.MainChainGasTipCap }}",
 		"{{ .Custom.NoACKWaitTime }}",
 		"{{ .Custom.Chain }}",
 		"{{ .Custom.MaxGoRoutineThreshold }}",
@@ -112,10 +112,9 @@ func TestDefaultConfigTemplate_ContainsBridgeConfigs(t *testing.T) {
 
 func TestDefaultConfigTemplate_ContainsGasConfigs(t *testing.T) {
 	// Test gas configuration section
-	require.Contains(t, helper.DefaultConfigTemplate, "#### gas limits ####")
-	require.Contains(t, helper.DefaultConfigTemplate, "main_chain_gas_limit")
-	require.Contains(t, helper.DefaultConfigTemplate, "#### gas price ####")
-	require.Contains(t, helper.DefaultConfigTemplate, "main_chain_max_gas_price")
+	require.Contains(t, helper.DefaultConfigTemplate, "#### gas price configs (EIP-1559) ####")
+	require.Contains(t, helper.DefaultConfigTemplate, "main_chain_gas_fee_cap")
+	require.Contains(t, helper.DefaultConfigTemplate, "main_chain_gas_tip_cap")
 }
 
 func TestDefaultConfigTemplate_ContainsHealthCheckConfigs(t *testing.T) {
