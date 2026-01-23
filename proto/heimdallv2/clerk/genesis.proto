@@ -7,8 +7,12 @@ import "heimdallv2/clerk/clerk.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 
+// GenesisState defines the clerk module's genesis state.
 message GenesisState {
+  // Initial event records at genesis.
   repeated EventRecord event_records = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+  // Record sequences for tracking processed events.
+  // Format: "txHash-logIndex" mapping to ensure events are not processed twice.
   repeated string record_sequences = 2 [ (amino.dont_omitempty) = true ];
 }

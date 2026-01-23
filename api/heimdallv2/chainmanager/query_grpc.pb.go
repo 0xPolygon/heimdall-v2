@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
-	// GetChainManagerParams queries the parameters of x/chainmanager module
+	// GetChainManagerParams queries the chainmanager module parameters.
 	GetChainManagerParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 }
 
@@ -51,7 +51,7 @@ func (c *queryClient) GetChainManagerParams(ctx context.Context, in *QueryParams
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
-	// GetChainManagerParams queries the parameters of x/chainmanager module
+	// GetChainManagerParams queries the chainmanager module parameters.
 	GetChainManagerParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }

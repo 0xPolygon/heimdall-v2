@@ -5,6 +5,9 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 
 import "amino/amino.proto";
 
+// LastBlockTxs stores the stake-related transactions from the last block.
+// This is used to track recent validator updates and ensure proper sequencing.
 message LastBlockTxs {
+  // Raw transaction bytes from stake operations in the previous block.
   repeated bytes txs = 1 [ (amino.dont_omitempty) = true ];
 }

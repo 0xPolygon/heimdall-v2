@@ -32,9 +32,10 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// QueryCheckpointSignaturesRequest is request type for
-// QueryCheckpointSignatures RPC method
+// QueryCheckpointSignaturesRequest is the request type for the
+// GetCheckpointSignatures query.
 type QueryCheckpointSignaturesRequest struct {
+	// Transaction hash of the checkpoint to query signatures for.
 	TxHash string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
 }
 
@@ -78,9 +79,10 @@ func (m *QueryCheckpointSignaturesRequest) GetTxHash() string {
 	return ""
 }
 
-// QueryCheckpointSignaturesResponse is response type for
-// QueryCheckpointSignatures RPC method
+// QueryCheckpointSignaturesResponse is the response type for the
+// GetCheckpointSignatures query.
 type QueryCheckpointSignaturesResponse struct {
+	// List of validator signatures for the requested checkpoint.
 	Signatures []CheckpointSignature `protobuf:"bytes,1,rep,name=signatures,proto3" json:"signatures"`
 }
 
@@ -124,6 +126,7 @@ func (m *QueryCheckpointSignaturesResponse) GetSignatures() []CheckpointSignatur
 	return nil
 }
 
+// QueryParamsRequest is the request type for the GetCheckpointParams query.
 type QueryParamsRequest struct {
 }
 
@@ -160,7 +163,9 @@ func (m *QueryParamsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryParamsRequest proto.InternalMessageInfo
 
+// QueryParamsResponse is the response type for the GetCheckpointParams query.
 type QueryParamsResponse struct {
+	// Current checkpoint module parameters.
 	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
 }
 
@@ -204,6 +209,7 @@ func (m *QueryParamsResponse) GetParams() Params {
 	return Params{}
 }
 
+// QueryAckCountRequest is the request type for the GetAckCount query.
 type QueryAckCountRequest struct {
 }
 
@@ -240,7 +246,9 @@ func (m *QueryAckCountRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryAckCountRequest proto.InternalMessageInfo
 
+// QueryAckCountResponse is the response type for the GetAckCount query.
 type QueryAckCountResponse struct {
+	// Total number of checkpoint acknowledgments.
 	AckCount uint64 `protobuf:"varint,1,opt,name=ack_count,json=ackCount,proto3" json:"ack_count,omitempty"`
 }
 
@@ -284,6 +292,7 @@ func (m *QueryAckCountResponse) GetAckCount() uint64 {
 	return 0
 }
 
+// QueryLastNoAckRequest is the request type for the GetLastNoAck query.
 type QueryLastNoAckRequest struct {
 }
 
@@ -320,7 +329,9 @@ func (m *QueryLastNoAckRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryLastNoAckRequest proto.InternalMessageInfo
 
+// QueryLastNoAckResponse is the response type for the GetLastNoAck query.
 type QueryLastNoAckResponse struct {
+	// ID of the last checkpoint that received a no-ack.
 	LastNoAckId uint64 `protobuf:"varint,1,opt,name=last_no_ack_id,json=lastNoAckId,proto3" json:"last_no_ack_id,omitempty"`
 }
 
@@ -364,6 +375,8 @@ func (m *QueryLastNoAckResponse) GetLastNoAckId() uint64 {
 	return 0
 }
 
+// QueryCheckpointBufferRequest is the request type for the GetCheckpointBuffer
+// query.
 type QueryCheckpointBufferRequest struct {
 }
 
@@ -400,7 +413,10 @@ func (m *QueryCheckpointBufferRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryCheckpointBufferRequest proto.InternalMessageInfo
 
+// QueryCheckpointBufferResponse is the response type for the
+// GetCheckpointBuffer query.
 type QueryCheckpointBufferResponse struct {
+	// Checkpoint currently in the buffer awaiting finalization.
 	Checkpoint Checkpoint `protobuf:"bytes,1,opt,name=checkpoint,proto3" json:"checkpoint"`
 }
 
@@ -444,7 +460,9 @@ func (m *QueryCheckpointBufferResponse) GetCheckpoint() Checkpoint {
 	return Checkpoint{}
 }
 
+// QueryCheckpointRequest is the request type for the GetCheckpoint query.
 type QueryCheckpointRequest struct {
+	// Checkpoint ID number to retrieve.
 	Number uint64 `protobuf:"varint,1,opt,name=number,proto3" json:"number,omitempty"`
 }
 
@@ -488,7 +506,9 @@ func (m *QueryCheckpointRequest) GetNumber() uint64 {
 	return 0
 }
 
+// QueryCheckpointResponse is the response type for the GetCheckpoint query.
 type QueryCheckpointResponse struct {
+	// The requested checkpoint.
 	Checkpoint Checkpoint `protobuf:"bytes,1,opt,name=checkpoint,proto3" json:"checkpoint"`
 }
 
@@ -532,6 +552,8 @@ func (m *QueryCheckpointResponse) GetCheckpoint() Checkpoint {
 	return Checkpoint{}
 }
 
+// QueryCheckpointLatestRequest is the request type for the GetCheckpointLatest
+// query.
 type QueryCheckpointLatestRequest struct {
 }
 
@@ -568,7 +590,10 @@ func (m *QueryCheckpointLatestRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryCheckpointLatestRequest proto.InternalMessageInfo
 
+// QueryCheckpointLatestResponse is the response type for the
+// GetCheckpointLatest query.
 type QueryCheckpointLatestResponse struct {
+	// The most recently finalized checkpoint.
 	Checkpoint Checkpoint `protobuf:"bytes,1,opt,name=checkpoint,proto3" json:"checkpoint"`
 }
 
@@ -612,6 +637,8 @@ func (m *QueryCheckpointLatestResponse) GetCheckpoint() Checkpoint {
 	return Checkpoint{}
 }
 
+// QueryNextCheckpointRequest is the request type for the GetNextCheckpoint
+// query.
 type QueryNextCheckpointRequest struct {
 }
 
@@ -648,7 +675,10 @@ func (m *QueryNextCheckpointRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryNextCheckpointRequest proto.InternalMessageInfo
 
+// QueryNextCheckpointResponse is the response type for the GetNextCheckpoint
+// query.
 type QueryNextCheckpointResponse struct {
+	// The prepared next checkpoint ready to be proposed.
 	Checkpoint MsgCheckpoint `protobuf:"bytes,1,opt,name=checkpoint,proto3" json:"checkpoint"`
 }
 
@@ -692,7 +722,10 @@ func (m *QueryNextCheckpointResponse) GetCheckpoint() MsgCheckpoint {
 	return MsgCheckpoint{}
 }
 
+// QueryCheckpointListRequest is the request type for the GetCheckpointList
+// query.
 type QueryCheckpointListRequest struct {
+	// Pagination parameters.
 	Pagination query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination"`
 }
 
@@ -736,9 +769,13 @@ func (m *QueryCheckpointListRequest) GetPagination() query.PageRequest {
 	return query.PageRequest{}
 }
 
+// QueryCheckpointListResponse is the response type for the GetCheckpointList
+// query.
 type QueryCheckpointListResponse struct {
-	CheckpointList []Checkpoint       `protobuf:"bytes,1,rep,name=checkpoint_list,json=checkpointList,proto3" json:"checkpoint_list"`
-	Pagination     query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination"`
+	// List of checkpoints matching the query.
+	CheckpointList []Checkpoint `protobuf:"bytes,1,rep,name=checkpoint_list,json=checkpointList,proto3" json:"checkpoint_list"`
+	// Pagination response with next page token.
+	Pagination query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination"`
 }
 
 func (m *QueryCheckpointListResponse) Reset()         { *m = QueryCheckpointListResponse{} }
@@ -788,6 +825,8 @@ func (m *QueryCheckpointListResponse) GetPagination() query.PageResponse {
 	return query.PageResponse{}
 }
 
+// QueryCheckpointOverviewRequest is the request type for the
+// GetCheckpointOverview query.
 type QueryCheckpointOverviewRequest struct {
 }
 
@@ -824,12 +863,19 @@ func (m *QueryCheckpointOverviewRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryCheckpointOverviewRequest proto.InternalMessageInfo
 
+// QueryCheckpointOverviewResponse is the response type for the
+// GetCheckpointOverview query.
 type QueryCheckpointOverviewResponse struct {
-	AckCount         uint64             `protobuf:"varint,1,opt,name=ack_count,json=ackCount,proto3" json:"ack_count,omitempty"`
-	LastNoAckId      uint64             `protobuf:"varint,2,opt,name=last_no_ack_id,json=lastNoAckId,proto3" json:"last_no_ack_id,omitempty"`
-	BufferCheckpoint Checkpoint         `protobuf:"bytes,3,opt,name=buffer_checkpoint,json=bufferCheckpoint,proto3" json:"buffer_checkpoint"`
-	ValidatorCount   uint64             `protobuf:"varint,4,opt,name=validator_count,json=validatorCount,proto3" json:"validator_count,omitempty"`
-	ValidatorSet     types.ValidatorSet `protobuf:"bytes,5,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set"`
+	// Total number of checkpoint acknowledgments.
+	AckCount uint64 `protobuf:"varint,1,opt,name=ack_count,json=ackCount,proto3" json:"ack_count,omitempty"`
+	// ID of the last checkpoint that received a no-ack.
+	LastNoAckId uint64 `protobuf:"varint,2,opt,name=last_no_ack_id,json=lastNoAckId,proto3" json:"last_no_ack_id,omitempty"`
+	// Checkpoint currently in the buffer.
+	BufferCheckpoint Checkpoint `protobuf:"bytes,3,opt,name=buffer_checkpoint,json=bufferCheckpoint,proto3" json:"buffer_checkpoint"`
+	// Total number of active validators.
+	ValidatorCount uint64 `protobuf:"varint,4,opt,name=validator_count,json=validatorCount,proto3" json:"validator_count,omitempty"`
+	// Current validator set.
+	ValidatorSet types.ValidatorSet `protobuf:"bytes,5,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set"`
 }
 
 func (m *QueryCheckpointOverviewResponse) Reset()         { *m = QueryCheckpointOverviewResponse{} }
@@ -1010,25 +1056,27 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	// GetCheckpointParams queries for the x/checkpoint params
+	// GetCheckpointParams queries the checkpoint module parameters.
 	GetCheckpointParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// GetCheckpointOverview queries for the checkpoint overview
+	// GetCheckpointOverview queries an overview of checkpoint status.
+	// Returns ack counts, validator set, and buffer checkpoint.
 	GetCheckpointOverview(ctx context.Context, in *QueryCheckpointOverviewRequest, opts ...grpc.CallOption) (*QueryCheckpointOverviewResponse, error)
-	// GetAckCount queries for the ack count
+	// GetAckCount queries the total number of checkpoint acknowledgments.
 	GetAckCount(ctx context.Context, in *QueryAckCountRequest, opts ...grpc.CallOption) (*QueryAckCountResponse, error)
-	// GetCheckpointLatest queries for the latest checkpoint
+	// GetCheckpointLatest queries the most recently finalized checkpoint.
 	GetCheckpointLatest(ctx context.Context, in *QueryCheckpointLatestRequest, opts ...grpc.CallOption) (*QueryCheckpointLatestResponse, error)
-	// GetCheckpointBuffer queries for the checkpoint in the buffer
+	// GetCheckpointBuffer queries the checkpoint currently in the buffer.
+	// The buffer holds a checkpoint while validators submit acks/no-acks.
 	GetCheckpointBuffer(ctx context.Context, in *QueryCheckpointBufferRequest, opts ...grpc.CallOption) (*QueryCheckpointBufferResponse, error)
-	// GetLastNoAck queries for the last last-no-ack
+	// GetLastNoAck queries the ID of the last checkpoint that received a no-ack.
 	GetLastNoAck(ctx context.Context, in *QueryLastNoAckRequest, opts ...grpc.CallOption) (*QueryLastNoAckResponse, error)
-	// GetNextCheckpoint queries for the next checkpoint
+	// GetNextCheckpoint prepares and returns the next checkpoint to be proposed.
 	GetNextCheckpoint(ctx context.Context, in *QueryNextCheckpointRequest, opts ...grpc.CallOption) (*QueryNextCheckpointResponse, error)
-	// GetCheckpointList queries for the list of checkpoints
+	// GetCheckpointList queries a paginated list of checkpoints.
 	GetCheckpointList(ctx context.Context, in *QueryCheckpointListRequest, opts ...grpc.CallOption) (*QueryCheckpointListResponse, error)
-	// GetCheckpointSignatures queries signatures for latest checkpoint
+	// GetCheckpointSignatures queries the validator signatures for a checkpoint.
 	GetCheckpointSignatures(ctx context.Context, in *QueryCheckpointSignaturesRequest, opts ...grpc.CallOption) (*QueryCheckpointSignaturesResponse, error)
-	// GetCheckpoint queries for the checkpoint based on the number
+	// GetCheckpoint queries a specific checkpoint by its ID number.
 	GetCheckpoint(ctx context.Context, in *QueryCheckpointRequest, opts ...grpc.CallOption) (*QueryCheckpointResponse, error)
 }
 
@@ -1132,25 +1180,27 @@ func (c *queryClient) GetCheckpoint(ctx context.Context, in *QueryCheckpointRequ
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	// GetCheckpointParams queries for the x/checkpoint params
+	// GetCheckpointParams queries the checkpoint module parameters.
 	GetCheckpointParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// GetCheckpointOverview queries for the checkpoint overview
+	// GetCheckpointOverview queries an overview of checkpoint status.
+	// Returns ack counts, validator set, and buffer checkpoint.
 	GetCheckpointOverview(context.Context, *QueryCheckpointOverviewRequest) (*QueryCheckpointOverviewResponse, error)
-	// GetAckCount queries for the ack count
+	// GetAckCount queries the total number of checkpoint acknowledgments.
 	GetAckCount(context.Context, *QueryAckCountRequest) (*QueryAckCountResponse, error)
-	// GetCheckpointLatest queries for the latest checkpoint
+	// GetCheckpointLatest queries the most recently finalized checkpoint.
 	GetCheckpointLatest(context.Context, *QueryCheckpointLatestRequest) (*QueryCheckpointLatestResponse, error)
-	// GetCheckpointBuffer queries for the checkpoint in the buffer
+	// GetCheckpointBuffer queries the checkpoint currently in the buffer.
+	// The buffer holds a checkpoint while validators submit acks/no-acks.
 	GetCheckpointBuffer(context.Context, *QueryCheckpointBufferRequest) (*QueryCheckpointBufferResponse, error)
-	// GetLastNoAck queries for the last last-no-ack
+	// GetLastNoAck queries the ID of the last checkpoint that received a no-ack.
 	GetLastNoAck(context.Context, *QueryLastNoAckRequest) (*QueryLastNoAckResponse, error)
-	// GetNextCheckpoint queries for the next checkpoint
+	// GetNextCheckpoint prepares and returns the next checkpoint to be proposed.
 	GetNextCheckpoint(context.Context, *QueryNextCheckpointRequest) (*QueryNextCheckpointResponse, error)
-	// GetCheckpointList queries for the list of checkpoints
+	// GetCheckpointList queries a paginated list of checkpoints.
 	GetCheckpointList(context.Context, *QueryCheckpointListRequest) (*QueryCheckpointListResponse, error)
-	// GetCheckpointSignatures queries signatures for latest checkpoint
+	// GetCheckpointSignatures queries the validator signatures for a checkpoint.
 	GetCheckpointSignatures(context.Context, *QueryCheckpointSignaturesRequest) (*QueryCheckpointSignaturesResponse, error)
-	// GetCheckpoint queries for the checkpoint based on the number
+	// GetCheckpoint queries a specific checkpoint by its ID number.
 	GetCheckpoint(context.Context, *QueryCheckpointRequest) (*QueryCheckpointResponse, error)
 }
 

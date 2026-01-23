@@ -512,13 +512,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// DividendAccount contains the burned fees
+// DividendAccount contains the burned fees for a user.
+// Tracks accumulated fees that can be withdrawn by validators.
 type DividendAccount struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	User      string `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	// Address of the user who owns this dividend account.
+	User string `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	// Total amount of fees accumulated in this account.
 	FeeAmount string `protobuf:"bytes,2,opt,name=fee_amount,json=feeAmount,proto3" json:"fee_amount,omitempty"`
 }
 

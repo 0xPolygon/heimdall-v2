@@ -25,13 +25,26 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Span represents a range of blocks on the Bor chain with an associated
+// validator set. Spans are used to organize block production into epochs, with
+// each span having a specific set of selected producers who take turns
+// producing blocks.
 type Span struct {
-	Id                uint64             `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	StartBlock        uint64             `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
-	EndBlock          uint64             `protobuf:"varint,3,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
-	ValidatorSet      types.ValidatorSet `protobuf:"bytes,4,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set"`
-	SelectedProducers []types.Validator  `protobuf:"bytes,5,rep,name=selected_producers,json=selectedProducers,proto3" json:"selected_producers"`
-	BorChainId        string             `protobuf:"bytes,6,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
+	// Unique identifier for this span. Spans are numbered sequentially starting
+	// from 0.
+	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	// First block number included in this span (inclusive).
+	StartBlock uint64 `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
+	// Last block number included in this span (inclusive).
+	EndBlock uint64 `protobuf:"varint,3,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
+	// Complete validator set at the time this span was created.
+	// This represents all active validators, not just the selected producers.
+	ValidatorSet types.ValidatorSet `protobuf:"bytes,4,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set"`
+	// Subset of validators selected to produce blocks during this span.
+	// The number of producers is determined by the producer_count parameter.
+	SelectedProducers []types.Validator `protobuf:"bytes,5,rep,name=selected_producers,json=selectedProducers,proto3" json:"selected_producers"`
+	// Chain ID of the Bor chain this span applies to.
+	BorChainId string `protobuf:"bytes,6,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
 }
 
 func (m *Span) Reset()         { *m = Span{} }
@@ -109,10 +122,16 @@ func (m *Span) GetBorChainId() string {
 	return ""
 }
 
+// Params defines the parameters for the bor module.
 type Params struct {
+	// Duration of a sprint in blocks. A sprint is a period where a single
+	// producer creates all blocks before the next producer takes over.
 	SprintDuration uint64 `protobuf:"varint,1,opt,name=sprint_duration,json=sprintDuration,proto3" json:"sprint_duration,omitempty"`
-	SpanDuration   uint64 `protobuf:"varint,2,opt,name=span_duration,json=spanDuration,proto3" json:"span_duration,omitempty"`
-	ProducerCount  uint64 `protobuf:"varint,3,opt,name=producer_count,json=producerCount,proto3" json:"producer_count,omitempty"`
+	// Duration of a span in blocks. A span typically contains multiple sprints.
+	SpanDuration uint64 `protobuf:"varint,2,opt,name=span_duration,json=spanDuration,proto3" json:"span_duration,omitempty"`
+	// Number of producers to select from the validator set for each span.
+	// Producers are selected based on their voting power.
+	ProducerCount uint64 `protobuf:"varint,3,opt,name=producer_count,json=producerCount,proto3" json:"producer_count,omitempty"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
@@ -169,7 +188,11 @@ func (m *Params) GetProducerCount() uint64 {
 	return 0
 }
 
+// ProducerVotes contains the validator IDs that a validator has voted for
+// to be included in the next span's producer set.
 type ProducerVotes struct {
+	// List of validator IDs that this validator votes for.
+	// Validators can vote for up to producer_count validators.
 	Votes []uint64 `protobuf:"varint,1,rep,packed,name=votes,proto3" json:"votes,omitempty"`
 }
 
@@ -213,9 +236,13 @@ func (m *ProducerVotes) GetVotes() []uint64 {
 	return nil
 }
 
+// BlockRange represents a contiguous range of blocks, used for tracking
+// planned downtime periods for producers.
 type BlockRange struct {
+	// First block number in the range (inclusive).
 	StartBlock uint64 `protobuf:"varint,1,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
-	EndBlock   uint64 `protobuf:"varint,2,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
+	// Last block number in the range (inclusive).
+	EndBlock uint64 `protobuf:"varint,2,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
 }
 
 func (m *BlockRange) Reset()         { *m = BlockRange{} }

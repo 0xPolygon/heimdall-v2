@@ -7,30 +7,49 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 
+// Validator represents a single validator in the Heimdall network.
+// Validators are responsible for producing blocks on the Bor chain and
+// securing the network through Proof-of-Stake consensus.
 message Validator {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
+  // Unique identifier for this validator.
   uint64 val_id = 1 [ (amino.dont_omitempty) = true ];
+  // Epoch when this validator becomes active.
   uint64 start_epoch = 2 [ (amino.dont_omitempty) = true ];
+  // Epoch when this validator becomes inactive. 0 means no end epoch set.
   uint64 end_epoch = 3 [ (amino.dont_omitempty) = true ];
+  // Nonce for replay protection of validator transactions.
   uint64 nonce = 4 [ (amino.dont_omitempty) = true ];
+  // Voting power based on the validator's stake amount.
   int64 voting_power = 5 [ (amino.dont_omitempty) = true ];
+  // Public key used for block signing on the Bor chain.
   bytes pub_key = 6 [ (amino.dont_omitempty) = true ];
+  // Heimdall address of this validator's signer.
   string signer = 7 [
     (cosmos_proto.scalar) = "cosmos.AddressString",
     (amino.dont_omitempty) = true
   ];
+  // Block height or identifier when this validator was last updated.
   string last_updated = 8 [ (amino.dont_omitempty) = true ];
+  // Whether this validator is currently jailed (slashed and temporarily
+  // removed).
   bool jailed = 9 [ (amino.dont_omitempty) = true ];
+  // Priority value used for round-robin proposer selection in Tendermint.
   int64 proposer_priority = 10 [ (amino.dont_omitempty) = true ];
 }
 
+// ValidatorSet represents a complete set of validators at a specific point in
+// time. This is used for consensus and includes the designated block proposer.
 message ValidatorSet {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = false;
+  // List of all validators in this set.
   repeated Validator validators = 1
       [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
+  // The validator designated as proposer for the current block.
   Validator proposer = 2
       [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
+  // Sum of voting power across all validators in this set.
   int64 total_voting_power = 3 [ (amino.dont_omitempty) = true ];
 }

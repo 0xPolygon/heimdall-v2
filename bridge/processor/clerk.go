@@ -22,6 +22,25 @@ import (
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
+const (
+	// Error messages
+	errMsgClerkUnmarshallingEvent         = "ClerkProcessor: error while unmarshalling event from rootChain"
+	errMsgClerkParsingEvent               = "ClerkProcessor: error while parsing event"
+	errMsgClerkConvertingAddress          = "ClerkProcessor: error converting address to string"
+	errMsgClerkBroadcasting               = "ClerkProcessor: error while broadcasting clerk Record to heimdall"
+	errMsgClerkFetchingChainManagerParams = "ClerkProcessor: error while fetching chain manager params"
+
+	// Info messages
+	infoMsgClerkStarting                 = "ClerkProcessor: starting"
+	infoMsgClerkRegisteringTasks         = "ClerkProcessor: registering clerk tasks"
+	infoMsgClerkIgnoringAlreadyProcessed = "ClerkProcessor: ignoring task to send deposit to heimdall as already processed"
+	infoMsgClerkDataTooLarge             = `ClerkProcessor: data is too large to process, Resetting to ""`
+	infoMsgClerkTxInMempool              = "ClerkProcessor: similar transaction already in mempool, retrying in sometime"
+
+	// Debug messages
+	debugMsgClerkNewEventFound = "ClerkProcessor: new event found"
+)
+
 // ClerkContext for bridge
 type ClerkContext struct {
 	ChainmanagerParams *chainmanagertypes.Params
@@ -42,16 +61,16 @@ func NewClerkProcessor(stateSenderAbi *abi.ABI) *ClerkProcessor {
 
 // Start starts new block subscription
 func (cp *ClerkProcessor) Start() error {
-	cp.Logger.Info("Starting")
+	cp.Logger.Info(infoMsgClerkStarting)
 	return nil
 }
 
 // RegisterTasks registers the clerk-related tasks with machinery
 func (cp *ClerkProcessor) RegisterTasks() {
-	cp.Logger.Info("Registering clerk tasks")
+	cp.Logger.Info(infoMsgClerkRegisteringTasks)
 
 	if err := cp.queueConnector.Server.RegisterTask("sendStateSyncedToHeimdall", cp.sendStateSyncedToHeimdall); err != nil {
-		cp.Logger.Error("RegisterTasks | sendStateSyncedToHeimdall", "error", err)
+		cp.Logger.Error("ClerkProcessor | RegisterTasks | sendStateSyncedToHeimdall", "error", err)
 	}
 }
 
@@ -68,7 +87,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
-		cp.Logger.Error("Error while unmarshalling event from rootChain", "error", err)
+		cp.Logger.Error(errMsgClerkUnmarshallingEvent, "error", err)
 		return err
 	}
 
@@ -81,7 +100,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 
 	event := new(statesender.StatesenderStateSynced)
 	if err = helper.UnpackLog(cp.stateSenderAbi, event, eventName, &vLog); err != nil {
-		cp.Logger.Error("Error while parsing event", "name", eventName, "error", err)
+		cp.Logger.Error(errMsgClerkParsingEvent, "name", eventName, "error", err)
 	} else {
 		defer util.LogElapsedTimeForStateSyncedEvent(event, "sendStateSyncedToHeimdall", start)
 
@@ -96,7 +115,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		tracing.EndSpan(isOldTxSpan)
 
 		if isOld {
-			cp.Logger.Info("Ignoring task to send deposit to heimdall as already processed",
+			cp.Logger.Info(infoMsgClerkIgnoringAlreadyProcessed,
 				"event", eventName,
 				"id", event.Id,
 				"contract", event.ContractAddress,
@@ -111,7 +130,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		}
 
 		cp.Logger.Debug(
-			"⬜ New event found",
+			debugMsgClerkNewEventFound,
 			"event", eventName,
 			"id", event.Id,
 			"contract", event.ContractAddress,
@@ -124,14 +143,14 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 
 		_, maxStateSyncSizeCheckSpan := tracing.StartSpan(sendStateSyncedToHeimdallCtx, "maxStateSyncSizeCheck")
 		if len(event.Data) > helper.MaxStateSyncSize {
-			cp.Logger.Info(`Data is too large to process, Resetting to ""`, "data", hex.EncodeToString(event.Data))
+			cp.Logger.Info(infoMsgClerkDataTooLarge, "data", hex.EncodeToString(event.Data))
 			event.Data = common.FromHex("")
 		}
 		tracing.EndSpan(maxStateSyncSizeCheckSpan)
 
 		address, err := helper.GetAddressString()
 		if err != nil {
-			return fmt.Errorf("error converting address to string: %w", err)
+			return fmt.Errorf("ClerkProcessor: error converting address to string: %w", err)
 		}
 
 		msg := clerkTypes.NewMsgEventRecord(
@@ -153,17 +172,17 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		tracing.EndSpan(checkTxAgainstMempoolSpan)
 
 		if inMempool {
-			cp.Logger.Info("Similar transaction already in mempool, retrying in sometime", "event", eventName, "retry delay", util.RetryStateSyncTaskDelay)
+			cp.Logger.Info(infoMsgClerkTxInMempool, "event", eventName, "retry delay", util.RetryStateSyncTaskDelay)
 			return tasks.NewErrRetryTaskLater("transaction already in mempool", util.RetryStateSyncTaskDelay)
 		}
 
 		_, BroadcastToHeimdallSpan := tracing.StartSpan(sendStateSyncedToHeimdallCtx, "BroadcastToHeimdall")
 		// return broadcast to heimdall
-		_, err = cp.txBroadcaster.BroadcastToHeimdall(&msg, event)
+		_, err = cp.txBroadcaster.BroadcastToHeimdall(context.Background(), &msg, event)
 		tracing.EndSpan(BroadcastToHeimdallSpan)
 
 		if err != nil {
-			cp.Logger.Error("Error while broadcasting clerk Record to heimdall", "error", err)
+			cp.Logger.Error(errMsgClerkBroadcasting, "error", err)
 			return err
 		}
 	}
@@ -174,7 +193,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 func (cp *ClerkProcessor) getClerkContext() (*ClerkContext, error) {
 	chainmanagerParams, err := util.GetChainmanagerParams(cp.cliCtx.Codec)
 	if err != nil {
-		cp.Logger.Error("Error while fetching chain manager params", "error", err)
+		cp.Logger.Error(errMsgClerkFetchingChainManagerParams, "error", err)
 		return nil, err
 	}
 

@@ -8,16 +8,24 @@ import "amino/amino.proto";
 import "heimdallv2/checkpoint/checkpoint.proto";
 import "heimdallv2/checkpoint/checkpoint_signatures.proto";
 
+// GenesisState defines the checkpoint module's genesis state.
 message GenesisState {
+  // Module parameters at genesis.
   Params params = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  // Checkpoint currently in the buffer at genesis.
   Checkpoint buffered_checkpoint = 2
       [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
+  // ID of the last checkpoint that received a no-ack.
   uint64 last_no_ack = 3 [ (amino.dont_omitempty) = true ];
+  // Total count of checkpoint acknowledgments.
   uint64 ack_count = 4 [ (amino.dont_omitempty) = true ];
+  // List of all checkpoints at genesis.
   repeated Checkpoint checkpoints = 5
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  // Signatures for the latest checkpoint.
   CheckpointSignatures checkpoint_signatures = 6
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  // Transaction hash of the checkpoint that has the stored signatures.
   string checkpoint_signatures_txhash = 7 [ (amino.dont_omitempty) = true ];
 }

@@ -11,5 +11,4 @@ const (
 	FlagCheckpointTxHash   = "tx-hash"
 	FlagCheckpointLogIndex = "log-index"
 	FlagAutoConfigure      = "auto-configure"
-	FlagCheckpointNumber   = "checkpoint-number"
 )

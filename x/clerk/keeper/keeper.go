@@ -90,7 +90,7 @@ func (k *Keeper) SetEventRecord(ctx context.Context, record types.EventRecord) e
 	return k.SetEventRecordWithTime(ctx, record)
 }
 
-// GetEventRecord returns record from store.
+// GetEventRecord returns record from the store.
 func (k *Keeper) GetEventRecord(ctx context.Context, stateID uint64) (*types.EventRecord, error) {
 	// Check if the record exists.
 	record, err := k.RecordsWithID.Get(ctx, stateID)
@@ -140,7 +140,12 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page, limit uint64) ([]
 	if err != nil {
 		return nil, err
 	}
-	defer iterator.Close()
+	defer func(iterator collections.Iterator[uint64, types.EventRecord]) {
+		err := iterator.Close()
+		if err != nil {
+			k.Logger(ctx).Error("Error closing iterator", "error", err)
+		}
+	}(iterator)
 
 	// Collect the records from the iterator.
 	records, err = iterator.Values()
@@ -188,14 +193,10 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 	for _, stateID := range stateIDs {
 		record, err := k.GetEventRecord(ctx, stateID)
 		if err != nil {
-			k.Logger(ctx).Error("error in fetching event record", "error", err)
+			k.Logger(ctx).Error("Error in fetching event record", "error", err)
 			continue
 		}
 		allRecords = append(allRecords, *record)
-	}
-
-	if page == 0 && limit == 0 {
-		return allRecords, nil
 	}
 
 	startIndex := int((page - 1) * limit)
@@ -256,7 +257,7 @@ func (k *Keeper) IterateRecordSequencesAndApplyFn(ctx context.Context, f func(se
 			return
 		}
 
-		// Call function and return if required.
+		// Call the function and return if required.
 		if err := f(sequence); err != nil {
 			return
 		}
@@ -268,7 +269,7 @@ func (k *Keeper) SetRecordSequence(ctx context.Context, sequence string) {
 	if sequence != "" {
 		err := k.RecordSequences.Set(ctx, sequence, types.DefaultValue)
 		if err != nil {
-			k.Logger(ctx).Error("error in storing record sequence", "error", err)
+			k.Logger(ctx).Error("Error in storing record sequence", "error", err)
 		}
 	}
 }
@@ -288,10 +289,15 @@ func (k *Keeper) GetEventRecordCount(ctx context.Context) uint64 {
 	// Create a reverse iterator to get the highest key efficiently.
 	iterator, err := k.RecordsWithID.Iterate(ctx, (&collections.Range[uint64]{}).Descending())
 	if err != nil {
-		k.Logger(ctx).Error("failed to create reverse iterator for counting records", "error", err)
+		k.Logger(ctx).Error("Failed to create reverse iterator for counting records", "error", err)
 		return 0
 	}
-	defer iterator.Close()
+	defer func(iterator collections.Iterator[uint64, types.EventRecord]) {
+		err := iterator.Close()
+		if err != nil {
+			k.Logger(ctx).Error("Failed to close reverse iterator for counting records", "error", err)
+		}
+	}(iterator)
 
 	// Get the first (highest) key from the reverse iterator.
 	if !iterator.Valid() {
@@ -300,7 +306,7 @@ func (k *Keeper) GetEventRecordCount(ctx context.Context) uint64 {
 
 	highestKey, err := iterator.Key()
 	if err != nil {
-		k.Logger(ctx).Error("failed to get highest key for counting records", "error", err)
+		k.Logger(ctx).Error("Failed to get highest key for counting records", "error", err)
 		return 0
 	}
 

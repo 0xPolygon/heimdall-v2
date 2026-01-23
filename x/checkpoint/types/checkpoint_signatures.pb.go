@@ -24,9 +24,13 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// CheckpointSignature represents a single validator's signature on a
+// checkpoint.
 type CheckpointSignature struct {
+	// Address of the validator who created this signature.
 	ValidatorAddress []byte `protobuf:"bytes,1,opt,name=validator_address,json=validatorAddress,proto3" json:"validator_address,omitempty"`
-	Signature        []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
+	// Cryptographic signature over the checkpoint data.
+	Signature []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
 }
 
 func (m *CheckpointSignature) Reset()         { *m = CheckpointSignature{} }
@@ -76,7 +80,11 @@ func (m *CheckpointSignature) GetSignature() []byte {
 	return nil
 }
 
+// CheckpointSignatures is a collection of validator signatures for a
+// checkpoint. Multiple signatures are aggregated to prove consensus before
+// submitting to the root chain.
 type CheckpointSignatures struct {
+	// List of validator signatures for this checkpoint.
 	Signatures []CheckpointSignature `protobuf:"bytes,1,rep,name=signatures,proto3" json:"signatures"`
 }
 

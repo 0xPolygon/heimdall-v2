@@ -2,6 +2,7 @@ package api
 
 const (
 	// Query API methods.
+
 	IsTopupTxOldMethod                = "IsTopupTxOld"
 	GetTopupTxSequenceMethod          = "GetTopupTxSequence"
 	GetDividendAccountByAddressMethod = "GetDividendAccountByAddress"
@@ -10,12 +11,15 @@ const (
 	GetAccountProofByAddressMethod    = "GetAccountProofByAddress"
 
 	// Transaction API methods.
+
 	HandleTopupTxMethod = "HandleTopupTx"
 	WithdrawFeeTxMethod = "WithdrawFeeTx"
 
 	// Side message handler methods.
+
 	SideHandleTopupTxMethod = "SideHandleTopupTx"
 
 	// Post message handler methods.
+
 	PostHandleTopupTxMethod = "PostHandleTopupTx"
 )

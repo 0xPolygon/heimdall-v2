@@ -1,15 +1,15 @@
 package types
 
 import (
-	fmt "fmt"
+	"fmt"
 	"sort"
 	"strings"
 
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-// SortValidatorByAddress sorts a slice of validators by address
-// to sort it we compare the values of the Signer(HeimdallAddress i.e. [20]byte)
+// SortValidatorByAddress sorts a slice of validators by address.
+// To sort it, we compare the values of the Signer(HeimdallAddress i.e. [20]byte)
 func SortValidatorByAddress(a []staketypes.Validator) []staketypes.Validator {
 	sort.Slice(a, func(i, j int) bool {
 		return strings.Compare(a[i].Signer, a[j].Signer) < 0
@@ -31,8 +31,12 @@ func IsBlockCloseToSpanEnd(blockNumber, spanEnd uint64) bool {
 }
 
 func GenerateBorCommittedSpans(latestBorBlock uint64, latestBorUsedSpan *Span) []Span {
-	spans := []Span{}
 	spanLength := latestBorUsedSpan.EndBlock - latestBorUsedSpan.StartBlock
+	estimatedSpans := (latestBorBlock - latestBorUsedSpan.EndBlock) / spanLength
+	if estimatedSpans > 0 {
+		estimatedSpans++ // Add buffer
+	}
+	spans := make([]Span, 0, estimatedSpans)
 	prevSpan := latestBorUsedSpan
 	for latestBorBlock > prevSpan.EndBlock {
 		startBlock := prevSpan.EndBlock + 1
@@ -52,7 +56,7 @@ func GenerateBorCommittedSpans(latestBorBlock uint64, latestBorUsedSpan *Span) [
 
 // CalcCurrentBorSpanId computes the Bor span ID corresponding to latestBorBlock,
 // using latestHeimdallSpan as the reference. It returns an error if inputs are invalid
-// (nil span, zero or negative span length) or if arithmetic overflow is detected.
+// (nil span, zero, or negative span length) or if arithmetic overflow is detected.
 func CalcCurrentBorSpanId(latestBorBlock uint64, latestHeimdallSpan *Span) (uint64, error) {
 	if latestHeimdallSpan == nil {
 		return 0, fmt.Errorf("nil Heimdall span provided")
@@ -97,12 +101,12 @@ func CalcCurrentBorSpanId(latestBorBlock uint64, latestHeimdallSpan *Span) (uint
 const (
 	PlannedDowntimeMinimumTimeInFuture = 150
 	PlannedDowntimeMaximumTimeInFuture = 100 * DefaultSpanDuration // ~2 weeks
-	PlannedDowntimeMinRange            = 150                       // It will be down minimum for whole span, this here is just for tx validation
+	PlannedDowntimeMinRange            = 150                       // It will be down minimum for the whole span, this here is just for tx validation
 	PlannedDowntimeMaxRange            = 14 * DefaultSpanDuration  // ~48 hours
 )
 
 // LogSpan returns a human-readable summary of the span for logging purposes.
-// It extracts the key fields without dumping the entire validator set which causes unreadable logs.
+// It extracts the key fields without dumping the entire validator set, which causes unreadable logs.
 func (s *Span) LogSpan() string {
 	if s == nil {
 		return "nil"

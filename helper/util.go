@@ -82,9 +82,21 @@ func GetPowerFromAmount(amount *big.Int) (*big.Int, error) {
 }
 
 // UnpackSigAndVotes Unpacks Sig and Votes from Tx Payload
-func UnpackSigAndVotes(payload []byte, abi abi.ABI) (votes []byte, sigs []byte, checkpointData []byte, err error) {
+// For current rootchain ABI: submitHeaderBlock(bytes data, bytes sigs)
+// Returns: (data, sigs, empty, error) to maintain backward compatibility
+func UnpackSigAndVotes(payload []byte, abi abi.ABI) (data []byte, sigs []byte, reserved []byte, err error) {
 	// recover Method from signature and ABI
-	method := abi.Methods["submitHeaderBlock"]
+	method, ok := abi.Methods["submitHeaderBlock"]
+	if !ok {
+		err = errors.New("submitHeaderBlock method not found in ABI")
+		return
+	}
+
+	if len(payload) < 4 {
+		err = errors.New("payload too short")
+		return
+	}
+
 	decodedPayload := payload[4:]
 	inputDataMap := make(map[string]interface{})
 	// unpack method inputs
@@ -93,21 +105,21 @@ func UnpackSigAndVotes(payload []byte, abi abi.ABI) (votes []byte, sigs []byte, 
 		return
 	}
 
-	if inputDataMap["sigs"] == nil {
-		inputDataMap["sigs"] = []byte{}
+	// Current ABI has "data" and "sigs" parameters
+	if inputDataMap["data"] != nil {
+		data = inputDataMap["data"].([]byte)
+	} else {
+		data = []byte{}
 	}
 
-	if inputDataMap["txData"] == nil {
-		inputDataMap["txData"] = []byte{}
+	if inputDataMap["sigs"] != nil {
+		sigs = inputDataMap["sigs"].([]byte)
+	} else {
+		sigs = []byte{}
 	}
 
-	if inputDataMap["vote"] == nil {
-		inputDataMap["vote"] = []byte{}
-	}
-
-	sigs = inputDataMap["sigs"].([]byte)
-	checkpointData = inputDataMap["txData"].([]byte)
-	votes = inputDataMap["vote"].([]byte)
+	// Third return value is reserved for backward compatibility
+	reserved = []byte{}
 
 	return
 }
@@ -148,6 +160,11 @@ func FetchFromAPI(URL string) ([]byte, error) {
 
 	// Limit the number of bytes read from the response body
 	limitedBody := http.MaxBytesReader(nil, resp.Body, APIBodyLimit)
+	defer func() {
+		if err = limitedBody.Close(); err != nil {
+			Logger.Error("Error closing limited body:", err)
+		}
+	}()
 
 	// Handle the response
 
@@ -168,13 +185,17 @@ func FetchFromAPI(URL string) ([]byte, error) {
 // IsPubKeyFirstByteValid checks the validity of the public key's first byte.
 // It must be 0x04 for uncompressed public keys
 func IsPubKeyFirstByteValid(pubKey []byte) bool {
+	if len(pubKey) == 0 {
+		return false
+	}
+
 	prefix := make([]byte, 1)
 	prefix[0] = byte(0x04)
 
 	return bytes.Equal(prefix, pubKey[0:1])
 }
 
-// BroadcastTx attempts to generate, sign and broadcast a transaction with the
+// BroadcastTx attempts to generate, sign, and broadcast a transaction with the
 // given set of messages. It will also simulate gas requirements if necessary.
 // It will return an error upon failure.
 func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg) (*sdk.TxResponse, error) {
@@ -200,7 +221,7 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 	}
 
 	if clientCtx.Simulate {
-		Logger.Debug("in simulate mode")
+		Logger.Debug("Running in simulate mode")
 
 		return &sdk.TxResponse{
 			Code: abci.CodeTypeOK,
@@ -209,7 +230,7 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 
 	tx, err := txf.BuildUnsignedTx(msgs...)
 	if err != nil {
-		Logger.Error("error while building unsigned tx", "error", err)
+		Logger.Error("Error while building unsigned tx", "error", err)
 		return nil, err
 	}
 
@@ -263,14 +284,14 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 
 	txBytes, err := clientCtx.TxConfig.TxEncoder()(tx.GetTx())
 	if err != nil {
-		Logger.Error("error while encoding tx", "error", err)
+		Logger.Error("Error while encoding tx", "error", err)
 		return nil, err
 	}
 
 	// broadcast to a CometBFT node
 	res, err := clientCtx.BroadcastTx(txBytes)
 	if err != nil {
-		Logger.Error("error while broadcasting tx", "error", err)
+		Logger.Error("Error while broadcasting tx", "error", err)
 		return nil, err
 	}
 

@@ -97,31 +97,31 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	validatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching validator set from store", "err", err)
+		k.Logger(ctx).Error("Error in fetching validator set from store", "err", err)
 		return nil
 	}
 
 	sequences, err := k.GetStakingSequences(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching staking sequences from store", "err", err)
+		k.Logger(ctx).Error("Error in fetching staking sequences from store", "err", err)
 		return nil
 	}
 
 	previousValidatorSet, err := k.GetPreviousBlockValidatorSet(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching previous validator set from store", "err", err)
+		k.Logger(ctx).Error("Error in fetching previous validator set from store", "err", err)
 		return nil
 	}
 
 	lastBlockTxs, err := k.GetLastBlockTxs(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching last block txs from store", "err", err)
+		k.Logger(ctx).Error("Error in fetching last block txs from store", "err", err)
 		return nil
 	}
 
 	penultimateValidatorSet, err := k.GetPenultimateBlockValidatorSet(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching penultimate validator set from store", "err", err)
+		k.Logger(ctx).Error("Error in fetching penultimate validator set from store", "err", err)
 		return nil
 	}
 

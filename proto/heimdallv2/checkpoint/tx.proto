@@ -9,79 +9,107 @@ import "heimdallv2/checkpoint/checkpoint.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
 
+// Msg defines the gRPC message service for the checkpoint module.
 service Msg {
   option (cosmos.msg.v1.service) = true;
-  // Checkpoint defines a method for the new checkpoint
+  // Checkpoint defines a method for proposing a new checkpoint.
   rpc Checkpoint(MsgCheckpoint) returns (MsgCheckpointResponse);
-  // CheckpointAck defines a method for checkpoint ack
+  // CheckpointAck defines a method for validators to acknowledge a checkpoint.
   rpc CheckpointAck(MsgCpAck) returns (MsgCpAckResponse);
-  // CheckpointNoAck defines a method for checkpoint no ack
+  // CheckpointNoAck defines a method for validators to reject a checkpoint.
   rpc CheckpointNoAck(MsgCpNoAck) returns (MsgCheckpointNoAckResponse);
-  // CheckpointNoAck defines a method for checkpoint no ack
+  // UpdateParams defines a method for updating checkpoint module parameters.
+  // Only the governance authority can execute this.
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
 }
 
+// MsgCheckpoint defines the message for proposing a new checkpoint.
 message MsgCheckpoint {
   option (cosmos.msg.v1.signer) = "proposer";
   option (amino.name) = "heimdallv2/checkpoint/MsgCheckpoint";
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
+  // Address of the validator proposing this checkpoint.
   string proposer = 1 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
+  // First block number included in this checkpoint.
   uint64 start_block = 2 [ (amino.dont_omitempty) = true ];
+  // Last block number included in this checkpoint.
   uint64 end_block = 3 [ (amino.dont_omitempty) = true ];
+  // Merkle root hash of all blocks in the checkpoint range.
   bytes root_hash = 4 [ (amino.dont_omitempty) = true ];
+  // Merkle root hash of all account states in the checkpoint range.
   bytes account_root_hash = 5 [ (amino.dont_omitempty) = true ];
+  // Chain ID of the Bor chain.
   string bor_chain_id = 6 [ (amino.dont_omitempty) = true ];
 }
 
+// MsgCheckpointResponse defines the response for MsgCheckpoint.
 message MsgCheckpointResponse {}
 
+// MsgCpAck defines the message for acknowledging a checkpoint.
+// Validators send acks to indicate they agree with a proposed checkpoint.
 message MsgCpAck {
   option (cosmos.msg.v1.signer) = "from";
   option (amino.name) = "heimdallv2/checkpoint/MsgCpAck";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
+  // Address of the validator sending the acknowledgment.
   string from = 1 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
+  // Checkpoint ID being acknowledged.
   uint64 number = 2 [ (amino.dont_omitempty) = true ];
+  // Address of the checkpoint proposer.
   string proposer = 3 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
+  // First block number in the checkpoint.
   uint64 start_block = 4 [ (amino.dont_omitempty) = true ];
+  // Last block number in the checkpoint.
   uint64 end_block = 5 [ (amino.dont_omitempty) = true ];
+  // Root hash of the checkpoint being acknowledged.
   bytes root_hash = 6 [ (amino.dont_omitempty) = true ];
 }
 
+// MsgCpAckResponse defines the response for MsgCpAck.
 message MsgCpAckResponse {}
 
+// MsgCpNoAck defines the message for rejecting a checkpoint.
+// Validators send no-acks to indicate they disagree with a proposed checkpoint.
 message MsgCpNoAck {
   option (cosmos.msg.v1.signer) = "from";
   option (amino.name) = "heimdallv2/checkpoint/MsgCpNoAck";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
+  // Address of the validator sending the rejection.
   string from = 1 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
 }
 
+// MsgCheckpointNoAckResponse defines the response for MsgCpNoAck.
 message MsgCheckpointNoAckResponse {}
 
+// MsgUpdateParams defines the message for updating checkpoint module
+// parameters.
 message MsgUpdateParams {
   option (cosmos.msg.v1.signer) = "authority";
   option (amino.name) = "heimdallv2/checkpoint/MsgUpdateParams";
+  // Address of the governance authority (typically the governance module).
   string authority = 1 [
     (cosmos_proto.scalar) = "cosmos.AddressString",
     (amino.dont_omitempty) = true
   ];
+  // New parameters to set.
   Params params = 2
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// MsgUpdateParamsResponse defines the response for MsgUpdateParams.
 message MsgUpdateParamsResponse {}

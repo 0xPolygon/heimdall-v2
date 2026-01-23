@@ -15,6 +15,7 @@ import (
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
@@ -30,14 +31,14 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
 }
 
-func (m msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpan) (*types.MsgProposeSpanResponse, error) {
+func (srv msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpan) (*types.MsgProposeSpanResponse, error) {
 	var err error
 	start := time.Now()
 	defer recordBorTransactionMetric(api.ProposeSpanMethod, start, &err)
 
-	logger := m.Logger(ctx)
+	logger := srv.Logger(ctx)
 
-	logger.Debug("✅ validating proposed span msg",
+	logger.Debug(helper.LogValidatingExternalCall("MsgProposeSpan"),
 		"proposer", msg.Proposer,
 		"spanId", msg.SpanId,
 		"startBlock", msg.StartBlock,
@@ -47,37 +48,36 @@ func (m msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpan) (
 
 	_, err = sdk.ValAddressFromHex(msg.Proposer)
 	if err != nil {
-		logger.Error("invalid proposer address", "error", err)
-		return nil, errors.Wrapf(err, "invalid proposer address")
+		logger.Error(heimdallTypes.ErrMsgInvalidProposerAddress, "error", err)
+		return nil, errors.Wrapf(err, heimdallTypes.ErrMsgInvalidProposerAddress)
 	}
 
 	// verify chain id
-	chainParams, err := m.ck.GetParams(ctx)
+	chainParams, err := srv.ck.GetParams(ctx)
 	if err != nil {
-		logger.Error("failed to get chain params", "error", err)
-		return nil, errors.Wrapf(err, "failed to get chain params")
+		logger.Error(heimdallTypes.ErrMsgFailedToGetChainParams, "error", err)
+		return nil, errors.Wrapf(err, heimdallTypes.ErrMsgFailedToGetChainParams)
 	}
 
-	if chainParams.ChainParams.BorChainId != msg.ChainId {
-		logger.Error("invalid bor chain id", "expected", chainParams.ChainParams.BorChainId, "got", msg.ChainId)
+	if !helper.ValidateChainID(msg.ChainId, chainParams.ChainParams.BorChainId, logger, "bor") {
 		return nil, types.ErrInvalidChainID
 	}
 
 	// verify seed length
 	if len(msg.Seed) != common.HashLength {
-		logger.Error("invalid seed length", "expected", common.HashLength, "got", len(msg.Seed))
+		logger.Error("Invalid seed length", "expected", common.HashLength, "got", len(msg.Seed))
 		return nil, types.ErrInvalidSeedLength
 	}
 
-	lastSpan, err := m.GetLastSpan(ctx)
+	lastSpan, err := srv.GetLastSpan(ctx)
 	if err != nil {
-		logger.Error("unable to fetch last span", "Error", err)
+		logger.Error("Unable to fetch last span", "Error", err)
 		return nil, errors.Wrapf(err, "unable to fetch last span")
 	}
 
 	// Validate span continuity
 	if lastSpan.Id+1 != msg.SpanId || msg.StartBlock != lastSpan.EndBlock+1 || msg.EndBlock <= msg.StartBlock {
-		logger.Error("blocks not in continuity",
+		logger.Error(heimdallTypes.ErrMsgBlocksNotInContinuity,
 			"lastSpanId", lastSpan.Id,
 			"spanId", msg.SpanId,
 			"lastSpanStartBlock", lastSpan.StartBlock,
@@ -102,38 +102,38 @@ func (m msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpan) (
 		),
 	})
 
-	logger.Debug("Emitted propose-span event")
+	logger.Debug("Emitted ProposeSpan event")
 	return &types.MsgProposeSpanResponse{}, nil
 }
 
 // UpdateParams defines a method to update the params in x/bor module.
-func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+func (srv msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
 	var err error
 	start := time.Now()
 	defer recordBorTransactionMetric(api.BorUpdateParamsMethod, start, &err)
 
-	if m.authority != msg.Authority {
-		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", m.authority, msg.Authority)
+	if srv.authority != msg.Authority {
+		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", srv.authority, msg.Authority)
 	}
 
 	if err := msg.Params.ValidateBasic(); err != nil {
 		return nil, err
 	}
 
-	if err := m.SetParams(ctx, msg.Params); err != nil {
+	if err := srv.SetParams(ctx, msg.Params); err != nil {
 		return nil, err
 	}
 
 	return &types.MsgUpdateParamsResponse{}, nil
 }
 
-func (m msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProducers) (*types.MsgVoteProducersResponse, error) {
+func (srv msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProducers) (*types.MsgVoteProducersResponse, error) {
 	var err error
 	start := time.Now()
 	defer recordBorTransactionMetric(api.VoteProducersMethod, start, &err)
 
-	// Validate VEBLOP phase
-	if err := m.CanVoteProducers(ctx); err != nil {
+	// Validate veBlop phase
+	if err := srv.CanVoteProducers(ctx); err != nil {
 		return nil, err
 	}
 
@@ -142,7 +142,7 @@ func (m msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProducer
 		return nil, errors.Wrapf(err, "invalid voter address")
 	}
 
-	validator, err := m.sk.GetValidatorFromValID(ctx, msg.VoterId)
+	validator, err := srv.sk.GetValidatorFromValID(ctx, msg.VoterId)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid voter id")
 	}
@@ -162,7 +162,7 @@ func (m msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProducer
 		seen[vote] = true
 	}
 
-	err = m.SetProducerVotes(ctx, msg.VoterId, msg.Votes)
+	err = srv.SetProducerVotes(ctx, msg.VoterId, msg.Votes)
 	if err != nil {
 		return nil, err
 	}
@@ -170,14 +170,14 @@ func (m msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProducer
 	return &types.MsgVoteProducersResponse{}, nil
 }
 
-func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpans) (*types.MsgBackfillSpansResponse, error) {
+func (srv msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpans) (*types.MsgBackfillSpansResponse, error) {
 	var err error
 	start := time.Now()
 	defer recordBorTransactionMetric(api.BackfillSpansMethod, start, &err)
 
-	logger := s.Logger(ctx)
+	logger := srv.Logger(ctx)
 
-	logger.Debug("✅ validating proposed backfill spans msg",
+	logger.Debug(helper.LogValidatingExternalCall("MsgSpanBackfill"),
 		"proposer", msg.Proposer,
 		"latestSpanId", msg.LatestSpanId,
 		"latestBorSpanId", msg.LatestBorSpanId,
@@ -186,61 +186,60 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 
 	_, err = sdk.ValAddressFromHex(msg.Proposer)
 	if err != nil {
-		logger.Error("invalid proposer address", "error", err)
-		return nil, errors.Wrapf(err, "invalid proposer address")
+		logger.Error(heimdallTypes.ErrMsgInvalidProposerAddress, "error", err)
+		return nil, errors.Wrapf(err, heimdallTypes.ErrMsgInvalidProposerAddress)
 	}
 
-	chainParams, err := s.ck.GetParams(ctx)
+	chainParams, err := srv.ck.GetParams(ctx)
 	if err != nil {
-		logger.Error("failed to get chain params", "error", err)
+		logger.Error("Failed to get chain params", "error", err)
 		return nil, errors.Wrapf(err, "failed to get chain params")
 	}
 
-	if chainParams.ChainParams.BorChainId != msg.ChainId {
-		logger.Error("invalid bor chain id", "expected", chainParams.ChainParams.BorChainId, "got", msg.ChainId)
+	if !helper.ValidateChainID(msg.ChainId, chainParams.ChainParams.BorChainId, logger, "bor") {
 		return nil, types.ErrInvalidChainID
 	}
 
-	latestSpan, err := s.GetLastSpan(ctx)
+	latestSpan, err := srv.GetLastSpan(ctx)
 	if err != nil {
-		logger.Error("failed to get latest span", "error", err)
+		logger.Error("Failed to get latest span", "error", err)
 		return nil, errors.Wrapf(err, "failed to get latest span")
 	}
 
 	if msg.LatestSpanId != latestSpan.Id && msg.LatestSpanId != latestSpan.Id-1 {
-		logger.Error("invalid latest span id", "expected",
+		logger.Error("Invalid latest span id", "expected",
 			fmt.Sprintf("%d or %d", latestSpan.Id, latestSpan.Id-1), "got", msg.LatestSpanId)
 		return nil, types.ErrInvalidSpan
 	}
 
 	if msg.LatestBorSpanId <= msg.LatestSpanId {
-		logger.Error("invalid bor span id, expected greater than latest span id",
+		logger.Error("Invalid bor span id, expected greater than latest span id",
 			"latestSpanId", latestSpan.Id,
 			"latestBorSpanId", msg.LatestBorSpanId,
 		)
 		return nil, types.ErrInvalidLastBorSpanID
 	}
 
-	latestMilestone, err := s.mk.GetLastMilestone(ctx)
+	latestMilestone, err := srv.mk.GetLastMilestone(ctx)
 	if err != nil {
-		logger.Error("failed to get latest milestone", "error", err)
+		logger.Error("Failed to get latest milestone", "error", err)
 		return nil, errors.Wrapf(err, "failed to get latest milestone")
 	}
 
 	if latestMilestone == nil {
-		logger.Error("latest milestone is nil")
+		logger.Error("Latest milestone is nil")
 		return nil, types.ErrLatestMilestoneNotFound
 	}
 
-	borLastUsedSpan, err := s.GetSpan(ctx, msg.LatestSpanId)
+	borLastUsedSpan, err := srv.GetSpan(ctx, msg.LatestSpanId)
 	if err != nil {
-		logger.Error("failed to get last used bor span", "error", err)
+		logger.Error("Failed to get last used bor span", "error", err)
 		return nil, errors.Wrapf(err, "failed to get last used bor span")
 	}
 
 	borSpanId, err := types.CalcCurrentBorSpanId(latestMilestone.EndBlock, &borLastUsedSpan)
 	if err != nil {
-		logger.Error("failed to calculate bor span id", "error", err)
+		logger.Error("Failed to calculate bor span id", "error", err)
 		return nil, errors.Wrapf(err, "failed to calculate bor span id")
 	}
 
@@ -260,13 +259,13 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 	return &types.MsgBackfillSpansResponse{}, nil
 }
 
-func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetProducerDowntime) (*types.MsgSetProducerDowntimeResponse, error) {
+func (srv msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetProducerDowntime) (*types.MsgSetProducerDowntimeResponse, error) {
 	var err error
 	start := time.Now()
 	defer recordBorTransactionMetric(api.ProducerDowntimeMethod, start, &err)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if err := s.CanSetProducerDowntime(sdkCtx); err != nil {
+	if err := srv.CanSetProducerDowntime(sdkCtx); err != nil {
 		return nil, err
 	}
 
@@ -291,7 +290,7 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 	}
 
 	producerId := uint64(0)
-	validators := s.sk.GetSpanEligibleValidators(ctx)
+	validators := srv.sk.GetSpanEligibleValidators(ctx)
 	found := false
 	for _, v := range validators {
 		if util.FormatAddress(v.Signer) == util.FormatAddress(msg.Producer) {
@@ -305,7 +304,7 @@ func (s msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetPro
 		return nil, fmt.Errorf("producer with address %s not found in the current validator set", msg.Producer)
 	}
 
-	candidates, err := s.CalculateProducerSet(ctx, helper.GetProducerSetLimit(sdkCtx))
+	candidates, err := srv.CalculateProducerSet(ctx, helper.GetProducerSetLimit(sdkCtx))
 	if err != nil {
 		return nil, fmt.Errorf("failed to calculate producer set: %w", err)
 	}

@@ -6671,6 +6671,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// QueryCurrentValidatorSetRequest is the request type for the
+// GetCurrentValidatorSet query.
 type QueryCurrentValidatorSetRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -6697,11 +6699,14 @@ func (*QueryCurrentValidatorSetRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_stake_query_proto_rawDescGZIP(), []int{0}
 }
 
+// QueryCurrentValidatorSetResponse is the response type for the
+// GetCurrentValidatorSet query.
 type QueryCurrentValidatorSetResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The current active validator set.
 	ValidatorSet *ValidatorSet `protobuf:"bytes,1,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set,omitempty"`
 }
 
@@ -6732,11 +6737,13 @@ func (x *QueryCurrentValidatorSetResponse) GetValidatorSet() *ValidatorSet {
 	return nil
 }
 
+// QuerySignerRequest is the request type for the GetSignerByAddress query.
 type QuerySignerRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Signer address to query for.
 	ValAddress string `protobuf:"bytes,1,opt,name=val_address,json=valAddress,proto3" json:"val_address,omitempty"`
 }
 
@@ -6767,11 +6774,13 @@ func (x *QuerySignerRequest) GetValAddress() string {
 	return ""
 }
 
+// QuerySignerResponse is the response type for the GetSignerByAddress query.
 type QuerySignerResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Validator information for the requested signer.
 	Validator *Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator,omitempty"`
 }
 
@@ -6802,11 +6811,13 @@ func (x *QuerySignerResponse) GetValidator() *Validator {
 	return nil
 }
 
+// QueryValidatorRequest is the request type for the GetValidatorById query.
 type QueryValidatorRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Validator ID to query for.
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
@@ -6837,11 +6848,13 @@ func (x *QueryValidatorRequest) GetId() uint64 {
 	return 0
 }
 
+// QueryValidatorResponse is the response type for the GetValidatorById query.
 type QueryValidatorResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Validator information for the requested ID.
 	Validator *Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator,omitempty"`
 }
 
@@ -6872,6 +6885,7 @@ func (x *QueryValidatorResponse) GetValidator() *Validator {
 	return nil
 }
 
+// QueryTotalPowerRequest is the request type for the GetTotalPower query.
 type QueryTotalPowerRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -6898,11 +6912,13 @@ func (*QueryTotalPowerRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_stake_query_proto_rawDescGZIP(), []int{6}
 }
 
+// QueryTotalPowerResponse is the response type for the GetTotalPower query.
 type QueryTotalPowerResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Total voting power across all active validators.
 	TotalPower int64 `protobuf:"varint,1,opt,name=total_power,json=totalPower,proto3" json:"total_power,omitempty"`
 }
 
@@ -6933,11 +6949,14 @@ func (x *QueryTotalPowerResponse) GetTotalPower() int64 {
 	return 0
 }
 
+// QueryValidatorStatusRequest is the request type for the
+// GetValidatorStatusByAddress query.
 type QueryValidatorStatusRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Validator address to check status for.
 	ValAddress string `protobuf:"bytes,1,opt,name=val_address,json=valAddress,proto3" json:"val_address,omitempty"`
 }
 
@@ -6968,11 +6987,14 @@ func (x *QueryValidatorStatusRequest) GetValAddress() string {
 	return ""
 }
 
+// QueryValidatorStatusResponse is the response type for the
+// GetValidatorStatusByAddress query.
 type QueryValidatorStatusResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// True if the validator is no longer active (exited or not yet joined).
 	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
 
@@ -7003,12 +7025,15 @@ func (x *QueryValidatorStatusResponse) GetIsOld() bool {
 	return false
 }
 
+// QueryStakeIsOldTxRequest is the request type for the IsStakeTxOld query.
 type QueryStakeIsOldTxRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TxHash   string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Transaction hash on the root chain.
+	TxHash string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Log index within the transaction.
 	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 }
 
@@ -7046,11 +7071,13 @@ func (x *QueryStakeIsOldTxRequest) GetLogIndex() uint64 {
 	return 0
 }
 
+// QueryStakeIsOldTxResponse is the response type for the IsStakeTxOld query.
 type QueryStakeIsOldTxResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// True if this stake transaction has already been processed.
 	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
 
@@ -7081,11 +7108,13 @@ func (x *QueryStakeIsOldTxResponse) GetIsOld() bool {
 	return false
 }
 
+// QueryProposersRequest is the request type for the GetProposersByTimes query.
 type QueryProposersRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Number of future proposers to return in the rotation sequence.
 	Times uint64 `protobuf:"varint,1,opt,name=times,proto3" json:"times,omitempty"`
 }
 
@@ -7116,11 +7145,14 @@ func (x *QueryProposersRequest) GetTimes() uint64 {
 	return 0
 }
 
+// QueryProposersResponse is the response type for the GetProposersByTimes
+// query.
 type QueryProposersResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// List of validators in proposer rotation order.
 	Proposers []*Validator `protobuf:"bytes,1,rep,name=proposers,proto3" json:"proposers,omitempty"`
 }
 
@@ -7151,6 +7183,8 @@ func (x *QueryProposersResponse) GetProposers() []*Validator {
 	return nil
 }
 
+// QueryCurrentProposerRequest is the request type for the GetCurrentProposer
+// query.
 type QueryCurrentProposerRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -7177,11 +7211,14 @@ func (*QueryCurrentProposerRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_stake_query_proto_rawDescGZIP(), []int{14}
 }
 
+// QueryCurrentProposerResponse is the response type for the GetCurrentProposer
+// query.
 type QueryCurrentProposerResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The validator currently designated as proposer.
 	Validator *Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator,omitempty"`
 }
 

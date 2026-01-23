@@ -30,16 +30,20 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MsgClient interface {
-	// ProposeSpan defines a method for proposing a bor span.
+	// ProposeSpan defines a method for proposing a new bor span.
 	ProposeSpan(ctx context.Context, in *MsgProposeSpan, opts ...grpc.CallOption) (*MsgProposeSpanResponse, error)
-	// UpdateParams defines a method to update the bor params.
+	// UpdateParams defines a method to update the bor module parameters.
+	// Only the governance authority can execute this.
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
-	// BackfillSpans defines a method to fill missing spans.
+	// BackfillSpans defines a method to backfill missing spans.
+	// This is used during chain recovery or when spans need to be reconstructed.
 	BackfillSpans(ctx context.Context, in *MsgBackfillSpans, opts ...grpc.CallOption) (*MsgBackfillSpansResponse, error)
-	// VoteProducers defines a method to update the producer votes.
+	// VoteProducers defines a method for validators to submit their producer
+	// votes.
 	VoteProducers(ctx context.Context, in *MsgVoteProducers, opts ...grpc.CallOption) (*MsgVoteProducersResponse, error)
 	// SetProducerDowntime defines a method to set planned downtime for a
-	// producer.
+	// producer. Producers can signal maintenance windows during which they won't
+	// produce blocks.
 	SetProducerDowntime(ctx context.Context, in *MsgSetProducerDowntime, opts ...grpc.CallOption) (*MsgSetProducerDowntimeResponse, error)
 }
 
@@ -100,16 +104,20 @@ func (c *msgClient) SetProducerDowntime(ctx context.Context, in *MsgSetProducerD
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
-	// ProposeSpan defines a method for proposing a bor span.
+	// ProposeSpan defines a method for proposing a new bor span.
 	ProposeSpan(context.Context, *MsgProposeSpan) (*MsgProposeSpanResponse, error)
-	// UpdateParams defines a method to update the bor params.
+	// UpdateParams defines a method to update the bor module parameters.
+	// Only the governance authority can execute this.
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
-	// BackfillSpans defines a method to fill missing spans.
+	// BackfillSpans defines a method to backfill missing spans.
+	// This is used during chain recovery or when spans need to be reconstructed.
 	BackfillSpans(context.Context, *MsgBackfillSpans) (*MsgBackfillSpansResponse, error)
-	// VoteProducers defines a method to update the producer votes.
+	// VoteProducers defines a method for validators to submit their producer
+	// votes.
 	VoteProducers(context.Context, *MsgVoteProducers) (*MsgVoteProducersResponse, error)
 	// SetProducerDowntime defines a method to set planned downtime for a
-	// producer.
+	// producer. Producers can signal maintenance windows during which they won't
+	// produce blocks.
 	SetProducerDowntime(context.Context, *MsgSetProducerDowntime) (*MsgSetProducerDowntimeResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }

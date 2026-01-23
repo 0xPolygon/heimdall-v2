@@ -561,14 +561,19 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// AccountProof contains proof data for verifying account balances.
+// Used to verify fee topups from the root chain.
 type AccountProof struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Address      string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	// Address of the account this proof is for.
+	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	// Merkle proof data for this account's balance.
 	AccountProof []byte `protobuf:"bytes,2,opt,name=account_proof,json=accountProof,proto3" json:"account_proof,omitempty"`
-	Index        uint64 `protobuf:"varint,3,opt,name=index,proto3" json:"index,omitempty"`
+	// Index of this account in the merkle tree.
+	Index uint64 `protobuf:"varint,3,opt,name=index,proto3" json:"index,omitempty"`
 }
 
 func (x *AccountProof) Reset() {

@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"sort"
 
+	"cosmossdk.io/collections"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-// AddNewVeblopSpan adds a new veblop (Validator-elected block producer) span
-func (k *Keeper) AddNewVeblopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}, heimdallBlock uint64) error {
+// AddNewVeBlopSpan adds a new veBlop (Validator-elected block producer) span
+func (k *Keeper) AddNewVeBlopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}, heimdallBlock uint64) error {
 	logger := k.Logger(ctx)
 
 	// select next producers
@@ -47,7 +49,7 @@ func (k *Keeper) AddNewVeblopSpan(ctx sdk.Context, currentProducer uint64, start
 		BorChainId:        borChainID,
 	}
 
-	logger.Info("Freezing new veblop span", "span", newSpan.LogSpan())
+	logger.Info("Freezing new veBlop span", "span", newSpan.LogSpan())
 
 	err = k.AddNewSpan(ctx, newSpan)
 	if err != nil {
@@ -234,7 +236,7 @@ func (k *Keeper) ClearLatestFailedProducer(ctx context.Context) error {
 }
 
 // SelectNextSpanProducer selects the next producer for a new span.
-// It calculates candidate set, filters by active producers and selects one.
+// It calculates the candidate set, filters by active producers, and selects one.
 func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit, startBlock, endBlock uint64) (uint64, error) {
 	candidates, err := k.CalculateProducerSet(ctx, producerSetLimit)
 	if err != nil {
@@ -275,7 +277,7 @@ func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64,
 func (k *Keeper) CalculateProducerSet(ctx context.Context, producerSetLimit uint64) ([]uint64, error) {
 	allValidators, err := k.sk.GetValidatorSet(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get validator set: %w", err)
+		return nil, fmt.Errorf("%s: %w", heimdallTypes.ErrMsgFailedToGetValidatorSet, err)
 	}
 
 	totalPotentialProducers := uint64(len(allValidators.Validators))
@@ -284,13 +286,18 @@ func (k *Keeper) CalculateProducerSet(ctx context.Context, producerSetLimit uint
 		return []uint64{}, nil
 	}
 
-	producerWeightedScores := make(map[uint64]int64) // Will now be sum of stakes
+	producerWeightedScores := make(map[uint64]int64) // Will now be the sum of stakes
 
 	votesIterator, err := k.ProducerVotes.Iterate(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to iterate producer votes: %w", err)
 	}
-	defer votesIterator.Close()
+	defer func(votesIterator collections.Iterator[uint64, types.ProducerVotes]) {
+		err := votesIterator.Close()
+		if err != nil {
+			k.Logger(ctx).Error("Failed to close producer votes iterator", "error", err)
+		}
+	}(votesIterator)
 
 	for ; votesIterator.Valid(); votesIterator.Next() {
 		validatorID, err := votesIterator.Key()
@@ -353,7 +360,7 @@ func (k *Keeper) CalculateProducerSet(ctx context.Context, producerSetLimit uint
 		return rankedProducers[i].Score > rankedProducers[j].Score
 	})
 
-	// Calculate total stake of all validators for threshold calculation
+	// Calculate the total stake of all validators for threshold calculation
 	var totalStakeOfAllValidators int64
 	for _, val := range allValidators.Validators {
 		totalStakeOfAllValidators += val.VotingPower
@@ -370,7 +377,7 @@ func (k *Keeper) CalculateProducerSet(ctx context.Context, producerSetLimit uint
 			break // Reached producer set limit
 		}
 
-		// Calculate positional threshold: candidate needs >= 2/3 of max possible weighted vote at their position
+		// Calculate the positional threshold: candidate needs >= 2/3 of the max possible weighted vote at their position
 		position := uint64(i) + 1 // 1-indexed position
 		maxPossibleWeightedVoteAtPosition := int64(totalPotentialProducers-position+1) * totalStakeOfAllValidators
 		positionalRequiredScore := (maxPossibleWeightedVoteAtPosition * 2 / 3) + 1
@@ -398,7 +405,7 @@ func (k *Keeper) CalculateProducerSet(ctx context.Context, producerSetLimit uint
 }
 
 // FilterByActiveProducerSet filters candidates based on whether each candidate has voted for the last X milestones.
-func (k *Keeper) FilterByActiveProducerSet(ctx context.Context, candidates []uint64, activeValidatorIDs map[uint64]struct{}) []uint64 {
+func (k *Keeper) FilterByActiveProducerSet(_ context.Context, candidates []uint64, activeValidatorIDs map[uint64]struct{}) []uint64 {
 	activeCandidates := make([]uint64, 0, len(candidates))
 
 	for _, candidate := range candidates {

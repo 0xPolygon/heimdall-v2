@@ -35,25 +35,27 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
-	// GetCheckpointParams queries for the x/checkpoint params
+	// GetCheckpointParams queries the checkpoint module parameters.
 	GetCheckpointParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// GetCheckpointOverview queries for the checkpoint overview
+	// GetCheckpointOverview queries an overview of checkpoint status.
+	// Returns ack counts, validator set, and buffer checkpoint.
 	GetCheckpointOverview(ctx context.Context, in *QueryCheckpointOverviewRequest, opts ...grpc.CallOption) (*QueryCheckpointOverviewResponse, error)
-	// GetAckCount queries for the ack count
+	// GetAckCount queries the total number of checkpoint acknowledgments.
 	GetAckCount(ctx context.Context, in *QueryAckCountRequest, opts ...grpc.CallOption) (*QueryAckCountResponse, error)
-	// GetCheckpointLatest queries for the latest checkpoint
+	// GetCheckpointLatest queries the most recently finalized checkpoint.
 	GetCheckpointLatest(ctx context.Context, in *QueryCheckpointLatestRequest, opts ...grpc.CallOption) (*QueryCheckpointLatestResponse, error)
-	// GetCheckpointBuffer queries for the checkpoint in the buffer
+	// GetCheckpointBuffer queries the checkpoint currently in the buffer.
+	// The buffer holds a checkpoint while validators submit acks/no-acks.
 	GetCheckpointBuffer(ctx context.Context, in *QueryCheckpointBufferRequest, opts ...grpc.CallOption) (*QueryCheckpointBufferResponse, error)
-	// GetLastNoAck queries for the last last-no-ack
+	// GetLastNoAck queries the ID of the last checkpoint that received a no-ack.
 	GetLastNoAck(ctx context.Context, in *QueryLastNoAckRequest, opts ...grpc.CallOption) (*QueryLastNoAckResponse, error)
-	// GetNextCheckpoint queries for the next checkpoint
+	// GetNextCheckpoint prepares and returns the next checkpoint to be proposed.
 	GetNextCheckpoint(ctx context.Context, in *QueryNextCheckpointRequest, opts ...grpc.CallOption) (*QueryNextCheckpointResponse, error)
-	// GetCheckpointList queries for the list of checkpoints
+	// GetCheckpointList queries a paginated list of checkpoints.
 	GetCheckpointList(ctx context.Context, in *QueryCheckpointListRequest, opts ...grpc.CallOption) (*QueryCheckpointListResponse, error)
-	// GetCheckpointSignatures queries signatures for latest checkpoint
+	// GetCheckpointSignatures queries the validator signatures for a checkpoint.
 	GetCheckpointSignatures(ctx context.Context, in *QueryCheckpointSignaturesRequest, opts ...grpc.CallOption) (*QueryCheckpointSignaturesResponse, error)
-	// GetCheckpoint queries for the checkpoint based on the number
+	// GetCheckpoint queries a specific checkpoint by its ID number.
 	GetCheckpoint(ctx context.Context, in *QueryCheckpointRequest, opts ...grpc.CallOption) (*QueryCheckpointResponse, error)
 }
 
@@ -159,25 +161,27 @@ func (c *queryClient) GetCheckpoint(ctx context.Context, in *QueryCheckpointRequ
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
-	// GetCheckpointParams queries for the x/checkpoint params
+	// GetCheckpointParams queries the checkpoint module parameters.
 	GetCheckpointParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// GetCheckpointOverview queries for the checkpoint overview
+	// GetCheckpointOverview queries an overview of checkpoint status.
+	// Returns ack counts, validator set, and buffer checkpoint.
 	GetCheckpointOverview(context.Context, *QueryCheckpointOverviewRequest) (*QueryCheckpointOverviewResponse, error)
-	// GetAckCount queries for the ack count
+	// GetAckCount queries the total number of checkpoint acknowledgments.
 	GetAckCount(context.Context, *QueryAckCountRequest) (*QueryAckCountResponse, error)
-	// GetCheckpointLatest queries for the latest checkpoint
+	// GetCheckpointLatest queries the most recently finalized checkpoint.
 	GetCheckpointLatest(context.Context, *QueryCheckpointLatestRequest) (*QueryCheckpointLatestResponse, error)
-	// GetCheckpointBuffer queries for the checkpoint in the buffer
+	// GetCheckpointBuffer queries the checkpoint currently in the buffer.
+	// The buffer holds a checkpoint while validators submit acks/no-acks.
 	GetCheckpointBuffer(context.Context, *QueryCheckpointBufferRequest) (*QueryCheckpointBufferResponse, error)
-	// GetLastNoAck queries for the last last-no-ack
+	// GetLastNoAck queries the ID of the last checkpoint that received a no-ack.
 	GetLastNoAck(context.Context, *QueryLastNoAckRequest) (*QueryLastNoAckResponse, error)
-	// GetNextCheckpoint queries for the next checkpoint
+	// GetNextCheckpoint prepares and returns the next checkpoint to be proposed.
 	GetNextCheckpoint(context.Context, *QueryNextCheckpointRequest) (*QueryNextCheckpointResponse, error)
-	// GetCheckpointList queries for the list of checkpoints
+	// GetCheckpointList queries a paginated list of checkpoints.
 	GetCheckpointList(context.Context, *QueryCheckpointListRequest) (*QueryCheckpointListResponse, error)
-	// GetCheckpointSignatures queries signatures for latest checkpoint
+	// GetCheckpointSignatures queries the validator signatures for a checkpoint.
 	GetCheckpointSignatures(context.Context, *QueryCheckpointSignaturesRequest) (*QueryCheckpointSignaturesResponse, error)
-	// GetCheckpoint queries for the checkpoint based on the number
+	// GetCheckpoint queries a specific checkpoint by its ID number.
 	GetCheckpoint(context.Context, *QueryCheckpointRequest) (*QueryCheckpointResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }

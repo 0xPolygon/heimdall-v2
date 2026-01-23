@@ -12,7 +12,6 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	goproto "github.com/cosmos/gogoproto/proto"
-
 	"github.com/stretchr/testify/require"
 )
 
@@ -56,7 +55,7 @@ func TestGetVEsFromEndpoint_MockServer(t *testing.T) {
 	extInfo, err := GetVEsFromEndpoint(1189, host, port)
 	require.NoError(t, err)
 	require.NotNil(t, extInfo)
-	t.Logf("Unmarshaled ExtendedCommitInfo: Round=%d, Votes=%d", extInfo.Round, len(extInfo.Votes))
+	t.Logf("Unmarshalled ExtendedCommitInfo: Round=%d, Votes=%d", extInfo.Round, len(extInfo.Votes))
 	require.NotEmpty(t, extInfo.Votes)
 
 	decoded, err := base64.StdEncoding.DecodeString(mockVe)

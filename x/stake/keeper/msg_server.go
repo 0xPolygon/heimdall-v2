@@ -19,6 +19,7 @@ import (
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -33,12 +34,12 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 }
 
 // ValidatorJoin defines a method for new validator's joining
-func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoin) (*types.MsgValidatorJoinResponse, error) {
+func (srv msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoin) (*types.MsgValidatorJoinResponse, error) {
 	var err error
 	startTime := time.Now()
 	defer recordStakeTransactionMetric(api.ValidatorJoinMethod, startTime, &err)
 
-	m.k.Logger(ctx).Debug("✅ Validating validator join msg",
+	srv.k.Logger(ctx).Debug(helper.LogValidatingExternalCall("ValidatorJoin"),
 		"validatorId", msg.ValId,
 		"activationEpoch", msg.ActivationEpoch,
 		"amount", msg.Amount,
@@ -50,11 +51,11 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 
 	err = msg.ValidateBasic()
 	if err != nil {
-		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgValidationFailed, hmTypes.LogKeyError, err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, hmTypes.ErrMsgValidationFailed)
 	}
 
-	// Generate PubKey from PubKey in message and signer
+	// Generate PubKey from PubKey in the message and signer
 	pubKey := msg.SignerPubKey
 	pk := secp256k1.PubKey{Key: pubKey}
 
@@ -64,19 +65,19 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 
 	signer, err := addrCodec.NewHexCodec().BytesToString(pk.Address())
 	if err != nil {
-		m.k.Logger(ctx).Error("signer is invalid", "error", err)
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "signer is invalid")
+		srv.k.Logger(ctx).Error("Signer is invalid for ValidatorJoin", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "signer is invalid for ValidatorJoin")
 	}
 
 	// check if the validator has been validator before
-	if ok, err := m.k.DoesValIdExist(ctx, msg.ValId); ok {
-		m.k.Logger(ctx).Error("validator has been a validator before, hence cannot join with same id", "validatorId", msg.ValId, "err", err)
+	if ok, err := srv.k.DoesValIdExist(ctx, msg.ValId); ok {
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgValidatorAlreadyExists, hmTypes.LogKeyValidatorID, msg.ValId, hmTypes.LogKeyError, err)
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "validator corresponding to the val id already exists in store")
 	}
 
 	signer = util.FormatAddress(signer)
 	// get validator by signer
-	checkVal, err := m.k.GetValidatorInfo(ctx, signer)
+	checkVal, err := srv.k.GetValidatorInfo(ctx, signer)
 	// not returning error if validator not found because it is a new validator
 	if err == nil && strings.Compare(util.FormatAddress(checkVal.Signer), signer) == 0 {
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, fmt.Sprintf("validator %s already exists", signer))
@@ -85,7 +86,7 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 	// validate voting power
 	_, err = helper.GetPowerFromAmount(msg.Amount.BigInt())
 	if err != nil {
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprintf("Invalid amount %s for validator %d", msg.Amount, msg.ValId))
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprintf("%s %s for validator %d", hmTypes.ErrMsgInvalidAmount, msg.Amount, msg.ValId))
 	}
 
 	// add the sequence
@@ -94,9 +95,9 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 	// check if the event has already been processed
-	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
-		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
+	if srv.k.HasStakingSequence(ctx, sequence.String()) {
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence.String())
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, hmTypes.ErrMsgOldEventsNotAllowed)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -113,12 +114,12 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 }
 
 // StakeUpdate defines a method for updating the stake of a validator
-func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (*types.MsgStakeUpdateResponse, error) {
+func (srv msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (*types.MsgStakeUpdateResponse, error) {
 	var err error
 	startTime := time.Now()
 	defer recordStakeTransactionMetric(api.StakeUpdateMethod, startTime, &err)
 
-	m.k.Logger(ctx).Debug("✅ Validating stake update msg",
+	srv.k.Logger(ctx).Debug(helper.LogValidatingExternalCall("StakeUpdate"),
 		"validatorID", msg.ValId,
 		"newAmount", msg.NewAmount,
 		"txHash", msg.TxHash,
@@ -128,15 +129,15 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 
 	err = msg.ValidateBasic()
 	if err != nil {
-		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgValidationFailed, hmTypes.LogKeyError, err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, hmTypes.ErrMsgValidationFailed)
 	}
 
 	// pull validator from store
-	_, err = m.k.GetValidatorFromValID(ctx, msg.ValId)
+	_, err = srv.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
-		m.k.Logger(ctx).Error("failed to fetch validator from store", "validatorId", msg.ValId, "error", err)
-		return nil, errorsmod.Wrap(types.ErrNoValidator, "failed to fetch validator from store")
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgFailedToFetchValidator, "validatorId", msg.ValId, "error", err)
+		return nil, errorsmod.Wrap(types.ErrNoValidator, hmTypes.ErrMsgFailedToFetchValidator)
 	}
 
 	// add the sequence
@@ -145,9 +146,9 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 	// check if the event has already been processed
-	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
-		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
+	if srv.k.HasStakingSequence(ctx, sequence.String()) {
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence.String())
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, hmTypes.ErrMsgOldEventsNotAllowed)
 	}
 
 	// set validator amount
@@ -160,12 +161,12 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 }
 
 // SignerUpdate defines a method for updating the validator's signer
-func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate) (*types.MsgSignerUpdateResponse, error) {
+func (srv msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate) (*types.MsgSignerUpdateResponse, error) {
 	var err error
 	startTime := time.Now()
 	defer recordStakeTransactionMetric(api.SignerUpdateMethod, startTime, &err)
 
-	m.k.Logger(ctx).Debug("✅ Validating signer update msg",
+	srv.k.Logger(ctx).Debug(helper.LogValidatingExternalCall("SignerUpdate"),
 		"validatorID", msg.ValId,
 		"NewSignerPubKey", common.Bytes2Hex(msg.NewSignerPubKey),
 		"txHash", msg.TxHash,
@@ -175,11 +176,11 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 
 	err = msg.ValidateBasic()
 	if err != nil {
-		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgValidationFailed, hmTypes.LogKeyError, err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, hmTypes.ErrMsgValidationFailed)
 	}
 
-	// Generate PubKey from PubKey in message and signer
+	// Generate PubKey from PubKey in the message and signer
 	pubKey := msg.NewSignerPubKey
 	pk := &secp256k1.PubKey{Key: pubKey}
 
@@ -189,14 +190,14 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 
 	newSigner, err := addrCodec.NewHexCodec().BytesToString(pk.Address())
 	if err != nil {
-		m.k.Logger(ctx).Error("new signer is invalid", "error", err, "newSigner", newSigner)
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "new signer is invalid")
+		srv.k.Logger(ctx).Error("New signer is invalid for signerUpdate", "error", err, "newSigner", newSigner)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "new signer is invalid for signerUpdate")
 	}
 
 	// pull validator from store
-	validator, err := m.k.GetValidatorFromValID(ctx, msg.ValId)
+	validator, err := srv.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
-		m.k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ValId, "error", err)
+		srv.k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ValId, "error", err)
 		return nil, errorsmod.Wrap(types.ErrNoValidator, "Fetching of validator from store failed")
 	}
 
@@ -209,29 +210,28 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 	// check if the event has already been processed
-	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
-		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
+	if srv.k.HasStakingSequence(ctx, sequence.String()) {
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence.String())
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, hmTypes.ErrMsgOldEventsNotAllowed)
 	}
 
 	// check if the new signer address is the same as the existing signer
 	if newSigner == oldSigner {
 		// No signer change
-		m.k.Logger(ctx).Error("new signer is the same as old signer")
-		return nil, errorsmod.Wrap(types.ErrNoSignerChange, "newSigner same as oldSigner")
-
+		srv.k.Logger(ctx).Error("New signer is the same as old signer in signerUpdate", "validatorId", msg.ValId, "signer", newSigner)
+		return nil, errorsmod.Wrap(types.ErrNoSignerChange, "newSigner same as oldSigner in signerUpdate")
 	}
 
 	return &types.MsgSignerUpdateResponse{}, nil
 }
 
 // ValidatorExit defines a method for exiting the validator from the validator set
-func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExit) (*types.MsgValidatorExitResponse, error) {
+func (srv msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExit) (*types.MsgValidatorExitResponse, error) {
 	var err error
 	startTime := time.Now()
 	defer recordStakeTransactionMetric(api.ValidatorExitMethod, startTime, &err)
 
-	m.k.Logger(ctx).Debug("✅ Validating validator exit msg",
+	srv.k.Logger(ctx).Debug(helper.LogValidatingExternalCall("ValidatorExit"),
 		"validatorID", msg.ValId,
 		"deactivationEpoch", msg.DeactivationEpoch,
 		"txHash", msg.TxHash,
@@ -241,20 +241,20 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 
 	err = msg.ValidateBasic()
 	if err != nil {
-		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgValidationFailed, hmTypes.LogKeyError, err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, hmTypes.ErrMsgValidationFailed)
 	}
 
-	validator, err := m.k.GetValidatorFromValID(ctx, msg.ValId)
+	validator, err := srv.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
-		m.k.Logger(ctx).Error("failed to fetch validator from store", "validatorID", msg.ValId, "error", err)
-		return nil, errorsmod.Wrap(types.ErrNoValidator, "failed to fetch validator from store")
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgFailedToFetchValidator, "validatorID", msg.ValId, "error", err)
+		return nil, errorsmod.Wrap(types.ErrNoValidator, hmTypes.ErrMsgFailedToFetchValidator)
 	}
 
-	m.k.Logger(ctx).Debug("validator in store", "validator", validator)
+	srv.k.Logger(ctx).Debug("Validator in store", "validator", validator)
 	// check if the validator deactivation period is set
 	if validator.EndEpoch != 0 {
-		m.k.Logger(ctx).Error("validator already unBonded")
+		srv.k.Logger(ctx).Error("Validator already unBonded", "validatorID", msg.ValId, "endEpoch", validator.EndEpoch)
 		return nil, errorsmod.Wrap(types.ErrValUnBonded, "validator already unBonded")
 	}
 
@@ -264,9 +264,9 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 	// check if the event has already been processed
-	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
-		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
+	if srv.k.HasStakingSequence(ctx, sequence.String()) {
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence.String())
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, hmTypes.ErrMsgOldEventsNotAllowed)
 	}
 
 	return &types.MsgValidatorExitResponse{}, nil

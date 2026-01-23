@@ -33,8 +33,12 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// QueryTopupSequenceRequest is the request type for the GetTopupTxSequence and
+// IsTopupTxOld queries.
 type QueryTopupSequenceRequest struct {
-	TxHash   string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Root chain transaction hash.
+	TxHash string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Log index in root chain transaction.
 	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 }
 
@@ -85,7 +89,10 @@ func (m *QueryTopupSequenceRequest) GetLogIndex() uint64 {
 	return 0
 }
 
+// QueryTopupSequenceResponse is the response type for the GetTopupTxSequence
+// query.
 type QueryTopupSequenceResponse struct {
+	// Sequence number for the topup transaction.
 	Sequence string `protobuf:"bytes,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
 }
 
@@ -129,7 +136,9 @@ func (m *QueryTopupSequenceResponse) GetSequence() string {
 	return ""
 }
 
+// QueryIsTopupTxOldResponse is the response type for the IsTopupTxOld query.
 type QueryIsTopupTxOldResponse struct {
+	// True if the transaction has already been processed.
 	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
 
@@ -173,7 +182,10 @@ func (m *QueryIsTopupTxOldResponse) GetIsOld() bool {
 	return false
 }
 
+// QueryDividendAccountRequest is the request type for the
+// GetDividendAccountByAddress query.
 type QueryDividendAccountRequest struct {
+	// Address of the account to query.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
 
@@ -217,7 +229,10 @@ func (m *QueryDividendAccountRequest) GetAddress() string {
 	return ""
 }
 
+// QueryDividendAccountResponse is the response type for the
+// GetDividendAccountByAddress query.
 type QueryDividendAccountResponse struct {
+	// The requested dividend account.
 	DividendAccount types.DividendAccount `protobuf:"bytes,1,opt,name=dividend_account,json=dividendAccount,proto3" json:"dividend_account"`
 }
 
@@ -261,6 +276,8 @@ func (m *QueryDividendAccountResponse) GetDividendAccount() types.DividendAccoun
 	return types.DividendAccount{}
 }
 
+// QueryDividendAccountRootHashRequest is the request type for the
+// GetDividendAccountRootHash query.
 type QueryDividendAccountRootHashRequest struct {
 }
 
@@ -297,7 +314,10 @@ func (m *QueryDividendAccountRootHashRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryDividendAccountRootHashRequest proto.InternalMessageInfo
 
+// QueryDividendAccountRootHashResponse is the response type for the
+// GetDividendAccountRootHash query.
 type QueryDividendAccountRootHashResponse struct {
+	// Merkle root hash of all dividend accounts.
 	AccountRootHash []byte `protobuf:"bytes,1,opt,name=account_root_hash,json=accountRootHash,proto3" json:"account_root_hash,omitempty"`
 }
 
@@ -341,9 +361,13 @@ func (m *QueryDividendAccountRootHashResponse) GetAccountRootHash() []byte {
 	return nil
 }
 
+// QueryVerifyAccountProofRequest is the request type for the
+// VerifyAccountProofByAddress query.
 type QueryVerifyAccountProofRequest struct {
+	// Address of the account to verify.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	Proof   string `protobuf:"bytes,2,opt,name=proof,proto3" json:"proof,omitempty"`
+	// Merkle proof to verify.
+	Proof string `protobuf:"bytes,2,opt,name=proof,proto3" json:"proof,omitempty"`
 }
 
 func (m *QueryVerifyAccountProofRequest) Reset()         { *m = QueryVerifyAccountProofRequest{} }
@@ -393,7 +417,10 @@ func (m *QueryVerifyAccountProofRequest) GetProof() string {
 	return ""
 }
 
+// QueryVerifyAccountProofResponse is the response type for the
+// VerifyAccountProofByAddress query.
 type QueryVerifyAccountProofResponse struct {
+	// True if the proof is valid.
 	IsVerified bool `protobuf:"varint,1,opt,name=is_verified,json=isVerified,proto3" json:"is_verified,omitempty"`
 }
 
@@ -437,7 +464,10 @@ func (m *QueryVerifyAccountProofResponse) GetIsVerified() bool {
 	return false
 }
 
+// QueryAccountProofRequest is the request type for the
+// GetAccountProofByAddress query.
 type QueryAccountProofRequest struct {
+	// Address of the account to get proof for.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
 
@@ -481,7 +511,10 @@ func (m *QueryAccountProofRequest) GetAddress() string {
 	return ""
 }
 
+// QueryAccountProofResponse is the response type for the
+// GetAccountProofByAddress query.
 type QueryAccountProofResponse struct {
+	// Merkle proof for the requested account.
 	Proof AccountProof `protobuf:"bytes,1,opt,name=proof,proto3" json:"proof"`
 }
 
@@ -608,20 +641,18 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	// IsTopupTxOld queries for a specific topup tx to check its status (old
-	// means already submitted)
+	// IsTopupTxOld checks if a topup transaction has already been processed.
 	IsTopupTxOld(ctx context.Context, in *QueryTopupSequenceRequest, opts ...grpc.CallOption) (*QueryIsTopupTxOldResponse, error)
-	// GetTopupTxSequence queries for a specific topup tx and returns its sequence
+	// GetTopupTxSequence returns the sequence number for a topup transaction.
 	GetTopupTxSequence(ctx context.Context, in *QueryTopupSequenceRequest, opts ...grpc.CallOption) (*QueryTopupSequenceResponse, error)
-	// GetDividendAccountByAddress queries for a specific DividendAccount by its
-	// address
+	// GetDividendAccountByAddress queries a dividend account by address.
 	GetDividendAccountByAddress(ctx context.Context, in *QueryDividendAccountRequest, opts ...grpc.CallOption) (*QueryDividendAccountResponse, error)
-	// GetDividendAccountRootHash calculates and returns the dividend account root
-	// hash
+	// GetDividendAccountRootHash calculates the Merkle root of all dividend
+	// accounts.
 	GetDividendAccountRootHash(ctx context.Context, in *QueryDividendAccountRootHashRequest, opts ...grpc.CallOption) (*QueryDividendAccountRootHashResponse, error)
-	// VerifyAccountProof queries for the proof of an account given its address
+	// VerifyAccountProofByAddress verifies an account proof for a given address.
 	VerifyAccountProofByAddress(ctx context.Context, in *QueryVerifyAccountProofRequest, opts ...grpc.CallOption) (*QueryVerifyAccountProofResponse, error)
-	// GetAccountProof queries for the account proof of a given address
+	// GetAccountProofByAddress retrieves the account proof for a given address.
 	GetAccountProofByAddress(ctx context.Context, in *QueryAccountProofRequest, opts ...grpc.CallOption) (*QueryAccountProofResponse, error)
 }
 
@@ -689,20 +720,18 @@ func (c *queryClient) GetAccountProofByAddress(ctx context.Context, in *QueryAcc
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	// IsTopupTxOld queries for a specific topup tx to check its status (old
-	// means already submitted)
+	// IsTopupTxOld checks if a topup transaction has already been processed.
 	IsTopupTxOld(context.Context, *QueryTopupSequenceRequest) (*QueryIsTopupTxOldResponse, error)
-	// GetTopupTxSequence queries for a specific topup tx and returns its sequence
+	// GetTopupTxSequence returns the sequence number for a topup transaction.
 	GetTopupTxSequence(context.Context, *QueryTopupSequenceRequest) (*QueryTopupSequenceResponse, error)
-	// GetDividendAccountByAddress queries for a specific DividendAccount by its
-	// address
+	// GetDividendAccountByAddress queries a dividend account by address.
 	GetDividendAccountByAddress(context.Context, *QueryDividendAccountRequest) (*QueryDividendAccountResponse, error)
-	// GetDividendAccountRootHash calculates and returns the dividend account root
-	// hash
+	// GetDividendAccountRootHash calculates the Merkle root of all dividend
+	// accounts.
 	GetDividendAccountRootHash(context.Context, *QueryDividendAccountRootHashRequest) (*QueryDividendAccountRootHashResponse, error)
-	// VerifyAccountProof queries for the proof of an account given its address
+	// VerifyAccountProofByAddress verifies an account proof for a given address.
 	VerifyAccountProofByAddress(context.Context, *QueryVerifyAccountProofRequest) (*QueryVerifyAccountProofResponse, error)
-	// GetAccountProof queries for the account proof of a given address
+	// GetAccountProofByAddress retrieves the account proof for a given address.
 	GetAccountProofByAddress(context.Context, *QueryAccountProofRequest) (*QueryAccountProofResponse, error)
 }
 

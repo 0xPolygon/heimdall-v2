@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"math/big"
 	"strconv"
 	"time"
 
@@ -10,8 +9,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
@@ -34,7 +34,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 
 	logger := srv.Logger(ctx)
 
-	logger.Debug("✅ Validating clerk msg",
+	logger.Debug(helper.LogValidatingExternalCall("ClerkEventRecord"),
 		"id", msg.Id,
 		"contract", msg.ContractAddress,
 		"data", string(msg.Data),
@@ -51,27 +51,24 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	// chainManager params
 	params, err := srv.ChainKeeper.GetParams(ctx)
 	if err != nil {
-		logger.Error("failed to get chain manager params", "error", err)
+		logger.Error(heimdallTypes.ErrMsgFailedToGetChainManagerParams, "error", err)
 		return nil, err
 	}
 
 	chainParams := params.ChainParams
 
 	// check chain id
-	if chainParams.BorChainId != msg.ChainId {
-		logger.Error("Invalid Bor chain id", "msgChainID", msg.ChainId, "borChainId", chainParams.BorChainId)
+	if !helper.ValidateChainID(msg.ChainId, chainParams.BorChainId, logger, "clerk") {
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid bor chain id")
 	}
 
 	// sequence id
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
-	if srv.HasRecordSequence(ctx, sequence.String()) {
-		logger.Error("Event already processed", "Sequence", sequence.String())
-		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
+	if srv.HasRecordSequence(ctx, sequence) {
+		logger.Error(heimdallTypes.ErrMsgEventAlreadyProcessed, heimdallTypes.LogKeySequence, sequence)
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, heimdallTypes.ErrMsgOldEventsNotAllowed)
 	}
 
 	// add events

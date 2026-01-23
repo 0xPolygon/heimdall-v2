@@ -4521,21 +4521,22 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// MsgValidatorJoin defines a message for a new validator to join the network
+// MsgValidatorJoin defines the message for a new validator joining the network.
+// This is triggered by stake events from the root chain.
 type MsgValidatorJoin struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	From            string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
-	ValId           uint64 `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
-	ActivationEpoch uint64 `protobuf:"varint,3,opt,name=activation_epoch,json=activationEpoch,proto3" json:"activation_epoch,omitempty"`
-	Amount          string `protobuf:"bytes,4,opt,name=amount,proto3" json:"amount,omitempty"`
-	SignerPubKey    []byte `protobuf:"bytes,5,opt,name=signer_pub_key,json=signerPubKey,proto3" json:"signer_pub_key,omitempty"`
-	TxHash          []byte `protobuf:"bytes,6,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	LogIndex        uint64 `protobuf:"varint,7,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
-	BlockNumber     uint64 `protobuf:"varint,8,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
-	Nonce           uint64 `protobuf:"varint,9,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	ValId           uint64 `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`                               // Validator ID
+	ActivationEpoch uint64 `protobuf:"varint,3,opt,name=activation_epoch,json=activationEpoch,proto3" json:"activation_epoch,omitempty"` // Epoch when validator becomes active
+	Amount          string `protobuf:"bytes,4,opt,name=amount,proto3" json:"amount,omitempty"`                                           // Staked amount
+	SignerPubKey    []byte `protobuf:"bytes,5,opt,name=signer_pub_key,json=signerPubKey,proto3" json:"signer_pub_key,omitempty"`         // Public key for block signing
+	TxHash          []byte `protobuf:"bytes,6,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`                             // Root chain transaction hash
+	LogIndex        uint64 `protobuf:"varint,7,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`                      // Log index in root chain tx
+	BlockNumber     uint64 `protobuf:"varint,8,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`             // Root chain block number
+	Nonce           uint64 `protobuf:"varint,9,opt,name=nonce,proto3" json:"nonce,omitempty"`                                            // Nonce for replay protection
 }
 
 func (x *MsgValidatorJoin) Reset() {
@@ -4621,6 +4622,7 @@ func (x *MsgValidatorJoin) GetNonce() uint64 {
 	return 0
 }
 
+// MsgValidatorJoinResponse defines the response for MsgValidatorJoin.
 type MsgValidatorJoinResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4647,6 +4649,7 @@ func (*MsgValidatorJoinResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_stake_tx_proto_rawDescGZIP(), []int{1}
 }
 
+// MsgStakeUpdate defines the message for updating a validator's stake amount.
 type MsgStakeUpdate struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4654,7 +4657,7 @@ type MsgStakeUpdate struct {
 
 	From        string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 	ValId       uint64 `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
-	NewAmount   string `protobuf:"bytes,3,opt,name=new_amount,json=newAmount,proto3" json:"new_amount,omitempty"`
+	NewAmount   string `protobuf:"bytes,3,opt,name=new_amount,json=newAmount,proto3" json:"new_amount,omitempty"` // New stake amount
 	TxHash      []byte `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
 	LogIndex    uint64 `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 	BlockNumber uint64 `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
@@ -4730,6 +4733,7 @@ func (x *MsgStakeUpdate) GetNonce() uint64 {
 	return 0
 }
 
+// MsgStakeUpdateResponse defines the response for MsgStakeUpdate.
 type MsgStakeUpdateResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4756,6 +4760,8 @@ func (*MsgStakeUpdateResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_stake_tx_proto_rawDescGZIP(), []int{3}
 }
 
+// MsgSignerUpdate defines the message for updating a validator's signer public
+// key.
 type MsgSignerUpdate struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4763,7 +4769,7 @@ type MsgSignerUpdate struct {
 
 	From            string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 	ValId           uint64 `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
-	NewSignerPubKey []byte `protobuf:"bytes,3,opt,name=new_signer_pub_key,json=newSignerPubKey,proto3" json:"new_signer_pub_key,omitempty"`
+	NewSignerPubKey []byte `protobuf:"bytes,3,opt,name=new_signer_pub_key,json=newSignerPubKey,proto3" json:"new_signer_pub_key,omitempty"` // New public key for block signing
 	TxHash          []byte `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
 	LogIndex        uint64 `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 	BlockNumber     uint64 `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
@@ -4839,6 +4845,7 @@ func (x *MsgSignerUpdate) GetNonce() uint64 {
 	return 0
 }
 
+// MsgSignerUpdateResponse defines the response for MsgSignerUpdate.
 type MsgSignerUpdateResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4865,6 +4872,7 @@ func (*MsgSignerUpdateResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_stake_tx_proto_rawDescGZIP(), []int{5}
 }
 
+// MsgValidatorExit defines the message for a validator exiting the network.
 type MsgValidatorExit struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4872,7 +4880,7 @@ type MsgValidatorExit struct {
 
 	From              string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 	ValId             uint64 `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
-	DeactivationEpoch uint64 `protobuf:"varint,3,opt,name=deactivation_epoch,json=deactivationEpoch,proto3" json:"deactivation_epoch,omitempty"`
+	DeactivationEpoch uint64 `protobuf:"varint,3,opt,name=deactivation_epoch,json=deactivationEpoch,proto3" json:"deactivation_epoch,omitempty"` // Epoch when validator becomes inactive
 	TxHash            []byte `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
 	LogIndex          uint64 `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 	BlockNumber       uint64 `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
@@ -4948,6 +4956,7 @@ func (x *MsgValidatorExit) GetNonce() uint64 {
 	return 0
 }
 
+// MsgValidatorExitResponse defines the response for MsgValidatorExit.
 type MsgValidatorExitResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -13,7 +13,7 @@ import (
 func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	err := k.SetParams(ctx, data.Params)
 	if err != nil {
-		k.Logger(ctx).Error("error in setting checkpoint params during init genesis", "error", err)
+		k.Logger(ctx).Error("Error in setting checkpoint params during init genesis", "error", err)
 		panic(err)
 	}
 
@@ -21,7 +21,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	if data.LastNoAck > 0 {
 		err = k.SetLastNoAck(ctx, data.LastNoAck)
 		if err != nil {
-			k.Logger(ctx).Error("error in setting last no ack during init genesis", "error", err)
+			k.Logger(ctx).Error("Error in setting last no ack during init genesis", "error", err)
 			panic(err)
 		}
 	}
@@ -30,7 +30,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	if len(data.Checkpoints) != 0 {
 		// check if we are provided all the checkpoints
 		if int(data.AckCount) != len(data.Checkpoints) {
-			k.Logger(ctx).Error("incorrect state in state-dump", "ack count", data.AckCount, "checkpoints length", data.Checkpoints)
+			k.Logger(ctx).Error("Incorrect state in state-dump", "ack count", data.AckCount, "checkpoints length", data.Checkpoints)
 			panic(err)
 		}
 		// sort checkpoints before loading to state
@@ -46,13 +46,13 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 				checkpoint.BorChainId)
 
 			if err := msg.ValidateBasic(); err != nil {
-				k.Logger(ctx).Error("error in validating checkpoint message while InitGenesis", "error", err)
+				k.Logger(ctx).Error("Error in validating checkpoint message while InitGenesis", "error", err)
 				panic(err)
 			}
 			checkpointIndex := uint64(i) + 1
 			checkpoint.Id = checkpointIndex
 			if err = k.AddCheckpoint(ctx, checkpoint); err != nil {
-				k.Logger(ctx).Error("error while adding the checkpoint to store",
+				k.Logger(ctx).Error("Error while adding the checkpoint to store",
 					"checkpointIndex", checkpointIndex,
 					"checkpoint", checkpoint.String(),
 					"error", err)
@@ -63,14 +63,14 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	// add checkpoint in the buffer
 	if data.BufferedCheckpoint != nil {
 		if err := k.SetCheckpointBuffer(ctx, *data.BufferedCheckpoint); err != nil {
-			k.Logger(ctx).Error("error while setting the checkpoint in buffer", "error", err)
+			k.Logger(ctx).Error("Error while setting the checkpoint in buffer", "error", err)
 		}
 	}
 
 	// set initial ack count
 	err = k.UpdateAckCountWithValue(ctx, data.AckCount)
 	if err != nil {
-		k.Logger(ctx).Error("error in updating the ack count value in store", "error", err)
+		k.Logger(ctx).Error("Error in updating the ack count value in store", "error", err)
 		panic(err)
 	}
 
@@ -78,7 +78,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	if len(data.CheckpointSignatures.Signatures) > 0 {
 		for _, s := range data.CheckpointSignatures.Signatures {
 			if err = address.VerifyAddressFormat(s.ValidatorAddress); err != nil {
-				k.Logger(ctx).Error("error in validating checkpoint signature address", "error", err)
+				k.Logger(ctx).Error("Error in validating checkpoint signature address", "error", err)
 				panic(err)
 			}
 
@@ -87,27 +87,27 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 			}
 		}
 		if err = k.SetCheckpointSignatures(ctx, data.CheckpointSignatures); err != nil {
-			k.Logger(ctx).Error("error in setting checkpoint signatures", "error", err)
+			k.Logger(ctx).Error("Error in setting checkpoint signatures", "error", err)
 			panic(err)
 		}
 	} else {
 		// if checkpoint signatures are empty, set it to nil
 		if err = k.SetCheckpointSignatures(ctx, types.CheckpointSignatures{Signatures: make([]types.CheckpointSignature, 0)}); err != nil {
-			k.Logger(ctx).Error("error in setting checkpoint signatures", "error", err)
+			k.Logger(ctx).Error("Error in setting checkpoint signatures", "error", err)
 			panic(err)
 		}
 	}
 
-	// set checkpoint signatures txhash
+	// set checkpoint signatures txHash
 	if data.CheckpointSignaturesTxhash != "" {
 		if err = k.SetCheckpointSignaturesTxHash(ctx, data.CheckpointSignaturesTxhash); err != nil {
-			k.Logger(ctx).Error("error in setting checkpoint signatures txhash", "error", err)
+			k.Logger(ctx).Error("Error in setting checkpoint signatures txHash", "error", err)
 			panic(err)
 		}
 	} else {
-		// if checkpoint signatures txhash are empty, set it to nil
+		// if checkpoint signatures txHash are empty, set it to nil
 		if err = k.SetCheckpointSignaturesTxHash(ctx, ""); err != nil {
-			k.Logger(ctx).Error("error in setting checkpoint signatures txhash", "error", err)
+			k.Logger(ctx).Error("Error in setting checkpoint signatures txHash", "error", err)
 			panic(err)
 		}
 	}
@@ -118,38 +118,38 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	params, err := k.GetParams(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in getting checkpoint params in export genesis call", "error", err)
+		k.Logger(ctx).Error("Error in getting checkpoint params in export genesis call", "error", err)
 		return nil
 	}
 
 	checkpoints, err := k.GetCheckpoints(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in getting checkpoints in export genesis call", "error", err)
+		k.Logger(ctx).Error("Error in getting checkpoints in export genesis call", "error", err)
 		return nil
 	}
 
 	bufferedCheckpoint, _ := k.GetCheckpointFromBuffer(ctx)
 	lastNoAck, err := k.GetLastNoAck(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in getting last no ack in export genesis call", "error", err)
+		k.Logger(ctx).Error("Error in getting last no ack in export genesis call", "error", err)
 		return nil
 	}
 
 	ackCount, err := k.GetAckCount(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in getting ack count in export genesis call", "error", err)
+		k.Logger(ctx).Error("Error in getting ack count in export genesis call", "error", err)
 		return nil
 	}
 
 	checkpointSignatures, err := k.GetCheckpointSignatures(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in getting checkpoint signatures in export genesis call", "error", err)
+		k.Logger(ctx).Error("Error in getting checkpoint signatures in export genesis call", "error", err)
 		return nil
 	}
 
-	checkpointSignaturesTxhash, err := k.GetCheckpointSignaturesTxHash(ctx)
+	checkpointSignaturesTxHash, err := k.GetCheckpointSignaturesTxHash(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in getting checkpoint signatures txhash in export genesis call", "error", err)
+		k.Logger(ctx).Error("Error in getting checkpoint signatures txHash in export genesis call", "error", err)
 		return nil
 	}
 
@@ -160,6 +160,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		AckCount:                   ackCount,
 		Checkpoints:                types.SortCheckpoints(checkpoints),
 		CheckpointSignatures:       checkpointSignatures,
-		CheckpointSignaturesTxhash: checkpointSignaturesTxhash,
+		CheckpointSignaturesTxhash: checkpointSignaturesTxHash,
 	}
 }

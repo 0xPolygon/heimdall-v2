@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
@@ -69,7 +70,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 
 	msg, ok := sdkMsg.(*types.MsgCheckpoint)
 	if !ok {
-		logger.Error("type mismatch for MsgCheckpoint")
+		logger.Error(helper.ErrTypeMismatch("MsgCheckpoint"))
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -77,7 +78,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 
 	chainParams, err := srv.ck.GetParams(ctx)
 	if err != nil {
-		logger.Error("error in getting chain manager params", "error", err)
+		logger.Error(hmTypes.ErrMsgErrorInGettingChainManagerParams, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -86,20 +87,56 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	// get params
 	params, err := srv.GetParams(ctx)
 	if err != nil {
-		logger.Error("error in getting params", "error", err)
+		logger.Error(hmTypes.ErrMsgFailedToFetchParams, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	chainParams, err = srv.ck.GetParams(ctx)
 	if err != nil {
-		logger.Error("error in getting chain manager params", "error", err)
+		logger.Error(hmTypes.ErrMsgErrorInGettingChainManagerParams, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
-	if msg.BorChainId != chainParams.ChainParams.BorChainId {
-		logger.Error("bor chain id mismatch",
-			"expected", chainParams.ChainParams.BorChainId,
-			"received", msg.BorChainId,
+	if !helper.ValidateChainID(msg.BorChainId, chainParams.ChainParams.BorChainId, logger, "checkpoint") {
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// validate checkpoint number
+	if lastCheckpoint, err := srv.GetLastCheckpoint(ctx); err == nil {
+		// check if the new checkpoint's start block starts from the current tip
+		if lastCheckpoint.EndBlock+1 != msg.StartBlock {
+			logger.Error("Checkpoint not in continuity in checkpoint side handler",
+				"currentTip", lastCheckpoint.EndBlock,
+				"startBlock", msg.StartBlock)
+
+			return sidetxs.Vote_VOTE_NO
+		}
+	} else if errors.Is(err, types.ErrNoCheckpointFound) && msg.StartBlock != 0 {
+		logger.Error("First checkpoint to start from block 0", "checkpoint start block", msg.StartBlock, hmTypes.LogKeyError, err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// Check the proposer in the message
+	validatorSet, err := srv.stakeKeeper.GetValidatorSet(ctx)
+	if err != nil {
+		logger.Error(hmTypes.ErrMsgNoProposerInValidatorSet, "msgProposer", msg.Proposer)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	if validatorSet.Proposer == nil {
+		logger.Error(hmTypes.ErrMsgNoProposerInValidatorSet, "msgProposer", msg.Proposer)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	msgProposer := util.FormatAddress(msg.Proposer)
+	valProposer := util.FormatAddress(validatorSet.Proposer.Signer)
+
+	if msgProposer != valProposer {
+		logger.Error(
+			hmTypes.ErrMsgInvalidProposerInMsg,
+			hmTypes.LogKeyProposer, valProposer,
+			"msgProposer", msgProposer,
 		)
+
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -107,16 +144,16 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	// Calculate new account root hash
 	dividendAccounts, err := srv.topupKeeper.GetAllDividendAccounts(ctx)
 	if err != nil {
-		logger.Error("error while fetching dividends accounts", "error", err)
+		logger.Error("Error while fetching dividends accounts", hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Debug("dividendAccounts of all validators", "dividendAccountsLength", len(dividendAccounts))
+	logger.Debug("DividendAccounts of all validators", "dividendAccountsLength", len(dividendAccounts))
 
 	// Get account root hash from dividend accounts
 	accountRoot, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	if err != nil {
-		logger.Error("error while fetching account root hash", "error", err)
+		logger.Error("Error while fetching account root hash", hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -143,7 +180,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	// validate checkpoint
 	validCheckpoint, err := types.IsValidCheckpoint(msg.StartBlock, msg.EndBlock, msg.RootHash, params.MaxCheckpointLength, contractCaller, borChainTxConfirmations)
 	if err != nil {
-		logger.Error("error validating checkpoint",
+		logger.Error("Error validating checkpoint",
 			"startBlock", msg.StartBlock,
 			"endBlock", msg.EndBlock,
 			"rootHash", common.Bytes2Hex(msg.RootHash),
@@ -180,7 +217,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 	msg, ok := sdkMsg.(*types.MsgCpAck)
 	if !ok {
-		logger.Error("type mismatch for MsgCpAck")
+		logger.Error("Type mismatch for MsgCpAck")
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -188,7 +225,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 	chainParams, err := srv.ck.GetParams(ctx)
 	if err != nil {
-		logger.Error("error in getting chain manager params", "error", err)
+		logger.Error(hmTypes.ErrMsgErrorInGettingChainManagerParams, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -197,13 +234,13 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	// get params
 	params, err := srv.GetParams(ctx)
 	if err != nil {
-		logger.Error("error in getting params", "error", err)
+		logger.Error(hmTypes.ErrMsgFailedToFetchParams, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	rootChainInstance, err := contractCaller.GetRootChainInstance(rootChainAddress)
 	if err != nil {
-		logger.Error("unable to fetch rootChain contract instance",
+		logger.Error("Unable to fetch rootChain contract instance",
 			"eth address", rootChainAddress,
 			"error", err,
 		)
@@ -221,7 +258,70 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 	root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(msg.Number, rootChainInstance, params.ChildChainBlockInterval)
 	if err != nil {
-		logger.Error("unable to fetch checkpoint from rootChain", "checkpointNumber", msg.Number, "error", err)
+		logger.Error("Unable to fetch checkpoint from rootChain", "checkpointNumber", msg.Number, "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// validate start and end blocks
+	if msg.StartBlock >= msg.EndBlock {
+		logger.Error("End block should be greater than start block in checkpoint side handler",
+			"startBlock", msg.StartBlock,
+			"endBlock", msg.EndBlock,
+			"rootHash", common.Bytes2Hex(msg.RootHash),
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// validate checkpoint number
+	lastCheckpoint, err := srv.GetLastCheckpoint(ctx)
+	if err != nil && !errors.Is(err, types.ErrNoCheckpointFound) {
+		logger.Error("Unable to get last checkpoint in checkpoint side handler", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	expectedId := uint64(1)
+
+	if err == nil {
+		expectedId = lastCheckpoint.Id + 1
+	}
+
+	if msg.Number != expectedId {
+		logger.Error("Ack number in checkpoint side handler is not sequential",
+			"lastCheckpointNumber", expectedId,
+			"checkpointNumber", msg.Number,
+		)
+		return sidetxs.Vote_VOTE_NO
+
+	}
+
+	// validate buffered checkpoint
+	bufCheckpoint, err := srv.GetCheckpointFromBuffer(ctx)
+	if err != nil {
+		logger.Error("Unable to get buffered checkpoint in checkpoint side handler", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	if IsBufferedCheckpointZero(bufCheckpoint) {
+		logger.Debug("No checkpoint in buffer, cannot process ack in checkpoint side handler")
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	if msg.StartBlock != bufCheckpoint.StartBlock {
+		logger.Error("Invalid start block during side handler checkpoint ack", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// return an error if start and end match, but contract root hash doesn't match
+	if msg.EndBlock == bufCheckpoint.EndBlock &&
+		!bytes.Equal(msg.RootHash, bufCheckpoint.RootHash) {
+		logger.Error("Invalid ack in checkpoint side handler",
+			"startExpected", bufCheckpoint.StartBlock,
+			"startReceived", msg.StartBlock,
+			"endExpected", bufCheckpoint.EndBlock,
+			"endReceived", msg.StartBlock,
+			"rootExpected", common.Bytes2Hex(bufCheckpoint.RootHash),
+			"rootReceived", common.Bytes2Hex(msg.RootHash),
+		)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -267,15 +367,15 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 
 	msg, ok := sdkMsg.(*types.MsgCheckpoint)
 	if !ok {
-		err := errors.New("type mismatch for MsgCheckpoint")
+		err := errors.New(helper.ErrTypeMismatch("MsgCheckpoint"))
 		logger.Error(err.Error())
 		return err
 	}
 
 	// Skip handler if stakeUpdate is not approved
-	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		logger.Debug("skipping stake update since side-tx didn't get yes votes")
-		return errors.New("side-tx didn't get yes votes")
+	if !helper.IsSideTxApproved(sideTxResult) {
+		logger.Debug(helper.ErrSkippingMsg("Checkpoint"))
+		return errors.New(hmTypes.ErrMsgSideTxRejected)
 	}
 
 	// fetch the last checkpoint from the store
@@ -283,42 +383,42 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	if err == nil {
 		// check if the new checkpoint's start block starts from the current tip
 		if lastCheckpoint.EndBlock+1 != msg.StartBlock {
-			logger.Error("checkpoint not in continuity",
+			logger.Error("Checkpoint not in continuity",
 				"currentTip", lastCheckpoint.EndBlock,
 				"startBlock", msg.StartBlock)
 
-			return errors.New("checkpoint not in continuity")
+			return errors.New(hmTypes.ErrMsgBlocksNotInContinuity)
 		}
 	} else if errors.Is(err, types.ErrNoCheckpointFound) && msg.StartBlock != 0 {
-		logger.Error("first checkpoint to start from block 0", "error", err)
+		logger.Error("First checkpoint to start from block 0", hmTypes.LogKeyError, err)
 		return err
 	}
 
 	doExist, err := srv.HasCheckpointInBuffer(ctx)
 	if err != nil {
-		logger.Error("error in checking the existence of checkpoint in buffer", "error", err)
+		logger.Error("Error in checking the existence of checkpoint in buffer", hmTypes.LogKeyError, err)
 		return err
 	}
 
 	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
 	if err != nil {
-		logger.Error("error in getting checkpoint from buffer", "error", err)
+		logger.Error("Error in getting checkpoint from buffer", hmTypes.LogKeyError, err)
 		return err
 	}
 
 	if doExist && !IsBufferedCheckpointZero(checkpointBuffer) {
-		logger.Debug("checkpoint already exists in buffer")
+		logger.Debug("Checkpoint already exists in buffer")
 
 		// get checkpoint buffer time from params
 		params, err := srv.GetParams(ctx)
 		if err != nil {
-			logger.Error("checkpoint params not found", "error", err)
+			logger.Error("Checkpoint params not found", hmTypes.LogKeyError, err)
 			return err
 		}
 
 		expiryTime := checkpointBuffer.Timestamp + uint64(params.CheckpointBufferTime.Seconds())
 
-		logger.Error(fmt.Sprintf("checkpoint already exists in buffer, ack expected, expires at %s", strconv.FormatUint(expiryTime, 10)))
+		logger.Error(fmt.Sprintf("Checkpoint already exists in buffer, ack expected, expires at %s", strconv.FormatUint(expiryTime, 10)))
 
 		return errors.New("checkpoint already exists in buffer")
 	}
@@ -335,7 +435,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		BorChainId: msg.BorChainId,
 		Timestamp:  timeStamp,
 	}); err != nil {
-		logger.Error("failed to set checkpoint buffer", "Error", err)
+		logger.Error("Failed to set checkpoint buffer", "Error", err)
 		return err
 	}
 
@@ -378,38 +478,38 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 	msg, ok := sdkMsg.(*types.MsgCpAck)
 	if !ok {
-		err := errors.New("type mismatch for MsgCpAck")
+		err := errors.New(helper.ErrTypeMismatch("MsgCpAck"))
 		logger.Error(err.Error())
 		return err
 	}
 
 	// skip handler if ACK is not approved
-	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		logger.Debug("skipping stake update since side-tx didn't get yes votes")
-		return errors.New("side-tx didn't get yes votes")
+	if !helper.IsSideTxApproved(sideTxResult) {
+		logger.Debug(helper.ErrSkippingMsg("CheckpointAck"))
+		return errors.New(hmTypes.ErrMsgSideTxRejected)
 	}
 
 	// get the last checkpoint from the buffer
 	checkpointObj, err := srv.GetCheckpointFromBuffer(ctx)
 	if err != nil {
-		logger.Error("unable to get checkpoint buffer", "error", err)
+		logger.Error("Fnable to get checkpoint buffer", hmTypes.LogKeyError, err)
 		return err
 	}
 
 	if IsBufferedCheckpointZero(checkpointObj) {
-		logger.Debug("no checkpoint in buffer, cannot process checkpoint ack in postHandler")
+		logger.Debug("No checkpoint in buffer, cannot process checkpoint ack in postHandler")
 		return errors.New("no checkpoint in buffer, cannot process checkpoint ack in postHandler")
 	}
 
 	// invalid start block
 	if msg.StartBlock != checkpointObj.StartBlock {
-		logger.Error("invalid start block during postHandler checkpoint ack", "startExpected", checkpointObj.StartBlock, "startReceived", msg.StartBlock)
+		logger.Error("Invalid start block during postHandler checkpoint ack", "startExpected", checkpointObj.StartBlock, "startReceived", msg.StartBlock)
 		return errors.New("invalid start block during postHandler checkpoint ack")
 	}
 
-	// return err if start and end match, but contract root hash doesn't match
+	// return an error if start and end match, but contract root hash doesn't match
 	if msg.EndBlock == checkpointObj.EndBlock && !bytes.Equal(msg.RootHash, checkpointObj.RootHash) {
-		logger.Error("invalid ACK",
+		logger.Error("Invalid ack",
 			"startExpected", checkpointObj.StartBlock,
 			"startReceived", msg.StartBlock,
 			"endExpected", checkpointObj.EndBlock,
@@ -423,7 +523,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 	// adjust checkpoint data if the latest checkpoint is already submitted
 	if checkpointObj.EndBlock != msg.EndBlock {
-		logger.Info("adjusting endBlock to one already submitted on chain", "endBlock", checkpointObj.EndBlock, "adjustedEndBlock", msg.EndBlock)
+		logger.Info("Adjusting endBlock to one already submitted on chain", "endBlock", checkpointObj.EndBlock, "adjustedEndBlock", msg.EndBlock)
 		checkpointObj.EndBlock = msg.EndBlock
 		checkpointObj.RootHash = msg.RootHash
 		checkpointObj.Proposer = msg.Proposer
@@ -432,7 +532,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	// add checkpoint to store
 	checkpointObj.Id = msg.Number
 	if err = srv.AddCheckpoint(ctx, checkpointObj); err != nil {
-		logger.Error("error while adding checkpoint into store", "checkpointNumber", msg.Number)
+		logger.Error("Error while adding checkpoint into store", "checkpointNumber", msg.Number)
 		return err
 	}
 
@@ -447,7 +547,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	// flush buffer
 	err = srv.FlushCheckpointBuffer(ctx)
 	if err != nil {
-		logger.Error("error while flushing buffer", "error", err)
+		logger.Error("Error while flushing buffer", hmTypes.LogKeyError, err)
 		return err
 	}
 
@@ -456,14 +556,14 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	// update ack count module
 	err = srv.IncrementAckCount(ctx)
 	if err != nil {
-		logger.Error("error while updating the ack count", "err", err)
+		logger.Error("Error while updating the ack count", "err", err)
 		return err
 	}
 
 	// increment accum (selects new proposer)
 	err = srv.stakeKeeper.IncrementAccum(ctx, 1)
 	if err != nil {
-		logger.Error("error while incrementing accum", "err", err)
+		logger.Error("Error while incrementing accum", "err", err)
 		return err
 	}
 
@@ -506,7 +606,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	return nil
 }
 
-// recordCheckpointMetric records metrics for side and post handlers.
+// recordCheckpointMetric records metrics for side and post-handlers.
 func recordCheckpointMetric(method string, apiType string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.CheckpointSubsystem, method, apiType, success, start)

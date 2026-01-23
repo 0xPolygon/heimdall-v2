@@ -351,24 +351,24 @@ func (s *KeeperTestSuite) TestVoteProducers() {
 				Votes:   sampleVotes,
 			},
 			mockSetup: func(tc types.MsgVoteProducers) {
-				// Set VEBLOP height to be higher than next span start (1001)
-				// This simulates the case where we haven't reached VEBLOP phase yet
-				helper.SetRioHeight(1002) // Much higher than span end (1000) + 1
+				// Set veBlop height to be higher than the next span start (1001)
+				// This simulates the case where we haven't reached veBlop phase yet
+				helper.SetRioHeight(1002) // Much higher than the span end (1000) + 1
 			},
 			expectError:   true,
-			errorContains: "span is not in VEBLOP phase",
+			errorContains: "span is not in veBlop phase",
 		},
 		{
-			name: "VEBLOP height exactly at boundary - should accept vote",
+			name: "veBlop height exactly at boundary - should accept vote",
 			msg: types.MsgVoteProducers{
 				Voter:   voterAccAddressHex,
 				VoterId: matchingVal.ValId,
 				Votes:   sampleVotes,
 			},
 			mockSetup: func(tc types.MsgVoteProducers) {
-				// Set VEBLOP height exactly at next span start (1001)
-				// This should be in VEBLOP phase and allow the vote
-				helper.SetRioHeight(1001) // Exactly at span end (1000) + 1
+				// Set veBlop height exactly at the next span start (1001)
+				// This should be in veBlop phase and allow the vote
+				helper.SetRioHeight(1001) // Exactly at the span end (1000) + 1
 				skMock.EXPECT().GetValidatorFromValID(ctx, matchingVal.ValId).Return(matchingVal, nil).Times(1)
 			},
 			expectError: false,
@@ -379,27 +379,27 @@ func (s *KeeperTestSuite) TestVoteProducers() {
 			},
 		},
 		{
-			name: "VEBLOP height just below boundary - should reject vote",
+			name: "veBlop height just below boundary - should reject vote",
 			msg: types.MsgVoteProducers{
 				Voter:   voterAccAddressHex,
 				VoterId: matchingVal.ValId,
 				Votes:   sampleVotes,
 			},
 			mockSetup: func(tc types.MsgVoteProducers) {
-				// Set VEBLOP height just below next span start (1001)
-				// This should NOT be in VEBLOP phase and reject the vote
-				helper.SetRioHeight(1002) // Above span end (1000) + 1, so 1001 < 1002 = not in VEBLOP phase
-				// Note: No mock setup needed since this should fail at VEBLOP validation before reaching validator lookup
+				// Set veBlop height just below the next span start (1001)
+				// This should NOT be in veBlop phase and reject the vote
+				helper.SetRioHeight(1002) // Above span end (1000) + 1, so 1001 < 1002 = not in veBlop phase
+				// Note: No mock setup needed since this should fail at veBlop validation before reaching validator lookup
 			},
 			expectError:   true,
-			errorContains: "span is not in VEBLOP phase",
+			errorContains: "span is not in veBlop phase",
 		},
 	}
 
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			// Reset VEBLOP height to default for proper test isolation
-			helper.SetRioHeight(1000) // Reset to span EndBlock for VEBLOP phase
+			// Reset veBlop height to default for proper test isolation
+			helper.SetRioHeight(1000) // Reset to span EndBlock for veBlop phase
 
 			_ = borKeeper.SetProducerVotes(ctx, tc.msg.VoterId, types.ProducerVotes{})
 
@@ -532,30 +532,30 @@ func (s *KeeperTestSuite) TestCanVoteProducers() {
 		errorContains string
 	}{
 		{
-			name:        "VEBLOP phase active - should pass",
-			rioHeight:   201, // Next span starts at 201, VEBLOP at 201 = active
+			name:        "veBlop phase active - should pass",
+			rioHeight:   201, // the next span starts at 201, veBlop at 201 = active
 			operation:   "test",
 			expectError: false,
 		},
 		{
-			name:          "VEBLOP phase not active - should fail",
-			rioHeight:     300, // Next span starts at 201, VEBLOP at 300 = not active yet
+			name:          "veBlop phase not active - should fail",
+			rioHeight:     300, // the next span starts at 201, veBlop at 300 = not active yet
 			operation:     "test",
 			expectError:   true,
-			errorContains: "span is not in VEBLOP phase",
+			errorContains: "span is not in veBlop phase",
 		},
 		{
-			name:        "VEBLOP height exactly at boundary - should pass",
-			rioHeight:   201, // Exactly at next span start
+			name:        "veBlop height exactly at boundary - should pass",
+			rioHeight:   201, // Exactly at the next span start
 			operation:   "boundary_test",
 			expectError: false,
 		},
 		{
-			name:          "VEBLOP height below next span start - should fail",
-			rioHeight:     202, // Above next span start (201), so 201 < 202 = not in VEBLOP phase
+			name:          "veBlop height below next span start - should fail",
+			rioHeight:     202, // Above next span start (201), so 201 < 202 = not in veBlop phase
 			operation:     "below_boundary_test",
 			expectError:   true,
-			errorContains: "span is not in VEBLOP phase",
+			errorContains: "span is not in veBlop phase",
 		},
 	}
 
@@ -588,7 +588,7 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 	val3 := valInfo{id3, common.HexToAddress("0x0000000000000000000000000000000000000003").Hex()}
 
 	minRange := uint64(types.PlannedDowntimeMinRange)
-	maxRange := uint64(types.PlannedDowntimeMaxRange)
+	maxRange := types.PlannedDowntimeMaxRange
 
 	newMsg := func(producer string, start, end uint64) *types.MsgSetProducerDowntime {
 		return &types.MsgSetProducerDowntime{
@@ -646,7 +646,7 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 	type testCase struct {
 		name            string
 		validators      []staketypes.Validator // eligible validators
-		seedVotes       []uint64               // producer ranking to control producer set
+		seedVotes       []uint64               // producer ranking to control the producer set
 		msg             *types.MsgSetProducerDowntime
 		expectErrSubstr string
 	}
@@ -655,7 +655,7 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 		{
 			name:       "success - valid producer in eligible and producer set, range within bounds",
 			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}},
-			seedVotes:  []uint64{id1, id2, id3}, // include id1 in producer set
+			seedVotes:  []uint64{id1, id2, id3}, // include id1 in the producer set
 			msg:        newMsg(val1.hexAddr, 100, 100+minRange),
 		},
 		{
@@ -708,7 +708,7 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 			ctx := s.ctx
 			msgServer := s.msgServer
 
-			// Prime mocks and seed producer votes controlling producer set
+			// Prime mocks and seed producer votes controlling the producer set
 			primeStakeMocks(tc.validators)
 			setVotesForAll(tc.seedVotes)
 

@@ -205,7 +205,7 @@ func (s *KeeperTestSuite) TestGetEventRecordListTime() {
 func (s *KeeperTestSuite) TestSetHasGetRecordSequence() {
 	t, ctx, ck := s.T(), s.ctx, s.keeper
 
-	testSeq := "testseq"
+	testSeq := "test_seq"
 
 	ck.SetRecordSequence(ctx, testSeq)
 	found := ck.HasRecordSequence(ctx, testSeq)

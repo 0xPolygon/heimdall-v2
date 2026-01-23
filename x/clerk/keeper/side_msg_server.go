@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"math/big"
 	"strconv"
 	"time"
 
@@ -51,53 +50,77 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler
 	}
 }
 
-func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg) (result sidetxs.Vote) {
+func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg) (result sidetxs.Vote) {
 	var err error
 	startTime := time.Now()
 	defer recordClerkMetric(api.SideHandleMsgEventRecordMethod, api.SideType, startTime, &err)
 
-	msg, ok := _msg.(*types.MsgEventRecord)
+	msg, ok := m.(*types.MsgEventRecord)
 	if !ok {
-		srv.Logger(ctx).Error("type mismatch for MsgEventRecord")
+		srv.Logger(ctx).Error(helper.ErrTypeMismatch("MsgEventRecord"))
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	srv.Logger(ctx).Debug("✅ Validating External call for clerk msg",
+	srv.Logger(ctx).Debug(helper.LogValidatingExternalCall("ClerkEventRecord"),
 		"txHash", msg.TxHash,
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
 
+	// check if the event record exists
+	if exists := srv.HasEventRecord(ctx, msg.Id); exists {
+		srv.Logger(ctx).Info("Msg event record already present in clerk side handler, voting NO")
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	// chainManager params
 	params, err := srv.ChainKeeper.GetParams(ctx)
 	if err != nil {
-		srv.Logger(ctx).Error("failed to get chain manager params", "error", err)
+		srv.Logger(ctx).Error(heimdallTypes.ErrMsgFailedToGetChainManagerParams, heimdallTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	chainParams := params.ChainParams
 
-	// get confirmed tx receipt
-	receipt, err := srv.Keeper.contractCaller.GetConfirmedTxReceipt(common.HexToHash(msg.TxHash), params.GetMainChainTxConfirmations())
-	if receipt == nil || err != nil {
+	// check chain id
+	if !helper.ValidateChainID(msg.ChainId, chainParams.BorChainId, srv.Logger(ctx), "clerk") {
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// sequence id
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+
+	// check if the event has already been processed
+	if srv.HasRecordSequence(ctx, sequence) {
+		srv.Logger(ctx).Error(helper.LogEventAlreadyProcessedIn("clerk"), heimdallTypes.LogKeySequence, sequence)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// get and validate confirmed tx receipt
+	receipt := helper.FetchAndValidateReceipt(
+		srv.contractCaller,
+		helper.ReceiptValidationParams{
+			TxHash:         common.HexToHash(msg.TxHash).Bytes(),
+			MsgBlockNumber: msg.BlockNumber,
+			Confirmations:  params.GetMainChainTxConfirmations(),
+			ModuleName:     "clerk",
+		},
+		srv.Logger(ctx),
+	)
+	if receipt == nil {
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// get event log for clerk
-	eventLog, err := srv.Keeper.contractCaller.DecodeStateSyncedEvent(chainParams.StateSenderAddress, receipt, msg.LogIndex)
+	eventLog, err := srv.contractCaller.DecodeStateSyncedEvent(chainParams.StateSenderAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		srv.Logger(ctx).Error("Error fetching log from tx hash")
+		srv.Logger(ctx).Error(heimdallTypes.ErrMsgErrorFetchingLog)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
-		srv.Logger(ctx).Error("blockNumber in message doesn't match blockNumber in receipt", "MsgBlockNumber", msg.BlockNumber, "ReceiptBlockNumber", receipt.BlockNumber.Uint64())
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	// check if message and event log matches
+	// check if the message and the event log match
 	if eventLog.Id.Uint64() != msg.Id {
-		srv.Logger(ctx).Error("ID in message doesn't match with id in log", "msgId", msg.Id, "stateIdFromTx", eventLog.Id)
+		srv.Logger(ctx).Error(heimdallTypes.ErrMsgIDMismatch, heimdallTypes.LogKeyMsgID, msg.Id, "stateIdFromTx", eventLog.Id)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -144,37 +167,35 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	return sidetxs.Vote_VOTE_YES
 }
 
-func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg, sideTxResult sidetxs.Vote) error {
+func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, sideTxResult sidetxs.Vote) error {
 	var err error
 	startTime := time.Now()
 	defer recordClerkMetric(api.PostHandleMsgEventRecordMethod, api.PostType, startTime, &err)
 
 	logger := srv.Logger(ctx)
 
-	msg, ok := _msg.(*types.MsgEventRecord)
+	msg, ok := m.(*types.MsgEventRecord)
 	if !ok {
-		err := errors.New("type mismatch for MsgEventRecord")
+		err := errors.New(helper.ErrTypeMismatch("MsgEventRecord"))
 		logger.Error(err.Error())
 	}
 
 	// Skip handler if clerk is not approved
-	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		logger.Debug("skipping new clerk since side-tx didn't get yes votes")
+	if !helper.IsSideTxApproved(sideTxResult) {
+		logger.Debug(helper.ErrSkippingMsg("ClerkEventRecord"))
 		return nil
 	}
 
 	// check for replay
 	if srv.HasEventRecord(ctx, msg.Id) {
-		logger.Debug("skipping new clerk record as it's already processed")
+		logger.Debug("Skipping new clerk record as it's already processed")
 		return errors.New("clerk record already processed")
 	}
 
-	logger.Debug("persisting clerk state", "sideTxResult", sideTxResult)
+	logger.Debug("Persisting clerk state", "sideTxResult", sideTxResult)
 
 	// sequence id
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(heimdallTypes.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
 
 	// create the event record
 	record := types.NewEventRecord(
@@ -189,12 +210,12 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 
 	// save event into state
 	if err := srv.SetEventRecord(ctx, record); err != nil {
-		logger.Error("unable to update event record", "id", msg.Id, "error", err)
+		logger.Error("Unable to update event record", "id", msg.Id, heimdallTypes.LogKeyError, err)
 		return err
 	}
 
 	// save the record sequence
-	srv.SetRecordSequence(ctx, sequence.String())
+	srv.SetRecordSequence(ctx, sequence)
 
 	// tx bytes
 	txBytes := ctx.TxBytes()
@@ -217,7 +238,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	return nil
 }
 
-// recordClerkMetric records metrics for side and post handlers.
+// recordClerkMetric records metrics for side and post-handlers.
 func recordClerkMetric(method string, apiType string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.ClerkSubsystem, method, apiType, success, start)

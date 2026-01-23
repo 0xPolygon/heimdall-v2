@@ -15,6 +15,11 @@ import (
 	"github.com/0xPolygon/heimdall-v2/types"
 )
 
+const (
+	errInvalidProposerFmt = "invalid proposer %s"
+	errInvalidSenderFmt   = "invalid sender %s"
+)
+
 var (
 	_ sdk.Msg = &MsgCheckpoint{}
 	_ sdk.Msg = &MsgCpAck{}
@@ -46,23 +51,23 @@ func (msg MsgCheckpoint) ValidateBasic() error {
 	}
 
 	if bytes.Equal(msg.RootHash, common.Hash{}.Bytes()) {
-		return ErrInvalidMsg.Wrapf("Invalid roothash %v", string(msg.RootHash))
+		return ErrInvalidMsg.Wrapf("Invalid rootHash %v", string(msg.RootHash))
 	}
 
 	if len(msg.RootHash) != common.HashLength {
-		return ErrInvalidMsg.Wrapf("Invalid roothash length %v", len(msg.RootHash))
+		return ErrInvalidMsg.Wrapf("Invalid rootHash length %v", len(msg.RootHash))
 	}
 
 	ac := addressCodec.NewHexCodec()
 	addrBytes, err := ac.StringToBytes(msg.Proposer)
 	if err != nil {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
+		return ErrInvalidMsg.Wrapf(errInvalidProposerFmt, msg.Proposer)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
+		return ErrInvalidMsg.Wrapf(errInvalidProposerFmt, msg.Proposer)
 	}
 
 	if msg.StartBlock >= msg.EndBlock || msg.EndBlock == 0 {
@@ -174,25 +179,25 @@ func (msg MsgCpAck) ValidateBasic() error {
 	ac := addressCodec.NewHexCodec()
 
 	// Validate sender (msg.From)
-	fromBytes, err := ac.StringToBytes(msg.From)
+	senderBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
+		return ErrInvalidMsg.Wrapf(errInvalidSenderFmt, msg.From)
 	}
 
-	fromAccAddr := sdk.AccAddress(fromBytes)
+	fromAccAddr := sdk.AccAddress(senderBytes)
 	if fromAccAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
+		return ErrInvalidMsg.Wrapf(errInvalidSenderFmt, msg.From)
 	}
 
 	// Validate proposer (msg.Proposer)
 	proposerBytes, err := ac.StringToBytes(msg.Proposer)
 	if err != nil {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
+		return ErrInvalidMsg.Wrapf(errInvalidSenderFmt, msg.Proposer)
 	}
 
 	proposerAccAddr := sdk.AccAddress(proposerBytes)
 	if proposerAccAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
+		return ErrInvalidMsg.Wrapf(errInvalidSenderFmt, msg.Proposer)
 	}
 
 	if msg.StartBlock >= msg.EndBlock {
@@ -200,11 +205,11 @@ func (msg MsgCpAck) ValidateBasic() error {
 	}
 
 	if bytes.Equal(msg.RootHash, common.Hash{}.Bytes()) {
-		return ErrInvalidMsg.Wrapf("Invalid roothash %v", string(msg.RootHash))
+		return ErrInvalidMsg.Wrapf("Invalid root=Hash %v", string(msg.RootHash))
 	}
 
 	if len(msg.RootHash) != common.HashLength {
-		return ErrInvalidMsg.Wrapf("Invalid roothash length %v", len(msg.RootHash))
+		return ErrInvalidMsg.Wrapf("Invalid rootHash length %v", len(msg.RootHash))
 	}
 
 	return nil
