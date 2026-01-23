@@ -59,8 +59,9 @@ const (
 	ClerkPollIntervalFlag        = "clerk_poll_interval"
 	SpanPollIntervalFlag         = "span_poll_interval"
 	MilestonePollIntervalFlag    = "milestone_poll_interval"
-	MainChainGasLimitFlag        = "main_chain_gas_limit"
-	MainChainMaxGasPriceFlag     = "main_chain_max_gas_price"
+
+	MainChainGasFeeCapFlag = "main_chain_gas_fee_cap"
+	MainChainGasTipCapFlag = "main_chain_gas_tip_cap"
 
 	NoACKWaitTimeFlag = "no_ack_wait_time"
 	ChainFlag         = "chain"
@@ -98,9 +99,8 @@ const (
 	DefaultSHCheckpointAckInterval = 30 * time.Minute
 	DefaultSHMaxDepthDuration      = 24 * time.Hour
 
-	DefaultMainChainGasLimit = uint64(5000000)
-
-	DefaultMainChainMaxGasPrice = 400000000000 // 400 Gwei
+	DefaultMainChainGasFeeCap = 500000000000 // 500 Gwei
+	DefaultMainChainGasTipCap = 10000000000  // 10 Gwei
 
 	DefaultBorChainID      = "15001"
 	DefaultHeimdallChainID = "heimdall-15001"
@@ -147,9 +147,8 @@ type CustomConfig struct {
 
 	AmqpURL string `mapstructure:"amqp_url"` // amqp url
 
-	MainChainGasLimit uint64 `mapstructure:"main_chain_gas_limit"` // gas-limit for main chain txs, e.g., submit checkpoint
-
-	MainChainMaxGasPrice int64 `mapstructure:"main_chain_max_gas_price"` // max-gas-price for main chain txs
+	MainChainGasFeeCap int64 `mapstructure:"main_chain_gas_fee_cap"` // max fee per gas for EIP-1559 txs (in wei)
+	MainChainGasTipCap int64 `mapstructure:"main_chain_gas_tip_cap"` // max priority fee per gas for EIP-1559 txs (in wei)
 
 	// config related to bridge
 	CheckpointPollInterval  time.Duration `mapstructure:"checkpoint_poll_interval"` // Poll interval for checkpointer service to send new checkpoints or missing ACK
@@ -407,14 +406,22 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		conf.Custom.SHMaxDepthDuration = DefaultSHMaxDepthDuration
 	}
 
+	// validate EIP-1559 gas config: tip cap must not exceed fee cap
+	if conf.Custom.MainChainGasTipCap > conf.Custom.MainChainGasFeeCap {
+		log.Fatal("invalid gas config: main_chain_gas_tip_cap must not exceed main_chain_gas_fee_cap",
+			"tip_cap", conf.Custom.MainChainGasTipCap,
+			"fee_cap", conf.Custom.MainChainGasFeeCap,
+		)
+	}
+
 	if mainRPCClient, err = rpc.Dial(conf.Custom.EthRPCUrl); err != nil {
-		log.Fatalln("Unable to dial via ethClient", "URL", conf.Custom.EthRPCUrl, "chain", "eth", "error", err)
+		log.Fatal("unable to dial main chain RPC client", "URL", conf.Custom.EthRPCUrl, "error", err)
 	}
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
 
 	if borRPCClient, err = rpc.Dial(conf.Custom.BorRPCUrl); err != nil {
-		log.Fatal(err)
+		log.Fatal("unable to dial bor chain RPC client", "URL", conf.Custom.BorRPCUrl, "error", err)
 	}
 
 	borClient = ethclient.NewClient(borRPCClient)
@@ -422,7 +429,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	if conf.Custom.BorGRPCFlag && conf.Custom.BorGRPCUrl != "" {
 		client, err := borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl, Logger)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("unable to create bor gRPC client", "URL", conf.Custom.BorGRPCUrl, "error", err)
 		}
 		borGRPCClient = client
 	}
@@ -517,9 +524,8 @@ func GetDefaultHeimdallConfig() CustomConfig {
 
 		AmqpURL: DefaultAmqpURL,
 
-		MainChainGasLimit: DefaultMainChainGasLimit,
-
-		MainChainMaxGasPrice: DefaultMainChainMaxGasPrice,
+		MainChainGasFeeCap: DefaultMainChainGasFeeCap,
+		MainChainGasTipCap: DefaultMainChainGasTipCap,
 
 		CheckpointPollInterval:  DefaultCheckpointPollInterval,
 		SyncerPollInterval:      DefaultSyncerPollInterval,
@@ -878,26 +884,26 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, MilestonePollIntervalFlag), "Error", err)
 	}
 
-	// add MainChainGasLimitFlag flag
-	cmd.PersistentFlags().Uint64(
-		MainChainGasLimitFlag,
+	// add MainChainGasFeeCapFlag flag
+	cmd.PersistentFlags().Int64(
+		MainChainGasFeeCapFlag,
 		0,
-		"Set main chain gas limit",
+		"Set main chain max gas fee cap for EIP-1559 transactions (in wei)",
 	)
 
-	if err := v.BindPFlag(MainChainGasLimitFlag, cmd.PersistentFlags().Lookup(MainChainGasLimitFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, MainChainGasLimitFlag), "Error", err)
+	if err := v.BindPFlag(MainChainGasFeeCapFlag, cmd.PersistentFlags().Lookup(MainChainGasFeeCapFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, MainChainGasFeeCapFlag), "Error", err)
 	}
 
-	// add MainChainMaxGasPriceFlag flag
+	// add MainChainGasTipCapFlag flag
 	cmd.PersistentFlags().Int64(
-		MainChainMaxGasPriceFlag,
+		MainChainGasTipCapFlag,
 		0,
-		"Set main chain max gas limit",
+		"Set main chain max priority fee (tip) for EIP-1559 transactions (in wei)",
 	)
 
-	if err := v.BindPFlag(MainChainMaxGasPriceFlag, cmd.PersistentFlags().Lookup(MainChainMaxGasPriceFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, MainChainMaxGasPriceFlag), "Error", err)
+	if err := v.BindPFlag(MainChainGasTipCapFlag, cmd.PersistentFlags().Lookup(MainChainGasTipCapFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, MainChainGasTipCapFlag), "Error", err)
 	}
 
 	// add NoACKWaitTimeFlag flag
@@ -1064,16 +1070,16 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 		}
 	}
 
-	// get mainChain gas limit from viper/cobra
-	uint64ConfigValue := v.GetUint64(MainChainGasLimitFlag)
-	if uint64ConfigValue != 0 {
-		c.Custom.MainChainGasLimit = uint64ConfigValue
+	// get mainChain gas fee cap from viper/cobra. if it is greater than zero, set it as a configuration parameter
+	int64ConfigValue := v.GetInt64(MainChainGasFeeCapFlag)
+	if int64ConfigValue > 0 {
+		c.Custom.MainChainGasFeeCap = int64ConfigValue
 	}
 
-	// get mainChain max gas price from viper/cobra. if it is greater than zero, set it as a configuration parameter
-	int64ConfigValue := v.GetInt64(MainChainMaxGasPriceFlag)
+	// get mainChain gas tip cap from viper/cobra
+	int64ConfigValue = v.GetInt64(MainChainGasTipCapFlag)
 	if int64ConfigValue > 0 {
-		c.Custom.MainChainMaxGasPrice = int64ConfigValue
+		c.Custom.MainChainGasTipCap = int64ConfigValue
 	}
 
 	// get chain from viper/cobra flag
@@ -1121,12 +1127,12 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 		c.Custom.AmqpURL = cc.AmqpURL
 	}
 
-	if cc.MainChainGasLimit != 0 {
-		c.Custom.MainChainGasLimit = cc.MainChainGasLimit
+	if cc.MainChainGasFeeCap != 0 {
+		c.Custom.MainChainGasFeeCap = cc.MainChainGasFeeCap
 	}
 
-	if cc.MainChainMaxGasPrice != 0 {
-		c.Custom.MainChainMaxGasPrice = cc.MainChainMaxGasPrice
+	if cc.MainChainGasTipCap != 0 {
+		c.Custom.MainChainGasTipCap = cc.MainChainGasTipCap
 	}
 
 	if cc.CheckpointPollInterval != 0 {

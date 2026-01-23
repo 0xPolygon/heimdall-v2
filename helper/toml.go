@@ -50,11 +50,9 @@ sh_stake_update_interval = "{{ .Custom.SHStakeUpdateInterval }}"
 sh_checkpoint_ack_interval = "{{ .Custom.SHCheckpointAckInterval }}"
 sh_max_depth_duration = "{{ .Custom.SHMaxDepthDuration }}"
 
-#### gas limits ####
-main_chain_gas_limit = "{{ .Custom.MainChainGasLimit }}"
-
-#### gas price ####
-main_chain_max_gas_price = "{{ .Custom.MainChainMaxGasPrice }}"
+#### gas price configs (EIP-1559) ####
+main_chain_gas_fee_cap = "{{ .Custom.MainChainGasFeeCap }}"
+main_chain_gas_tip_cap = "{{ .Custom.MainChainGasTipCap }}"
 
 ##### Timeout Config #####
 no_ack_wait_time = "{{ .Custom.NoACKWaitTime }}"
