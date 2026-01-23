@@ -29,13 +29,24 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// EventRecord represents a state sync event from the Ethereum root chain to the
+// Bor chain. These records are used to relay events from Ethereum to Polygon,
+// enabling cross-chain communication for deposits, state updates, and other
+// operations.
 type EventRecord struct {
-	Id         uint64    `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Contract   string    `protobuf:"bytes,2,opt,name=contract,proto3" json:"contract,omitempty"`
-	Data       []byte    `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
-	TxHash     string    `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	LogIndex   uint64    `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
-	BorChainId string    `protobuf:"bytes,6,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
+	// Unique sequential identifier for this event record.
+	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Address of the contract that emitted this event on the root chain.
+	Contract string `protobuf:"bytes,2,opt,name=contract,proto3" json:"contract,omitempty"`
+	// Encoded event data from the contract log.
+	Data []byte `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+	// Transaction hash on the root chain where this event was emitted.
+	TxHash string `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Index of this log entry within the transaction.
+	LogIndex uint64 `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
+	// Chain ID of the Bor chain this record applies to.
+	BorChainId string `protobuf:"bytes,6,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
+	// Timestamp when this record was created.
 	RecordTime time.Time `protobuf:"bytes,7,opt,name=record_time,json=recordTime,proto3,stdtime" json:"record_time"`
 }
 

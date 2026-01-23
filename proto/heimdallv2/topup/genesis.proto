@@ -7,8 +7,11 @@ import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
+// GenesisState defines the topup module's genesis state.
 message GenesisState {
+  // Topup transaction sequences for replay protection.
   repeated string topup_sequences = 1 [ (amino.dont_omitempty) = true ];
+  // Initial dividend accounts at genesis.
   repeated heimdallv2.types.DividendAccount dividend_accounts = 2
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

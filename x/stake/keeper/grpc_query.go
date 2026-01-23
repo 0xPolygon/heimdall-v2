@@ -17,6 +17,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
+const errEmptyRequest = "empty request"
+
 var _ types.QueryServer = queryServer{}
 
 type queryServer struct {
@@ -52,7 +54,7 @@ func (q queryServer) GetSignerByAddress(ctx context.Context, req *types.QuerySig
 	defer recordStakeQueryMetric(api.GetSignerByAddressMethod, startTime, &err)
 
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if !common.IsHexAddress(req.ValAddress) {
@@ -81,7 +83,7 @@ func (q queryServer) GetValidatorById(ctx context.Context, req *types.QueryValid
 	defer recordStakeQueryMetric(api.GetValidatorByIdMethod, startTime, &err)
 
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if req.Id <= 0 {
@@ -99,7 +101,7 @@ func (q queryServer) GetValidatorById(ctx context.Context, req *types.QueryValid
 // GetValidatorStatusByAddress queries validator status for given validator address.
 func (q queryServer) GetValidatorStatusByAddress(ctx context.Context, req *types.QueryValidatorStatusRequest) (*types.QueryValidatorStatusResponse, error) {
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	// validate address
@@ -138,7 +140,7 @@ func (q queryServer) IsStakeTxOld(ctx context.Context, req *types.QueryStakeIsOl
 	defer recordStakeQueryMetric(api.IsStakeTxOldMethod, startTime, &err)
 
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if !hex.IsTxHashNonEmpty(req.TxHash) {
@@ -181,7 +183,7 @@ func (q queryServer) GetProposersByTimes(ctx context.Context, req *types.QueryPr
 	defer recordStakeQueryMetric(api.GetProposersByTimesMethod, startTime, &err)
 
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if req.Times >= math.MaxInt64 {
@@ -221,6 +223,10 @@ func (q queryServer) GetCurrentProposer(ctx context.Context, _ *types.QueryCurre
 	defer recordStakeQueryMetric(api.GetCurrentProposerMethod, startTime, &err)
 
 	proposer := q.k.GetCurrentProposer(ctx)
+	if proposer == nil {
+		err = status.Error(codes.NotFound, "current proposer not found")
+		return nil, err
+	}
 
 	return &types.QueryCurrentProposerResponse{Validator: *proposer}, nil
 }

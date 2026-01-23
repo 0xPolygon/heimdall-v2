@@ -22,7 +22,9 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Response is a generic REST API response wrapper.
 type Response struct {
+	// Raw result data.
 	Result []byte `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
 }
 
@@ -66,7 +68,9 @@ func (m *Response) GetResult() []byte {
 	return nil
 }
 
+// GasEstimateResponse contains gas estimation for a transaction.
 type GasEstimateResponse struct {
+	// Estimated gas units required for the transaction.
 	GasEstimate uint64 `protobuf:"varint,1,opt,name=gas_estimate,json=gasEstimate,proto3" json:"gas_estimate,omitempty"`
 }
 

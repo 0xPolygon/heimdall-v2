@@ -25,6 +25,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Vote represents a validator's decision on a side transaction.
 type Vote int32
 
 const (
@@ -53,10 +54,18 @@ func (Vote) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_75911ad509cf3b3b, []int{0}
 }
 
+// VoteExtension contains additional data included by validators in their votes.
+// Introduced in ABCI++, vote extensions allow validators to include
+// supplementary information like milestone propositions and side transaction
+// results.
 type VoteExtension struct {
-	BlockHash            []byte                      `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
-	Height               int64                       `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
-	SideTxResponses      []SideTxResponse            `protobuf:"bytes,3,rep,name=side_tx_responses,json=sideTxResponses,proto3" json:"side_tx_responses"`
+	// Hash of the block this vote extension is for.
+	BlockHash []byte `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
+	// Height of the block this vote extension is for.
+	Height int64 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+	// Results of side transaction validation by this validator.
+	SideTxResponses []SideTxResponse `protobuf:"bytes,3,rep,name=side_tx_responses,json=sideTxResponses,proto3" json:"side_tx_responses"`
+	// Milestone proposition submitted by this validator.
 	MilestoneProposition *types.MilestoneProposition `protobuf:"bytes,4,opt,name=milestone_proposition,json=milestoneProposition,proto3" json:"milestone_proposition,omitempty"`
 }
 
@@ -121,9 +130,12 @@ func (m *VoteExtension) GetMilestoneProposition() *types.MilestoneProposition {
 	return nil
 }
 
+// SideTxResponse contains a validator's vote on a side transaction.
 type SideTxResponse struct {
+	// Hash of the side transaction being voted on.
 	TxHash []byte `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	Result Vote   `protobuf:"varint,2,opt,name=result,proto3,enum=heimdallv2.sidetxs.Vote" json:"result,omitempty"`
+	// The validator's vote (yes or no).
+	Result Vote `protobuf:"varint,2,opt,name=result,proto3,enum=heimdallv2.sidetxs.Vote" json:"result,omitempty"`
 }
 
 func (m *SideTxResponse) Reset()         { *m = SideTxResponse{} }

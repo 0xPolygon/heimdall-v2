@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestSortValidatorByAddress populates only the signer as that is the only value used in sorting
@@ -35,7 +35,7 @@ func TestSortValidatorByAddress(t *testing.T) {
 	}
 	for i, c := range tc {
 		out := SortValidatorByAddress(c.in)
-		assert.Equal(t, c.out, out, fmt.Sprintf("i: %v, case: %v", i, c.msg))
+		require.Equal(t, c.out, out, fmt.Sprintf("i: %v, case: %v", i, c.msg))
 	}
 }
 
@@ -74,10 +74,10 @@ func TestValidateBasic(t *testing.T) {
 		fmt.Println(c.in.Signer)
 		out := c.in.ValidateBasic()
 		if c.expFail {
-			assert.NotNil(t, out)
-			assert.Contains(t, out.Error(), c.msg)
+			require.NotNil(t, out)
+			require.Contains(t, out.Error(), c.msg)
 		} else {
-			assert.Equal(t, nil, out, c.msg)
+			require.Equal(t, nil, out, c.msg)
 		}
 	}
 }

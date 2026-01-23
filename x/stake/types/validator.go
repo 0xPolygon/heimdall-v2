@@ -39,8 +39,8 @@ func NewValidator(
 	}, nil
 }
 
-// SortValidatorByAddress sorts a slice of validators by address
-// to sort it we compare the values of the signer field
+// SortValidatorByAddress sorts a slice of validators by address.
+// To sort it, we compare the values of the signer field
 func SortValidatorByAddress(a []Validator) []Validator {
 	sort.Slice(a, func(i, j int) bool {
 		return strings.Compare(util.FormatAddress(a[i].Signer), util.FormatAddress(a[j].Signer)) < 0
@@ -111,7 +111,7 @@ func (v Validator) ConsPubKey() ([]byte, error) {
 	return v.PubKey, nil
 }
 
-// Bytes computes the unique encoding of a validator with a given voting power.
+// Bytes function computes the unique encoding of a validator with a given voting power.
 // These are the bytes that get hashed in consensus.
 // It excludes the address
 // as it's redundant with the pubKey.

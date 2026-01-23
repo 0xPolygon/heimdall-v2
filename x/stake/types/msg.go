@@ -12,6 +12,12 @@ import (
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 )
 
+const (
+	errInvalidValidatorID = "invalid validator id %v"
+	errInvalidProposer    = "invalid proposer %v"
+	errInvalidTxHash      = "invalid tx hash %v"
+)
+
 var (
 	_ sdk.Msg = &MsgValidatorJoin{}
 	_ sdk.Msg = &MsgStakeUpdate{}
@@ -41,19 +47,19 @@ func NewMsgValidatorJoin(
 // ValidateBasic validates the validator join msg before it is executed
 func (msg MsgValidatorJoin) ValidateBasic() error {
 	if msg.ValId == uint64(0) {
-		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
+		return ErrInvalidMsg.Wrapf(errInvalidValidatorID, msg.ValId)
 	}
 
 	ac := hexCodec.NewHexCodec()
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf(errInvalidProposer, msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf(errInvalidProposer, msg.From)
 	}
 
 	if msg.SignerPubKey == nil {
@@ -69,7 +75,7 @@ func (msg MsgValidatorJoin) ValidateBasic() error {
 	}
 
 	if len(msg.TxHash) != common.HashLength {
-		return ErrInvalidMsg.Wrapf("invalid tx hash %v", msg.TxHash)
+		return ErrInvalidMsg.Wrapf(errInvalidTxHash, msg.TxHash)
 	}
 
 	return nil
@@ -94,19 +100,19 @@ func NewMsgStakeUpdate(from string, id uint64,
 // ValidateBasic validates the stake update msg before it is executed
 func (msg MsgStakeUpdate) ValidateBasic() error {
 	if msg.ValId == uint64(0) {
-		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
+		return ErrInvalidMsg.Wrapf(errInvalidValidatorID, msg.ValId)
 	}
 
 	ac := hexCodec.NewHexCodec()
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf(errInvalidProposer, msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf(errInvalidProposer, msg.From)
 	}
 
 	if msg.NewAmount.IsZero() || msg.NewAmount.IsNegative() {
@@ -114,7 +120,7 @@ func (msg MsgStakeUpdate) ValidateBasic() error {
 	}
 
 	if len(msg.TxHash) != common.HashLength {
-		return ErrInvalidMsg.Wrapf("invalid tx hash %v", msg.TxHash)
+		return ErrInvalidMsg.Wrapf(errInvalidTxHash, msg.TxHash)
 	}
 
 	return nil
@@ -139,19 +145,19 @@ func NewMsgSignerUpdate(from string, id uint64,
 // ValidateBasic validates the signer update msg before it is executed
 func (msg MsgSignerUpdate) ValidateBasic() error {
 	if msg.ValId == uint64(0) {
-		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
+		return ErrInvalidMsg.Wrapf(errInvalidValidatorID, msg.ValId)
 	}
 
 	ac := hexCodec.NewHexCodec()
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf(errInvalidProposer, msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf(errInvalidProposer, msg.From)
 	}
 
 	if msg.NewSignerPubKey == nil {
@@ -163,7 +169,7 @@ func (msg MsgSignerUpdate) ValidateBasic() error {
 	}
 
 	if len(msg.TxHash) != common.HashLength {
-		return ErrInvalidMsg.Wrapf("invalid tx hash %v", msg.TxHash)
+		return ErrInvalidMsg.Wrapf(errInvalidTxHash, msg.TxHash)
 	}
 
 	return nil
@@ -189,23 +195,23 @@ func NewMsgValidatorExit(
 // ValidateBasic validates the validator exit msg before it is executed
 func (msg MsgValidatorExit) ValidateBasic() error {
 	if msg.ValId == uint64(0) {
-		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
+		return ErrInvalidMsg.Wrapf(errInvalidValidatorID, msg.ValId)
 	}
 
 	ac := hexCodec.NewHexCodec()
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf(errInvalidProposer, msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf(errInvalidProposer, msg.From)
 	}
 
 	if len(msg.TxHash) != common.HashLength {
-		return ErrInvalidMsg.Wrapf("invalid tx hash %v", msg.TxHash)
+		return ErrInvalidMsg.Wrapf(errInvalidTxHash, msg.TxHash)
 	}
 
 	return nil

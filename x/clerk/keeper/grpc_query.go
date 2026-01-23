@@ -20,6 +20,8 @@ import (
 const (
 	// MaxRecordListLimit is the maximum record list limit for queries.
 	MaxRecordListLimit = 50
+
+	errEmptyRequest = "empty request"
 )
 
 var _ types.QueryServer = queryServer{}
@@ -41,7 +43,7 @@ func (q queryServer) GetRecordById(ctx context.Context, request *types.RecordReq
 	defer recordClerkQueryMetric(api.GetRecordByIdMethod, startTime, &err)
 
 	if request == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	record, err := q.k.GetEventRecord(ctx, request.RecordId)
@@ -58,7 +60,7 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 	defer recordClerkQueryMetric(api.GetRecordListMethod, startTime, &err)
 
 	if request == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if request.Page == 0 {
@@ -82,7 +84,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	defer recordClerkQueryMetric(api.GetRecordListWithTimeMethod, startTime, &err)
 
 	if request == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if isPaginationEmpty(request.Pagination) {
@@ -105,7 +107,12 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	defer iterator.Close()
+	defer func(iterator collections.Iterator[uint64, types.EventRecord]) {
+		err := iterator.Close()
+		if err != nil {
+			q.k.Logger(ctx).Error("Error in closing event record iterator", "error", err)
+		}
+	}(iterator)
 
 	skipped := uint64(0)   // Records skipped based on pagination offset.
 	collected := uint64(0) // Records collected based on pagination limit.
@@ -113,7 +120,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	for ; iterator.Valid(); iterator.Next() {
 		value, err := iterator.Value()
 		if err != nil {
-			q.k.Logger(ctx).Debug("error in fetching event record from iterator", "error", err)
+			q.k.Logger(ctx).Debug("Error in fetching event record from iterator", "error", err)
 			break
 		}
 
@@ -155,7 +162,7 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 	defer recordClerkQueryMetric(api.GetRecordSequenceMethod, startTime, &err)
 
 	if request == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if !hex.IsTxHashNonEmpty(request.TxHash) {
@@ -192,7 +199,7 @@ func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequ
 	defer recordClerkQueryMetric(api.IsClerkTxOldMethod, startTime, &err)
 
 	if request == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if !hex.IsTxHashNonEmpty(request.TxHash) {

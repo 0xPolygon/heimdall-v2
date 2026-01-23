@@ -24,6 +24,7 @@ import (
 const (
 	blockAuthorsCollisionCheck   = 10
 	blockProducerMaxSpanLookback = 50
+	spandIdLog                   = "spanId"
 )
 
 // Keeper stores all the bor related data
@@ -166,14 +167,14 @@ func (k *Keeper) GetAllSpans(ctx context.Context) ([]*types.Span, error) {
 	defer func(iter collections.Iterator[uint64, types.Span]) {
 		err := iter.Close()
 		if err != nil {
-			logger.Error("error closing span iterator", "err", err)
+			logger.Error("Error closing span iterator", "err", err)
 			return
 		}
 	}(iter)
 
 	res, err := iter.Values()
 	if err != nil {
-		logger.Error("error getting spans from iterator", "err", err)
+		logger.Error("Error getting spans from iterator", "err", err)
 		return nil, err
 	}
 
@@ -271,7 +272,7 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash, prev
 	}
 
 	if len(prevVals) > 0 {
-		// rollback voting powers for the selection algorithm
+		// roll back the voting powers for the selection algorithm
 		spanEligibleVals = RollbackVotingPowers(spanEligibleVals, prevVals)
 	}
 
@@ -309,7 +310,7 @@ func (k *Keeper) UpdateLastSpan(ctx context.Context, id uint64) error {
 func (k *Keeper) SetLastSpanBlock(ctx context.Context, block uint64) error {
 	err := k.LastSpanBlock.Set(ctx, block)
 	if err != nil {
-		k.Logger(ctx).Error("error while setting last span block in store", "err", err)
+		k.Logger(ctx).Error("Error while setting last span block in store", "err", err)
 		return err
 	}
 
@@ -319,7 +320,7 @@ func (k *Keeper) SetLastSpanBlock(ctx context.Context, block uint64) error {
 func (k *Keeper) GetLastSpanBlock(ctx context.Context) (uint64, error) {
 	doExist, err := k.LastSpanBlock.Has(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while checking the existence of last span block in store", "err", err)
+		k.Logger(ctx).Error("Error while checking the existence of last span block in store", "err", err)
 		return 0, err
 	}
 
@@ -329,7 +330,7 @@ func (k *Keeper) GetLastSpanBlock(ctx context.Context) (uint64, error) {
 
 	block, err := k.LastSpanBlock.Get(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while getting last span block from store", "err", err)
+		k.Logger(ctx).Error("Error while getting last span block from store", "err", err)
 		return 0, err
 	}
 
@@ -350,7 +351,7 @@ func (k *Keeper) FetchNextSpanSeed(ctx context.Context, id uint64) (common.Hash,
 
 	seedSpan, err := k.GetSpan(ctx, seedSpanID)
 	if err != nil {
-		logger.Error("error fetching span while calculating next span seed", "error", err)
+		logger.Error("Error fetching span while calculating next span seed", "error", err)
 		return common.Hash{}, common.Address{}, err
 	}
 
@@ -361,16 +362,16 @@ func (k *Keeper) FetchNextSpanSeed(ctx context.Context, id uint64) (common.Hash,
 
 	blockHeader, err := k.contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(borBlock)))
 	if err != nil {
-		k.Logger(ctx).Error("error fetching block header from bor chain while calculating next span seed", "error", err, "block", borBlock)
+		k.Logger(ctx).Error("Error fetching block header from bor chain while calculating next span seed", "error", err, "block", borBlock)
 		return common.Hash{}, common.Address{}, err
 	}
 
 	if author == nil {
-		k.Logger(ctx).Error("seed author is nil")
+		k.Logger(ctx).Error("Seed author is nil")
 		return blockHeader.Hash(), common.Address{}, fmt.Errorf("seed author is nil")
 	}
 
-	logger.Debug("fetched block for seed", "block", borBlock, "author", author, "span id", id)
+	logger.Debug("Fetched block for seed", "block", borBlock, "author", author, spandIdLog, id)
 
 	return blockHeader.Hash(), *author, nil
 }
@@ -401,7 +402,7 @@ func (k *Keeper) GetSeedProducer(ctx context.Context, id uint64) (*common.Addres
 	}
 
 	if !ok {
-		return nil, nil //nolint: nilnil
+		return nil, nil //nolint:nilnil // nil address with nil error indicates not found
 	}
 
 	// get last seed producer
@@ -410,7 +411,7 @@ func (k *Keeper) GetSeedProducer(ctx context.Context, id uint64) (*common.Addres
 		return nil, err
 	}
 	if authorBytes == nil {
-		return nil, nil //nolint: nilnil
+		return nil, nil //nolint:nilnil // nil address with nil error indicates not found
 	}
 
 	author := common.BytesToAddress(authorBytes)
@@ -470,17 +471,17 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 		err      error
 	)
 
-	logger.Debug("getting bor block for span seed", "span id", seedSpan.GetId(), "proposed span id", proposedSpanID)
+	logger.Debug("Getting bor block for span seed", spandIdLog, seedSpan.GetId(), "proposed span id", proposedSpanID)
 
 	if proposedSpanID == 1 {
 		borBlock = 1
 		author, err = k.contractCaller.GetBorChainBlockAuthor(big.NewInt(int64(borBlock)))
 		if err != nil {
-			logger.Error("error fetching first block for span seed", "error", err, "block", borBlock)
+			logger.Error("Error fetching first block for span seed", "error", err, "block", borBlock)
 			return 0, nil, err
 		}
 
-		logger.Debug("returning first block author", "author", author, "block", borBlock)
+		logger.Debug("Returning first block author", "author", author, "block", borBlock)
 
 		return borBlock, author, nil
 	}
@@ -490,7 +491,7 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 
 	lastAuthor, err := k.GetSeedProducer(ctx, spanID)
 	if err != nil {
-		logger.Error("Error fetching last seed producer", "error", err, "span id", spanID)
+		logger.Error("Error fetching last seed producer", "error", err, spandIdLog, spanID)
 		return 0, nil, err
 	}
 
@@ -502,12 +503,12 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 
 		author, err = k.GetSeedProducer(ctx, spanID)
 		if err != nil {
-			logger.Error("Error fetching span seed producer", "error", err, "span id", spanID)
+			logger.Error("Error fetching span seed producer", "error", err, spandIdLog, spanID)
 			return 0, nil, err
 		}
 
 		if author == nil {
-			logger.Info("GetSeedProducer returned empty value", "span id", spanID)
+			logger.Info("GetSeedProducer returned empty value", spandIdLog, spanID)
 			break
 		}
 
@@ -515,7 +516,7 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 		spanID--
 	}
 
-	logger.Debug("last authors", "authors", fmt.Sprintf("%+v", uniqueAuthors), "span id", seedSpan.GetId())
+	logger.Debug("Last authors", "authors", fmt.Sprintf("%+v", uniqueAuthors), spandIdLog, seedSpan.GetId())
 
 	firstDiffFromLast := uint64(0)
 
@@ -534,7 +535,7 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 		}
 
 		if _, exists := uniqueAuthors[author.Hex()]; !exists || len(seedSpan.ValidatorSet.Validators) == 1 {
-			logger.Debug("got author", "author", author, "block", borBlock)
+			logger.Debug("Got author", "author", author, "block", borBlock)
 			return borBlock, author, nil
 		}
 
@@ -555,7 +556,7 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 		return 0, nil, err
 	}
 
-	logger.Debug("returning first different block author", "author", author, "block", borBlock)
+	logger.Debug("Returning first different block author", "author", author, "block", borBlock)
 
 	return borBlock, author, nil
 }
@@ -578,7 +579,7 @@ func RollbackVotingPowers(valsNew, valsOld []staketypes.Validator) []staketypes.
 	return valsNew
 }
 
-// CanVoteProducers checks if the current span is in VEBLOP phase and returns an error if not.
+// CanVoteProducers checks if the current span is in veBlop phase and returns an error if not.
 func (k Keeper) CanVoteProducers(ctx context.Context) error {
 	latestSpan, err := k.GetLastSpan(ctx)
 	if err != nil {
@@ -586,7 +587,7 @@ func (k Keeper) CanVoteProducers(ctx context.Context) error {
 	}
 
 	if !helper.IsRio(latestSpan.EndBlock + 1) {
-		return fmt.Errorf("MsgVoteProducers not allowed: span is not in VEBLOP phase (span start block: %d, span end block: %d, veblop height: %d)",
+		return fmt.Errorf("MsgVoteProducers not allowed: span is not in veBlop phase (span start block: %d, span end block: %d, veBlop height: %d)",
 			latestSpan.StartBlock,
 			latestSpan.EndBlock,
 			helper.GetRioHeight())

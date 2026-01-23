@@ -6,8 +6,13 @@ import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
+// AccountProof contains proof data for verifying account balances.
+// Used to verify fee topups from the root chain.
 message AccountProof {
+  // Address of the account this proof is for.
   string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // Merkle proof data for this account's balance.
   bytes account_proof = 2 [ (amino.dont_omitempty) = true ];
+  // Index of this account in the merkle tree.
   uint64 index = 3 [ (amino.dont_omitempty) = true ];
 }

@@ -32,20 +32,19 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
-	// GetRecordCount queries the total number of event records
+	// GetRecordCount queries the total number of event records.
 	GetRecordCount(ctx context.Context, in *RecordCountRequest, opts ...grpc.CallOption) (*RecordCountResponse, error)
-	// GetRecordList queries a list of records
+	// GetRecordList queries a paginated list of event records.
 	GetRecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error)
-	// GetLatestRecordId queries the latest record id from L1.
+	// GetLatestRecordId queries the latest event record ID from the root chain.
 	GetLatestRecordId(ctx context.Context, in *LatestRecordIdRequest, opts ...grpc.CallOption) (*LatestRecordIdResponse, error)
-	// GetRecordById retrieves a record by its id
+	// GetRecordById retrieves a specific event record by its ID.
 	GetRecordById(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error)
-	// GetRecordListWithTime queries a list of records with time
+	// GetRecordListWithTime queries event records within a time range.
 	GetRecordListWithTime(ctx context.Context, in *RecordListWithTimeRequest, opts ...grpc.CallOption) (*RecordListWithTimeResponse, error)
-	// GetRecordSequence queries the sequence of the record
+	// GetRecordSequence queries the sequence number for a specific event record.
 	GetRecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error)
-	// IsClerkTxOld queries for a specific clerk tx to check its status (old
-	// means already submitted)
+	// IsClerkTxOld checks if a clerk transaction has already been submitted.
 	IsClerkTxOld(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*IsClerkTxOldResponse, error)
 }
 
@@ -124,20 +123,19 @@ func (c *queryClient) IsClerkTxOld(ctx context.Context, in *RecordSequenceReques
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
-	// GetRecordCount queries the total number of event records
+	// GetRecordCount queries the total number of event records.
 	GetRecordCount(context.Context, *RecordCountRequest) (*RecordCountResponse, error)
-	// GetRecordList queries a list of records
+	// GetRecordList queries a paginated list of event records.
 	GetRecordList(context.Context, *RecordListRequest) (*RecordListResponse, error)
-	// GetLatestRecordId queries the latest record id from L1.
+	// GetLatestRecordId queries the latest event record ID from the root chain.
 	GetLatestRecordId(context.Context, *LatestRecordIdRequest) (*LatestRecordIdResponse, error)
-	// GetRecordById retrieves a record by its id
+	// GetRecordById retrieves a specific event record by its ID.
 	GetRecordById(context.Context, *RecordRequest) (*RecordResponse, error)
-	// GetRecordListWithTime queries a list of records with time
+	// GetRecordListWithTime queries event records within a time range.
 	GetRecordListWithTime(context.Context, *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error)
-	// GetRecordSequence queries the sequence of the record
+	// GetRecordSequence queries the sequence number for a specific event record.
 	GetRecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error)
-	// IsClerkTxOld queries for a specific clerk tx to check its status (old
-	// means already submitted)
+	// IsClerkTxOld checks if a clerk transaction has already been submitted.
 	IsClerkTxOld(context.Context, *RecordSequenceRequest) (*IsClerkTxOldResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }

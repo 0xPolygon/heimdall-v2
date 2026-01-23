@@ -42,7 +42,7 @@ func NewTxCmd() *cobra.Command {
 	return txCmd
 }
 
-// SendCheckpointCmd returns a CLI command handler for creating a MsgCheckpoint transaction.
+// SendCheckpointCmd returns a CLI command handler for creating the MsgCheckpoint transaction.
 func SendCheckpointCmd(addressCodec address.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "send-checkpoint",

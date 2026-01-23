@@ -4692,17 +4692,25 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// MsgProposeSpan defines the message for proposing a new span.
 type MsgProposeSpan struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SpanId     uint64 `protobuf:"varint,1,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
-	Proposer   string `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// ID of the span being proposed.
+	SpanId uint64 `protobuf:"varint,1,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
+	// Address of the validator proposing this span.
+	Proposer string `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// First block number of this span.
 	StartBlock uint64 `protobuf:"varint,3,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
-	EndBlock   uint64 `protobuf:"varint,4,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
-	ChainId    string `protobuf:"bytes,5,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	Seed       []byte `protobuf:"bytes,6,opt,name=seed,proto3" json:"seed,omitempty"`
+	// Last block number of this span.
+	EndBlock uint64 `protobuf:"varint,4,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
+	// Chain ID of the Bor chain.
+	ChainId string `protobuf:"bytes,5,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// Random seed used for producer selection.
+	Seed []byte `protobuf:"bytes,6,opt,name=seed,proto3" json:"seed,omitempty"`
+	// Address of the validator who generated the seed.
 	SeedAuthor string `protobuf:"bytes,7,opt,name=seed_author,json=seedAuthor,proto3" json:"seed_author,omitempty"`
 }
 
@@ -4775,6 +4783,7 @@ func (x *MsgProposeSpan) GetSeedAuthor() string {
 	return ""
 }
 
+// MsgProposeSpanResponse defines the response for MsgProposeSpan.
 type MsgProposeSpanResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4801,13 +4810,16 @@ func (*MsgProposeSpanResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_tx_proto_rawDescGZIP(), []int{1}
 }
 
+// MsgUpdateParams defines the message for updating bor module parameters.
 type MsgUpdateParams struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Authority string  `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
-	Params    *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
+	// Address of the governance authority (typically the governance module).
+	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
+	// New parameters to set.
+	Params *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
 }
 
 func (x *MsgUpdateParams) Reset() {
@@ -4844,6 +4856,7 @@ func (x *MsgUpdateParams) GetParams() *Params {
 	return nil
 }
 
+// MsgUpdateParamsResponse defines the response for MsgUpdateParams.
 type MsgUpdateParamsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4870,14 +4883,19 @@ func (*MsgUpdateParamsResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_tx_proto_rawDescGZIP(), []int{3}
 }
 
+// MsgBackfillSpans defines the message for backfilling missing spans.
 type MsgBackfillSpans struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Proposer        string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
-	ChainId         string `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	LatestSpanId    uint64 `protobuf:"varint,3,opt,name=latest_span_id,json=latestSpanId,proto3" json:"latest_span_id,omitempty"`
+	// Address of the validator proposing the backfill.
+	Proposer string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// Chain ID of the Bor chain.
+	ChainId string `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// Latest span ID known to Heimdall.
+	LatestSpanId uint64 `protobuf:"varint,3,opt,name=latest_span_id,json=latestSpanId,proto3" json:"latest_span_id,omitempty"`
+	// Latest span ID on the Bor chain.
 	LatestBorSpanId uint64 `protobuf:"varint,4,opt,name=latest_bor_span_id,json=latestBorSpanId,proto3" json:"latest_bor_span_id,omitempty"`
 }
 
@@ -4929,6 +4947,7 @@ func (x *MsgBackfillSpans) GetLatestBorSpanId() uint64 {
 	return 0
 }
 
+// MsgBackfillSpansResponse defines the response for MsgBackfillSpans.
 type MsgBackfillSpansResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4955,14 +4974,18 @@ func (*MsgBackfillSpansResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_tx_proto_rawDescGZIP(), []int{5}
 }
 
+// MsgVoteProducers defines the message for voting on producers.
 type MsgVoteProducers struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Voter   string         `protobuf:"bytes,1,opt,name=voter,proto3" json:"voter,omitempty"`
-	VoterId uint64         `protobuf:"varint,2,opt,name=voter_id,json=voterId,proto3" json:"voter_id,omitempty"`
-	Votes   *ProducerVotes `protobuf:"bytes,3,opt,name=votes,proto3" json:"votes,omitempty"`
+	// Address of the validator casting the vote.
+	Voter string `protobuf:"bytes,1,opt,name=voter,proto3" json:"voter,omitempty"`
+	// ID of the validator casting the vote.
+	VoterId uint64 `protobuf:"varint,2,opt,name=voter_id,json=voterId,proto3" json:"voter_id,omitempty"`
+	// List of validator IDs being voted for as producers.
+	Votes *ProducerVotes `protobuf:"bytes,3,opt,name=votes,proto3" json:"votes,omitempty"`
 }
 
 func (x *MsgVoteProducers) Reset() {
@@ -5006,6 +5029,7 @@ func (x *MsgVoteProducers) GetVotes() *ProducerVotes {
 	return nil
 }
 
+// MsgVoteProducersResponse defines the response for MsgVoteProducers.
 type MsgVoteProducersResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -5032,12 +5056,15 @@ func (*MsgVoteProducersResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_tx_proto_rawDescGZIP(), []int{7}
 }
 
+// MsgSetProducerDowntime defines the message for setting producer downtime.
 type MsgSetProducerDowntime struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Producer      string      `protobuf:"bytes,1,opt,name=producer,proto3" json:"producer,omitempty"`
+	// Address of the producer setting their downtime.
+	Producer string `protobuf:"bytes,1,opt,name=producer,proto3" json:"producer,omitempty"`
+	// Block range during which the producer will be offline.
 	DowntimeRange *BlockRange `protobuf:"bytes,2,opt,name=downtime_range,json=downtimeRange,proto3" json:"downtime_range,omitempty"`
 }
 
@@ -5075,6 +5102,8 @@ func (x *MsgSetProducerDowntime) GetDowntimeRange() *BlockRange {
 	return nil
 }
 
+// MsgSetProducerDowntimeResponse defines the response for
+// MsgSetProducerDowntime.
 type MsgSetProducerDowntimeResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

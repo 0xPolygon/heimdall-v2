@@ -59,12 +59,12 @@ func PruneCmd() *cobra.Command {
 			stateDBPath := filepath.Join(dataDir, "state.db")
 
 			if _, err := os.Stat(blockstoreDBPath); os.IsNotExist(err) {
-				fmt.Fprintf(os.Stderr, "Error: blockstore.db not found in %s\n", dataDir)
+				_, _ = fmt.Fprintf(os.Stderr, "Error: blockstore.db not found in %s\n", dataDir)
 				os.Exit(1)
 			}
 
 			if _, err := os.Stat(stateDBPath); os.IsNotExist(err) {
-				fmt.Fprintf(os.Stderr, "Error: state.db not found in %s\n", dataDir)
+				_, _ = fmt.Fprintf(os.Stderr, "Error: state.db not found in %s\n", dataDir)
 				os.Exit(1)
 			}
 
@@ -73,14 +73,14 @@ func PruneCmd() *cobra.Command {
 			dbType := dbm.BackendType(dbBackend)
 			blockStoreDB, err := dbm.NewDB("blockstore", dbType, dataDir)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: failed to open blockstore database: %v\n", err)
+				_, _ = fmt.Fprintf(os.Stderr, "Error: failed to open blockstore database: %v\n", err)
 				os.Exit(1)
 			}
 			defer func() {
 				if err := blockStoreDB.Close(); err != nil {
 					logger.Error("Failed to close blockstore database", "err", err)
 				} else {
-					logger.Info("Blockstore database closed")
+					logger.Info("blockstore database closed")
 				}
 			}()
 
@@ -89,7 +89,7 @@ func PruneCmd() *cobra.Command {
 			logger.Info("Opening state database", "path", stateDBPath)
 			stateDB, err := dbm.NewDB("state", dbType, dataDir)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: failed to open state database: %v\n", err)
+				_, _ = fmt.Fprintf(os.Stderr, "Error: failed to open state database: %v\n", err)
 				os.Exit(1)
 			}
 			defer func() {
@@ -107,12 +107,12 @@ func PruneCmd() *cobra.Command {
 			var blockIndexer *blockidxkv.BlockerIndexer
 			var wg sync.WaitGroup
 
-			// Only open tx_index database if pruning indexers
+			// Only open the tx_index database if pruning indexers
 			if pruneIndexers {
 				logger.Info("Opening tx_index database")
 				txIndexDB, err = dbm.NewDB("tx_index", dbType, dataDir)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error: failed to open tx_index database: %v\n", err)
+					_, _ = fmt.Fprintf(os.Stderr, "Error: failed to open tx_index database: %v\n", err)
 					os.Exit(1)
 				}
 				defer func() {
@@ -140,17 +140,17 @@ func PruneCmd() *cobra.Command {
 
 			// Validate height
 			if height <= base {
-				fmt.Fprintf(os.Stderr, "Error: requested height %d is less than or equal to current base height %d\n", height, base)
+				_, _ = fmt.Fprintf(os.Stderr, "Error: requested height %d is less than or equal to current base height %d\n", height, base)
 				os.Exit(1)
 			}
 
 			if height > currentHeight {
-				fmt.Fprintf(os.Stderr, "Error: requested height %d is greater than current height %d\n", height, currentHeight)
+				_, _ = fmt.Fprintf(os.Stderr, "Error: requested height %d is greater than current height %d\n", height, currentHeight)
 				os.Exit(1)
 			}
 
 			if (currentHeight - height) < helper.EnforcedMinRetainBlocks {
-				fmt.Fprintf(os.Stderr, "Error: requested distance between current height %d and height %d is too short (%d). It must be at least %d\n", currentHeight, height, currentHeight-height, helper.EnforcedMinRetainBlocks)
+				_, _ = fmt.Fprintf(os.Stderr, "Error: requested distance between current height %d and height %d is too short (%d). It must be at least %d\n", currentHeight, height, currentHeight-height, helper.EnforcedMinRetainBlocks)
 				os.Exit(1)
 			}
 
@@ -175,7 +175,7 @@ func PruneCmd() *cobra.Command {
 				)
 			}
 
-			// Get current application retain height
+			// Get the current application retain height
 			currentRetainHeight, err := pruner.GetApplicationRetainHeight()
 			if err != nil {
 				logger.Info("No existing application retain height found", "err", err)
@@ -186,7 +186,7 @@ func PruneCmd() *cobra.Command {
 			// Set the application retain height to the requested height
 			logger.Info("Setting application retain height", "height", height)
 			if err := pruner.SetApplicationBlockRetainHeight(height); err != nil {
-				fmt.Fprintf(os.Stderr, "Error: failed to set application retain height: %v\n", err)
+				_, _ = fmt.Fprintf(os.Stderr, "Error: failed to set application retain height: %v\n", err)
 				os.Exit(1)
 			}
 
@@ -194,7 +194,7 @@ func PruneCmd() *cobra.Command {
 			logger.Info("Loading current state")
 			st, err := stateStore.Load()
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: failed to load state: %v\n", err)
+				_, _ = fmt.Fprintf(os.Stderr, "Error: failed to load state: %v\n", err)
 				os.Exit(1)
 			}
 
@@ -203,7 +203,7 @@ func PruneCmd() *cobra.Command {
 			logger.Info("Starting block pruning", "pruneToHeight", height)
 			pruned, evidenceRetainHeight, err := blockStore.PruneBlocks(height, st)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error: failed to prune blocks: %v\n", err)
+				_, _ = fmt.Fprintf(os.Stderr, "Error: failed to prune blocks: %v\n", err)
 				os.Exit(1)
 			}
 
@@ -217,7 +217,7 @@ func PruneCmd() *cobra.Command {
 				logger.Info("Pruning states", "from", base, "to", height, "evidenceRetainHeight", evidenceRetainHeight)
 				prunedStates, err := stateStore.PruneStates(base, height, evidenceRetainHeight)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error: failed to prune states: %v\n", err)
+					_, _ = fmt.Fprintf(os.Stderr, "Error: failed to prune states: %v\n", err)
 					os.Exit(1)
 				}
 				logger.Info("State pruning completed", "prunedStates", prunedStates)

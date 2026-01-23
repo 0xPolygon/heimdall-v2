@@ -24,7 +24,9 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// GenesisState defines the chainmanager module's genesis state.
 type GenesisState struct {
+	// Module parameters at genesis.
 	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
 }
 

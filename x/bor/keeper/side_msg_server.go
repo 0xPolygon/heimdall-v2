@@ -19,6 +19,13 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
+const (
+	rioHeightStr       = "rioHeight"
+	msgTypeReceivedLog = "msg type received"
+	sidTxNoYesVotesLog = "side-tx didn't get yes votes"
+	spanIdLog          = "spanId"
+)
+
 var SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpan{})
 var FillMissingSpansMsgTypeURL = sdk.MsgTypeURL(&types.MsgBackfillSpans{})
 var SetProducerDowntimeMsgTypeURL = sdk.MsgTypeURL(&types.MsgSetProducerDowntime{})
@@ -37,39 +44,39 @@ func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 }
 
 // SideTxHandler returns a side handler for span type messages.
-func (s sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
+func (srv sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 	switch methodName {
 	case SpanProposeMsgTypeURL:
-		return s.SideHandleMsgSpan
+		return srv.SideHandleMsgSpan
 	case FillMissingSpansMsgTypeURL:
-		return s.SideHandleMsgBackfillSpans
+		return srv.SideHandleMsgBackfillSpans
 	case SetProducerDowntimeMsgTypeURL:
-		return s.SideHandleSetProducerDowntime
+		return srv.SideHandleSetProducerDowntime
 	default:
 		return nil
 	}
 }
 
 // SideHandleMsgSpan validates external calls required for processing the proposed span
-func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
+func (srv sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
 	var err error
 	start := time.Now()
 	defer recordBorMetric(api.SideHandleMsgSpanMethod, api.SideType, start, &err)
 
-	logger := s.k.Logger(ctx)
+	logger := srv.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgProposeSpan)
 	if !ok {
-		logger.Error("MsgProposeSpan type mismatch", "msg type received", msgI)
+		logger.Error("MsgProposeSpan type mismatch", msgTypeReceivedLog, msgI)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if helper.IsRio(msg.StartBlock) {
-		logger.Debug("skipping span msg since block height is greater than rio height", "block height", ctx.BlockHeight(), "rio height", helper.GetRioHeight())
+		logger.Debug("Skipping span msg since block height is greater than rio height", "block height", ctx.BlockHeight(), rioHeightStr, helper.GetRioHeight())
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Debug("Validating external call for span msg",
+	logger.Debug(helper.LogValidatingExternalCall("Span"),
 		"proposer", msg.Proposer,
 		"spanId", msg.SpanId,
 		"startBlock", msg.StartBlock,
@@ -78,14 +85,14 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 		"seedAuthor", msg.SeedAuthor,
 	)
 
-	params, err := s.k.GetParams(ctx)
+	params, err := srv.k.GetParams(ctx)
 	if err != nil {
-		logger.Error("error fetching params", "error", err)
+		logger.Error("Error fetching params", "error", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if params.SpanDuration != (msg.EndBlock - msg.StartBlock + 1) {
-		logger.Error("span duration of proposed span is wrong",
+		logger.Error("Span duration of proposed span is wrong",
 			"proposedSpanDuration", msg.EndBlock-msg.StartBlock+1,
 			"paramsSpanDuration", params.SpanDuration,
 		)
@@ -94,16 +101,16 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	}
 
 	// calculate next span seed locally
-	nextSpanSeed, nextSpanSeedAuthor, err := s.k.FetchNextSpanSeed(ctx, msg.SpanId)
+	nextSpanSeed, nextSpanSeedAuthor, err := srv.k.FetchNextSpanSeed(ctx, msg.SpanId)
 	if err != nil {
-		logger.Error("error fetching next span seed from mainChain", "error", err)
+		logger.Error("Error fetching next span seed from mainChain", "error", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// check if span seed matches or not
 	if !bytes.Equal(msg.Seed, nextSpanSeed.Bytes()) {
 		logger.Error(
-			"span seed does not match",
+			"Span seed does not match",
 			"msgSeed", msg.Seed,
 			"mainChainSeed", nextSpanSeed.String(),
 		)
@@ -126,24 +133,56 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	var latestMilestoneEndBlock uint64
-	latestMilestone, err := s.k.mk.GetLastMilestone(ctx)
-	if err == nil {
-		latestMilestoneEndBlock = latestMilestone.EndBlock
-	} else {
-		logger.Error("error fetching latest milestone", "error", err)
-	}
-
-	// fetch current child block
-	childBlock, err := s.k.contractCaller.GetBorChainBlock(ctx, nil)
+	// verify chain id
+	chainParams, err := srv.k.ck.GetParams(ctx)
 	if err != nil {
-		logger.Error("error fetching current child block", "error", err)
+		logger.Error(heimdallTypes.ErrMsgFailedToGetChainParams+" while executing bor side handler", "error", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	lastSpan, err := s.k.GetLastSpan(ctx)
+	if chainParams.ChainParams.BorChainId != msg.ChainId {
+		logger.Error("Invalid bor chain id in bor side handler", "expected", chainParams.ChainParams.BorChainId, "got", msg.ChainId)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// verify seed length
+	if len(msg.Seed) != common.HashLength {
+		logger.Error("Invalid seed length in bor side handler", "expected", common.HashLength, "got", len(msg.Seed))
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	var latestMilestoneEndBlock uint64
+	latestMilestone, err := srv.k.mk.GetLastMilestone(ctx)
+	if err == nil {
+		latestMilestoneEndBlock = latestMilestone.EndBlock
+	} else {
+		logger.Error("Error fetching latest milestone", "error", err)
+	}
+
+	// fetch current child block
+	childBlock, err := srv.k.contractCaller.GetBorChainBlock(ctx, nil)
 	if err != nil {
-		logger.Error("error fetching last span", "error", err)
+		logger.Error("Error fetching current child block", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	lastSpan, err := srv.k.GetLastSpan(ctx)
+	if err != nil {
+		logger.Error("Error fetching last span", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// Validate span continuity
+	if lastSpan.Id+1 != msg.SpanId || msg.StartBlock != lastSpan.EndBlock+1 || msg.EndBlock <= msg.StartBlock {
+		logger.Error(heimdallTypes.ErrMsgBlocksNotInContinuity+" in bor side handler",
+			"lastSpanId", lastSpan.Id,
+			"spanId", msg.SpanId,
+			"lastSpanStartBlock", lastSpan.StartBlock,
+			"lastSpanEndBlock", lastSpan.EndBlock,
+			"spanStartBlock", msg.StartBlock,
+			"spanEndBlock", msg.EndBlock,
+		)
+
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -152,13 +191,13 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	maxBlockNumber := max(latestMilestoneEndBlock, currentBlock)
 
 	if types.IsBlockCloseToSpanEnd(maxBlockNumber, lastSpan.EndBlock) {
-		logger.Debug("current block is close to span end", "currentBlock", currentBlock, "lastSpanEndBlock", lastSpan.EndBlock)
+		logger.Debug("Current block is close to span end", "currentBlock", currentBlock, "lastSpanEndBlock", lastSpan.EndBlock)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	// If we are past end of the last span, we need to backfill before proposing a new span
+	// If we are past the end of the last span, we need to backfill before proposing a new span
 	if msg.StartBlock <= maxBlockNumber {
-		logger.Error("span is already in the past",
+		logger.Error("Span is already in the past",
 			"currentBlock", currentBlock,
 			"msgStartBlock", msg.StartBlock,
 			"msgEndBlock", msg.EndBlock,
@@ -171,7 +210,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	// check if the proposed span is in-turn or not
 	if !(lastSpan.StartBlock <= currentBlock && currentBlock <= lastSpan.EndBlock) {
 		logger.Error(
-			"span proposed is not in-turn",
+			"Span proposed is not in-turn",
 			"currentChildBlock", currentBlock,
 			"msgStartBlock", msg.StartBlock,
 			"msgEndBlock", msg.EndBlock,
@@ -189,29 +228,45 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	return sidetxs.Vote_VOTE_YES
 }
 
-func (s sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
+func (srv sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
 	var err error
 	start := time.Now()
 	defer recordBorMetric(api.SideHandleMsgSetProducerDowntimeMethod, api.SideType, start, &err)
 
-	logger := s.k.Logger(ctx)
+	logger := srv.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgSetProducerDowntime)
 	if !ok {
-		logger.Error("MsgSetProducerDowntime type mismatch", "msg type received", msgI)
+		logger.Error("MsgSetProducerDowntime type mismatch", msgTypeReceivedLog, msgI)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	childBlock, err := s.k.contractCaller.GetBorChainBlock(ctx, nil)
+	if msg.DowntimeRange.StartBlock >= msg.DowntimeRange.EndBlock {
+		logger.Error("Downtime range start block must be less than end block in bor side handler",
+			"startBlock", msg.DowntimeRange.StartBlock,
+			"endBlock", msg.DowntimeRange.EndBlock,
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	childBlock, err := srv.k.contractCaller.GetBorChainBlock(ctx, nil)
 	if err != nil {
-		logger.Error("error fetching current child block", "error", err)
+		logger.Error("Error fetching current child block", "error", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	childBlockNumber := childBlock.Number.Uint64()
 
+	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock < types.PlannedDowntimeMinRange {
+		logger.Error("Time range for planned downtime is too small in bor side handler",
+			"startBlock", msg.DowntimeRange.StartBlock,
+			"endBlock", msg.DowntimeRange.EndBlock,
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	if msg.DowntimeRange.StartBlock < childBlockNumber+types.PlannedDowntimeMinimumTimeInFuture {
-		logger.Error("start block must be at least minFuture in the future",
+		logger.Error("Start block must be at least minFuture in the future",
 			"startBlock", msg.DowntimeRange.StartBlock,
 			"minimumStartBlock", childBlockNumber+types.PlannedDowntimeMinimumTimeInFuture+1,
 		)
@@ -219,70 +274,70 @@ func (s sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 	}
 
 	if msg.DowntimeRange.EndBlock > childBlockNumber+types.PlannedDowntimeMaximumTimeInFuture {
-		logger.Error("end block for planned downtime is too far in the future",
+		logger.Error("End block for planned downtime is too far in the future",
 			"currentBlock", childBlockNumber,
 			"endBlock", msg.DowntimeRange.EndBlock,
 		)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Debug("✅ successfully validated external call for set producer downtime msg")
+	logger.Debug(helper.LogSuccessfullyValidated("SetProducerDowntime"))
 
 	return sidetxs.Vote_VOTE_YES
 }
 
-func (s sideMsgServer) SideHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
+func (srv sideMsgServer) SideHandleMsgBackfillSpans(_ sdk.Context, _ sdk.Msg) sidetxs.Vote {
 	return sidetxs.Vote_VOTE_NO
 }
 
 // PostTxHandler returns a side handler for span type messages.
-func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
+func (srv sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 	switch methodName {
 	case SpanProposeMsgTypeURL:
-		return s.PostHandleMsgSpan
+		return srv.PostHandleMsgSpan
 	case FillMissingSpansMsgTypeURL:
-		return s.PostHandleMsgBackfillSpans
+		return srv.PostHandleMsgBackfillSpans
 	case SetProducerDowntimeMsgTypeURL:
-		return s.PostHandleSetProducerDowntime
+		return srv.PostHandleSetProducerDowntime
 	default:
 		return nil
 	}
 }
 
 // PostHandleMsgSpan handles state persisting span msg
-func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+func (srv sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
 	var err error
 	start := time.Now()
 	defer recordBorMetric(api.PostHandleMsgSpanMethod, api.PostType, start, &err)
 
-	logger := s.k.Logger(ctx)
+	logger := srv.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgProposeSpan)
 	if !ok {
 		err = errors.New("MsgProposeSpan type mismatch")
-		logger.Error(err.Error(), "msg type received", msg)
+		logger.Error(err.Error(), msgTypeReceivedLog, msg)
 		return err
 	}
 
 	if helper.IsRio(msg.StartBlock) {
-		logger.Debug("skipping span msg since block height is greater than rio height", "block height", ctx.BlockHeight(), "rio height", helper.GetRioHeight())
+		logger.Debug("Skipping span msg since block height is greater than rio height", "block height", ctx.BlockHeight(), rioHeightStr, helper.GetRioHeight())
 		return nil
 	}
 
 	// Skip handler if the span is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		logger.Debug("skipping new span since side-tx didn't get yes votes")
-		return errors.New("side-tx didn't get yes votes")
+		logger.Debug("Skipping new span since side-tx didn't get yes votes")
+		return errors.New(sidTxNoYesVotesLog)
 	}
 
 	// check for replay
-	ok, err = s.k.HasSpan(ctx, msg.SpanId)
+	ok, err = srv.k.HasSpan(ctx, msg.SpanId)
 	if err != nil {
-		logger.Error("error occurred while checking for span", "span id", msg.SpanId, "error", err)
+		logger.Error("Error occurred while checking for span", spanIdLog, msg.SpanId, "error", err)
 		return err
 	}
 	if ok {
-		logger.Debug("skipping new span as it's already processed", "span id", msg.SpanId)
+		logger.Debug("Skipping new span as it'srv already processed", spanIdLog, msg.SpanId)
 		return errors.New("span already processed")
 	}
 
@@ -293,15 +348,15 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	)
 
 	seedAuthor := common.HexToAddress(msg.SeedAuthor)
-	if err = s.k.StoreSeedProducer(ctx, msg.SpanId, &seedAuthor); err != nil {
+	if err = srv.k.StoreSeedProducer(ctx, msg.SpanId, &seedAuthor); err != nil {
 		logger.Error("Unable to store seed producer", "error", err)
 		return err
 	}
 
 	// freeze for new span
-	err = s.k.FreezeSet(ctx, msg.SpanId, msg.StartBlock, msg.EndBlock, msg.ChainId, common.Hash(msg.Seed))
+	err = srv.k.FreezeSet(ctx, msg.SpanId, msg.StartBlock, msg.EndBlock, msg.ChainId, common.Hash(msg.Seed))
 	if err != nil {
-		logger.Error("unable to freeze validator set for span", "span id", msg.SpanId, "error", err)
+		logger.Error("Unable to freeze validator set for span", spanIdLog, msg.SpanId, "error", err)
 		return err
 	}
 
@@ -325,58 +380,58 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	return nil
 }
 
-func (s sideMsgServer) PostHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+func (srv sideMsgServer) PostHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
 	var err error
 	start := time.Now()
 	defer recordBorMetric(api.PostHandleMsgBackfillSpansMethod, api.PostType, start, &err)
 
-	logger := s.k.Logger(ctx)
+	logger := srv.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgBackfillSpans)
 	if !ok {
 		err = errors.New("MsgBackfillSpans type mismatch")
-		logger.Error(err.Error(), "msg type received", msg)
+		logger.Error(err.Error(), msgTypeReceivedLog, msg)
 		return err
 	}
 
 	if helper.IsRio(msg.LatestSpanId) {
-		logger.Debug("skipping backfill spans msg since span id is greater than rio height", "span id", msg.LatestSpanId, "rio height", helper.GetRioHeight())
+		logger.Debug("Skipping backfill spans msg since span id is greater than rio height", spanIdLog, msg.LatestSpanId, rioHeightStr, helper.GetRioHeight())
 		return nil
 	}
 
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		logger.Debug("skipping new span since side-tx didn't get yes votes")
-		return errors.New("side-tx didn't get yes votes")
+		logger.Debug("Skipping new span since side-tx didn't get yes votes")
+		return errors.New(sidTxNoYesVotesLog)
 	}
 
-	latestMilestone, err := s.k.mk.GetLastMilestone(ctx)
+	latestMilestone, err := srv.k.mk.GetLastMilestone(ctx)
 	if err != nil {
-		logger.Error("failed to get latest milestone", "error", err)
+		logger.Error("Failed to get latest milestone", "error", err)
 		return fmt.Errorf("failed to get latest milestone: %w", err)
 	}
 
 	if latestMilestone == nil {
-		logger.Error("latest milestone is nil")
+		logger.Error("Latest milestone is nil")
 		return types.ErrLatestMilestoneNotFound
 	}
 
-	latestSpan, err := s.k.GetSpan(ctx, msg.LatestSpanId)
+	latestSpan, err := srv.k.GetSpan(ctx, msg.LatestSpanId)
 	if err != nil {
-		logger.Error("failed to get latest span", "error", err)
+		logger.Error("Failed to get latest span", "error", err)
 		return err
 	}
 
 	borSpans := types.GenerateBorCommittedSpans(latestMilestone.EndBlock, &latestSpan)
 	spansOverlap := 0
 	for i := range borSpans {
-		if _, err := s.k.GetSpan(ctx, borSpans[i].Id); err == nil {
+		if _, err := srv.k.GetSpan(ctx, borSpans[i].Id); err == nil {
 			spansOverlap++
 		}
 		if spansOverlap > 1 {
-			logger.Error("more than one span overlap detected", "span id", borSpans[i].Id)
+			logger.Error("More than one span overlap detected", spanIdLog, borSpans[i].Id)
 			return fmt.Errorf("more than one span overlap detected for span id: %d", borSpans[i].Id)
 		}
-		if err = s.k.AddNewSpan(ctx, &borSpans[i]); err != nil {
+		if err = srv.k.AddNewSpan(ctx, &borSpans[i]); err != nil {
 			logger.Error("Unable to store spans", "error", err)
 			return err
 		}
@@ -400,37 +455,37 @@ func (s sideMsgServer) PostHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg,
 	return nil
 }
 
-func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+func (srv sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
 	var err error
 	start := time.Now()
 	defer recordBorMetric(api.PostHandleMsgSetProducerDowntimeMethod, api.PostType, start, &err)
 
-	logger := s.k.Logger(ctx)
+	logger := srv.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgSetProducerDowntime)
 	if !ok {
 		err = errors.New("MsgSetProducerDowntime type mismatch")
-		logger.Error(err.Error(), "msg type received", msg)
+		logger.Error(err.Error(), msgTypeReceivedLog, msg)
 		return err
 	}
 
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		logger.Debug("skipping set producer downtime since side-tx didn't get yes votes")
-		return errors.New("side-tx didn't get yes votes")
+		logger.Debug("Skipping set producer downtime since side-tx didn't get yes votes")
+		return errors.New(sidTxNoYesVotesLog)
 	}
 
-	validatorId, err := s.k.sk.GetValIdFromAddress(ctx, msg.Producer)
+	validatorId, err := srv.k.sk.GetValIdFromAddress(ctx, msg.Producer)
 	if err != nil {
-		logger.Error("error fetching validator ID from address", "address", msg.Producer, "error", err)
+		logger.Error("Error fetching validator ID from address", "address", msg.Producer, "error", err)
 		return err
 	}
 
 	isProducer := false
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	producers, err := s.k.CalculateProducerSet(ctx, helper.GetProducerSetLimit(sdkCtx))
+	producers, err := srv.k.CalculateProducerSet(ctx, helper.GetProducerSetLimit(sdkCtx))
 	if err != nil {
-		logger.Error("error calculating producer set", "error", err)
+		logger.Error("Error calculating producer set", "error", err)
 		return err
 	}
 
@@ -457,7 +512,7 @@ func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 			continue
 		}
 
-		found, err := s.k.ProducerPlannedDowntime.Has(ctx, p)
+		found, err := srv.k.ProducerPlannedDowntime.Has(ctx, p)
 		if err != nil {
 			return err
 		}
@@ -469,7 +524,7 @@ func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 
 		foundCount++
 
-		downtime, err := s.k.ProducerPlannedDowntime.Get(ctx, p)
+		downtime, err := srv.k.ProducerPlannedDowntime.Get(ctx, p)
 		if err != nil {
 			return err
 		}
@@ -487,32 +542,32 @@ func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 		return fmt.Errorf("producer with id %d has overlapping planned downtime with all other producers", validatorId)
 	}
 
-	if err := s.k.ProducerPlannedDowntime.Set(ctx, validatorId, types.BlockRange{
+	if err := srv.k.ProducerPlannedDowntime.Set(ctx, validatorId, types.BlockRange{
 		StartBlock: msg.DowntimeRange.StartBlock,
 		EndBlock:   msg.DowntimeRange.EndBlock,
 	}); err != nil {
 		return err
 	}
 
-	params, err := s.k.GetParams(ctx)
+	params, err := srv.k.GetParams(ctx)
 	if err != nil {
-		logger.Error("error fetching params", "error", err)
+		logger.Error("Error fetching params", "error", err)
 		return err
 	}
 
-	lastSpan, err := s.k.GetLastSpan(ctx)
+	lastSpan, err := srv.k.GetLastSpan(ctx)
 	if err != nil {
-		logger.Error("error fetching last span", "error", err)
+		logger.Error("Error fetching last span", "error", err)
 		return err
 	}
 
-	latestActiveProducer, err := s.k.GetLatestActiveProducer(ctx)
+	latestActiveProducer, err := srv.k.GetLatestActiveProducer(ctx)
 	if err != nil {
 		logger.Error("Error occurred while getting latest active producer", "error", err)
 		return err
 	}
 
-	latestFailedProducer, err := s.k.GetLatestFailedProducer(ctx)
+	latestFailedProducer, err := srv.k.GetLatestFailedProducer(ctx)
 	if err != nil {
 		logger.Error("Error occurred while getting latest failed producer", "error", err)
 		return err
@@ -529,10 +584,10 @@ func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 		cur := lastSpan
 
 		for {
-			isDown, derr := s.k.IsProducerDownForBlockRange(ctx, cur.StartBlock, cur.EndBlock, validatorId)
-			if derr != nil {
-				logger.Error("failed to check producer downtime overlap", "spanId", cur.Id, "error", derr)
-				return false, derr
+			isDown, dErr := srv.k.IsProducerDownForBlockRange(ctx, cur.StartBlock, cur.EndBlock, validatorId)
+			if dErr != nil {
+				logger.Error("Failed to check producer downtime overlap", "spanId", cur.Id, "error", dErr)
+				return false, dErr
 			}
 
 			if isDown {
@@ -544,11 +599,11 @@ func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 				break
 			}
 
-			// Move to previous span; if not found, stop scanning.
-			prev, gerr := s.k.GetSpan(ctx, cur.Id-1)
-			if gerr != nil {
-				logger.Debug("stopping backward scan while traversing previous spans",
-					"fromSpanId", cur.Id, "error", gerr)
+			// Move to the previous span; if not found, stop scanning.
+			prev, gErr := srv.k.GetSpan(ctx, cur.Id-1)
+			if gErr != nil {
+				logger.Debug("Stopping backward scan while traversing previous spans",
+					"fromSpanId", cur.Id, "error", gErr)
 				break
 			}
 
@@ -568,15 +623,15 @@ func (s sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk.M
 		return nil
 	}
 
-	if err := s.k.AddNewVeblopSpan(ctx, validatorId, msg.DowntimeRange.StartBlock, msg.DowntimeRange.StartBlock+params.SpanDuration, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight())); err != nil {
-		logger.Error("Error occurred while adding new veblop span", "error", err)
+	if err := srv.k.AddNewVeBlopSpan(ctx, validatorId, msg.DowntimeRange.StartBlock, msg.DowntimeRange.StartBlock+params.SpanDuration, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight())); err != nil {
+		logger.Error("Error occurred while adding new veBlop span", "error", err)
 		return err
 	}
 
 	return nil
 }
 
-// recordBorMetric records metrics for side and post handlers.
+// recordBorMetric records metrics for side and post-handlers.
 func recordBorMetric(method string, apiType string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.BorSubsystem, method, apiType, success, start)

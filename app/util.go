@@ -51,7 +51,29 @@ func (h HealthStatusLevel) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + h.String() + `"`), nil
 }
 
-// ResponseRecorder captures the response from health-go handler.
+// UnmarshalJSON implements json.Unmarshaler interface to parse the string representation back to the health status level.
+func (h *HealthStatusLevel) UnmarshalJSON(data []byte) error {
+	// Remove quotes from the JSON string
+	str := string(data)
+	if len(str) >= 2 && str[0] == '"' && str[len(str)-1] == '"' {
+		str = str[1 : len(str)-1]
+	}
+
+	switch str {
+	case "OK":
+		*h = StatusOK
+	case "WARN":
+		*h = StatusWarn
+	case "CRITICAL":
+		*h = StatusCritical
+	default:
+		*h = StatusOK // Default to OK for unknown values
+	}
+
+	return nil
+}
+
+// ResponseRecorder captures the response from the health-go handler.
 type ResponseRecorder struct {
 	http.ResponseWriter
 	statusCode int

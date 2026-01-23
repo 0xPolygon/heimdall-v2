@@ -1,10 +1,11 @@
 package keeper_test
 
 import (
+	"github.com/golang/mock/gomock"
+
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-	"github.com/golang/mock/gomock"
 )
 
 func (s *KeeperTestSuite) TestCalculateProducerSet() {
@@ -138,7 +139,8 @@ func (s *KeeperTestSuite) TestCalculateProducerSet() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			borKeeper.ClearProducerVotes(ctx)
+			err := borKeeper.ClearProducerVotes(ctx)
+			require.NoError(err)
 
 			require.NoError(borKeeper.SetParams(ctx, tc.params))
 
@@ -180,7 +182,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 		EndBlock: 1000,
 	}, nil).AnyTimes()
 
-	s.borKeeper.AddNewSpan(ctx, &types.Span{
+	err := s.borKeeper.AddNewSpan(ctx, &types.Span{
 		Id:         0,
 		StartBlock: 0,
 		EndBlock:   1001,
@@ -188,6 +190,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			{ValId: 1, VotingPower: 100},
 		},
 	})
+	require.NoError(err)
 
 	// Test validators
 	val1 := staketypes.Validator{ValId: 1, VotingPower: 100}
@@ -290,7 +293,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 					StartBlock: 1,
 					EndBlock:   100,
 					SelectedProducers: []staketypes.Validator{
-						{ValId: 5, VotingPower: 100}, // Current producer not in candidate list [2,3]
+						{ValId: 5, VotingPower: 100}, // Current producer not in the candidate list [2,3]
 					},
 				}
 				require.NoError(borKeeper.AddNewSpan(ctx, &span))
@@ -311,7 +314,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, val1.ValId).Return(val1, nil).AnyTimes()
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, val2.ValId).Return(val2, nil).AnyTimes()
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, val3.ValId).Return(val3, nil).AnyTimes()
-				// Catch-all for any other ID, will be checked after specific ones
+				// Catch-all for any other ID will be checked after specific ones
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).
 					Return(staketypes.Validator{VotingPower: 0}, nil).AnyTimes()
 			},
@@ -319,7 +322,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				2: {},
 				3: {},
 			},
-			expectedProducer: 2, // Candidates [2,3] (due to ProducerCount=2 and votes), current 5 not in list, so selects 2
+			expectedProducer: 2, // Candidates [2,3] (due to ProducerCount=2 and votes), current 5 not in the list, so selects 2
 			expectedError:    false,
 		},
 		{
@@ -330,7 +333,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 					StartBlock: 1,
 					EndBlock:   100,
 					SelectedProducers: []staketypes.Validator{
-						{ValId: 3, VotingPower: 100}, // Current producer is last in candidate list [2,3]
+						{ValId: 3, VotingPower: 100}, // Current producer is last in the candidate list [2,3]
 					},
 				}
 				require.NoError(borKeeper.AddNewSpan(ctx, &span))
@@ -351,7 +354,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, val1.ValId).Return(val1, nil).AnyTimes()
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, val2.ValId).Return(val2, nil).AnyTimes()
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, val3.ValId).Return(val3, nil).AnyTimes()
-				// Catch-all for any other ID, will be checked after specific ones
+				// Catch-all for any other ID will be checked after specific ones
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).
 					Return(staketypes.Validator{VotingPower: 0}, nil).AnyTimes()
 			},
@@ -397,7 +400,8 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			borKeeper.ClearProducerVotes(ctx)
+			err = borKeeper.ClearProducerVotes(ctx)
+			require.NoError(err)
 
 			tc.setupSpan()
 			if tc.setupProducerVotes != nil {
@@ -441,7 +445,8 @@ func (s *KeeperTestSuite) TestCalculateProducerSet_TotalPotentialProducersVoteCa
 	prodB := uint64(102)
 
 	// Clear any existing votes
-	borKeeper.ClearProducerVotes(ctx)
+	err := borKeeper.ClearProducerVotes(ctx)
+	require.NoError(err)
 
 	// Set up validator set with only 1 validator (totalPotentialProducers will be 1)
 	valSet := staketypes.ValidatorSet{
@@ -461,7 +466,7 @@ func (s *KeeperTestSuite) TestCalculateProducerSet_TotalPotentialProducersVoteCa
 	require.ElementsMatch([]uint64{prodA}, candidates, "Expected: [%d], Got: %v", prodA, candidates)
 }
 
-func (s *KeeperTestSuite) TestAddNewVeblopSpan() {
+func (s *KeeperTestSuite) TestAddNewVeBlopSpan() {
 	require := s.Require()
 	ctx := s.ctx
 	borKeeper := s.borKeeper
@@ -486,7 +491,7 @@ func (s *KeeperTestSuite) TestAddNewVeblopSpan() {
 	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(2)).Return(val2, nil).AnyTimes()
 	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(3)).Return(val3, nil).AnyTimes()
 
-	// Set producer votes so that candidate 2 qualifies as next producer
+	// Set producer votes so that candidate 2 qualifies as the next producer
 	require.NoError(borKeeper.SetProducerVotes(ctx, val1.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
 	require.NoError(borKeeper.SetProducerVotes(ctx, val2.ValId, types.ProducerVotes{Votes: []uint64{1, 3}}))
 	require.NoError(borKeeper.SetProducerVotes(ctx, val3.ValId, types.ProducerVotes{Votes: []uint64{3, 1}}))
@@ -498,7 +503,7 @@ func (s *KeeperTestSuite) TestAddNewVeblopSpan() {
 	borChainID := "137"
 	heimdallBlock := uint64(5000)
 
-	err := borKeeper.AddNewVeblopSpan(ctx, 1, startBlock, endBlock, borChainID, active, heimdallBlock)
+	err := borKeeper.AddNewVeBlopSpan(ctx, 1, startBlock, endBlock, borChainID, active, heimdallBlock)
 	require.NoError(err)
 
 	span, err := borKeeper.GetSpan(ctx, 1)

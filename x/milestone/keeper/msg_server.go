@@ -24,20 +24,20 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 var _ types.MsgServer = msgServer{}
 
 // UpdateParams defines a method to update the params in x/milestone module.
-func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+func (srv msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
 	var err error
 	startTime := time.Now()
 	defer recordMilestoneTransactionMetric(api.MilestoneUpdateParamsMethod, startTime, &err)
 
-	if m.authority != msg.Authority {
-		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", m.authority, msg.Authority)
+	if srv.authority != msg.Authority {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", srv.authority, msg.Authority)
 	}
 
 	if err := msg.Params.ValidateBasic(); err != nil {
 		return nil, err
 	}
 
-	if err := m.SetParams(ctx, msg.Params); err != nil {
+	if err := srv.SetParams(ctx, msg.Params); err != nil {
 		return nil, err
 	}
 

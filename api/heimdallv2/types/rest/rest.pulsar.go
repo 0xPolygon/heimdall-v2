@@ -851,11 +851,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Response is a generic REST API response wrapper.
 type Response struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Raw result data.
 	Result []byte `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
 }
 
@@ -886,11 +888,13 @@ func (x *Response) GetResult() []byte {
 	return nil
 }
 
+// GasEstimateResponse contains gas estimation for a transaction.
 type GasEstimateResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Estimated gas units required for the transaction.
 	GasEstimate uint64 `protobuf:"varint,1,opt,name=gas_estimate,json=gasEstimate,proto3" json:"gas_estimate,omitempty"`
 }
 

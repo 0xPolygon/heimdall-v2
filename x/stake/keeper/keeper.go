@@ -105,6 +105,6 @@ func (k *Keeper) SetCheckpointKeeper(checkpointKeeper types.CheckpointKeeper) {
 // PanicIfSetupIsIncomplete panics if the setup is incomplete, meaning that the checkpointKeeper is not set
 func (k *Keeper) PanicIfSetupIsIncomplete() {
 	if !k.setupComplete {
-		panic("stake keeper is not yet ready, checkpoint keeper is missing")
+		panic("stakeKeeper is not yet ready, checkpoint keeper is missing")
 	}
 }

@@ -10,8 +10,9 @@ import "heimdallv2/bor/bor.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
 
+// Query defines the gRPC query service for the bor module.
 service Query {
-  // GetSpanList queries a list of spans.
+  // GetSpanList queries a paginated list of spans.
   rpc GetSpanList(QuerySpanListRequest) returns (QuerySpanListResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/spans/list";
@@ -23,21 +24,22 @@ service Query {
     option (google.api.http).get = "/bor/spans/latest";
   }
 
-  // GetNextSpanSeed queries the next span seed given a
-  // QueryNextSpanSeedRequest.
+  // GetNextSpanSeed queries the seed for generating the next span.
+  // The seed is used for deterministic random selection of producers.
   rpc GetNextSpanSeed(QueryNextSpanSeedRequest)
       returns (QueryNextSpanSeedResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/spans/seed/{id}";
   }
 
-  // GetNextSpan queries the next span given a QueryNextSpanRequest.
+  // GetNextSpan prepares and returns the next span based on the current
+  // validator set. This is used by proposers to create span proposals.
   rpc GetNextSpan(QueryNextSpanRequest) returns (QueryNextSpanResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/spans/prepare";
   }
 
-  // GetSpanById retrieves a span by its id.
+  // GetSpanById retrieves a specific span by its ID.
   rpc GetSpanById(QuerySpanByIdRequest) returns (QuerySpanByIdResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/spans/{id}";
@@ -50,22 +52,24 @@ service Query {
   }
 
   // GetProducerVotes queries producer votes from all validators.
+  // Returns a map of validator ID to their producer votes.
   rpc GetProducerVotes(QueryProducerVotesRequest)
       returns (QueryProducerVotesResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/producer-votes";
   }
 
-  // GetProducerVotesByValidatorId queries the producer votes for a given
-  // validator id.
+  // GetProducerVotesByValidatorId queries the producer votes cast by a specific
+  // validator.
   rpc GetProducerVotesByValidatorId(QueryProducerVotesByValidatorIdRequest)
       returns (QueryProducerVotesByValidatorIdResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/producer-votes/{validator_id}";
   }
 
-  // GetProducerPlannedDowntime queries the planned downtime for a given
-  // producer id.
+  // GetProducerPlannedDowntime queries the planned downtime window for a
+  // specific producer. Producers can signal planned maintenance periods during
+  // which they won't produce blocks.
   rpc GetProducerPlannedDowntime(QueryProducerPlannedDowntimeRequest)
       returns (QueryProducerPlannedDowntimeResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
@@ -73,7 +77,8 @@ service Query {
         "/bor/producers/planned-downtime/{producer_id}";
   }
 
-  // GetValidatorPerformanceScore queries the validator performance score.
+  // GetValidatorPerformanceScore queries the performance scores of all
+  // validators. Performance scores track block production reliability.
   rpc GetValidatorPerformanceScore(QueryValidatorPerformanceScoreRequest)
       returns (QueryValidatorPerformanceScoreResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
@@ -81,85 +86,134 @@ service Query {
   }
 }
 
+// QuerySpanByIdRequest is the request type for the GetSpanById query.
 message QuerySpanByIdRequest {
+  // ID of the span to retrieve.
   string id = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QuerySpanByIdResponse is the response type for the GetSpanById query.
 message QuerySpanByIdResponse {
+  // The requested span.
   Span span = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QuerySpanListRequest is the request type for the GetSpanList query.
 message QuerySpanListRequest {
+  // Pagination parameters for the query.
   cosmos.base.query.v1beta1.PageRequest pagination = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }
 
+// QuerySpanListResponse is the response type for the GetSpanList query.
 message QuerySpanListResponse {
+  // List of spans matching the query.
   repeated Span span_list = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+  // Pagination response with next page token.
   cosmos.base.query.v1beta1.PageResponse pagination = 2
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }
 
+// QueryLatestSpanRequest is the request type for the GetLatestSpan query.
 message QueryLatestSpanRequest {}
 
+// QueryLatestSpanResponse is the response type for the GetLatestSpan query.
 message QueryLatestSpanResponse {
+  // The most recently created span.
   Span span = 1 [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }
 
+// QueryNextSpanSeedRequest is the request type for the GetNextSpanSeed query.
 message QueryNextSpanSeedRequest {
+  // ID of the span for which to get the seed.
   uint64 id = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryNextSpanSeedResponse is the response type for the GetNextSpanSeed query.
 message QueryNextSpanSeedResponse {
+  // Seed value used for producer selection randomization.
   string seed = 1 [ (amino.dont_omitempty) = true ];
+  // Address of the validator who authored the seed.
   string seed_author = 2 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryNextSpanRequest is the request type for the GetNextSpan query.
 message QueryNextSpanRequest {
+  // ID for the next span to be created.
   uint64 span_id = 1 [ (amino.dont_omitempty) = true ];
+  // Starting block number for the next span.
   uint64 start_block = 2 [ (amino.dont_omitempty) = true ];
+  // Chain ID of the Bor chain.
   string bor_chain_id = 3 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryNextSpanResponse is the response type for the GetNextSpan query.
 message QueryNextSpanResponse {
+  // The prepared next span with selected producers.
   Span span = 1 [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }
 
+// QueryParamsRequest is the request type for the GetBorParams query.
 message QueryParamsRequest {}
 
+// QueryParamsResponse is the response type for the GetBorParams query.
 message QueryParamsResponse {
+  // Current parameters of the bor module.
   Params params = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }
 
+// QueryProducerVotesRequest is the request type for the GetProducerVotes query.
 message QueryProducerVotesRequest {}
 
+// QueryProducerVotesResponse is the response type for the GetProducerVotes
+// query.
 message QueryProducerVotesResponse {
+  // Map of validator ID to their producer votes.
+  // Key: validator ID, Value: list of validator IDs they voted for.
   map<uint64, ProducerVotes> all_votes = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }
 
+// QueryProducerVotesByValidatorIdRequest is the request type for the
+// GetProducerVotesByValidatorId query.
 message QueryProducerVotesByValidatorIdRequest {
+  // ID of the validator whose votes to retrieve.
   uint64 validator_id = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryProducerVotesByValidatorIdResponse is the response type for the
+// GetProducerVotesByValidatorId query.
 message QueryProducerVotesByValidatorIdResponse {
+  // List of validator IDs that the queried validator voted for.
   repeated uint64 votes = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryProducerPlannedDowntimeRequest is the request type for the
+// GetProducerPlannedDowntime query.
 message QueryProducerPlannedDowntimeRequest {
+  // ID of the producer whose planned downtime to retrieve.
   uint64 producer_id = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryProducerPlannedDowntimeResponse is the response type for the
+// GetProducerPlannedDowntime query.
 message QueryProducerPlannedDowntimeResponse {
+  // Block range during which the producer has planned downtime.
   BlockRange downtime_range = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }
 
+// QueryValidatorPerformanceScoreRequest is the request type for the
+// GetValidatorPerformanceScore query.
 message QueryValidatorPerformanceScoreRequest {}
 
+// QueryValidatorPerformanceScoreResponse is the response type for the
+// GetValidatorPerformanceScore query.
 message QueryValidatorPerformanceScoreResponse {
+  // Map of validator ID to their performance score.
+  // Higher scores indicate better block production reliability.
   map<uint64, uint64> validator_performance_score = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }

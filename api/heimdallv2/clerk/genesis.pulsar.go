@@ -645,13 +645,17 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// GenesisState defines the clerk module's genesis state.
 type GenesisState struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	EventRecords    []*EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records,omitempty"`
-	RecordSequences []string       `protobuf:"bytes,2,rep,name=record_sequences,json=recordSequences,proto3" json:"record_sequences,omitempty"`
+	// Initial event records at genesis.
+	EventRecords []*EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records,omitempty"`
+	// Record sequences for tracking processed events.
+	// Format: "txHash-logIndex" mapping to ensure events are not processed twice.
+	RecordSequences []string `protobuf:"bytes,2,rep,name=record_sequences,json=recordSequences,proto3" json:"record_sequences,omitempty"`
 }
 
 func (x *GenesisState) Reset() {

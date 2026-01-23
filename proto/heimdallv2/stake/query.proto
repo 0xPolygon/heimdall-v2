@@ -9,47 +9,47 @@ import "heimdallv2/stake/validator.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 
+// Query defines the gRPC query service for the stake module.
 service Query {
-  // GetCurrentValidatorSet queries for the current validator set
+  // GetCurrentValidatorSet queries the current active validator set.
   rpc GetCurrentValidatorSet(QueryCurrentValidatorSetRequest)
       returns (QueryCurrentValidatorSetResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/validators-set";
   }
-  // GetSignerByAddress queries validator info for a given validator address
+  // GetSignerByAddress queries validator information by signer address.
   rpc GetSignerByAddress(QuerySignerRequest) returns (QuerySignerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/signer/{val_address}";
   }
-  // GetValidatorById queries validator info for a given validator id
+  // GetValidatorById queries validator information by validator ID.
   rpc GetValidatorById(QueryValidatorRequest) returns (QueryValidatorResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/validator/{id}";
   }
-  // GetValidatorStatusByAddress queries validator status for given validator
-  // val_address
+  // GetValidatorStatusByAddress queries whether a validator is active or old.
   rpc GetValidatorStatusByAddress(QueryValidatorStatusRequest)
       returns (QueryValidatorStatusResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/validator-status/{val_address}";
   }
-  // GetTotalPower queries the total power of a validator set
+  // GetTotalPower queries the sum of all validators' voting power.
   rpc GetTotalPower(QueryTotalPowerRequest) returns (QueryTotalPowerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/total-power";
   }
-  // IsStakeTxOld queries for the staking sequence
+  // IsStakeTxOld checks if a stake transaction has already been processed.
   rpc IsStakeTxOld(QueryStakeIsOldTxRequest)
       returns (QueryStakeIsOldTxResponse) {
     option (google.api.http).get = "/stake/is-old-tx";
   }
-  // GetCurrentProposer queries validator info for the current proposer
+  // GetCurrentProposer queries the validator currently designated as proposer.
   rpc GetCurrentProposer(QueryCurrentProposerRequest)
       returns (QueryCurrentProposerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/proposers/current";
   }
-  // GetProposersByTimes queries for the proposers by Tendermint iterations
+  // GetProposersByTimes returns the next N proposers in the rotation sequence.
   rpc GetProposersByTimes(QueryProposersRequest)
       returns (QueryProposersResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
@@ -57,66 +57,103 @@ service Query {
   }
 }
 
+// QueryCurrentValidatorSetRequest is the request type for the
+// GetCurrentValidatorSet query.
 message QueryCurrentValidatorSetRequest {}
 
+// QueryCurrentValidatorSetResponse is the response type for the
+// GetCurrentValidatorSet query.
 message QueryCurrentValidatorSetResponse {
+  // The current active validator set.
   ValidatorSet validator_set = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QuerySignerRequest is the request type for the GetSignerByAddress query.
 message QuerySignerRequest {
+  // Signer address to query for.
   string val_address = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QuerySignerResponse is the response type for the GetSignerByAddress query.
 message QuerySignerResponse {
+  // Validator information for the requested signer.
   Validator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QueryValidatorRequest is the request type for the GetValidatorById query.
 message QueryValidatorRequest {
+  // Validator ID to query for.
   uint64 id = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryValidatorResponse is the response type for the GetValidatorById query.
 message QueryValidatorResponse {
+  // Validator information for the requested ID.
   Validator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QueryTotalPowerRequest is the request type for the GetTotalPower query.
 message QueryTotalPowerRequest {}
 
+// QueryTotalPowerResponse is the response type for the GetTotalPower query.
 message QueryTotalPowerResponse {
+  // Total voting power across all active validators.
   int64 total_power = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryValidatorStatusRequest is the request type for the
+// GetValidatorStatusByAddress query.
 message QueryValidatorStatusRequest {
+  // Validator address to check status for.
   string val_address = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryValidatorStatusResponse is the response type for the
+// GetValidatorStatusByAddress query.
 message QueryValidatorStatusResponse {
+  // True if the validator is no longer active (exited or not yet joined).
   bool is_old = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryStakeIsOldTxRequest is the request type for the IsStakeTxOld query.
 message QueryStakeIsOldTxRequest {
+  // Transaction hash on the root chain.
   string tx_hash = 1 [ (amino.dont_omitempty) = true ];
+  // Log index within the transaction.
   uint64 log_index = 2 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryStakeIsOldTxResponse is the response type for the IsStakeTxOld query.
 message QueryStakeIsOldTxResponse {
+  // True if this stake transaction has already been processed.
   bool is_old = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryProposersRequest is the request type for the GetProposersByTimes query.
 message QueryProposersRequest {
+  // Number of future proposers to return in the rotation sequence.
   uint64 times = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryProposersResponse is the response type for the GetProposersByTimes
+// query.
 message QueryProposersResponse {
+  // List of validators in proposer rotation order.
   repeated heimdallv2.stake.Validator proposers = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QueryCurrentProposerRequest is the request type for the GetCurrentProposer
+// query.
 message QueryCurrentProposerRequest {}
 
+// QueryCurrentProposerResponse is the response type for the GetCurrentProposer
+// query.
 message QueryCurrentProposerResponse {
+  // The validator currently designated as proposer.
   heimdallv2.stake.Validator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

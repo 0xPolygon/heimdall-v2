@@ -9,25 +9,26 @@ import "heimdallv2/milestone/milestone.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
+// Query defines the gRPC query service for the milestone module.
 service Query {
-  // GetMilestoneParams queries for the x/milestone parameters
+  // GetMilestoneParams queries the milestone module parameters.
   rpc GetMilestoneParams(QueryParamsRequest) returns (QueryParamsResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestones/params";
   }
 
-  // GetMilestoneCount queries for the milestone count
+  // GetMilestoneCount queries the total number of milestones.
   rpc GetMilestoneCount(QueryCountRequest) returns (QueryCountResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestones/count";
   }
-  // GetLatestMilestone queries for the latest milestone
+  // GetLatestMilestone queries the most recently finalized milestone.
   rpc GetLatestMilestone(QueryLatestMilestoneRequest)
       returns (QueryLatestMilestoneResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestones/latest";
   }
-  // GetMilestoneByNumber queries for the milestone based on the number
+  // GetMilestoneByNumber queries a specific milestone by its number.
   rpc GetMilestoneByNumber(QueryMilestoneRequest)
       returns (QueryMilestoneResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
@@ -35,31 +36,47 @@ service Query {
   }
 }
 
+// QueryParamsRequest is the request type for the GetMilestoneParams query.
 message QueryParamsRequest {}
 
+// QueryParamsResponse is the response type for the GetMilestoneParams query.
 message QueryParamsResponse {
+  // Current milestone module parameters.
   Params params = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QueryCountRequest is the request type for the GetMilestoneCount query.
 message QueryCountRequest {}
 
+// QueryCountResponse is the response type for the GetMilestoneCount query.
 message QueryCountResponse {
+  // Total number of milestones.
   uint64 count = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryLatestMilestoneRequest is the request type for the GetLatestMilestone
+// query.
 message QueryLatestMilestoneRequest {}
 
+// QueryLatestMilestoneResponse is the response type for the GetLatestMilestone
+// query.
 message QueryLatestMilestoneResponse {
+  // The most recently finalized milestone.
   Milestone milestone = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QueryMilestoneRequest is the request type for the GetMilestoneByNumber query.
 message QueryMilestoneRequest {
+  // Milestone number to retrieve.
   uint64 number = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryMilestoneResponse is the response type for the GetMilestoneByNumber
+// query.
 message QueryMilestoneResponse {
+  // The requested milestone.
   Milestone milestone = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

@@ -29,13 +29,13 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MsgClient interface {
-	// ValidatorJoin defines a method for a new validator to join
+	// ValidatorJoin processes a new validator joining the network.
 	ValidatorJoin(ctx context.Context, in *MsgValidatorJoin, opts ...grpc.CallOption) (*MsgValidatorJoinResponse, error)
-	// StakeUpdate defines a method for updating an existing validator's stake.
+	// StakeUpdate processes an update to a validator's stake amount.
 	StakeUpdate(ctx context.Context, in *MsgStakeUpdate, opts ...grpc.CallOption) (*MsgStakeUpdateResponse, error)
-	// SignerUpdate defines a method for updating an existing validator's signer.
+	// SignerUpdate processes an update to a validator's signer public key.
 	SignerUpdate(ctx context.Context, in *MsgSignerUpdate, opts ...grpc.CallOption) (*MsgSignerUpdateResponse, error)
-	// ValidatorExit defines a method for exiting an existing validator
+	// ValidatorExit processes a validator exiting the network.
 	ValidatorExit(ctx context.Context, in *MsgValidatorExit, opts ...grpc.CallOption) (*MsgValidatorExitResponse, error)
 }
 
@@ -87,13 +87,13 @@ func (c *msgClient) ValidatorExit(ctx context.Context, in *MsgValidatorExit, opt
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
-	// ValidatorJoin defines a method for a new validator to join
+	// ValidatorJoin processes a new validator joining the network.
 	ValidatorJoin(context.Context, *MsgValidatorJoin) (*MsgValidatorJoinResponse, error)
-	// StakeUpdate defines a method for updating an existing validator's stake.
+	// StakeUpdate processes an update to a validator's stake amount.
 	StakeUpdate(context.Context, *MsgStakeUpdate) (*MsgStakeUpdateResponse, error)
-	// SignerUpdate defines a method for updating an existing validator's signer.
+	// SignerUpdate processes an update to a validator's signer public key.
 	SignerUpdate(context.Context, *MsgSignerUpdate) (*MsgSignerUpdateResponse, error)
-	// ValidatorExit defines a method for exiting an existing validator
+	// ValidatorExit processes a validator exiting the network.
 	ValidatorExit(context.Context, *MsgValidatorExit) (*MsgValidatorExitResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }

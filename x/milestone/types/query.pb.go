@@ -31,6 +31,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// QueryParamsRequest is the request type for the GetMilestoneParams query.
 type QueryParamsRequest struct {
 }
 
@@ -67,7 +68,9 @@ func (m *QueryParamsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryParamsRequest proto.InternalMessageInfo
 
+// QueryParamsResponse is the response type for the GetMilestoneParams query.
 type QueryParamsResponse struct {
+	// Current milestone module parameters.
 	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
 }
 
@@ -111,6 +114,7 @@ func (m *QueryParamsResponse) GetParams() Params {
 	return Params{}
 }
 
+// QueryCountRequest is the request type for the GetMilestoneCount query.
 type QueryCountRequest struct {
 }
 
@@ -147,7 +151,9 @@ func (m *QueryCountRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryCountRequest proto.InternalMessageInfo
 
+// QueryCountResponse is the response type for the GetMilestoneCount query.
 type QueryCountResponse struct {
+	// Total number of milestones.
 	Count uint64 `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
 }
 
@@ -191,6 +197,8 @@ func (m *QueryCountResponse) GetCount() uint64 {
 	return 0
 }
 
+// QueryLatestMilestoneRequest is the request type for the GetLatestMilestone
+// query.
 type QueryLatestMilestoneRequest struct {
 }
 
@@ -227,7 +235,10 @@ func (m *QueryLatestMilestoneRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryLatestMilestoneRequest proto.InternalMessageInfo
 
+// QueryLatestMilestoneResponse is the response type for the GetLatestMilestone
+// query.
 type QueryLatestMilestoneResponse struct {
+	// The most recently finalized milestone.
 	Milestone Milestone `protobuf:"bytes,1,opt,name=milestone,proto3" json:"milestone"`
 }
 
@@ -271,7 +282,9 @@ func (m *QueryLatestMilestoneResponse) GetMilestone() Milestone {
 	return Milestone{}
 }
 
+// QueryMilestoneRequest is the request type for the GetMilestoneByNumber query.
 type QueryMilestoneRequest struct {
+	// Milestone number to retrieve.
 	Number uint64 `protobuf:"varint,1,opt,name=number,proto3" json:"number,omitempty"`
 }
 
@@ -315,7 +328,10 @@ func (m *QueryMilestoneRequest) GetNumber() uint64 {
 	return 0
 }
 
+// QueryMilestoneResponse is the response type for the GetMilestoneByNumber
+// query.
 type QueryMilestoneResponse struct {
+	// The requested milestone.
 	Milestone Milestone `protobuf:"bytes,1,opt,name=milestone,proto3" json:"milestone"`
 }
 
@@ -421,13 +437,13 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	// GetMilestoneParams queries for the x/milestone parameters
+	// GetMilestoneParams queries the milestone module parameters.
 	GetMilestoneParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// GetMilestoneCount queries for the milestone count
+	// GetMilestoneCount queries the total number of milestones.
 	GetMilestoneCount(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error)
-	// GetLatestMilestone queries for the latest milestone
+	// GetLatestMilestone queries the most recently finalized milestone.
 	GetLatestMilestone(ctx context.Context, in *QueryLatestMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestMilestoneResponse, error)
-	// GetMilestoneByNumber queries for the milestone based on the number
+	// GetMilestoneByNumber queries a specific milestone by its number.
 	GetMilestoneByNumber(ctx context.Context, in *QueryMilestoneRequest, opts ...grpc.CallOption) (*QueryMilestoneResponse, error)
 }
 
@@ -477,13 +493,13 @@ func (c *queryClient) GetMilestoneByNumber(ctx context.Context, in *QueryMilesto
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	// GetMilestoneParams queries for the x/milestone parameters
+	// GetMilestoneParams queries the milestone module parameters.
 	GetMilestoneParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// GetMilestoneCount queries for the milestone count
+	// GetMilestoneCount queries the total number of milestones.
 	GetMilestoneCount(context.Context, *QueryCountRequest) (*QueryCountResponse, error)
-	// GetLatestMilestone queries for the latest milestone
+	// GetLatestMilestone queries the most recently finalized milestone.
 	GetLatestMilestone(context.Context, *QueryLatestMilestoneRequest) (*QueryLatestMilestoneResponse, error)
-	// GetMilestoneByNumber queries for the milestone based on the number
+	// GetMilestoneByNumber queries a specific milestone by its number.
 	GetMilestoneByNumber(context.Context, *QueryMilestoneRequest) (*QueryMilestoneResponse, error)
 }
 

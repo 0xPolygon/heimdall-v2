@@ -32,7 +32,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgValidatorJoin defines a message for a new validator to join the network
+// MsgValidatorJoin defines the message for a new validator joining the network.
+// This is triggered by stake events from the root chain.
 type MsgValidatorJoin struct {
 	From            string                `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 	ValId           uint64                `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
@@ -134,6 +135,7 @@ func (m *MsgValidatorJoin) GetNonce() uint64 {
 	return 0
 }
 
+// MsgValidatorJoinResponse defines the response for MsgValidatorJoin.
 type MsgValidatorJoinResponse struct {
 }
 
@@ -170,6 +172,7 @@ func (m *MsgValidatorJoinResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgValidatorJoinResponse proto.InternalMessageInfo
 
+// MsgStakeUpdate defines the message for updating a validator's stake amount.
 type MsgStakeUpdate struct {
 	From        string                `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 	ValId       uint64                `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
@@ -255,6 +258,7 @@ func (m *MsgStakeUpdate) GetNonce() uint64 {
 	return 0
 }
 
+// MsgStakeUpdateResponse defines the response for MsgStakeUpdate.
 type MsgStakeUpdateResponse struct {
 }
 
@@ -291,6 +295,8 @@ func (m *MsgStakeUpdateResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgStakeUpdateResponse proto.InternalMessageInfo
 
+// MsgSignerUpdate defines the message for updating a validator's signer public
+// key.
 type MsgSignerUpdate struct {
 	From            string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 	ValId           uint64 `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
@@ -383,6 +389,7 @@ func (m *MsgSignerUpdate) GetNonce() uint64 {
 	return 0
 }
 
+// MsgSignerUpdateResponse defines the response for MsgSignerUpdate.
 type MsgSignerUpdateResponse struct {
 }
 
@@ -419,6 +426,7 @@ func (m *MsgSignerUpdateResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgSignerUpdateResponse proto.InternalMessageInfo
 
+// MsgValidatorExit defines the message for a validator exiting the network.
 type MsgValidatorExit struct {
 	From              string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 	ValId             uint64 `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
@@ -511,6 +519,7 @@ func (m *MsgValidatorExit) GetNonce() uint64 {
 	return 0
 }
 
+// MsgValidatorExitResponse defines the response for MsgValidatorExit.
 type MsgValidatorExitResponse struct {
 }
 
@@ -623,13 +632,13 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// ValidatorJoin defines a method for a new validator to join
+	// ValidatorJoin processes a new validator joining the network.
 	ValidatorJoin(ctx context.Context, in *MsgValidatorJoin, opts ...grpc.CallOption) (*MsgValidatorJoinResponse, error)
-	// StakeUpdate defines a method for updating an existing validator's stake.
+	// StakeUpdate processes an update to a validator's stake amount.
 	StakeUpdate(ctx context.Context, in *MsgStakeUpdate, opts ...grpc.CallOption) (*MsgStakeUpdateResponse, error)
-	// SignerUpdate defines a method for updating an existing validator's signer.
+	// SignerUpdate processes an update to a validator's signer public key.
 	SignerUpdate(ctx context.Context, in *MsgSignerUpdate, opts ...grpc.CallOption) (*MsgSignerUpdateResponse, error)
-	// ValidatorExit defines a method for exiting an existing validator
+	// ValidatorExit processes a validator exiting the network.
 	ValidatorExit(ctx context.Context, in *MsgValidatorExit, opts ...grpc.CallOption) (*MsgValidatorExitResponse, error)
 }
 
@@ -679,13 +688,13 @@ func (c *msgClient) ValidatorExit(ctx context.Context, in *MsgValidatorExit, opt
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// ValidatorJoin defines a method for a new validator to join
+	// ValidatorJoin processes a new validator joining the network.
 	ValidatorJoin(context.Context, *MsgValidatorJoin) (*MsgValidatorJoinResponse, error)
-	// StakeUpdate defines a method for updating an existing validator's stake.
+	// StakeUpdate processes an update to a validator's stake amount.
 	StakeUpdate(context.Context, *MsgStakeUpdate) (*MsgStakeUpdateResponse, error)
-	// SignerUpdate defines a method for updating an existing validator's signer.
+	// SignerUpdate processes an update to a validator's signer public key.
 	SignerUpdate(context.Context, *MsgSignerUpdate) (*MsgSignerUpdateResponse, error)
-	// ValidatorExit defines a method for exiting an existing validator
+	// ValidatorExit processes a validator exiting the network.
 	ValidatorExit(context.Context, *MsgValidatorExit) (*MsgValidatorExitResponse, error)
 }
 

@@ -26,6 +26,7 @@ import (
 const (
 	MaxTotalVotingPower      = int64(math.MaxInt64) / 8
 	PriorityWindowSizeFactor = 2
+	errEmptyValSet           = "empty validator set"
 )
 
 // ValidatorSet represent a set of *Validator at a given height.
@@ -63,7 +64,7 @@ func (vals *ValidatorSet) IsNilOrEmpty() bool {
 	return vals == nil || len(vals.Validators) == 0
 }
 
-// CopyIncrementProposerPriority increments ProposerPriority and update the proposer on a copy and return it.
+// CopyIncrementProposerPriority increments the ProposerPriority and updates the proposer on a copy and return it.
 func (vals *ValidatorSet) CopyIncrementProposerPriority(times int) *ValidatorSet {
 	cp := vals.Copy()
 	cp.IncrementProposerPriority(times)
@@ -76,7 +77,7 @@ func (vals *ValidatorSet) CopyIncrementProposerPriority(times int) *ValidatorSet
 // `times` must be positive.
 func (vals *ValidatorSet) IncrementProposerPriority(times int) {
 	if vals.IsNilOrEmpty() {
-		panic("empty validator set")
+		panic(errEmptyValSet)
 	}
 
 	if times <= 0 {
@@ -102,7 +103,7 @@ func (vals *ValidatorSet) IncrementProposerPriority(times int) {
 // RescalePriorities rescales the priorities
 func (vals *ValidatorSet) RescalePriorities(diffMax int64) {
 	if vals.IsNilOrEmpty() {
-		panic("empty validator set")
+		panic(errEmptyValSet)
 	}
 	// NOTE: This check is merely a sanity-check that could be
 	// removed when all tests would initialize voting power appropriately;
@@ -126,14 +127,22 @@ func (vals *ValidatorSet) RescalePriorities(diffMax int64) {
 
 // incrementProposerPriority increments the proposer priority of each validator in a set
 func (vals *ValidatorSet) incrementProposerPriority() *Validator {
-	for _, val := range vals.Validators {
-		// Check for overflow for the sum
-		newPrio := safeAddClip(val.ProposerPriority, val.VotingPower)
-		val.ProposerPriority = newPrio
+	if vals == nil || len(vals.Validators) == 0 {
+		return nil
 	}
-	// Decrement the validator with most ProposerPriority.
+
+	for _, val := range vals.Validators {
+		if val == nil {
+			continue // should never happen
+		}
+		val.ProposerPriority = safeAddClip(val.ProposerPriority, val.VotingPower)
+	}
+
 	mostest := vals.getValWithMostPriority()
-	// Mind the underflow.
+	if mostest == nil {
+		return nil
+	}
+
 	mostest.ProposerPriority = safeSubClip(mostest.ProposerPriority, vals.GetTotalVotingPower())
 
 	return mostest
@@ -160,7 +169,7 @@ func (vals *ValidatorSet) computeAvgProposerPriority() int64 {
 // Compute the difference between the max and min ProposerPriority of that set.
 func computeMaxMinPriorityDiff(vals *ValidatorSet) int64 {
 	if vals.IsNilOrEmpty() {
-		panic("empty validator set")
+		panic(errEmptyValSet)
 	}
 
 	maxP := int64(math.MinInt64)
@@ -202,7 +211,7 @@ func (vals *ValidatorSet) getValWithMostPriority() *Validator {
 // shiftByAvgProposerPriority shifts the proper priority of every validator in a set
 func (vals *ValidatorSet) shiftByAvgProposerPriority() {
 	if vals.IsNilOrEmpty() {
-		panic("empty validator set")
+		panic(errEmptyValSet)
 	}
 
 	avgProposerPriority := vals.computeAvgProposerPriority()

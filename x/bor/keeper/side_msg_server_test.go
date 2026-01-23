@@ -20,12 +20,14 @@ import (
 )
 
 func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
-	ctx, require, borKeeper, milestoneKeeper, sideMsgServer := s.ctx, s.Require(), s.borKeeper, s.milestoneKeeper, s.sideMsgServer
+	ctx, require, borKeeper, milestoneKeeper, cmKeeper, sideMsgServer := s.ctx, s.Require(), s.borKeeper, s.milestoneKeeper, s.chainManagerKeeper, s.sideMsgServer
 	testChainParams, contractCaller := chainmanagertypes.DefaultParams(), &s.contractCaller
 
 	borParams := types.DefaultParams()
 	err := borKeeper.SetParams(ctx, borParams)
 	require.NoError(err)
+
+	cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(testChainParams, nil)
 
 	valSet, vals := s.genTestValidators()
 
@@ -282,7 +284,7 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 	require := s.Require()
 
 	minFuture := uint64(types.PlannedDowntimeMinimumTimeInFuture)
-	maxFuture := uint64(types.PlannedDowntimeMaximumTimeInFuture)
+	maxFuture := types.PlannedDowntimeMaximumTimeInFuture
 
 	newMsg := func(start, end uint64) *types.MsgSetProducerDowntime {
 		return &types.MsgSetProducerDowntime{
@@ -326,7 +328,7 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
-			// handler rejects only if end > current+maxFuture; equality is allowed
+			// handler rejects only if the end > current+maxFuture; equality is allowed
 			name:       "end boundary (end == current+max) returns YES",
 			current:    2_000_000,
 			msg:        newMsg(2_000_000+minFuture, 2_000_000+maxFuture),
@@ -407,7 +409,7 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 	id1, id2, id3 := uint64(1), uint64(2), uint64(3)
 
 	// New helper: make every validator vote the same ordered candidate list.
-	// This drives CalculateProducerSet to return the given candidates (subject to threshold).
+	// This drives CalculateProducerSet to return the given candidates (subject to the threshold).
 	setVotesForAll := func(voteList []uint64) {
 		require.NoError(s.borKeeper.ClearProducerVotes(s.ctx))
 		for _, voter := range []uint64{id1, id2, id3} {
@@ -521,7 +523,7 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 			sideVote: sidetxs.Vote_VOTE_YES,
 			msg:      newMsg(addr1, 1000, 1100),
 			setup: func() {
-				// id1 resolves but is not in producer set
+				// id1 resolves but is not in the producer set
 				s.stakeKeeper.EXPECT().
 					GetValIdFromAddress(gomock.Any(), addr1).
 					Return(id1, nil).
@@ -541,7 +543,7 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 					Return(id1, nil).
 					Times(1)
 				// Force producer set to exactly [id1]:
-				// all voters rank only id1, so only id1 gets a score and passes threshold.
+				// all voters rank only id1, so only id1 gets a score and passes the threshold.
 				setVotesForAll([]uint64{id1})
 			},
 			expectErr:   true,
@@ -647,7 +649,7 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 				params := types.DefaultParams()
 				require.NoError(s.borKeeper.SetParams(s.ctx, params))
 
-				// Seed latest active producers (optional; safe even if AddNewVeblopSpan can handle nil)
+				// Seed latest active producers (optional; safe even if AddNewVeBlopSpan can handle nil)
 				require.NoError(s.borKeeper.UpdateLatestActiveProducer(s.ctx, map[uint64]struct{}{id2: {}, id3: {}}))
 
 				valSet, vals := s.genTestValidators()
@@ -679,7 +681,7 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 			expectErr:     false,
 			expectPDSet:   true,
 			expectPDRange: &types.BlockRange{StartBlock: 150, EndBlock: 350},
-			// New PostHandler adds exactly one veblop span when any overlap exists.
+			// New PostHandler adds exactly one veBlop span when any overlap exists.
 			expectSpanDelta: 1,
 		},
 	}
@@ -692,7 +694,7 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 			require.NoError(s.borKeeper.SetParams(s.ctx, types.DefaultParams()))
 			primeStakeMocks()
 
-			// Seed minimal spans so GetLastSpan works, unless test seeds its own
+			// Seed minimal spans, so GetLastSpan works, unless the test seeds its own
 			if tc.expectSpanDelta == 0 && tc.errContains == "" {
 				valSet, vals := s.genTestValidators()
 				if len(vals) > 0 {

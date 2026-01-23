@@ -32,13 +32,21 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// MsgTopupTx defines the message for topping up fees for a validator.
+// This is triggered by topup events from the root chain.
 type MsgTopupTx struct {
-	Proposer    string                `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
-	User        string                `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
-	Fee         cosmossdk_io_math.Int `protobuf:"bytes,3,opt,name=fee,proto3,customtype=cosmossdk.io/math.Int" json:"fee"`
-	TxHash      []byte                `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	LogIndex    uint64                `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
-	BlockNumber uint64                `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
+	// Address of the validator proposing this topup transaction.
+	Proposer string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// Address of the user receiving the fee topup.
+	User string `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
+	// Amount of fees to add to the user's account.
+	Fee cosmossdk_io_math.Int `protobuf:"bytes,3,opt,name=fee,proto3,customtype=cosmossdk.io/math.Int" json:"fee"`
+	// Root chain transaction hash.
+	TxHash []byte `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Log index in root chain transaction.
+	LogIndex uint64 `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
+	// Root chain block number.
+	BlockNumber uint64 `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
 }
 
 func (m *MsgTopupTx) Reset()         { *m = MsgTopupTx{} }
@@ -109,9 +117,13 @@ func (m *MsgTopupTx) GetBlockNumber() uint64 {
 	return 0
 }
 
+// MsgWithdrawFeeTx defines the message for withdrawing fees from a validator's
+// account.
 type MsgWithdrawFeeTx struct {
-	Proposer string                `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
-	Amount   cosmossdk_io_math.Int `protobuf:"bytes,2,opt,name=amount,proto3,customtype=cosmossdk.io/math.Int" json:"amount"`
+	// Address of the validator proposing this withdrawal.
+	Proposer string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// Amount of fees to withdraw.
+	Amount cosmossdk_io_math.Int `protobuf:"bytes,2,opt,name=amount,proto3,customtype=cosmossdk.io/math.Int" json:"amount"`
 }
 
 func (m *MsgWithdrawFeeTx) Reset()         { *m = MsgWithdrawFeeTx{} }
@@ -154,6 +166,7 @@ func (m *MsgWithdrawFeeTx) GetProposer() string {
 	return ""
 }
 
+// MsgTopupTxResponse defines the response for MsgTopupTx.
 type MsgTopupTxResponse struct {
 }
 
@@ -190,6 +203,7 @@ func (m *MsgTopupTxResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgTopupTxResponse proto.InternalMessageInfo
 
+// MsgWithdrawFeeTxResponse defines the response for MsgWithdrawFeeTx.
 type MsgWithdrawFeeTxResponse struct {
 }
 
@@ -284,9 +298,9 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// HandleTopupTx defines a RPC method for handling a topup tx for a validator
+	// HandleTopupTx processes a fee topup transaction for a validator.
 	HandleTopupTx(ctx context.Context, in *MsgTopupTx, opts ...grpc.CallOption) (*MsgTopupTxResponse, error)
-	// WithdrawFeeTx defines a RPC method for withdrawing the fees for a validator
+	// WithdrawFeeTx processes a fee withdrawal request from a validator.
 	WithdrawFeeTx(ctx context.Context, in *MsgWithdrawFeeTx, opts ...grpc.CallOption) (*MsgWithdrawFeeTxResponse, error)
 }
 
@@ -318,9 +332,9 @@ func (c *msgClient) WithdrawFeeTx(ctx context.Context, in *MsgWithdrawFeeTx, opt
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// HandleTopupTx defines a RPC method for handling a topup tx for a validator
+	// HandleTopupTx processes a fee topup transaction for a validator.
 	HandleTopupTx(context.Context, *MsgTopupTx) (*MsgTopupTxResponse, error)
-	// WithdrawFeeTx defines a RPC method for withdrawing the fees for a validator
+	// WithdrawFeeTx processes a fee withdrawal request from a validator.
 	WithdrawFeeTx(context.Context, *MsgWithdrawFeeTx) (*MsgWithdrawFeeTxResponse, error)
 }
 
