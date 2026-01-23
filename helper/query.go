@@ -18,21 +18,16 @@ const (
 )
 
 // GetNodeStatus returns node status
-func GetNodeStatus(cliCtx cosmosContext.Context) (*ctypes.ResultStatus, error) {
+func GetNodeStatus(ctx context.Context, cliCtx cosmosContext.Context) (*ctypes.ResultStatus, error) {
 	node, err := cliCtx.GetNode()
 	if err != nil {
 		return nil, err
 	}
 
-	ctx := cliCtx.CmdContext
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
 
-	if ctx == nil {
-		ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		ctx = ctxWithTimeout
-	}
-
-	return node.Status(ctx) //nolint:contextcheck
+	return node.Status(ctxWithTimeout)
 }
 
 // QueryTxWithProof query tx with proof from the node
@@ -103,7 +98,7 @@ func GetBeginBlockEvents(ctx context.Context, client *httpClient.HTTP, height in
 				return events, fmt.Errorf("unexpected event type: %T", t)
 			}
 		case <-ctx.Done():
-			// Parent context cancelled - return immediately
+			// Parent context canceled - return immediately
 			return events, ctx.Err()
 		case <-c.Done():
 			return events, errors.New("timed out waiting for event")

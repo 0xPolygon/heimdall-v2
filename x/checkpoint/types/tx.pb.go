@@ -32,13 +32,20 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// MsgCheckpoint defines the message for proposing a new checkpoint.
 type MsgCheckpoint struct {
-	Proposer        string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
-	StartBlock      uint64 `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
-	EndBlock        uint64 `protobuf:"varint,3,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
-	RootHash        []byte `protobuf:"bytes,4,opt,name=root_hash,json=rootHash,proto3" json:"root_hash,omitempty"`
+	// Address of the validator proposing this checkpoint.
+	Proposer string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// First block number included in this checkpoint.
+	StartBlock uint64 `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
+	// Last block number included in this checkpoint.
+	EndBlock uint64 `protobuf:"varint,3,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
+	// Merkle root hash of all blocks in the checkpoint range.
+	RootHash []byte `protobuf:"bytes,4,opt,name=root_hash,json=rootHash,proto3" json:"root_hash,omitempty"`
+	// Merkle root hash of all account states in the checkpoint range.
 	AccountRootHash []byte `protobuf:"bytes,5,opt,name=account_root_hash,json=accountRootHash,proto3" json:"account_root_hash,omitempty"`
-	BorChainId      string `protobuf:"bytes,6,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
+	// Chain ID of the Bor chain.
+	BorChainId string `protobuf:"bytes,6,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
 }
 
 func (m *MsgCheckpoint) Reset()         { *m = MsgCheckpoint{} }
@@ -116,6 +123,7 @@ func (m *MsgCheckpoint) GetBorChainId() string {
 	return ""
 }
 
+// MsgCheckpointResponse defines the response for MsgCheckpoint.
 type MsgCheckpointResponse struct {
 }
 
@@ -152,13 +160,21 @@ func (m *MsgCheckpointResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgCheckpointResponse proto.InternalMessageInfo
 
+// MsgCpAck defines the message for acknowledging a checkpoint.
+// Validators send acks to indicate they agree with a proposed checkpoint.
 type MsgCpAck struct {
-	From       string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
-	Number     uint64 `protobuf:"varint,2,opt,name=number,proto3" json:"number,omitempty"`
-	Proposer   string `protobuf:"bytes,3,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// Address of the validator sending the acknowledgment.
+	From string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
+	// Checkpoint ID being acknowledged.
+	Number uint64 `protobuf:"varint,2,opt,name=number,proto3" json:"number,omitempty"`
+	// Address of the checkpoint proposer.
+	Proposer string `protobuf:"bytes,3,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// First block number in the checkpoint.
 	StartBlock uint64 `protobuf:"varint,4,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
-	EndBlock   uint64 `protobuf:"varint,5,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
-	RootHash   []byte `protobuf:"bytes,6,opt,name=root_hash,json=rootHash,proto3" json:"root_hash,omitempty"`
+	// Last block number in the checkpoint.
+	EndBlock uint64 `protobuf:"varint,5,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
+	// Root hash of the checkpoint being acknowledged.
+	RootHash []byte `protobuf:"bytes,6,opt,name=root_hash,json=rootHash,proto3" json:"root_hash,omitempty"`
 }
 
 func (m *MsgCpAck) Reset()         { *m = MsgCpAck{} }
@@ -236,6 +252,7 @@ func (m *MsgCpAck) GetRootHash() []byte {
 	return nil
 }
 
+// MsgCpAckResponse defines the response for MsgCpAck.
 type MsgCpAckResponse struct {
 }
 
@@ -272,7 +289,10 @@ func (m *MsgCpAckResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgCpAckResponse proto.InternalMessageInfo
 
+// MsgCpNoAck defines the message for rejecting a checkpoint.
+// Validators send no-acks to indicate they disagree with a proposed checkpoint.
 type MsgCpNoAck struct {
+	// Address of the validator sending the rejection.
 	From string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 }
 
@@ -316,6 +336,7 @@ func (m *MsgCpNoAck) GetFrom() string {
 	return ""
 }
 
+// MsgCheckpointNoAckResponse defines the response for MsgCpNoAck.
 type MsgCheckpointNoAckResponse struct {
 }
 
@@ -352,9 +373,13 @@ func (m *MsgCheckpointNoAckResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgCheckpointNoAckResponse proto.InternalMessageInfo
 
+// MsgUpdateParams defines the message for updating checkpoint module
+// parameters.
 type MsgUpdateParams struct {
+	// Address of the governance authority (typically the governance module).
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
-	Params    Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
+	// New parameters to set.
+	Params Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
 }
 
 func (m *MsgUpdateParams) Reset()         { *m = MsgUpdateParams{} }
@@ -404,6 +429,7 @@ func (m *MsgUpdateParams) GetParams() Params {
 	return Params{}
 }
 
+// MsgUpdateParamsResponse defines the response for MsgUpdateParams.
 type MsgUpdateParamsResponse struct {
 }
 
@@ -552,13 +578,14 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// Checkpoint defines a method for the new checkpoint
+	// Checkpoint defines a method for proposing a new checkpoint.
 	Checkpoint(ctx context.Context, in *MsgCheckpoint, opts ...grpc.CallOption) (*MsgCheckpointResponse, error)
-	// CheckpointAck defines a method for checkpoint ack
+	// CheckpointAck defines a method for validators to acknowledge a checkpoint.
 	CheckpointAck(ctx context.Context, in *MsgCpAck, opts ...grpc.CallOption) (*MsgCpAckResponse, error)
-	// CheckpointNoAck defines a method for checkpoint no ack
+	// CheckpointNoAck defines a method for validators to reject a checkpoint.
 	CheckpointNoAck(ctx context.Context, in *MsgCpNoAck, opts ...grpc.CallOption) (*MsgCheckpointNoAckResponse, error)
-	// CheckpointNoAck defines a method for checkpoint no ack
+	// UpdateParams defines a method for updating checkpoint module parameters.
+	// Only the governance authority can execute this.
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 }
 
@@ -608,13 +635,14 @@ func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts 
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// Checkpoint defines a method for the new checkpoint
+	// Checkpoint defines a method for proposing a new checkpoint.
 	Checkpoint(context.Context, *MsgCheckpoint) (*MsgCheckpointResponse, error)
-	// CheckpointAck defines a method for checkpoint ack
+	// CheckpointAck defines a method for validators to acknowledge a checkpoint.
 	CheckpointAck(context.Context, *MsgCpAck) (*MsgCpAckResponse, error)
-	// CheckpointNoAck defines a method for checkpoint no ack
+	// CheckpointNoAck defines a method for validators to reject a checkpoint.
 	CheckpointNoAck(context.Context, *MsgCpNoAck) (*MsgCheckpointNoAckResponse, error)
-	// CheckpointNoAck defines a method for checkpoint no ack
+	// UpdateParams defines a method for updating checkpoint module parameters.
+	// Only the governance authority can execute this.
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 }
 

@@ -600,12 +600,15 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// GenesisState defines the milestone module's genesis state.
 type GenesisState struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Params     *Params      `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
+	// Module parameters at genesis.
+	Params *Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
+	// Initial milestones loaded at genesis.
 	Milestones []*Milestone `protobuf:"bytes,2,rep,name=milestones,proto3" json:"milestones,omitempty"`
 }
 

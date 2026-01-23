@@ -7,12 +7,15 @@ import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/types";
 
-// DividendAccount contains the burned fees
+// DividendAccount contains the burned fees for a user.
+// Tracks accumulated fees that can be withdrawn by validators.
 message DividendAccount {
   option (gogoproto.equal) = true;
+  // Address of the user who owns this dividend account.
   string user = 1 [
     (cosmos_proto.scalar) = "cosmos.AddressString",
     (amino.dont_omitempty) = true
   ];
+  // Total amount of fees accumulated in this account.
   string fee_amount = 2 [ (amino.dont_omitempty) = true ];
 }

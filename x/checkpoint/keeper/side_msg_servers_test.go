@@ -15,6 +15,8 @@ import (
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 )
 
+const dummyAddress = "0xdummyAddress123"
+
 func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) sidetxs.Vote {
 	cfg := s.sideMsgCfg
 	return cfg.GetSideHandler(msg)(ctx, msg)
@@ -27,7 +29,7 @@ func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote sidetxs
 
 func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 	ctx, require := s.ctx, s.Require()
-	keeper, cmKeeper, sideHandler, contractCaller := s.checkpointKeeper, s.cmKeeper, s.sideHandler, s.contractCaller
+	keeper, cmKeeper, stakeKeeper, sideHandler, contractCaller := s.checkpointKeeper, s.cmKeeper, s.stakeKeeper, s.sideHandler, s.contractCaller
 	topupKeeper := s.topupKeeper
 
 	start := uint64(0)
@@ -35,7 +37,13 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 
 	cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(cmTypes.DefaultParams(), nil)
 
+	// Create a validator set first
+	validatorSet := stakeSim.GetRandomValidatorSet(2)
+	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+
+	// Create the checkpoint with the proposer matching the validator set proposer
 	checkpoint := testutil.GenRandCheckpoint(start, maxSize, uint64(1))
+	checkpoint.Proposer = validatorSet.Proposer.Signer
 
 	chainParams, err := cmKeeper.GetParams(ctx)
 	require.NoError(err)
@@ -165,6 +173,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 func (s *KeeperTestSuite) TestSideHandleMsgCpAck() {
 	ctx, require := s.ctx, s.Require()
 	keeper, cmKeeper, sideHandler, contractCaller := s.checkpointKeeper, s.cmKeeper, s.sideHandler, s.contractCaller
+	postHandler := s.postHandler
 
 	start := uint64(0)
 	maxSize := uint64(256)
@@ -179,9 +188,20 @@ func (s *KeeperTestSuite) TestSideHandleMsgCpAck() {
 	s.Run("Success", func() {
 		contractCaller.Mock = mock.Mock{}
 
+		// First, put a checkpoint in the buffer by calling the post-handler
+		msgCheckpoint := types.NewMsgCheckpointBlock(
+			checkpoint.Proposer,
+			checkpoint.StartBlock,
+			checkpoint.EndBlock,
+			checkpoint.RootHash,
+			checkpoint.RootHash,
+			"1234",
+		)
+		postHandler(ctx, msgCheckpoint, sidetxs.Vote_VOTE_YES)
+
 		// prepare ack msg
 		MsgCpAck := types.NewMsgCpAck(
-			common.HexToAddress("0xdummyAddress123").String(),
+			common.HexToAddress(dummyAddress).String(),
 			uint64(1),
 			checkpoint.Proposer,
 			checkpoint.StartBlock,
@@ -200,9 +220,20 @@ func (s *KeeperTestSuite) TestSideHandleMsgCpAck() {
 	s.Run("No HeaderInfo", func() {
 		contractCaller.Mock = mock.Mock{}
 
+		// First, put a checkpoint in the buffer by calling the post-handler
+		msgCheckpoint := types.NewMsgCheckpointBlock(
+			checkpoint.Proposer,
+			checkpoint.StartBlock,
+			checkpoint.EndBlock,
+			checkpoint.RootHash,
+			checkpoint.RootHash,
+			"1234",
+		)
+		postHandler(ctx, msgCheckpoint, sidetxs.Vote_VOTE_YES)
+
 		// prepare ack msg
 		MsgCpAck := types.NewMsgCpAck(
-			common.HexToAddress("0xdummyAddress123").String(),
+			common.HexToAddress(dummyAddress).String(),
 			uint64(1),
 			checkpoint.Proposer,
 			checkpoint.StartBlock,
@@ -308,7 +339,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 
 	s.Run("Failure", func() {
 		MsgCpAck := types.NewMsgCpAck(
-			common.HexToAddress("0xdummyAddress123").String(),
+			common.HexToAddress(dummyAddress).String(),
 			checkpointNumber,
 			checkpoint.Proposer,
 			checkpoint.StartBlock,
@@ -347,7 +378,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 		postHandler(ctx, msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		MsgCpAck := types.NewMsgCpAck(
-			common.HexToAddress("0xdummyAddress123").String(),
+			common.HexToAddress(dummyAddress).String(),
 			checkpointNumber,
 			checkpoint.Proposer,
 			checkpoint.StartBlock,
@@ -374,7 +405,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 
 	s.Run("Replay", func() {
 		MsgCpAck := types.NewMsgCpAck(
-			common.HexToAddress("0xdummyAddress123").String(),
+			common.HexToAddress(dummyAddress).String(),
 			checkpointNumber,
 			checkpoint.Proposer,
 			checkpoint.StartBlock,
@@ -414,7 +445,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 		postHandler(ctx, msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		MsgCpAck := types.NewMsgCpAck(
-			common.HexToAddress("0xdummyAddress123").String(),
+			common.HexToAddress(dummyAddress).String(),
 			checkpointNumber,
 			checkpoint2.Proposer,
 			checkpoint2.StartBlock,
@@ -454,7 +485,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 		postHandler(ctx, msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		msgCpAck := types.NewMsgCpAck(
-			common.HexToAddress("0xdummyAddress123").String(),
+			common.HexToAddress(dummyAddress).String(),
 			checkpointNumber,
 			checkpoint5.Proposer,
 			checkpoint5.StartBlock,
@@ -499,7 +530,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 		postHandler(ctx, msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		msgCheckpointAck := types.NewMsgCpAck(
-			common.HexToAddress("0xdummyAddress123").String(),
+			common.HexToAddress(dummyAddress).String(),
 			checkpointNumber,
 			checkpoint6.Proposer,
 			checkpoint6.StartBlock,

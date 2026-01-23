@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -24,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
 	"github.com/0xPolygon/heimdall-v2/bridge/listener"
@@ -31,6 +31,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
 func BenchmarkSendStateSyncedToHeimdall(b *testing.B) {
@@ -153,39 +154,44 @@ func BenchmarkSendTaskWithDelay(b *testing.B) {
 }
 
 func BenchmarkCalculateTaskDelay(b *testing.B) {
-	b.Skip("to be enabled")
 	interfaceRegistry := codectypes.NewInterfaceRegistry()
 	cryptocodec.RegisterInterfaces(interfaceRegistry)
 	clerkTypes.RegisterInterfaces(interfaceRegistry)
 	cdc := codec.NewProtoCodec(interfaceRegistry)
+
+	// Setup mocks once for all iterations
+	mockCtrl := prepareMockData(b)
+	defer mockCtrl.Finish()
+
+	// Initialize helper config without creating the full processor
+	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
+	viper.Set(flags.FlagLogLevel, "debug")
+	helper.InitTestHeimdallConfig("")
+
+	srvConf := serverconfig.DefaultConfig()
+	configuration := helper.GetDefaultHeimdallConfig()
+	srvConf.API.Enable = true
+	srvConf.API.Address = dummyHeimdallServerUrl
+	configuration.CometBFTRPCUrl = dummyCometBFTNode
+	customAppConf := helper.CustomAppConfig{
+		Config: *srvConf,
+		Custom: configuration,
+	}
+	helper.SetTestConfig(customAppConf)
+
 	b.ReportAllocs()
 	b.ResetTimer()
-	b.StopTimer()
+
+	var isCurrentValidator bool
+	var timeDuration time.Duration
 
 	for i := 0; i < b.N; i++ {
-		func() {
-			b.Logf("Executing iteration '%d' out of '%d'", i, b.N)
-
-			// given
-			mockCtrl := prepareMockData(b)
-			defer mockCtrl.Finish()
-
-			_, err := prepareClerkProcessor()
-			if err != nil {
-				b.Fatal("Error initializing test clerk processor")
-			}
-
-			// when
-			b.StartTimer()
-
-			isCurrentValidator, timeDuration := util.CalculateTaskDelay(nil, cdc)
-
-			b.StopTimer()
-
-			b.Logf("CalculateTaskDelay tested successfully. Results: isCurrentValidator: '%t', timeDuration: '%s'",
-				isCurrentValidator, timeDuration.String())
-		}()
+		isCurrentValidator, timeDuration = util.CalculateTaskDelay(nil, cdc)
 	}
+
+	b.StopTimer()
+	b.Logf("CalculateTaskDelay tested successfully. Last results: isCurrentValidator: '%t', timeDuration: '%s'",
+		isCurrentValidator, timeDuration.String())
 }
 
 func BenchmarkGetUnconfirmedTxnCount(b *testing.B) {
@@ -219,6 +225,82 @@ func BenchmarkGetUnconfirmedTxnCount(b *testing.B) {
 	}
 }
 
+func TestClerkProcessor_RetryBehavior(t *testing.T) {
+	t.Parallel()
+
+	t.Run("validates retry delay constant", func(t *testing.T) {
+		t.Parallel()
+
+		retryDelay := util.RetryStateSyncTaskDelay
+
+		require.Greater(t, retryDelay, time.Duration(0))
+		require.Equal(t, 24*time.Second, retryDelay)
+	})
+}
+
+func TestClerkProcessor_Start(t *testing.T) {
+	t.Parallel()
+
+	t.Run("starts successfully", func(t *testing.T) {
+		t.Parallel()
+
+		cp := &ClerkProcessor{}
+
+		require.NotNil(t, cp)
+	})
+}
+
+func TestClerkProcessor_Constants(t *testing.T) {
+	t.Parallel()
+
+	t.Run("validates error message constants", func(t *testing.T) {
+		t.Parallel()
+
+		errorMessages := []string{
+			errMsgClerkUnmarshallingEvent,
+			errMsgClerkParsingEvent,
+			errMsgClerkConvertingAddress,
+			errMsgClerkBroadcasting,
+			errMsgClerkFetchingChainManagerParams,
+		}
+
+		for _, msg := range errorMessages {
+			require.NotEmpty(t, msg)
+			require.Contains(t, msg, "ClerkProcessor")
+		}
+	})
+
+	t.Run("validates info message constants", func(t *testing.T) {
+		t.Parallel()
+
+		infoMessages := []string{
+			infoMsgClerkStarting,
+			infoMsgClerkRegisteringTasks,
+			infoMsgClerkIgnoringAlreadyProcessed,
+			infoMsgClerkDataTooLarge,
+			infoMsgClerkTxInMempool,
+		}
+
+		for _, msg := range infoMessages {
+			require.NotEmpty(t, msg)
+			require.Contains(t, msg, "ClerkProcessor")
+		}
+	})
+
+	t.Run("validates debug message constants", func(t *testing.T) {
+		t.Parallel()
+
+		debugMessages := []string{
+			debugMsgClerkNewEventFound,
+		}
+
+		for _, msg := range debugMessages {
+			require.NotEmpty(t, msg)
+			require.Contains(t, msg, "ClerkProcessor")
+		}
+	})
+}
+
 func prepareMockData(b *testing.B) *gomock.Controller {
 	b.Helper()
 
@@ -226,14 +308,30 @@ func prepareMockData(b *testing.B) *gomock.Controller {
 
 	mockHttpClient := helperMocks.NewMockHTTPClient(mockCtrl)
 
-	mockHttpClient.EXPECT().Get(chainManagerParamsUrl).Return(prepareResponse(chainManagerParamsResponse), nil).AnyTimes()
-	mockHttpClient.EXPECT().Get(getAccountUrl).Return(prepareResponse(getAccountResponse), nil).AnyTimes()
-	mockHttpClient.EXPECT().Get(getAccountUrl2).Return(prepareResponse(getAccountResponse), nil).AnyTimes()
-	mockHttpClient.EXPECT().Get(isOldTxUrl).Return(prepareResponse(isOldTxResponse), nil).AnyTimes()
-	mockHttpClient.EXPECT().Get(checkpointCountUrl).Return(prepareResponse(checkpointCountResponse), nil).AnyTimes()
-	mockHttpClient.EXPECT().Get(unconfirmedTxsUrl).Return(prepareResponse(unconfirmedTxsResponse), nil).AnyTimes()
-	mockHttpClient.EXPECT().Get(getUnconfirmedTxnCountUrl).Return(prepareResponse(getUnconfirmedTxnCountResponse), nil).AnyTimes()
-	mockHttpClient.EXPECT().Get(getValidatorSetUrl).Return(prepareResponse(getValidatorSetResponse), nil).AnyTimes()
+	mockHttpClient.EXPECT().Get(chainManagerParamsUrl).DoAndReturn(func(string) (*http.Response, error) {
+		return prepareResponse(chainManagerParamsResponse), nil
+	}).AnyTimes()
+	mockHttpClient.EXPECT().Get(getAccountUrl).DoAndReturn(func(string) (*http.Response, error) {
+		return prepareResponse(getAccountResponse), nil
+	}).AnyTimes()
+	mockHttpClient.EXPECT().Get(getAccountUrl2).DoAndReturn(func(string) (*http.Response, error) {
+		return prepareResponse(getAccountResponse), nil
+	}).AnyTimes()
+	mockHttpClient.EXPECT().Get(isOldTxUrl).DoAndReturn(func(string) (*http.Response, error) {
+		return prepareResponse(isOldTxResponse), nil
+	}).AnyTimes()
+	mockHttpClient.EXPECT().Get(checkpointCountUrl).DoAndReturn(func(string) (*http.Response, error) {
+		return prepareResponse(checkpointCountResponse), nil
+	}).AnyTimes()
+	mockHttpClient.EXPECT().Get(unconfirmedTxsUrl).DoAndReturn(func(string) (*http.Response, error) {
+		return prepareResponse(unconfirmedTxsResponse), nil
+	}).AnyTimes()
+	mockHttpClient.EXPECT().Get(getUnconfirmedTxnCountUrl).DoAndReturn(func(string) (*http.Response, error) {
+		return prepareResponse(getUnconfirmedTxnCountResponse), nil
+	}).AnyTimes()
+	mockHttpClient.EXPECT().Get(getValidatorSetUrl).DoAndReturn(func(string) (*http.Response, error) {
+		return prepareResponse(getValidatorSetResponse), nil
+	}).AnyTimes()
 
 	helper.Client = mockHttpClient
 

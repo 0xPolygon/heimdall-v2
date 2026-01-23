@@ -85,7 +85,7 @@ func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
 	p, err := k.params.Get(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("failed to get chainmanager params", "error", err)
+		k.Logger(ctx).Error("Failed to get chainmanager params", "error", err)
 		return types.Params{}, err
 	}
 	return p, nil

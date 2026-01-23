@@ -24,9 +24,13 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// GenesisState defines the bor module's genesis state.
 type GenesisState struct {
+	// Module parameters at genesis.
 	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
-	Spans  []Span `protobuf:"bytes,2,rep,name=spans,proto3" json:"spans"`
+	// Initial spans loaded at genesis.
+	// This allows the chain to start with pre-configured spans.
+	Spans []Span `protobuf:"bytes,2,rep,name=spans,proto3" json:"spans"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }

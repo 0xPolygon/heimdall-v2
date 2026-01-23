@@ -24,12 +24,19 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// GenesisState defines the stake module's genesis state.
 type GenesisState struct {
-	Validators                   []*Validator `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
-	CurrentValidatorSet          ValidatorSet `protobuf:"bytes,2,opt,name=current_validator_set,json=currentValidatorSet,proto3" json:"current_validator_set"`
-	StakingSequences             []string     `protobuf:"bytes,3,rep,name=staking_sequences,json=stakingSequences,proto3" json:"staking_sequences,omitempty"`
-	PreviousBlockValidatorSet    ValidatorSet `protobuf:"bytes,4,opt,name=previous_block_validator_set,json=previousBlockValidatorSet,proto3" json:"previous_block_validator_set"`
-	LastBlockTxs                 LastBlockTxs `protobuf:"bytes,5,opt,name=last_block_txs,json=lastBlockTxs,proto3" json:"last_block_txs"`
+	// All validators at genesis.
+	Validators []*Validator `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
+	// Current active validator set.
+	CurrentValidatorSet ValidatorSet `protobuf:"bytes,2,opt,name=current_validator_set,json=currentValidatorSet,proto3" json:"current_validator_set"`
+	// Staking transaction sequences for replay protection.
+	StakingSequences []string `protobuf:"bytes,3,rep,name=staking_sequences,json=stakingSequences,proto3" json:"staking_sequences,omitempty"`
+	// Validator set from the previous block.
+	PreviousBlockValidatorSet ValidatorSet `protobuf:"bytes,4,opt,name=previous_block_validator_set,json=previousBlockValidatorSet,proto3" json:"previous_block_validator_set"`
+	// Stake transactions from the last block.
+	LastBlockTxs LastBlockTxs `protobuf:"bytes,5,opt,name=last_block_txs,json=lastBlockTxs,proto3" json:"last_block_txs"`
+	// Validator set from two blocks ago.
 	PenultimateBlockValidatorSet ValidatorSet `protobuf:"bytes,6,opt,name=penultimate_block_validator_set,json=penultimateBlockValidatorSet,proto3" json:"penultimate_block_validator_set"`
 }
 

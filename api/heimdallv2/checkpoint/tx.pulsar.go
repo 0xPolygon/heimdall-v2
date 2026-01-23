@@ -3778,17 +3778,24 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// MsgCheckpoint defines the message for proposing a new checkpoint.
 type MsgCheckpoint struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Proposer        string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
-	StartBlock      uint64 `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
-	EndBlock        uint64 `protobuf:"varint,3,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
-	RootHash        []byte `protobuf:"bytes,4,opt,name=root_hash,json=rootHash,proto3" json:"root_hash,omitempty"`
+	// Address of the validator proposing this checkpoint.
+	Proposer string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// First block number included in this checkpoint.
+	StartBlock uint64 `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
+	// Last block number included in this checkpoint.
+	EndBlock uint64 `protobuf:"varint,3,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
+	// Merkle root hash of all blocks in the checkpoint range.
+	RootHash []byte `protobuf:"bytes,4,opt,name=root_hash,json=rootHash,proto3" json:"root_hash,omitempty"`
+	// Merkle root hash of all account states in the checkpoint range.
 	AccountRootHash []byte `protobuf:"bytes,5,opt,name=account_root_hash,json=accountRootHash,proto3" json:"account_root_hash,omitempty"`
-	BorChainId      string `protobuf:"bytes,6,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
+	// Chain ID of the Bor chain.
+	BorChainId string `protobuf:"bytes,6,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
 }
 
 func (x *MsgCheckpoint) Reset() {
@@ -3853,6 +3860,7 @@ func (x *MsgCheckpoint) GetBorChainId() string {
 	return ""
 }
 
+// MsgCheckpointResponse defines the response for MsgCheckpoint.
 type MsgCheckpointResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3879,17 +3887,25 @@ func (*MsgCheckpointResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_tx_proto_rawDescGZIP(), []int{1}
 }
 
+// MsgCpAck defines the message for acknowledging a checkpoint.
+// Validators send acks to indicate they agree with a proposed checkpoint.
 type MsgCpAck struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	From       string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
-	Number     uint64 `protobuf:"varint,2,opt,name=number,proto3" json:"number,omitempty"`
-	Proposer   string `protobuf:"bytes,3,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// Address of the validator sending the acknowledgment.
+	From string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
+	// Checkpoint ID being acknowledged.
+	Number uint64 `protobuf:"varint,2,opt,name=number,proto3" json:"number,omitempty"`
+	// Address of the checkpoint proposer.
+	Proposer string `protobuf:"bytes,3,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// First block number in the checkpoint.
 	StartBlock uint64 `protobuf:"varint,4,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
-	EndBlock   uint64 `protobuf:"varint,5,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
-	RootHash   []byte `protobuf:"bytes,6,opt,name=root_hash,json=rootHash,proto3" json:"root_hash,omitempty"`
+	// Last block number in the checkpoint.
+	EndBlock uint64 `protobuf:"varint,5,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
+	// Root hash of the checkpoint being acknowledged.
+	RootHash []byte `protobuf:"bytes,6,opt,name=root_hash,json=rootHash,proto3" json:"root_hash,omitempty"`
 }
 
 func (x *MsgCpAck) Reset() {
@@ -3954,6 +3970,7 @@ func (x *MsgCpAck) GetRootHash() []byte {
 	return nil
 }
 
+// MsgCpAckResponse defines the response for MsgCpAck.
 type MsgCpAckResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3980,11 +3997,14 @@ func (*MsgCpAckResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_tx_proto_rawDescGZIP(), []int{3}
 }
 
+// MsgCpNoAck defines the message for rejecting a checkpoint.
+// Validators send no-acks to indicate they disagree with a proposed checkpoint.
 type MsgCpNoAck struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Address of the validator sending the rejection.
 	From string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 }
 
@@ -4015,6 +4035,7 @@ func (x *MsgCpNoAck) GetFrom() string {
 	return ""
 }
 
+// MsgCheckpointNoAckResponse defines the response for MsgCpNoAck.
 type MsgCheckpointNoAckResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4041,13 +4062,17 @@ func (*MsgCheckpointNoAckResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_tx_proto_rawDescGZIP(), []int{5}
 }
 
+// MsgUpdateParams defines the message for updating checkpoint module
+// parameters.
 type MsgUpdateParams struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Authority string  `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
-	Params    *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
+	// Address of the governance authority (typically the governance module).
+	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
+	// New parameters to set.
+	Params *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
 }
 
 func (x *MsgUpdateParams) Reset() {
@@ -4084,6 +4109,7 @@ func (x *MsgUpdateParams) GetParams() *Params {
 	return nil
 }
 
+// MsgUpdateParamsResponse defines the response for MsgUpdateParams.
 type MsgUpdateParamsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

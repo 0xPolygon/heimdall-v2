@@ -10,6 +10,6 @@ const (
 )
 
 func InitMetrics() {
-	// Update Heimdallv2 Version Info gauge.
+	// Update version Info gauge.
 	UpdateHeimdallV2Info(version.Version, version.Commit)
 }

@@ -2,6 +2,7 @@ package api
 
 const (
 	// Query API methods.
+
 	GetCheckpointParamsMethod     = "GetCheckpointParams"
 	GetCheckpointOverviewMethod   = "GetCheckpointOverview"
 	GetAckCountMethod             = "GetAckCount"
@@ -14,16 +15,19 @@ const (
 	GetCheckpointMethod           = "GetCheckpoint"
 
 	// Transaction API methods.
+
 	CheckpointMethod             = "Checkpoint"
 	CheckpointAckMethod          = "CheckpointAck"
 	CheckpointNoAckMethod        = "CheckpointNoAck"
 	CheckpointUpdateParamsMethod = "UpdateParams"
 
 	// Side message handler methods.
+
 	SideHandleMsgCheckpointMethod    = "SideHandleMsgCheckpoint"
 	SideHandleMsgCheckpointAckMethod = "SideHandleMsgCheckpointAck"
 
 	// Post message handler methods.
+
 	PostHandleMsgCheckpointMethod    = "PostHandleMsgCheckpoint"
 	PostHandleMsgCheckpointAckMethod = "PostHandleMsgCheckpointAck"
 )

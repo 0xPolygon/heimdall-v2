@@ -1554,21 +1554,32 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// ChainParams contains configuration for both chains and contract addresses.
 type ChainParams struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	BorChainId            string `protobuf:"bytes,1,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
-	HeimdallChainId       string `protobuf:"bytes,2,opt,name=heimdall_chain_id,json=heimdallChainId,proto3" json:"heimdall_chain_id,omitempty"`
-	PolTokenAddress       string `protobuf:"bytes,3,opt,name=pol_token_address,json=polTokenAddress,proto3" json:"pol_token_address,omitempty"`
+	// Chain ID of the Bor (child) chain.
+	BorChainId string `protobuf:"bytes,1,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
+	// Chain ID of the Heimdall chain.
+	HeimdallChainId string `protobuf:"bytes,2,opt,name=heimdall_chain_id,json=heimdallChainId,proto3" json:"heimdall_chain_id,omitempty"`
+	// Address of the POL token contract on the root chain.
+	PolTokenAddress string `protobuf:"bytes,3,opt,name=pol_token_address,json=polTokenAddress,proto3" json:"pol_token_address,omitempty"`
+	// Address of the staking manager contract on the root chain.
 	StakingManagerAddress string `protobuf:"bytes,4,opt,name=staking_manager_address,json=stakingManagerAddress,proto3" json:"staking_manager_address,omitempty"`
-	SlashManagerAddress   string `protobuf:"bytes,5,opt,name=slash_manager_address,json=slashManagerAddress,proto3" json:"slash_manager_address,omitempty"`
-	RootChainAddress      string `protobuf:"bytes,6,opt,name=root_chain_address,json=rootChainAddress,proto3" json:"root_chain_address,omitempty"`
-	StakingInfoAddress    string `protobuf:"bytes,7,opt,name=staking_info_address,json=stakingInfoAddress,proto3" json:"staking_info_address,omitempty"`
-	StateSenderAddress    string `protobuf:"bytes,8,opt,name=state_sender_address,json=stateSenderAddress,proto3" json:"state_sender_address,omitempty"`
-	StateReceiverAddress  string `protobuf:"bytes,9,opt,name=state_receiver_address,json=stateReceiverAddress,proto3" json:"state_receiver_address,omitempty"`
-	ValidatorSetAddress   string `protobuf:"bytes,10,opt,name=validator_set_address,json=validatorSetAddress,proto3" json:"validator_set_address,omitempty"`
+	// Address of the slash manager contract on the root chain.
+	SlashManagerAddress string `protobuf:"bytes,5,opt,name=slash_manager_address,json=slashManagerAddress,proto3" json:"slash_manager_address,omitempty"`
+	// Address of the root chain contract (checkpoint submission).
+	RootChainAddress string `protobuf:"bytes,6,opt,name=root_chain_address,json=rootChainAddress,proto3" json:"root_chain_address,omitempty"`
+	// Address of the staking info contract on the root chain.
+	StakingInfoAddress string `protobuf:"bytes,7,opt,name=staking_info_address,json=stakingInfoAddress,proto3" json:"staking_info_address,omitempty"`
+	// Address of the state sender contract on the root chain.
+	StateSenderAddress string `protobuf:"bytes,8,opt,name=state_sender_address,json=stateSenderAddress,proto3" json:"state_sender_address,omitempty"`
+	// Address of the state receiver contract on the Bor chain.
+	StateReceiverAddress string `protobuf:"bytes,9,opt,name=state_receiver_address,json=stateReceiverAddress,proto3" json:"state_receiver_address,omitempty"`
+	// Address of the validator set contract on the root chain.
+	ValidatorSetAddress string `protobuf:"bytes,10,opt,name=validator_set_address,json=validatorSetAddress,proto3" json:"validator_set_address,omitempty"`
 }
 
 func (x *ChainParams) Reset() {
@@ -1661,14 +1672,18 @@ func (x *ChainParams) GetValidatorSetAddress() string {
 	return ""
 }
 
+// Params defines the parameters for the chainmanager module.
 type Params struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ChainParams              *ChainParams `protobuf:"bytes,1,opt,name=chain_params,json=chainParams,proto3" json:"chain_params,omitempty"`
-	MainChainTxConfirmations uint64       `protobuf:"varint,2,opt,name=main_chain_tx_confirmations,json=mainChainTxConfirmations,proto3" json:"main_chain_tx_confirmations,omitempty"`
-	BorChainTxConfirmations  uint64       `protobuf:"varint,3,opt,name=bor_chain_tx_confirmations,json=borChainTxConfirmations,proto3" json:"bor_chain_tx_confirmations,omitempty"`
+	// Chain configuration and contract addresses.
+	ChainParams *ChainParams `protobuf:"bytes,1,opt,name=chain_params,json=chainParams,proto3" json:"chain_params,omitempty"`
+	// Number of confirmations required for main chain transactions.
+	MainChainTxConfirmations uint64 `protobuf:"varint,2,opt,name=main_chain_tx_confirmations,json=mainChainTxConfirmations,proto3" json:"main_chain_tx_confirmations,omitempty"`
+	// Number of confirmations required for Bor chain transactions.
+	BorChainTxConfirmations uint64 `protobuf:"varint,3,opt,name=bor_chain_tx_confirmations,json=borChainTxConfirmations,proto3" json:"bor_chain_tx_confirmations,omitempty"`
 }
 
 func (x *Params) Reset() {

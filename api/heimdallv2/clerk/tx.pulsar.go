@@ -1207,6 +1207,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// MsgEventRecordResponse defines the response for HandleMsgEventRecord.
 type MsgEventRecordResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1233,19 +1234,28 @@ func (*MsgEventRecordResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_clerk_tx_proto_rawDescGZIP(), []int{0}
 }
 
+// MsgEventRecord defines the message for submitting a state sync event record.
 type MsgEventRecord struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	From            string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
-	TxHash          string `protobuf:"bytes,2,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	LogIndex        uint64 `protobuf:"varint,3,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
-	BlockNumber     uint64 `protobuf:"varint,4,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
+	// Address of the validator submitting this event record.
+	From string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
+	// Transaction hash on the root chain where the event was emitted.
+	TxHash string `protobuf:"bytes,2,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Index of the log entry within the transaction.
+	LogIndex uint64 `protobuf:"varint,3,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
+	// Block number on the root chain where the event occurred.
+	BlockNumber uint64 `protobuf:"varint,4,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
+	// Address of the contract that emitted the event.
 	ContractAddress string `protobuf:"bytes,5,opt,name=contract_address,json=contractAddress,proto3" json:"contract_address,omitempty"`
-	Data            []byte `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
-	Id              uint64 `protobuf:"varint,7,opt,name=id,proto3" json:"id,omitempty"`
-	ChainId         string `protobuf:"bytes,8,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// Encoded event data from the contract log.
+	Data []byte `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
+	// Unique ID for this event record.
+	Id uint64 `protobuf:"varint,7,opt,name=id,proto3" json:"id,omitempty"`
+	// Chain ID of the Bor chain this event applies to.
+	ChainId string `protobuf:"bytes,8,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 }
 
 func (x *MsgEventRecord) Reset() {

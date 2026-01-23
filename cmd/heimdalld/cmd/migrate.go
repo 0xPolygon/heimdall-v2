@@ -183,7 +183,6 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		//nolint:ineffassign
 		genesisData = nil
 
 		runtime.GC()
@@ -321,7 +320,7 @@ func saveGenesisFile(genesisData map[string]interface{}, genesisFileV2 string) e
 	return nil
 }
 
-// migrateStakeModule renames the staking module to stake, renames current_val_set to current_validator_set
+// migrateStakeModule renames the staking module to stake, and renames current_val_set to current_validator_set
 // and migrates the validators and proposer data.
 func migrateStakeModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating stake module...")
@@ -725,7 +724,7 @@ func migrateAuthModule(genesisData map[string]interface{}) error {
 }
 
 // migrateCheckpointModule converts checkpoint_buffer_time from string nanoseconds timestamp to seconds duration,
-// renames child_chain_block_interval to child_block_interval and iterates over the checkpoints to convert the root_hash
+// renames child_chain_block_interval to child_block_interval, and iterates over the checkpoints to convert the root_hash
 // from hex to base64.
 func migrateCheckpointModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating checkpoint module...")
@@ -857,8 +856,8 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to add empty checkpoint signatures to checkpoint module: %w", err)
 	}
 
-	emptyCheckpointSignaturesTxhash := ""
-	if err := utils.AddProperty(genesisData, "app_state.checkpoint", "checkpoint_signatures_txhash", emptyCheckpointSignaturesTxhash); err != nil {
+	emptyCheckpointSignaturesTxHash := ""
+	if err := utils.AddProperty(genesisData, "app_state.checkpoint", "checkpoint_signatures_txhash", emptyCheckpointSignaturesTxHash); err != nil {
 		return fmt.Errorf("failed to add empty checkpoint signatures tx hash to checkpoint module: %w", err)
 	}
 

@@ -1350,18 +1350,29 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Checkpoint represents a snapshot of the Bor chain state at a specific block
+// range. Checkpoints are periodically submitted to the root chain (Ethereum) to
+// finalize the Bor chain state and enable fraud proofs.
 type Checkpoint struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id         uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Proposer   string `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// Unique sequential identifier for this checkpoint.
+	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Address of the validator who proposed this checkpoint.
+	Proposer string `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// First block number included in this checkpoint (inclusive).
 	StartBlock uint64 `protobuf:"varint,3,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
-	EndBlock   uint64 `protobuf:"varint,4,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
-	RootHash   []byte `protobuf:"bytes,5,opt,name=root_hash,json=rootHash,proto3" json:"root_hash,omitempty"`
+	// Last block number included in this checkpoint (inclusive).
+	EndBlock uint64 `protobuf:"varint,4,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
+	// Merkle root hash of all blocks in this checkpoint range.
+	// This is the primary state commitment submitted to the root chain.
+	RootHash []byte `protobuf:"bytes,5,opt,name=root_hash,json=rootHash,proto3" json:"root_hash,omitempty"`
+	// Chain ID of the Bor chain this checkpoint applies to.
 	BorChainId string `protobuf:"bytes,6,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
-	Timestamp  uint64 `protobuf:"varint,7,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	// Unix timestamp when this checkpoint was created.
+	Timestamp uint64 `protobuf:"varint,7,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 }
 
 func (x *Checkpoint) Reset() {
@@ -1433,15 +1444,21 @@ func (x *Checkpoint) GetTimestamp() uint64 {
 	return 0
 }
 
+// Params defines the parameters for the checkpoint module.
 type Params struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	CheckpointBufferTime    *durationpb.Duration `protobuf:"bytes,1,opt,name=checkpoint_buffer_time,json=checkpointBufferTime,proto3" json:"checkpoint_buffer_time,omitempty"`
-	AvgCheckpointLength     uint64               `protobuf:"varint,2,opt,name=avg_checkpoint_length,json=avgCheckpointLength,proto3" json:"avg_checkpoint_length,omitempty"`
-	MaxCheckpointLength     uint64               `protobuf:"varint,3,opt,name=max_checkpoint_length,json=maxCheckpointLength,proto3" json:"max_checkpoint_length,omitempty"`
-	ChildChainBlockInterval uint64               `protobuf:"varint,4,opt,name=child_chain_block_interval,json=childChainBlockInterval,proto3" json:"child_chain_block_interval,omitempty"`
+	// Time buffer before a checkpoint can be finalized.
+	// This allows validators time to submit acks or no-acks.
+	CheckpointBufferTime *durationpb.Duration `protobuf:"bytes,1,opt,name=checkpoint_buffer_time,json=checkpointBufferTime,proto3" json:"checkpoint_buffer_time,omitempty"`
+	// Target number of blocks to include in each checkpoint.
+	AvgCheckpointLength uint64 `protobuf:"varint,2,opt,name=avg_checkpoint_length,json=avgCheckpointLength,proto3" json:"avg_checkpoint_length,omitempty"`
+	// Maximum number of blocks allowed in a single checkpoint.
+	MaxCheckpointLength uint64 `protobuf:"varint,3,opt,name=max_checkpoint_length,json=maxCheckpointLength,proto3" json:"max_checkpoint_length,omitempty"`
+	// Average time between blocks on the child (Bor) chain in seconds.
+	ChildChainBlockInterval uint64 `protobuf:"varint,4,opt,name=child_chain_block_interval,json=childChainBlockInterval,proto3" json:"child_chain_block_interval,omitempty"`
 }
 
 func (x *Params) Reset() {

@@ -44,6 +44,11 @@ func NewRootCmd() *cobra.Command {
 	// Since this is only a temp app, we don't need info logs, only warn and error logs.
 	tempLogger := log.NewLogger(os.Stdout, log.LevelOption(zerolog.WarnLevel))
 	tempApp := app.NewHeimdallApp(tempLogger, db.NewMemDB(), nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
+	defer func() {
+		if err := tempApp.Close(); err != nil {
+			logger.Error("Failed to close temp app", "error", err)
+		}
+	}()
 	encodingConfig := EncodingConfig{
 		InterfaceRegistry: tempApp.InterfaceRegistry(),
 		Codec:             tempApp.AppCodec(),

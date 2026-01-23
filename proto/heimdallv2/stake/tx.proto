@@ -9,23 +9,25 @@ import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 
+// Msg defines the gRPC message service for the stake module.
 service Msg {
   option (cosmos.msg.v1.service) = true;
 
-  // ValidatorJoin defines a method for a new validator to join
+  // ValidatorJoin processes a new validator joining the network.
   rpc ValidatorJoin(MsgValidatorJoin) returns (MsgValidatorJoinResponse);
 
-  // StakeUpdate defines a method for updating an existing validator's stake.
+  // StakeUpdate processes an update to a validator's stake amount.
   rpc StakeUpdate(MsgStakeUpdate) returns (MsgStakeUpdateResponse);
 
-  // SignerUpdate defines a method for updating an existing validator's signer.
+  // SignerUpdate processes an update to a validator's signer public key.
   rpc SignerUpdate(MsgSignerUpdate) returns (MsgSignerUpdateResponse);
 
-  // ValidatorExit defines a method for exiting an existing validator
+  // ValidatorExit processes a validator exiting the network.
   rpc ValidatorExit(MsgValidatorExit) returns (MsgValidatorExitResponse);
 }
 
-//  MsgValidatorJoin defines a message for a new validator to join the network
+// MsgValidatorJoin defines the message for a new validator joining the network.
+// This is triggered by stake events from the root chain.
 message MsgValidatorJoin {
   option (cosmos.msg.v1.signer) = "from";
   option (amino.name) = "heimdallv2/stake/MsgValidatorJoin";
@@ -35,22 +37,30 @@ message MsgValidatorJoin {
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
-  uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
-  uint64 activation_epoch = 3 [ (amino.dont_omitempty) = true ];
+  uint64 val_id = 2 [ (amino.dont_omitempty) = true ]; // Validator ID
+  uint64 activation_epoch = 3
+      [ (amino.dont_omitempty) = true ]; // Epoch when validator becomes active
   string amount = 4 [
     (gogoproto.nullable) = false,
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (amino.dont_omitempty) = true
-  ];
-  bytes signer_pub_key = 5 [ (amino.dont_omitempty) = true ];
-  bytes tx_hash = 6 [ (amino.dont_omitempty) = true ];
-  uint64 log_index = 7 [ (amino.dont_omitempty) = true ];
-  uint64 block_number = 8 [ (amino.dont_omitempty) = true ];
-  uint64 nonce = 9 [ (amino.dont_omitempty) = true ];
+  ]; // Staked amount
+  bytes signer_pub_key = 5
+      [ (amino.dont_omitempty) = true ]; // Public key for block signing
+  bytes tx_hash = 6
+      [ (amino.dont_omitempty) = true ]; // Root chain transaction hash
+  uint64 log_index = 7
+      [ (amino.dont_omitempty) = true ]; // Log index in root chain tx
+  uint64 block_number = 8
+      [ (amino.dont_omitempty) = true ]; // Root chain block number
+  uint64 nonce = 9
+      [ (amino.dont_omitempty) = true ]; // Nonce for replay protection
 }
 
+// MsgValidatorJoinResponse defines the response for MsgValidatorJoin.
 message MsgValidatorJoinResponse {}
 
+// MsgStakeUpdate defines the message for updating a validator's stake amount.
 message MsgStakeUpdate {
   option (cosmos.msg.v1.signer) = "from";
   option (amino.name) = "heimdallv2/stake/MsgStakeUpdate";
@@ -65,15 +75,18 @@ message MsgStakeUpdate {
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true,
     (gogoproto.customtype) = "cosmossdk.io/math.Int"
-  ];
+  ]; // New stake amount
   bytes tx_hash = 4 [ (amino.dont_omitempty) = true ];
   uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
   uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
   uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
 }
 
+// MsgStakeUpdateResponse defines the response for MsgStakeUpdate.
 message MsgStakeUpdateResponse {}
 
+// MsgSignerUpdate defines the message for updating a validator's signer public
+// key.
 message MsgSignerUpdate {
   option (cosmos.msg.v1.signer) = "from";
   option (amino.name) = "heimdallv2/stake/MsgSignerUpdate";
@@ -84,15 +97,18 @@ message MsgSignerUpdate {
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
   uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
-  bytes new_signer_pub_key = 3 [ (amino.dont_omitempty) = true ];
+  bytes new_signer_pub_key = 3
+      [ (amino.dont_omitempty) = true ]; // New public key for block signing
   bytes tx_hash = 4 [ (amino.dont_omitempty) = true ];
   uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
   uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
   uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
 }
 
+// MsgSignerUpdateResponse defines the response for MsgSignerUpdate.
 message MsgSignerUpdateResponse {}
 
+// MsgValidatorExit defines the message for a validator exiting the network.
 message MsgValidatorExit {
   option (cosmos.msg.v1.signer) = "from";
   option (amino.name) = "heimdallv2/stake/MsgValidatorExit";
@@ -103,11 +119,14 @@ message MsgValidatorExit {
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
   uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
-  uint64 deactivation_epoch = 3 [ (amino.dont_omitempty) = true ];
+  uint64 deactivation_epoch = 3
+      [ (amino.dont_omitempty) =
+            true ]; // Epoch when validator becomes inactive
   bytes tx_hash = 4 [ (amino.dont_omitempty) = true ];
   uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
   uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
   uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
 }
 
+// MsgValidatorExitResponse defines the response for MsgValidatorExit.
 message MsgValidatorExitResponse {}

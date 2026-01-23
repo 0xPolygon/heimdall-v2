@@ -52,17 +52,17 @@ func NewListenerService(cdc codec.Codec, queueConnector *queue.Connector, httpCl
 // OnStart starts the new block subscription
 func (listenerService *Service) OnStart() error {
 	if err := listenerService.BaseService.OnStart(); err != nil {
-		listenerService.Logger.Error("OnStart | OnStart", "Error", err)
+		listenerService.Logger.Error("ListenerService: OnStart | OnStart", "Error", err)
 	} // Always call the overridden method.
 
 	// start chain listeners
 	for _, listener := range listenerService.listeners {
 		if err := listener.Start(); err != nil {
-			listenerService.Logger.Error("OnStart | Start", "Error", err)
+			listenerService.Logger.Error("ListenerService: OnStart | Start", "Error", err)
 		}
 	}
 
-	listenerService.Logger.Info("all listeners Started")
+	listenerService.Logger.Info("ListenerService: all listeners started")
 
 	return nil
 }
@@ -76,5 +76,5 @@ func (listenerService *Service) OnStop() {
 		listener.Stop()
 	}
 
-	listenerService.Logger.Info("all listeners stopped")
+	listenerService.Logger.Info("ListenerService: all listeners stopped")
 }

@@ -2,14 +2,13 @@ package helper
 
 import (
 	"encoding/hex"
+	"errors"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/erc20"
 	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
@@ -20,51 +19,82 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 )
 
-const (
-	testCometBFTNode = "tcp://localhost:26657"
-)
-
-// TestCheckpointSigs decodes signers from checkpoint sigs data
+// TestCheckpointSigs tests signature recovery with checkpoint data
 func TestCheckpointSigs(t *testing.T) {
-	t.Skip("Skipped because RecoverPubKey is not actively used in cosmos-sdk and GetCheckpointSign (invoking UnpackSigAndVotes) is not used in Heimdall")
 	t.Parallel()
 
-	viper.Set(CometBFTNodeFlag, testCometBFTNode)
-	viper.Set(flags.FlagLogLevel, "info")
-	InitTestHeimdallConfig("")
+	// Create test data with multiple signers
+	numSigners := 3
+	privKeys := make([]*secp256k1.PrivKey, numSigners)
+	expectedAddresses := make([]string, numSigners)
 
-	contractCallerObj, err := NewContractCaller()
-	if err != nil {
-		t.Error("Error creating contract caller")
+	// Generate private keys and expected addresses
+	for i := 0; i < numSigners; i++ {
+		privKeys[i] = secp256k1.GenPrivKey()
+		expectedAddresses[i] = hex.EncodeToString(privKeys[i].PubKey().Address().Bytes())
 	}
 
-	txHashStr := "0x9c2a9e20e1fecdae538f72b01dd0fd5008cc90176fd603b92b59274d754cbbd8"
-	txHash := common.HexToHash(txHashStr)
+	// Message that all signers will sign (checkpoint data)
+	checkpointData := []byte("test checkpoint data for signing")
 
-	voteSignBytes, sigs, txData, err := contractCallerObj.GetCheckpointSign(txHash)
-	if err != nil {
-		t.Error("Error fetching checkpoint tx input args")
+	// Collect signatures
+	var allSigs []byte
+	for i := 0; i < numSigners; i++ {
+		sig, err := privKeys[i].Sign(checkpointData)
+		require.NoError(t, err, "Error signing checkpoint data")
+		allSigs = append(allSigs, sig...)
 	}
 
-	t.Log("checkpoint args", "vote", hex.EncodeToString(voteSignBytes), "sigs", hex.EncodeToString(sigs), "txData", hex.EncodeToString(txData))
+	t.Log("Checkpoint data:", hex.EncodeToString(checkpointData))
+	t.Log("Combined signatures:", hex.EncodeToString(allSigs))
+	t.Log("Signatures count:", len(allSigs)/65)
 
-	signerList, err := FetchSigners(voteSignBytes, sigs)
-	if err != nil {
-		t.Error("Error fetching signer list from tx input args")
+	// Test FetchSigners function
+	signerList, err := FetchSigners(checkpointData, allSigs)
+	require.NoError(t, err, "Error fetching signer list")
+	require.Len(t, signerList, numSigners, "Incorrect number of signers recovered")
+
+	// Verify each recovered signer matches the expected address
+	for i := 0; i < numSigners; i++ {
+		t.Logf("Signer %d - Expected: %s, Recovered: %s", i, expectedAddresses[i], signerList[i])
+		require.Equal(t, expectedAddresses[i], signerList[i], "Signer address mismatch at index %d", i)
 	}
 
-	t.Log("signers list", signerList)
+	t.Log("All signers successfully verified")
+}
+
+// TestCheckpointSigsWithInvalidData tests error handling
+func TestCheckpointSigsWithInvalidData(t *testing.T) {
+	t.Parallel()
+
+	checkpointData := []byte("test data")
+
+	// Test with empty signatures
+	_, err := FetchSigners(checkpointData, []byte{})
+	require.NoError(t, err, "Should handle empty signatures")
+
+	// Test with incomplete signature (less than 65 bytes)
+	incompleteSig := make([]byte, 32)
+	_, err = FetchSigners(checkpointData, incompleteSig)
+	require.Error(t, err, "Should error on incomplete signature")
 }
 
 // FetchSigners fetches the signers' list
 func FetchSigners(voteBytes []byte, sigInput []byte) ([]string, error) {
 	const sigLength = 65
 
-	signersList := make([]string, len(sigInput))
+	if len(sigInput)%sigLength != 0 {
+		return nil, errors.New("invalid signature length")
+	}
 
-	// Calculate the total stake power of all the signers.
-	for i := 0; i < len(sigInput); i += sigLength {
-		signature := sigInput[i : i+sigLength]
+	numSigners := len(sigInput) / sigLength
+	signersList := make([]string, numSigners)
+
+	// Recover public key and address for each signature
+	for i := 0; i < numSigners; i++ {
+		sigStart := i * sigLength
+		sigEnd := sigStart + sigLength
+		signature := sigInput[sigStart:sigEnd]
 
 		pKey, err := signing.RecoverPubKey(voteBytes, signature)
 		if err != nil {
@@ -72,7 +102,7 @@ func FetchSigners(voteBytes []byte, sigInput []byte) ([]string, error) {
 		}
 
 		pk := secp256k1.PubKey{Key: pKey}
-		signersList[i] = pk.Address().String()
+		signersList[i] = hex.EncodeToString(pk.Address().Bytes())
 	}
 	return signersList, nil
 }

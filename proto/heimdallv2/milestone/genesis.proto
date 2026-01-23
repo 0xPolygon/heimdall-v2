@@ -7,9 +7,12 @@ import "heimdallv2/milestone/milestone.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
+// GenesisState defines the milestone module's genesis state.
 message GenesisState {
+  // Module parameters at genesis.
   Params params = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  // Initial milestones loaded at genesis.
   repeated Milestone milestones = 2
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

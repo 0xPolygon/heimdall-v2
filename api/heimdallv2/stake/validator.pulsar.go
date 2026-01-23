@@ -1541,21 +1541,35 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Validator represents a single validator in the Heimdall network.
+// Validators are responsible for producing blocks on the Bor chain and
+// securing the network through Proof-of-Stake consensus.
 type Validator struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	ValId            uint64 `protobuf:"varint,1,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
-	StartEpoch       uint64 `protobuf:"varint,2,opt,name=start_epoch,json=startEpoch,proto3" json:"start_epoch,omitempty"`
-	EndEpoch         uint64 `protobuf:"varint,3,opt,name=end_epoch,json=endEpoch,proto3" json:"end_epoch,omitempty"`
-	Nonce            uint64 `protobuf:"varint,4,opt,name=nonce,proto3" json:"nonce,omitempty"`
-	VotingPower      int64  `protobuf:"varint,5,opt,name=voting_power,json=votingPower,proto3" json:"voting_power,omitempty"`
-	PubKey           []byte `protobuf:"bytes,6,opt,name=pub_key,json=pubKey,proto3" json:"pub_key,omitempty"`
-	Signer           string `protobuf:"bytes,7,opt,name=signer,proto3" json:"signer,omitempty"`
-	LastUpdated      string `protobuf:"bytes,8,opt,name=last_updated,json=lastUpdated,proto3" json:"last_updated,omitempty"`
-	Jailed           bool   `protobuf:"varint,9,opt,name=jailed,proto3" json:"jailed,omitempty"`
-	ProposerPriority int64  `protobuf:"varint,10,opt,name=proposer_priority,json=proposerPriority,proto3" json:"proposer_priority,omitempty"`
+	// Unique identifier for this validator.
+	ValId uint64 `protobuf:"varint,1,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
+	// Epoch when this validator becomes active.
+	StartEpoch uint64 `protobuf:"varint,2,opt,name=start_epoch,json=startEpoch,proto3" json:"start_epoch,omitempty"`
+	// Epoch when this validator becomes inactive. 0 means no end epoch set.
+	EndEpoch uint64 `protobuf:"varint,3,opt,name=end_epoch,json=endEpoch,proto3" json:"end_epoch,omitempty"`
+	// Nonce for replay protection of validator transactions.
+	Nonce uint64 `protobuf:"varint,4,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	// Voting power based on the validator's stake amount.
+	VotingPower int64 `protobuf:"varint,5,opt,name=voting_power,json=votingPower,proto3" json:"voting_power,omitempty"`
+	// Public key used for block signing on the Bor chain.
+	PubKey []byte `protobuf:"bytes,6,opt,name=pub_key,json=pubKey,proto3" json:"pub_key,omitempty"`
+	// Heimdall address of this validator's signer.
+	Signer string `protobuf:"bytes,7,opt,name=signer,proto3" json:"signer,omitempty"`
+	// Block height or identifier when this validator was last updated.
+	LastUpdated string `protobuf:"bytes,8,opt,name=last_updated,json=lastUpdated,proto3" json:"last_updated,omitempty"`
+	// Whether this validator is currently jailed (slashed and temporarily
+	// removed).
+	Jailed bool `protobuf:"varint,9,opt,name=jailed,proto3" json:"jailed,omitempty"`
+	// Priority value used for round-robin proposer selection in Tendermint.
+	ProposerPriority int64 `protobuf:"varint,10,opt,name=proposer_priority,json=proposerPriority,proto3" json:"proposer_priority,omitempty"`
 }
 
 func (x *Validator) Reset() {
@@ -1648,14 +1662,19 @@ func (x *Validator) GetProposerPriority() int64 {
 	return 0
 }
 
+// ValidatorSet represents a complete set of validators at a specific point in
+// time. This is used for consensus and includes the designated block proposer.
 type ValidatorSet struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Validators       []*Validator `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
-	Proposer         *Validator   `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
-	TotalVotingPower int64        `protobuf:"varint,3,opt,name=total_voting_power,json=totalVotingPower,proto3" json:"total_voting_power,omitempty"`
+	// List of all validators in this set.
+	Validators []*Validator `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
+	// The validator designated as proposer for the current block.
+	Proposer *Validator `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// Sum of voting power across all validators in this set.
+	TotalVotingPower int64 `protobuf:"varint,3,opt,name=total_voting_power,json=totalVotingPower,proto3" json:"total_voting_power,omitempty"`
 }
 
 func (x *ValidatorSet) Reset() {

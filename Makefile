@@ -29,6 +29,8 @@ ldflags = -X github.com/0xPolygon/heimdall-v2/version.Name=heimdall \
 
 BUILD_FLAGS := -ldflags '$(ldflags)'
 
+COVERAGE_PKGS := ./app/...,./bridge/...,./client/...,./cmd/...,./common/...,./file/...,./helper/...,./sidetxs/...,./types/...,./version/...,./x/...
+
 ###############################################################################
 ###	                      Build, Test and Clean								###
 ###############################################################################
@@ -49,9 +51,24 @@ build-arm: clean
 	env CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ go build $(BUILD_FLAGS) -o build/heimdalld ./cmd/heimdalld
 	@echo "====================================================\n==================Build Successful==================\n===================================================="
 
+.PHONY: test
 test:
 	go test ./...
 
+.PHONY: test-coverage
+test-coverage:
+	@echo "Running tests with coverage..."
+	@go test ./... \
+		-coverprofile=coverage.tmp \
+		-coverpkg=$(COVERAGE_PKGS) \
+		2>&1 | grep -v "coverage:.*of statements in"
+	@echo "Filtering out generated files from coverage report..."
+	@grep -v "_mocks.go" coverage.tmp | grep -v "\.pb\.go" | grep -v "\.pb\.gw\.go" > coverage.out
+	@rm coverage.tmp
+	@echo "\n=== Coverage Summary (excluding generated files) ==="
+	@go tool cover -func=coverage.out | grep total | awk '{print "Total Coverage: " $$3}'
+	@echo "\nFull coverage report saved to coverage.out"
+	@echo "To view HTML report, run: go tool cover -html=coverage.out"
 
 ###############################################################################
 ###	                      Checks and Linters								###
@@ -64,10 +81,14 @@ vulncheck:
 .PHONY: lint-deps
 lint-deps:
 	rm -f ./build/bin/golangci-lint
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./build/bin v2.6.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./build/bin v2.8.0
 
 .PHONY: lint
 lint:
+	@if [ ! -f ./build/bin/golangci-lint ]; then \
+		echo "golangci-lint not found, installing dependencies..."; \
+		$(MAKE) lint-deps; \
+	fi
 	@if [ -n "$(NEW_FROM_REV)" ]; then \
 		echo "NEW_FROM_REV is set to: $(NEW_FROM_REV)"; \
 	else \
@@ -183,6 +204,7 @@ help:
 	@echo "  build              	- Compiles the Heimdall binaries."
 	@echo "  build-arm           	- Compiles the Heimdall binaries for ARM64 architecture."
 	@echo "  test               	- Run the tests."
+	@echo "  test-coverage       	- Run tests with coverage for core packages only."
 	@echo "  mock                	- Generate mocks."
 	@echo "  proto-all           	- Format, lint and generate proto files."
 	@echo "  proto-lint        		- Lint proto files."

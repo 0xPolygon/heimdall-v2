@@ -39,9 +39,10 @@ func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote sidetxs
 func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 	var msg types.MsgTopupTx
 
-	ctx, keeper, require, t, contractCaller, sideHandler := s.ctx, s.keeper, s.Require(), s.T(), &s.contractCaller, s.sideHandler
+	ctx, keeper, bankKeeper, require, t, contractCaller, sideHandler := s.ctx, s.keeper, s.keeper.BankKeeper, s.Require(), s.T(), &s.contractCaller, s.sideHandler
 
 	keeper.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(6)
+	bankKeeper.(*testutil.MockBankKeeper).EXPECT().IsSendEnabledDenom(gomock.Any(), authTypes.FeeToken).Return(true).AnyTimes()
 
 	_, _, addr1 := testdata.KeyTestPubAddr()
 	_, _, addr2 := testdata.KeyTestPubAddr()
@@ -160,7 +161,7 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 		)
 
 		event := &stakinginfo.StakinginfoTopUpFee{
-			User: common.Address(sdk.AccAddress(addr1.String())),
+			User: common.Address(addr1.Bytes()),
 			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
 		}
 
@@ -192,7 +193,7 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 		)
 
 		event := &stakinginfo.StakinginfoTopUpFee{
-			User: common.Address(sdk.AccAddress(addr2.String())),
+			User: common.Address(addr2.Bytes()),
 			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
 		}
 
@@ -225,7 +226,7 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 
 		// mock external call
 		event := &stakinginfo.StakinginfoTopUpFee{
-			User: common.Address(sdk.AccAddress(addr2.String())),
+			User: common.Address(addr2.Bytes()),
 			Fee:  new(big.Int).SetUint64(1),
 		}
 

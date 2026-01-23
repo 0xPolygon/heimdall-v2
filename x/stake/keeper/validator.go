@@ -21,7 +21,7 @@ func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) er
 	// store validator with address prefixed with the validator key as index
 	err := k.validators.Set(ctx, util.FormatAddress(validator.Signer), validator)
 	if err != nil {
-		k.Logger(ctx).Error("error while setting the validator in store", "err", err)
+		k.Logger(ctx).Error("Error while setting the validator in store", "err", err)
 		return err
 	}
 
@@ -39,14 +39,14 @@ func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string
 	// get ack count
 	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in getting ack count", "error", err)
+		k.Logger(ctx).Error("Error in getting ack count", "error", err)
 		return false, err
 	}
 
 	// get validator info
 	validator, err := k.GetValidatorInfo(ctx, util.FormatAddress(address))
 	if err != nil {
-		k.Logger(ctx).Error("error in getting validator info", "error", err)
+		k.Logger(ctx).Error("Error in getting validator info", "error", err)
 		return false, err
 	}
 
@@ -166,12 +166,12 @@ func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validat
 	defer func() {
 		err := iterator.Close()
 		if err != nil {
-			k.Logger(ctx).Error("error in closing the iterator", "error", err)
+			k.Logger(ctx).Error("Error in closing the iterator", "error", err)
 		}
 	}()
 
 	if err != nil {
-		k.Logger(ctx).Error("error in getting iterator for validators")
+		k.Logger(ctx).Error("Error in getting iterator for validators")
 		return
 	}
 
@@ -180,7 +180,7 @@ func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validat
 		// unmarshall validator
 		validator, err := iterator.Value()
 		if err != nil {
-			k.Logger(ctx).Error("error in getting validator from iterator", "err", err)
+			k.Logger(ctx).Error("Error in getting validator from iterator", "err", err)
 			return
 		}
 
@@ -197,7 +197,7 @@ func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubKey [
 	// get old validator from state and make power 0
 	validator, err := k.GetValidatorInfo(ctx, util.FormatAddress(prevSigner))
 	if err != nil {
-		k.Logger(ctx).Error("unable to fetch validator from store")
+		k.Logger(ctx).Error("Unable to fetch validator from store")
 		return err
 	}
 
@@ -207,7 +207,7 @@ func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubKey [
 
 	// update validator
 	if err := k.AddValidator(ctx, validator); err != nil {
-		k.Logger(ctx).Error("error in adding validator", "error", err)
+		k.Logger(ctx).Error("Error in adding validator", "error", err)
 		return err
 	}
 
@@ -218,7 +218,7 @@ func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubKey [
 
 	// add updated validator to store with the new key
 	if err = k.AddValidator(ctx, validator); err != nil {
-		k.Logger(ctx).Error("error in adding validator", "error", err)
+		k.Logger(ctx).Error("Error in adding validator", "error", err)
 		return err
 	}
 
@@ -231,7 +231,7 @@ func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet 
 	// set validator set with CurrentValidatorSetKey as the key in store
 	err := k.validatorSet.Set(ctx, types.CurrentValidatorSetKey, newValidatorSet)
 	if err != nil {
-		k.Logger(ctx).Error("error in setting the current validator set in store", "err", err)
+		k.Logger(ctx).Error("Error in setting the current validator set in store", "err", err)
 		return err
 	}
 
@@ -244,7 +244,7 @@ func (k *Keeper) GetValidatorSet(ctx context.Context) (validatorSet types.Valida
 	// get the current validator set from store
 	validatorSet, err = k.validatorSet.Get(ctx, types.CurrentValidatorSetKey)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching current validator set from store", "error", err)
+		k.Logger(ctx).Error("Error in fetching current validator set from store", "error", err)
 		return validatorSet, err
 	}
 
@@ -258,7 +258,7 @@ func (k *Keeper) UpdatePreviousBlockValidatorSetInStore(ctx context.Context, new
 	// set validator set with CurrentValidatorSetKey as the key in store
 	err := k.validatorSet.Set(ctx, types.PreviousBlockValidatorSetKey, newValidatorSet)
 	if err != nil {
-		k.Logger(ctx).Error("error in setting the previous block's validator set in store", "err", err)
+		k.Logger(ctx).Error("Error in setting the previous block's validator set in store", "err", err)
 		return err
 	}
 
@@ -271,7 +271,7 @@ func (k *Keeper) GetPreviousBlockValidatorSet(ctx context.Context) (validatorSet
 	// get the current validator set from store
 	validatorSet, err = k.validatorSet.Get(ctx, types.PreviousBlockValidatorSetKey)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching the previous block's validator set from store", "error", err)
+		k.Logger(ctx).Error("Error in fetching the previous block's validator set from store", "error", err)
 		return validatorSet, err
 	}
 
@@ -285,7 +285,7 @@ func (k *Keeper) UpdatePenultimateBlockValidatorSetInStore(ctx context.Context, 
 	// set validator set with PenultimateBlockValidatorSetKey as the key in store
 	err := k.validatorSet.Set(ctx, types.PenultimateBlockValidatorSetKey, newValidatorSet)
 	if err != nil {
-		k.Logger(ctx).Error("error in setting the validator set from 2 blocks ago in store", "err", err)
+		k.Logger(ctx).Error("Error in setting the validator set from 2 blocks ago in store", "err", err)
 		return err
 	}
 
@@ -298,7 +298,7 @@ func (k *Keeper) GetPenultimateBlockValidatorSet(ctx context.Context) (validator
 	// get the validator set from 2 blocks ago from store
 	validatorSet, err = k.validatorSet.Get(ctx, types.PenultimateBlockValidatorSetKey)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching the validator set from 2 blocks ago from store", "error", err)
+		k.Logger(ctx).Error("Error in fetching the validator set from 2 blocks ago from store", "error", err)
 		return validatorSet, err
 	}
 
@@ -306,13 +306,13 @@ func (k *Keeper) GetPenultimateBlockValidatorSet(ctx context.Context) (validator
 	return validatorSet, nil
 }
 
-// IncrementAccum increments accum for validator set by n times and replace the validator set in store
+// IncrementAccum increments the accumulator for validator set by n times and replaces the validator set in store
 func (k *Keeper) IncrementAccum(ctx context.Context, times int) error {
 	k.PanicIfSetupIsIncomplete()
 	// get the validator set
 	validatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching validator set from store", "error", err)
+		k.Logger(ctx).Error("Error in fetching validator set from store", "error", err)
 		return err
 
 	}
@@ -320,7 +320,7 @@ func (k *Keeper) IncrementAccum(ctx context.Context, times int) error {
 	validatorSet.IncrementProposerPriority(times)
 
 	if err = k.UpdateValidatorSetInStore(ctx, validatorSet); err != nil {
-		k.Logger(ctx).Error("error in updating validator set in store", "error", err)
+		k.Logger(ctx).Error("Error in updating validator set in store", "error", err)
 		return err
 	}
 
@@ -333,7 +333,7 @@ func (k *Keeper) GetNextProposer(ctx context.Context) *types.Validator {
 	// get the validator set
 	validatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching the validator set from database", "error", err)
+		k.Logger(ctx).Error("Error in fetching the validator set from database", "error", err)
 		return nil
 	}
 
@@ -350,7 +350,7 @@ func (k *Keeper) GetCurrentProposer(ctx context.Context) *types.Validator {
 	// get the validator set
 	validatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching the validator set from database", "error", err)
+		k.Logger(ctx).Error("Error in fetching the validator set from database", "error", err)
 		return nil
 	}
 
@@ -361,7 +361,7 @@ func (k *Keeper) GetCurrentProposer(ctx context.Context) *types.Validator {
 func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID uint64, signerAddr string) {
 	err := k.signer.Set(ctx, valID, util.FormatAddress(signerAddr))
 	if err != nil {
-		k.Logger(ctx).Error("key or value is nil", "error", err)
+		k.Logger(ctx).Error("Key or value is nil", "error", err)
 	}
 }
 
@@ -370,7 +370,7 @@ func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (st
 	k.PanicIfSetupIsIncomplete()
 	signer, err := k.signer.Get(ctx, valID)
 	if err != nil {
-		k.Logger(ctx).Error("error while getting fetching signer address", "error", err)
+		k.Logger(ctx).Error("Error while getting fetching signer address", "error", err)
 		return "", err
 	}
 
@@ -424,7 +424,7 @@ func (k *Keeper) HasStakingSequence(ctx context.Context, sequence string) bool {
 	k.PanicIfSetupIsIncomplete()
 	res, err := k.sequences.Has(ctx, sequence)
 	if err != nil {
-		k.Logger(ctx).Error("error while checking for the existence of staking key in store", "error", err)
+		k.Logger(ctx).Error("Error while checking for the existence of staking key in store", "error", err)
 		return false
 	}
 
@@ -453,13 +453,13 @@ func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(s
 	defer func(iterator collections.Iterator[string, bool]) {
 		err := iterator.Close()
 		if err != nil {
-			k.Logger(ctx).Error("error in closing the iterator", "error", err)
+			k.Logger(ctx).Error("Error in closing the iterator", "error", err)
 			e = err
 		}
 	}(iterator)
 
 	if err != nil {
-		k.Logger(ctx).Error("error in getting iterator for validators")
+		k.Logger(ctx).Error("Error in getting iterator for validators")
 		return
 	}
 
@@ -467,7 +467,7 @@ func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(s
 	for ; iterator.Valid(); iterator.Next() {
 		sequence, err := iterator.Key()
 		if err != nil {
-			k.Logger(ctx).Error("error in getting key value", "err", err)
+			k.Logger(ctx).Error("Error in getting key value", "err", err)
 		}
 
 		// call function and return if required
@@ -506,7 +506,7 @@ func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(v
 	k.PanicIfSetupIsIncomplete()
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching the validator set from database", "error", err)
+		k.Logger(ctx).Error("Error in fetching the validator set from database", "error", err)
 		return err
 	}
 
@@ -527,7 +527,7 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 	var cmtValUpdates []abci.ValidatorUpdate
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while calling the GetValidatorSet fn", "err", err)
+		k.Logger(ctx).Error("Error while calling the GetValidatorSet fn", "err", err)
 		return nil, err
 	}
 
@@ -542,7 +542,7 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 		// update the penultimate validator set in store
 		err = k.UpdatePenultimateBlockValidatorSetInStore(ctx, previousValidatorSet)
 		if err != nil {
-			k.Logger(ctx).Error("unable to set validator set from 2 blocks ago in state", "error", err)
+			k.Logger(ctx).Error("Unable to set validator set from 2 blocks ago in state", "error", err)
 			return nil, err
 		}
 
@@ -551,7 +551,7 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 	// save the current validator set as the previous block's validator set
 	err = k.UpdatePreviousBlockValidatorSetInStore(ctx, currentValidatorSet)
 	if err != nil {
-		k.Logger(ctx).Error("unable to set previous block's validator set in state", "error", err)
+		k.Logger(ctx).Error("Unable to set previous block's validator set in state", "error", err)
 		return nil, err
 	}
 
@@ -571,14 +571,14 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 		// create the new validator set
 		if err = currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
 			// return error
-			k.Logger(ctx).Error("unable to update current validator set", "error", err)
+			k.Logger(ctx).Error("Unable to update current validator set", "error", err)
 			return nil, err
 		}
 
 		// save set in store
 		if err = k.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
 			// return with nothing
-			k.Logger(ctx).Error("unable to update current validator set in state", "error", err)
+			k.Logger(ctx).Error("Unable to update current validator set in state", "error", err)
 			return nil, err
 		}
 
@@ -588,7 +588,7 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 		for _, v := range setUpdates {
 			cmtProtoPk, err := v.CmtConsPublicKey()
 			if err != nil {
-				k.Logger(ctx).Error("error while getting the public key for validator, skipping it", "error", err, "validatorId", v.ValId)
+				k.Logger(ctx).Error("Error while getting the public key for validator, skipping it", "error", err, "validatorId", v.ValId)
 				continue
 			}
 

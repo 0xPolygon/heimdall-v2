@@ -31,7 +31,9 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// QuerySpanByIdRequest is the request type for the GetSpanById query.
 type QuerySpanByIdRequest struct {
+	// ID of the span to retrieve.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
@@ -75,7 +77,9 @@ func (m *QuerySpanByIdRequest) GetId() string {
 	return ""
 }
 
+// QuerySpanByIdResponse is the response type for the GetSpanById query.
 type QuerySpanByIdResponse struct {
+	// The requested span.
 	Span *Span `protobuf:"bytes,1,opt,name=span,proto3" json:"span,omitempty"`
 }
 
@@ -119,7 +123,9 @@ func (m *QuerySpanByIdResponse) GetSpan() *Span {
 	return nil
 }
 
+// QuerySpanListRequest is the request type for the GetSpanList query.
 type QuerySpanListRequest struct {
+	// Pagination parameters for the query.
 	Pagination query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination"`
 }
 
@@ -163,8 +169,11 @@ func (m *QuerySpanListRequest) GetPagination() query.PageRequest {
 	return query.PageRequest{}
 }
 
+// QuerySpanListResponse is the response type for the GetSpanList query.
 type QuerySpanListResponse struct {
-	SpanList   []Span             `protobuf:"bytes,1,rep,name=span_list,json=spanList,proto3" json:"span_list"`
+	// List of spans matching the query.
+	SpanList []Span `protobuf:"bytes,1,rep,name=span_list,json=spanList,proto3" json:"span_list"`
+	// Pagination response with next page token.
 	Pagination query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination"`
 }
 
@@ -215,6 +224,7 @@ func (m *QuerySpanListResponse) GetPagination() query.PageResponse {
 	return query.PageResponse{}
 }
 
+// QueryLatestSpanRequest is the request type for the GetLatestSpan query.
 type QueryLatestSpanRequest struct {
 }
 
@@ -251,7 +261,9 @@ func (m *QueryLatestSpanRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryLatestSpanRequest proto.InternalMessageInfo
 
+// QueryLatestSpanResponse is the response type for the GetLatestSpan query.
 type QueryLatestSpanResponse struct {
+	// The most recently created span.
 	Span Span `protobuf:"bytes,1,opt,name=span,proto3" json:"span"`
 }
 
@@ -295,7 +307,9 @@ func (m *QueryLatestSpanResponse) GetSpan() Span {
 	return Span{}
 }
 
+// QueryNextSpanSeedRequest is the request type for the GetNextSpanSeed query.
 type QueryNextSpanSeedRequest struct {
+	// ID of the span for which to get the seed.
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
@@ -339,8 +353,11 @@ func (m *QueryNextSpanSeedRequest) GetId() uint64 {
 	return 0
 }
 
+// QueryNextSpanSeedResponse is the response type for the GetNextSpanSeed query.
 type QueryNextSpanSeedResponse struct {
-	Seed       string `protobuf:"bytes,1,opt,name=seed,proto3" json:"seed,omitempty"`
+	// Seed value used for producer selection randomization.
+	Seed string `protobuf:"bytes,1,opt,name=seed,proto3" json:"seed,omitempty"`
+	// Address of the validator who authored the seed.
 	SeedAuthor string `protobuf:"bytes,2,opt,name=seed_author,json=seedAuthor,proto3" json:"seed_author,omitempty"`
 }
 
@@ -391,9 +408,13 @@ func (m *QueryNextSpanSeedResponse) GetSeedAuthor() string {
 	return ""
 }
 
+// QueryNextSpanRequest is the request type for the GetNextSpan query.
 type QueryNextSpanRequest struct {
-	SpanId     uint64 `protobuf:"varint,1,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
+	// ID for the next span to be created.
+	SpanId uint64 `protobuf:"varint,1,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
+	// Starting block number for the next span.
 	StartBlock uint64 `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
+	// Chain ID of the Bor chain.
 	BorChainId string `protobuf:"bytes,3,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
 }
 
@@ -451,7 +472,9 @@ func (m *QueryNextSpanRequest) GetBorChainId() string {
 	return ""
 }
 
+// QueryNextSpanResponse is the response type for the GetNextSpan query.
 type QueryNextSpanResponse struct {
+	// The prepared next span with selected producers.
 	Span Span `protobuf:"bytes,1,opt,name=span,proto3" json:"span"`
 }
 
@@ -495,6 +518,7 @@ func (m *QueryNextSpanResponse) GetSpan() Span {
 	return Span{}
 }
 
+// QueryParamsRequest is the request type for the GetBorParams query.
 type QueryParamsRequest struct {
 }
 
@@ -531,7 +555,9 @@ func (m *QueryParamsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryParamsRequest proto.InternalMessageInfo
 
+// QueryParamsResponse is the response type for the GetBorParams query.
 type QueryParamsResponse struct {
+	// Current parameters of the bor module.
 	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
 }
 
@@ -575,6 +601,7 @@ func (m *QueryParamsResponse) GetParams() Params {
 	return Params{}
 }
 
+// QueryProducerVotesRequest is the request type for the GetProducerVotes query.
 type QueryProducerVotesRequest struct {
 }
 
@@ -611,7 +638,11 @@ func (m *QueryProducerVotesRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryProducerVotesRequest proto.InternalMessageInfo
 
+// QueryProducerVotesResponse is the response type for the GetProducerVotes
+// query.
 type QueryProducerVotesResponse struct {
+	// Map of validator ID to their producer votes.
+	// Key: validator ID, Value: list of validator IDs they voted for.
 	AllVotes map[uint64]ProducerVotes `protobuf:"bytes,1,rep,name=all_votes,json=allVotes,proto3" json:"all_votes" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
@@ -655,7 +686,10 @@ func (m *QueryProducerVotesResponse) GetAllVotes() map[uint64]ProducerVotes {
 	return nil
 }
 
+// QueryProducerVotesByValidatorIdRequest is the request type for the
+// GetProducerVotesByValidatorId query.
 type QueryProducerVotesByValidatorIdRequest struct {
+	// ID of the validator whose votes to retrieve.
 	ValidatorId uint64 `protobuf:"varint,1,opt,name=validator_id,json=validatorId,proto3" json:"validator_id,omitempty"`
 }
 
@@ -701,7 +735,10 @@ func (m *QueryProducerVotesByValidatorIdRequest) GetValidatorId() uint64 {
 	return 0
 }
 
+// QueryProducerVotesByValidatorIdResponse is the response type for the
+// GetProducerVotesByValidatorId query.
 type QueryProducerVotesByValidatorIdResponse struct {
+	// List of validator IDs that the queried validator voted for.
 	Votes []uint64 `protobuf:"varint,1,rep,packed,name=votes,proto3" json:"votes,omitempty"`
 }
 
@@ -747,7 +784,10 @@ func (m *QueryProducerVotesByValidatorIdResponse) GetVotes() []uint64 {
 	return nil
 }
 
+// QueryProducerPlannedDowntimeRequest is the request type for the
+// GetProducerPlannedDowntime query.
 type QueryProducerPlannedDowntimeRequest struct {
+	// ID of the producer whose planned downtime to retrieve.
 	ProducerId uint64 `protobuf:"varint,1,opt,name=producer_id,json=producerId,proto3" json:"producer_id,omitempty"`
 }
 
@@ -791,7 +831,10 @@ func (m *QueryProducerPlannedDowntimeRequest) GetProducerId() uint64 {
 	return 0
 }
 
+// QueryProducerPlannedDowntimeResponse is the response type for the
+// GetProducerPlannedDowntime query.
 type QueryProducerPlannedDowntimeResponse struct {
+	// Block range during which the producer has planned downtime.
 	DowntimeRange BlockRange `protobuf:"bytes,1,opt,name=downtime_range,json=downtimeRange,proto3" json:"downtime_range"`
 }
 
@@ -835,6 +878,8 @@ func (m *QueryProducerPlannedDowntimeResponse) GetDowntimeRange() BlockRange {
 	return BlockRange{}
 }
 
+// QueryValidatorPerformanceScoreRequest is the request type for the
+// GetValidatorPerformanceScore query.
 type QueryValidatorPerformanceScoreRequest struct {
 }
 
@@ -871,7 +916,11 @@ func (m *QueryValidatorPerformanceScoreRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryValidatorPerformanceScoreRequest proto.InternalMessageInfo
 
+// QueryValidatorPerformanceScoreResponse is the response type for the
+// GetValidatorPerformanceScore query.
 type QueryValidatorPerformanceScoreResponse struct {
+	// Map of validator ID to their performance score.
+	// Higher scores indicate better block production reliability.
 	ValidatorPerformanceScore map[uint64]uint64 `protobuf:"bytes,1,rep,name=validator_performance_score,json=validatorPerformanceScore,proto3" json:"validator_performance_score" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 }
 
@@ -1036,28 +1085,32 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	// GetSpanList queries a list of spans.
+	// GetSpanList queries a paginated list of spans.
 	GetSpanList(ctx context.Context, in *QuerySpanListRequest, opts ...grpc.CallOption) (*QuerySpanListResponse, error)
 	// GetLatestSpan queries the latest span.
 	GetLatestSpan(ctx context.Context, in *QueryLatestSpanRequest, opts ...grpc.CallOption) (*QueryLatestSpanResponse, error)
-	// GetNextSpanSeed queries the next span seed given a
-	// QueryNextSpanSeedRequest.
+	// GetNextSpanSeed queries the seed for generating the next span.
+	// The seed is used for deterministic random selection of producers.
 	GetNextSpanSeed(ctx context.Context, in *QueryNextSpanSeedRequest, opts ...grpc.CallOption) (*QueryNextSpanSeedResponse, error)
-	// GetNextSpan queries the next span given a QueryNextSpanRequest.
+	// GetNextSpan prepares and returns the next span based on the current
+	// validator set. This is used by proposers to create span proposals.
 	GetNextSpan(ctx context.Context, in *QueryNextSpanRequest, opts ...grpc.CallOption) (*QueryNextSpanResponse, error)
-	// GetSpanById retrieves a span by its id.
+	// GetSpanById retrieves a specific span by its ID.
 	GetSpanById(ctx context.Context, in *QuerySpanByIdRequest, opts ...grpc.CallOption) (*QuerySpanByIdResponse, error)
 	// GetBorParams queries the parameters of x/bor module.
 	GetBorParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 	// GetProducerVotes queries producer votes from all validators.
+	// Returns a map of validator ID to their producer votes.
 	GetProducerVotes(ctx context.Context, in *QueryProducerVotesRequest, opts ...grpc.CallOption) (*QueryProducerVotesResponse, error)
-	// GetProducerVotesByValidatorId queries the producer votes for a given
-	// validator id.
+	// GetProducerVotesByValidatorId queries the producer votes cast by a specific
+	// validator.
 	GetProducerVotesByValidatorId(ctx context.Context, in *QueryProducerVotesByValidatorIdRequest, opts ...grpc.CallOption) (*QueryProducerVotesByValidatorIdResponse, error)
-	// GetProducerPlannedDowntime queries the planned downtime for a given
-	// producer id.
+	// GetProducerPlannedDowntime queries the planned downtime window for a
+	// specific producer. Producers can signal planned maintenance periods during
+	// which they won't produce blocks.
 	GetProducerPlannedDowntime(ctx context.Context, in *QueryProducerPlannedDowntimeRequest, opts ...grpc.CallOption) (*QueryProducerPlannedDowntimeResponse, error)
-	// GetValidatorPerformanceScore queries the validator performance score.
+	// GetValidatorPerformanceScore queries the performance scores of all
+	// validators. Performance scores track block production reliability.
 	GetValidatorPerformanceScore(ctx context.Context, in *QueryValidatorPerformanceScoreRequest, opts ...grpc.CallOption) (*QueryValidatorPerformanceScoreResponse, error)
 }
 
@@ -1161,28 +1214,32 @@ func (c *queryClient) GetValidatorPerformanceScore(ctx context.Context, in *Quer
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	// GetSpanList queries a list of spans.
+	// GetSpanList queries a paginated list of spans.
 	GetSpanList(context.Context, *QuerySpanListRequest) (*QuerySpanListResponse, error)
 	// GetLatestSpan queries the latest span.
 	GetLatestSpan(context.Context, *QueryLatestSpanRequest) (*QueryLatestSpanResponse, error)
-	// GetNextSpanSeed queries the next span seed given a
-	// QueryNextSpanSeedRequest.
+	// GetNextSpanSeed queries the seed for generating the next span.
+	// The seed is used for deterministic random selection of producers.
 	GetNextSpanSeed(context.Context, *QueryNextSpanSeedRequest) (*QueryNextSpanSeedResponse, error)
-	// GetNextSpan queries the next span given a QueryNextSpanRequest.
+	// GetNextSpan prepares and returns the next span based on the current
+	// validator set. This is used by proposers to create span proposals.
 	GetNextSpan(context.Context, *QueryNextSpanRequest) (*QueryNextSpanResponse, error)
-	// GetSpanById retrieves a span by its id.
+	// GetSpanById retrieves a specific span by its ID.
 	GetSpanById(context.Context, *QuerySpanByIdRequest) (*QuerySpanByIdResponse, error)
 	// GetBorParams queries the parameters of x/bor module.
 	GetBorParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	// GetProducerVotes queries producer votes from all validators.
+	// Returns a map of validator ID to their producer votes.
 	GetProducerVotes(context.Context, *QueryProducerVotesRequest) (*QueryProducerVotesResponse, error)
-	// GetProducerVotesByValidatorId queries the producer votes for a given
-	// validator id.
+	// GetProducerVotesByValidatorId queries the producer votes cast by a specific
+	// validator.
 	GetProducerVotesByValidatorId(context.Context, *QueryProducerVotesByValidatorIdRequest) (*QueryProducerVotesByValidatorIdResponse, error)
-	// GetProducerPlannedDowntime queries the planned downtime for a given
-	// producer id.
+	// GetProducerPlannedDowntime queries the planned downtime window for a
+	// specific producer. Producers can signal planned maintenance periods during
+	// which they won't produce blocks.
 	GetProducerPlannedDowntime(context.Context, *QueryProducerPlannedDowntimeRequest) (*QueryProducerPlannedDowntimeResponse, error)
-	// GetValidatorPerformanceScore queries the validator performance score.
+	// GetValidatorPerformanceScore queries the performance scores of all
+	// validators. Performance scores track block production reliability.
 	GetValidatorPerformanceScore(context.Context, *QueryValidatorPerformanceScoreRequest) (*QueryValidatorPerformanceScoreResponse, error)
 }
 

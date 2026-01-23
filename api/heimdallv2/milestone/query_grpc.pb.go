@@ -29,13 +29,13 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
-	// GetMilestoneParams queries for the x/milestone parameters
+	// GetMilestoneParams queries the milestone module parameters.
 	GetMilestoneParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// GetMilestoneCount queries for the milestone count
+	// GetMilestoneCount queries the total number of milestones.
 	GetMilestoneCount(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error)
-	// GetLatestMilestone queries for the latest milestone
+	// GetLatestMilestone queries the most recently finalized milestone.
 	GetLatestMilestone(ctx context.Context, in *QueryLatestMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestMilestoneResponse, error)
-	// GetMilestoneByNumber queries for the milestone based on the number
+	// GetMilestoneByNumber queries a specific milestone by its number.
 	GetMilestoneByNumber(ctx context.Context, in *QueryMilestoneRequest, opts ...grpc.CallOption) (*QueryMilestoneResponse, error)
 }
 
@@ -87,13 +87,13 @@ func (c *queryClient) GetMilestoneByNumber(ctx context.Context, in *QueryMilesto
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
-	// GetMilestoneParams queries for the x/milestone parameters
+	// GetMilestoneParams queries the milestone module parameters.
 	GetMilestoneParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// GetMilestoneCount queries for the milestone count
+	// GetMilestoneCount queries the total number of milestones.
 	GetMilestoneCount(context.Context, *QueryCountRequest) (*QueryCountResponse, error)
-	// GetLatestMilestone queries for the latest milestone
+	// GetLatestMilestone queries the most recently finalized milestone.
 	GetLatestMilestone(context.Context, *QueryLatestMilestoneRequest) (*QueryLatestMilestoneResponse, error)
-	// GetMilestoneByNumber queries for the milestone based on the number
+	// GetMilestoneByNumber queries a specific milestone by its number.
 	GetMilestoneByNumber(context.Context, *QueryMilestoneRequest) (*QueryMilestoneResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }

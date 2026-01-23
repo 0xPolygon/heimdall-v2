@@ -76,7 +76,7 @@ func AdjustDBValue(cmd *cobra.Command) {
 
 // StartWithCtx starts the bridge runtime as a side service of heimdalld and shuts down gracefully.
 func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
-	// setup codec and registry
+	// set up the codec and registry
 	cdc, err := makeCodec()
 	if err != nil {
 		panic(err)
@@ -89,14 +89,14 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 
 	httpClient, err := createAndStartRPC(helper.GetConfig().CometBFTRPCUrl)
 	if err != nil {
-		logger().Error("Error connecting to server", "err", err)
+		logger().Error("Bridge: error connecting to server", "err", err)
 		return err
 	}
 
 	// set chain ID
 	chainID, err := resolveChainID(ctx, clientCtx)
 	if err != nil {
-		logger().Error("Error while determining chain ID", "err", err)
+		logger().Error("Bridge: error while determining chain ID", "err", err)
 		return err
 	}
 	clientCtx = clientCtx.WithChainID(chainID)
@@ -104,7 +104,7 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 
 	// wait until the node is synced
 	if err := waitUntilSynced(ctx, clientCtx, waitDuration); err != nil {
-		// context cancelled while waiting is not an error for shutdown
+		// context canceled while waiting is not an error for shutdown
 		return err
 	}
 
@@ -115,7 +115,7 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 		processor.NewProcessorService(cdc, qc, httpClient, txBroadcaster),
 	}
 
-	// run services and handle graceful shutdown
+	// run services and handle a graceful shutdown
 	return runServices(ctx, services, httpClient)
 }
 
@@ -129,7 +129,7 @@ func makeCodec() (codec.Codec, error) {
 		},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("interface registry: %w", err)
+		return nil, fmt.Errorf("bridge: interface registry: %w", err)
 	}
 
 	cryptocodec.RegisterInterfaces(ir)
@@ -155,10 +155,10 @@ func attachCodecIfMissing(clientCtx client.Context, cdc codec.Codec) client.Cont
 func createAndStartRPC(rpcURL string) (*rpchttp.HTTP, error) {
 	httpClient, err := rpchttp.New(rpcURL, "/websocket")
 	if err != nil {
-		return nil, fmt.Errorf("creating cometbft http client: %w", err)
+		return nil, fmt.Errorf("bridge: creating cometbft http client: %w", err)
 	}
 	if err := httpClient.Start(); err != nil {
-		return nil, fmt.Errorf("starting cometbft http client: %w", err)
+		return nil, fmt.Errorf("bridge: starting cometbft http client: %w", err)
 	}
 	return httpClient, nil
 }
@@ -166,21 +166,21 @@ func createAndStartRPC(rpcURL string) (*rpchttp.HTTP, error) {
 // resolveChainID retrieves the chain ID from the client context or node status.
 func resolveChainID(ctx context.Context, clientCtx client.Context) (string, error) {
 	if cid := clientCtx.ChainID; cid != "" {
-		logger().Info("ChainID set in clientCtx", "chainId", cid)
+		logger().Info("Bridge: chainID set in clientCtx", "chainId", cid)
 		return cid, nil
 	}
 
-	logger().Info("ChainID is empty in clientCtx at bridge startup, fetching from node status")
+	logger().Info("Bridge: chainID is empty in clientCtx at bridge startup, fetching from node status")
 
-	nodeStatus, err := helper.GetNodeStatus(clientCtx) //nolint:contextcheck
+	nodeStatus, err := helper.GetNodeStatus(ctx, clientCtx)
 	if err != nil {
-		return "", fmt.Errorf("fetching node status: %w", err)
+		return "", fmt.Errorf("bridge: fetching node status: %w", err)
 	}
 	if nodeStatus.NodeInfo.Network == "" {
-		return "", errors.New("network is empty in node status, cannot determine chain ID")
+		return "", errors.New("bridge: network is empty in node status, cannot determine chain ID")
 	}
 
-	logger().Info("ChainID fetched from node status", "chainId", nodeStatus.NodeInfo.Network)
+	logger().Info("Bridge: chainID fetched from node status", "chainId", nodeStatus.NodeInfo.Network)
 	return nodeStatus.NodeInfo.Network, nil
 }
 
@@ -191,11 +191,11 @@ func waitUntilSynced(ctx context.Context, clientCtx client.Context, d time.Durat
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-time.After(d):
-			if !util.IsCatchingUp(clientCtx, ctx) {
-				logger().Info("Node up to date, starting bridge services")
+			if !util.IsCatchingUp(ctx, clientCtx) {
+				logger().Info("Bridge: node up to date, starting bridge services")
 				return nil
 			}
-			logger().Info("Waiting for heimdall to be synced")
+			logger().Info("Bridge: waiting for heimdall to be synced")
 		}
 	}
 }
@@ -209,7 +209,7 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 		s := svc
 		g.Go(func() error {
 			if err := s.Start(); err != nil {
-				logger().Error("service.Start failed", "err", err)
+				logger().Error("Bridge: service.Start failed", "err", err)
 				return err
 			}
 			<-s.Quit()
@@ -220,13 +220,13 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 	// shutdown controller
 	g.Go(func() error {
 		<-ctx.Done()
-		logger().Info("Received stop signal - Stopping all heimdall bridge services")
+		logger().Info("Bridge: received stop signal - stopping all heimdall bridge services")
 
 		// stop services
 		for _, s := range services {
 			if s.IsRunning() {
 				if err := s.Stop(); err != nil {
-					logger().Error("service.Stop failed", "err", err)
+					logger().Error("Bridge: service.Stop failed", "err", err)
 					return err
 				}
 			}
@@ -234,7 +234,7 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 
 		// stop comet client
 		if err := httpClient.Stop(); err != nil {
-			logger().Error("httpClient.Stop failed", "err", err)
+			logger().Error("Bridge: httpClient.Stop failed", "err", err)
 			return err
 		}
 
@@ -244,7 +244,7 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 	})
 
 	if err := g.Wait(); err != nil {
-		logger().Error("Bridge stopped", "err", err)
+		logger().Error("Bridge: stopped", "err", err)
 		return err
 	}
 	return nil

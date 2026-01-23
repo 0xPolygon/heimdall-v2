@@ -16,6 +16,7 @@ import (
 
 const (
 	MaxSpanListLimit = 1_000
+	errEmptyRequest  = "empty request"
 )
 
 var _ types.QueryServer = queryServer{}
@@ -57,7 +58,7 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 	defer recordBorQueryMetric(api.GetNextSpanMethod, start, &err)
 
 	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	lastSpan, err := q.k.GetLastSpan(ctx)
@@ -128,7 +129,7 @@ func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSp
 	defer recordBorQueryMetric(api.GetNextSpanSeedMethod, start, &err)
 
 	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, errEmptyRequest)
 	}
 	spanId := req.GetId()
 
@@ -165,7 +166,7 @@ func (q queryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRe
 	defer recordBorQueryMetric(api.GetSpanByIdMethod, start, &err)
 
 	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	spanId, err := strconv.Atoi(req.Id)
@@ -188,7 +189,7 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 	defer recordBorQueryMetric(api.GetSpanListMethod, start, &err)
 
 	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if isPaginationEmpty(req.Pagination) {
@@ -218,7 +219,7 @@ func (q queryServer) GetProducerVotesByValidatorId(ctx context.Context, req *typ
 	defer recordBorQueryMetric(api.GetProducerVotesByValidatorIdMethod, start, &err)
 
 	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	producerVotes, err := q.k.GetProducerVotes(ctx, req.ValidatorId)
@@ -229,7 +230,7 @@ func (q queryServer) GetProducerVotesByValidatorId(ctx context.Context, req *typ
 	return &types.QueryProducerVotesByValidatorIdResponse{Votes: producerVotes.Votes}, nil
 }
 
-func (q queryServer) GetProducerVotes(ctx context.Context, req *types.QueryProducerVotesRequest) (*types.QueryProducerVotesResponse, error) {
+func (q queryServer) GetProducerVotes(ctx context.Context, _ *types.QueryProducerVotesRequest) (*types.QueryProducerVotesResponse, error) {
 	var err error
 	start := time.Now()
 	defer recordBorQueryMetric(api.GetProducerVotesMethod, start, &err)
@@ -256,7 +257,7 @@ func (q queryServer) GetProducerPlannedDowntime(ctx context.Context, req *types.
 	defer recordBorQueryMetric(api.GetProducerPlannedDowntimeMethod, start, &err)
 
 	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	found, err := q.k.ProducerPlannedDowntime.Has(ctx, req.ProducerId)
@@ -282,7 +283,7 @@ func recordBorQueryMetric(method string, start time.Time, err *error) {
 	api.RecordAPICallWithStart(api.BorSubsystem, method, api.QueryType, success, start)
 }
 
-func (q queryServer) GetValidatorPerformanceScore(ctx context.Context, req *types.QueryValidatorPerformanceScoreRequest) (*types.QueryValidatorPerformanceScoreResponse, error) {
+func (q queryServer) GetValidatorPerformanceScore(ctx context.Context, _ *types.QueryValidatorPerformanceScoreRequest) (*types.QueryValidatorPerformanceScoreResponse, error) {
 	var err error
 	start := time.Now()
 	defer recordBorQueryMetric(api.GetValidatorPerformanceScoreMethod, start, &err)

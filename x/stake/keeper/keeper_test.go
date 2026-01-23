@@ -175,7 +175,7 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 		require.NoErrorf(err, "Error while adding validator to store")
 	}
 
-	// fetch validator info from store
+	// fetch validator info from the store
 	valInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer)
 	require.NoErrorf(err, "Error while fetching Validator Info from store")
 

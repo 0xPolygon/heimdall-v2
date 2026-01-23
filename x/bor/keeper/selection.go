@@ -90,7 +90,7 @@ func randomRangeInclusive(minValue uint64, maxValue uint64, rand *rand.Rand) uin
 	return minValue + randomValue%rangeLength
 }
 
-// createWeightedRanges converts array [1, 2, 3] into cumulative form [1, 3, 6]
+// createWeightedRanges converts the array [1, 2, 3] into cumulative form [1, 3, 6]
 func createWeightedRanges(weights []uint64) ([]uint64, uint64) {
 	weightedRanges := make([]uint64, len(weights))
 

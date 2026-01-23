@@ -9,18 +9,21 @@ import "heimdallv2/chainmanager/chainmanager.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/chainmanager/types";
 
-// Query defines the gRPC querier service
+// Query defines the gRPC query service for the chainmanager module.
 service Query {
-  // GetChainManagerParams queries the parameters of x/chainmanager module
+  // GetChainManagerParams queries the chainmanager module parameters.
   rpc GetChainManagerParams(QueryParamsRequest) returns (QueryParamsResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/chainmanager/params";
   }
 }
 
+// QueryParamsRequest is the request type for the GetChainManagerParams query.
 message QueryParamsRequest {}
 
+// QueryParamsResponse is the response type for the GetChainManagerParams query.
 message QueryParamsResponse {
+  // Current chainmanager module parameters.
   Params params = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

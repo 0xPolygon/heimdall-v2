@@ -23,7 +23,6 @@ import (
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -53,7 +52,6 @@ const (
 	TopupTxStatusURL        = "/topup/is-old-tx"
 	ClerkTxStatusURL        = "/clerk/is-old-tx"
 	ClerkEventRecordURL     = "/clerk/event-records/%d"
-	LatestMilestoneURL      = "/milestones/latest"
 
 	CometBFTUnconfirmedTxsURL      = "/unconfirmed_txs"
 	CometBFTUnconfirmedTxsCountURL = "/num_unconfirmed_txs"
@@ -69,6 +67,8 @@ const (
 	ClerkEvent   BridgeEvent = "clerk"
 
 	BridgeDBFlag = "bridge-db"
+
+	errorAddressConversion = "error converting signer string to bytes"
 )
 
 // Logger returns logger singleton instance
@@ -91,14 +91,14 @@ func IsProposer(cdc codec.Codec) (bool, error) {
 	}
 
 	if err := cdc.UnmarshalJSON(result, &response); err != nil {
-		logger.Error("error unmarshalling proposer slice", "error", err)
+		logger.Error("Error unmarshalling proposer slice", "error", err)
 		return false, err
 	}
 
 	ac := addressCodec.NewHexCodec()
 	signerBytes, err := ac.StringToBytes(response.Proposers[0].Signer)
 	if err != nil {
-		logger.Error("Error converting signer string to bytes", "error", err)
+		logger.Error(errorAddressConversion, "error", err)
 		return false, err
 	}
 	if bytes.Equal(signerBytes, helper.GetAddress()) {
@@ -134,7 +134,7 @@ func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	for i := 1; i <= int(count) && i < len(proposers.Proposers); i++ {
 		signerBytes, err := ac.StringToBytes(proposers.Proposers[i].Signer)
 		if err != nil {
-			logger.Error("Error converting signer string to bytes", "error", err)
+			logger.Error(errorAddressConversion, "error", err)
 			return false, err
 		}
 		if bytes.Equal(signerBytes, helper.GetAddress()) {
@@ -168,7 +168,7 @@ func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration
 	for i, validator := range validatorSet.Validators {
 		signerBytes, err := ac.StringToBytes(validator.Signer)
 		if err != nil {
-			logger.Error("Error converting signer string to bytes", "error", err)
+			logger.Error(errorAddressConversion, "error", err)
 			return false, 0
 		}
 		if bytes.Equal(signerBytes, helper.GetAddress()) {
@@ -207,7 +207,7 @@ func IsCurrentProposer(cdc codec.Codec) (bool, error) {
 	}
 
 	if err = cdc.UnmarshalJSON(result, &response); err != nil {
-		logger.Error("error unmarshalling current proposer response", "error", err)
+		logger.Error("Error unmarshalling current proposer response", "error", err)
 		return false, err
 	}
 
@@ -216,7 +216,7 @@ func IsCurrentProposer(cdc codec.Codec) (bool, error) {
 	ac := addressCodec.NewHexCodec()
 	signerBytes, err := ac.StringToBytes(response.Validator.Signer)
 	if err != nil {
-		logger.Error("Error converting signer string to bytes", "error", err)
+		logger.Error(errorAddressConversion, "error", err)
 		return false, err
 	}
 	if bytes.Equal(signerBytes, helper.GetAddress()) {
@@ -249,7 +249,7 @@ func IsEventSender(validatorID uint64, cdc codec.Codec) bool {
 	ac := addressCodec.NewHexCodec()
 	signerBytes, err := ac.StringToBytes(validatorResponse.Validator.Signer)
 	if err != nil {
-		logger.Error("Error converting signer string to bytes", "error", err)
+		logger.Error(errorAddressConversion, "error", err)
 		return false
 	}
 	return bytes.Equal(signerBytes, helper.GetAddress())
@@ -275,8 +275,8 @@ func CreateURLWithQuery(uri string, param map[string]interface{}) (string, error
 
 // IsCatchingUp checks if the heimdall node you are connected to is fully synced or not
 // returns true when synced
-func IsCatchingUp(cliCtx client.Context, ctx context.Context) bool {
-	resp, err := helper.GetNodeStatus(cliCtx) //nolint:contextcheck
+func IsCatchingUp(ctx context.Context, cliCtx client.Context) bool {
+	resp, err := helper.GetNodeStatus(ctx, cliCtx)
 	if err != nil {
 		return true
 	}
@@ -512,6 +512,12 @@ func GetUnconfirmedTxnCount(event interface{}) int {
 
 	// Limit the number of bytes read from the response body
 	limitedBody := http.MaxBytesReader(nil, resp.Body, helper.APIBodyLimit)
+	defer func(limitedBody io.ReadCloser) {
+		err := limitedBody.Close()
+		if err != nil {
+			logger.Error("Error closing limited response body:", err)
+		}
+	}(limitedBody)
 
 	body, err := io.ReadAll(limitedBody)
 	defer func() {
@@ -568,23 +574,4 @@ func LogElapsedTimeForStateSyncedEvent(event interface{}, functionName string, s
 	logger.Info("StateSyncedEvent: "+functionName,
 		"stateSyncId", typedEvent.Id,
 		"timeElapsed", timeElapsed)
-}
-
-// GetLatestMilestone return last successful milestone
-func GetLatestMilestone(cdc codec.Codec) (*milestoneTypes.Milestone, error) {
-	logger := Logger()
-
-	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestMilestoneURL))
-	if err != nil {
-		logger.Debug("Error fetching latest milestone", "err", err)
-		return nil, err
-	}
-
-	var milestone milestoneTypes.QueryLatestMilestoneResponse
-	if err = cdc.UnmarshalJSON(response, &milestone); err != nil {
-		logger.Error("Error unmarshalling latest milestone", "url", LatestMilestoneURL, "err", err)
-		return nil, err
-	}
-
-	return &milestone.Milestone, nil
 }

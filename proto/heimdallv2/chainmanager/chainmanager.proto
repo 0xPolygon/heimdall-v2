@@ -6,24 +6,39 @@ import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/chainmanager/types";
 
+// ChainParams contains configuration for both chains and contract addresses.
 message ChainParams {
   option (gogoproto.equal) = true;
+  // Chain ID of the Bor (child) chain.
   string bor_chain_id = 1 [ (amino.dont_omitempty) = true ];
+  // Chain ID of the Heimdall chain.
   string heimdall_chain_id = 2 [ (amino.dont_omitempty) = true ];
+  // Address of the POL token contract on the root chain.
   string pol_token_address = 3 [ (amino.dont_omitempty) = true ];
+  // Address of the staking manager contract on the root chain.
   string staking_manager_address = 4 [ (amino.dont_omitempty) = true ];
+  // Address of the slash manager contract on the root chain.
   string slash_manager_address = 5 [ (amino.dont_omitempty) = true ];
+  // Address of the root chain contract (checkpoint submission).
   string root_chain_address = 6 [ (amino.dont_omitempty) = true ];
+  // Address of the staking info contract on the root chain.
   string staking_info_address = 7 [ (amino.dont_omitempty) = true ];
+  // Address of the state sender contract on the root chain.
   string state_sender_address = 8 [ (amino.dont_omitempty) = true ];
+  // Address of the state receiver contract on the Bor chain.
   string state_receiver_address = 9 [ (amino.dont_omitempty) = true ];
+  // Address of the validator set contract on the root chain.
   string validator_set_address = 10 [ (amino.dont_omitempty) = true ];
 }
 
+// Params defines the parameters for the chainmanager module.
 message Params {
   option (gogoproto.equal) = true;
+  // Chain configuration and contract addresses.
   ChainParams chain_params = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+  // Number of confirmations required for main chain transactions.
   uint64 main_chain_tx_confirmations = 2 [ (amino.dont_omitempty) = true ];
+  // Number of confirmations required for Bor chain transactions.
   uint64 bor_chain_tx_confirmations = 3 [ (amino.dont_omitempty) = true ];
 }

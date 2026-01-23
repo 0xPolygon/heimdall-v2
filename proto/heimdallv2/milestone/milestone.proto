@@ -7,42 +7,69 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
+// Milestone represents a fast-finality checkpoint for the Bor chain.
+// Milestones provide intermediate finalization between full checkpoints,
+// allowing for quicker finality guarantees.
 message Milestone {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
+  // Address of the validator who proposed this milestone.
   string proposer = 1 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
+  // First block number included in this milestone (inclusive).
   uint64 start_block = 2 [ (amino.dont_omitempty) = true ];
+  // Last block number included in this milestone (inclusive).
   uint64 end_block = 3 [ (amino.dont_omitempty) = true ];
+  // Hash of the end block in this milestone.
   bytes hash = 4 [ (amino.dont_omitempty) = true ];
+  // Chain ID of the Bor chain this milestone applies to.
   string bor_chain_id = 5 [ (amino.dont_omitempty) = true ];
+  // Unique identifier for this milestone (typically a hash).
   string milestone_id = 6 [ (amino.dont_omitempty) = true ];
+  // Unix timestamp when this milestone was created.
   uint64 timestamp = 7 [ (amino.dont_omitempty) = true ];
+  // Total difficulty of the Bor chain at the end block.
   uint64 total_difficulty = 8 [ (amino.dont_omitempty) = true ];
 }
 
+// MilestoneCount tracks the total number of milestones.
 message MilestoneCount {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
+  // Total number of milestones.
   uint64 count = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// MilestoneProposition represents a proposed milestone submitted via vote
+// extensions. Validators include these in their vote extensions to propose new
+// milestones.
 message MilestoneProposition {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
 
+  // Hashes of all blocks included in this milestone proposition.
   repeated bytes block_hashes = 1 [ (amino.dont_omitempty) = true ];
+  // Starting block number for this proposition.
   uint64 start_block_number = 2 [ (amino.dont_omitempty) = true ];
+  // Hash of the parent block (block before start_block_number).
   bytes parent_hash = 3 [ (amino.dont_omitempty) = true ];
+  // Total difficulty values for each block in the proposition.
+  // Corresponds 1:1 with block_hashes.
   repeated uint64 block_tds = 4 [ (amino.dont_omitempty) = true ];
 }
 
+// Params defines the parameters for the milestone module.
 message Params {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
+  // Maximum number of blocks that can be included in a milestone proposition.
   uint64 max_milestone_proposition_length = 1 [ (amino.dont_omitempty) = true ];
+  // Fast-finality threshold: minimum number of validators required to agree
+  // on a milestone proposition for it to be accepted.
   uint64 ff_milestone_threshold = 2 [ (amino.dont_omitempty) = true ];
+  // Fast-finality interval: target number of blocks between milestone
+  // propositions.
   uint64 ff_milestone_block_interval = 3 [ (amino.dont_omitempty) = true ];
 }

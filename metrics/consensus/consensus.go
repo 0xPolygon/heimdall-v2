@@ -41,7 +41,7 @@ func RecordConsensusFailure() {
 	SideTxConsensusFailures.Inc()
 }
 
-// RecordConsensusApproved records when a side transaction reaches 2/3 YES consensus.
+// RecordConsensusApproved records the metrics when a side transaction reaches 2/3 YES consensus.
 func RecordConsensusApproved() {
 	SideTxConsensusApproved.Inc()
 }

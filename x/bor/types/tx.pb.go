@@ -31,13 +31,21 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// MsgProposeSpan defines the message for proposing a new span.
 type MsgProposeSpan struct {
-	SpanId     uint64 `protobuf:"varint,1,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
-	Proposer   string `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// ID of the span being proposed.
+	SpanId uint64 `protobuf:"varint,1,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
+	// Address of the validator proposing this span.
+	Proposer string `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// First block number of this span.
 	StartBlock uint64 `protobuf:"varint,3,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
-	EndBlock   uint64 `protobuf:"varint,4,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
-	ChainId    string `protobuf:"bytes,5,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	Seed       []byte `protobuf:"bytes,6,opt,name=seed,proto3" json:"seed,omitempty"`
+	// Last block number of this span.
+	EndBlock uint64 `protobuf:"varint,4,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
+	// Chain ID of the Bor chain.
+	ChainId string `protobuf:"bytes,5,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// Random seed used for producer selection.
+	Seed []byte `protobuf:"bytes,6,opt,name=seed,proto3" json:"seed,omitempty"`
+	// Address of the validator who generated the seed.
 	SeedAuthor string `protobuf:"bytes,7,opt,name=seed_author,json=seedAuthor,proto3" json:"seed_author,omitempty"`
 }
 
@@ -123,6 +131,7 @@ func (m *MsgProposeSpan) GetSeedAuthor() string {
 	return ""
 }
 
+// MsgProposeSpanResponse defines the response for MsgProposeSpan.
 type MsgProposeSpanResponse struct {
 }
 
@@ -159,9 +168,12 @@ func (m *MsgProposeSpanResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgProposeSpanResponse proto.InternalMessageInfo
 
+// MsgUpdateParams defines the message for updating bor module parameters.
 type MsgUpdateParams struct {
+	// Address of the governance authority (typically the governance module).
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
-	Params    Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
+	// New parameters to set.
+	Params Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
 }
 
 func (m *MsgUpdateParams) Reset()         { *m = MsgUpdateParams{} }
@@ -211,6 +223,7 @@ func (m *MsgUpdateParams) GetParams() Params {
 	return Params{}
 }
 
+// MsgUpdateParamsResponse defines the response for MsgUpdateParams.
 type MsgUpdateParamsResponse struct {
 }
 
@@ -247,10 +260,15 @@ func (m *MsgUpdateParamsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgUpdateParamsResponse proto.InternalMessageInfo
 
+// MsgBackfillSpans defines the message for backfilling missing spans.
 type MsgBackfillSpans struct {
-	Proposer        string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
-	ChainId         string `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
-	LatestSpanId    uint64 `protobuf:"varint,3,opt,name=latest_span_id,json=latestSpanId,proto3" json:"latest_span_id,omitempty"`
+	// Address of the validator proposing the backfill.
+	Proposer string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// Chain ID of the Bor chain.
+	ChainId string `protobuf:"bytes,2,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	// Latest span ID known to Heimdall.
+	LatestSpanId uint64 `protobuf:"varint,3,opt,name=latest_span_id,json=latestSpanId,proto3" json:"latest_span_id,omitempty"`
+	// Latest span ID on the Bor chain.
 	LatestBorSpanId uint64 `protobuf:"varint,4,opt,name=latest_bor_span_id,json=latestBorSpanId,proto3" json:"latest_bor_span_id,omitempty"`
 }
 
@@ -315,6 +333,7 @@ func (m *MsgBackfillSpans) GetLatestBorSpanId() uint64 {
 	return 0
 }
 
+// MsgBackfillSpansResponse defines the response for MsgBackfillSpans.
 type MsgBackfillSpansResponse struct {
 }
 
@@ -351,10 +370,14 @@ func (m *MsgBackfillSpansResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgBackfillSpansResponse proto.InternalMessageInfo
 
+// MsgVoteProducers defines the message for voting on producers.
 type MsgVoteProducers struct {
-	Voter   string        `protobuf:"bytes,1,opt,name=voter,proto3" json:"voter,omitempty"`
-	VoterId uint64        `protobuf:"varint,2,opt,name=voter_id,json=voterId,proto3" json:"voter_id,omitempty"`
-	Votes   ProducerVotes `protobuf:"bytes,3,opt,name=votes,proto3" json:"votes"`
+	// Address of the validator casting the vote.
+	Voter string `protobuf:"bytes,1,opt,name=voter,proto3" json:"voter,omitempty"`
+	// ID of the validator casting the vote.
+	VoterId uint64 `protobuf:"varint,2,opt,name=voter_id,json=voterId,proto3" json:"voter_id,omitempty"`
+	// List of validator IDs being voted for as producers.
+	Votes ProducerVotes `protobuf:"bytes,3,opt,name=votes,proto3" json:"votes"`
 }
 
 func (m *MsgVoteProducers) Reset()         { *m = MsgVoteProducers{} }
@@ -411,6 +434,7 @@ func (m *MsgVoteProducers) GetVotes() ProducerVotes {
 	return ProducerVotes{}
 }
 
+// MsgVoteProducersResponse defines the response for MsgVoteProducers.
 type MsgVoteProducersResponse struct {
 }
 
@@ -447,8 +471,11 @@ func (m *MsgVoteProducersResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgVoteProducersResponse proto.InternalMessageInfo
 
+// MsgSetProducerDowntime defines the message for setting producer downtime.
 type MsgSetProducerDowntime struct {
-	Producer      string     `protobuf:"bytes,1,opt,name=producer,proto3" json:"producer,omitempty"`
+	// Address of the producer setting their downtime.
+	Producer string `protobuf:"bytes,1,opt,name=producer,proto3" json:"producer,omitempty"`
+	// Block range during which the producer will be offline.
 	DowntimeRange BlockRange `protobuf:"bytes,2,opt,name=downtime_range,json=downtimeRange,proto3" json:"downtime_range"`
 }
 
@@ -499,6 +526,8 @@ func (m *MsgSetProducerDowntime) GetDowntimeRange() BlockRange {
 	return BlockRange{}
 }
 
+// MsgSetProducerDowntimeResponse defines the response for
+// MsgSetProducerDowntime.
 type MsgSetProducerDowntimeResponse struct {
 }
 
@@ -617,16 +646,20 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// ProposeSpan defines a method for proposing a bor span.
+	// ProposeSpan defines a method for proposing a new bor span.
 	ProposeSpan(ctx context.Context, in *MsgProposeSpan, opts ...grpc.CallOption) (*MsgProposeSpanResponse, error)
-	// UpdateParams defines a method to update the bor params.
+	// UpdateParams defines a method to update the bor module parameters.
+	// Only the governance authority can execute this.
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
-	// BackfillSpans defines a method to fill missing spans.
+	// BackfillSpans defines a method to backfill missing spans.
+	// This is used during chain recovery or when spans need to be reconstructed.
 	BackfillSpans(ctx context.Context, in *MsgBackfillSpans, opts ...grpc.CallOption) (*MsgBackfillSpansResponse, error)
-	// VoteProducers defines a method to update the producer votes.
+	// VoteProducers defines a method for validators to submit their producer
+	// votes.
 	VoteProducers(ctx context.Context, in *MsgVoteProducers, opts ...grpc.CallOption) (*MsgVoteProducersResponse, error)
 	// SetProducerDowntime defines a method to set planned downtime for a
-	// producer.
+	// producer. Producers can signal maintenance windows during which they won't
+	// produce blocks.
 	SetProducerDowntime(ctx context.Context, in *MsgSetProducerDowntime, opts ...grpc.CallOption) (*MsgSetProducerDowntimeResponse, error)
 }
 
@@ -685,16 +718,20 @@ func (c *msgClient) SetProducerDowntime(ctx context.Context, in *MsgSetProducerD
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// ProposeSpan defines a method for proposing a bor span.
+	// ProposeSpan defines a method for proposing a new bor span.
 	ProposeSpan(context.Context, *MsgProposeSpan) (*MsgProposeSpanResponse, error)
-	// UpdateParams defines a method to update the bor params.
+	// UpdateParams defines a method to update the bor module parameters.
+	// Only the governance authority can execute this.
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
-	// BackfillSpans defines a method to fill missing spans.
+	// BackfillSpans defines a method to backfill missing spans.
+	// This is used during chain recovery or when spans need to be reconstructed.
 	BackfillSpans(context.Context, *MsgBackfillSpans) (*MsgBackfillSpansResponse, error)
-	// VoteProducers defines a method to update the producer votes.
+	// VoteProducers defines a method for validators to submit their producer
+	// votes.
 	VoteProducers(context.Context, *MsgVoteProducers) (*MsgVoteProducersResponse, error)
 	// SetProducerDowntime defines a method to set planned downtime for a
-	// producer.
+	// producer. Producers can signal maintenance windows during which they won't
+	// produce blocks.
 	SetProducerDowntime(context.Context, *MsgSetProducerDowntime) (*MsgSetProducerDowntimeResponse, error)
 }
 

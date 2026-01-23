@@ -165,7 +165,7 @@ func NewProducerDowntimeCmd() *cobra.Command {
 				}
 			} else {
 				startTimeUTC = int(time.Now().UTC().Unix()) + 360 // default to 6 minutes from now
-				endTimeUTC = startTimeUTC + 360                   // default to 6 minutes duration
+				endTimeUTC = startTimeUTC + 360                   // default to 6-minutes duration
 			}
 
 			if endTimeUTC <= startTimeUTC {

@@ -9104,11 +9104,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// QuerySpanByIdRequest is the request type for the GetSpanById query.
 type QuerySpanByIdRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// ID of the span to retrieve.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
@@ -9139,11 +9141,13 @@ func (x *QuerySpanByIdRequest) GetId() string {
 	return ""
 }
 
+// QuerySpanByIdResponse is the response type for the GetSpanById query.
 type QuerySpanByIdResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The requested span.
 	Span *Span `protobuf:"bytes,1,opt,name=span,proto3" json:"span,omitempty"`
 }
 
@@ -9174,11 +9178,13 @@ func (x *QuerySpanByIdResponse) GetSpan() *Span {
 	return nil
 }
 
+// QuerySpanListRequest is the request type for the GetSpanList query.
 type QuerySpanListRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Pagination parameters for the query.
 	Pagination *v1beta1.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
@@ -9209,12 +9215,15 @@ func (x *QuerySpanListRequest) GetPagination() *v1beta1.PageRequest {
 	return nil
 }
 
+// QuerySpanListResponse is the response type for the GetSpanList query.
 type QuerySpanListResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SpanList   []*Span               `protobuf:"bytes,1,rep,name=span_list,json=spanList,proto3" json:"span_list,omitempty"`
+	// List of spans matching the query.
+	SpanList []*Span `protobuf:"bytes,1,rep,name=span_list,json=spanList,proto3" json:"span_list,omitempty"`
+	// Pagination response with next page token.
 	Pagination *v1beta1.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
@@ -9252,6 +9261,7 @@ func (x *QuerySpanListResponse) GetPagination() *v1beta1.PageResponse {
 	return nil
 }
 
+// QueryLatestSpanRequest is the request type for the GetLatestSpan query.
 type QueryLatestSpanRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -9278,11 +9288,13 @@ func (*QueryLatestSpanRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{4}
 }
 
+// QueryLatestSpanResponse is the response type for the GetLatestSpan query.
 type QueryLatestSpanResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The most recently created span.
 	Span *Span `protobuf:"bytes,1,opt,name=span,proto3" json:"span,omitempty"`
 }
 
@@ -9313,11 +9325,13 @@ func (x *QueryLatestSpanResponse) GetSpan() *Span {
 	return nil
 }
 
+// QueryNextSpanSeedRequest is the request type for the GetNextSpanSeed query.
 type QueryNextSpanSeedRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// ID of the span for which to get the seed.
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
@@ -9348,12 +9362,15 @@ func (x *QueryNextSpanSeedRequest) GetId() uint64 {
 	return 0
 }
 
+// QueryNextSpanSeedResponse is the response type for the GetNextSpanSeed query.
 type QueryNextSpanSeedResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Seed       string `protobuf:"bytes,1,opt,name=seed,proto3" json:"seed,omitempty"`
+	// Seed value used for producer selection randomization.
+	Seed string `protobuf:"bytes,1,opt,name=seed,proto3" json:"seed,omitempty"`
+	// Address of the validator who authored the seed.
 	SeedAuthor string `protobuf:"bytes,2,opt,name=seed_author,json=seedAuthor,proto3" json:"seed_author,omitempty"`
 }
 
@@ -9391,13 +9408,17 @@ func (x *QueryNextSpanSeedResponse) GetSeedAuthor() string {
 	return ""
 }
 
+// QueryNextSpanRequest is the request type for the GetNextSpan query.
 type QueryNextSpanRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SpanId     uint64 `protobuf:"varint,1,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
+	// ID for the next span to be created.
+	SpanId uint64 `protobuf:"varint,1,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
+	// Starting block number for the next span.
 	StartBlock uint64 `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
+	// Chain ID of the Bor chain.
 	BorChainId string `protobuf:"bytes,3,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
 }
 
@@ -9442,11 +9463,13 @@ func (x *QueryNextSpanRequest) GetBorChainId() string {
 	return ""
 }
 
+// QueryNextSpanResponse is the response type for the GetNextSpan query.
 type QueryNextSpanResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The prepared next span with selected producers.
 	Span *Span `protobuf:"bytes,1,opt,name=span,proto3" json:"span,omitempty"`
 }
 
@@ -9477,6 +9500,7 @@ func (x *QueryNextSpanResponse) GetSpan() *Span {
 	return nil
 }
 
+// QueryParamsRequest is the request type for the GetBorParams query.
 type QueryParamsRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -9503,11 +9527,13 @@ func (*QueryParamsRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{10}
 }
 
+// QueryParamsResponse is the response type for the GetBorParams query.
 type QueryParamsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Current parameters of the bor module.
 	Params *Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
 }
 
@@ -9538,6 +9564,7 @@ func (x *QueryParamsResponse) GetParams() *Params {
 	return nil
 }
 
+// QueryProducerVotesRequest is the request type for the GetProducerVotes query.
 type QueryProducerVotesRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -9564,11 +9591,15 @@ func (*QueryProducerVotesRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{12}
 }
 
+// QueryProducerVotesResponse is the response type for the GetProducerVotes
+// query.
 type QueryProducerVotesResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Map of validator ID to their producer votes.
+	// Key: validator ID, Value: list of validator IDs they voted for.
 	AllVotes map[uint64]*ProducerVotes `protobuf:"bytes,1,rep,name=all_votes,json=allVotes,proto3" json:"all_votes,omitempty" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
@@ -9599,11 +9630,14 @@ func (x *QueryProducerVotesResponse) GetAllVotes() map[uint64]*ProducerVotes {
 	return nil
 }
 
+// QueryProducerVotesByValidatorIdRequest is the request type for the
+// GetProducerVotesByValidatorId query.
 type QueryProducerVotesByValidatorIdRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// ID of the validator whose votes to retrieve.
 	ValidatorId uint64 `protobuf:"varint,1,opt,name=validator_id,json=validatorId,proto3" json:"validator_id,omitempty"`
 }
 
@@ -9634,11 +9668,14 @@ func (x *QueryProducerVotesByValidatorIdRequest) GetValidatorId() uint64 {
 	return 0
 }
 
+// QueryProducerVotesByValidatorIdResponse is the response type for the
+// GetProducerVotesByValidatorId query.
 type QueryProducerVotesByValidatorIdResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// List of validator IDs that the queried validator voted for.
 	Votes []uint64 `protobuf:"varint,1,rep,packed,name=votes,proto3" json:"votes,omitempty"`
 }
 
@@ -9669,11 +9706,14 @@ func (x *QueryProducerVotesByValidatorIdResponse) GetVotes() []uint64 {
 	return nil
 }
 
+// QueryProducerPlannedDowntimeRequest is the request type for the
+// GetProducerPlannedDowntime query.
 type QueryProducerPlannedDowntimeRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// ID of the producer whose planned downtime to retrieve.
 	ProducerId uint64 `protobuf:"varint,1,opt,name=producer_id,json=producerId,proto3" json:"producer_id,omitempty"`
 }
 
@@ -9704,11 +9744,14 @@ func (x *QueryProducerPlannedDowntimeRequest) GetProducerId() uint64 {
 	return 0
 }
 
+// QueryProducerPlannedDowntimeResponse is the response type for the
+// GetProducerPlannedDowntime query.
 type QueryProducerPlannedDowntimeResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Block range during which the producer has planned downtime.
 	DowntimeRange *BlockRange `protobuf:"bytes,1,opt,name=downtime_range,json=downtimeRange,proto3" json:"downtime_range,omitempty"`
 }
 
@@ -9739,6 +9782,8 @@ func (x *QueryProducerPlannedDowntimeResponse) GetDowntimeRange() *BlockRange {
 	return nil
 }
 
+// QueryValidatorPerformanceScoreRequest is the request type for the
+// GetValidatorPerformanceScore query.
 type QueryValidatorPerformanceScoreRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -9765,11 +9810,15 @@ func (*QueryValidatorPerformanceScoreRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{18}
 }
 
+// QueryValidatorPerformanceScoreResponse is the response type for the
+// GetValidatorPerformanceScore query.
 type QueryValidatorPerformanceScoreResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Map of validator ID to their performance score.
+	// Higher scores indicate better block production reliability.
 	ValidatorPerformanceScore map[uint64]uint64 `protobuf:"bytes,1,rep,name=validator_performance_score,json=validatorPerformanceScore,proto3" json:"validator_performance_score,omitempty" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 }
 

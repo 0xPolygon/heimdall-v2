@@ -5728,11 +5728,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// RecordRequest is the request type for the GetRecordById query.
 type RecordRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// ID of the event record to retrieve.
 	RecordId uint64 `protobuf:"varint,1,opt,name=record_id,json=recordId,proto3" json:"record_id,omitempty"`
 }
 
@@ -5763,11 +5765,13 @@ func (x *RecordRequest) GetRecordId() uint64 {
 	return 0
 }
 
+// RecordResponse is the response type for the GetRecordById query.
 type RecordResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The requested event record.
 	Record *EventRecord `protobuf:"bytes,1,opt,name=record,proto3" json:"record,omitempty"`
 }
 
@@ -5798,12 +5802,15 @@ func (x *RecordResponse) GetRecord() *EventRecord {
 	return nil
 }
 
+// RecordListRequest is the request type for the GetRecordList query.
 type RecordListRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Page  uint64 `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	// Page number for pagination (1-indexed).
+	Page uint64 `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	// Maximum number of records to return per page.
 	Limit uint64 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
 }
 
@@ -5841,11 +5848,13 @@ func (x *RecordListRequest) GetLimit() uint64 {
 	return 0
 }
 
+// RecordListResponse is the response type for the GetRecordList query.
 type RecordListResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// List of event records for the requested page.
 	EventRecords []*EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records,omitempty"`
 }
 
@@ -5876,14 +5885,19 @@ func (x *RecordListResponse) GetEventRecords() []*EventRecord {
 	return nil
 }
 
+// RecordListWithTimeRequest is the request type for the GetRecordListWithTime
+// query.
 type RecordListWithTimeRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	FromId     uint64                 `protobuf:"varint,1,opt,name=from_id,json=fromId,proto3" json:"from_id,omitempty"`
-	ToTime     *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=to_time,json=toTime,proto3" json:"to_time,omitempty"`
-	Pagination *v1beta1.PageRequest   `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	// Starting record ID (inclusive).
+	FromId uint64 `protobuf:"varint,1,opt,name=from_id,json=fromId,proto3" json:"from_id,omitempty"`
+	// End time for the query range (exclusive).
+	ToTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=to_time,json=toTime,proto3" json:"to_time,omitempty"`
+	// Pagination parameters.
+	Pagination *v1beta1.PageRequest `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (x *RecordListWithTimeRequest) Reset() {
@@ -5927,11 +5941,14 @@ func (x *RecordListWithTimeRequest) GetPagination() *v1beta1.PageRequest {
 	return nil
 }
 
+// RecordListWithTimeResponse is the response type for the GetRecordListWithTime
+// query.
 type RecordListWithTimeResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// List of event records within the time range.
 	EventRecords []*EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records,omitempty"`
 }
 
@@ -5962,12 +5979,16 @@ func (x *RecordListWithTimeResponse) GetEventRecords() []*EventRecord {
 	return nil
 }
 
+// RecordSequenceRequest is the request type for the GetRecordSequence and
+// IsClerkTxOld queries.
 type RecordSequenceRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TxHash   string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Transaction hash on the root chain.
+	TxHash string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Log index within the transaction.
 	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 }
 
@@ -6005,11 +6026,13 @@ func (x *RecordSequenceRequest) GetLogIndex() uint64 {
 	return 0
 }
 
+// RecordSequenceResponse is the response type for the GetRecordSequence query.
 type RecordSequenceResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Sequence number of the event record.
 	Sequence uint64 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
 }
 
@@ -6040,11 +6063,13 @@ func (x *RecordSequenceResponse) GetSequence() uint64 {
 	return 0
 }
 
+// IsClerkTxOldResponse is the response type for the IsClerkTxOld query.
 type IsClerkTxOldResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// True if the clerk transaction has already been submitted.
 	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
 
@@ -6075,6 +6100,7 @@ func (x *IsClerkTxOldResponse) GetIsOld() bool {
 	return false
 }
 
+// LatestRecordIdRequest is the request type for the GetLatestRecordId query.
 type LatestRecordIdRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -6101,13 +6127,16 @@ func (*LatestRecordIdRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_clerk_query_proto_rawDescGZIP(), []int{9}
 }
 
+// LatestRecordIdResponse is the response type for the GetLatestRecordId query.
 type LatestRecordIdResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	LatestRecordId        uint64 `protobuf:"varint,1,opt,name=latest_record_id,json=latestRecordId,proto3" json:"latest_record_id,omitempty"`
-	IsProcessedByHeimdall bool   `protobuf:"varint,2,opt,name=is_processed_by_heimdall,json=isProcessedByHeimdall,proto3" json:"is_processed_by_heimdall,omitempty"`
+	// Latest event record ID from the root chain.
+	LatestRecordId uint64 `protobuf:"varint,1,opt,name=latest_record_id,json=latestRecordId,proto3" json:"latest_record_id,omitempty"`
+	// True if this record has been processed by Heimdall.
+	IsProcessedByHeimdall bool `protobuf:"varint,2,opt,name=is_processed_by_heimdall,json=isProcessedByHeimdall,proto3" json:"is_processed_by_heimdall,omitempty"`
 }
 
 func (x *LatestRecordIdResponse) Reset() {
@@ -6144,6 +6173,7 @@ func (x *LatestRecordIdResponse) GetIsProcessedByHeimdall() bool {
 	return false
 }
 
+// RecordCountRequest is the request type for the GetRecordCount query.
 type RecordCountRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -6170,11 +6200,13 @@ func (*RecordCountRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_clerk_query_proto_rawDescGZIP(), []int{11}
 }
 
+// RecordCountResponse is the response type for the GetRecordCount query.
 type RecordCountResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Total number of event records.
 	Count uint64 `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
 }
 

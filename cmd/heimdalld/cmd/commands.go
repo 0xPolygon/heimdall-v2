@@ -212,7 +212,7 @@ func initRootCmd(
 						break waitLoop
 
 					case <-ticker.C:
-						// keep printing every second if rest-server is not responding
+						// keep printing every second if the rest-server is not responding
 						fmt.Println("Warning: still waiting for REST server to respond... Something wrong with it, please check!")
 
 					case <-ctx.Done():
@@ -322,9 +322,8 @@ func checkServerStatus(ctx context.Context, url string, resultChan chan<- string
 					// Context canceled while trying to send the result
 				}
 				return
-			} else {
-				fmt.Printf("Received non-OK HTTP status from %s: %d\n", url, resp.StatusCode)
 			}
+			fmt.Printf("Received non-OK HTTP status from %s: %d\n", url, resp.StatusCode)
 		}()
 	}
 }
@@ -456,12 +455,24 @@ func appExport(
 	var hApp *app.HeimdallApp
 	if height != -1 {
 		hApp = app.NewHeimdallApp(logger, db, traceStore, false, appOpts)
+		defer func(hApp *app.HeimdallApp) {
+			err := hApp.Close()
+			if err != nil {
+				fmt.Printf("error closing the app: %v\n", err)
+			}
+		}(hApp)
 
 		if err := hApp.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
 		hApp = app.NewHeimdallApp(logger, db, traceStore, true, appOpts)
+		defer func(hApp *app.HeimdallApp) {
+			err := hApp.Close()
+			if err != nil {
+				fmt.Printf("error closing the app: %v\n", err)
+			}
+		}(hApp)
 	}
 
 	return hApp.ExportAppStateAndValidators(false, nil, modulesToExport)
@@ -543,8 +554,8 @@ func generateValidatorKey() *cobra.Command {
 				return err
 			}
 
-			filepv := privval.NewFilePV(secp256k1.PrivKey(ds[:]), "priv_validator_key.json", "priv_validator_state.json")
-			filepv.Save()
+			filePV := privval.NewFilePV(secp256k1.PrivKey(ds[:]), "priv_validator_key.json", "priv_validator_state.json")
+			filePV.Save()
 
 			return nil
 		},
@@ -553,7 +564,7 @@ func generateValidatorKey() *cobra.Command {
 	return cmd
 }
 
-// importValidatorKey imports validator private key from the given file path
+// importValidatorKey imports the validator private key from the given file path
 func importValidatorKey() *cobra.Command {
 	cdc := codec.NewLegacyAmino()
 	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
