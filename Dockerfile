@@ -1,5 +1,5 @@
 # ─── BUILDER STAGE ───────────────────────────────────────────────────────────────
-FROM golang:1.25-alpine AS builder
+FROM mirror.gcr.io/library/golang:1.25-alpine AS builder
 
 ARG HEIMDALL_DIR=/var/lib/heimdall/
 ENV HEIMDALL_DIR=${HEIMDALL_DIR}
@@ -22,7 +22,7 @@ RUN --mount=type=ssh \
     make build
 
 # ─── RUNTIME STAGE ────────────────────────────────────────────────────────────────
-FROM alpine:latest
+FROM mirror.gcr.io/library/alpine:3.21
 
 ARG HEIMDALL_DIR=/var/lib/heimdall/
 ENV HEIMDALL_DIR=${HEIMDALL_DIR}
