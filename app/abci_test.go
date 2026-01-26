@@ -3830,7 +3830,15 @@ func TestPrepareProposal_MultipleTransactionsPerBlock(t *testing.T) {
 				sequence++
 			}
 
-			_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+			_, extCommit, _, err := buildExtensionCommits(
+				t,
+				app,
+				common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+				validators,
+				validatorPrivKeys,
+				2,
+				nil,
+			)
 			require.NoError(t, err)
 
 			req := &abci.RequestPrepareProposal{
@@ -3877,10 +3885,26 @@ func TestPrepareProposal_MultipleSideTxsSameType(t *testing.T) {
 			sequence++
 		}
 
-		_, _, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, _, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
-		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		req := &abci.RequestPrepareProposal{
@@ -3924,10 +3948,26 @@ func TestPrepareProposal_MultipleSideTxsSameType(t *testing.T) {
 			sequence++
 		}
 
-		_, _, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, _, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
-		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		req := &abci.RequestPrepareProposal{
@@ -4031,10 +4071,26 @@ func TestPrepareProposal_MultipleSideTxsDifferentTypes(t *testing.T) {
 		proposedTxs = append(proposedTxs, txBytes)
 		sequence++
 
-		_, _, _, err = buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, _, _, err = buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
-		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		req := &abci.RequestPrepareProposal{
@@ -4080,13 +4136,29 @@ func TestPrepareProposal_MaxBytesConstraint(t *testing.T) {
 			sequence++
 		}
 
-		extCommitBytes, _, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		extCommitBytes, _, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		// Set max bytes to be very small so only a few txs can fit
 		maxBytes := len(extCommitBytes) + len(proposedTxs[0]) + len(proposedTxs[1]) + 100
 
-		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		req := &abci.RequestPrepareProposal{
@@ -4116,7 +4188,15 @@ func TestPrepareProposal_TransactionWithMultipleSideHandlers(t *testing.T) {
 		// Note: The current transaction builder might not easily support this,
 		// but the code path exists in PrepareProposal to handle it
 
-		_, _, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, _, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		// For now, test with a single side tx to ensure it's not skipped
@@ -4132,7 +4212,15 @@ func TestPrepareProposal_TransactionWithMultipleSideHandlers(t *testing.T) {
 		txBytes, err := buildSignedTx(checkpointMsg, priv.PubKey().Address().String(), ctx, priv, app)
 		require.NoError(t, err)
 
-		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		req := &abci.RequestPrepareProposal{
@@ -4178,7 +4266,15 @@ func TestPrepareProposal_AccountSequenceMismatch(t *testing.T) {
 			proposedTxs = append(proposedTxs, txBytes)
 		}
 
-		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		req := &abci.RequestPrepareProposal{
@@ -4227,7 +4323,15 @@ func TestPrepareProposal_AccountSequenceMismatch(t *testing.T) {
 			sequence++
 		}
 
-		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		req := &abci.RequestPrepareProposal{
@@ -4270,7 +4374,15 @@ func TestProcessProposal_ValidProposalMultipleTxs(t *testing.T) {
 			txsToProcess = append(txsToProcess, txBytes)
 		}
 
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		// Prepend ExtendedCommitInfo to txs
@@ -4365,7 +4477,15 @@ func TestProcessProposal_RejectScenarios(t *testing.T) {
 		txBytes, err := buildSignedTx(msg, priv.PubKey().Address().String(), ctx, priv, app)
 		require.NoError(t, err)
 
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		allTxs := [][]byte{extCommitBytes, txBytes}
@@ -4435,7 +4555,15 @@ func TestExtendVote_MultipleSideTxsExecution(t *testing.T) {
 		var allTxs [][]byte
 
 		// Add ExtendedCommitInfo first
-		extCommitBytes, _, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		extCommitBytes, _, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 		allTxs = append(allTxs, extCommitBytes)
 
@@ -4572,7 +4700,15 @@ func TestExtendVote_MaxSideTxResponsesLimit(t *testing.T) {
 		var allTxs [][]byte
 
 		// Add ExtendedCommitInfo first
-		extCommitBytes, _, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		extCommitBytes, _, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 		allTxs = append(allTxs, extCommitBytes)
 
@@ -4650,7 +4786,7 @@ func TestVerifyVoteExtension_AllRejectionScenarios(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			priv, app, ctx, _ := SetupAppWithABCICtx(t)
 
-			req := tt.setupVE(t, &app, ctx, priv)
+			req := tt.setupVE(t, app, ctx, priv)
 
 			handler := app.VerifyVoteExtensionHandler()
 			res, err := handler(ctx, req)
@@ -4693,7 +4829,15 @@ func TestPreBlocker_MultipleBlocksSequential(t *testing.T) {
 			txsForBlock = append(txsForBlock, txBytes)
 
 			// Create ExtendedCommitInfo
-			extCommitBytes, _, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, blockHeight)
+			extCommitBytes, _, _, err := buildExtensionCommits(
+				t,
+				app,
+				common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+				validators,
+				validatorPrivKeys,
+				blockHeight,
+				nil,
+			)
 			require.NoError(t, err)
 
 			// Prepend ExtendedCommitInfo
@@ -4808,7 +4952,15 @@ func TestPreBlocker_MultipleApprovedSideTxs(t *testing.T) {
 		txsForBlock = append(txsForBlock, txBytes)
 
 		// Create ExtendedCommitInfo
-		extCommitBytes, _, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		extCommitBytes, _, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		// Set last block txs
@@ -4913,7 +5065,15 @@ func TestABCI_FullBlockLifecycle_NoPreBlocker(t *testing.T) {
 		require.NoError(t, err)
 		proposedTxs = append(proposedTxs, txBytes)
 
-		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		// 2. PrepareProposal
@@ -4958,7 +5118,15 @@ func TestABCI_FullBlockLifecycle_NoPreBlocker(t *testing.T) {
 		require.NotNil(t, verifyRes)
 
 		// 5. ProcessProposal
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		processReq := &abci.RequestProcessProposal{
@@ -5085,7 +5253,15 @@ func TestABCI_StressTestWith100Blocks(t *testing.T) {
 				proposedTxs = append(proposedTxs, txBytes)
 			}
 
-			_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, blockHeight)
+			_, extCommit, _, err := buildExtensionCommits(
+				t,
+				app,
+				common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+				validators,
+				validatorPrivKeys,
+				blockHeight,
+				nil,
+			)
 			require.NoError(t, err)
 
 			// PrepareProposal
@@ -5108,7 +5284,15 @@ func TestABCI_StressTestWith100Blocks(t *testing.T) {
 			require.NotNil(t, prepareRes)
 
 			// ProcessProposal (vote extensions are for the previous height)
-			extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, blockHeight-1)
+			extCommitBytes, extCommit, _, err := buildExtensionCommits(
+				t,
+				app,
+				common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+				validators,
+				validatorPrivKeys,
+				blockHeight-1,
+				nil,
+			)
 			if err != nil {
 				t.Logf("buildExtensionCommits failed at height %d: %v", blockHeight, err)
 				continue
@@ -5152,7 +5336,15 @@ func TestPrepareProposal_ErrorRecovery(t *testing.T) {
 		// Create invalid transaction bytes
 		invalidTxBytes := []byte("this-is-not-a-valid-transaction")
 
-		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		req := &abci.RequestPrepareProposal{
@@ -5287,7 +5479,15 @@ func TestPrepareProposal_ManySideTxMessageTypes(t *testing.T) {
 		require.NoError(t, err)
 		proposedTxs = append(proposedTxs, txBytes)
 
-		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		_, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		req := &abci.RequestPrepareProposal{
@@ -5412,7 +5612,15 @@ func TestProcessProposal_ManySideTxMessageTypes(t *testing.T) {
 		proposedTxs = append(proposedTxs, txBytes)
 
 		// Get vote extensions
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
 		require.NoError(t, err)
 
 		// Add ExtendedCommitInfo as the first transaction
