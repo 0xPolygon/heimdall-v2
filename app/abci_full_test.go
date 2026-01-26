@@ -69,7 +69,7 @@ func getTest(t *testing.T, testIdx int, priv cryptotypes.PrivKey, app *HeimdallA
 
 func TestFullABCI(t *testing.T) {
 	for i := 0; ; i++ {
-		priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 		testInfo := getTest(t, i, priv, app, ctx)
 		if testInfo == nil {
 			break

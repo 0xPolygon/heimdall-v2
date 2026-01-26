@@ -225,11 +225,11 @@ func buildExtensionCommits(
 	return extCommitBytes, extCommit, voteInfo, err
 }
 
-func SetupAppWithABCIctx(t *testing.T) (cryptotypes.PrivKey, *HeimdallApp, sdk.Context, []secp256k1.PrivKey) {
-	return SetupAppWithABCIctxAndValidators(t, 1)
+func SetupAppWithABCICtx(t *testing.T) (cryptotypes.PrivKey, *HeimdallApp, sdk.Context, []secp256k1.PrivKey) {
+	return SetupAppWithABCICtxAndValidators(t, 1)
 }
 
-func SetupAppWithABCIctxAndValidators(t *testing.T, numValidators int) (cryptotypes.PrivKey, *HeimdallApp, sdk.Context, []secp256k1.PrivKey) {
+func SetupAppWithABCICtxAndValidators(t *testing.T, numValidators int) (cryptotypes.PrivKey, *HeimdallApp, sdk.Context, []secp256k1.PrivKey) {
 	priv, _, _ := testdata.KeyTestPubAddr()
 
 	setupResult := SetupAppWithPrivKey(t, uint64(numValidators), priv)
@@ -5555,31 +5555,6 @@ func TestProcessProposal_ManySideTxMessageTypes(t *testing.T) {
 		require.NotNil(t, res)
 		require.Equal(t, abci.ResponseProcessProposal_ACCEPT, res.Status)
 	})
-}
-
-func SetupAppWithABCICtx(t *testing.T) (cryptotypes.PrivKey, *HeimdallApp, sdk.Context, []secp256k1.PrivKey) {
-	return SetupAppWithABCICtxAndValidators(t, 1)
-}
-
-func SetupAppWithABCICtxAndValidators(t *testing.T, numValidators int) (cryptotypes.PrivKey, *HeimdallApp, sdk.Context, []secp256k1.PrivKey) {
-	priv, _, _ := testdata.KeyTestPubAddr()
-
-	setupResult := SetupAppWithPrivKey(t, uint64(numValidators), priv)
-	app := setupResult.App
-
-	// Initialize the application state
-	ctx := app.BaseApp.NewContext(true).WithChainID(app.ChainID())
-
-	// Set up consensus params
-	params := cmtproto.ConsensusParams{
-		Abci: &cmtproto.ABCIParams{
-			VoteExtensionsEnableHeight: 1,
-		},
-	}
-	ctx = ctx.WithConsensusParams(params)
-
-	validatorPrivKeys := setupResult.ValidatorKeys
-	return priv, app, ctx, validatorPrivKeys
 }
 
 func buildExtensionCommitsWithMilestoneProposition(t *testing.T, app *HeimdallApp, txHashBytes []byte, validators []*stakeTypes.Validator, validatorPrivKeys []secp256k1.PrivKey, milestoneProp milestoneTypes.MilestoneProposition) ([]byte, *abci.ExtendedCommitInfo, *abci.ExtendedVoteInfo, error) {
