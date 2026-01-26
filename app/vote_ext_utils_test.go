@@ -906,6 +906,7 @@ func createSignatureForVoteExtension(
 
 	// Sign nonRpVE
 	signatureNonRpVE, err := privKey.Sign(nonRpVoteExtensionBytes)
+	require.NoErrorf(t, err, "failed to sign nonRpVoteExtensionBytes: %v", err)
 
 	voteInfo.ExtensionSignature = signature
 	voteInfo.NonRpExtensionSignature = signatureNonRpVE
