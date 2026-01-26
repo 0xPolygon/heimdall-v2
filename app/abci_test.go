@@ -280,10 +280,11 @@ func buildSignedTx(msg sdk.Msg, signer string, ctx sdk.Context, priv cryptotypes
 func buildExtensionCommits(
 	t *testing.T,
 	app *HeimdallApp,
-	txHashBytes []byte,
+	blockHashBytes []byte,
 	validators []*stakeTypes.Validator,
 	validatorPrivKeys []secp256k1.PrivKey,
 	height int64,
+	voteInfo *abci.ExtendedVoteInfo,
 ) ([]byte, *abci.ExtendedCommitInfo, *abci.ExtendedVoteInfo, error) {
 
 	cometVal := abci.Validator{
@@ -291,27 +292,25 @@ func buildExtensionCommits(
 		Power:   validators[0].VotingPower,
 	}
 
-	cmtPubKey, err := validators[0].CmtConsPublicKey()
-
-	voteInfo := setupExtendedVoteInfoWithNonRp(
-		t,
-		cmtproto.BlockIDFlagCommit,
-		txHashBytes,
-		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000002dead"),
-		cometVal,
-		validatorPrivKeys[0],
-		height,
-		app,
-		cmtPubKey.GetEd25519(),
-	)
+	if voteInfo == nil {
+		emptyVoteInfo := setupEmptyExtendedVoteInfo(
+			t,
+			cmtproto.BlockIDFlagCommit,
+			blockHashBytes,
+			cometVal,
+			validatorPrivKeys[0],
+			height,
+			app,
+		)
+		voteInfo = &emptyVoteInfo
+	}
 
 	extCommit := &abci.ExtendedCommitInfo{
-		Round: 1,
-		Votes: []abci.ExtendedVoteInfo{voteInfo},
+		Votes: []abci.ExtendedVoteInfo{*voteInfo},
 	}
 	extCommitBytes, err := extCommit.Marshal()
 	require.NoError(t, err)
-	return extCommitBytes, extCommit, &voteInfo, err
+	return extCommitBytes, extCommit, voteInfo, err
 }
 
 func buildExtensionCommitsWithMilestoneProposition(t *testing.T, app *HeimdallApp, txHashBytes []byte, validators []*stakeTypes.Validator, validatorPrivKeys []secp256k1.PrivKey, milestoneProp milestoneTypes.MilestoneProposition) ([]byte, *abci.ExtendedCommitInfo, *abci.ExtendedVoteInfo, error) {
@@ -337,7 +336,6 @@ func buildExtensionCommitsWithMilestoneProposition(t *testing.T, app *HeimdallAp
 	)
 
 	extCommit := &abci.ExtendedCommitInfo{
-		Round: 1,
 		Votes: []abci.ExtendedVoteInfo{voteInfo},
 	}
 	extCommitBytes, err := extCommit.Marshal()
@@ -394,6 +392,7 @@ func TestPrepareProposalHandler(t *testing.T) {
 		validators,
 		validatorPrivKeys,
 		app.LastBlockHeight(),
+		nil,
 	)
 	require.NoError(t, err)
 
@@ -428,7 +427,16 @@ func TestProcessProposalHandler(t *testing.T) {
 
 	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
 
-	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(
+		t,
+		app,
+		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+		validators,
+		validatorPrivKeys,
+		2,
+		nil,
+	)
+	require.NoError(t, err)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 		Height:          3,
@@ -513,7 +521,16 @@ func TestExtendVoteHandler(t *testing.T) {
 
 	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
 
-	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(
+		t,
+		app,
+		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+		validators,
+		validatorPrivKeys,
+		2,
+		nil,
+	)
+	require.NoError(t, err)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 		Height:          3,
@@ -657,7 +674,15 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 
 	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
 
-	extCommitBytes, extCommit, voteInfo, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+	extCommitBytes, extCommit, voteInfo, err := buildExtensionCommits(
+		t,
+		app,
+		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+		validators,
+		validatorPrivKeys,
+		2,
+		nil,
+	)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 		Height:          3,
@@ -852,7 +877,16 @@ func TestPreBlocker(t *testing.T) {
 	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
 	var txBytesCmt cmtTypes.Tx = txBytes
 
-	extCommitBytes, _, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
+	extCommitBytes, _, _, err := buildExtensionCommits(
+		t,
+		app,
+		txBytesCmt.Hash(),
+		validators,
+		validatorPrivKeys,
+		2,
+		nil,
+	)
+	require.NoError(t, err)
 
 	app.StakeKeeper.SetLastBlockTxs(ctx, [][]byte{txBytes})
 
@@ -1020,7 +1054,16 @@ func TestSidetxsHappyPath(t *testing.T) {
 			txBytes, err := buildSignedTx(tc.msg, validators[0].Signer, ctx, priv, app)
 			var txBytesCmt cmtTypes.Tx = txBytes
 
-			extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
+			extCommitBytes, extCommit, _, err := buildExtensionCommits(
+				t,
+				app,
+				txBytesCmt.Hash(),
+				validators,
+				validatorPrivKeys,
+				2,
+				nil,
+			)
+			require.NoError(t, err)
 			_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 				Height:          3,
 				Txs:             [][]byte{extCommitBytes, txBytes},
@@ -1056,8 +1099,16 @@ func TestSidetxsHappyPath(t *testing.T) {
 
 			app.StakeKeeper.SetLastBlockTxs(ctx, [][]byte{txBytes})
 
-			extCommitBytes2, _, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
-
+			extCommitBytes2, _, _, err := buildExtensionCommits(
+				t,
+				app,
+				txBytesCmt.Hash(),
+				validators,
+				validatorPrivKeys,
+				2,
+				nil,
+			)
+			require.NoError(t, err)
 			finalizeReq := abci.RequestFinalizeBlock{
 				Txs:             [][]byte{extCommitBytes2, txBytes},
 				Height:          3,
@@ -1208,7 +1259,17 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 		txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			txBytesCmt.Hash(),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
+
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 			Height:          3,
 			Txs:             [][]byte{extCommitBytes, txBytes},
@@ -1257,7 +1318,16 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 		txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			txBytesCmt.Hash(),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 			Height:          3,
 			Txs:             [][]byte{extCommitBytes, txBytes},
@@ -1306,7 +1376,16 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 		txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			txBytesCmt.Hash(),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 			Height:          3,
 			Txs:             [][]byte{extCommitBytes, txBytes},
@@ -1462,7 +1541,16 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			txBytesCmt.Hash(),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 			Height:          3,
 			Txs:             [][]byte{extCommitBytes, txBytes},
@@ -1536,7 +1624,16 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			txBytesCmt.Hash(),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 			Height:          3,
 			Txs:             [][]byte{extCommitBytes, txBytes},
@@ -1622,7 +1719,16 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			txBytesCmt.Hash(),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 			Height:          3,
 			Txs:             [][]byte{extCommitBytes, txBytes},
@@ -1705,7 +1811,16 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			txBytesCmt.Hash(),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 			Height:          3,
 			Txs:             [][]byte{extCommitBytes, txBytes},
@@ -1869,7 +1984,16 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			txBytesCmt.Hash(),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 			Height:          3,
 			Txs:             [][]byte{extCommitBytes, txBytes},
@@ -1940,7 +2064,16 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			txBytesCmt.Hash(),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 			Height:          3,
 			Txs:             [][]byte{extCommitBytes, txBytes},
@@ -2014,7 +2147,16 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			txBytesCmt.Hash(),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 			Height:          3,
 			Txs:             [][]byte{extCommitBytes, txBytes},
@@ -2091,7 +2233,16 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
-		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			txBytesCmt.Hash(),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 			Height:          3,
 			Txs:             [][]byte{extCommitBytes, txBytes},
@@ -2161,7 +2312,16 @@ func TestMilestoneHappyPath(t *testing.T) {
 
 	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
 
-	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(
+		t,
+		app,
+		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+		validators,
+		validatorPrivKeys,
+		2,
+		nil,
+	)
+	require.NoError(t, err)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 		Height:          3,
@@ -2296,7 +2456,16 @@ func TestMilestoneUnhappyPaths(t *testing.T) {
 
 	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
 
-	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(
+		t,
+		app,
+		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+		validators,
+		validatorPrivKeys,
+		2,
+		nil,
+	)
+	require.NoError(t, err)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
 		Height:          3,
@@ -2544,22 +2713,17 @@ func TestPrepareProposal(t *testing.T) {
 	require.NoError(t, err)
 
 	// Build a fake commit for height=3
-	cmtPubKey, err := validators[0].CmtConsPublicKey()
-	require.NoError(t, err)
-	voteInfo1 := setupExtendedVoteInfoWithNonRp(
+	voteInfo1 := setupEmptyExtendedVoteInfo(
 		t,
 		cmtproto.BlockIDFlagCommit,
-		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
 		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000002dead"),
 		cometVal1,
 		validatorPrivKeys[0],
 		2,
 		app,
-		cmtPubKey.GetEd25519(),
 	)
 
 	extCommit := &abci.ExtendedCommitInfo{
-		Round: 1,
 		Votes: []abci.ExtendedVoteInfo{voteInfo1},
 	}
 	extCommitBytes, err := extCommit.Marshal()
@@ -2673,42 +2837,6 @@ func TestPrepareProposal(t *testing.T) {
 		respBadTx.Status,
 		"expected REJECT when Transaction decoding fails",
 	)
-
-	// ------------------------------------------------------------------------------------------
-	// --------------------------------- Process Proposal Verify --------------------------------
-
-	// msgBadTx := &checkpointTypes.MsgCheckpoint{
-	// 	Proposer:        validators[0].Signer,
-	// 	StartBlock:      1,
-	// 	EndBlock:        2,
-	// 	RootHash:        common.Hex2Bytes("aa"),
-	// 	AccountRootHash: common.Hex2Bytes("bb"),
-	// 	BorChainId:      "test",
-	// }
-	// txBuilderBadTx := txConfig.NewTxBuilder()
-	// require.NoError(t, txBuilderBadTx.SetMsgs(msgBadTx))
-	// require.NoError(t, txBuilderBadTx.SetSignatures(sigV2))
-
-	// txBytesBadTx, err := txConfig.TxEncoder()(txBuilderBadTx.GetTx())
-	// require.NoError(t, err)
-
-	// reqBadTxMsg := &abci.RequestProcessProposal{
-	// 	Txs: [][]byte{
-	// 		respPrep.Txs[0],
-	// 		txBytesBadTx, // decode error here
-	// 	},
-	// 	Height:             3,
-	// 	ProposedLastCommit: abci.CommitInfo{Round: reqPrep.LocalLastCommit.Round},
-	// }
-
-	// respBadTxMsg, err := app.NewProcessProposalHandler()(ctx, reqBadTxMsg)
-	// require.NoError(t, err, "handler itself should not error")
-	// require.Equal(
-	// 	t,
-	// 	abci.ResponseProcessProposal_REJECT,
-	// 	respBadTxMsg.Status,
-	// 	"expected REJECT when Transaction decoding fails",
-	// )
 
 	// ------------------------------------------------------------------------------------------
 
@@ -2973,28 +3101,18 @@ func TestPrepareProposal(t *testing.T) {
 	txBytesBor, err := txConfig.TxEncoder()(txBuilder.GetTx())
 	require.NoError(t, err)
 	app.StakeKeeper.SetLastBlockTxs(ctx, [][]byte{txBytesBor})
-	fmt.Println("#################################################################")
-	fmt.Println(txBytesBor)
-	fmt.Println(app.StakeKeeper.GetLastBlockTxs(ctx))
 
-	// _, err = app.Commit()
-	// require.NoError(t, err)
-	var txBytesBorcmt cmtTypes.Tx = txBytesBor
-
-	voteInfo2 := setupExtendedVoteInfoWithNonRp(
+	voteInfo2 := setupEmptyExtendedVoteInfo(
 		t,
 		cmtproto.BlockIDFlagCommit,
-		txBytesBorcmt.Hash(),
 		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000002dead"),
 		cometVal1,
 		validatorPrivKeys[0],
 		2,
 		app,
-		cmtPubKey.GetEd25519(),
 	)
 
 	extCommit2 := &abci.ExtendedCommitInfo{
-		Round: 1,
 		Votes: []abci.ExtendedVoteInfo{voteInfo2},
 	}
 	extCommitBytes2, err := extCommit2.Marshal()
@@ -3032,28 +3150,18 @@ func TestPrepareProposal(t *testing.T) {
 	txBytesClerk, err := txConfig.TxEncoder()(txBuilder.GetTx())
 	require.NoError(t, err)
 	app.StakeKeeper.SetLastBlockTxs(ctx, [][]byte{txBytesClerk})
-	fmt.Println("#################################################################")
-	fmt.Println(txBytesBor)
-	fmt.Println(app.StakeKeeper.GetLastBlockTxs(ctx))
 
-	// _, err = app.Commit()
-	// require.NoError(t, err)
-	var txBytesClerkcmt cmtTypes.Tx = txBytesBor
-
-	voteInfo3 := setupExtendedVoteInfoWithNonRp(
+	voteInfo3 := setupEmptyExtendedVoteInfo(
 		t,
 		cmtproto.BlockIDFlagCommit,
-		txBytesClerkcmt.Hash(),
 		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000002dead"),
 		cometVal1,
 		validatorPrivKeys[0],
 		2,
 		app,
-		cmtPubKey.GetEd25519(),
 	)
 
 	extCommit3 := &abci.ExtendedCommitInfo{
-		Round: 1,
 		Votes: []abci.ExtendedVoteInfo{voteInfo3},
 	}
 	extCommitBytes3, err := extCommit3.Marshal()
@@ -3091,22 +3199,18 @@ func TestPrepareProposal(t *testing.T) {
 
 	_, err = app.Commit()
 	require.NoError(t, err)
-	var txBytesTopUpcmt cmtTypes.Tx = txBytesTopUp
 
-	voteInfo4 := setupExtendedVoteInfoWithNonRp(
+	voteInfo4 := setupEmptyExtendedVoteInfo(
 		t,
 		cmtproto.BlockIDFlagCommit,
-		txBytesTopUpcmt.Hash(),
 		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000002dead"),
 		cometVal1,
 		validatorPrivKeys[0],
 		2,
 		app,
-		cmtPubKey.GetEd25519(),
 	)
 
 	extCommit4 := &abci.ExtendedCommitInfo{
-		Round: 1,
 		Votes: []abci.ExtendedVoteInfo{voteInfo4},
 	}
 	extCommitBytes4, err := extCommit4.Marshal()

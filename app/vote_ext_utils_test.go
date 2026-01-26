@@ -840,21 +840,22 @@ func setupExtendedVoteInfo(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes,
 	}
 }
 
-func setupExtendedVoteInfoWithNonRp(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator, privKey cmtcrypto.PrivKey, height int64, app *HeimdallApp, cmtPubKey cmtcrypto.PubKey) abci.ExtendedVoteInfo {
+func setupEmptyExtendedVoteInfo(
+	t *testing.T,
+	flag cmtTypes.BlockIDFlag,
+	blockHashBytes []byte,
+	validator abci.Validator,
+	privKey cmtcrypto.PrivKey,
+	height int64,
+	app *HeimdallApp,
+) abci.ExtendedVoteInfo {
 	t.Helper()
 
-	dummyExt, err := GetDummyNonRpVoteExtension(height, app.ChainID())
-	if err != nil {
-		panic(err)
-	}
+	nonRpDummyVoteExt, err := GetDummyNonRpVoteExtension(height, app.ChainID())
+	require.NoErrorf(t, err, "failed to get dummy nonRpVoteExtension: %v", err)
+
 	// create a protobuf msg for ConsolidatedSideTxResponse
 	voteExtensionProto := sidetxs.VoteExtension{
-		SideTxResponses: []sidetxs.SideTxResponse{
-			{
-				TxHash: txHashBytes,
-				Result: sidetxs.Vote_VOTE_YES,
-			},
-		},
 		BlockHash: blockHashBytes,
 		Height:    VoteExtBlockHeight,
 	}
@@ -863,10 +864,30 @@ func setupExtendedVoteInfoWithNonRp(t *testing.T, flag cmtTypes.BlockIDFlag, txH
 	voteExtensionBytes, err := voteExtensionProto.Marshal()
 	require.NoErrorf(t, err, "failed to marshal voteExtensionProto: %v", err)
 
+	voteInfo := abci.ExtendedVoteInfo{
+		BlockIdFlag:        flag,
+		VoteExtension:      voteExtensionBytes,
+		Validator:          validator,
+		NonRpVoteExtension: nonRpDummyVoteExt,
+	}
+
+	createSignatureForVoteExtension(t, height, privKey, voteExtensionBytes, nonRpDummyVoteExt, &voteInfo)
+
+	return voteInfo
+}
+
+func createSignatureForVoteExtension(
+	t *testing.T,
+	height int64,
+	privKey cmtcrypto.PrivKey,
+	voteExtensionBytes,
+	nonRpVoteExtensionBytes []byte,
+	voteInfo *abci.ExtendedVoteInfo,
+) {
 	cve := cmtTypes.CanonicalVoteExtension{
 		Extension: voteExtensionBytes,
-		Height:    CurrentHeight - 1, // the vote extension was signed in the previous height
-		Round:     int64(1),
+		Height:    height,
+		Round:     int64(0),
 		ChainId:   "",
 	}
 
@@ -886,20 +907,10 @@ func setupExtendedVoteInfoWithNonRp(t *testing.T, flag cmtTypes.BlockIDFlag, txH
 	require.NoErrorf(t, err, "failed to sign extSignBytes: %v", err)
 
 	// Sign nonRpVE
-	signatureNonRpVE, err := privKey.Sign(dummyExt)
-	ok := cmtPubKey.VerifySignature(dummyExt, signatureNonRpVE)
-	if !ok {
-		fmt.Println(" Error : Signature verification failed!")
-	}
+	signatureNonRpVE, err := privKey.Sign(nonRpVoteExtensionBytes)
 
-	return abci.ExtendedVoteInfo{
-		BlockIdFlag:             flag,
-		VoteExtension:           voteExtensionBytes,
-		ExtensionSignature:      signature,
-		Validator:               validator,
-		NonRpVoteExtension:      dummyExt,
-		NonRpExtensionSignature: signatureNonRpVE,
-	}
+	voteInfo.ExtensionSignature = signature
+	voteInfo.NonRpExtensionSignature = signatureNonRpVE
 }
 
 func setupExtendedVoteInfoWithMilestoneProposition(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator, privKey cmtcrypto.PrivKey, height int64, app *HeimdallApp, cmtPubKey cmtcrypto.PubKey, milestoneProposition milestoneTypes.MilestoneProposition) abci.ExtendedVoteInfo {
