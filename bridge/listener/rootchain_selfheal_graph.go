@@ -94,12 +94,12 @@ func (rl *RootChainListener) getLatestStateID(ctx context.Context) (*big.Int, er
 
 	data, err := rl.querySubGraph(byteQuery, ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch latest state id from graph with err: %w", err)
+		return nil, fmt.Errorf("self-healing: unable to fetch latest state id from graph with err: %w", err)
 	}
 
 	var response stateSyncedsResponse
 	if err = json.Unmarshal(data, &response); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal graph response: %w", err)
+		return nil, fmt.Errorf("self-healing: unable to unmarshal graph response: %w", err)
 	}
 
 	if len(response.Data.StateSynceds) == 0 {
@@ -108,7 +108,7 @@ func (rl *RootChainListener) getLatestStateID(ctx context.Context) (*big.Int, er
 
 	stateId := big.NewInt(0)
 	stateId.SetString(response.Data.StateSynceds[0].StateId, 10)
-	rl.Logger.Info("Fetched latest stateId from subgraph", "stateId", stateId)
+	rl.Logger.Info("Self-healing: fetched latest stateId from subgraph", "stateId", stateId)
 
 	return stateId, nil
 }
@@ -155,16 +155,16 @@ func (rl *RootChainListener) getStateSynced(ctx context.Context, stateId int64) 
 
 	data, err := rl.querySubGraph(byteQuery, ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch latest stateId from graph with err: %w", err)
+		return nil, fmt.Errorf("self-healing: unable to fetch latest stateId from graph with err: %w", err)
 	}
 
 	var response stateSyncedsResponse
 	if err = json.Unmarshal(data, &response); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal graph response: %w", err)
+		return nil, fmt.Errorf("self-healing: unable to unmarshal graph response: %w", err)
 	}
 
 	if len(response.Data.StateSynceds) == 0 {
-		return nil, fmt.Errorf("no state synced event found for state id %d", stateId)
+		return nil, fmt.Errorf("self-healing: no state synced event found for state id %d", stateId)
 	}
 
 	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(response.Data.StateSynceds[0].TransactionHash))
@@ -174,12 +174,12 @@ func (rl *RootChainListener) getStateSynced(ctx context.Context, stateId int64) 
 
 	for _, log := range receipt.Logs {
 		if strconv.Itoa(int(log.Index)) == response.Data.StateSynceds[0].LogIndex {
-			rl.Logger.Info("Retrieved log for StateSynced event", "stateId", stateId, "logIndex", response.Data.StateSynceds[0].LogIndex, "txHash", response.Data.StateSynceds[0].TransactionHash)
+			rl.Logger.Info("Self-healing: retrieved log for StateSynced event", "stateId", stateId, "logIndex", response.Data.StateSynceds[0].LogIndex, "txHash", response.Data.StateSynceds[0].TransactionHash)
 			return log, nil
 		}
 	}
 
-	return nil, fmt.Errorf("no log found for given log index %s and state id %d", response.Data.StateSynceds[0].LogIndex, stateId)
+	return nil, fmt.Errorf("self-healing: no log found for given log index %s and state id %d", response.Data.StateSynceds[0].LogIndex, stateId)
 }
 
 // getLatestNonce returns the nonce from the latest StakeUpdate event
@@ -201,7 +201,7 @@ func (rl *RootChainListener) getLatestNonce(ctx context.Context, validatorId uin
 
 	data, err := rl.querySubGraph(byteQuery, ctx)
 	if err != nil {
-		return 0, fmt.Errorf("unable to fetch latest nonce from graph with err: %w", err)
+		return 0, fmt.Errorf("self-healing: unable to fetch latest nonce from graph with err: %w", err)
 	}
 
 	var response stakeUpdateResponse
@@ -217,7 +217,7 @@ func (rl *RootChainListener) getLatestNonce(ctx context.Context, validatorId uin
 	if err != nil {
 		return 0, err
 	}
-	rl.Logger.Info("Fetched latest nonce from subgraph", "validatorId", validatorId, "latestNonce", uint64(latestValidatorNonce))
+	rl.Logger.Info("Self-healing: fetched latest nonce from subgraph", "validatorId", validatorId, "latestNonce", uint64(latestValidatorNonce))
 
 	return uint64(latestValidatorNonce), nil
 }
@@ -242,7 +242,7 @@ func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorId, no
 
 	data, err := rl.querySubGraph(byteQuery, ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch stake update from graph with err: %w", err)
+		return nil, fmt.Errorf("self-healing: unable to fetch stake update from graph with err: %w", err)
 	}
 
 	var response stakeUpdateResponse
@@ -251,7 +251,7 @@ func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorId, no
 	}
 
 	if len(response.Data.StakeUpdates) == 0 {
-		return nil, fmt.Errorf("no stake update found for validator %d and nonce %d", validatorId, nonce)
+		return nil, fmt.Errorf("self-healing: no stake update found for validator %d and nonce %d", validatorId, nonce)
 	}
 
 	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(response.Data.StakeUpdates[0].TransactionHash))
@@ -261,15 +261,15 @@ func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorId, no
 
 	for _, log := range receipt.Logs {
 		if strconv.Itoa(int(log.Index)) == response.Data.StakeUpdates[0].LogIndex {
-			rl.Logger.Info("Retrieved StakeUpdate log from Ethereum", "validatorId", validatorId, "nonce", nonce, "txHash", log.TxHash.Hex())
+			rl.Logger.Info("Self-healing: retrieved StakeUpdate log from Ethereum", "validatorId", validatorId, "nonce", nonce, "txHash", log.TxHash.Hex())
 			return log, nil
 		}
 	}
 
-	return nil, fmt.Errorf("no log found for given log index %s ,validator %d and nonce %d", response.Data.StakeUpdates[0].LogIndex, validatorId, nonce)
+	return nil, fmt.Errorf("self-healing: no log found for given log index %s ,validator %d and nonce %d", response.Data.StakeUpdates[0].LogIndex, validatorId, nonce)
 }
 
-// getLatestCheckpointFromL1 returns the latest checkpoint from L1 using subgraph
+// getLatestCheckpointFromL1 returns the latest checkpoint from L1 using the subgraph
 func (rl *RootChainListener) getLatestCheckpointFromL1(ctx context.Context) (*newHeaderBlock, error) {
 	query := map[string]string{
 		"query": `
@@ -290,21 +290,21 @@ func (rl *RootChainListener) getLatestCheckpointFromL1(ctx context.Context) (*ne
 
 	data, err := rl.querySubGraph(byteQuery, ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch latest header block event from subgraph with err: %w", err)
+		return nil, fmt.Errorf("self-healing: unable to fetch latest header block event from subgraph with err: %w", err)
 	}
 
 	var response newHeaderBlocksResponse
 	if err = json.Unmarshal(data, &response); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal subgraph response: %w", err)
+		return nil, fmt.Errorf("self-healing: unable to unmarshal subgraph response: %w", err)
 	}
 
 	if len(response.Data.NewHeaderBlocks) == 0 {
-		return nil, fmt.Errorf("no header block event found")
+		return nil, fmt.Errorf("self-healing: no header block event found")
 	}
 
 	latestHeaderBlock := response.Data.NewHeaderBlocks[0]
 
-	rl.Logger.Info("Fetched latest header block event from subgraph", "headerBlockId", latestHeaderBlock.HeaderBlockId, "logIndex", latestHeaderBlock.LogIndex, "transactionHash", latestHeaderBlock.TransactionHash)
+	rl.Logger.Info("Self-healing: fetched latest header block event from subgraph", "headerBlockId", latestHeaderBlock.HeaderBlockId, "logIndex", latestHeaderBlock.LogIndex, "transactionHash", latestHeaderBlock.TransactionHash)
 
 	return &latestHeaderBlock, nil
 }

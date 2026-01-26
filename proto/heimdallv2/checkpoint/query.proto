@@ -13,155 +13,204 @@ import "heimdallv2/stake/validator.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
 
+// Query defines the gRPC query service for the checkpoint module.
 service Query {
-  // GetCheckpointParams queries for the x/checkpoint params
+  // GetCheckpointParams queries the checkpoint module parameters.
   rpc GetCheckpointParams(QueryParamsRequest) returns (QueryParamsResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/params";
   }
 
-  // GetCheckpointOverview queries for the checkpoint overview
+  // GetCheckpointOverview queries an overview of checkpoint status.
+  // Returns ack counts, validator set, and buffer checkpoint.
   rpc GetCheckpointOverview(QueryCheckpointOverviewRequest)
       returns (QueryCheckpointOverviewResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/overview";
   }
 
-  // GetAckCount queries for the ack count
+  // GetAckCount queries the total number of checkpoint acknowledgments.
   rpc GetAckCount(QueryAckCountRequest) returns (QueryAckCountResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/count";
   }
 
-  // GetCheckpointLatest queries for the latest checkpoint
+  // GetCheckpointLatest queries the most recently finalized checkpoint.
   rpc GetCheckpointLatest(QueryCheckpointLatestRequest)
       returns (QueryCheckpointLatestResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/latest";
   }
 
-  // GetCheckpointBuffer queries for the checkpoint in the buffer
+  // GetCheckpointBuffer queries the checkpoint currently in the buffer.
+  // The buffer holds a checkpoint while validators submit acks/no-acks.
   rpc GetCheckpointBuffer(QueryCheckpointBufferRequest)
       returns (QueryCheckpointBufferResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/buffer";
   }
 
-  // GetLastNoAck queries for the last last-no-ack
+  // GetLastNoAck queries the ID of the last checkpoint that received a no-ack.
   rpc GetLastNoAck(QueryLastNoAckRequest) returns (QueryLastNoAckResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/last-no-ack";
   }
 
-  // GetNextCheckpoint queries for the next checkpoint
+  // GetNextCheckpoint prepares and returns the next checkpoint to be proposed.
   rpc GetNextCheckpoint(QueryNextCheckpointRequest)
       returns (QueryNextCheckpointResponse) {
     option (google.api.http).get = "/checkpoints/prepare-next";
   }
 
-  // GetCheckpointList queries for the list of checkpoints
+  // GetCheckpointList queries a paginated list of checkpoints.
   rpc GetCheckpointList(QueryCheckpointListRequest)
       returns (QueryCheckpointListResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/list";
   }
 
-  // GetCheckpointSignatures queries signatures for latest checkpoint
+  // GetCheckpointSignatures queries the validator signatures for a checkpoint.
   rpc GetCheckpointSignatures(QueryCheckpointSignaturesRequest)
       returns (QueryCheckpointSignaturesResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/signatures/{tx_hash}";
   }
 
-  // GetCheckpoint queries for the checkpoint based on the number
+  // GetCheckpoint queries a specific checkpoint by its ID number.
   rpc GetCheckpoint(QueryCheckpointRequest) returns (QueryCheckpointResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/{number}";
   }
 }
 
-// QueryCheckpointSignaturesRequest is request type for
-// QueryCheckpointSignatures RPC method
+// QueryCheckpointSignaturesRequest is the request type for the
+// GetCheckpointSignatures query.
 message QueryCheckpointSignaturesRequest {
+  // Transaction hash of the checkpoint to query signatures for.
   string tx_hash = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryCheckpointSignaturesResponse is response type for
-// QueryCheckpointSignatures RPC method
+// QueryCheckpointSignaturesResponse is the response type for the
+// GetCheckpointSignatures query.
 message QueryCheckpointSignaturesResponse {
+  // List of validator signatures for the requested checkpoint.
   repeated CheckpointSignature signatures = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QueryParamsRequest is the request type for the GetCheckpointParams query.
 message QueryParamsRequest {}
 
+// QueryParamsResponse is the response type for the GetCheckpointParams query.
 message QueryParamsResponse {
+  // Current checkpoint module parameters.
   Params params = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QueryAckCountRequest is the request type for the GetAckCount query.
 message QueryAckCountRequest {}
 
+// QueryAckCountResponse is the response type for the GetAckCount query.
 message QueryAckCountResponse {
+  // Total number of checkpoint acknowledgments.
   uint64 ack_count = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryLastNoAckRequest is the request type for the GetLastNoAck query.
 message QueryLastNoAckRequest {}
 
+// QueryLastNoAckResponse is the response type for the GetLastNoAck query.
 message QueryLastNoAckResponse {
+  // ID of the last checkpoint that received a no-ack.
   uint64 last_no_ack_id = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryCheckpointBufferRequest is the request type for the GetCheckpointBuffer
+// query.
 message QueryCheckpointBufferRequest {}
 
+// QueryCheckpointBufferResponse is the response type for the
+// GetCheckpointBuffer query.
 message QueryCheckpointBufferResponse {
+  // Checkpoint currently in the buffer awaiting finalization.
   Checkpoint checkpoint = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QueryCheckpointRequest is the request type for the GetCheckpoint query.
 message QueryCheckpointRequest {
+  // Checkpoint ID number to retrieve.
   uint64 number = 1 [ (amino.dont_omitempty) = true ];
 }
 
+// QueryCheckpointResponse is the response type for the GetCheckpoint query.
 message QueryCheckpointResponse {
+  // The requested checkpoint.
   Checkpoint checkpoint = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QueryCheckpointLatestRequest is the request type for the GetCheckpointLatest
+// query.
 message QueryCheckpointLatestRequest {}
 
+// QueryCheckpointLatestResponse is the response type for the
+// GetCheckpointLatest query.
 message QueryCheckpointLatestResponse {
+  // The most recently finalized checkpoint.
   Checkpoint checkpoint = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QueryNextCheckpointRequest is the request type for the GetNextCheckpoint
+// query.
 message QueryNextCheckpointRequest {}
 
+// QueryNextCheckpointResponse is the response type for the GetNextCheckpoint
+// query.
 message QueryNextCheckpointResponse {
+  // The prepared next checkpoint ready to be proposed.
   MsgCheckpoint checkpoint = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QueryCheckpointListRequest is the request type for the GetCheckpointList
+// query.
 message QueryCheckpointListRequest {
+  // Pagination parameters.
   cosmos.base.query.v1beta1.PageRequest pagination = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QueryCheckpointListResponse is the response type for the GetCheckpointList
+// query.
 message QueryCheckpointListResponse {
+  // List of checkpoints matching the query.
   repeated Checkpoint checkpoint_list = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  // Pagination response with next page token.
   cosmos.base.query.v1beta1.PageResponse pagination = 2
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
+// QueryCheckpointOverviewRequest is the request type for the
+// GetCheckpointOverview query.
 message QueryCheckpointOverviewRequest {}
 
+// QueryCheckpointOverviewResponse is the response type for the
+// GetCheckpointOverview query.
 message QueryCheckpointOverviewResponse {
+  // Total number of checkpoint acknowledgments.
   uint64 ack_count = 1 [ (amino.dont_omitempty) = true ];
+  // ID of the last checkpoint that received a no-ack.
   uint64 last_no_ack_id = 2 [ (amino.dont_omitempty) = true ];
+  // Checkpoint currently in the buffer.
   Checkpoint buffer_checkpoint = 3
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  // Total number of active validators.
   uint64 validator_count = 4 [ (amino.dont_omitempty) = true ];
+  // Current validator set.
   heimdallv2.stake.ValidatorSet validator_set = 5
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

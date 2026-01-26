@@ -2,15 +2,16 @@ package keeper
 
 import (
 	"context"
-	"math/big"
 	"time"
 
 	"cosmossdk.io/errors"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
@@ -25,12 +26,12 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 }
 
 // HandleTopupTx handles the topup tx events for the x/topup module
-func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*types.MsgTopupTxResponse, error) {
+func (srv msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*types.MsgTopupTxResponse, error) {
 	var err error
 	startTime := time.Now()
 	defer recordTopupTransactionMetric(api.HandleTopupTxMethod, startTime, &err)
 
-	logger := m.k.Logger(ctx)
+	logger := srv.k.Logger(ctx)
 
 	txHash := common.BytesToHash(msg.TxHash)
 
@@ -44,34 +45,32 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 	)
 
 	// check if send is enabled for default denom
-	if !m.k.BankKeeper.IsSendEnabledDenom(ctx, sdk.DefaultBondDenom) {
-		logger.Error("send not enabled")
+	if !srv.k.BankKeeper.IsSendEnabledDenom(ctx, sdk.DefaultBondDenom) {
+		logger.Error("Send not enabled in bank keeper")
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest,
 			"send for denom %s is not enabled in bank keeper", sdk.DefaultBondDenom)
 	}
 
 	// check the feasibility of topup tx based on msg fee
 	if msg.Fee.LT(ante.DefaultFeeWantedPerTx[0].Amount) {
-		logger.Error("default fee exceeds amount to topup", "user", msg.User,
+		logger.Error("Default fee exceeds amount to topup", "user", msg.User,
 			"amount", msg.Fee, "defaultFeeWantedPerTx", ante.DefaultFeeWantedPerTx[0])
 		return nil, errors.Wrapf(sdkerrors.ErrInsufficientFunds, "default fee exceeds amount to topup")
 	}
 
 	// calculate sequence
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// check if incoming tx already exists
-	exists, err := m.k.HasTopupSequence(ctx, sequence.String())
+	exists, err := srv.k.HasTopupSequence(ctx, sequence)
 	if err != nil {
 		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
 	if exists {
-		logger.Error("older tx found",
-			"sequence", sequence.String(),
+		logger.Error("Older tx found for topup",
+			"sequence", sequence,
 			"logIndex", msg.LogIndex,
 			"blockNumber", msg.BlockNumber,
 			"txHash", txHash)
@@ -90,18 +89,18 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 		),
 	})
 
-	logger.Debug("event created for HandleTopupTx")
+	logger.Debug("Event created for HandleTopupTx")
 
 	return &types.MsgTopupTxResponse{}, nil
 }
 
 // WithdrawFeeTx handles withdraw fee tx events for the x/topup module
-func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeTx) (*types.MsgWithdrawFeeTxResponse, error) {
+func (srv msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeTx) (*types.MsgWithdrawFeeTxResponse, error) {
 	var err error
 	startTime := time.Now()
 	defer recordTopupTransactionMetric(api.WithdrawFeeTxMethod, startTime, &err)
 
-	logger := m.k.Logger(ctx)
+	logger := srv.k.Logger(ctx)
 
 	logger.Debug("WithdrawFeeTx msg received",
 		"proposer", msg.Proposer,
@@ -110,25 +109,34 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 
 	// check if the amount is negative
 	if msg.Amount.IsNegative() {
-		logger.Error("negative amount to withdraw")
+		logger.Error("Negative amount to withdraw")
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest,
 			"amount %s is negative", msg.Amount.String())
+	}
+
+	// validate and convert proposer address
+	ac := address.NewHexCodec()
+	proposer, err := ac.StringToBytes(msg.Proposer)
+	if err != nil {
+		logger.Error("Invalid proposer address", "proposer", msg.Proposer, "err", err)
+		return nil, errors.Wrapf(sdkerrors.ErrInvalidAddress,
+			"proposer address %s is invalid: %v", msg.Proposer, err)
 	}
 
 	// partial withdrawal
 	amount := msg.Amount
 
-	// full withdraw
+	// full withdrawal
 	if msg.Amount.IsZero() {
-		coins := m.k.BankKeeper.SpendableCoin(ctx, sdk.AccAddress(msg.Proposer), sdk.DefaultBondDenom)
+		coins := srv.k.BankKeeper.SpendableCoin(ctx, proposer, sdk.DefaultBondDenom)
 		amount = coins.Amount
 	}
 
-	logger.Debug("fee amount", "fromAddress", msg.Proposer, "balance", amount.BigInt().String())
+	logger.Debug("Fee amount", "fromAddress", msg.Proposer, "balance", amount.BigInt().String())
 
 	// check if there is no balance to withdraw
 	if amount.IsZero() {
-		logger.Error("no balance to withdraw")
+		logger.Error("No balance to withdraw")
 		return nil, errors.Wrapf(sdkerrors.ErrInsufficientFunds,
 			"account %s has no balance", msg.Proposer)
 	}
@@ -137,18 +145,18 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	coins := sdk.Coins{sdk.Coin{Denom: sdk.DefaultBondDenom, Amount: amount}}
 
 	// send coins from account to module
-	err = m.k.BankKeeper.SendCoinsFromAccountToModule(ctx, sdk.AccAddress(msg.Proposer), types.ModuleName, coins)
+	err = srv.k.BankKeeper.SendCoinsFromAccountToModule(ctx, proposer, types.ModuleName, coins)
 	if err != nil {
-		logger.Error("error while sending coins from account to module",
+		logger.Error("Error while sending coins from account to module",
 			"fromAddress", msg.Proposer,
 			"module", types.ModuleName,
 			"err", err)
 		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
 	// burn coins from the module
-	err = m.k.BankKeeper.BurnCoins(ctx, types.ModuleName, coins)
+	err = srv.k.BankKeeper.BurnCoins(ctx, types.ModuleName, coins)
 	if err != nil {
-		logger.Error("error while burning coins",
+		logger.Error("Error while burning coins",
 			"module", types.ModuleName,
 			"coinsAmount", coins.String(),
 			"err", err)
@@ -159,8 +167,8 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 
 	// add Fee to dividendAccount
 	feeAmount := amount.BigInt()
-	if err := m.k.AddFeeToDividendAccount(ctx, msg.Proposer, feeAmount); err != nil {
-		logger.Error("error while adding fee to dividend account",
+	if err := srv.k.AddFeeToDividendAccount(ctx, msg.Proposer, feeAmount); err != nil {
+		logger.Error("Error while adding fee to dividend account",
 			"fromAddress", msg.Proposer,
 			"feeAmount", feeAmount,
 			"err", err)
@@ -176,7 +184,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 		),
 	})
 
-	logger.Debug("event created for WithdrawFeeTx")
+	logger.Debug("Event created for WithdrawFeeTx")
 
 	return &types.MsgWithdrawFeeTxResponse{}, nil
 }

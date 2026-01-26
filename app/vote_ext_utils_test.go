@@ -376,10 +376,8 @@ func TestTallyVotes(t *testing.T) {
 			if tc.expectError {
 				require.Error(t, err)
 				return
-			} else {
-				require.NoError(t, err)
 			}
-
+			require.NoError(t, err)
 			require.Equal(t, tc.expectedApprove, approvedTxs)
 			require.Equal(t, tc.expectedReject, rejectedTxs)
 			require.Equal(t, tc.expectedSkip, skippedTxs)

@@ -84,7 +84,7 @@ func NewBaseListener(cdc codec.Codec, queueConnector *queue.Connector, httpClien
 
 	contractCaller, err := helper.NewContractCaller()
 	if err != nil {
-		logger.Error("Error while getting the contract caller", "error", err)
+		logger.Error("BaseListener: error while getting the contract caller", "error", err)
 		panic(err)
 	}
 
@@ -93,7 +93,7 @@ func NewBaseListener(cdc codec.Codec, queueConnector *queue.Connector, httpClien
 	cmt := helper.GetConfig().CometBFTRPCUrl
 	rpc, err := client.NewClientFromNode(cmt)
 	if err != nil {
-		logger.Error("Error while creating rpc client", "error", err)
+		logger.Error("BaseListener: error while creating rpc client", "error", err)
 		panic(err)
 	}
 	cliCtx = cliCtx.WithClient(rpc)
@@ -123,14 +123,14 @@ func (bl *BaseListener) String() string {
 
 // StartHeaderProcess starts the header process when they get a new header
 func (bl *BaseListener) StartHeaderProcess(ctx context.Context) {
-	bl.Logger.Info("Starting header process")
+	bl.Logger.Info("BaseListener: starting header process")
 
 	for {
 		select {
 		case newHeader := <-bl.HeaderChannel:
 			bl.impl.ProcessHeader(newHeader)
 		case <-ctx.Done():
-			bl.Logger.Info("Header process stopped")
+			bl.Logger.Info("BaseListener: header process stopped")
 			return
 		}
 	}
@@ -171,7 +171,7 @@ func (bl *BaseListener) StartPolling(ctx context.Context, pollInterval time.Dura
 			}
 
 			if err != nil {
-				bl.Logger.Error("Error in fetching block header while polling", "err", err)
+				bl.Logger.Error("BaseListener: error in fetching block header while polling", "err", err)
 			}
 
 			// push data to the channel
@@ -179,7 +179,7 @@ func (bl *BaseListener) StartPolling(ctx context.Context, pollInterval time.Dura
 				bl.HeaderChannel <- bHeader
 			}
 		case <-ctx.Done():
-			bl.Logger.Info("Polling stopped")
+			bl.Logger.Info("BaseListener: polling stopped")
 			ticker.Stop()
 
 			return
@@ -192,18 +192,18 @@ func (bl *BaseListener) StartSubscription(ctx context.Context, subscription ethe
 		select {
 		case err := <-subscription.Err():
 			// stop service
-			bl.Logger.Error("Error while subscribing new blocks", "error", err)
+			bl.Logger.Error("BaseListener: error while subscribing new blocks", "error", err)
 			// bl.Stop()
 
 			// cancel subscription
 			if bl.cancelSubscription != nil {
-				bl.Logger.Debug("Cancelling the subscription of listener")
+				bl.Logger.Debug("BaseListener: cancelling the subscription of listener")
 				bl.cancelSubscription()
 			}
 
 			return
 		case <-ctx.Done():
-			bl.Logger.Info("Subscription stopped")
+			bl.Logger.Info("BaseListener: subscription stopped")
 			return
 		}
 	}

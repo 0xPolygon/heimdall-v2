@@ -28,8 +28,8 @@ func InitTestHeimdallConfig(chain string) {
 }
 
 // SetTestConfig sets test configuration
-func SetTestConfig(_conf CustomAppConfig) {
-	conf = _conf
+func SetTestConfig(cfg CustomAppConfig) {
+	conf = cfg
 }
 
 // SetTestPrivPubKey sets test the private and public keys for testing

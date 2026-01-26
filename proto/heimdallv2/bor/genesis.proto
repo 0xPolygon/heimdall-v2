@@ -7,9 +7,13 @@ import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
 
+// GenesisState defines the bor module's genesis state.
 message GenesisState {
+  // Module parameters at genesis.
   Params params = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+  // Initial spans loaded at genesis.
+  // This allows the chain to start with pre-configured spans.
   repeated Span spans = 2
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }

@@ -11,16 +11,17 @@ import (
 )
 
 const (
-	// QueryType is the type of API call.
+	// QueryType is the type of the API call.
 	QueryType = "query"
-	// TxType is the type of API call.
+	// TxType is the type of the API call.
 	TxType = "tx"
-	// SideType is the type of side handler call.
+	// SideType is the type of the side-handler call.
 	SideType = "side"
-	// PostType is the type of post handler call.
+	// PostType is the type of the post-handler call.
 	PostType = "post"
 
 	// Module subsystems.
+
 	BorSubsystem        = "bor"
 	CheckpointSubsystem = "checkpoint"
 	ClerkSubsystem      = "clerk"
@@ -100,19 +101,19 @@ func GetModuleMetrics(subsystem string) *ModuleMetrics {
 
 // RecordAPICall is the main generic function to record API metrics for any module.
 func RecordAPICall(subsystem, method, apiType string, success bool, duration time.Duration) {
-	metrics := GetModuleMetrics(subsystem)
+	moduleMetrics := GetModuleMetrics(subsystem)
 	durationSeconds := duration.Seconds()
 
 	// Record total calls.
-	metrics.TotalCalls.WithLabelValues(method, apiType).Inc()
+	moduleMetrics.TotalCalls.WithLabelValues(method, apiType).Inc()
 
 	// Record success calls only if successful.
 	if success {
-		metrics.SuccessCalls.WithLabelValues(method, apiType).Inc()
+		moduleMetrics.SuccessCalls.WithLabelValues(method, apiType).Inc()
 	}
 
 	// Record response time.
-	metrics.ResponseTime.WithLabelValues(method, apiType).Observe(durationSeconds)
+	moduleMetrics.ResponseTime.WithLabelValues(method, apiType).Observe(durationSeconds)
 }
 
 // RecordAPICallWithStart is a convenience function that calculates duration from start time.

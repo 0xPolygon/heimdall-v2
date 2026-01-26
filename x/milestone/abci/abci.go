@@ -44,7 +44,7 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 	if milestone != nil {
 		propStartBlock = milestone.EndBlock + 1
 
-		// Fetch the latest header once and reuse it to avoid duplicate RPC calls and race conditions.
+		// Fetch the latest header, once and reuse it to avoid duplicate RPC calls and race conditions.
 		latestHeader, err = contractCaller.GetBorChainBlock(ctx, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get the latest header: %w", err)
@@ -182,7 +182,7 @@ func GetMajorityMilestoneProposition(
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
 			if ShouldErrorOnValidatorNotFound(ctx.BlockHeight()) {
-				return nil, nil, "", nil, fmt.Errorf("failed to get validator %s", valAddr)
+				return nil, nil, "", nil, errors.New(helper.ErrFailedToGetValidator(valAddr))
 			}
 			continue
 		}

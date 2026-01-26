@@ -961,16 +961,23 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// GenesisState defines the stake module's genesis state.
 type GenesisState struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Validators                   []*Validator  `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
-	CurrentValidatorSet          *ValidatorSet `protobuf:"bytes,2,opt,name=current_validator_set,json=currentValidatorSet,proto3" json:"current_validator_set,omitempty"`
-	StakingSequences             []string      `protobuf:"bytes,3,rep,name=staking_sequences,json=stakingSequences,proto3" json:"staking_sequences,omitempty"`
-	PreviousBlockValidatorSet    *ValidatorSet `protobuf:"bytes,4,opt,name=previous_block_validator_set,json=previousBlockValidatorSet,proto3" json:"previous_block_validator_set,omitempty"`
-	LastBlockTxs                 *LastBlockTxs `protobuf:"bytes,5,opt,name=last_block_txs,json=lastBlockTxs,proto3" json:"last_block_txs,omitempty"`
+	// All validators at genesis.
+	Validators []*Validator `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
+	// Current active validator set.
+	CurrentValidatorSet *ValidatorSet `protobuf:"bytes,2,opt,name=current_validator_set,json=currentValidatorSet,proto3" json:"current_validator_set,omitempty"`
+	// Staking transaction sequences for replay protection.
+	StakingSequences []string `protobuf:"bytes,3,rep,name=staking_sequences,json=stakingSequences,proto3" json:"staking_sequences,omitempty"`
+	// Validator set from the previous block.
+	PreviousBlockValidatorSet *ValidatorSet `protobuf:"bytes,4,opt,name=previous_block_validator_set,json=previousBlockValidatorSet,proto3" json:"previous_block_validator_set,omitempty"`
+	// Stake transactions from the last block.
+	LastBlockTxs *LastBlockTxs `protobuf:"bytes,5,opt,name=last_block_txs,json=lastBlockTxs,proto3" json:"last_block_txs,omitempty"`
+	// Validator set from two blocks ago.
 	PenultimateBlockValidatorSet *ValidatorSet `protobuf:"bytes,6,opt,name=penultimate_block_validator_set,json=penultimateBlockValidatorSet,proto3" json:"penultimate_block_validator_set,omitempty"`
 }
 

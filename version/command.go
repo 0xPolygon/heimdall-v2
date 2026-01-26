@@ -36,7 +36,7 @@ var Cmd = &cobra.Command{
 		var bz []byte
 
 		if !longFormat {
-			// For short format, just return version string or JSON with version only.
+			// For short format, just return version string or JSON with the version only.
 			switch outputFormat {
 			case outputJSON:
 				shortInfo := map[string]string{"version": verInfo.Version}

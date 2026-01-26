@@ -1009,13 +1009,17 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// CheckpointSignature represents a single validator's signature on a
+// checkpoint.
 type CheckpointSignature struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Address of the validator who created this signature.
 	ValidatorAddress []byte `protobuf:"bytes,1,opt,name=validator_address,json=validatorAddress,proto3" json:"validator_address,omitempty"`
-	Signature        []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
+	// Cryptographic signature over the checkpoint data.
+	Signature []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
 }
 
 func (x *CheckpointSignature) Reset() {
@@ -1052,11 +1056,15 @@ func (x *CheckpointSignature) GetSignature() []byte {
 	return nil
 }
 
+// CheckpointSignatures is a collection of validator signatures for a
+// checkpoint. Multiple signatures are aggregated to prove consensus before
+// submitting to the root chain.
 type CheckpointSignatures struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// List of validator signatures for this checkpoint.
 	Signatures []*CheckpointSignature `protobuf:"bytes,1,rep,name=signatures,proto3" json:"signatures,omitempty"`
 }
 

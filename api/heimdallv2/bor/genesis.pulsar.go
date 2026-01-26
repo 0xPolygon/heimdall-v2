@@ -600,13 +600,17 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// GenesisState defines the bor module's genesis state.
 type GenesisState struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Module parameters at genesis.
 	Params *Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
-	Spans  []*Span `protobuf:"bytes,2,rep,name=spans,proto3" json:"spans,omitempty"`
+	// Initial spans loaded at genesis.
+	// This allows the chain to start with pre-configured spans.
+	Spans []*Span `protobuf:"bytes,2,rep,name=spans,proto3" json:"spans,omitempty"`
 }
 
 func (x *GenesisState) Reset() {

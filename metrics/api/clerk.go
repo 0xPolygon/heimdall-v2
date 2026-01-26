@@ -2,6 +2,7 @@ package api
 
 const (
 	// Query API methods.
+
 	GetRecordCountMethod        = "GetRecordCount"
 	GetRecordListMethod         = "GetRecordList"
 	GetLatestRecordIdMethod     = "GetLatestRecordId"
@@ -11,11 +12,14 @@ const (
 	IsClerkTxOldMethod          = "IsClerkTxOld"
 
 	// Transaction API methods.
+
 	HandleMsgEventRecordMethod = "HandleMsgEventRecord"
 
 	// Side message handler methods.
+
 	SideHandleMsgEventRecordMethod = "SideHandleMsgEventRecord"
 
 	// Post message handler methods.
+
 	PostHandleMsgEventRecordMethod = "PostHandleMsgEventRecord"
 )

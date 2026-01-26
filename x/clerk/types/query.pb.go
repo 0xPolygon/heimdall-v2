@@ -35,7 +35,9 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// RecordRequest is the request type for the GetRecordById query.
 type RecordRequest struct {
+	// ID of the event record to retrieve.
 	RecordId uint64 `protobuf:"varint,1,opt,name=record_id,json=recordId,proto3" json:"record_id,omitempty"`
 }
 
@@ -79,7 +81,9 @@ func (m *RecordRequest) GetRecordId() uint64 {
 	return 0
 }
 
+// RecordResponse is the response type for the GetRecordById query.
 type RecordResponse struct {
+	// The requested event record.
 	Record EventRecord `protobuf:"bytes,1,opt,name=record,proto3" json:"record"`
 }
 
@@ -123,8 +127,11 @@ func (m *RecordResponse) GetRecord() EventRecord {
 	return EventRecord{}
 }
 
+// RecordListRequest is the request type for the GetRecordList query.
 type RecordListRequest struct {
-	Page  uint64 `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	// Page number for pagination (1-indexed).
+	Page uint64 `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	// Maximum number of records to return per page.
 	Limit uint64 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
 }
 
@@ -175,7 +182,9 @@ func (m *RecordListRequest) GetLimit() uint64 {
 	return 0
 }
 
+// RecordListResponse is the response type for the GetRecordList query.
 type RecordListResponse struct {
+	// List of event records for the requested page.
 	EventRecords []EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records"`
 }
 
@@ -219,9 +228,14 @@ func (m *RecordListResponse) GetEventRecords() []EventRecord {
 	return nil
 }
 
+// RecordListWithTimeRequest is the request type for the GetRecordListWithTime
+// query.
 type RecordListWithTimeRequest struct {
-	FromId     uint64            `protobuf:"varint,1,opt,name=from_id,json=fromId,proto3" json:"from_id,omitempty"`
-	ToTime     time.Time         `protobuf:"bytes,2,opt,name=to_time,json=toTime,proto3,stdtime" json:"to_time"`
+	// Starting record ID (inclusive).
+	FromId uint64 `protobuf:"varint,1,opt,name=from_id,json=fromId,proto3" json:"from_id,omitempty"`
+	// End time for the query range (exclusive).
+	ToTime time.Time `protobuf:"bytes,2,opt,name=to_time,json=toTime,proto3,stdtime" json:"to_time"`
+	// Pagination parameters.
 	Pagination query.PageRequest `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination"`
 }
 
@@ -279,7 +293,10 @@ func (m *RecordListWithTimeRequest) GetPagination() query.PageRequest {
 	return query.PageRequest{}
 }
 
+// RecordListWithTimeResponse is the response type for the GetRecordListWithTime
+// query.
 type RecordListWithTimeResponse struct {
+	// List of event records within the time range.
 	EventRecords []EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records"`
 }
 
@@ -323,8 +340,12 @@ func (m *RecordListWithTimeResponse) GetEventRecords() []EventRecord {
 	return nil
 }
 
+// RecordSequenceRequest is the request type for the GetRecordSequence and
+// IsClerkTxOld queries.
 type RecordSequenceRequest struct {
-	TxHash   string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Transaction hash on the root chain.
+	TxHash string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Log index within the transaction.
 	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 }
 
@@ -375,7 +396,9 @@ func (m *RecordSequenceRequest) GetLogIndex() uint64 {
 	return 0
 }
 
+// RecordSequenceResponse is the response type for the GetRecordSequence query.
 type RecordSequenceResponse struct {
+	// Sequence number of the event record.
 	Sequence uint64 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
 }
 
@@ -419,7 +442,9 @@ func (m *RecordSequenceResponse) GetSequence() uint64 {
 	return 0
 }
 
+// IsClerkTxOldResponse is the response type for the IsClerkTxOld query.
 type IsClerkTxOldResponse struct {
+	// True if the clerk transaction has already been submitted.
 	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
 
@@ -463,6 +488,7 @@ func (m *IsClerkTxOldResponse) GetIsOld() bool {
 	return false
 }
 
+// LatestRecordIdRequest is the request type for the GetLatestRecordId query.
 type LatestRecordIdRequest struct {
 }
 
@@ -499,9 +525,12 @@ func (m *LatestRecordIdRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_LatestRecordIdRequest proto.InternalMessageInfo
 
+// LatestRecordIdResponse is the response type for the GetLatestRecordId query.
 type LatestRecordIdResponse struct {
-	LatestRecordId        uint64 `protobuf:"varint,1,opt,name=latest_record_id,json=latestRecordId,proto3" json:"latest_record_id,omitempty"`
-	IsProcessedByHeimdall bool   `protobuf:"varint,2,opt,name=is_processed_by_heimdall,json=isProcessedByHeimdall,proto3" json:"is_processed_by_heimdall,omitempty"`
+	// Latest event record ID from the root chain.
+	LatestRecordId uint64 `protobuf:"varint,1,opt,name=latest_record_id,json=latestRecordId,proto3" json:"latest_record_id,omitempty"`
+	// True if this record has been processed by Heimdall.
+	IsProcessedByHeimdall bool `protobuf:"varint,2,opt,name=is_processed_by_heimdall,json=isProcessedByHeimdall,proto3" json:"is_processed_by_heimdall,omitempty"`
 }
 
 func (m *LatestRecordIdResponse) Reset()         { *m = LatestRecordIdResponse{} }
@@ -551,6 +580,7 @@ func (m *LatestRecordIdResponse) GetIsProcessedByHeimdall() bool {
 	return false
 }
 
+// RecordCountRequest is the request type for the GetRecordCount query.
 type RecordCountRequest struct {
 }
 
@@ -587,7 +617,9 @@ func (m *RecordCountRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RecordCountRequest proto.InternalMessageInfo
 
+// RecordCountResponse is the response type for the GetRecordCount query.
 type RecordCountResponse struct {
+	// Total number of event records.
 	Count uint64 `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
 }
 
@@ -724,20 +756,19 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	// GetRecordCount queries the total number of event records
+	// GetRecordCount queries the total number of event records.
 	GetRecordCount(ctx context.Context, in *RecordCountRequest, opts ...grpc.CallOption) (*RecordCountResponse, error)
-	// GetRecordList queries a list of records
+	// GetRecordList queries a paginated list of event records.
 	GetRecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error)
-	// GetLatestRecordId queries the latest record id from L1.
+	// GetLatestRecordId queries the latest event record ID from the root chain.
 	GetLatestRecordId(ctx context.Context, in *LatestRecordIdRequest, opts ...grpc.CallOption) (*LatestRecordIdResponse, error)
-	// GetRecordById retrieves a record by its id
+	// GetRecordById retrieves a specific event record by its ID.
 	GetRecordById(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error)
-	// GetRecordListWithTime queries a list of records with time
+	// GetRecordListWithTime queries event records within a time range.
 	GetRecordListWithTime(ctx context.Context, in *RecordListWithTimeRequest, opts ...grpc.CallOption) (*RecordListWithTimeResponse, error)
-	// GetRecordSequence queries the sequence of the record
+	// GetRecordSequence queries the sequence number for a specific event record.
 	GetRecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error)
-	// IsClerkTxOld queries for a specific clerk tx to check its status (old
-	// means already submitted)
+	// IsClerkTxOld checks if a clerk transaction has already been submitted.
 	IsClerkTxOld(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*IsClerkTxOldResponse, error)
 }
 
@@ -814,20 +845,19 @@ func (c *queryClient) IsClerkTxOld(ctx context.Context, in *RecordSequenceReques
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	// GetRecordCount queries the total number of event records
+	// GetRecordCount queries the total number of event records.
 	GetRecordCount(context.Context, *RecordCountRequest) (*RecordCountResponse, error)
-	// GetRecordList queries a list of records
+	// GetRecordList queries a paginated list of event records.
 	GetRecordList(context.Context, *RecordListRequest) (*RecordListResponse, error)
-	// GetLatestRecordId queries the latest record id from L1.
+	// GetLatestRecordId queries the latest event record ID from the root chain.
 	GetLatestRecordId(context.Context, *LatestRecordIdRequest) (*LatestRecordIdResponse, error)
-	// GetRecordById retrieves a record by its id
+	// GetRecordById retrieves a specific event record by its ID.
 	GetRecordById(context.Context, *RecordRequest) (*RecordResponse, error)
-	// GetRecordListWithTime queries a list of records with time
+	// GetRecordListWithTime queries event records within a time range.
 	GetRecordListWithTime(context.Context, *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error)
-	// GetRecordSequence queries the sequence of the record
+	// GetRecordSequence queries the sequence number for a specific event record.
 	GetRecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error)
-	// IsClerkTxOld queries for a specific clerk tx to check its status (old
-	// means already submitted)
+	// IsClerkTxOld checks if a clerk transaction has already been submitted.
 	IsClerkTxOld(context.Context, *RecordSequenceRequest) (*IsClerkTxOldResponse, error)
 }
 

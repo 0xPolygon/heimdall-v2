@@ -25,9 +25,12 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// DividendAccount contains the burned fees
+// DividendAccount contains the burned fees for a user.
+// Tracks accumulated fees that can be withdrawn by validators.
 type DividendAccount struct {
-	User      string `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	// Address of the user who owns this dividend account.
+	User string `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	// Total amount of fees accumulated in this account.
 	FeeAmount string `protobuf:"bytes,2,opt,name=fee_amount,json=feeAmount,proto3" json:"fee_amount,omitempty"`
 }
 

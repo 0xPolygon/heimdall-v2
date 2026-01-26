@@ -23,7 +23,10 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// LastBlockTxs stores the stake-related transactions from the last block.
+// This is used to track recent validator updates and ensure proper sequencing.
 type LastBlockTxs struct {
+	// Raw transaction bytes from stake operations in the previous block.
 	Txs [][]byte `protobuf:"bytes,1,rep,name=txs,proto3" json:"txs,omitempty"`
 }
 

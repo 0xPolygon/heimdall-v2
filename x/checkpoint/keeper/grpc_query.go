@@ -16,6 +16,7 @@ import (
 
 const (
 	MaxCheckpointListLimit = 10_000 // In erigon, CheckpointsFetchLimit is 10_000.
+	errEmptyRequest        = "empty request"
 )
 
 var _ types.QueryServer = queryServer{}
@@ -134,7 +135,7 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 	defer recordCheckpointQueryMetric(api.GetNextCheckpointMethod, startTime, &err)
 
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	chainParams, err := q.k.ck.GetParams(ctx)
@@ -149,6 +150,9 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 	}
 
 	proposer := validatorSet.GetProposer()
+	if proposer == nil {
+		return nil, status.Error(codes.Internal, "could not get proposer from validator set")
+	}
 	ackCount, err := q.k.GetAckCount(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -178,19 +182,19 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 
 	rootHash, err := contractCaller.GetRootHash(start, endBlockNumber, params.MaxCheckpointLength)
 	if err != nil {
-		q.k.Logger(ctx).Error("could not fetch rootHash", "start", start, "end", endBlockNumber, "error", err)
+		q.k.Logger(ctx).Error("Could not fetch rootHash", "start", start, "end", endBlockNumber, "error", err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	dividendAccounts, err := q.k.topupKeeper.GetAllDividendAccounts(ctx)
 	if err != nil {
-		q.k.Logger(ctx).Error("could not get the dividends accounts", "error", err)
+		q.k.Logger(ctx).Error("Could not get the dividends accounts", "error", err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	if err != nil {
-		q.k.Logger(ctx).Error("could not get generate account root hash", "error", err)
+		q.k.Logger(ctx).Error("Could not get generate account root hash", "error", err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -213,7 +217,7 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 	defer recordCheckpointQueryMetric(api.GetCheckpointListMethod, startTime, &err)
 
 	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+		return nil, status.Errorf(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if isPaginationEmpty(req.Pagination) {
@@ -247,7 +251,7 @@ func (q queryServer) GetCheckpointOverview(ctx context.Context, _ *types.QueryCh
 	// get the validator set
 	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get validator set: %v", err)
+		return nil, status.Errorf(codes.Internal, "%s: %v", hmTypes.ErrMsgFailedToGetValidatorSet, err)
 	}
 
 	ackCount, err := q.k.GetAckCount(ctx)
@@ -281,7 +285,7 @@ func (q queryServer) GetCheckpointSignatures(ctx context.Context, req *types.Que
 	defer recordCheckpointQueryMetric(api.GetCheckpointSignaturesMethod, startTime, &err)
 
 	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
 	if !hex.IsTxHashNonEmpty(req.TxHash) {

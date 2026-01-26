@@ -62,7 +62,7 @@ func (rl *RootChainListener) startSelfHealing(ctx context.Context) {
 	stateSyncedTicker := time.NewTicker(helper.GetConfig().SHStateSyncedInterval)
 	checkpointAckTicker := time.NewTicker(helper.GetConfig().SHCheckpointAckInterval)
 
-	rl.Logger.Info("Started self-healing")
+	rl.Logger.Info("Self-healing: started")
 
 	for {
 		select {
@@ -73,7 +73,7 @@ func (rl *RootChainListener) startSelfHealing(ctx context.Context) {
 		case <-checkpointAckTicker.C:
 			rl.processCheckpointAck(ctx)
 		case <-ctx.Done():
-			rl.Logger.Info("Stopping self-healing")
+			rl.Logger.Info("Self-healing: stopping")
 			stakeUpdateTicker.Stop()
 			stateSyncedTicker.Stop()
 
@@ -83,25 +83,25 @@ func (rl *RootChainListener) startSelfHealing(ctx context.Context) {
 }
 
 func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
-	rl.Logger.Info("Processing checkpoint self-healing")
+	rl.Logger.Info("Self-healing: processing checkpoint")
 
-	// Get the latest header block event from L1 using subgraph.
+	// Get the latest header block event from L1 using the subgraph.
 	latestL1Checkpoint, err := rl.getLatestCheckpointFromL1(ctx)
 	if err != nil {
-		rl.Logger.Error("Failed to fetch latest header block event from L1 subgraph", "error", err)
+		rl.Logger.Error("Self-healing: failed to fetch latest header block event from L1 subgraph", "error", err)
 		return
 	}
 
 	l1HeaderBlockId, err := strconv.ParseUint(latestL1Checkpoint.HeaderBlockId, 10, 64)
 	if err != nil {
-		rl.Logger.Error("Failed to parse L1 checkpoint header block ID", "error", err)
+		rl.Logger.Error("Self-healing: failed to parse L1 checkpoint header block ID", "error", err)
 		return
 	}
 
 	// Get checkpoint parameters to get ChildChainBlockInterval.
 	checkpointParams, err := util.GetCheckpointParams(rl.cliCtx.Codec)
 	if err != nil {
-		rl.Logger.Error("Failed to get checkpoint params", "error", err)
+		rl.Logger.Error("Self-healing: failed to get checkpoint params", "error", err)
 		return
 	}
 
@@ -112,39 +112,39 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 	// So we use GetCheckpointAckCount instead.
 	ackCount, err := util.GetCheckpointAckCount(rl.cliCtx.Codec)
 	if err != nil {
-		rl.Logger.Error("Failed to get checkpoint ack count", "error", err)
+		rl.Logger.Error("Self-healing: failed to get checkpoint ack count", "error", err)
 		return
 	}
 
 	if l1HeaderBlockId == ackCount {
-		rl.Logger.Info("Latest checkpoint is already synced on Heimdall; skipping", "l1HeaderBlockId", l1HeaderBlockId, "heimdallAckCount", ackCount)
+		rl.Logger.Info("Self-healing: latest checkpoint is already synced on heimdall; skipping", "l1HeaderBlockId", l1HeaderBlockId, "heimdallAckCount", ackCount)
 		return
 	}
 
-	// Check if we have a checkpoint in buffer.
+	// Check if we have a checkpoint in the buffer.
 	bufferedCheckpoint, err := util.GetBufferedCheckpoint(rl.cliCtx.Codec)
 	if err != nil {
-		rl.Logger.Error("Failed to get buffered checkpoint", "error", err)
+		rl.Logger.Error("Self-healing: failed to get buffered checkpoint", "error", err)
 		return
 	}
 
 	if bufferedCheckpoint == nil || bufferedCheckpoint.Id == 0 {
-		rl.Logger.Error("Empty buffered checkpoint")
+		rl.Logger.Warn("Self-healing: empty buffered checkpoint")
 		return
 	}
 
 	// Check if the buffered checkpoint matches the L1 checkpoint.
 	if l1HeaderBlockId != bufferedCheckpoint.Id {
-		rl.Logger.Info("No matching buffered checkpoint found for L1 checkpoint", "l1HeaderBlockId", l1HeaderBlockId, "bufferedCheckpointId", bufferedCheckpoint.Id)
+		rl.Logger.Info("Self-healing: no matching buffered checkpoint found", "l1HeaderBlockId", l1HeaderBlockId, "bufferedCheckpointId", bufferedCheckpoint.Id)
 		return
 	}
 
-	rl.Logger.Info("Found matching buffered checkpoint, preparing to send ACK", "checkpointId", l1HeaderBlockId)
+	rl.Logger.Info("Self-healing: found matching buffered checkpoint, preparing to send ACK", "checkpointId", l1HeaderBlockId)
 
 	// Get the transaction receipt to construct the ACK.
 	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(latestL1Checkpoint.TransactionHash))
 	if err != nil {
-		rl.Logger.Error("Failed to get transaction receipt for L1 checkpoint", "txHash", latestL1Checkpoint.TransactionHash, "error", err)
+		rl.Logger.Error("Self-healing: failed to get transaction receipt for L1 checkpoint", "txHash", latestL1Checkpoint.TransactionHash, "error", err)
 		return
 	}
 	// Find the correct log within the transaction.
@@ -152,19 +152,19 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 	for _, log := range receipt.Logs {
 		if strconv.Itoa(int(log.Index)) == latestL1Checkpoint.LogIndex {
 			targetLog = log
-			rl.Logger.Info("Retrieved log for NewHeaderBlock event", "headerBlockId", l1HeaderBlockId, "logIndex", latestL1Checkpoint.LogIndex, "txHash", latestL1Checkpoint.TransactionHash)
+			rl.Logger.Info("Self-healing: retrieved log for NewHeaderBlock event", "headerBlockId", l1HeaderBlockId, "logIndex", latestL1Checkpoint.LogIndex, "txHash", latestL1Checkpoint.TransactionHash)
 			break
 		}
 	}
 	if targetLog == nil {
-		rl.Logger.Error("Failed to find matching log in transaction receipt", "txHash", latestL1Checkpoint.TransactionHash, "expectedLogIndex", latestL1Checkpoint.LogIndex)
+		rl.Logger.Error("Self-healing: failed to find matching log in transaction receipt", "txHash", latestL1Checkpoint.TransactionHash, "expectedLogIndex", latestL1Checkpoint.LogIndex)
 		return
 	}
 
 	// Marshal the log to JSON for the task queue.
 	logBytes, err := json.Marshal(*targetLog)
 	if err != nil {
-		rl.Logger.Error("Failed to marshal log to JSON", "error", err)
+		rl.Logger.Error("Self-healing: failed to marshal log to JSON", "error", err)
 		return
 	}
 
@@ -177,7 +177,7 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 
 	// Send the checkpoint ACK task.
 	rl.SendTaskWithDelay("sendCheckpointAckToHeimdall", helper.NewHeaderBlockEvent, logBytes, 0, nil)
-	rl.Logger.Info("Successfully queued checkpoint ACK task", "headerBlockId", l1HeaderBlockId, "logIndex", latestL1Checkpoint.LogIndex, "txHash", targetLog.TxHash.Hex())
+	rl.Logger.Info("Self-healing: successfully queued checkpoint ACK task", "headerBlockId", l1HeaderBlockId, "logIndex", latestL1Checkpoint.LogIndex, "txHash", targetLog.TxHash.Hex())
 }
 
 // processStakeUpdate checks if validators are in sync, otherwise syncs them by broadcasting missing events
@@ -185,11 +185,11 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 	// Fetch all heimdall validators
 	validatorSet, err := util.GetValidatorSet(rl.cliCtx.Codec)
 	if err != nil {
-		rl.Logger.Error("Failed to fetch validator set from Heimdall", "error", err)
+		rl.Logger.Error("Self-healing: failed to fetch validator set from heimdall", "error", err)
 		return
 	}
 
-	rl.Logger.Info("Fetched validator list from Heimdall", "validatorCount", len(validatorSet.Validators))
+	rl.Logger.Info("Self-healing: fetched validator list from heimdall", "validatorCount", len(validatorSet.Validators))
 
 	// Make sure each validator is in sync
 	var wg sync.WaitGroup
@@ -201,7 +201,7 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 
 			nonce, err := util.GetValidatorNonce(id, rl.cliCtx.Codec)
 			if err != nil {
-				rl.Logger.Error("Failed to fetch nonce for validator from Heimdall", "validatorId", id, "error", err)
+				rl.Logger.Error("Self-healing: failed to fetch nonce for validator from Heimdall", "validatorId", id, "error", err)
 				return
 			}
 
@@ -211,10 +211,10 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 				ethereumNonce, err = rl.getLatestNonce(ctx, id)
 				return err
 			}, 3, time.Second); err != nil {
-				rl.Logger.Error("Failed to fetch latest nonce from Ethereum (L1) for validator", "validatorId", id, "error", err)
+				rl.Logger.Error("Self-healing: failed to fetch latest nonce from Ethereum (L1) for validator", "validatorId", id, "error", err)
 				return
 			}
-			rl.Logger.Info("Retrieved nonces for validator", "validatorId", id, "ethereumNonce", ethereumNonce, "heimdallNonce", nonce)
+			rl.Logger.Info("Self-healing: retrieved nonces for validator", "validatorId", id, "ethereumNonce", ethereumNonce, "heimdallNonce", nonce)
 
 			if ethereumNonce <= nonce {
 				return
@@ -222,7 +222,7 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 
 			nonce++
 
-			rl.Logger.Info("Validator is behind; processing missing stake update", "validatorId", id, "ethereumNonce", ethereumNonce, "nextExpectedNonce", nonce)
+			rl.Logger.Info("Self-healing: validator is behind; processing missing stake update", "validatorId", id, "ethereumNonce", ethereumNonce, "nextExpectedNonce", nonce)
 
 			var stakeUpdate *types.Log
 
@@ -230,10 +230,10 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 				stakeUpdate, err = rl.getStakeUpdate(ctx, id, nonce)
 				return err
 			}, 3, time.Second); err != nil {
-				rl.Logger.Error("Failed to retrieve StakeUpdate event from subgraph", "validatorId", id, "nonce", nonce, "error", err)
+				rl.Logger.Error("Self-healing: failed to retrieve StakeUpdate event from subgraph", "validatorId", id, "nonce", nonce, "error", err)
 				return
 			}
-			rl.Logger.Info("Fetched StakeUpdate event from Ethereum", "validatorId", id, "nonce", nonce, "blockNumber", stakeUpdate.BlockNumber, "txHash", stakeUpdate.TxHash.Hex())
+			rl.Logger.Info("Self-healing: fetched StakeUpdate event from Ethereum", "validatorId", id, "nonce", nonce, "blockNumber", stakeUpdate.BlockNumber, "txHash", stakeUpdate.TxHash.Hex())
 
 			stakeUpdateCounter.WithLabelValues(
 				fmt.Sprintf("%d", id),
@@ -244,9 +244,9 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 			).Add(1)
 
 			if _, err = rl.processEvent(ctx, stakeUpdate); err != nil {
-				rl.Logger.Error("Failed to process StakeUpdate event", "validatorId", id, "nonce", nonce, "error", err)
+				rl.Logger.Error("Self-healing: failed to process StakeUpdate event", "validatorId", id, "nonce", nonce, "error", err)
 			} else {
-				rl.Logger.Info("Successfully processed StakeUpdate event", "validatorId", id, "nonce", nonce)
+				rl.Logger.Info("Self-healing: successfully processed StakeUpdate event", "validatorId", id, "nonce", nonce)
 			}
 		}(validator.ValId)
 	}
@@ -258,16 +258,16 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 	latestPolygonStateId, err := rl.getCurrentStateID(ctx)
 	if err != nil {
-		rl.Logger.Error("Failed to fetch current Polygon stateId from StateReceiver contract", "error", err)
+		rl.Logger.Error("Self-healing: failed to fetch current Polygon stateId from StateReceiver contract", "error", err)
 		return
 	}
 
 	latestEthereumStateId, err := rl.getLatestStateID(ctx)
 	if err != nil {
-		rl.Logger.Error("Failed to fetch latest Ethereum stateId from StateSender contract", "error", err)
+		rl.Logger.Error("Self-healing: failed to fetch latest Ethereum stateId from StateSender contract", "error", err)
 		return
 	}
-	rl.Logger.Info("Retrieved latest state IDs", "polygonStateId", latestPolygonStateId, "ethereumStateId", latestEthereumStateId)
+	rl.Logger.Info("Self-healing: retrieved latest state IDs", "polygonStateId", latestPolygonStateId, "ethereumStateId", latestEthereumStateId)
 
 	if latestEthereumStateId.Cmp(latestPolygonStateId) != 1 {
 		return
@@ -275,11 +275,11 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 
 	for i := latestPolygonStateId.Int64() + 1; i <= latestEthereumStateId.Int64(); i++ {
 		if _, err = util.GetClerkEventRecord(i, rl.cliCtx.Codec); err == nil {
-			rl.Logger.Info("State ID already synced on Heimdall; skipping", "stateId", i)
+			rl.Logger.Info("Self-healing: state ID already synced on Heimdall; skipping", "stateId", i)
 			continue
 		}
 
-		rl.Logger.Info("Missing state detected; processing StateSynced event", "stateId", i)
+		rl.Logger.Info("Self-healing: missing state detected; processing StateSynced event", "stateId", i)
 
 		var stateSynced *types.Log
 
@@ -287,7 +287,7 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 			stateSynced, err = rl.getStateSynced(ctx, i)
 			return err
 		}, 3, time.Second); err != nil {
-			rl.Logger.Error("Failed to retrieve StateSynced event for missing state", "stateId", i, "error", err)
+			rl.Logger.Error("Self-healing: failed to retrieve StateSynced event for missing state", "stateId", i, "error", err)
 			continue
 		}
 
@@ -300,7 +300,7 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 
 		ignore, err := rl.processEvent(ctx, stateSynced)
 		if err != nil {
-			rl.Logger.Error("Failed to process StateSynced event and update Heimdall", "stateId", i, "error", err)
+			rl.Logger.Error("Self-healing: failed to process StateSynced event and update Heimdall", "stateId", i, "error", err)
 			i--
 			continue
 		}
@@ -311,10 +311,10 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 			var statusCheck int
 			for statusCheck = 0; statusCheck < 15; statusCheck++ {
 				if _, err = util.GetClerkEventRecord(i, rl.cliCtx.Codec); err == nil {
-					rl.Logger.Info("StateId found on Heimdall after processing", "stateId", i)
+					rl.Logger.Info("Self-healing: stateId found on Heimdall after processing", "stateId", i)
 					break
 				}
-				rl.Logger.Info("StateId not yet found on Heimdall; retrying", "stateId", i)
+				rl.Logger.Info("Self-healing: stateId not yet found on Heimdall; retrying", "stateId", i)
 				time.Sleep(1 * time.Second)
 			}
 
@@ -329,12 +329,12 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 func (rl *RootChainListener) processEvent(ctx context.Context, vLog *types.Log) (bool, error) {
 	blockTime, err := rl.contractCaller.GetMainChainBlockTime(ctx, vLog.BlockNumber)
 	if err != nil {
-		rl.Logger.Error("Failed to get block time", "error", err)
+		rl.Logger.Error("Self-healing: failed to get block time", "error", err)
 		return false, err
 	}
 
 	if time.Since(blockTime) < helper.GetConfig().SHMaxDepthDuration {
-		rl.Logger.Info("Block time is less than the max time depth; skipping event")
+		rl.Logger.Info("Self-healing: block time is less than the max time depth; skipping event")
 		return true, err
 	}
 

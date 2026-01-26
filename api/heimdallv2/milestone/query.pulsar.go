@@ -3210,6 +3210,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// QueryParamsRequest is the request type for the GetMilestoneParams query.
 type QueryParamsRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3236,11 +3237,13 @@ func (*QueryParamsRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_milestone_query_proto_rawDescGZIP(), []int{0}
 }
 
+// QueryParamsResponse is the response type for the GetMilestoneParams query.
 type QueryParamsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Current milestone module parameters.
 	Params *Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
 }
 
@@ -3271,6 +3274,7 @@ func (x *QueryParamsResponse) GetParams() *Params {
 	return nil
 }
 
+// QueryCountRequest is the request type for the GetMilestoneCount query.
 type QueryCountRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3297,11 +3301,13 @@ func (*QueryCountRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_milestone_query_proto_rawDescGZIP(), []int{2}
 }
 
+// QueryCountResponse is the response type for the GetMilestoneCount query.
 type QueryCountResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Total number of milestones.
 	Count uint64 `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
 }
 
@@ -3332,6 +3338,8 @@ func (x *QueryCountResponse) GetCount() uint64 {
 	return 0
 }
 
+// QueryLatestMilestoneRequest is the request type for the GetLatestMilestone
+// query.
 type QueryLatestMilestoneRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3358,11 +3366,14 @@ func (*QueryLatestMilestoneRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_milestone_query_proto_rawDescGZIP(), []int{4}
 }
 
+// QueryLatestMilestoneResponse is the response type for the GetLatestMilestone
+// query.
 type QueryLatestMilestoneResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The most recently finalized milestone.
 	Milestone *Milestone `protobuf:"bytes,1,opt,name=milestone,proto3" json:"milestone,omitempty"`
 }
 
@@ -3393,11 +3404,13 @@ func (x *QueryLatestMilestoneResponse) GetMilestone() *Milestone {
 	return nil
 }
 
+// QueryMilestoneRequest is the request type for the GetMilestoneByNumber query.
 type QueryMilestoneRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Milestone number to retrieve.
 	Number uint64 `protobuf:"varint,1,opt,name=number,proto3" json:"number,omitempty"`
 }
 
@@ -3428,11 +3441,14 @@ func (x *QueryMilestoneRequest) GetNumber() uint64 {
 	return 0
 }
 
+// QueryMilestoneResponse is the response type for the GetMilestoneByNumber
+// query.
 type QueryMilestoneResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The requested milestone.
 	Milestone *Milestone `protobuf:"bytes,1,opt,name=milestone,proto3" json:"milestone,omitempty"`
 }
 

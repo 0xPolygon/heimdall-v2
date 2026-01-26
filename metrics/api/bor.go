@@ -2,6 +2,7 @@ package api
 
 const (
 	// Query API methods.
+
 	GetSpanListMethod                   = "GetSpanList"
 	GetLatestSpanMethod                 = "GetLatestSpan"
 	GetNextSpanSeedMethod               = "GetNextSpanSeed"
@@ -14,6 +15,7 @@ const (
 	GetValidatorPerformanceScoreMethod  = "GetValidatorPerformanceScore"
 
 	// Transaction API methods.
+
 	ProposeSpanMethod      = "ProposeSpan"
 	BorUpdateParamsMethod  = "UpdateParams"
 	BackfillSpansMethod    = "BackfillSpans"
@@ -21,11 +23,12 @@ const (
 	ProducerDowntimeMethod = "ProducerDowntime"
 
 	// Side message handler methods.
+
 	SideHandleMsgSpanMethod                = "SideHandleMsgSpan"
-	SideHandleMsgBackfillSpansMethod       = "SideHandleMsgBackfillSpans"
 	SideHandleMsgSetProducerDowntimeMethod = "SideHandleMsgSetProducerDowntime"
 
 	// Post message handler methods.
+
 	PostHandleMsgSpanMethod                = "PostHandleMsgSpan"
 	PostHandleMsgBackfillSpansMethod       = "PostHandleMsgBackfillSpans"
 	PostHandleMsgSetProducerDowntimeMethod = "PostHandleMsgSetProducerDowntime"

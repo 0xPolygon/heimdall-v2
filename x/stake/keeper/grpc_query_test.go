@@ -153,6 +153,7 @@ func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
 	res, err := queryClient.GetCurrentProposer(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
+	require.NotNil(val)
 
 	require.Equal(res.Validator.Signer, val.Signer)
 }

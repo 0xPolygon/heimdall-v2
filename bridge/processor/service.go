@@ -108,7 +108,7 @@ func NewProcessorService(
 	}
 
 	if len(processorService.processors) == 0 {
-		panic("No processors selected. Use --all or --only <comma-separated processors>")
+		panic("processorService: no processors selected. Use --all or --only <comma-separated processors>")
 	}
 
 	return processorService
@@ -117,7 +117,7 @@ func NewProcessorService(
 // OnStart starts the new block subscription
 func (processorService *Service) OnStart() error {
 	if err := processorService.BaseService.OnStart(); err != nil {
-		processorService.Logger.Error("OnStart | OnStart", "Error", err)
+		processorService.Logger.Error("ProcessorService | OnStart | OnStart", "Error", err)
 	} // Always call the overridden method.
 
 	// start processors
@@ -126,7 +126,7 @@ func (processorService *Service) OnStart() error {
 
 		go func(processor Processor) {
 			if err := processor.Start(); err != nil {
-				processorService.Logger.Error("OnStart | processor.Start", "Error", err)
+				processorService.Logger.Error("ProcessorService | OnStart | processor.Start", "Error", err)
 			}
 		}(processor)
 	}
@@ -142,5 +142,5 @@ func (processorService *Service) OnStop() {
 		processor.Stop()
 	}
 
-	processorService.Logger.Info("all processors stopped")
+	processorService.Logger.Info("ProcessorService: all processors stopped")
 }

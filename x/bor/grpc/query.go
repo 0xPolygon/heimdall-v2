@@ -15,7 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
-func (h *BorGRPCClient) GetRootHash(ctx context.Context, startBlock uint64, endBlock uint64) (string, error) {
+func (c *BorGRPCClient) GetRootHash(ctx context.Context, startBlock uint64, endBlock uint64) (string, error) {
 	req := &proto.GetRootHashRequest{
 		StartBlockNumber: startBlock,
 		EndBlockNumber:   endBlock,
@@ -23,7 +23,7 @@ func (h *BorGRPCClient) GetRootHash(ctx context.Context, startBlock uint64, endB
 
 	log.Info("Fetching bor root hash")
 
-	res, err := h.client.GetRootHash(ctx, req)
+	res, err := c.client.GetRootHash(ctx, req)
 	if err != nil {
 		return "", err
 	}
@@ -33,7 +33,7 @@ func (h *BorGRPCClient) GetRootHash(ctx context.Context, startBlock uint64, endB
 	return res.RootHash, nil
 }
 
-func (h *BorGRPCClient) GetVoteOnHash(ctx context.Context, startBlock uint64, endBlock uint64, rootHash string, milestoneId string) (bool, error) {
+func (c *BorGRPCClient) GetVoteOnHash(ctx context.Context, startBlock uint64, endBlock uint64, rootHash string, milestoneId string) (bool, error) {
 	req := &proto.GetVoteOnHashRequest{
 		StartBlockNumber: startBlock,
 		EndBlockNumber:   endBlock,
@@ -43,7 +43,7 @@ func (h *BorGRPCClient) GetVoteOnHash(ctx context.Context, startBlock uint64, en
 
 	log.Info("Fetching vote on hash")
 
-	res, err := h.client.GetVoteOnHash(ctx, req)
+	res, err := c.client.GetVoteOnHash(ctx, req)
 	if err != nil {
 		return false, err
 	}
@@ -53,7 +53,7 @@ func (h *BorGRPCClient) GetVoteOnHash(ctx context.Context, startBlock uint64, en
 	return res.Response, nil
 }
 
-func (h *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error) {
+func (c *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error) {
 	if blockID > math.MaxInt64 {
 		return nil, fmt.Errorf("blockID too large: %d", blockID)
 	}
@@ -66,7 +66,7 @@ func (h *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*eth
 
 	log.Info("Fetching header by number")
 
-	res, err := h.client.HeaderByNumber(ctx, req)
+	res, err := c.client.HeaderByNumber(ctx, req)
 	if err != nil {
 		return &ethTypes.Header{}, err
 	}
@@ -82,7 +82,7 @@ func (h *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*eth
 	return resp, nil
 }
 
-func (h *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error) {
+func (c *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error) {
 	if blockID > math.MaxInt64 {
 		return nil, fmt.Errorf("blockID too large: %d", blockID)
 	}
@@ -95,7 +95,7 @@ func (h *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethT
 
 	log.Info("Fetching block by number")
 
-	res, err := h.client.BlockByNumber(ctx, req)
+	res, err := c.client.BlockByNumber(ctx, req)
 	if err != nil {
 		return &ethTypes.Block{}, err
 	}
@@ -110,14 +110,14 @@ func (h *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethT
 	return ethTypes.NewBlock(&header, nil, nil, nil), nil
 }
 
-func (h *BorGRPCClient) TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error) {
+func (c *BorGRPCClient) TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error) {
 	req := &proto.ReceiptRequest{
 		Hash: protoutil.ConvertHashToH256(txHash),
 	}
 
 	log.Info("Fetching transaction receipt")
 
-	res, err := h.client.TransactionReceipt(ctx, req)
+	res, err := c.client.TransactionReceipt(ctx, req)
 	if err != nil {
 		return &ethTypes.Receipt{}, err
 	}
@@ -127,14 +127,14 @@ func (h *BorGRPCClient) TransactionReceipt(ctx context.Context, txHash common.Ha
 	return receiptResponseToTypesReceipt(res.Receipt), nil
 }
 
-func (h *BorGRPCClient) BorBlockReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error) {
+func (c *BorGRPCClient) BorBlockReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error) {
 	req := &proto.ReceiptRequest{
 		Hash: protoutil.ConvertHashToH256(txHash),
 	}
 
 	log.Info("Fetching bor block receipt")
 
-	res, err := h.client.BorBlockReceipt(ctx, req)
+	res, err := c.client.BorBlockReceipt(ctx, req)
 	if err != nil {
 		return &ethTypes.Receipt{}, err
 	}

@@ -16,7 +16,7 @@ type BorChainListener struct {
 
 // Start starts new block subscription
 func (ml *BorChainListener) Start() error {
-	ml.Logger.Info("Starting")
+	ml.Logger.Info("BorChainListener: starting")
 
 	// create cancellable context
 	ctx, cancelSubscription := context.WithCancel(context.Background())
@@ -30,7 +30,7 @@ func (ml *BorChainListener) Start() error {
 	go ml.StartHeaderProcess(headerCtx)
 
 	// start go routine to poll for the new header using the client object
-	ml.Logger.Info("Start polling for header blocks", "pollInterval", helper.GetConfig().CheckpointPollInterval)
+	ml.Logger.Info("BorChainListener: start polling for header blocks", "pollInterval", helper.GetConfig().CheckpointPollInterval)
 
 	// start polling for the latest block in the bor child chain (replace with finalized block once we have it implemented)
 	go ml.StartPolling(ctx, helper.GetConfig().CheckpointPollInterval, nil)
@@ -40,12 +40,12 @@ func (ml *BorChainListener) Start() error {
 
 // ProcessHeader - process header block from the bor chain
 func (ml *BorChainListener) ProcessHeader(newHeader *blockHeader) {
-	ml.Logger.Debug("New header block detected", "blockNumber", newHeader.header.Number)
+	ml.Logger.Debug("BorChainListener: new header block detected", "blockNumber", newHeader.header.Number)
 
 	// Marshall header block and publish to queue
 	headerBytes, err := newHeader.header.MarshalJSON()
 	if err != nil {
-		ml.Logger.Error("Error marshalling header block", "error", err)
+		ml.Logger.Error("BorChainListener: error marshalling header block", "error", err)
 		return
 	}
 
@@ -69,10 +69,10 @@ func (ml *BorChainListener) sendTaskWithDelay(taskName string, headerBytes []byt
 	eta := time.Now().Add(delay)
 	signature.ETA = &eta
 
-	ml.Logger.Debug("Sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)
+	ml.Logger.Debug("BorChainListener: sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)
 
 	_, err := ml.queueConnector.Server.SendTask(signature)
 	if err != nil {
-		ml.Logger.Error("Error sending task", "taskName", taskName, "error", err)
+		ml.Logger.Error("BorChainListener: error sending task", "taskName", taskName, "error", err)
 	}
 }

@@ -4711,12 +4711,16 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// QueryTopupSequenceRequest is the request type for the GetTopupTxSequence and
+// IsTopupTxOld queries.
 type QueryTopupSequenceRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TxHash   string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Root chain transaction hash.
+	TxHash string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// Log index in root chain transaction.
 	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 }
 
@@ -4754,11 +4758,14 @@ func (x *QueryTopupSequenceRequest) GetLogIndex() uint64 {
 	return 0
 }
 
+// QueryTopupSequenceResponse is the response type for the GetTopupTxSequence
+// query.
 type QueryTopupSequenceResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Sequence number for the topup transaction.
 	Sequence string `protobuf:"bytes,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
 }
 
@@ -4789,11 +4796,13 @@ func (x *QueryTopupSequenceResponse) GetSequence() string {
 	return ""
 }
 
+// QueryIsTopupTxOldResponse is the response type for the IsTopupTxOld query.
 type QueryIsTopupTxOldResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// True if the transaction has already been processed.
 	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
 
@@ -4824,11 +4833,14 @@ func (x *QueryIsTopupTxOldResponse) GetIsOld() bool {
 	return false
 }
 
+// QueryDividendAccountRequest is the request type for the
+// GetDividendAccountByAddress query.
 type QueryDividendAccountRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Address of the account to query.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
 
@@ -4859,11 +4871,14 @@ func (x *QueryDividendAccountRequest) GetAddress() string {
 	return ""
 }
 
+// QueryDividendAccountResponse is the response type for the
+// GetDividendAccountByAddress query.
 type QueryDividendAccountResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The requested dividend account.
 	DividendAccount *types.DividendAccount `protobuf:"bytes,1,opt,name=dividend_account,json=dividendAccount,proto3" json:"dividend_account,omitempty"`
 }
 
@@ -4894,6 +4909,8 @@ func (x *QueryDividendAccountResponse) GetDividendAccount() *types.DividendAccou
 	return nil
 }
 
+// QueryDividendAccountRootHashRequest is the request type for the
+// GetDividendAccountRootHash query.
 type QueryDividendAccountRootHashRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4920,11 +4937,14 @@ func (*QueryDividendAccountRootHashRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_query_proto_rawDescGZIP(), []int{5}
 }
 
+// QueryDividendAccountRootHashResponse is the response type for the
+// GetDividendAccountRootHash query.
 type QueryDividendAccountRootHashResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Merkle root hash of all dividend accounts.
 	AccountRootHash []byte `protobuf:"bytes,1,opt,name=account_root_hash,json=accountRootHash,proto3" json:"account_root_hash,omitempty"`
 }
 
@@ -4955,13 +4975,17 @@ func (x *QueryDividendAccountRootHashResponse) GetAccountRootHash() []byte {
 	return nil
 }
 
+// QueryVerifyAccountProofRequest is the request type for the
+// VerifyAccountProofByAddress query.
 type QueryVerifyAccountProofRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Address of the account to verify.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	Proof   string `protobuf:"bytes,2,opt,name=proof,proto3" json:"proof,omitempty"`
+	// Merkle proof to verify.
+	Proof string `protobuf:"bytes,2,opt,name=proof,proto3" json:"proof,omitempty"`
 }
 
 func (x *QueryVerifyAccountProofRequest) Reset() {
@@ -4998,11 +5022,14 @@ func (x *QueryVerifyAccountProofRequest) GetProof() string {
 	return ""
 }
 
+// QueryVerifyAccountProofResponse is the response type for the
+// VerifyAccountProofByAddress query.
 type QueryVerifyAccountProofResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// True if the proof is valid.
 	IsVerified bool `protobuf:"varint,1,opt,name=is_verified,json=isVerified,proto3" json:"is_verified,omitempty"`
 }
 
@@ -5033,11 +5060,14 @@ func (x *QueryVerifyAccountProofResponse) GetIsVerified() bool {
 	return false
 }
 
+// QueryAccountProofRequest is the request type for the
+// GetAccountProofByAddress query.
 type QueryAccountProofRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Address of the account to get proof for.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
 
@@ -5068,11 +5098,14 @@ func (x *QueryAccountProofRequest) GetAddress() string {
 	return ""
 }
 
+// QueryAccountProofResponse is the response type for the
+// GetAccountProofByAddress query.
 type QueryAccountProofResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Merkle proof for the requested account.
 	Proof *AccountProof `protobuf:"bytes,1,opt,name=proof,proto3" json:"proof,omitempty"`
 }
 

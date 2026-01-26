@@ -3,6 +3,14 @@ package heimdallv2.types.rest;
 
 option go_package = "github.com/0xPolygon/heimdall-v2/types/rest";
 
-message Response { bytes result = 1; }
+// Response is a generic REST API response wrapper.
+message Response {
+  // Raw result data.
+  bytes result = 1;
+}
 
-message GasEstimateResponse { uint64 gas_estimate = 1; }
+// GasEstimateResponse contains gas estimation for a transaction.
+message GasEstimateResponse {
+  // Estimated gas units required for the transaction.
+  uint64 gas_estimate = 1;
+}

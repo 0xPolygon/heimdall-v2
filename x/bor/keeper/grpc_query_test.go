@@ -213,7 +213,7 @@ func (s *KeeperTestSuite) TestGetProducerVotes() {
 		Votes: votes2Data,
 	}
 
-	// Mocking and setup for happy path
+	// Mocking and setup for the happy path
 	stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(*validatorSet, nil).Times(1)
 	err := keeper.SetProducerVotes(ctx, val1ID, votes1)
 	require.NoError(err)

@@ -7,22 +7,34 @@ import "heimdallv2/milestone/milestone.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/sidetxs";
 
+// VoteExtension contains additional data included by validators in their votes.
+// Introduced in ABCI++, vote extensions allow validators to include
+// supplementary information like milestone propositions and side transaction
+// results.
 message VoteExtension {
+  // Hash of the block this vote extension is for.
   bytes block_hash = 1 [ (amino.dont_omitempty) = true ];
+  // Height of the block this vote extension is for.
   int64 height = 2 [ (amino.dont_omitempty) = true ];
+  // Results of side transaction validation by this validator.
   repeated SideTxResponse side_tx_responses = 3
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+  // Milestone proposition submitted by this validator.
   heimdallv2.milestone.MilestoneProposition milestone_proposition = 4
       [ (amino.dont_omitempty) = true ];
 }
 
+// SideTxResponse contains a validator's vote on a side transaction.
 message SideTxResponse {
+  // Hash of the side transaction being voted on.
   bytes tx_hash = 1 [ (amino.dont_omitempty) = true ];
+  // The validator's vote (yes or no).
   Vote result = 2 [ (amino.dont_omitempty) = true ];
 }
 
+// Vote represents a validator's decision on a side transaction.
 enum Vote {
-  UNSPECIFIED = 0;
-  VOTE_YES = 1;
-  VOTE_NO = 2;
+  UNSPECIFIED = 0; // Invalid/unset vote
+  VOTE_YES = 1;    // Validator approves the side transaction
+  VOTE_NO = 2;     // Validator rejects the side transaction
 }

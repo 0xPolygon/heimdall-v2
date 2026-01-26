@@ -18,15 +18,14 @@ const (
 	MainChainTxConfirmations = "main_chain_tx_confirmations"
 	BorChainTxConfirmations  = "bor_chain_tx_confirmations"
 	BorChainID               = "bor_chain_id"
-	// #nosec G101 -- suppress gosec warning
-	PolTokenAddress       = "pol_token_address"
-	StakingManagerAddress = "staking_manager_address"
-	SlashManagerAddress   = "slash_manager_address"
-	RootChainAddress      = "root_chain_address"
-	StakingInfoAddress    = "staking_info_address"
-	StateSenderAddress    = "state_sender_address"
-	StateReceiverAddress  = "state_receiver_address"
-	ValidatorSetAddress   = "validator_set_address"
+	PolTokenAddress          = "pol_token_address" //nolint:gosec // not a hardcoded credential, just a key name for simulation
+	StakingManagerAddress    = "staking_manager_address"
+	SlashManagerAddress      = "slash_manager_address"
+	RootChainAddress         = "root_chain_address"
+	StakingInfoAddress       = "staking_info_address"
+	StateSenderAddress       = "state_sender_address"
+	StateReceiverAddress     = "state_receiver_address"
+	ValidatorSetAddress      = "validator_set_address"
 )
 
 // genMainChainTxConfirmations returns randomized mainChain tx confirmations

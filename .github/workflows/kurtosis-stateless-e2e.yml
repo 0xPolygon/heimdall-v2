@@ -41,29 +41,29 @@ jobs:
         run: sudo apt update && sudo apt install build-essential
 
       - name: Checkout heimdall-v2
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: heimdall-v2
 
       - name: Checkout bor
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: 0xPolygon/bor
           ref: develop
           path: bor
 
       - name: Checkout pos-workflows
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: 0xPolygon/pos-workflows
           ref: main
           path: pos-workflows
 
       - name: Checkout kurtosis-pos
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: 0xPolygon/kurtosis-pos
-          ref: v1.2.7
+          ref: hv2/tx-eip1559-gas-price-configs
           path: kurtosis-pos
 
       - name: Pre kurtosis run

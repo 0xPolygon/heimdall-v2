@@ -99,6 +99,10 @@ import (
 
 const (
 	HeimdallAppName = "heimdallapp"
+
+	// HTTP header constants
+	headerContentType       = "Content-Type"
+	mimeTypeApplicationJSON = "application/json"
 )
 
 var (
@@ -144,7 +148,7 @@ type HeimdallApp struct {
 	MilestoneKeeper    milestoneKeeper.Keeper
 	BorKeeper          borKeeper.Keeper
 
-	// utility for invoking contracts in Ethereum and Bor chain
+	// utility for invoking contracts in the Ethereum and Bor chains
 	caller helper.IContractCaller
 
 	ModuleManager *module.Manager
@@ -447,7 +451,7 @@ func NewHeimdallApp(
 	}
 	err = msgservice.ValidateProtoAnnotations(protoFiles)
 	if err != nil {
-		// Once we switch to using protoreflect-based antehandlers, we might
+		// Once we switch to using protoreflect-based ante handlers, we might
 		// want to panic here instead of logging a warning.
 		_, err := fmt.Fprintln(os.Stderr, err.Error())
 		if err != nil {
@@ -480,7 +484,7 @@ func NewHeimdallApp(
 }
 
 func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
-	// Only apply VEBLOP validation during normal CheckTx (not recheck)
+	// Only apply veBlop validation during normal CheckTx (not recheck)
 	if req.Type == abci.CheckTxType_New {
 		tx, err := app.TxDecode(req.Tx)
 		if err != nil {
@@ -497,9 +501,9 @@ func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx
 				// Create a context for validation
 				ctx := app.NewUncachedContext(true, cmtproto.Header{})
 
-				// Validate VEBLOP phase using common function
+				// Validate veBlop phase using common function
 				if err := app.BorKeeper.CanVoteProducers(ctx); err != nil {
-					app.Logger().Debug("rejecting MsgVoteProducers in CheckTx", "error", err)
+					app.Logger().Debug("Rejecting MsgVoteProducers in CheckTx", "error", err)
 					return &abci.ResponseCheckTx{
 						Code: sdkerrors.ErrInvalidRequest.ABCICode(),
 						Log:  err.Error(),
@@ -509,7 +513,7 @@ func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx
 				// Create a context for validation
 				ctx := app.NewUncachedContext(true, cmtproto.Header{Height: app.LastBlockHeight() + 1})
 				if err := app.BorKeeper.CanSetProducerDowntime(ctx); err != nil {
-					app.Logger().Debug("rejecting MsgSetProducerDowntime in CheckTx", "error", err)
+					app.Logger().Debug("Rejecting MsgSetProducerDowntime in CheckTx", "error", err)
 					return &abci.ResponseCheckTx{
 						Code: sdkerrors.ErrInvalidRequest.ABCICode(),
 						Log:  err.Error(),
@@ -624,7 +628,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	}, nil
 }
 
-// BeginBlocker application updates every begin block
+// BeginBlocker application updates every begin-block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 	startTime := time.Now()
 	defer metrics.RecordABCIHandlerDuration(metrics.BeginBlockerDuration, startTime)
@@ -638,7 +642,7 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	defer metrics.RecordABCIHandlerDuration(metrics.EndBlockerDuration, startTime)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	// transfer fees to current proposer
+	// transfer fees to the current proposer
 	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
 		moduleAccount := app.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName)
 		coin := app.BankKeeper.GetBalance(ctx, moduleAccount.GetAddress(), authtypes.FeeToken)
@@ -664,10 +668,10 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 
 	customABCIEvents := sdkCtx.EventManager().ABCIEvents()
 	result, err := app.ModuleManager.EndBlock(ctx)
-	result.Events = append(result.Events, customABCIEvents...)
 	if err != nil {
 		return result, err
 	}
+	result.Events = append(result.Events, customABCIEvents...)
 
 	return result, nil
 }
@@ -785,7 +789,7 @@ func (app *HeimdallApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.A
 
 func getCometStatusHandler(cliCtx client.Context) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		resultStatus, err := helper.GetNodeStatus(cliCtx) //nolint:contextcheck
+		resultStatus, err := helper.GetNodeStatus(r.Context(), cliCtx)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to get node status: %v", err), http.StatusInternalServerError)
 			return
@@ -795,7 +799,7 @@ func getCometStatusHandler(cliCtx client.Context) func(w http.ResponseWriter, r 
 			http.Error(w, fmt.Sprintf("failed to marshal node status: %v", err), http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(headerContentType, mimeTypeApplicationJSON)
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write(resp); err != nil {
 			http.Error(w, fmt.Sprintf("failed to write response: %v", err), http.StatusInternalServerError)
@@ -812,7 +816,7 @@ func getHeimdallV2Version() func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("failed to marshal version: %v", err), http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(headerContentType, mimeTypeApplicationJSON)
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write(versionBytes); err != nil {
 			http.Error(w, fmt.Sprintf("failed to write version response: %v", err), http.StatusInternalServerError)
@@ -953,7 +957,7 @@ func (app *HeimdallApp) customHealthServiceHandler(clientCtx client.Context) htt
 		var healthResponse map[string]any
 		if err := json.Unmarshal(recorder.body, &healthResponse); err != nil {
 			app.Logger().Error("Failed to unmarshal response: %v\n", err)
-			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set(headerContentType, mimeTypeApplicationJSON)
 			w.WriteHeader(recorder.statusCode)
 			if _, writeErr := w.Write(recorder.body); writeErr != nil {
 				app.Logger().Error("Failed to write fallback response: %v\n", writeErr)
@@ -964,7 +968,7 @@ func (app *HeimdallApp) customHealthServiceHandler(clientCtx client.Context) htt
 		// Remove the "status" field from health-go as it's always "OK" and not useful.
 		delete(healthResponse, "status")
 
-		heimdallInfo, err := app.getHeimdallInfo(clientCtx) //nolint:contextcheck
+		heimdallInfo, err := app.getHeimdallInfo(r.Context(), clientCtx)
 		if err != nil {
 			healthResponse["error"] = true
 			healthResponse["error_message"] = err.Error()
@@ -977,7 +981,7 @@ func (app *HeimdallApp) customHealthServiceHandler(clientCtx client.Context) htt
 		status := app.performHealthChecks(healthResponse)
 		healthResponse["status"] = status
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(headerContentType, mimeTypeApplicationJSON)
 		w.WriteHeader(recorder.statusCode)
 
 		if err := json.NewEncoder(w).Encode(healthResponse); err != nil {
@@ -994,20 +998,18 @@ func (app *HeimdallApp) performHealthChecks(healthResponse map[string]any) Healt
 	overallStatus := StatusOK
 	var statusMessages []string
 
-	config := helper.GetConfig()
+	cfg := helper.GetConfig()
 
 	// Goroutines check.
 	if system, ok := healthResponse["system"].(map[string]any); ok && system != nil {
 		if goroutinesCount, ok := system["goroutines_count"].(float64); ok {
-			// Check critical threshold first.
-			if config.MaxGoRoutineThreshold != 0 && int(goroutinesCount) > config.MaxGoRoutineThreshold {
+			// Check the critical threshold first.
+			if cfg.MaxGoRoutineThreshold != 0 && int(goroutinesCount) > cfg.MaxGoRoutineThreshold {
 				overallStatus = StatusCritical
 				statusMessages = append(statusMessages, "number of goroutines above the maximum threshold")
-			} else if config.WarnGoRoutineThreshold != 0 && int(goroutinesCount) > config.WarnGoRoutineThreshold {
+			} else if cfg.WarnGoRoutineThreshold != 0 && int(goroutinesCount) > cfg.WarnGoRoutineThreshold {
 				// Only set to warn if we haven't already hit critical.
-				if overallStatus != StatusCritical {
-					overallStatus = StatusWarn
-				}
+				overallStatus = StatusWarn
 				statusMessages = append(statusMessages, "number of goroutines above the warning threshold")
 			}
 		}
@@ -1016,11 +1018,11 @@ func (app *HeimdallApp) performHealthChecks(healthResponse map[string]any) Healt
 	// Peer check - only perform if node_info exists and has peer_count.
 	if heimdallInfo, ok := healthResponse["node_info"].(map[string]any); ok && heimdallInfo != nil {
 		if peerCount, ok := heimdallInfo["peer_count"].(int); ok {
-			// Check critical threshold first.
-			if config.MinPeerThreshold != 0 && peerCount < config.MinPeerThreshold {
+			// Check the critical threshold first.
+			if cfg.MinPeerThreshold != 0 && peerCount < cfg.MinPeerThreshold {
 				overallStatus = StatusCritical
 				statusMessages = append(statusMessages, "number of peers below the minimum threshold")
-			} else if config.WarnPeerThreshold != 0 && peerCount < config.WarnPeerThreshold {
+			} else if cfg.WarnPeerThreshold != 0 && peerCount < cfg.WarnPeerThreshold {
 				// Only set to warn if we haven't already hit critical.
 				if overallStatus != StatusCritical {
 					overallStatus = StatusWarn
@@ -1037,10 +1039,10 @@ func (app *HeimdallApp) performHealthChecks(healthResponse map[string]any) Healt
 	}
 }
 
-func (app *HeimdallApp) getHeimdallInfo(clientCtx client.Context) (map[string]any, error) {
+func (app *HeimdallApp) getHeimdallInfo(ctx context.Context, clientCtx client.Context) (map[string]any, error) {
 	heimdallInfo := map[string]any{}
 
-	heimdall_status, err := helper.GetNodeStatus(clientCtx)
+	heimdallStatus, err := helper.GetNodeStatus(ctx, clientCtx)
 	if err != nil {
 		err = fmt.Errorf("failed to get node status: %w", err)
 		return heimdallInfo, err
@@ -1053,31 +1055,28 @@ func (app *HeimdallApp) getHeimdallInfo(clientCtx client.Context) (map[string]an
 		return heimdallInfo, err
 	}
 
-	ctx := clientCtx.CmdContext
-	if ctx == nil {
-		ctxWithTimeout, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		ctx = ctxWithTimeout
-	}
+	// Create a context with timeout for the RPC call
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
 
-	netInfo, err := comeBFTRPC.NetInfo(ctx)
+	netInfo, err := comeBFTRPC.NetInfo(ctxWithTimeout)
 	if err != nil {
-		err = fmt.Errorf("failed to get cometbft net info: %w", err)
+		err = fmt.Errorf("failed to get cometBft net info: %w", err)
 		return heimdallInfo, err
 	}
 
-	heimdallInfo["chain_id"] = heimdall_status.NodeInfo.Network
+	heimdallInfo["chain_id"] = heimdallStatus.NodeInfo.Network
 
-	heimdallInfo["catching_up"] = heimdall_status.SyncInfo.CatchingUp
+	heimdallInfo["catching_up"] = heimdallStatus.SyncInfo.CatchingUp
 
-	heimdallInfo["latest_block_hash"] = heimdall_status.SyncInfo.LatestBlockHash.String()
-	heimdallInfo["latest_block_number"] = heimdall_status.SyncInfo.LatestBlockHeight
-	heimdallInfo["latest_block_timestamp"] = heimdall_status.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano)
+	heimdallInfo["latest_block_hash"] = heimdallStatus.SyncInfo.LatestBlockHash.String()
+	heimdallInfo["latest_block_number"] = heimdallStatus.SyncInfo.LatestBlockHeight
+	heimdallInfo["latest_block_timestamp"] = heimdallStatus.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano)
 
 	heimdallInfo["peer_count"] = netInfo.NPeers
 
-	heimdallInfo["validator_address"] = heimdall_status.ValidatorInfo.Address.String()
-	heimdallInfo["validator_voting_power"] = heimdall_status.ValidatorInfo.VotingPower
+	heimdallInfo["validator_address"] = heimdallStatus.ValidatorInfo.Address.String()
+	heimdallInfo["validator_voting_power"] = heimdallStatus.ValidatorInfo.VotingPower
 
 	return heimdallInfo, nil
 }

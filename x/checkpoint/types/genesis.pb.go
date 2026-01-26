@@ -24,14 +24,22 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// GenesisState defines the checkpoint module's genesis state.
 type GenesisState struct {
-	Params                     Params               `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
-	BufferedCheckpoint         *Checkpoint          `protobuf:"bytes,2,opt,name=buffered_checkpoint,json=bufferedCheckpoint,proto3" json:"buffered_checkpoint,omitempty"`
-	LastNoAck                  uint64               `protobuf:"varint,3,opt,name=last_no_ack,json=lastNoAck,proto3" json:"last_no_ack,omitempty"`
-	AckCount                   uint64               `protobuf:"varint,4,opt,name=ack_count,json=ackCount,proto3" json:"ack_count,omitempty"`
-	Checkpoints                []Checkpoint         `protobuf:"bytes,5,rep,name=checkpoints,proto3" json:"checkpoints"`
-	CheckpointSignatures       CheckpointSignatures `protobuf:"bytes,6,opt,name=checkpoint_signatures,json=checkpointSignatures,proto3" json:"checkpoint_signatures"`
-	CheckpointSignaturesTxhash string               `protobuf:"bytes,7,opt,name=checkpoint_signatures_txhash,json=checkpointSignaturesTxhash,proto3" json:"checkpoint_signatures_txhash,omitempty"`
+	// Module parameters at genesis.
+	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
+	// Checkpoint currently in the buffer at genesis.
+	BufferedCheckpoint *Checkpoint `protobuf:"bytes,2,opt,name=buffered_checkpoint,json=bufferedCheckpoint,proto3" json:"buffered_checkpoint,omitempty"`
+	// ID of the last checkpoint that received a no-ack.
+	LastNoAck uint64 `protobuf:"varint,3,opt,name=last_no_ack,json=lastNoAck,proto3" json:"last_no_ack,omitempty"`
+	// Total count of checkpoint acknowledgments.
+	AckCount uint64 `protobuf:"varint,4,opt,name=ack_count,json=ackCount,proto3" json:"ack_count,omitempty"`
+	// List of all checkpoints at genesis.
+	Checkpoints []Checkpoint `protobuf:"bytes,5,rep,name=checkpoints,proto3" json:"checkpoints"`
+	// Signatures for the latest checkpoint.
+	CheckpointSignatures CheckpointSignatures `protobuf:"bytes,6,opt,name=checkpoint_signatures,json=checkpointSignatures,proto3" json:"checkpoint_signatures"`
+	// Transaction hash of the checkpoint that has the stored signatures.
+	CheckpointSignaturesTxhash string `protobuf:"bytes,7,opt,name=checkpoint_signatures_txhash,json=checkpointSignaturesTxhash,proto3" json:"checkpoint_signatures_txhash,omitempty"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }

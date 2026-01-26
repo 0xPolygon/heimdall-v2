@@ -11,7 +11,7 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 	if len(data.EventRecords) != 0 {
 		for _, record := range data.EventRecords {
 			if err := k.SetEventRecord(ctx, record); err != nil {
-				k.Logger(ctx).Error("error in storing event record", "error", err)
+				k.Logger(ctx).Error("Error in storing event record", "error", err)
 			}
 		}
 	}

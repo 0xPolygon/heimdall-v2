@@ -26,14 +26,25 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Milestone represents a fast-finality checkpoint for the Bor chain.
+// Milestones provide intermediate finalization between full checkpoints,
+// allowing for quicker finality guarantees.
 type Milestone struct {
-	Proposer        string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
-	StartBlock      uint64 `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
-	EndBlock        uint64 `protobuf:"varint,3,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
-	Hash            []byte `protobuf:"bytes,4,opt,name=hash,proto3" json:"hash,omitempty"`
-	BorChainId      string `protobuf:"bytes,5,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
-	MilestoneId     string `protobuf:"bytes,6,opt,name=milestone_id,json=milestoneId,proto3" json:"milestone_id,omitempty"`
-	Timestamp       uint64 `protobuf:"varint,7,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	// Address of the validator who proposed this milestone.
+	Proposer string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
+	// First block number included in this milestone (inclusive).
+	StartBlock uint64 `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
+	// Last block number included in this milestone (inclusive).
+	EndBlock uint64 `protobuf:"varint,3,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
+	// Hash of the end block in this milestone.
+	Hash []byte `protobuf:"bytes,4,opt,name=hash,proto3" json:"hash,omitempty"`
+	// Chain ID of the Bor chain this milestone applies to.
+	BorChainId string `protobuf:"bytes,5,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
+	// Unique identifier for this milestone (typically a hash).
+	MilestoneId string `protobuf:"bytes,6,opt,name=milestone_id,json=milestoneId,proto3" json:"milestone_id,omitempty"`
+	// Unix timestamp when this milestone was created.
+	Timestamp uint64 `protobuf:"varint,7,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	// Total difficulty of the Bor chain at the end block.
 	TotalDifficulty uint64 `protobuf:"varint,8,opt,name=total_difficulty,json=totalDifficulty,proto3" json:"total_difficulty,omitempty"`
 }
 
@@ -126,7 +137,9 @@ func (m *Milestone) GetTotalDifficulty() uint64 {
 	return 0
 }
 
+// MilestoneCount tracks the total number of milestones.
 type MilestoneCount struct {
+	// Total number of milestones.
 	Count uint64 `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
 }
 
@@ -170,11 +183,19 @@ func (m *MilestoneCount) GetCount() uint64 {
 	return 0
 }
 
+// MilestoneProposition represents a proposed milestone submitted via vote
+// extensions. Validators include these in their vote extensions to propose new
+// milestones.
 type MilestoneProposition struct {
-	BlockHashes      [][]byte `protobuf:"bytes,1,rep,name=block_hashes,json=blockHashes,proto3" json:"block_hashes,omitempty"`
-	StartBlockNumber uint64   `protobuf:"varint,2,opt,name=start_block_number,json=startBlockNumber,proto3" json:"start_block_number,omitempty"`
-	ParentHash       []byte   `protobuf:"bytes,3,opt,name=parent_hash,json=parentHash,proto3" json:"parent_hash,omitempty"`
-	BlockTds         []uint64 `protobuf:"varint,4,rep,packed,name=block_tds,json=blockTds,proto3" json:"block_tds,omitempty"`
+	// Hashes of all blocks included in this milestone proposition.
+	BlockHashes [][]byte `protobuf:"bytes,1,rep,name=block_hashes,json=blockHashes,proto3" json:"block_hashes,omitempty"`
+	// Starting block number for this proposition.
+	StartBlockNumber uint64 `protobuf:"varint,2,opt,name=start_block_number,json=startBlockNumber,proto3" json:"start_block_number,omitempty"`
+	// Hash of the parent block (block before start_block_number).
+	ParentHash []byte `protobuf:"bytes,3,opt,name=parent_hash,json=parentHash,proto3" json:"parent_hash,omitempty"`
+	// Total difficulty values for each block in the proposition.
+	// Corresponds 1:1 with block_hashes.
+	BlockTds []uint64 `protobuf:"varint,4,rep,packed,name=block_tds,json=blockTds,proto3" json:"block_tds,omitempty"`
 }
 
 func (m *MilestoneProposition) Reset()         { *m = MilestoneProposition{} }
@@ -238,10 +259,16 @@ func (m *MilestoneProposition) GetBlockTds() []uint64 {
 	return nil
 }
 
+// Params defines the parameters for the milestone module.
 type Params struct {
+	// Maximum number of blocks that can be included in a milestone proposition.
 	MaxMilestonePropositionLength uint64 `protobuf:"varint,1,opt,name=max_milestone_proposition_length,json=maxMilestonePropositionLength,proto3" json:"max_milestone_proposition_length,omitempty"`
-	FfMilestoneThreshold          uint64 `protobuf:"varint,2,opt,name=ff_milestone_threshold,json=ffMilestoneThreshold,proto3" json:"ff_milestone_threshold,omitempty"`
-	FfMilestoneBlockInterval      uint64 `protobuf:"varint,3,opt,name=ff_milestone_block_interval,json=ffMilestoneBlockInterval,proto3" json:"ff_milestone_block_interval,omitempty"`
+	// Fast-finality threshold: minimum number of validators required to agree
+	// on a milestone proposition for it to be accepted.
+	FfMilestoneThreshold uint64 `protobuf:"varint,2,opt,name=ff_milestone_threshold,json=ffMilestoneThreshold,proto3" json:"ff_milestone_threshold,omitempty"`
+	// Fast-finality interval: target number of blocks between milestone
+	// propositions.
+	FfMilestoneBlockInterval uint64 `protobuf:"varint,3,opt,name=ff_milestone_block_interval,json=ffMilestoneBlockInterval,proto3" json:"ff_milestone_block_interval,omitempty"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
