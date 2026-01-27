@@ -25,6 +25,9 @@ jobs:
     steps:
       - name: Checkout bor
         uses: actions/checkout@v5
+        with:
+          repository: 0xPolygon/bor
+          ref: develop
 
       - name: Build docker image
         run: docker build -t bor:local --file Dockerfile .
@@ -45,9 +48,6 @@ jobs:
     steps:
       - name: Checkout heimdall-v2
         uses: actions/checkout@v5
-        with:
-          repository: 0xPolygon/heimdall-v2
-          ref: develop
 
       - name: Build docker image
         run: docker build -t heimdall-v2:local --file Dockerfile .
