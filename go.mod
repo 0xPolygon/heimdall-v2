@@ -18,11 +18,11 @@ require (
 	github.com/RichardKnop/machinery v1.10.8
 	github.com/bufbuild/buf v1.61.0
 	github.com/cbergoon/merkletree v0.2.0
-	github.com/cometbft/cometbft v0.38.19
+	github.com/cometbft/cometbft v0.38.21
 	github.com/cometbft/cometbft-db v0.14.1
 	github.com/cosmos/cosmos-db v1.1.3
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
-	github.com/cosmos/cosmos-sdk v0.50.14
+	github.com/cosmos/cosmos-sdk v0.50.15
 	github.com/cosmos/gogoproto v1.7.2
 	github.com/ethereum/go-ethereum v1.15.0
 	github.com/gogo/protobuf v1.3.2
@@ -231,8 +231,8 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.4 // indirect
 	github.com/prometheus/procfs v0.19.2 // indirect
-	github.com/quic-go/qpack v0.5.1 // indirect
-	github.com/quic-go/quic-go v0.56.0 // indirect
+	github.com/quic-go/qpack v0.6.0 // indirect
+	github.com/quic-go/quic-go v0.57.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
 	github.com/redis/go-redis/v9 v9.7.3 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
