@@ -1065,7 +1065,14 @@ func (c *ContractCaller) GetBorTxReceipt(txHash common.Hash) (*ethTypes.Receipt,
 	return c.getTxReceipt(ctx, c.BorChainClient, nil, txHash)
 }
 
-func (c *ContractCaller) getTxReceipt(ctx context.Context, client *ethclient.Client, grpcClient *grpc.BorGRPCClient, txHash common.Hash) (*ethTypes.Receipt, error) {
+func (c *ContractCaller) getTxReceipt(
+	ctx context.Context,
+	client interface {
+		TransactionReceipt(context.Context, common.Hash) (*ethTypes.Receipt, error)
+	},
+	grpcClient *grpc.BorGRPCClient,
+	txHash common.Hash,
+) (*ethTypes.Receipt, error) {
 	if grpcClient != nil {
 		return grpcClient.TransactionReceipt(ctx, txHash)
 	}
