@@ -130,7 +130,9 @@ jobs:
 
       # Run e2e tests
       - name: Test state syncs
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'bridge MATIC/POL, ERC20, and ERC721 from L1 to L2 and confirm L2 balances increased' tests/pos/bridge.bats"
+        uses: ./.github/actions/test-state-sync
+        with:
+          enclave_name: ${{ env.ENCLAVE_NAME }}
 
       - name: Add new validator
         run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'add new validator' tests/pos/validator.bats"

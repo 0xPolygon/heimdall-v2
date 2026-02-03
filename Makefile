@@ -40,7 +40,7 @@ clean:
 	rm -rf build
 
 .PHONY: build
-build: clean
+build:
 	mkdir -p build
 	go build $(BUILD_FLAGS) -o build/heimdalld ./cmd/heimdalld
 	@echo "====================================================\n==================Build Successful==================\n===================================================="
