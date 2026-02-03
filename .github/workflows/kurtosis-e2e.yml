@@ -120,7 +120,7 @@ jobs:
           gunzip -c heimdall-v2-image.tar.gz | docker load
           echo "Loaded heimdall-v2 image:"
           docker images heimdall-v2:local --format "{{.ID}} {{.CreatedAt}}"
-      
+
       # Deploy kurtosis enclave
       - name: Kurtosis run
         run: kurtosis run --args-file=kurtosis-e2e.yml --enclave=${{ env.ENCLAVE_NAME }} .
@@ -133,23 +133,34 @@ jobs:
         uses: ./.github/actions/test-state-sync
         with:
           enclave_name: ${{ env.ENCLAVE_NAME }}
+          agglayer_e2e_tag: 2687c0c751e7cae2deaf4e99b13ae0d0ef97b2d7
 
       - name: Add new validator
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'add new validator' tests/pos/validator.bats"
+        shell: bash
+        working-directory: agglayer-e2e
+        run: bats --show-output-of-passing-tests --filter 'add new validator' tests/pos/validator.bats
 
       - name: Update validator stake
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'update validator stake' tests/pos/validator.bats"
+        shell: bash
+        working-directory: agglayer-e2e
+        run: bats --show-output-of-passing-tests --filter 'update validator stake' tests/pos/validator.bats
 
       - name: Delegate MATIC/POL to a validator
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'delegate MATIC/POL to a validator' tests/pos/validator.bats"
+        shell: bash
+        working-directory: agglayer-e2e
+        run: bats --show-output-of-passing-tests --filter 'delegate MATIC/POL to a validator' tests/pos/validator.bats
 
       - name: Undelegate MATIC/POL from a validator
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'undelegate MATIC/POL from a validator' tests/pos/validator.bats"
+        shell: bash
+        working-directory: agglayer-e2e
+        run: bats --show-output-of-passing-tests --filter 'undelegate MATIC/POL from a validator' tests/pos/validator.bats
 
       - name: Remove validator
-        run: kurtosis service exec ${{ env.ENCLAVE_NAME }} test-runner "bats --filter 'remove validator' tests/pos/validator.bats"
+        shell: bash
+        working-directory: agglayer-e2e
+        run: bats --show-output-of-passing-tests --filter 'remove validator' tests/pos/validator.bats
 
-      - name: Run smoke tests (Checkpoints and Milestones)
+      - name: Run smoke tests
         run: bash ./pos-workflows/tests/kurtosis_smoke_test.sh
 
       - name: Install Go
