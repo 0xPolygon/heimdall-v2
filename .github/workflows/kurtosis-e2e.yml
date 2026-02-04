@@ -129,13 +129,6 @@ jobs:
       - name: Inspect enclave
         run: kurtosis enclave inspect ${{ env.ENCLAVE_NAME }}
 
-      # Run e2e tests
-      - name: Test state syncs
-        uses: ./.github/actions/test-state-sync
-        with:
-          enclave_name: ${{ env.ENCLAVE_NAME }}
-          agglayer_e2e_tag: 2687c0c751e7cae2deaf4e99b13ae0d0ef97b2d7
-
       - name: Add new validator
         shell: bash
         working-directory: agglayer-e2e
@@ -163,6 +156,12 @@ jobs:
 
       - name: Run smoke tests
         run: bash ./pos-workflows/tests/kurtosis_smoke_test.sh
+      
+      - name: Test state syncs
+        uses: ./.github/actions/test-state-sync
+        with:
+          enclave_name: ${{ env.ENCLAVE_NAME }}
+          agglayer_e2e_tag: 2687c0c751e7cae2deaf4e99b13ae0d0ef97b2d7
 
       - name: Install Go
         uses: actions/setup-go@v6
