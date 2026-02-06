@@ -501,7 +501,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 256 // Rio height for local devnet.
+		rioHeight = 128 // Rio height for local devnet.
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
