@@ -145,24 +145,44 @@ jobs:
           polycli version
 
       - name: Run smoke tests
+        id: smoke-tests
         working-directory: pos-workflows/tests
-        run: ENABLE_PRODUCER_PLANNED_DOWNTIME_TEST=true bash kurtosis_smoke_test.sh
+        run: |
+          exit 1
+          ENABLE_PRODUCER_PLANNED_DOWNTIME_TEST=true bash kurtosis_smoke_test.sh
 
       - name: Run validator tests
+        id: validator-tests
         working-directory: pos-workflows/tests
         run: bash validator_tests.sh
 
       - name: Verify milestones after validator tests
+        id: milestone-monitor
         working-directory: pos-workflows/tests
         run: bash milestone_monitor.sh
 
       - name: Verify checkpoints after validator tests
+        id: checkpoint-monitor
         working-directory: pos-workflows/tests
         run: bash checkpoint_monitor.sh
 
       - name: Verify producer planned downtime
+        id: producer-downtime
         working-directory: pos-workflows/tests
         run: ENABLE_PRODUCER_PLANNED_DOWNTIME_TEST=true bash producer_planned_downtime/verify.sh
+
+      # Collect diagnostics on failure
+      - name: Collect network diagnostics and state dump
+        if: >-
+          always() && (
+          steps.smoke-tests.outcome == 'failure' ||
+          steps.validator-tests.outcome == 'failure' ||
+          steps.milestone-monitor.outcome == 'failure' ||
+          steps.checkpoint-monitor.outcome == 'failure' ||
+          steps.producer-downtime.outcome == 'failure')
+        uses: ./pos-workflows/.github/actions/network-diagnostics-and-state-dump
+        with:
+          enclave_name: ${{ env.ENCLAVE_NAME }}
 
       # Clean up
       - name: Post kurtosis run
