@@ -147,9 +147,7 @@ jobs:
       - name: Run smoke tests
         id: smoke-tests
         working-directory: pos-workflows/tests
-        run: |
-          exit 1
-          ENABLE_PRODUCER_PLANNED_DOWNTIME_TEST=true bash kurtosis_smoke_test.sh
+        run: ENABLE_PRODUCER_PLANNED_DOWNTIME_TEST=true bash kurtosis_smoke_test.sh
 
       - name: Run validator tests
         id: validator-tests
