@@ -42,7 +42,7 @@ func IsValidCheckpoint(start uint64, end uint64, rootHash []byte, checkpointLeng
 		exists, err := contractCaller.CheckIfBlocksExist(end + confirmations)
 		if err != nil {
 			return false, fmt.Errorf(
-				"%w: block existence check failed (end=%d confirmations=%d target=%d): %v",
+				"%w: block existence check failed (end=%d confirmations=%d target=%d): %w",
 				borTypes.ErrFailedToQueryBor,
 				end,
 				confirmations,
@@ -72,7 +72,7 @@ func IsValidCheckpoint(start uint64, end uint64, rootHash []byte, checkpointLeng
 		root, err = contractCaller.GetRootHash(start, end, checkpointLength)
 		if err != nil {
 			return false, fmt.Errorf(
-				"%w: root hash query failed (start=%d end=%d checkpointLength=%d): %v",
+				"%w: root hash query failed (start=%d end=%d checkpointLength=%d): %w",
 				borTypes.ErrFailedToQueryBor,
 				start,
 				end,
