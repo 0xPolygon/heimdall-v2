@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -82,7 +83,7 @@ const (
 
 	DefaultCometBFTNodeURL = "http://0.0.0.0:26657"
 
-	NoACKWaitTime = 1800 * time.Second // Time ack service waits to clear buffer and elect new proposer (1800 seconds ~ 30 min)
+	NoACKWaitTime = 1800 * time.Second // Time ack service waits to clear the buffer and elect the new proposer (1800 seconds ~ 30 min)
 
 	DefaultCheckpointPollInterval = 5 * time.Minute
 	DefaultSyncerPollInterval     = 1 * time.Minute
@@ -167,7 +168,7 @@ type CustomConfig struct {
 	SHMaxDepthDuration      time.Duration `mapstructure:"sh_max_depth_duration"`      // Max duration that allows to suggest self-healing is not needed
 
 	// wait-time-related options
-	NoACKWaitTime time.Duration `mapstructure:"no_ack_wait_time"` // Time ack service waits to clear buffer and elect new proposer
+	NoACKWaitTime time.Duration `mapstructure:"no_ack_wait_time"` // Time ack service waits to clear the buffer and elect the new proposer
 
 	// Log related options
 	LogsType       string `mapstructure:"logs_type"`        // if true, enable logging in json format
@@ -428,6 +429,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 
 	borClient = ethclient.NewClient(borRPCClient)
+	warnIfBorRPCInaccessible(borClient, conf.Custom.BorRPCTimeout, conf.Custom.BorRPCUrl)
 
 	if conf.Custom.BorGRPCFlag && conf.Custom.BorGRPCUrl != "" {
 		client, err := borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl, Logger)
@@ -435,6 +437,9 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 			log.Fatal("unable to create bor gRPC client", "URL", conf.Custom.BorGRPCUrl, "error", err)
 		}
 		borGRPCClient = client
+		warnIfBorGRPCInaccessible(borGRPCClient, conf.Custom.BorRPCTimeout, conf.Custom.BorGRPCUrl)
+	} else if conf.Custom.BorGRPCFlag && conf.Custom.BorGRPCUrl == "" {
+		log.Fatal("bor gRPC is enabled but bor_grpc_url is empty")
 	}
 
 	// Set default producers based on the chain if not already set by config or flags
@@ -507,6 +512,38 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
+	}
+}
+
+// warnIfBorRPCInaccessible checks if the Bor RPC endpoint is accessible by making a simple call to get the latest block number.
+// If the call fails, it logs a warning message. This is useful to detect issues with the Bor RPC endpoint at startup.
+func warnIfBorRPCInaccessible(client *ethclient.Client, timeout time.Duration, url string) {
+	if client == nil {
+		Logger.Warn("Bor RPC client is nil", "URL", url)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	if _, err := client.BlockNumber(ctx); err != nil {
+		Logger.Warn("Bor RPC endpoint appears inaccessible at startup", "URL", url, "error", err)
+	}
+}
+
+// warnIfBorGRPCInaccessible checks if the Bor gRPC endpoint is accessible by making a simple call to get the latest block header.
+// If the call fails, it logs a warning message. This is useful to detect issues with the Bor gRPC endpoint at startup.
+func warnIfBorGRPCInaccessible(client *borgrpc.BorGRPCClient, timeout time.Duration, url string) {
+	if client == nil {
+		Logger.Warn("Bor gRPC client is nil", "URL", url)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	if _, err := client.HeaderByNumber(ctx, -2); err != nil {
+		Logger.Warn("Bor gRPC endpoint appears inaccessible at startup", "URL", url, "error", err)
 	}
 }
 
