@@ -10,7 +10,6 @@ import (
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
@@ -884,38 +883,6 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	if err != nil {
 		s.k.Logger(ctx).Error(hmTypes.ErrMsgUnableToSetSequence, hmTypes.LogKeyError, err)
 		return err
-	}
-
-	// Move heimdall fee to new signer
-	oldAccAddress, err := addrCodec.NewHexCodec().StringToBytes(oldValidator.Signer)
-	if err != nil {
-		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertHexToBytes, hmTypes.LogKeyError, err)
-		return err
-	}
-
-	newAccAddress, err := addrCodec.NewHexCodec().StringToBytes(validator.Signer)
-	if err != nil {
-		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertHexToBytes, hmTypes.LogKeyError, err)
-		return err
-	}
-
-	coins := s.k.bankKeeper.GetBalance(ctx, oldAccAddress, authTypes.FeeToken)
-
-	// validate balance
-	if coins.IsNegative() {
-		s.k.Logger(ctx).Error("Negative balance for fee token", "address", oldValidator.Signer, "balance", coins.String())
-		return errors.New("negative balance for fee token")
-	}
-
-	polTokensBalance := coins.Amount.Abs()
-	if !polTokensBalance.IsZero() {
-		s.k.Logger(ctx).Info("Transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polTokensBalance.String())
-
-		polCoins := sdk.Coins{coins}
-		if err := s.k.bankKeeper.SendCoins(ctx, oldAccAddress, newAccAddress, polCoins); err != nil {
-			s.k.Logger(ctx).Info("Error while transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polTokensBalance.String())
-			return err
-		}
 	}
 
 	txBytes := ctx.TxBytes()
