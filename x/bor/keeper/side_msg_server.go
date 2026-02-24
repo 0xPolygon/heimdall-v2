@@ -257,9 +257,9 @@ func (srv sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 
 	childBlockNumber := childBlock.Number.Uint64()
 
-	activeProducers, err := srv.k.GetProducersByBlockNumber(ctx, childBlockNumber)
+	activeProducers, err := srv.k.GetProducersByBlockNumber(ctx, msg.DowntimeRange.StartBlock)
 	if err != nil {
-		logger.Error("Error fetching active producers during SideHandleSetProducerDowntime", "childBlock", childBlockNumber, "error", err)
+		logger.Error("Error fetching active producers during SideHandleSetProducerDowntime", "startBlock", msg.DowntimeRange.StartBlock, "error", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -272,7 +272,7 @@ func (srv sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 	}
 
 	if !isActiveProducer {
-		logger.Error("Producer is not in active producers set during SideHandleSetProducerDowntime", "producer", msg.Producer, "childBlock", childBlockNumber)
+		logger.Error("Producer is not in active producers set during SideHandleSetProducerDowntime", "producer", msg.Producer, "startBlock", msg.DowntimeRange.StartBlock)
 		return sidetxs.Vote_VOTE_NO
 	}
 
