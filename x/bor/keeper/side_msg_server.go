@@ -257,6 +257,25 @@ func (srv sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 
 	childBlockNumber := childBlock.Number.Uint64()
 
+	activeProducers, err := srv.k.GetProducersByBlockNumber(ctx, msg.DowntimeRange.StartBlock)
+	if err != nil {
+		logger.Error("Error fetching active producers during SideHandleSetProducerDowntime", "startBlock", msg.DowntimeRange.StartBlock, "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	isActiveProducer := false
+	for _, producer := range activeProducers {
+		if util.FormatAddress(producer.Hex()) == util.FormatAddress(msg.Producer) {
+			isActiveProducer = true
+			break
+		}
+	}
+
+	if !isActiveProducer {
+		logger.Error("Producer is not in active producers set during SideHandleSetProducerDowntime", "producer", msg.Producer, "startBlock", msg.DowntimeRange.StartBlock)
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock < types.PlannedDowntimeMinRange {
 		logger.Error("Time range for planned downtime is too small in bor side handler",
 			"startBlock", msg.DowntimeRange.StartBlock,
@@ -476,7 +495,7 @@ func (srv sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 
 	validatorId, err := srv.k.sk.GetValIdFromAddress(ctx, msg.Producer)
 	if err != nil {
-		logger.Error("Error fetching validator ID from address", "address", msg.Producer, "error", err)
+		logger.Error("Error fetching validator ID from address during PostHandleSetProducerDowntime", "address", msg.Producer, "error", err)
 		return err
 	}
 
@@ -485,7 +504,7 @@ func (srv sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	producers, err := srv.k.CalculateProducerSet(ctx, helper.GetProducerSetLimit(sdkCtx))
 	if err != nil {
-		logger.Error("Error calculating producer set", "error", err)
+		logger.Error("Error calculating producer set during PostHandleSetProducerDowntime", "error", err)
 		return err
 	}
 
@@ -497,11 +516,11 @@ func (srv sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 	}
 
 	if !isProducer {
-		return fmt.Errorf("producer with id %d is not a registered producer", validatorId)
+		return fmt.Errorf("producer with id %d is not a registered producer during PostHandleSetProducerDowntime", validatorId)
 	}
 
 	if len(producers) == 1 {
-		return fmt.Errorf("only one registered producer, cannot set planned downtime")
+		return fmt.Errorf("only one registered producer, cannot set planned downtime during PostHandleSetProducerDowntime")
 	}
 
 	// Only return an error if the requested downtime overlaps with every other producer

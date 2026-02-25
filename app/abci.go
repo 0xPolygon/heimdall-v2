@@ -108,7 +108,6 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				continue
 			}
 
-			// run the tx by executing the msg_server handler on the tx msgs and the ante handler
 			app.Logger().Info("Prepare proposal verify tx", "tx", tx.GetMsgs())
 			_, err = app.PrepareProposalVerifyTx(tx)
 			if err != nil {
@@ -204,7 +203,6 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 				}
 			}
 
-			// run the tx by executing the msg_server handler on the tx msgs and the ante handler
 			if _, err := app.ProcessProposalVerifyTx(tx); err != nil {
 				// this should never happen, as the txs have already been checked in PrepareProposal
 				logger.Error("RunTx returned an error in ProcessProposal", "error", err)

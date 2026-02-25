@@ -285,21 +285,24 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 
 	minFuture := uint64(types.PlannedDowntimeMinimumTimeInFuture)
 	maxFuture := types.PlannedDowntimeMaximumTimeInFuture
+	producerAddr := common.HexToAddress("0x0000000000000000000000000000000000000001").Hex()
+	otherProducerAddr := common.HexToAddress("0x0000000000000000000000000000000000000002").Hex()
 
-	newMsg := func(start, end uint64) *types.MsgSetProducerDowntime {
+	newMsg := func(producer string, start, end uint64) *types.MsgSetProducerDowntime {
 		return &types.MsgSetProducerDowntime{
-			Producer:      common.HexToAddress("0x0000000000000000000000000000000000000001").Hex(),
+			Producer:      producer,
 			DowntimeRange: types.BlockRange{StartBlock: start, EndBlock: end},
 		}
 	}
 
 	type testCase struct {
-		name         string
-		typeMismatch bool
-		current      uint64
-		msg          *types.MsgSetProducerDowntime
-		getBlockErr  error
-		expectVote   sidetxs.Vote
+		name                string
+		typeMismatch        bool
+		current             uint64
+		msg                 *types.MsgSetProducerDowntime
+		getBlockErr         error
+		activeProducerAddrs []string
+		expectVote          sidetxs.Vote
 	}
 
 	tests := []testCase{
@@ -311,47 +314,54 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 		{
 			name:        "GetBorChainBlock error returns NO",
 			current:     1_000_000,
-			msg:         newMsg(1_000_100, 1_000_200),
+			msg:         newMsg(producerAddr, 1_000_100, 1_000_200),
 			getBlockErr: fmt.Errorf("rpc error"),
 			expectVote:  sidetxs.Vote_VOTE_NO,
 		},
 		{
+			name:                "producer not in active producers set returns NO",
+			current:             1_000_000,
+			msg:                 newMsg(producerAddr, 1_000_200, 1_000_400),
+			activeProducerAddrs: []string{otherProducerAddr},
+			expectVote:          sidetxs.Vote_VOTE_NO,
+		},
+		{
 			name:       "start too soon - boundary (start == current+min-1) returns NO",
 			current:    5_000_000,
-			msg:        newMsg((5_000_000+minFuture)-1, (5_000_000+minFuture)+10),
+			msg:        newMsg(producerAddr, (5_000_000+minFuture)-1, (5_000_000+minFuture)+10),
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
 			name:       "start too soon - strict (start < current+min-1) returns NO",
 			current:    5_000_000,
-			msg:        newMsg((5_000_000+minFuture)-2, (5_000_000+minFuture)+10),
+			msg:        newMsg(producerAddr, (5_000_000+minFuture)-2, (5_000_000+minFuture)+10),
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
 			// handler rejects only if the end > current+maxFuture; equality is allowed
 			name:       "end boundary (end == current+max) returns YES",
 			current:    2_000_000,
-			msg:        newMsg(2_000_000+minFuture, 2_000_000+maxFuture),
+			msg:        newMsg(producerAddr, 2_000_000+minFuture, 2_000_000+maxFuture),
 			expectVote: sidetxs.Vote_VOTE_YES,
 		},
 		{
 			name:       "end too far - strict (end > current+max) returns NO",
 			current:    2_000_000,
-			msg:        newMsg(2_000_000+minFuture, 2_000_000+maxFuture+1),
+			msg:        newMsg(producerAddr, 2_000_000+minFuture, 2_000_000+maxFuture+1),
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
 			name:    "passes both checks - boundary just passing returns YES",
 			current: 3_000_000,
 			// start == current+min, end == current+max-1
-			msg:        newMsg(3_000_000+minFuture, (3_000_000+maxFuture)-1),
+			msg:        newMsg(producerAddr, 3_000_000+minFuture, (3_000_000+maxFuture)-1),
 			expectVote: sidetxs.Vote_VOTE_YES,
 		},
 		{
 			name:    "passes both checks - start well in future, end well within max returns YES",
 			current: 4_000_000,
 			// start >= current+min, end < current+max
-			msg:        newMsg(4_000_000+minFuture+100, 4_000_000+maxFuture-100),
+			msg:        newMsg(producerAddr, 4_000_000+minFuture+100, 4_000_000+maxFuture-100),
 			expectVote: sidetxs.Vote_VOTE_YES,
 		},
 	}
@@ -372,6 +382,27 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 					s.contractCaller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).
 						Return((*ethTypes.Header)(nil), tc.getBlockErr).Once()
 				} else {
+					producers := tc.activeProducerAddrs
+					if len(producers) == 0 {
+						producers = []string{producerAddr}
+					}
+
+					selectedProducers := make([]stakeTypes.Validator, 0, len(producers))
+					for i, producer := range producers {
+						selectedProducers = append(selectedProducers, stakeTypes.Validator{
+							ValId:  uint64(i + 1),
+							Signer: producer,
+						})
+					}
+
+					require.NoError(s.borKeeper.AddNewSpan(ctx, &types.Span{
+						Id:                1,
+						StartBlock:        1,
+						EndBlock:          tc.current + maxFuture + 10_000,
+						SelectedProducers: selectedProducers,
+						BorChainId:        "bor",
+					}))
+
 					s.contractCaller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).
 						Return(&ethTypes.Header{Number: big.NewInt(int64(tc.current))}, nil).Once()
 				}
