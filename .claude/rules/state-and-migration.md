@@ -13,6 +13,12 @@ paths:
 
 Changes to shared types, state migration, and proto definitions can silently corrupt chain state or break consensus across validators running different versions.
 
+## External Attack Vectors
+
+- **Malicious tx submitter** (anyone): crafts messages with fields that exploit `ValidateBasic()` gaps -- zero-value addresses, maximum-length strings, negative amounts that wrap unsigned, or proto messages with unexpected `oneof` variants. If these reach keepers and corrupt state, all nodes are affected.
+- **Governance attacker** (validator coalition): proposes param changes that set critical values to zero (span duration, checkpoint interval, min stake) or extremes, triggering division-by-zero panics or infinite loops in ABCI handlers. Params without bounds validation are exploitable.
+- **Upgrade-time attacker**: if a migration has a non-deterministic bug, the attacker waits for the upgrade height and submits transactions that exercise the buggy path, causing some validators to produce different post-migration state than others -- splitting the network.
+
 ## State Migration
 
 - Migrations must be deterministic -- all validators must produce identical post-migration state from identical pre-migration state

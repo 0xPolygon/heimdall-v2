@@ -17,6 +17,13 @@ paths:
 
 All Ethereum/Bor contract interactions flow through `helper.IContractCaller`. This is the trust boundary between Heimdall consensus and external chains. Bugs here can forge validator joins, steal funds, or corrupt checkpoints.
 
+## External Attack Vectors
+
+- **Malicious/compromised RPC provider**: returns fabricated block headers, fake receipts, wrong chain IDs, manipulated gas estimates, or zero-value responses. If `IContractCaller` doesn't validate responses, all validators using that provider vote based on false data. A coordinated RPC attack on a popular provider (Infura, Alchemy) can affect a majority of validators simultaneously.
+- **L1 contract upgrader** (Polygon governance): if L1 contracts (RootChain, StakeManager) are upgraded via proxy, ABI bindings become stale. Mismatched ABIs decode silently with wrong values -- no error, just garbage data flowing into consensus.
+- **Front-running attacker** (L1 MEV): observes Heimdall's `SendCheckpoint` or `StakeFor` transaction in the L1 mempool and front-runs with a same-nonce higher-gas replacement, or sandwich-attacks to manipulate gas pricing.
+- **Bor chain attacker**: if Bor's gRPC endpoint is compromised or a malicious Bor node is connected, it can feed false root hashes, block headers, or milestone data to Heimdall's side handlers.
+
 ## IContractCaller Interface (`helper/call.go`)
 
 - This is the single most security-critical non-consensus file in the codebase

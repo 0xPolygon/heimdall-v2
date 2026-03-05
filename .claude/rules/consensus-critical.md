@@ -11,6 +11,17 @@ paths:
 
 This code directly affects consensus. Bugs here can halt the chain, cause forks, or enable fund theft. Review with extreme caution.
 
+## External Attack Vectors
+
+These are the actors who can trigger consensus bugs **remotely** -- making any exploitable issue CRITICAL:
+
+- **Malicious proposer** (1 of ~100 validators): crafts proposals with malformed VEs, invalid tx ordering, or oversized payloads. If this triggers a panic in `ProcessProposal` on ALL honest validators, the chain halts. The proposer sacrifices their own block but stops the network.
+- **Malicious validator**: sends crafted vote extensions (malformed proto, oversized NonRpVE, duplicate votes, smuggled unknown fields). If `VerifyVoteExtension` panics or produces different results on different honest nodes, consensus breaks.
+- **External tx submitter** (anyone): submits transactions designed to exploit side-tx handlers, ante decorators, or keeper logic. If a crafted message causes non-deterministic state writes across validators, app hash diverges.
+- **Colluding minority** (<1/3 validators): submits conflicting vote extensions or milestones to exploit threshold edge cases (e.g., non-deterministic map iteration when multiple values meet 1/3 threshold).
+
+**Key question for every finding: "Can a malicious proposer/validator/user trigger this on honest nodes?"** If yes, it is CRITICAL regardless of how unlikely. Self-inflicted bugs (misconfiguration, code bug affecting only the buggy node) are lower severity.
+
 **Every module keeper change is consensus-critical.** Divergences in keeper state propagate to the app layer. If two nodes run different states, they produce the infamous **app hash mismatch error**, halting heimdall block production and impacting bor (finality, checkpoints, network liveness). Even if all nodes run the same version, a change in state management applied to previous blocks triggers app hash mismatch -- this is why **hard forks are required** for state-divergence changes (e.g., post-handler modifications).
 
 ## Determinism Requirements

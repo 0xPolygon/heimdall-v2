@@ -13,6 +13,13 @@ paths:
 
 This code handles L1<->L2 communication. Bugs here can lead to unauthorized validator joins, stolen funds, forged checkpoints, or state sync corruption.
 
+## External Attack Vectors
+
+- **L1 transaction crafter** (anyone with ETH): deploys a contract that emits events with matching topic hashes but from a wrong address, or crafts transactions with multiple events where log index extraction grabs the wrong one. If Heimdall doesn't verify `log.Address` and log index correctly, fake validator joins, stake updates, or state syncs are accepted.
+- **L1 reorg exploiter**: submits a staking event, waits for Heimdall to process it on a non-finalized block, then reorgs L1. If the bridge uses `latest` instead of `finalized`, the event is processed but never happened.
+- **Replay attacker**: replays a previously valid staking event (join, exit, signer change) if nonce checks are missing or flawed. Cost: one L1 transaction.
+- **Malicious validator (as tx submitter)**: crafts Heimdall messages with manipulated fields (wrong nonce, fake pubkey, altered amount) that pass `ValidateBasic()` but exploit weak side-handler validation.
+
 ## L1 Receipt Validation
 
 - ALWAYS verify transaction receipts against finalized L1 blocks (`rpc.FinalizedBlockNumber`), never pending/latest

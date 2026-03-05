@@ -14,6 +14,14 @@ paths:
 
 Heimdall delegates P2P consensus to CometBFT, but configures seeds, peers, RPC endpoints, and runs bridge listeners/broadcasters that connect to L1, Bor, and RabbitMQ. Compromised networking allows eclipse attacks, transaction censorship, or forged chain data.
 
+## External Attack Vectors
+
+- **Eclipse attacker** (any P2P participant): monopolizes a validator's peer connections by flooding with sybil peers. The isolated validator sees only attacker-controlled blocks/txs, can be tricked into signing conflicting proposals or missing votes. Low peer thresholds and enabled PEX make this easier.
+- **MITM on RPC** (network-level): if RPC connections to L1/Bor use plaintext HTTP, a network-level attacker can intercept and modify responses -- feeding fake finalized blocks, wrong root hashes, or fabricated receipts. Affects all bridge operations.
+- **RabbitMQ message injector** (adjacent service/host): if AMQP uses default `guest:guest` credentials or no TLS, any process on the same network can inject fabricated bridge events (fake state syncs, forged staking events) or consume/drop legitimate ones.
+- **Gossip flooder** (any peer): exploits aggressive gossip settings (e.g., 25ms `PeerGossipSleepDuration`) to amplify bandwidth consumption, degrading consensus performance for the target validator.
+- **SubGraph endpoint attacker** (MITM or compromised endpoint): feeds fabricated or empty event data to self-heal logic, causing the bridge to skip events or process fake ones during recovery.
+
 ## CometBFT P2P Configuration
 
 - Seed nodes and persistent peers must come from verified config for known networks (mainnet, amoy) -- never accept seeds from unvalidated runtime input

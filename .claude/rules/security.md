@@ -1,5 +1,23 @@
 # Security Review Rules
 
+## Threat Model -- External vs Self-Inflicted
+
+When classifying severity, always consider **who can trigger the bug**:
+
+| Attacker | Example | Severity Multiplier |
+|---|---|---|
+| **External user/tx submitter** | Crafted transaction crashes all validators | **Highest** -- anyone can attack, no permissions needed |
+| **Malicious validator/proposer** | Proposal with crafted VEs triggers panic in ProcessProposal on all honest nodes | **Critical** -- 1 of ~100 validators can halt the chain |
+| **Malicious RPC provider** | Fabricated L1 responses cause wrong side-tx votes | **High** -- trusted dependency, but external |
+| **Adjacent service** | RabbitMQ message injection forges bridge events | **High** -- requires network access |
+| **Malicious peer** | Eclipse attack, gossip flooding | **High** -- any P2P participant |
+| **Node misconfiguration** | Wrong chain ID, bad RPC URL | **Lower** -- operator error, self-inflicted |
+| **Code bug (no external trigger)** | Race condition, memory leak | **Lower** -- affects only the buggy node |
+
+**Key principle**: A bug that a single external actor (proposer, validator, user, peer) can trigger to crash/corrupt ALL honest nodes is always CRITICAL, regardless of how unlikely the scenario seems. A bug that only affects the node running the bad code is lower severity.
+
+When reviewing, ask: **"Can someone else make my node do this?"** If yes, severity goes up.
+
 ## Pre-Commit Security Checklist
 
 Before approving or completing any code change, verify:
@@ -43,7 +61,11 @@ Before approving or completing any code change, verify:
 When a security issue is found during review:
 
 1. **STOP** -- do not continue with the change
-2. Classify severity: CRITICAL (consensus break, fund loss), HIGH (validator manipulation, DoS), MEDIUM (info leak, degraded security), LOW (hardening opportunity)
+2. Classify severity using both impact AND attacker model:
+   - **CRITICAL**: externally triggerable consensus break or fund loss (malicious proposer/validator/user can halt chain or steal funds)
+   - **HIGH**: externally triggerable DoS or validator manipulation (malicious peer/RPC/queue can degrade network)
+   - **MEDIUM**: self-inflicted consensus risk or externally triggerable info leak
+   - **LOW**: self-inflicted degradation, hardening opportunity
 3. For CRITICAL/HIGH: flag immediately, do not merge, recommend fix before any other work
 4. Check the entire codebase for similar patterns
 5. If secrets were exposed: rotate immediately, check git history with `git log -p --all -S 'SECRET_VALUE'`
