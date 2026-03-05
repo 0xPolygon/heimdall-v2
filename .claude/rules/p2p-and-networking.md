@@ -23,6 +23,7 @@ Heimdall delegates P2P consensus to CometBFT, but configures seeds, peers, RPC e
 - P2P config changes in `packaging/templates/` propagate to all new deployments -- review with same rigor as code changes
 - Peer Exchange (PEX) reactor: if enabled, peers can inject malicious peer addresses. For validator nodes, prefer `pex = false` with explicit persistent peers. Sentry nodes can use PEX.
 - Validator nodes should not expose their P2P port publicly -- use sentry node architecture where sentry nodes shield validators from direct network access
+- **Reference the repo's own config templates** for current defaults and param tuning: `packaging/templates/config/mainnet/config.toml` and `packaging/templates/config/amoy/config.toml`. CometBFT params set programmatically in `cmd/heimdalld/cmd/commands.go` (`initCometBFTConfig`) may differ from template defaults.
 
 ## RPC Endpoint Security
 
@@ -59,6 +60,7 @@ Heimdall delegates P2P consensus to CometBFT, but configures seeds, peers, RPC e
 
 ## CLI Commands (`cmd/`)
 
+- Most modules have **autocli enabled** -- auto-generated CLI commands must correctly reflect the manually implemented CLI commands. If a module adds custom CLI commands, ensure they don't conflict with or shadow autocli-generated ones.
 - CLI commands that interact with contracts (`stake.go`: StakeFor, ApproveTokens) must validate all user inputs before calling the contract layer
 - Never log or echo private keys, even in error messages or debug output
 - `--home` flag controls key storage location -- validate path permissions (not world-readable, mode 0700 for keyring directory)

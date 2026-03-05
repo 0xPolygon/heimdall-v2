@@ -2,14 +2,16 @@
 paths:
   - "app/**/*.go"
   - "sidetxs/**/*.go"
-  - "x/checkpoint/**/*.go"
-  - "x/milestone/**/*.go"
-  - "x/bor/**/*.go"
+  - "x/**/keeper/*.go"
+  - "x/milestone/abci/**/*.go"
+  - "x/*/module.go"
 ---
 
 # Consensus-Critical Code Review
 
 This code directly affects consensus. Bugs here can halt the chain, cause forks, or enable fund theft. Review with extreme caution.
+
+**Every module keeper change is consensus-critical.** Divergences in keeper state propagate to the app layer. If two nodes run different states, they produce the infamous **app hash mismatch error**, halting heimdall block production and impacting bor (finality, checkpoints, network liveness). Even if all nodes run the same version, a change in state management applied to previous blocks triggers app hash mismatch -- this is why **hard forks are required** for state-divergence changes (e.g., post-handler modifications).
 
 ## Determinism Requirements
 
@@ -26,12 +28,14 @@ This code directly affects consensus. Bugs here can halt the chain, cause forks,
 Understand which handlers are deterministic vs non-deterministic:
 
 - **`ExtendVote`**: per-validator, MAY make external RPC calls (L1, Bor), MAY be non-deterministic. This is where side-handlers run and produce validator-specific opinions.
-- **`VerifyVoteExtension`**: per-validator, MUST be deterministic for vote validity. All validators must agree on whether a vote extension is valid. No external network calls.
-- **`ProcessProposal`**: deterministic validation. All validators must accept or reject the same proposal identically. No external network calls.
-- **`PreBlocker`**: deterministic execution. Tallies votes, runs post-handlers, applies approved side-txs. No external network calls. State writes happen here.
-- **`PrepareProposal`**: proposer-only, may filter/reorder txs. Not required to be deterministic with other validators, but output must pass `ProcessProposal`.
+- **`VerifyVoteExtension`**: per-validator, MUST be deterministic for vote validity. All validators must agree on whether a vote extension is valid. No external network calls. Should mirror the validation logic of `ExtendVote` -- every check in `ExtendVote` should have a corresponding verification in `VerifyVoteExtension`.
+- **`ProcessProposal`**: deterministic validation. All validators must accept or reject the same proposal identically. No external network calls. **All validation checks from `PrepareProposal` must also be executed in `ProcessProposal`** -- if the proposer validates something, all validators must validate it too.
+- **`PreBlocker`**: deterministic execution. State writes happen here at two levels:
+  - **App-level PreBlocker** (`app/abci.go`): tallies votes, runs post-handlers for approved side-txs, processes milestone propositions, handles checkpoint signatures
+  - **Module-level PreBlockers**: invoked by the app-level PreBlocker at the end. The **stake module** performs validator set updates here. Changes to module PreBlockers are as critical as app-level ones.
+- **`PrepareProposal`**: proposer-only, may filter/reorder txs. Not required to be deterministic with other validators, but output must pass `ProcessProposal`. **Malformed VEs must be filtered out here** (not halt consensus), but explicitly rejected during ProcessProposal.
 
-Confusing these guarantees is the #1 source of consensus bugs.
+**Every error returned by an ABCI method triggers a panic in CometBFT, which can halt the chain.** Errors must be justified by strong backing reasons (e.g., proposal is provably invalid). When in doubt, log and continue rather than return an error.
 
 ## Vote Extension Security
 
@@ -42,26 +46,42 @@ Confusing these guarantees is the #1 source of consensus bugs.
 - Verify vote extension signatures against the canonical public key set at H-1
 - Enforce 2/3+ voting power threshold for side-tx approval (use `> 2/3` not `>= 2/3` -- match CometBFT's convention)
 - Enforce the single-side-msg-per-tx invariant to prevent vote hash collisions
-- `VoteExtensionsEnableHeight` in CometBFT config determines when VEs activate -- code must handle blocks before this height where VEs are absent
+- **`VoteExtensionsEnableHeight`**: heimdall-v2 launched with VEs always enabled (final v1 block + 1). This value MUST NEVER be changed -- modifying it would be catastrophic for consensus.
+- Enforce explicit size bounds on VEs and NonRpVEs -- filter/reject oversized and undersized extensions. Size params are defined in module params and enforced in PrepareProposal/ProcessProposal.
 
 ## PrepareProposal / ProcessProposal
 
-- Both handlers must enforce identical validation rules -- any divergence causes consensus failure
-- PrepareProposal filters invalid vote extensions; ProcessProposal rejects the entire proposal if any invalid VE is included
+- **All checks in PrepareProposal must be mirrored in ProcessProposal.** If the proposer validates something, all validators must validate it identically.
+- PrepareProposal **filters** invalid/malformed vote extensions (silently drops them to avoid halting consensus). ProcessProposal **rejects** the entire proposal if invalid VEs are included (the proposer should have filtered them).
 - VEBLOP conditions (MsgVoteProducers, MsgSetProducerDowntime) must be checked consistently in both handlers
 - PrepareProposal chooses transaction order; ProcessProposal must validate any valid ordering (don't assume order)
 
+## Milestone Module ABCI (`x/milestone/abci/`)
+
+The milestone module has its own ABCI implementation requiring particular attention:
+
+- Milestone propositions affect **bor finality** -- incorrect milestones compromise the entire finality guarantee of the Polygon PoS stack
+- `GenMilestoneProposition` makes external RPC calls to Bor (allowed in ExtendVote)
+- `GetMajorityMilestoneProposition` runs in PreBlocker (deterministic path) -- map iterations MUST be sorted
+- Milestone acceptance (2/3 majority) vs pending status (1/3) have different thresholds with different safety properties
+- Stalled milestones trigger span rotation -- incorrect milestone logic cascades into producer selection failures
+
 ## PreBlocker Security
 
+- State writes happen at **both** app level and module level:
+  - App-level: vote tallying, side-tx post-handlers, milestone processing, checkpoint signatures
+  - Module-level: stake module performs **validator set updates** via `ApplyAndReturnValidatorSetUpdates()`, chainmanager migrates contract addresses at specific heights
 - Tallying logic must use canonical validator set from H-1, never trust caller-provided voting power
 - 2/3 majority threshold for milestone acceptance, 1/3 for pending status -- verify exact threshold math (off-by-one in voting power comparison is a consensus vulnerability)
 - Checkpoint signature aggregation must validate each signature individually
 - Post-handlers for approved side-txs execute state changes -- they MUST be deterministic and MUST NOT make external calls
 - Post-handlers should be safe to crash-recover (node restarts mid-block replay the entire block)
+- **Any change to post-handler state logic applied to previous blocks requires a hard fork** -- you cannot change how past blocks are processed without causing app hash mismatch
 
 ## Panic Safety
 
 - Panics in any ABCI handler crash the node and can halt the chain if triggered for all validators
+- **Any error returned from an ABCI method triggers a CometBFT panic** -- only return errors when you have strong justification (provably invalid proposal, corrupted state). Prefer logging + graceful degradation over error returns.
 - Guard against nil pointer dereference: proto message fields, RPC responses, interface values
 - Guard against index out of range: vote extension arrays, validator lists, event logs
 - Guard against division by zero: voting power calculations, span duration math
@@ -73,14 +93,16 @@ Confusing these guarantees is the #1 source of consensus bugs.
 - Unbounded computation causes CometBFT timeouts and consensus stalls
 - Bound iteration over vote extensions, side-tx responses, and validator sets
 - Maximum 50 side-tx responses per vote extension -- validate this bound before iterating
+- Enforce explicit size bounds on VEs and NonRpVEs: filter/reject oversized and undersized extensions at PrepareProposal, reject at ProcessProposal
 
 ## Side Transaction Invariants
 
 - No duplicate tx hashes in side-tx responses
-- Valid vote types only (YES, NO, UNSPECIFIED)
+- Valid vote types: YES and NO are actively used. UNSPECIFIED exists in the proto definition but is not actively used in code -- treat it as an abstain/no-op, do not assume it carries semantic meaning.
 - `SideTxDecorator` must enforce at most one side-tx message per transaction
 - Side handlers (in `ExtendVote`) produce per-validator opinions -- disagreement is normal
 - Post-handlers (in `PreBlocker`) execute only for txs with 2/3+ approval -- must be deterministic
+- **`side_msg_server.go` in every module is especially critical** -- these define the side and post handlers that directly write state. Any change here can cause app hash divergence.
 
 ## Red Flags -- Reject Immediately
 
@@ -92,3 +114,6 @@ Confusing these guarantees is the #1 source of consensus bugs.
 - Modifying state directly in ABCI handlers instead of through keepers
 - Changes to tallying logic without corresponding test updates
 - Unguarded array/slice indexing on external data in ABCI handlers
+- Changes to post-handler state logic without planning a hard fork
+- Modifying `VoteExtensionsEnableHeight`
+- Any ABCI error return without strong justification (it triggers a CometBFT panic)
