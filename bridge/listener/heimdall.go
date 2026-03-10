@@ -160,6 +160,14 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 		}
 	}
 
+	// Clamp fromBlock to the node's earliest available block (this handles pruned snapshots)
+	earliestBlock := uint64(nodeStatus.SyncInfo.EarliestBlockHeight)
+	if earliestBlock > 0 && fromBlock < earliestBlock {
+		hl.Logger.Info("HeimdallListener: fromBlock is before the node's earliest available block, skipping ahead",
+			"fromBlock", fromBlock, "earliestBlock", earliestBlock)
+		fromBlock = earliestBlock
+	}
+
 	// toBlock - get the latest block height from heimdall node
 	toBlock := uint64(nodeStatus.SyncInfo.LatestBlockHeight)
 	if toBlock <= fromBlock {
