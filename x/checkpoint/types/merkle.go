@@ -41,7 +41,14 @@ func IsValidCheckpoint(start uint64, end uint64, rootHash []byte, checkpointLeng
 		// Check if blocks exist locally
 		exists, err := contractCaller.CheckIfBlocksExist(end + confirmations)
 		if err != nil {
-			return false, borTypes.ErrFailedToQueryBor
+			return false, fmt.Errorf(
+				"%w: block existence check failed (end=%d confirmations=%d target=%d): %w",
+				borTypes.ErrFailedToQueryBor,
+				end,
+				confirmations,
+				end+confirmations,
+				err,
+			)
 		}
 		if !exists {
 			return false, errors.New("blocks not found locally")
@@ -64,7 +71,14 @@ func IsValidCheckpoint(start uint64, end uint64, rootHash []byte, checkpointLeng
 		// Compare RootHash
 		root, err = contractCaller.GetRootHash(start, end, checkpointLength)
 		if err != nil {
-			return false, borTypes.ErrFailedToQueryBor
+			return false, fmt.Errorf(
+				"%w: root hash query failed (start=%d end=%d checkpointLength=%d): %w",
+				borTypes.ErrFailedToQueryBor,
+				start,
+				end,
+				checkpointLength,
+				err,
+			)
 		}
 
 		if len(root) > 0 {

@@ -364,7 +364,11 @@ func (c *ContractCaller) GetRootHash(start, end, checkpointLength uint64) ([]byt
 	var err error
 
 	if c.BorChainGrpcFlag {
-		rootHash, err = c.BorChainGrpcClient.GetRootHash(ctx, start, end)
+		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
+		if grpcErr != nil {
+			return nil, grpcErr
+		}
+		rootHash, err = grpcClient.GetRootHash(ctx, start, end)
 	} else {
 		rootHash, err = c.BorChainClient.GetRootHash(ctx, start, end)
 	}
@@ -390,7 +394,11 @@ func (c *ContractCaller) GetVoteOnHash(start, end uint64, hash, milestoneID stri
 	var err error
 
 	if c.BorChainGrpcFlag {
-		vote, err = c.BorChainGrpcClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
+		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
+		if grpcErr != nil {
+			return false, grpcErr
+		}
+		vote, err = grpcClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
 	} else {
 		vote, err = c.BorChainClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
 	}
@@ -523,11 +531,16 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 	var latestBlock *ethTypes.Header
 
 	if c.BorChainGrpcFlag {
+		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
+		if grpcErr != nil {
+			Logger.Error(errUnableToConnect, "error", grpcErr)
+			return nil, grpcErr
+		}
 		if blockNum == nil {
 			// LatestBlockNumber is BlockNumber(-2) in go-ethereum rpc
-			latestBlock, err = c.BorChainGrpcClient.HeaderByNumber(ctx, -2)
+			latestBlock, err = grpcClient.HeaderByNumber(ctx, -2)
 		} else {
-			latestBlock, err = c.BorChainGrpcClient.HeaderByNumber(ctx, blockNum.Int64())
+			latestBlock, err = grpcClient.HeaderByNumber(ctx, blockNum.Int64())
 		}
 	} else {
 		latestBlock, err = c.BorChainClient.HeaderByNumber(ctx, blockNum)
@@ -1012,11 +1025,27 @@ func (c *ContractCaller) CheckIfBlocksExist(number uint64) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
 	defer cancel()
 
-	header, err := c.BorChainClient.HeaderByNumber(ctx, big.NewInt(int64(number)))
+	var (
+		header *ethTypes.Header
+		err    error
+	)
+
+	if c.BorChainGrpcFlag {
+		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
+		if grpcErr != nil {
+			return false, grpcErr
+		}
+		header, err = grpcClient.HeaderByNumber(ctx, int64(number))
+	} else {
+		header, err = c.BorChainClient.HeaderByNumber(ctx, big.NewInt(int64(number)))
+	}
 	if err != nil {
+		if errors.Is(err, ethereum.NotFound) {
+			return false, nil
+		}
 		return false, err
 	}
-	if header == nil {
+	if header == nil || header.Number == nil {
 		return false, nil
 	}
 
@@ -1029,7 +1058,11 @@ func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint6
 	var err error
 
 	if c.BorChainGrpcFlag {
-		block, err = c.BorChainGrpcClient.BlockByNumber(ctx, int64(blockNumber))
+		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
+		if grpcErr != nil {
+			return nil, grpcErr
+		}
+		block, err = grpcClient.BlockByNumber(ctx, int64(blockNumber))
 	} else {
 		block, err = c.BorChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
 	}
@@ -1060,7 +1093,11 @@ func (c *ContractCaller) GetBorTxReceipt(txHash common.Hash) (*ethTypes.Receipt,
 	defer cancel()
 
 	if c.BorChainGrpcFlag {
-		return c.getTxReceipt(ctx, nil, c.BorChainGrpcClient, txHash)
+		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
+		if grpcErr != nil {
+			return nil, grpcErr
+		}
+		return c.getTxReceipt(ctx, nil, grpcClient, txHash)
 	}
 	return c.getTxReceipt(ctx, c.BorChainClient, nil, txHash)
 }
@@ -1098,6 +1135,14 @@ func (c *ContractCaller) GetCheckpointSign(txHash common.Hash) ([]byte, []byte, 
 	chainABI := c.RootChainABI
 
 	return UnpackSigAndVotes(payload, chainABI)
+}
+
+// getRequiredBorGRPCClient returns the bor grpc client or an error
+func (c *ContractCaller) getRequiredBorGRPCClient() (*grpc.BorGRPCClient, error) {
+	if c.BorChainGrpcClient == nil {
+		return nil, errors.New("bor grpc client is nil while bor grpc flag is enabled")
+	}
+	return c.BorChainGrpcClient, nil
 }
 
 // utility and helper methods

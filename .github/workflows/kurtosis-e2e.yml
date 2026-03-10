@@ -17,6 +17,7 @@ concurrency:
 
 env:
   ENCLAVE_NAME: kurtosis-e2e
+  POLYCLI_VERSION: v0.1.103
 
 jobs:
   build-bor:
@@ -29,13 +30,13 @@ jobs:
           repository: 0xPolygon/bor
           ref: develop
 
-      - name: Build docker image
+      - name: Build bor docker image
         run: docker build -t bor:local --file Dockerfile .
 
-      - name: Save image
+      - name: Save bor docker image
         run: docker save bor:local | gzip > bor-image.tar.gz
 
-      - name: Upload image
+      - name: Upload bor docker image
         uses: actions/upload-artifact@v4
         with:
           name: bor-image
@@ -49,13 +50,13 @@ jobs:
       - name: Checkout heimdall-v2
         uses: actions/checkout@v5
 
-      - name: Build docker image
+      - name: Build heimdall-v2 docker image
         run: docker build -t heimdall-v2:local --file Dockerfile .
 
-      - name: Save image
+      - name: Save heimdall-v2 docker image
         run: docker save heimdall-v2:local | gzip > heimdall-v2-image.tar.gz
 
-      - name: Upload image
+      - name: Upload heimdall-v2 docker image
         uses: actions/upload-artifact@v4
         with:
           name: heimdall-v2-image
@@ -67,7 +68,7 @@ jobs:
       - build-bor
       - build-heimdall-v2
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     # These permissions are required to log in to GCR
     permissions:
       contents: read
@@ -79,7 +80,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: 0xPolygon/kurtosis-pos
-          ref: hv2/tx-eip1559-gas-price-configs
+          ref: hv2/eip1559-and-rio-at-128
 
       # This step will free disk space and thus remove any docker images previously built
       - name: Pre kurtosis run
@@ -97,29 +98,29 @@ jobs:
           path: pos-workflows
 
       - name: Copy kurtosis config
-        run: cp ./pos-workflows/.github/configs/kurtosis-e2e.yml ./kurtosis-e2e.yml
+        run: cp ./pos-workflows/configs/kurtosis-e2e.yml ./kurtosis-e2e.yml
 
       # Load images
-      - name: Download bor image
+      - name: Download bor docker image
         uses: actions/download-artifact@v4
         with:
           name: bor-image
 
-      - name: Download heimdall-v2 image
+      - name: Download heimdall-v2 docker image
         uses: actions/download-artifact@v4
         with:
           name: heimdall-v2-image
 
-      - name: Load bor image
+      - name: Load bor docker image
         run: |
           gunzip -c bor-image.tar.gz | docker load
-          echo "Loaded bor image:"
+          echo "Loaded bor docker image:"
           docker images bor:local --format "{{.ID}} {{.CreatedAt}}"
 
-      - name: Load heimdall-v2 image
+      - name: Load heimdall-v2 docker image
         run: |
           gunzip -c heimdall-v2-image.tar.gz | docker load
-          echo "Loaded heimdall-v2 image:"
+          echo "Loaded heimdall-v2 docker image:"
           docker images heimdall-v2:local --format "{{.ID}} {{.CreatedAt}}"
 
       # Deploy kurtosis enclave
@@ -129,51 +130,57 @@ jobs:
       - name: Inspect enclave
         run: kurtosis enclave inspect ${{ env.ENCLAVE_NAME }}
 
-      - name: Sleep for 1 minute
-        run: sleep 60
-
-      - name: Test state syncs
-        uses: ./.github/actions/test-state-sync
-        with:
-          enclave_name: ${{ env.ENCLAVE_NAME }}
-          agglayer_e2e_tag: 2687c0c751e7cae2deaf4e99b13ae0d0ef97b2d7
-
-      - name: Add new validator
-        shell: bash
-        working-directory: agglayer-e2e
-        run: bats --show-output-of-passing-tests --filter 'add new validator' tests/pos/validator.bats
-
-      - name: Update validator stake
-        shell: bash
-        working-directory: agglayer-e2e
-        run: bats --show-output-of-passing-tests --filter 'update validator stake' tests/pos/validator.bats
-
-      - name: Delegate MATIC/POL to a validator
-        shell: bash
-        working-directory: agglayer-e2e
-        run: bats --show-output-of-passing-tests --filter 'delegate MATIC/POL to a validator' tests/pos/validator.bats
-
-      - name: Undelegate MATIC/POL from a validator
-        shell: bash
-        working-directory: agglayer-e2e
-        run: bats --show-output-of-passing-tests --filter 'undelegate MATIC/POL from a validator' tests/pos/validator.bats
-
-      - name: Remove validator
-        shell: bash
-        working-directory: agglayer-e2e
-        run: bats --show-output-of-passing-tests --filter 'remove validator' tests/pos/validator.bats
-
-      - name: Run smoke tests
-        run: bash ./pos-workflows/tests/kurtosis_smoke_test.sh
-
       - name: Install Go
         uses: actions/setup-go@v6
         with:
           go-version: 'stable'
 
-      - name: Run set producer downtime test
-        working-directory: pos-workflows/tests/producer_planned_downtime
-        run: go run .
+      - name: Install polycli
+        run: |
+          tmp_dir=$(mktemp -d)
+          curl -L https://github.com/0xPolygon/polygon-cli/releases/download/${{ env.POLYCLI_VERSION }}/polycli_${{ env.POLYCLI_VERSION }}_linux_amd64.tar.gz | tar -xz -C "$tmp_dir"
+          mv "$tmp_dir"/* /usr/local/bin/polycli
+          rm -rf "$tmp_dir"
+          sudo chmod +x /usr/local/bin/polycli
+          polycli version
+
+      - name: Run smoke tests
+        id: smoke-tests
+        working-directory: pos-workflows/tests
+        run: ENABLE_PRODUCER_PLANNED_DOWNTIME_TEST=true bash kurtosis_smoke_test.sh
+
+      - name: Run validator tests
+        id: validator-tests
+        working-directory: pos-workflows/tests
+        run: bash validator_tests.sh
+
+      - name: Verify milestones after validator tests
+        id: milestone-monitor
+        working-directory: pos-workflows/tests
+        run: bash milestone_monitor.sh
+
+      - name: Verify checkpoints after validator tests
+        id: checkpoint-monitor
+        working-directory: pos-workflows/tests
+        run: bash checkpoint_monitor.sh
+
+      - name: Verify producer planned downtime
+        id: producer-downtime
+        working-directory: pos-workflows/tests
+        run: ENABLE_PRODUCER_PLANNED_DOWNTIME_TEST=true bash producer_planned_downtime/verify.sh
+
+      # Collect diagnostics on failure
+      - name: Collect network diagnostics and state dump
+        if: >-
+          always() && (
+          steps.smoke-tests.outcome == 'failure' ||
+          steps.validator-tests.outcome == 'failure' ||
+          steps.milestone-monitor.outcome == 'failure' ||
+          steps.checkpoint-monitor.outcome == 'failure' ||
+          steps.producer-downtime.outcome == 'failure')
+        uses: ./pos-workflows/.github/actions/network-diagnostics-and-state-dump
+        with:
+          enclave_name: ${{ env.ENCLAVE_NAME }}
 
       # Clean up
       - name: Post kurtosis run
