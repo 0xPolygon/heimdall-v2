@@ -92,6 +92,65 @@ func TestNewCheckpointProcessor(t *testing.T) {
 	})
 }
 
+func TestCheckpointProcessor_NoAckGuard(t *testing.T) {
+	t.Parallel()
+
+	t.Run("skips no-ack check when previous run is in progress", func(t *testing.T) {
+		t.Parallel()
+
+		cp := &CheckpointProcessor{}
+		cp.BaseProcessor.Logger = log.NewNopLogger()
+
+		// Pre-set noAckInProgress to true (simulating a run already in progress)
+		cp.noAckInProgress.Store(true)
+
+		ctx, cancel := context.WithCancel(context.Background())
+
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			// Use a very short interval so the ticker fires before we cancel
+			cp.startPollingForNoAck(ctx, 20*time.Millisecond)
+		}()
+
+		// Wait for at least one tick to be processed (the skip path)
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+
+		select {
+		case <-done:
+			// startPollingForNoAck returned after context cancellation
+		case <-time.After(2 * time.Second):
+			t.Fatal("startPollingForNoAck did not stop after context cancellation")
+		}
+
+		// noAckInProgress should still be true (the goroutine was never spawned, so Store(false) was never called)
+		require.True(t, cp.noAckInProgress.Load())
+	})
+
+	t.Run("noAckInProgress defaults to false", func(t *testing.T) {
+		t.Parallel()
+
+		cp := &CheckpointProcessor{}
+		require.False(t, cp.noAckInProgress.Load())
+	})
+
+	t.Run("CompareAndSwap prevents concurrent access", func(t *testing.T) {
+		t.Parallel()
+
+		cp := &CheckpointProcessor{}
+
+		// First CAS should succeed
+		require.True(t, cp.noAckInProgress.CompareAndSwap(false, true))
+		// Second CAS should fail
+		require.False(t, cp.noAckInProgress.CompareAndSwap(false, true))
+		// Store resets the flag
+		cp.noAckInProgress.Store(false)
+		// CAS should succeed again
+		require.True(t, cp.noAckInProgress.CompareAndSwap(false, true))
+	})
+}
+
 func TestCheckpointProcessor_Constants(t *testing.T) {
 	t.Parallel()
 
