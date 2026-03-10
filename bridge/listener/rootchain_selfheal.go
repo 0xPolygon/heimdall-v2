@@ -3,7 +3,6 @@ package listener
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"sync"
@@ -19,26 +18,26 @@ import (
 )
 
 var (
-	stateSyncedCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+	stateSyncedCounter = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: "self_healing",
 		Subsystem: helper.GetConfig().Chain,
 		Name:      "StateSynced",
-		Help:      "The total number of missing StateSynced events",
-	}, []string{"id", "contract_address", "block_number", "tx_hash"})
+		Help:      "The total number of missing StateSynced events processed",
+	})
 
-	stakeUpdateCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+	stakeUpdateCounter = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: "self_healing",
 		Subsystem: helper.GetConfig().Chain,
 		Name:      "StakeUpdate",
-		Help:      "The total number of missing StakeUpdate events",
-	}, []string{"id", "nonce", "contract_address", "block_number", "tx_hash"})
+		Help:      "The total number of missing StakeUpdate events processed",
+	})
 
-	checkpointAckCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+	checkpointAckCounter = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: "self_healing",
 		Subsystem: helper.GetConfig().Chain,
 		Name:      "NewHeaderBlock",
 		Help:      "The total number of acks sent for missing NewHeaderBlock events",
-	}, []string{"headerBlockId", "contract_address", "block_number", "tx_hash"})
+	})
 )
 
 type subGraphClient struct {
@@ -76,6 +75,7 @@ func (rl *RootChainListener) startSelfHealing(ctx context.Context) {
 			rl.Logger.Info("Self-healing: stopping")
 			stakeUpdateTicker.Stop()
 			stateSyncedTicker.Stop()
+			checkpointAckTicker.Stop()
 
 			return
 		}
@@ -168,12 +168,7 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 		return
 	}
 
-	checkpointAckCounter.WithLabelValues(
-		fmt.Sprintf("%d", l1HeaderBlockId),
-		targetLog.Address.Hex(),
-		fmt.Sprintf("%d", targetLog.BlockNumber),
-		targetLog.TxHash.Hex(),
-	).Add(1)
+	checkpointAckCounter.Inc()
 
 	// Send the checkpoint ACK task.
 	rl.SendTaskWithDelay("sendCheckpointAckToHeimdall", helper.NewHeaderBlockEvent, logBytes, 0, nil)
@@ -235,13 +230,7 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 			}
 			rl.Logger.Info("Self-healing: fetched StakeUpdate event from Ethereum", "validatorId", id, "nonce", nonce, "blockNumber", stakeUpdate.BlockNumber, "txHash", stakeUpdate.TxHash.Hex())
 
-			stakeUpdateCounter.WithLabelValues(
-				fmt.Sprintf("%d", id),
-				fmt.Sprintf("%d", nonce),
-				stakeUpdate.Address.Hex(),
-				fmt.Sprintf("%d", stakeUpdate.BlockNumber),
-				stakeUpdate.TxHash.Hex(),
-			).Add(1)
+			stakeUpdateCounter.Inc()
 
 			if _, err = rl.processEvent(ctx, stakeUpdate); err != nil {
 				rl.Logger.Error("Self-healing: failed to process StakeUpdate event", "validatorId", id, "nonce", nonce, "error", err)
@@ -273,6 +262,8 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 		return
 	}
 
+	const maxRetriesPerState = 3
+
 	for i := latestPolygonStateId.Int64() + 1; i <= latestEthereumStateId.Int64(); i++ {
 		if _, err = util.GetClerkEventRecord(i, rl.cliCtx.Codec); err == nil {
 			rl.Logger.Info("Self-healing: state ID already synced on Heimdall; skipping", "stateId", i)
@@ -291,37 +282,46 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 			continue
 		}
 
-		stateSyncedCounter.WithLabelValues(
-			fmt.Sprintf("%d", i),
-			stateSynced.Address.Hex(),
-			fmt.Sprintf("%d", stateSynced.BlockNumber),
-			stateSynced.TxHash.Hex(),
-		).Add(1)
+		stateSyncedCounter.Inc()
 
-		ignore, err := rl.processEvent(ctx, stateSynced)
-		if err != nil {
-			rl.Logger.Error("Self-healing: failed to process StateSynced event and update Heimdall", "stateId", i, "error", err)
-			i--
-			continue
-		}
+		var synced bool
 
-		if !ignore {
+		for attempt := 0; attempt < maxRetriesPerState; attempt++ {
+			ignore, err := rl.processEvent(ctx, stateSynced)
+			if err != nil {
+				rl.Logger.Error("Self-healing: failed to process StateSynced event and update Heimdall", "stateId", i, "attempt", attempt+1, "error", err)
+				continue
+			}
+
+			if ignore {
+				synced = true
+				break
+			}
+
 			time.Sleep(1 * time.Second)
 
-			var statusCheck int
-			for statusCheck = 0; statusCheck < 15; statusCheck++ {
+			var confirmed bool
+
+			for statusCheck := 0; statusCheck < 15; statusCheck++ {
 				if _, err = util.GetClerkEventRecord(i, rl.cliCtx.Codec); err == nil {
 					rl.Logger.Info("Self-healing: stateId found on Heimdall after processing", "stateId", i)
+					confirmed = true
 					break
 				}
 				rl.Logger.Info("Self-healing: stateId not yet found on Heimdall; retrying", "stateId", i)
 				time.Sleep(1 * time.Second)
 			}
 
-			if statusCheck >= 15 {
-				i--
-				continue
+			if confirmed {
+				synced = true
+				break
 			}
+
+			rl.Logger.Warn("Self-healing: stateId not confirmed after polling; will retry", "stateId", i, "attempt", attempt+1)
+		}
+
+		if !synced {
+			rl.Logger.Error("Self-healing: giving up on stateId after max retries; moving to next", "stateId", i, "maxRetries", maxRetriesPerState)
 		}
 	}
 }

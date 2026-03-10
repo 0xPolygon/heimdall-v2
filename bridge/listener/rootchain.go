@@ -37,7 +37,8 @@ type RootChainListener struct {
 }
 
 const (
-	lastRootBlockKey = "rootchain-last-block" // storage key
+	lastRootBlockKey       = "rootchain-last-block" // storage key
+	maxRootChainBlockRange = 5000                   // max number of blocks to fetch logs for in a single FilterLogs call
 )
 
 // NewRootChainListener - constructor func
@@ -149,22 +150,31 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 		from = to
 	}
 
-	// process logs first
-	if err := rl.queryAndBroadcastEvents(rootChainContext, from, to); err != nil {
-		rl.Logger.Error(
-			"queryAndBroadcastEvents failed",
-			"error", err,
-			"from", from,
-			"to", to,
-		)
-		// do not advance the cursor, as we want to retry this range on the next header
-		return
-	}
+	// process logs in chunks to avoid oversized FilterLogs responses
+	for chunkFrom := new(big.Int).Set(from); chunkFrom.Cmp(to) <= 0; {
+		chunkTo := new(big.Int).Add(chunkFrom, big.NewInt(maxRootChainBlockRange-1))
+		if chunkTo.Cmp(to) > 0 {
+			chunkTo = to
+		}
 
-	// after successfully processing the logs, advance the cursor by setting the last block to storage
-	if err := rl.storageClient.Put([]byte(lastRootBlockKey), []byte(to.String()), nil); err != nil {
-		rl.Logger.Error("RootChainListener: error persisting last root block in storage", "error", err, "lastRootBlock", to.String())
-		// If this fails, we’ll reprocess [from, to] next time
+		if err := rl.queryAndBroadcastEvents(rootChainContext, chunkFrom, chunkTo); err != nil {
+			rl.Logger.Error(
+				"queryAndBroadcastEvents failed",
+				"error", err,
+				"from", chunkFrom,
+				"to", chunkTo,
+			)
+			// do not advance the cursor, as we want to retry this range on the next header
+			return
+		}
+
+		// advance the cursor after each successful chunk
+		if err := rl.storageClient.Put([]byte(lastRootBlockKey), []byte(chunkTo.String()), nil); err != nil {
+			rl.Logger.Error("RootChainListener: error persisting last root block in storage", "error", err, "lastRootBlock", chunkTo.String())
+			return
+		}
+
+		chunkFrom = new(big.Int).Add(chunkTo, big.NewInt(1))
 	}
 }
 
