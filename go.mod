@@ -1,7 +1,7 @@
 module github.com/0xPolygon/heimdall-v2
 
 // Note: Change the go image version in Dockerfile if you change this.
-go 1.25.7
+go 1.26.1
 
 require (
 	cosmossdk.io/api v0.7.5
@@ -24,7 +24,7 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.50.15
 	github.com/cosmos/gogoproto v1.7.2
-	github.com/ethereum/go-ethereum v1.15.0
+	github.com/ethereum/go-ethereum v1.17.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.4
@@ -44,8 +44,8 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0
-	golang.org/x/crypto v0.45.0
-	golang.org/x/sync v0.18.0
+	golang.org/x/crypto v0.46.0
+	golang.org/x/sync v0.19.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20251124214823-79d6a2a48846
 	google.golang.org/grpc v1.77.0
 	google.golang.org/protobuf v1.36.10
@@ -78,7 +78,7 @@ require (
 	connectrpc.com/connect v1.19.1 // indirect
 	connectrpc.com/otelconnect v0.8.0 // indirect
 	cosmossdk.io/depinject v1.2.1 // indirect
-	filippo.io/edwards25519 v1.1.0 // indirect
+	filippo.io/edwards25519 v1.1.1 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
@@ -86,6 +86,7 @@ require (
 	github.com/DataDog/zstd v1.5.7 // indirect
 	github.com/JekaMas/workerpool v1.1.8 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20260104020744-7268a54d0358 // indirect
 	github.com/RichardKnop/logging v0.0.0-20190827224416-1a693bdd4fae // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/aws/aws-sdk-go v1.44.274 // indirect
@@ -132,7 +133,7 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/cli v28.5.1+incompatible // indirect
+	github.com/docker/cli v29.2.1+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker v28.5.2+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.4 // indirect
@@ -287,9 +288,9 @@ require (
 	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.32.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/term v0.37.0 // indirect
-	golang.org/x/text v0.31.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/term v0.38.0 // indirect
+	golang.org/x/text v0.32.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	google.golang.org/api v0.247.0 // indirect
 	google.golang.org/genproto v0.0.0-20251124214823-79d6a2a48846 // indirect
@@ -317,7 +318,7 @@ replace (
 	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.3.6-polygon
 	github.com/cometbft/cometbft-db => github.com/0xPolygon/cometbft-db v0.14.1-polygon
 	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.2.8-polygon
-	github.com/ethereum/go-ethereum => github.com/0xPolygon/bor v1.14.14-0.20251125190736-ff906a05db96
+	github.com/ethereum/go-ethereum => github.com/0xPolygon/bor v1.14.14-0.20260304162036-54a90c4aa8ef
 	// Following version of goleveldb might cause an unexpected behavior.
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	nhooyr.io/websocket => github.com/coder/websocket v1.8.7
