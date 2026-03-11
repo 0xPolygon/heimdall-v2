@@ -83,12 +83,41 @@ x/<module>/
    go test -v ./path/to/package
    ```
 
+## Security Review
+
+Security rules are in `.claude/rules/`. They load automatically based on which files are being edited:
+
+- **`security.md`** -- always active: pre-commit checklist, Go security patterns, dependency checks
+- **`consensus-critical.md`** -- `app/`, `sidetxs/`, `x/checkpoint/`, `x/milestone/`, `x/bor/`: determinism, vote extension integrity, tallying thresholds
+- **`cross-chain.md`** -- `bridge/`, `helper/`, `contracts/`, `x/stake/`, `x/topup/`, `x/clerk/`, `x/chainmanager/`: L1 receipt validation, nonce replay, event log verification
+- **`contract-interactions.md`** -- `helper/call.go`, `helper/tx.go`, `contracts/`, `x/bor/grpc/`, keepers, bridge processors: IContractCaller security, ABI encoding, tx construction, gRPC client
+- **`p2p-and-networking.md`** -- `helper/config.go`, `bridge/listener/`, `bridge/broadcaster/`, `cmd/`, `packaging/templates/`: CometBFT P2P config, RPC endpoint security, bridge networking, RabbitMQ
+- **`state-and-migration.md`** -- `migration/`, `types/`, `common/`, `proto/`, `x/*/types/`: state migration safety, proto compatibility, shared type integrity
+
+### Security-Critical Areas (ranked by impact)
+
+1. **ABCI++ handlers** (`app/abci.go`, `app/vote_ext_utils.go`) -- consensus break, chain halt
+2. **Vote extension tallying** -- forged approvals, unauthorized state changes
+3. **L1 receipt validation** (`helper/call.go`) -- fake validator joins, stolen funds
+4. **Staking nonce checks** (`x/stake/keeper/side_msg_server.go`) -- replay attacks
+5. **Checkpoint verification** (`x/checkpoint/keeper/side_msg_server.go`) -- forged checkpoints
+6. **Bridge event processing** (`bridge/`) -- state sync corruption
+
+### When to Trigger Security Review
+
+- Any change to files matched by `consensus-critical.md` or `cross-chain.md`
+- New RPC endpoints or API handlers
+- Dependency updates (especially forked `cosmos-sdk`, `cometbft`, `bor`)
+- Changes to validation logic, threshold calculations, or signature verification
+- Any change touching `helper/call.go` (the L1 interface)
+
 ## Before Making Changes
 
 1. **Identify impact**: What other modules or components depend on this code?
 2. **Plan implementation**: Outline the approach before writing code
 3. **Plan testing**: How will you verify correctness? What edge cases exist?
 4. **Check for breaking changes**: Will this affect APIs, proto definitions, or stored state?
+5. **Check security implications**: Does this touch consensus, cross-chain, or validator logic? See `.claude/rules/`
 
 ## Common Pitfalls
 
