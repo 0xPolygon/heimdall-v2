@@ -50,58 +50,54 @@ func QueryTxWithProof(cliCtx cosmosContext.Context, hash []byte) (*ctypes.Result
 
 // GetBeginBlockEvents get block through per height
 func GetBeginBlockEvents(ctx context.Context, client *httpClient.HTTP, height int64) ([]abci.Event, error) {
-	var events []abci.Event
-	var err error
-
 	c, cancel := context.WithTimeout(ctx, CommitTimeout)
 	defer cancel()
 
-	// get block using the client
+	// Try to get block results directly
 	blockResults, err := client.BlockResults(c, &height)
 	if err == nil && blockResults != nil {
-		events = blockResults.FinalizeBlockEvents
-		return events, nil
+		return blockResults.FinalizeBlockEvents, nil
 	}
 
-	// subscriber
-	subscriber := fmt.Sprintf("new-block-%v", height)
+	// Only fallthrough to subscription if the block hasn't been committed yet.
+	// Otherwise, return the BlockResults error.
+	// Subscribing for an already-committed block (e.g., block pruned) would time out.
+	latestStatus, statusErr := client.Status(c)
+	if statusErr != nil || latestStatus == nil || height <= latestStatus.SyncInfo.LatestBlockHeight {
+		return nil, fmt.Errorf("BlockResults failed for block %d (possibly pruned or unavailable): %w", height, err)
+	}
 
-	// query for event
+	// Block is in the future, subscribe and wait for it
+	subscriber := fmt.Sprintf("new-block-%v", height)
 	query := cmtTypes.QueryForEvent(cmtTypes.EventNewBlock).String()
 
-	// register for the next event of this type
-	eventCh, err := client.Subscribe(c, subscriber, query)
-	if err != nil {
-		return events, errors.Wrap(err, "failed to subscribe")
+	eventCh, subscribeErr := client.Subscribe(c, subscriber, query)
+	if subscribeErr != nil {
+		return nil, errors.Wrap(subscribeErr, "failed to subscribe")
 	}
 
-	// unsubscribe query
 	defer func() {
-		if unsubscribeErr := client.Unsubscribe(c, subscriber, query); unsubscribeErr != nil && err == nil {
-			err = unsubscribeErr
-			events = nil // Set events to nil when returning an error
+		if unsubscribeErr := client.Unsubscribe(c, subscriber, query); unsubscribeErr != nil {
+			Logger.Error("GetBeginBlockEvents: error unsubscribing", "error", unsubscribeErr)
 		}
 	}()
 
 	for {
 		select {
 		case event := <-eventCh:
-			eventData := event.Data
-			switch t := eventData.(type) {
+			switch t := event.Data.(type) {
 			case cmtTypes.EventDataNewBlock:
 				if t.Block.Height == height {
-					events = t.ResultFinalizeBlock.GetEvents()
-					return events, err
+					return t.ResultFinalizeBlock.GetEvents(), nil
 				}
 			default:
 				Logger.Error("GetBeginBlockEvents", "unexpected event type", fmt.Sprintf("%+v", t))
-				return events, fmt.Errorf("unexpected event type: %T", t)
+				return nil, fmt.Errorf("unexpected event type: %T", t)
 			}
 		case <-ctx.Done():
-			// Parent context canceled - return immediately
-			return events, ctx.Err()
+			return nil, ctx.Err()
 		case <-c.Done():
-			return events, errors.New("timed out waiting for event")
+			return nil, errors.New("timed out waiting for event")
 		}
 	}
 }
