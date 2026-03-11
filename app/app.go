@@ -355,13 +355,13 @@ func NewHeimdallApp(
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
-		stake.NewAppModule(app.StakeKeeper, app.caller),
-		clerk.NewAppModule(app.ClerkKeeper),
+		stake.NewAppModule(&app.StakeKeeper),
+		clerk.NewAppModule(&app.ClerkKeeper),
 		chainmanager.NewAppModule(app.ChainManagerKeeper),
-		topup.NewAppModule(app.TopupKeeper, app.caller),
+		topup.NewAppModule(&app.TopupKeeper),
 		checkpoint.NewAppModule(&app.CheckpointKeeper),
 		milestone.NewAppModule(&app.MilestoneKeeper),
-		bor.NewAppModule(app.BorKeeper, app.caller),
+		bor.NewAppModule(&app.BorKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 	)
@@ -601,8 +601,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	stakingState := staketypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
 	checkpointState := checkpointTypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
 
-	// check if validator is current validator
-	// add to val updates else skip
+	// check if the validator is the current one and add to valUpdates else skip
 	var valUpdates []abci.ValidatorUpdate
 
 	for _, validator := range stakingState.Validators {

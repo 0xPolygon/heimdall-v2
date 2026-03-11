@@ -102,6 +102,11 @@ func (k *Keeper) SetCheckpointKeeper(checkpointKeeper types.CheckpointKeeper) {
 	k.setupComplete = true
 }
 
+// SetContractCaller sets the contract caller in the stake keeper
+func (k *Keeper) SetContractCaller(contractCaller helper.IContractCaller) {
+	k.contractCaller = contractCaller
+}
+
 // PanicIfSetupIsIncomplete panics if the setup is incomplete, meaning that the checkpointKeeper is not set
 func (k *Keeper) PanicIfSetupIsIncomplete() {
 	if !k.setupComplete {
