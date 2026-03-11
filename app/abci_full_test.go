@@ -72,6 +72,7 @@ func validReceipt(blockNumber uint64) *ethTypes.Receipt {
 	}
 }
 
+// getTests returns a list of test cases to run for the full ABCI flow tests
 func getTests(t *testing.T, priv cryptotypes.PrivKey, app *HeimdallApp, ctx sdk.Context) []testInfo {
 	t.Helper()
 
@@ -735,6 +736,7 @@ func TestFullABCI_PreBlockerRejectsEmptyTxs(t *testing.T) {
 	require.Contains(t, err.Error(), "no txs found")
 }
 
+// executeTest executes the full ABCI flow for a given test case, including PrepareProposal, ProcessProposal, ExtendVote, VerifyVoteExtension, and FinalizeBlock
 func executeTest(
 	t *testing.T,
 	app *HeimdallApp,
@@ -796,6 +798,7 @@ func executeTest(
 	require.NotNil(t, voteExtensions)
 }
 
+// executeHeight executes the full ABCI flow for a single block height, including PrepareProposal, ProcessProposal, ExtendVote, VerifyVoteExtension, and FinalizeBlock. It returns the ExtendVote response which contains the vote extensions that can be included in the next block's proposal.
 func executeHeight(
 	t *testing.T,
 	ctx sdk.Context,

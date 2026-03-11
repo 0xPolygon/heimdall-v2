@@ -186,6 +186,7 @@ func buildSignedTxWithSequence(msg sdk.Msg, ctx sdk.Context, priv cryptotypes.Pr
 	return txBytes, err
 }
 
+// buildSignedTx builds and signs a transaction for the given message, automatically fetching the account sequence.
 func buildSignedTx(msg sdk.Msg, ctx sdk.Context, priv cryptotypes.PrivKey, app *HeimdallApp) ([]byte, error) {
 	propAddr := sdk.AccAddress(priv.PubKey().Address())
 	propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
@@ -254,6 +255,7 @@ func buildSignedMultiMsgTx(msgs []sdk.Msg, ctx sdk.Context, priv cryptotypes.Pri
 	return txConfig.TxEncoder()(txBuilder.GetTx())
 }
 
+// buildExtensionCommits builds the extension commits for the given block hash and validators, using the provided vote info or creating an empty one if nil.
 func buildExtensionCommits(
 	t *testing.T,
 	app *HeimdallApp,
@@ -290,10 +292,12 @@ func buildExtensionCommits(
 	return extCommitBytes, extCommit, voteInfo, err
 }
 
+// SetupAppWithABCICtx sets up a HeimdallApp with a single validator and returns the private key, app instance, context, and validator private keys for testing.
 func SetupAppWithABCICtx(t *testing.T) (cryptotypes.PrivKey, *HeimdallApp, sdk.Context, []secp256k1.PrivKey) {
 	return SetupAppWithABCICtxAndValidators(t, 1)
 }
 
+// SetupAppWithABCICtxAndValidators sets up a HeimdallApp with the given number of validators and returns the private key, app instance, context, and validator private keys for testing.
 func SetupAppWithABCICtxAndValidators(t *testing.T, numValidators int) (cryptotypes.PrivKey, *HeimdallApp, sdk.Context, []secp256k1.PrivKey) {
 	priv, _, _ := testdata.KeyTestPubAddr()
 
@@ -315,6 +319,7 @@ func SetupAppWithABCICtxAndValidators(t *testing.T, numValidators int) (cryptoty
 	return priv, app, ctx, validatorPrivKeys
 }
 
+// TestPrepareProposalHandler tests the PrepareProposal handler of the HeimdallApp by creating a checkpoint message, building a signed transaction, and preparing a proposal with the transaction and an extension commit.
 func TestPrepareProposalHandler(t *testing.T) {
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -357,6 +362,7 @@ func TestPrepareProposalHandler(t *testing.T) {
 	require.NotEmpty(t, respPrep.Txs)
 }
 
+// TestProcessProposalHandler tests the ProcessProposal handler of the HeimdallApp by creating a checkpoint message, building a signed transaction, preparing a proposal, and processing the proposal with valid and invalid transactions.
 func TestProcessProposalHandler(t *testing.T) {
 
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -452,6 +458,7 @@ func TestProcessProposalHandler(t *testing.T) {
 	}
 }
 
+// TestExtendVoteHandler tests the ExtendVote handler of the HeimdallApp by creating a checkpoint message, building a signed transaction, preparing a proposal, and extending the vote with valid transactions and checking the interactions with the mock contract caller.
 func TestExtendVoteHandler(t *testing.T) {
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -605,6 +612,7 @@ func TestExtendVoteHandler(t *testing.T) {
 	}
 }
 
+// TestVerifyVoteExtensionHandler tests the VerifyVoteExtension handler of the HeimdallApp by creating a checkpoint message, building a signed transaction, preparing a proposal, extending the vote, and verifying the vote extension with valid and invalid transactions.
 func TestVerifyVoteExtensionHandler(t *testing.T) {
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -765,6 +773,7 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 	}
 }
 
+// TestVerifyVoteExtensionHandler_RejectsUnknownFieldsPadding tests that the VerifyVoteExtension handler rejects vote extensions that contain unknown fields padding, ensuring that the handler properly validates the structure of the vote extension data.
 func TestVerifyVoteExtensionHandler_RejectsUnknownFieldsPadding(t *testing.T) {
 	setupAppResult := SetupApp(t, 1)
 	hApp := setupAppResult.App
@@ -807,6 +816,7 @@ func TestVerifyVoteExtensionHandler_RejectsUnknownFieldsPadding(t *testing.T) {
 	require.Equal(t, abci.ResponseVerifyVoteExtension_REJECT, resp.Status)
 }
 
+// TestPreBlocker tests the PreBlocker function of the HeimdallApp by creating a MsgProposeSpan message, building a signed transaction, creating an extension commit, and calling the PreBlocker with the transaction and extension commit to ensure it processes without errors.
 func TestPreBlocker(t *testing.T) {
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -847,6 +857,7 @@ func TestPreBlocker(t *testing.T) {
 
 }
 
+// TestSideTxsHappyPath tests the happy path for side transactions in the HeimdallApp by setting up a mock contract caller, configuring the necessary keepers, and ensuring that the side transaction processing works correctly without errors.
 func TestSideTxsHappyPath(t *testing.T) {
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -1052,6 +1063,7 @@ func TestSideTxsHappyPath(t *testing.T) {
 
 }
 
+// TestAllUnhappyPathBorSideTxs tests various unhappy path scenarios for Bor side transactions in the HeimdallApp by setting up a mock contract caller, configuring the necessary keepers, and ensuring that the side transaction processing correctly handles errors and edge cases without causing unexpected behavior.
 func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -1351,6 +1363,7 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 
 }
 
+// TestAllUnhappyPathClerkSideTxs tests various unhappy path scenarios for Clerk side transactions in the HeimdallApp by setting up a mock contract caller, configuring the necessary keepers, and ensuring that the side transaction processing correctly handles errors and edge cases without causing unexpected behavior.
 func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -1797,6 +1810,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 
 }
 
+// TestAllUnhappyPathTopupSideTxs tests various unhappy path scenarios for Topup side transactions in the HeimdallApp by setting up a mock contract caller, configuring the necessary keepers, and ensuring that the topup transaction processing correctly handles errors and edge cases without causing unexpected behavior.
 func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -2209,6 +2223,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 }
 
+// TestMilestoneHappyPath tests the happy path scenario for the Milestone module in the HeimdallApp by setting up a mock contract caller, configuring the necessary keepers, and ensuring that the milestone creation and processing flow works correctly without any errors or unexpected behavior.
 func TestMilestoneHappyPath(t *testing.T) {
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -2367,6 +2382,7 @@ func TestMilestoneHappyPath(t *testing.T) {
 	_, err = app.PreBlocker(ctx, &finalizeReq)
 }
 
+// TestMilestoneUnhappyPaths tests various unhappy path scenarios for the Milestone module in the HeimdallApp by setting up a mock contract caller, configuring the necessary keepers, and ensuring that the milestone creation and processing flow correctly handles errors and edge cases without causing unexpected behavior.
 func TestMilestoneUnhappyPaths(t *testing.T) {
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -2513,6 +2529,7 @@ func TestMilestoneUnhappyPaths(t *testing.T) {
 
 }
 
+// TestPrepareProposal tests the PrepareProposal handler in the HeimdallApp by setting up a mock contract caller, configuring the necessary keepers, and ensuring that the proposal preparation flow works correctly without any errors or unexpected behavior, including handling various edge cases and scenarios related to checkpoint messages and milestone propositions.
 func TestPrepareProposal(t *testing.T) {
 	priv, _, _ := testdata.KeyTestPubAddr()
 	setupResult := SetupApp(t, 1)
@@ -3101,6 +3118,7 @@ func TestPrepareProposal(t *testing.T) {
 
 var defaultFeeAmount = big.NewInt(10).Exp(big.NewInt(10), big.NewInt(15), nil).Int64()
 
+// TestUpdateBlockProducerStatus tests the updateBlockProducerStatus function in the HeimdallApp by setting up an initial state with active and failed producers, providing a new set of supporting producers, and verifying that the function correctly updates the latest active producers while clearing the latest failed producers, ensuring that the application state reflects the expected changes after the function call.
 func TestUpdateBlockProducerStatus(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtx(t)
 
@@ -3131,6 +3149,7 @@ func TestUpdateBlockProducerStatus(t *testing.T) {
 	require.Empty(t, latestFailed)
 }
 
+// TestCheckAndAddFutureSpan tests the checkAndAddFutureSpan function in the HeimdallApp by setting up a mock application state with validators and a last span, providing different milestone propositions and supporting validator sets, and verifying that the function correctly adds a new future span when the conditions are met while ensuring that no new span is added when the conditions are not satisfied, thus validating the expected behavior of span management in the application.
 func TestCheckAndAddFutureSpan(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
 
@@ -3242,6 +3261,7 @@ func TestCheckAndAddFutureSpan(t *testing.T) {
 	})
 }
 
+// TestCheckAndRotateCurrentSpan tests the checkAndRotateCurrentSpan function in the HeimdallApp by setting up a mock application state with validators and a last span, providing different block heights and Rio heights, and verifying that the function correctly rotates the current span when the conditions are met while ensuring that no rotation occurs when the conditions are not satisfied, thus validating the expected behavior of span rotation in the application.
 func TestCheckAndRotateCurrentSpan(t *testing.T) {
 	t.Run("condition false - diff too small", func(t *testing.T) {
 		_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
@@ -3725,6 +3745,7 @@ func TestPreBlockerSpanRotationWithMajorityMilestone(t *testing.T) {
 	require.Equal(t, uint64(101), latestMilestone.EndBlock, "New milestone should have been added with correct end block")
 }
 
+// TestPrepareProposal_MultipleTransactionsPerBlock tests the PrepareProposal handler's ability to handle multiple transactions in a single block, ensuring that all transactions are included in the proposal response and that the ExtendedCommitInfo is properly accounted for in the transaction count, thus validating the correct behavior of transaction processing and proposal preparation in scenarios with multiple transactions.
 func TestPrepareProposal_MultipleTransactionsPerBlock(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -3813,6 +3834,7 @@ func TestPrepareProposal_MultipleTransactionsPerBlock(t *testing.T) {
 	}
 }
 
+// TestPrepareProposal_MultipleSideTxsSameType tests the PrepareProposal handler's ability to handle multiple side transactions of the same type (e.g., multiple checkpoint messages or multiple bor propose span messages) in a single proposal, ensuring that all transactions are included in the proposal response and that the ExtendedCommitInfo is properly accounted for, thus validating the correct processing of multiple side transactions of the same type during proposal preparation.
 func TestPrepareProposal_MultipleSideTxsSameType(t *testing.T) {
 	t.Run("multiple checkpoint messages in different txs", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -3941,6 +3963,7 @@ func TestPrepareProposal_MultipleSideTxsSameType(t *testing.T) {
 	})
 }
 
+// TestPrepareProposal_MultipleSideTxsDifferentTypes tests the PrepareProposal handler's ability to handle multiple side transactions of different types (e.g., checkpoint messages, bor propose span messages, clerk event record messages, stake validator join messages, and topup messages) in a single proposal, ensuring that all transactions are included in the proposal response and that the ExtendedCommitInfo is properly accounted for, thus validating the correct processing of multiple side transactions of different types during proposal preparation.
 func TestPrepareProposal_MultipleSideTxsDifferentTypes(t *testing.T) {
 	t.Run("mix of checkpoint, bor, clerk, stake, and topup side txs", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -4064,6 +4087,7 @@ func TestPrepareProposal_MultipleSideTxsDifferentTypes(t *testing.T) {
 	})
 }
 
+// TestPrepareProposal_MaxBytesConstraint tests the PrepareProposal handler's ability to enforce the MaxTxBytes constraint by including an ExtendedCommitInfo and multiple transactions that exceed the max bytes limit, ensuring that the handler correctly includes the ExtendedCommitInfo and only includes as many transactions as can fit within the specified MaxTxBytes, thus validating the proper handling of transaction size constraints during proposal preparation.
 func TestPrepareProposal_MaxBytesConstraint(t *testing.T) {
 	t.Run("exceeds max bytes with large transactions", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -4133,6 +4157,7 @@ func TestPrepareProposal_MaxBytesConstraint(t *testing.T) {
 	})
 }
 
+// TestPrepareProposal_TransactionWithMultipleSideHandlers tests the PrepareProposal handler's ability to process transactions that contain multiple side messages of different types (e.g., a transaction that includes both a checkpoint message and a bor propose span message), ensuring that the handler correctly identifies and processes all side messages within the transaction, includes the appropriate ExtendedCommitInfo, and returns a proposal response that accounts for all valid transactions and side messages, thus validating the proper handling of complex transactions with multiple side handlers during proposal preparation.
 func TestPrepareProposal_TransactionWithMultipleSideHandlers(t *testing.T) {
 	t.Run("skip tx with multiple side messages", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -4189,6 +4214,7 @@ func TestPrepareProposal_TransactionWithMultipleSideHandlers(t *testing.T) {
 	})
 }
 
+// TestPrepareProposal_AccountSequenceMismatch tests the PrepareProposal handler's ability to handle transactions with account sequence mismatches by including multiple transactions with the same sequence number, ensuring that the handler correctly processes the first transaction and rejects subsequent transactions with duplicate sequence numbers, includes the appropriate ExtendedCommitInfo, and returns a proposal response that accounts for valid transactions while rejecting those with sequence mismatches, thus validating the proper handling of account sequence mismatches during proposal preparation.
 func TestPrepareProposal_AccountSequenceMismatch(t *testing.T) {
 	t.Run("reject transactions with duplicate sequence numbers", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -4302,6 +4328,7 @@ func TestPrepareProposal_AccountSequenceMismatch(t *testing.T) {
 	})
 }
 
+// TestProcessProposal_ValidProposalMultipleTxs tests the ProcessProposal handler's ability to process a valid proposal containing multiple transactions by including an ExtendedCommitInfo and several valid transactions in the proposal request, ensuring that the handler correctly processes all transactions, validates the ExtendedCommitInfo, and returns an acceptance response, thus validating the proper processing of valid proposals with multiple transactions during proposal evaluation.
 func TestProcessProposal_ValidProposalMultipleTxs(t *testing.T) {
 	t.Run("process proposal with 10 valid transactions", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -4355,6 +4382,7 @@ func TestProcessProposal_ValidProposalMultipleTxs(t *testing.T) {
 	})
 }
 
+// TestProcessProposal_RejectScenarios tests the ProcessProposal handler's ability to reject invalid proposals by including various invalid scenarios such as proposals with no transactions, proposals with invalid ExtendedCommitInfo, and proposals with round mismatches, ensuring that the handler correctly identifies these issues and returns a rejection response for each case, thus validating the proper handling of invalid proposals during proposal evaluation.
 func TestProcessProposal_RejectScenarios(t *testing.T) {
 	t.Run("reject proposal with no txs", func(t *testing.T) {
 		_, app, ctx, _ := SetupAppWithABCICtx(t)
@@ -4458,6 +4486,7 @@ func TestProcessProposal_RejectScenarios(t *testing.T) {
 	})
 }
 
+// TestExtendVote_MultipleSideTxsExecution tests the ExtendVote handler's ability to execute multiple side transactions of different types during the vote extension process by including an ExtendedCommitInfo and a variety of side transactions (e.g., checkpoint messages, bor propose span messages, clerk event record messages) in the vote extension request, ensuring that the handler correctly processes all side transactions, updates the vote extension state accordingly, and returns a successful response, thus validating the proper execution of multiple side transactions during vote extension.
 func TestExtendVote_MultipleSideTxsExecution(t *testing.T) {
 	t.Run("extend vote with 20 side transactions of different types", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -4602,6 +4631,7 @@ func TestExtendVote_MultipleSideTxsExecution(t *testing.T) {
 	})
 }
 
+// TestExtendVote_MaxSideTxResponsesLimit tests the ExtendVote handler's ability to enforce the maximum side transaction responses limit by including an ExtendedCommitInfo and a large number of side transactions in the vote extension request, ensuring that the handler correctly limits the number of side transaction responses included in the vote extension to the defined maximum, even when more transactions are provided, thus validating the proper enforcement of side transaction response limits during vote extension.
 func TestExtendVote_MaxSideTxResponsesLimit(t *testing.T) {
 	t.Run("extend vote respects max side tx responses count", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -4705,6 +4735,7 @@ func TestExtendVote_MaxSideTxResponsesLimit(t *testing.T) {
 	})
 }
 
+// TestVerifyVoteExtension_AllRejectionScenarios tests the VerifyVoteExtension handler's ability to reject invalid vote extensions by including various invalid scenarios such as height mismatches, invalid hashes, and unauthorized validator addresses in the vote extension request, ensuring that the handler correctly identifies these issues and returns a rejection response for each case, thus validating the proper handling of invalid vote extensions during vote verification.
 func TestVerifyVoteExtension_AllRejectionScenarios(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -4750,6 +4781,7 @@ func TestVerifyVoteExtension_AllRejectionScenarios(t *testing.T) {
 	}
 }
 
+// TestPreBlocker_MultipleBlocksSequential tests the PreBlocker handler's ability to process multiple blocks sequentially by simulating the processing of 10 consecutive blocks, each containing an ExtendedCommitInfo and a checkpoint transaction, ensuring that the handler correctly processes each block without errors or panics, even when multiple blocks are processed in sequence, thus validating the proper functioning of the PreBlocker across multiple blocks.
 func TestPreBlocker_MultipleBlocksSequential(t *testing.T) {
 	t.Run("execute preBlocker for 10 consecutive blocks", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -4819,6 +4851,7 @@ func TestPreBlocker_MultipleBlocksSequential(t *testing.T) {
 	})
 }
 
+// TestPreBlocker_MultipleApprovedSideTxs tests the PreBlocker handler's ability to process multiple approved side transactions of different types within a single block by including an ExtendedCommitInfo and various side transactions (e.g., checkpoint messages, bor propose span messages, clerk event record messages, stake validator join messages, topup messages) in the block's transactions, ensuring that the handler correctly processes all approved side transactions without errors or panics, thus validating the proper handling of multiple approved side transactions during block finalization.
 func TestPreBlocker_MultipleApprovedSideTxs(t *testing.T) {
 	t.Run("preBlocker with 5 approved side txs of different types", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -4933,6 +4966,7 @@ func TestPreBlocker_MultipleApprovedSideTxs(t *testing.T) {
 	})
 }
 
+// TestPreBlocker_EmptyTxsScenario tests the PreBlocker handler's response to a scenario where no transactions are included in the block by simulating a block finalization request with an empty transaction list, ensuring that the handler correctly identifies the absence of transactions and returns an appropriate error, thus validating the proper handling of blocks with no transactions during finalization.
 func TestPreBlocker_EmptyTxsScenario(t *testing.T) {
 	t.Run("preBlocker fails with empty txs", func(t *testing.T) {
 		_, app, ctx, _ := SetupAppWithABCICtx(t)
@@ -4951,6 +4985,7 @@ func TestPreBlocker_EmptyTxsScenario(t *testing.T) {
 	})
 }
 
+// TestABCI_FullBlockLifecycle_NoPreBlocker tests the full block lifecycle from proposal to vote extension and verification without relying on the PreBlocker handler by simulating the creation of a block with an ExtendedCommitInfo and side transactions, preparing a proposal, extending the vote with the included transactions, and verifying the vote extension, ensuring that each step of the lifecycle functions correctly even when the PreBlocker is not involved, thus validating the robustness of the ABCI handlers in handling a complete block lifecycle independently.
 func TestABCI_FullBlockLifecycle_NoPreBlocker(t *testing.T) {
 	t.Run("complete block lifecycle with side txs", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -5092,6 +5127,7 @@ func TestABCI_FullBlockLifecycle_NoPreBlocker(t *testing.T) {
 	})
 }
 
+// TestABCI_StressTestWith100Blocks tests the ABCI handlers' ability to handle a high volume of blocks and transactions by simulating the processing of 100 consecutive blocks, each containing an ExtendedCommitInfo and a mix of different transaction types (e.g., checkpoint messages, bor propose span messages, clerk event record messages, topup messages), ensuring that the handlers correctly process all blocks and transactions without errors or panics, thus validating the robustness and scalability of the ABCI handlers under stress conditions.
 func TestABCI_StressTestWith100Blocks(t *testing.T) {
 	t.Run("stress test with 100 blocks and mixed tx types", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -5273,6 +5309,7 @@ func TestABCI_StressTestWith100Blocks(t *testing.T) {
 	})
 }
 
+// TestPrepareProposal_ErrorRecovery tests the PrepareProposal handler's ability to recover from errors gracefully by simulating a scenario where invalid transaction bytes are included in the proposal request, ensuring that the handler correctly identifies the invalid transaction and returns an appropriate error without crashing or panicking, thus validating the robustness of the PrepareProposal handler in handling erroneous input.
 func TestPrepareProposal_ErrorRecovery(t *testing.T) {
 	t.Run("handle decode errors gracefully", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -5308,6 +5345,7 @@ func TestPrepareProposal_ErrorRecovery(t *testing.T) {
 	})
 }
 
+// TestPrepareProposal_ManySideTxMessageTypes tests the PrepareProposal handler's ability to process a proposal containing a variety of side transaction message types by simulating a proposal request that includes multiple transactions of different types (e.g., checkpoint messages, stake update messages, signer update messages, validator exit messages), ensuring that the handler correctly processes all included transactions without errors, thus validating the proper handling of diverse side transaction message types during proposal preparation.
 func TestPrepareProposal_ManySideTxMessageTypes(t *testing.T) {
 	t.Run("includes many side tx message types", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -5452,6 +5490,7 @@ func TestPrepareProposal_ManySideTxMessageTypes(t *testing.T) {
 	})
 }
 
+// TestProcessProposal_ManySideTxMessageTypes tests the ProcessProposal handler's ability to process a proposal containing a variety of side transaction message types by simulating a proposal processing request that includes multiple transactions of different types (e.g., checkpoint acknowledgment messages, stake update messages, signer update messages, validator exit messages), ensuring that the handler correctly processes all included transactions without errors, thus validating the proper handling of diverse side transaction message types during proposal processing.
 func TestProcessProposal_ManySideTxMessageTypes(t *testing.T) {
 	t.Run("process proposal with many side tx types", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -5590,6 +5629,7 @@ func TestProcessProposal_ManySideTxMessageTypes(t *testing.T) {
 	})
 }
 
+// buildExtensionCommitsWithMilestoneProposition is a helper function to build an ExtendedCommitInfo with a MilestoneProposition in the vote extension for testing purposes
 func buildExtensionCommitsWithMilestoneProposition(t *testing.T, app *HeimdallApp, txHashBytes []byte, validators []*stakeTypes.Validator, validatorPrivKeys []secp256k1.PrivKey, milestoneProp milestoneTypes.MilestoneProposition) ([]byte, *abci.ExtendedCommitInfo, *abci.ExtendedVoteInfo, error) {
 
 	cometVal := abci.Validator{
