@@ -26,9 +26,11 @@ const (
 	spanIdLog          = "spanId"
 )
 
-var SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpan{})
-var FillMissingSpansMsgTypeURL = sdk.MsgTypeURL(&types.MsgBackfillSpans{})
-var SetProducerDowntimeMsgTypeURL = sdk.MsgTypeURL(&types.MsgSetProducerDowntime{})
+var (
+	SpanProposeMsgTypeURL         = sdk.MsgTypeURL(&types.MsgProposeSpan{})
+	FillMissingSpansMsgTypeURL    = sdk.MsgTypeURL(&types.MsgBackfillSpans{})
+	SetProducerDowntimeMsgTypeURL = sdk.MsgTypeURL(&types.MsgSetProducerDowntime{})
+)
 
 type sideMsgServer struct {
 	k *Keeper
@@ -274,6 +276,42 @@ func (srv sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 	if !isActiveProducer {
 		logger.Error("Producer is not in active producers set during SideHandleSetProducerDowntime", "producer", msg.Producer, "startBlock", msg.DowntimeRange.StartBlock)
 		return sidetxs.Vote_VOTE_NO
+	}
+
+	if msg.TargetProducerId != 0 && ctx.BlockHeight() >= helper.GetTargetProducerOverrideHeight() {
+		// Target producer must be a validator.
+		targetValidator, err := srv.k.sk.GetValidatorFromValID(ctx, msg.TargetProducerId)
+		if err != nil {
+			logger.Error("Target producer is not a validator", "targetProducerId", msg.TargetProducerId, "error", err)
+			return sidetxs.Vote_VOTE_NO
+		}
+		// Target producer cannot be the current producer.
+		if util.FormatAddress(targetValidator.Signer) == util.FormatAddress(msg.Producer) {
+			logger.Error("Target cannot be the current producer", "targetProducerId", msg.TargetProducerId)
+			return sidetxs.Vote_VOTE_NO
+		}
+		// Target producer must be in the producer candidate set.
+		// The producer set may shift between vote time and execution time; SelectNextSpanProducer
+		// re-checks at execution and falls through to round-robin if the target is no longer eligible.
+		candidates, err := srv.k.CalculateProducerSet(ctx, helper.GetProducerSetLimit(ctx))
+		if err != nil {
+			logger.Error("Failed to calculate producer set for target validation", "error", err)
+			return sidetxs.Vote_VOTE_NO
+		}
+		if len(candidates) == 0 {
+			candidates = helper.GetFallbackProducerVotes()
+		}
+		targetInCandidates := false
+		for _, c := range candidates {
+			if c == msg.TargetProducerId {
+				targetInCandidates = true
+				break
+			}
+		}
+		if !targetInCandidates {
+			logger.Error("Target producer is not in the candidate producer set", "targetProducerId", msg.TargetProducerId)
+			return sidetxs.Vote_VOTE_NO
+		}
 	}
 
 	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock < types.PlannedDowntimeMinRange {
@@ -642,7 +680,9 @@ func (srv sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 		return nil
 	}
 
-	if err := srv.k.AddNewVeBlopSpan(ctx, validatorId, msg.DowntimeRange.StartBlock, msg.DowntimeRange.StartBlock+params.SpanDuration, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight())); err != nil {
+	// TargetProducerId is height-gated inside SelectNextSpanProducer;
+	// below the fork height it is silently ignored and round-robin is used.
+	if err := srv.k.AddNewVeBlopSpan(ctx, validatorId, msg.DowntimeRange.StartBlock, msg.DowntimeRange.StartBlock+params.SpanDuration, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), msg.TargetProducerId); err != nil {
 		logger.Error("Error occurred while adding new veBlop span", "error", err)
 		return err
 	}

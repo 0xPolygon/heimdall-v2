@@ -325,6 +325,23 @@ func (srv msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetP
 		return nil, fmt.Errorf("producer with address %s and id %d is not in the current producer set", msg.Producer, producerId)
 	}
 
+	// Validate target producer id if it is not 0 and the block height is greater than the target producer override height.
+	if msg.TargetProducerId != 0 && sdkCtx.BlockHeight() >= helper.GetTargetProducerOverrideHeight() {
+		if msg.TargetProducerId == producerId {
+			return nil, fmt.Errorf("target producer cannot be the same as the current producer")
+		}
+		targetInCandidates := false
+		for _, c := range candidates {
+			if c == msg.TargetProducerId {
+				targetInCandidates = true
+				break
+			}
+		}
+		if !targetInCandidates {
+			return nil, fmt.Errorf("target producer id %d is not in the current producer set", msg.TargetProducerId)
+		}
+	}
+
 	return &types.MsgSetProducerDowntimeResponse{}, nil
 }
 

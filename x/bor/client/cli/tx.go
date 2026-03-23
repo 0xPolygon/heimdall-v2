@@ -207,7 +207,8 @@ func NewProducerDowntimeCmd() *cobra.Command {
 				return nil
 			}
 
-			msg := types.NewMsgSetProducerDowntime(producerAddress, startBlock, endBlock)
+			targetProducerID := viper.GetUint64(FlagTargetProducerID)
+			msg := types.NewMsgSetProducerDowntime(producerAddress, startBlock, endBlock, targetProducerID)
 
 			return cli.BroadcastMsg(clientCtx, producerAddress, msg, logger)
 		},
@@ -217,6 +218,7 @@ func NewProducerDowntimeCmd() *cobra.Command {
 	cmd.Flags().Int(FlagStartTimestampUTC, 0, "--start-timestamp-utc=<start-timestamp-utc>")
 	cmd.Flags().Int(FlagEndTimestampUTC, 0, "--end-timestamp-utc=<end-timestamp-utc>")
 	cmd.Flags().Bool(FlagCalcOnly, false, "--calc-only=<true|false>")
+	cmd.Flags().Uint64(FlagTargetProducerID, 0, "--target-producer-id=<target-producer-id>")
 
 	if err := cmd.MarkFlagRequired(FlagProducerAddress); err != nil {
 		fmt.Printf("NewProducerDowntimeCmd | MarkFlagRequired | FlagProducerAddress Error: %v", err)

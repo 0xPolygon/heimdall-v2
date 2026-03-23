@@ -6,8 +6,10 @@ import (
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 )
 
-var _ sdk.Msg = &MsgProposeSpan{}
-var _ sdk.Msg = &MsgBackfillSpans{}
+var (
+	_ sdk.Msg = &MsgProposeSpan{}
+	_ sdk.Msg = &MsgBackfillSpans{}
+)
 
 // NewMsgProposeSpan creates a new MsgProposeSpan instance
 func NewMsgProposeSpan(
@@ -45,6 +47,7 @@ func NewMsgSetProducerDowntime(
 	producer string,
 	startBorBlock uint64,
 	endBorBlock uint64,
+	targetProducerID uint64,
 ) *MsgSetProducerDowntime {
 	return &MsgSetProducerDowntime{
 		Producer: util.FormatAddress(producer),
@@ -52,6 +55,7 @@ func NewMsgSetProducerDowntime(
 			StartBlock: startBorBlock,
 			EndBlock:   endBorBlock,
 		},
+		TargetProducerId: targetProducerID,
 	}
 }
 

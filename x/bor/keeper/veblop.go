@@ -15,11 +15,11 @@ import (
 )
 
 // AddNewVeBlopSpan adds a new veBlop (Validator-elected block producer) span
-func (k *Keeper) AddNewVeBlopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}, heimdallBlock uint64) error {
+func (k *Keeper) AddNewVeBlopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}, heimdallBlock uint64, targetProducerID uint64) error {
 	logger := k.Logger(ctx)
 
 	// select next producers
-	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, helper.GetProducerSetLimit(ctx), startBlock, endBlock)
+	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, helper.GetProducerSetLimit(ctx), startBlock, endBlock, targetProducerID)
 	if err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func (k *Keeper) ClearLatestFailedProducer(ctx context.Context) error {
 
 // SelectNextSpanProducer selects the next producer for a new span.
 // It calculates the candidate set, filters by active producers, and selects one.
-func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit, startBlock, endBlock uint64) (uint64, error) {
+func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit, startBlock, endBlock uint64, targetProducerID uint64) (uint64, error) {
 	candidates, err := k.CalculateProducerSet(ctx, producerSetLimit)
 	if err != nil {
 		return 0, fmt.Errorf("failed to calculate producer set: %w", err)
@@ -262,6 +262,37 @@ func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64,
 			}
 		}
 		activeCandidates = newCandidates
+	}
+
+	// If the declaring producer requested a specific replacement, try to honor it.
+	// The target must still be an active candidate and not down for the range.
+	// If any check fails, we fall through to round-robin rather than blocking span creation.
+	if targetProducerID != 0 && ctx.BlockHeight() >= helper.GetTargetProducerOverrideHeight() {
+		// Target producer must be in the active candidate set.
+		targetInCandidates := false
+		for _, c := range activeCandidates {
+			if c == targetProducerID {
+				targetInCandidates = true
+				break
+			}
+		}
+		if targetInCandidates {
+			isDown, err := k.IsProducerDownForBlockRange(ctx, startBlock, endBlock, targetProducerID)
+			if err != nil {
+				k.Logger(ctx).Error("Failed to check target producer downtime, falling through to round-robin",
+					"targetProducerID", targetProducerID, "error", err)
+			} else if !isDown {
+				k.Logger(ctx).Info("Using target producer override",
+					"currentProducer", currentProducer, "targetProducer", targetProducerID)
+				return targetProducerID, nil
+			} else {
+				k.Logger(ctx).Warn("Target producer is down for range, falling through to round-robin",
+					"targetProducerID", targetProducerID)
+			}
+		} else {
+			k.Logger(ctx).Warn("Target producer not in active candidates, falling through to round-robin",
+				"targetProducerID", targetProducerID)
+		}
 	}
 
 	nextProducer, err := k.SelectProducer(ctx, currentProducer, activeCandidates, startBlock, endBlock)
