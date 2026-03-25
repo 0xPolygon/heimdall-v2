@@ -267,31 +267,37 @@ func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64,
 	// If the declaring producer requested a specific replacement, try to honor it.
 	// The target must still be an active candidate and not down for the range.
 	// If any check fails, we fall through to round-robin rather than blocking span creation.
-	if targetProducerID != 0 && ctx.BlockHeight() >= helper.GetTargetProducerOverrideHeight() {
-		// Target producer must be in the active candidate set.
-		targetInCandidates := false
-		for _, c := range activeCandidates {
-			if c == targetProducerID {
-				targetInCandidates = true
-				break
+	if targetProducerID != types.RoundRobinDefault && ctx.BlockHeight() >= helper.GetTargetProducerOverrideHeight() {
+		// Defense-in-depth: reject self-targeting even if upstream callers should have caught it.
+		if targetProducerID == currentProducer {
+			k.Logger(ctx).Warn("Target producer is the same as current producer, falling through to round-robin",
+				"targetProducerID", targetProducerID, "currentProducer", currentProducer)
+		} else {
+			// Target producer must be in the active candidate set.
+			targetInCandidates := false
+			for _, c := range activeCandidates {
+				if c == targetProducerID {
+					targetInCandidates = true
+					break
+				}
 			}
-		}
-		if targetInCandidates {
-			isDown, err := k.IsProducerDownForBlockRange(ctx, startBlock, endBlock, targetProducerID)
-			if err != nil {
-				k.Logger(ctx).Error("Failed to check target producer downtime, falling through to round-robin",
-					"targetProducerID", targetProducerID, "error", err)
-			} else if !isDown {
-				k.Logger(ctx).Info("Using target producer override",
-					"currentProducer", currentProducer, "targetProducer", targetProducerID)
-				return targetProducerID, nil
+			if targetInCandidates {
+				isDown, err := k.IsProducerDownForBlockRange(ctx, startBlock, endBlock, targetProducerID)
+				if err != nil {
+					k.Logger(ctx).Error("Failed to check target producer downtime, falling through to round-robin",
+						"targetProducerID", targetProducerID, "error", err)
+				} else if !isDown {
+					k.Logger(ctx).Info("Using target producer override",
+						"currentProducer", currentProducer, "targetProducer", targetProducerID)
+					return targetProducerID, nil
+				} else {
+					k.Logger(ctx).Warn("Target producer is down for range, falling through to round-robin",
+						"targetProducerID", targetProducerID)
+				}
 			} else {
-				k.Logger(ctx).Warn("Target producer is down for range, falling through to round-robin",
+				k.Logger(ctx).Warn("Target producer not in active candidates, falling through to round-robin",
 					"targetProducerID", targetProducerID)
 			}
-		} else {
-			k.Logger(ctx).Warn("Target producer not in active candidates, falling through to round-robin",
-				"targetProducerID", targetProducerID)
 		}
 	}
 

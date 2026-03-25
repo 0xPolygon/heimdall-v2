@@ -705,7 +705,7 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 			msg: &types.MsgSetProducerDowntime{
 				Producer:         val1.hexAddr,
 				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
-				TargetProducerId: 0,
+				TargetProducerId: types.RoundRobinDefault,
 			},
 		},
 		{
@@ -753,12 +753,52 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 		},
 	}
 
+	// Pre-fork rejection: when targetProducerOverrideHeight is set high,
+	// non-zero target should be rejected.
+	preForkTests := []testCase{
+		{
+			name:       "error - target rejected before fork height",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}, {ValId: val3.id, Signer: val3.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: id2,
+			},
+			expectErrSubstr: "target producer override is not enabled until height",
+		},
+		{
+			name:       "success - round-robin default accepted before fork height",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: types.RoundRobinDefault,
+			},
+		},
+	}
+	tests = append(tests, preForkTests...)
+
 	for _, tc := range tests {
 		s.T().Run(tc.name, func(t *testing.T) {
 			// Fresh suite state
 			s.SetupTest()
 			ctx := s.ctx
 			msgServer := s.msgServer
+
+			// Set fork height high for pre-fork tests, restore after.
+			isPreFork := false
+			for _, pf := range preForkTests {
+				if pf.name == tc.name {
+					isPreFork = true
+					break
+				}
+			}
+			if isPreFork {
+				helper.SetTargetProducerOverrideHeight(999999)
+				defer helper.SetTargetProducerOverrideHeight(0)
+			}
 
 			// Prime mocks and seed producer votes controlling the producer set
 			primeStakeMocks(tc.validators)

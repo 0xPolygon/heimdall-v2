@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -473,7 +474,7 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntimeTargetProducer() {
 			msg: &types.MsgSetProducerDowntime{
 				Producer:         addr1,
 				DowntimeRange:    types.BlockRange{StartBlock: start, EndBlock: end},
-				TargetProducerId: 0,
+				TargetProducerId: types.RoundRobinDefault,
 			},
 			expectVote: sidetxs.Vote_VOTE_YES,
 		},
@@ -509,6 +510,29 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntimeTargetProducer() {
 		},
 	}
 
+	// Pre-fork tests: target != 0 before fork height -> NO
+	preForkTests := []testCase{
+		{
+			name: "target rejected before fork height",
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         addr1,
+				DowntimeRange:    types.BlockRange{StartBlock: start, EndBlock: end},
+				TargetProducerId: id2,
+			},
+			expectVote: sidetxs.Vote_VOTE_NO,
+		},
+		{
+			name: "round-robin default accepted before fork height",
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         addr1,
+				DowntimeRange:    types.BlockRange{StartBlock: start, EndBlock: end},
+				TargetProducerId: types.RoundRobinDefault,
+			},
+			expectVote: sidetxs.Vote_VOTE_YES,
+		},
+	}
+	tests = append(tests, preForkTests...)
+
 	for _, tc := range tests {
 		s.T().Run(tc.name, func(t *testing.T) {
 			s.SetupTest()
@@ -542,6 +566,23 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntimeTargetProducer() {
 				}).
 				AnyTimes()
 
+			// GetValIdFromAddress mock for ID-based self-targeting check
+			s.stakeKeeper.EXPECT().
+				GetValIdFromAddress(gomock.Any(), gomock.Any()).
+				DoAndReturn(func(_ sdk.Context, addr string) (uint64, error) {
+					switch addr {
+					case addr1:
+						return id1, nil
+					case addr2:
+						return id2, nil
+					case addr3:
+						return id3, nil
+					default:
+						return 0, fmt.Errorf("unknown address %s", addr)
+					}
+				}).
+				AnyTimes()
+
 			// All vote for [id1, id2, id3] -> CalculateProducerSet returns [id1, id2, id3]
 			require.NoError(s.borKeeper.ClearProducerVotes(ctx))
 			for _, voter := range []uint64{id1, id2, id3} {
@@ -562,6 +603,19 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntimeTargetProducer() {
 				BorChainId: "bor",
 			}))
 
+			// Set fork height high for pre-fork tests, restore after.
+			isPreFork := false
+			for _, pf := range preForkTests {
+				if pf.name == tc.name {
+					isPreFork = true
+					break
+				}
+			}
+			if isPreFork {
+				helper.SetTargetProducerOverrideHeight(999999)
+				defer helper.SetTargetProducerOverrideHeight(0)
+			}
+
 			s.contractCaller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).
 				Return(&ethTypes.Header{Number: big.NewInt(int64(current))}, nil).Once()
 
@@ -572,6 +626,86 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntimeTargetProducer() {
 			s.contractCaller.AssertExpectations(s.T())
 		})
 	}
+}
+
+func (s *KeeperTestSuite) TestSideHandleSetProducerDowntimeGetValIdError() {
+	require := s.Require()
+
+	minFuture := uint64(types.PlannedDowntimeMinimumTimeInFuture)
+	addr1 := common.HexToAddress("0x0000000000000000000000000000000000000001").Hex()
+	addr2 := common.HexToAddress("0x0000000000000000000000000000000000000002").Hex()
+	addr3 := common.HexToAddress("0x0000000000000000000000000000000000000003").Hex()
+	id1, id2, id3 := uint64(1), uint64(2), uint64(3)
+
+	current := uint64(3_000_000)
+	start := current + minFuture
+	end := start + uint64(types.PlannedDowntimeMinRange)
+
+	s.SetupTest()
+	ctx := s.ctx
+
+	s.stakeKeeper.EXPECT().
+		GetValidatorSet(gomock.Any()).
+		Return(stakeTypes.ValidatorSet{
+			Validators: []*stakeTypes.Validator{
+				{ValId: id1, Signer: addr1, VotingPower: 100},
+				{ValId: id2, Signer: addr2, VotingPower: 100},
+				{ValId: id3, Signer: addr3, VotingPower: 100},
+			},
+		}, nil).
+		AnyTimes()
+
+	s.stakeKeeper.EXPECT().
+		GetValidatorFromValID(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ sdk.Context, vid uint64) (stakeTypes.Validator, error) {
+			switch vid {
+			case id1:
+				return stakeTypes.Validator{ValId: id1, Signer: addr1, VotingPower: 100}, nil
+			case id2:
+				return stakeTypes.Validator{ValId: id2, Signer: addr2, VotingPower: 100}, nil
+			case id3:
+				return stakeTypes.Validator{ValId: id3, Signer: addr3, VotingPower: 100}, nil
+			default:
+				return stakeTypes.Validator{}, fmt.Errorf("unknown validator id %d", vid)
+			}
+		}).
+		AnyTimes()
+
+	// GetValIdFromAddress returns an error -> should vote NO
+	s.stakeKeeper.EXPECT().
+		GetValIdFromAddress(gomock.Any(), addr1).
+		Return(uint64(0), fmt.Errorf("address lookup failed")).
+		Times(1)
+
+	require.NoError(s.borKeeper.ClearProducerVotes(ctx))
+	for _, voter := range []uint64{id1, id2, id3} {
+		require.NoError(s.borKeeper.SetProducerVotes(ctx, voter, types.ProducerVotes{Votes: []uint64{id1, id2, id3}}))
+	}
+
+	maxFuture := types.PlannedDowntimeMaximumTimeInFuture
+	require.NoError(s.borKeeper.AddNewSpan(ctx, &types.Span{
+		Id:         1,
+		StartBlock: 1,
+		EndBlock:   current + maxFuture + 10_000,
+		SelectedProducers: []stakeTypes.Validator{
+			{ValId: id1, Signer: addr1},
+			{ValId: id2, Signer: addr2},
+			{ValId: id3, Signer: addr3},
+		},
+		BorChainId: "bor",
+	}))
+
+	s.contractCaller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).
+		Return(&ethTypes.Header{Number: big.NewInt(int64(current))}, nil).Once()
+
+	msg := &types.MsgSetProducerDowntime{
+		Producer:         addr1,
+		DowntimeRange:    types.BlockRange{StartBlock: start, EndBlock: end},
+		TargetProducerId: id2,
+	}
+	sideHandler := s.sideMsgServer.SideTxHandler(sdk.MsgTypeURL(&types.MsgSetProducerDowntime{}))
+	v := sideHandler(ctx, msg)
+	require.Equal(sidetxs.Vote_VOTE_NO, v)
 }
 
 func (s *KeeperTestSuite) TestPostHandleSetProducerDowntimeTargetProducer() {

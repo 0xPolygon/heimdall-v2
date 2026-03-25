@@ -701,6 +701,10 @@ func GetTargetProducerOverrideHeight() int64 {
 	return targetProducerOverrideHeight
 }
 
+func SetTargetProducerOverrideHeight(height int64) {
+	targetProducerOverrideHeight = height
+}
+
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
 	chainMigration := chainManagerAddressMigrations[conf.Custom.Chain]
 	if chainMigration == nil {

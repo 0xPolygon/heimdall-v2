@@ -278,16 +278,28 @@ func (srv sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	if msg.TargetProducerId != 0 && ctx.BlockHeight() >= helper.GetTargetProducerOverrideHeight() {
+	// Reject non-default target before the fork height.
+	if msg.TargetProducerId != types.RoundRobinDefault && ctx.BlockHeight() < helper.GetTargetProducerOverrideHeight() {
+		logger.Error("Target producer override is not yet enabled",
+			"targetProducerId", msg.TargetProducerId, "forkHeight", helper.GetTargetProducerOverrideHeight())
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	if msg.TargetProducerId != types.RoundRobinDefault && ctx.BlockHeight() >= helper.GetTargetProducerOverrideHeight() {
 		// Target producer must be a validator.
-		targetValidator, err := srv.k.sk.GetValidatorFromValID(ctx, msg.TargetProducerId)
+		_, err := srv.k.sk.GetValidatorFromValID(ctx, msg.TargetProducerId)
 		if err != nil {
-			logger.Error("Target producer is not a validator", "targetProducerId", msg.TargetProducerId, "error", err)
+			logger.Error("Error fetching validator from valID", "targetProducerId", msg.TargetProducerId, "error", err)
 			return sidetxs.Vote_VOTE_NO
 		}
-		// Target producer cannot be the current producer.
-		if util.FormatAddress(targetValidator.Signer) == util.FormatAddress(msg.Producer) {
-			logger.Error("Target cannot be the current producer", "targetProducerId", msg.TargetProducerId)
+		// Resolve the declaring producer's valID from address to perform an ID-based self-targeting check.
+		producerValID, err := srv.k.sk.GetValIdFromAddress(ctx, msg.Producer)
+		if err != nil {
+			logger.Error("Error resolving producer address to validator ID", "producer", msg.Producer, "error", err)
+			return sidetxs.Vote_VOTE_NO
+		}
+		if msg.TargetProducerId == producerValID {
+			logger.Error("Target producer cannot be the current producer", "targetProducerId", msg.TargetProducerId)
 			return sidetxs.Vote_VOTE_NO
 		}
 		// Target producer must be in the producer candidate set.

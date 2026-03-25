@@ -325,8 +325,13 @@ func (srv msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetP
 		return nil, fmt.Errorf("producer with address %s and id %d is not in the current producer set", msg.Producer, producerId)
 	}
 
-	// Validate target producer id if it is not 0 and the block height is greater than the target producer override height.
-	if msg.TargetProducerId != 0 && sdkCtx.BlockHeight() >= helper.GetTargetProducerOverrideHeight() {
+	// Reject non-default target before the fork height.
+	if msg.TargetProducerId != types.RoundRobinDefault && sdkCtx.BlockHeight() < helper.GetTargetProducerOverrideHeight() {
+		return nil, fmt.Errorf("target producer override is not enabled until height %d", helper.GetTargetProducerOverrideHeight())
+	}
+
+	// Validate target producer if it is not the round-robin default and the block height is greater than the target producer override height.
+	if msg.TargetProducerId != types.RoundRobinDefault && sdkCtx.BlockHeight() >= helper.GetTargetProducerOverrideHeight() {
 		if msg.TargetProducerId == producerId {
 			return nil, fmt.Errorf("target producer cannot be the same as the current producer")
 		}
