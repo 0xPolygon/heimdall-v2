@@ -25,7 +25,7 @@ type Service struct {
 	// queue connector
 	queueConnector *queue.Connector
 
-	processors         []Processor
+	processors        []Processor
 	registerTasksOnce sync.Once
 }
 
