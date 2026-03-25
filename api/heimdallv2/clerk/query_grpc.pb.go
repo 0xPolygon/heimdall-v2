@@ -19,13 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_GetRecordCount_FullMethodName        = "/heimdallv2.clerk.Query/GetRecordCount"
-	Query_GetRecordList_FullMethodName         = "/heimdallv2.clerk.Query/GetRecordList"
-	Query_GetLatestRecordId_FullMethodName     = "/heimdallv2.clerk.Query/GetLatestRecordId"
-	Query_GetRecordById_FullMethodName         = "/heimdallv2.clerk.Query/GetRecordById"
-	Query_GetRecordListWithTime_FullMethodName = "/heimdallv2.clerk.Query/GetRecordListWithTime"
-	Query_GetRecordSequence_FullMethodName     = "/heimdallv2.clerk.Query/GetRecordSequence"
-	Query_IsClerkTxOld_FullMethodName          = "/heimdallv2.clerk.Query/IsClerkTxOld"
+	Query_GetRecordCount_FullMethodName               = "/heimdallv2.clerk.Query/GetRecordCount"
+	Query_GetRecordList_FullMethodName                = "/heimdallv2.clerk.Query/GetRecordList"
+	Query_GetLatestRecordId_FullMethodName            = "/heimdallv2.clerk.Query/GetLatestRecordId"
+	Query_GetRecordById_FullMethodName                = "/heimdallv2.clerk.Query/GetRecordById"
+	Query_GetRecordListWithTime_FullMethodName        = "/heimdallv2.clerk.Query/GetRecordListWithTime"
+	Query_GetRecordSequence_FullMethodName            = "/heimdallv2.clerk.Query/GetRecordSequence"
+	Query_IsClerkTxOld_FullMethodName                 = "/heimdallv2.clerk.Query/IsClerkTxOld"
+	Query_GetBlockHeightByTime_FullMethodName         = "/heimdallv2.clerk.Query/GetBlockHeightByTime"
+	Query_GetRecordListVisibleAtHeight_FullMethodName = "/heimdallv2.clerk.Query/GetRecordListVisibleAtHeight"
 )
 
 // QueryClient is the client API for Query service.
@@ -46,6 +48,14 @@ type QueryClient interface {
 	GetRecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error)
 	// IsClerkTxOld checks if a clerk transaction has already been submitted.
 	IsClerkTxOld(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*IsClerkTxOldResponse, error)
+	// GetBlockHeightByTime returns the greatest committed Heimdall height
+	// whose header timestamp is <= the given cutoff time.
+	GetBlockHeightByTime(ctx context.Context, in *BlockHeightByTimeRequest, opts ...grpc.CallOption) (*BlockHeightByTimeResponse, error)
+	// GetRecordListVisibleAtHeight queries events visible at a specific Heimdall
+	// height. Used by Bor for deterministic state sync: all validators derive the
+	// same height from the same Bor block header and get identical results from
+	// latest Heimdall state.
+	GetRecordListVisibleAtHeight(ctx context.Context, in *RecordListVisibleAtHeightRequest, opts ...grpc.CallOption) (*RecordListVisibleAtHeightResponse, error)
 }
 
 type queryClient struct {
@@ -119,6 +129,24 @@ func (c *queryClient) IsClerkTxOld(ctx context.Context, in *RecordSequenceReques
 	return out, nil
 }
 
+func (c *queryClient) GetBlockHeightByTime(ctx context.Context, in *BlockHeightByTimeRequest, opts ...grpc.CallOption) (*BlockHeightByTimeResponse, error) {
+	out := new(BlockHeightByTimeResponse)
+	err := c.cc.Invoke(ctx, Query_GetBlockHeightByTime_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) GetRecordListVisibleAtHeight(ctx context.Context, in *RecordListVisibleAtHeightRequest, opts ...grpc.CallOption) (*RecordListVisibleAtHeightResponse, error) {
+	out := new(RecordListVisibleAtHeightResponse)
+	err := c.cc.Invoke(ctx, Query_GetRecordListVisibleAtHeight_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -137,6 +165,14 @@ type QueryServer interface {
 	GetRecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error)
 	// IsClerkTxOld checks if a clerk transaction has already been submitted.
 	IsClerkTxOld(context.Context, *RecordSequenceRequest) (*IsClerkTxOldResponse, error)
+	// GetBlockHeightByTime returns the greatest committed Heimdall height
+	// whose header timestamp is <= the given cutoff time.
+	GetBlockHeightByTime(context.Context, *BlockHeightByTimeRequest) (*BlockHeightByTimeResponse, error)
+	// GetRecordListVisibleAtHeight queries events visible at a specific Heimdall
+	// height. Used by Bor for deterministic state sync: all validators derive the
+	// same height from the same Bor block header and get identical results from
+	// latest Heimdall state.
+	GetRecordListVisibleAtHeight(context.Context, *RecordListVisibleAtHeightRequest) (*RecordListVisibleAtHeightResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -164,6 +200,12 @@ func (UnimplementedQueryServer) GetRecordSequence(context.Context, *RecordSequen
 }
 func (UnimplementedQueryServer) IsClerkTxOld(context.Context, *RecordSequenceRequest) (*IsClerkTxOldResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsClerkTxOld not implemented")
+}
+func (UnimplementedQueryServer) GetBlockHeightByTime(context.Context, *BlockHeightByTimeRequest) (*BlockHeightByTimeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBlockHeightByTime not implemented")
+}
+func (UnimplementedQueryServer) GetRecordListVisibleAtHeight(context.Context, *RecordListVisibleAtHeightRequest) (*RecordListVisibleAtHeightResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRecordListVisibleAtHeight not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -304,6 +346,42 @@ func _Query_IsClerkTxOld_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_GetBlockHeightByTime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BlockHeightByTimeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetBlockHeightByTime(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetBlockHeightByTime_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetBlockHeightByTime(ctx, req.(*BlockHeightByTimeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_GetRecordListVisibleAtHeight_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordListVisibleAtHeightRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetRecordListVisibleAtHeight(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetRecordListVisibleAtHeight_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetRecordListVisibleAtHeight(ctx, req.(*RecordListVisibleAtHeightRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -338,6 +416,14 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsClerkTxOld",
 			Handler:    _Query_IsClerkTxOld_Handler,
+		},
+		{
+			MethodName: "GetBlockHeightByTime",
+			Handler:    _Query_GetBlockHeightByTime_Handler,
+		},
+		{
+			MethodName: "GetRecordListVisibleAtHeight",
+			Handler:    _Query_GetRecordListVisibleAtHeight_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

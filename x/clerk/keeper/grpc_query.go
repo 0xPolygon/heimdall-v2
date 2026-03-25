@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
@@ -97,6 +98,16 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Errorf(codes.InvalidArgument, "fromId cannot be less than 1")
 	}
 
+	// Mitigation for deterministic state syncs per committed snapshot.
+	// Post Bor's DeterministicStateSync fork, Bor uses GetRecordListVisibleAtHeight instead,
+	// which filters by immutable visibility_height indexes on the latest Heimdall state
+
+	// Determine the upgrade boundary. If not set, all events use the legacy path.
+	upgradeId, err := q.k.GetVisibilityTimeUpgradeID(ctx)
+	if err != nil {
+		upgradeId = ^uint64(0)
+	}
+
 	// Collect the records based on pagination parameters.
 	result := make([]types.EventRecord, 0, request.Pagination.Limit)
 
@@ -120,13 +131,25 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	for ; iterator.Valid(); iterator.Next() {
 		value, err := iterator.Value()
 		if err != nil {
-			q.k.Logger(ctx).Debug("Error in fetching event record from iterator", "error", err)
+			q.k.Logger(ctx).Debug("Error in fetching event record from iterator for GetRecordListWithTime", "error", err)
 			break
 		}
 
-		if !value.RecordTime.Before(request.ToTime) {
-			// Here, the time is >= ToTime, break early.
-			break
+		if value.Id < upgradeId {
+			// Legacy event: filter by record_time < to_time
+			if !value.RecordTime.Before(request.ToTime) {
+				break
+			}
+		} else {
+			// Post-upgrade event: filter by visibility_time < to_time
+			visTime, err := q.k.GetVisibilityTimeForEvent(ctx, value.Id)
+			if err != nil {
+				// Event exists but has no visibility_time yet → still pending.
+				break
+			}
+			if !visTime.Before(request.ToTime) {
+				break
+			}
 		}
 
 		// Skip records based on the pagination offset.
@@ -266,6 +289,121 @@ func (q queryServer) GetRecordCount(ctx context.Context, _ *types.RecordCountReq
 	defer recordClerkQueryMetric(api.GetRecordCountMethod, startTime, &err)
 
 	return &types.RecordCountResponse{Count: q.k.GetEventRecordCount(ctx)}, nil
+}
+
+// GetBlockHeightByTime returns the greatest committed Heimdall height whose header
+// timestamp is <= the given cutoff time. This is used by Bor to resolve a deterministic
+// Heimdall height for height-pinned state sync queries.
+func (q queryServer) GetBlockHeightByTime(ctx context.Context, request *types.BlockHeightByTimeRequest) (*types.BlockHeightByTimeResponse, error) {
+	if request == nil {
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
+	}
+	if request.CutoffTime <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "cutoff_time must be a positive unix timestamp, got %d", request.CutoffTime)
+	}
+
+	height, err := q.k.GetBlockHeightByTime(ctx, request.CutoffTime)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.BlockHeightByTimeResponse{Height: height}, nil
+}
+
+// GetRecordListVisibleAtHeight queries events visible at a specific Heimdall height.
+// Used by Bor for deterministic state syncs: all validators derive the same height
+// from the same Bor block header and get identical results from the latest Heimdall state.
+func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error) {
+	if request == nil {
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
+	}
+
+	if request.FromId < 1 {
+		return nil, status.Errorf(codes.InvalidArgument, "from_id cannot be less than 1")
+	}
+	if request.HeimdallHeight <= helper.GetInitialHeight() {
+		return nil, status.Errorf(codes.InvalidArgument, "heimdall_height must be greater than initial height %d", helper.GetInitialHeight())
+	}
+	if isPaginationEmpty(request.Pagination) {
+		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one argument must be set)")
+	}
+	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimit {
+		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxRecordListLimit)
+	}
+
+	// Determine the upgrade boundary. If not set, all events use the legacy path.
+	upgradeId, err := q.k.GetVisibilityTimeUpgradeID(ctx)
+	if err != nil {
+		upgradeId = ^uint64(0)
+	}
+
+	requestedHeight := uint64(request.HeimdallHeight)
+
+	result := make([]types.EventRecord, 0, request.Pagination.Limit)
+
+	rng := (&collections.Range[uint64]{}).StartInclusive(request.FromId)
+
+	iterator, err := q.k.RecordsWithID.Iterate(ctx, rng)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	defer func(iterator collections.Iterator[uint64, types.EventRecord]) {
+		err := iterator.Close()
+		if err != nil {
+			q.k.Logger(ctx).Error("Error in closing event record iterator", "error", err)
+		}
+	}(iterator)
+
+	skipped := uint64(0)
+	collected := uint64(0)
+
+	for ; iterator.Valid(); iterator.Next() {
+		value, err := iterator.Value()
+		if err != nil {
+			q.k.Logger(ctx).Debug("Error in fetching event record from iterator for GetRecordListVisibleAtHeight", "error", err)
+			break
+		}
+
+		if value.Id < upgradeId {
+			// Legacy event: filter by record_time < to_time for backward compatibility
+			if !value.RecordTime.Before(request.ToTime) {
+				break
+			}
+		} else {
+			// Post-upgrade event: filter by visibility_height.
+			// This is monotonic with contiguous IDs, as happens for GetRecordListWithTime.
+			visibilityHeight, err := q.k.GetVisibilityHeightForEvent(ctx, value.Id)
+			if err != nil {
+				// Event exists but has no visibility_height yet (still pending).
+				break
+			}
+			if visibilityHeight > requestedHeight {
+				break
+			}
+		}
+
+		if skipped < request.Pagination.Offset {
+			skipped++
+			continue
+		}
+
+		if collected < request.Pagination.Limit {
+			result = append(result, value)
+			collected++
+		} else {
+			break
+		}
+	}
+
+	if len(result) == 0 {
+		return &types.RecordListVisibleAtHeightResponse{
+			EventRecords: []types.EventRecord{},
+		}, nil
+	}
+
+	return &types.RecordListVisibleAtHeightResponse{
+		EventRecords: result,
+	}, nil
 }
 
 func isPaginationEmpty(p query.PageRequest) bool {

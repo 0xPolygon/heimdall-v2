@@ -238,6 +238,8 @@ var faultyMilestoneNumber int64 = 0
 
 var producerDowntimeHeight int64 = 0
 
+var visibilityTimeHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -485,6 +487,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 25723063
 		initialHeight = 24404501
 		producerDowntimeHeight = 34966593
+		visibilityTimeHeight = 0 // TODO marcello decide block height
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -494,6 +497,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
+		visibilityTimeHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -503,6 +507,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 10618299
 		initialHeight = 8788501
 		producerDowntimeHeight = 20457139
+		visibilityTimeHeight = 0 // TODO marcello decide block height
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -512,6 +517,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
+		visibilityTimeHeight = 256
 	}
 }
 
@@ -690,6 +696,19 @@ func GetFaultyMilestoneNumber() uint64 {
 
 func GetSetProducerDowntimeHeight() int64 {
 	return producerDowntimeHeight
+}
+
+func GetVisibilityTimeHeight() int64 {
+	return visibilityTimeHeight
+}
+
+func SetVisibilityTimeHeight(height int64) {
+	visibilityTimeHeight = height
+}
+
+// IsVisibilityTimeEnabled returns true if the visibility time feature is active (0 if disabled)
+func IsVisibilityTimeEnabled(blockHeight int64) bool {
+	return visibilityTimeHeight > 0 && blockHeight >= visibilityTimeHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {

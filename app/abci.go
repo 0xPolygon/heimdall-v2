@@ -464,6 +464,22 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		logger.Info("Deleted milestone matching target condition", "milestone", milestoneNumber)
 	}
 
+	// Process pending visibility events from the previous block before new side txs are processed.
+	// This assigns visibility_time = blockTime(current block) to events stored in the prior block.
+	// This runs before PostHandlers add new events to the pending list, ensuring a clean
+	// one-block delay: events stored in block H get visibility_time = blockTime(H+1).
+	// The visibility_time only becomes part of the committed state when this block commits
+	if helper.IsVisibilityTimeEnabled(req.Height) {
+		if err := app.ClerkKeeper.ProcessPendingVisibilityEvents(ctx); err != nil {
+			logger.Error("Error processing pending visibility events", "error", err)
+			return nil, err
+		}
+		if err := app.ClerkKeeper.StoreBlockTime(ctx); err != nil {
+			logger.Error("Error storing block time", "error", err)
+			return nil, err
+		}
+	}
+
 	// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
 	extCommitInfo := new(abci.ExtendedCommitInfo)
 

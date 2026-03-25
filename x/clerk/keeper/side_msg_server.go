@@ -214,6 +214,23 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 		return err
 	}
 
+	// If visibility time is enabled, add event to the pending list.
+	// Its visibility_time will be set in the next block's PreBlocker.
+	if helper.IsVisibilityTimeEnabled(ctx.BlockHeight()) {
+		if err := srv.AddPendingVisibilityEvent(ctx, record.Id); err != nil {
+			logger.Error("Unable to add pending visibility event", "id", record.Id, heimdallTypes.LogKeyError, err)
+			return err
+		}
+
+		// Set the upgrade boundary marker on the first post-upgrade event
+		if _, err := srv.GetVisibilityTimeUpgradeID(ctx); err != nil {
+			if setErr := srv.SetVisibilityTimeUpgradeID(ctx, record.Id); setErr != nil {
+				logger.Error("Unable to set visibility time upgrade ID", "id", record.Id, heimdallTypes.LogKeyError, setErr)
+				return setErr
+			}
+		}
+	}
+
 	// save the record sequence
 	srv.SetRecordSequence(ctx, sequence)
 
