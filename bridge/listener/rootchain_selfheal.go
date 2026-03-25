@@ -298,7 +298,11 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 				break
 			}
 
-			time.Sleep(1 * time.Second)
+			select {
+			case <-time.After(1 * time.Second):
+			case <-ctx.Done():
+				return
+			}
 
 			var confirmed bool
 
@@ -309,7 +313,11 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 					break
 				}
 				rl.Logger.Info("Self-healing: stateId not yet found on Heimdall; retrying", "stateId", i)
-				time.Sleep(1 * time.Second)
+				select {
+				case <-time.After(1 * time.Second):
+				case <-ctx.Done():
+					return
+				}
 			}
 
 			if confirmed {
