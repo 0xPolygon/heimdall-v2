@@ -1,6 +1,8 @@
 package processor
 
 import (
+	"sync"
+
 	common "github.com/cometbft/cometbft/libs/service"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -23,7 +25,8 @@ type Service struct {
 	// queue connector
 	queueConnector *queue.Connector
 
-	processors []Processor
+	processors         []Processor
+	registerTasksOnce sync.Once
 }
 
 // NewProcessorService returns a new service object for processing queue msg
@@ -114,16 +117,25 @@ func NewProcessorService(
 	return processorService
 }
 
+// RegisterTasks registers all selected processor tasks with machinery.
+func (processorService *Service) RegisterTasks() {
+	processorService.registerTasksOnce.Do(func() {
+		for _, processor := range processorService.processors {
+			processor.RegisterTasks()
+		}
+	})
+}
+
 // OnStart starts the new block subscription
 func (processorService *Service) OnStart() error {
 	if err := processorService.BaseService.OnStart(); err != nil {
 		processorService.Logger.Error("ProcessorService | OnStart | OnStart", "Error", err)
 	} // Always call the overridden method.
 
+	processorService.RegisterTasks()
+
 	// start processors
 	for _, processor := range processorService.processors {
-		processor.RegisterTasks()
-
 		go func(processor Processor) {
 			if err := processor.Start(); err != nil {
 				processorService.Logger.Error("ProcessorService | OnStart | processor.Start", "Error", err)

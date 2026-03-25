@@ -85,7 +85,6 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 
 	// setup queue and CometBFT RPC
 	qc := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
-	qc.StartWorker()
 
 	httpClient, err := createAndStartRPC(helper.GetConfig().CometBFTRPCUrl)
 	if err != nil {
@@ -110,13 +109,18 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 
 	// wire bridge services
 	txBroadcaster := broadcaster.NewTxBroadcaster(cdc, ctx, clientCtx, nil)
+	listenerService := listener.NewListenerService(cdc, qc, httpClient)
+	processorService := processor.NewProcessorService(cdc, qc, httpClient, txBroadcaster)
+	processorService.RegisterTasks()
+	qc.StartWorker()
+
 	services := []common.Service{
-		listener.NewListenerService(cdc, qc, httpClient),
-		processor.NewProcessorService(cdc, qc, httpClient, txBroadcaster),
+		listenerService,
+		processorService,
 	}
 
 	// run services and handle a graceful shutdown
-	return runServices(ctx, services, httpClient)
+	return runServices(ctx, services, httpClient, qc)
 }
 
 // makeCodec creates a new codec with the necessary interface registry and registers all required interfaces.
@@ -201,7 +205,7 @@ func waitUntilSynced(ctx context.Context, clientCtx client.Context, d time.Durat
 }
 
 // runServices starts all the bridge services and handles graceful shutdown.
-func runServices(ctx context.Context, services []common.Service, httpClient *rpchttp.HTTP) error {
+func runServices(ctx context.Context, services []common.Service, httpClient *rpchttp.HTTP, qc *queue.Connector) error {
 	var g errgroup.Group
 
 	// start each service
@@ -221,6 +225,8 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 	g.Go(func() error {
 		<-ctx.Done()
 		logger().Info("Bridge: received stop signal - stopping all heimdall bridge services")
+
+		qc.StopWorker()
 
 		// stop services
 		for _, s := range services {
