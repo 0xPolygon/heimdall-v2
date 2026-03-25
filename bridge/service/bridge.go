@@ -85,13 +85,24 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 
 	// setup queue and CometBFT RPC
 	qc := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
-	qc.StartWorker()
 
 	httpClient, err := createAndStartRPC(helper.GetConfig().CometBFTRPCUrl)
 	if err != nil {
 		logger().Error("Bridge: error connecting to server", "err", err)
 		return err
 	}
+
+	// cleanup runs on early-return errors; runServices owns shutdown in the happy path
+	earlyReturn := true
+	defer func() {
+		if !earlyReturn {
+			return
+		}
+		qc.StopWorker()
+		if stopErr := httpClient.Stop(); stopErr != nil {
+			logger().Error("Bridge: httpClient.Stop failed during early cleanup", "err", stopErr)
+		}
+	}()
 
 	// set chain ID
 	chainID, err := resolveChainID(ctx, clientCtx)
@@ -108,7 +119,7 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 		return err
 	}
 
-	// wire bridge services
+	// wire bridge services: register tasks before starting worker to avoid race
 	txBroadcaster := broadcaster.NewTxBroadcaster(cdc, ctx, clientCtx, nil)
 	listenerService := listener.NewListenerService(cdc, qc, httpClient)
 	processorService := processor.NewProcessorService(cdc, qc, httpClient, txBroadcaster)
@@ -121,6 +132,7 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 	}
 
 	// run services and handle a graceful shutdown
+	earlyReturn = false
 	return runServices(ctx, services, httpClient, qc)
 }
 
@@ -221,10 +233,9 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 			}
 			select {
 			case <-s.Quit():
-				return nil
 			case <-gCtx.Done():
-				return gCtx.Err()
 			}
+			return nil
 		})
 	}
 
@@ -257,11 +268,6 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 	})
 
 	if err := g.Wait(); err != nil {
-		// context.Canceled is expected during normal shutdown
-		if errors.Is(err, context.Canceled) {
-			logger().Info("Bridge: stopped")
-			return nil
-		}
 		logger().Error("Bridge: stopped", "err", err)
 		return err
 	}
