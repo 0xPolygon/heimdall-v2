@@ -25,7 +25,7 @@ const (
 	errMsgSpanFetchingNextSpanDetails            = "SpanProcessor: unable to fetch next span details"
 	errMsgSpanRecoveredPanic                     = "SpanProcessor: recovered panic in propose goroutine"
 	errMsgSpanPropose                            = "SpanProcessor: error in propose"
-	errMsgSpanFetchingLastSpanForVotes           = "SpanProcessor: uable to fetch last span"
+	errMsgSpanFetchingLastSpanForVotes           = "SpanProcessor: unable to fetch last span"
 	errMsgSpanValidatorNotFound                  = "SpanProcessor: validator not found in last span"
 	errMsgSpanFetchingProducerVotes              = "SpanProcessor: unable to fetch producer votes"
 	errMsgSpanSendingProducerVotes               = "SpanProcessor: error while sending producer votes"
