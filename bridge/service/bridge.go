@@ -201,8 +201,10 @@ func waitUntilSynced(ctx context.Context, clientCtx client.Context, d time.Durat
 }
 
 // runServices starts all the bridge services and handles graceful shutdown.
+// Uses errgroup.WithContext so that a service Start() failure cancels the
+// group context, which unblocks the shutdown controller and other goroutines.
 func runServices(ctx context.Context, services []common.Service, httpClient *rpchttp.HTTP) error {
-	var g errgroup.Group
+	g, gCtx := errgroup.WithContext(ctx)
 
 	// start each service
 	for _, svc := range services {
@@ -212,14 +214,18 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 				logger().Error("Bridge: service.Start failed", "err", err)
 				return err
 			}
-			<-s.Quit()
-			return nil
+			select {
+			case <-s.Quit():
+				return nil
+			case <-gCtx.Done():
+				return gCtx.Err()
+			}
 		})
 	}
 
-	// shutdown controller
+	// shutdown controller: triggers on parent ctx cancellation or first goroutine error
 	g.Go(func() error {
-		<-ctx.Done()
+		<-gCtx.Done()
 		logger().Info("Bridge: received stop signal - stopping all heimdall bridge services")
 
 		// stop services
@@ -244,6 +250,11 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 	})
 
 	if err := g.Wait(); err != nil {
+		// context.Canceled is expected during a normal shutdown
+		if errors.Is(err, context.Canceled) {
+			logger().Info("Bridge: stopped")
+			return nil
+		}
 		logger().Error("Bridge: stopped", "err", err)
 		return err
 	}
