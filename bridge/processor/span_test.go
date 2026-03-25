@@ -80,6 +80,32 @@ func TestSpanProcessor_PollingBehavior(t *testing.T) {
 	})
 }
 
+func TestSpanProcessor_ProposeGuard(t *testing.T) {
+	t.Parallel()
+
+	t.Run("proposeSpanInProgress defaults to false", func(t *testing.T) {
+		t.Parallel()
+
+		sp := &SpanProcessor{}
+		require.False(t, sp.proposeSpanInProgress.Load())
+	})
+
+	t.Run("CompareAndSwap prevents concurrent proposals", func(t *testing.T) {
+		t.Parallel()
+
+		sp := &SpanProcessor{}
+
+		// First CAS should succeed
+		require.True(t, sp.proposeSpanInProgress.CompareAndSwap(false, true))
+		// Second CAS should fail (simulates overlap prevention)
+		require.False(t, sp.proposeSpanInProgress.CompareAndSwap(false, true))
+		// Store resets the flag
+		sp.proposeSpanInProgress.Store(false)
+		// CAS should succeed again
+		require.True(t, sp.proposeSpanInProgress.CompareAndSwap(false, true))
+	})
+}
+
 func TestSpanProcessor_Constants(t *testing.T) {
 	t.Parallel()
 

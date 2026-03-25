@@ -85,13 +85,24 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 
 	// setup queue and CometBFT RPC
 	qc := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
-	qc.StartWorker()
 
 	httpClient, err := createAndStartRPC(helper.GetConfig().CometBFTRPCUrl)
 	if err != nil {
 		logger().Error("Bridge: error connecting to server", "err", err)
 		return err
 	}
+
+	// cleanup runs on early-return errors; runServices owns shutdown in the happy path
+	earlyReturn := true
+	defer func() {
+		if !earlyReturn {
+			return
+		}
+		qc.StopWorker()
+		if stopErr := httpClient.Stop(); stopErr != nil {
+			logger().Error("Bridge: httpClient.Stop failed during early cleanup", "err", stopErr)
+		}
+	}()
 
 	// set chain ID
 	chainID, err := resolveChainID(ctx, clientCtx)
@@ -108,15 +119,21 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 		return err
 	}
 
-	// wire bridge services
+	// wire bridge services: register tasks before starting worker to avoid race
 	txBroadcaster := broadcaster.NewTxBroadcaster(cdc, ctx, clientCtx, nil)
+	listenerService := listener.NewListenerService(cdc, qc, httpClient)
+	processorService := processor.NewProcessorService(cdc, qc, httpClient, txBroadcaster)
+	processorService.RegisterTasks()
+	qc.StartWorker()
+
 	services := []common.Service{
-		listener.NewListenerService(cdc, qc, httpClient),
-		processor.NewProcessorService(cdc, qc, httpClient, txBroadcaster),
+		listenerService,
+		processorService,
 	}
 
 	// run services and handle a graceful shutdown
-	return runServices(ctx, services, httpClient)
+	earlyReturn = false
+	return runServices(ctx, services, httpClient, qc)
 }
 
 // makeCodec creates a new codec with the necessary interface registry and registers all required interfaces.
@@ -203,7 +220,7 @@ func waitUntilSynced(ctx context.Context, clientCtx client.Context, d time.Durat
 // runServices starts all the bridge services and handles graceful shutdown.
 // Uses errgroup.WithContext so that a service Start() failure cancels the
 // group context, which unblocks the shutdown controller and other goroutines.
-func runServices(ctx context.Context, services []common.Service, httpClient *rpchttp.HTTP) error {
+func runServices(ctx context.Context, services []common.Service, httpClient *rpchttp.HTTP, qc *queue.Connector) error {
 	g, gCtx := errgroup.WithContext(ctx)
 
 	// start each service
@@ -216,17 +233,18 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 			}
 			select {
 			case <-s.Quit():
-				return nil
 			case <-gCtx.Done():
-				return gCtx.Err()
 			}
+			return nil
 		})
 	}
 
-	// shutdown controller: triggers on parent ctx cancellation or first goroutine error
+	// shutdown controller: triggers on parent ctx cancellation OR first goroutine error
 	g.Go(func() error {
 		<-gCtx.Done()
 		logger().Info("Bridge: received stop signal - stopping all heimdall bridge services")
+
+		qc.StopWorker()
 
 		// stop services
 		for _, s := range services {
@@ -250,11 +268,6 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 	})
 
 	if err := g.Wait(); err != nil {
-		// context.Canceled is expected during a normal shutdown
-		if errors.Is(err, context.Canceled) {
-			logger().Info("Bridge: stopped")
-			return nil
-		}
 		logger().Error("Bridge: stopped", "err", err)
 		return err
 	}
