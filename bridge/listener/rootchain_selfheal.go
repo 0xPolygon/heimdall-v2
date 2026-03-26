@@ -264,6 +264,13 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 
 	const maxRetriesPerState = 3
 
+	sleepTimer := time.NewTimer(0)
+	if !sleepTimer.Stop() {
+		<-sleepTimer.C
+	}
+
+	defer sleepTimer.Stop()
+
 	for i := latestPolygonStateId.Int64() + 1; i <= latestEthereumStateId.Int64(); i++ {
 		if _, err = util.GetClerkEventRecord(i, rl.cliCtx.Codec); err == nil {
 			rl.Logger.Info("Self-healing: state ID already synced on Heimdall; skipping", "stateId", i)
@@ -298,7 +305,13 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 				break
 			}
 
-			time.Sleep(1 * time.Second)
+			sleepTimer.Reset(1 * time.Second)
+
+			select {
+			case <-sleepTimer.C:
+			case <-ctx.Done():
+				return
+			}
 
 			var confirmed bool
 
@@ -309,7 +322,13 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 					break
 				}
 				rl.Logger.Info("Self-healing: stateId not yet found on Heimdall; retrying", "stateId", i)
-				time.Sleep(1 * time.Second)
+				sleepTimer.Reset(1 * time.Second)
+
+				select {
+				case <-sleepTimer.C:
+				case <-ctx.Done():
+					return
+				}
 			}
 
 			if confirmed {

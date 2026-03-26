@@ -116,6 +116,9 @@ type CheckpointProcessor struct {
 	// noAckInProgress prevents overlapping handleCheckpointNoAck goroutines
 	noAckInProgress atomic.Bool
 
+	// noAckSkipCount tracks how many times a tick was skipped because noAckInProgress was true (used in tests)
+	noAckSkipCount atomic.Uint64
+
 	// RootChain abi
 	rootChainAbi *abi.ABI
 }
@@ -172,6 +175,7 @@ func (cp *CheckpointProcessor) startPollingForNoAck(ctx context.Context, interva
 		case <-ticker.C:
 			if !cp.noAckInProgress.CompareAndSwap(false, true) {
 				cp.Logger.Debug("CheckpointProcessor: skipping no-ack check, previous run still in progress")
+				cp.noAckSkipCount.Add(1)
 				continue
 			}
 
