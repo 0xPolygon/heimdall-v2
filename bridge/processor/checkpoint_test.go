@@ -113,10 +113,10 @@ func TestCheckpointProcessor_NoAckGuard(t *testing.T) {
 			cp.startPollingForNoAck(ctx, 20*time.Millisecond)
 		}()
 
-		// Wait for at least one tick to be processed (the skip path)
+		// Wait for at least one tick to hit the skip path
 		require.Eventually(t, func() bool {
-			return cp.noAckInProgress.Load()
-		}, 2*time.Second, 10*time.Millisecond, "expected at least one tick to fire")
+			return cp.noAckSkipCount.Load() > 0
+		}, 2*time.Second, 10*time.Millisecond, "expected at least one tick to fire and be skipped")
 		cancel()
 
 		select {
