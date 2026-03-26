@@ -2,7 +2,6 @@ package heimdalld
 
 import (
 	"os"
-	"time"
 
 	"cosmossdk.io/log"
 	"github.com/cometbft/cometbft/cmd/cometbft/commands"
@@ -137,11 +136,12 @@ func NewRootCmd() *cobra.Command {
 			}
 
 			logNoColor := serverCtx.Viper.GetBool(flags.FlagLogNoColor)
-			// Store timestamps with sub-second precision so that log lines carry
-			// millisecond granularity. Without this, zerolog stores the Unix
-			// timestamp as RFC3339 (second precision) before the ConsoleWriter
-			// ever gets a chance to format it, resulting in second-only output.
-			zerolog.TimeFieldFormat = time.RFC3339Nano
+			// Store timestamps with millisecond precision so that log lines carry
+			// sub-second granularity. Without this, zerolog stores the timestamp
+			// as RFC3339 (second precision) before the ConsoleWriter ever gets a
+			// chance to format it, resulting in second-only output.
+			// Using 3 decimal places ("000") matches bor's log timestamp format.
+			zerolog.TimeFieldFormat = "2006-01-02T15:04:05.000Z07:00"
 			var logOpts []log.Option
 			if serverCtx.Viper.GetString(flags.FlagLogFormat) == flags.OutputFormatJSON {
 				logOpts = append(logOpts, log.OutputJSONOption())
@@ -150,7 +150,7 @@ func NewRootCmd() *cobra.Command {
 			}
 			logOpts = append(logOpts,
 				log.LevelOption(logLevel),
-				log.TimeFormatOption(time.RFC3339Nano),
+				log.TimeFormatOption("2006-01-02T15:04:05.000Z07:00"),
 			)
 
 			serverCtx.Logger = log.NewLogger(cmd.OutOrStdout(), logOpts...).With(log.ModuleKey, "server")
