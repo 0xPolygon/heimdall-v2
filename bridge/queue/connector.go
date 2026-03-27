@@ -1,6 +1,8 @@
 package queue
 
 import (
+	"sync"
+
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
@@ -13,6 +15,9 @@ import (
 type Connector struct {
 	logger log.Logger
 	Server *machinery.Server
+
+	mu     sync.Mutex
+	worker *machinery.Worker
 }
 
 const (
@@ -60,11 +65,51 @@ func NewQueueConnector(dialer string) *Connector {
 
 // StartWorker - starts worker to process registered tasks
 func (qc *Connector) StartWorker() {
+	qc.mu.Lock()
+	defer qc.mu.Unlock()
+
+	if qc.worker != nil {
+		return
+	}
+
 	worker := qc.Server.NewWorker("invoke-processor", 10)
+	errors := make(chan error, 1)
+	qc.worker = worker
 
 	qc.logger.Info("Starting machinery worker")
 
-	errors := make(chan error)
-
+	go qc.watchWorker(worker, errors)
 	worker.LaunchAsync(errors)
+}
+
+// StopWorker stops the worker and prevents it from consuming more tasks.
+func (qc *Connector) StopWorker() {
+	qc.mu.Lock()
+	worker := qc.worker
+	qc.worker = nil
+	qc.mu.Unlock()
+
+	if worker == nil {
+		return
+	}
+
+	qc.logger.Info("Stopping machinery worker")
+	worker.Quit()
+}
+
+func (qc *Connector) watchWorker(worker *machinery.Worker, errors <-chan error) {
+	err := <-errors
+
+	qc.mu.Lock()
+	if qc.worker == worker {
+		qc.worker = nil
+	}
+	qc.mu.Unlock()
+
+	if err != nil {
+		qc.logger.Error("Machinery worker stopped", "err", err)
+		return
+	}
+
+	qc.logger.Info("Machinery worker stopped")
 }
