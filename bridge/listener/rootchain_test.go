@@ -150,6 +150,100 @@ func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
 	})
 }
 
+func TestRootChainListener_MaxBlockRange(t *testing.T) {
+	t.Parallel()
+
+	t.Run("validates maxRootChainBlockRange constant", func(t *testing.T) {
+		t.Parallel()
+
+		require.Equal(t, int64(5000), int64(maxRootChainBlockRange))
+		require.Greater(t, maxRootChainBlockRange, 0)
+	})
+
+	t.Run("chunking produces correct ranges within maxRootChainBlockRange", func(t *testing.T) {
+		t.Parallel()
+
+		testCases := []struct {
+			name           string
+			from           int64
+			to             int64
+			expectedChunks [][2]int64 // [from, to] pairs
+		}{
+			{
+				name: "range smaller than max",
+				from: 100,
+				to:   200,
+				expectedChunks: [][2]int64{
+					{100, 200},
+				},
+			},
+			{
+				name: "range equal to max",
+				from: 1000,
+				to:   5999,
+				expectedChunks: [][2]int64{
+					{1000, 5999},
+				},
+			},
+			{
+				name: "range exceeds max by one",
+				from: 1000,
+				to:   6000,
+				expectedChunks: [][2]int64{
+					{1000, 5999},
+					{6000, 6000},
+				},
+			},
+			{
+				name: "range exactly double max",
+				from: 0,
+				to:   9999,
+				expectedChunks: [][2]int64{
+					{0, 4999},
+					{5000, 9999},
+				},
+			},
+			{
+				name: "single block range",
+				from: 500,
+				to:   500,
+				expectedChunks: [][2]int64{
+					{500, 500},
+				},
+			},
+			{
+				name: "large range produces multiple chunks",
+				from: 0,
+				to:   12499,
+				expectedChunks: [][2]int64{
+					{0, 4999},
+					{5000, 9999},
+					{10000, 12499},
+				},
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				from := big.NewInt(tc.from)
+				to := big.NewInt(tc.to)
+
+				var chunks [][2]int64
+				for chunkFrom := new(big.Int).Set(from); chunkFrom.Cmp(to) <= 0; {
+					chunkTo := new(big.Int).Add(chunkFrom, big.NewInt(maxRootChainBlockRange-1))
+					if chunkTo.Cmp(to) > 0 {
+						chunkTo = to
+					}
+					chunks = append(chunks, [2]int64{chunkFrom.Int64(), chunkTo.Int64()})
+					chunkFrom = new(big.Int).Add(chunkTo, big.NewInt(1))
+				}
+
+				require.Equal(t, tc.expectedChunks, chunks)
+			})
+		}
+	})
+}
+
 func TestRootChainListener_StorageKeys(t *testing.T) {
 	t.Parallel()
 
