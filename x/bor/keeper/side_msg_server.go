@@ -692,8 +692,10 @@ func (srv sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 		return nil
 	}
 
-	// TargetProducerId is height-gated inside SelectNextSpanProducer;
-	// below the fork height it is silently ignored and round-robin is used.
+	// TargetProducerId is validated by SideHandleSetProducerDowntime/SetProducerDowntime,
+	// which reject non-default targets before the fork height. Height-gating in
+	// SelectNextSpanProducer is therefore defense-in-depth; below the fork height
+	// round-robin selection is used.
 	if err := srv.k.AddNewVeBlopSpan(ctx, validatorId, msg.DowntimeRange.StartBlock, msg.DowntimeRange.StartBlock+params.SpanDuration, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), msg.TargetProducerId); err != nil {
 		logger.Error("Error occurred while adding new veBlop span", "error", err)
 		return err

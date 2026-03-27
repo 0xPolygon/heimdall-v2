@@ -596,14 +596,26 @@ func (k Keeper) CanVoteProducers(ctx context.Context) error {
 	return nil
 }
 
-// CanSetProducerDowntime checks if the current height is after the setProducerDowntimeHeight
+// CanSetProducerDowntime checks if the current height is after the setProducerDowntimeHeight.
 func (k Keeper) CanSetProducerDowntime(ctx sdk.Context) error {
-	if uint64(ctx.BlockHeight()) < uint64(helper.GetSetProducerDowntimeHeight()) {
+	if ctx.BlockHeight() < helper.GetSetProducerDowntimeHeight() {
 		return fmt.Errorf("MsgSetProducerDowntime not allowed: block %d is before the setProducerDowntimeHeight %d",
 			ctx.BlockHeight(),
-			helper.GetSetProducerDowntimeHeight())
+			helper.GetSetProducerDowntimeHeight(),
+		)
 	}
+	return nil
+}
 
+// CanUseTargetProducer checks if the current height is after the targetProducerOverrideHeight,
+// which gates the use of a non-default TargetProducerId in MsgSetProducerDowntime.
+func (k Keeper) CanUseTargetProducer(ctx sdk.Context) error {
+	if ctx.BlockHeight() < helper.GetTargetProducerOverrideHeight() {
+		return fmt.Errorf("MsgSetProducerDowntime with TargetProducerId not allowed: block %d is before the targetProducerOverrideHeight %d",
+			ctx.BlockHeight(),
+			helper.GetTargetProducerOverrideHeight(),
+		)
+	}
 	return nil
 }
 

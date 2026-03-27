@@ -509,7 +509,7 @@ func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx
 						Log:  err.Error(),
 					}, nil
 				}
-			} else if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+			} else if downtimeMsg, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
 				// Create a context for validation
 				ctx := app.NewUncachedContext(true, cmtproto.Header{Height: app.LastBlockHeight() + 1})
 				if err := app.BorKeeper.CanSetProducerDowntime(ctx); err != nil {
@@ -518,6 +518,15 @@ func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx
 						Code: sdkerrors.ErrInvalidRequest.ABCICode(),
 						Log:  err.Error(),
 					}, nil
+				}
+				if downtimeMsg.TargetProducerId != borTypes.RoundRobinDefault {
+					if err := app.BorKeeper.CanUseTargetProducer(ctx); err != nil {
+						app.Logger().Debug("Rejecting MsgSetProducerDowntime with TargetProducerId in CheckTx", "error", err)
+						return &abci.ResponseCheckTx{
+							Code: sdkerrors.ErrInvalidRequest.ABCICode(),
+							Log:  err.Error(),
+						}, nil
+					}
 				}
 			}
 		}

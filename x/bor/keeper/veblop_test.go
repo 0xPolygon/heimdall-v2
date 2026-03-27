@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -530,6 +531,10 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducerWithTarget() {
 	ctx := s.ctx
 	borKeeper := s.borKeeper
 	stakeKeeper := s.stakeKeeper
+
+	// Ensure the target-producer override is enabled regardless of any future
+	// activation height configured in the binary.
+	helper.SetTargetProducerOverrideHeight(0)
 
 	s.milestoneKeeper.EXPECT().GetLastMilestone(ctx).Return(&milestoneTypes.Milestone{
 		EndBlock: 1000,
