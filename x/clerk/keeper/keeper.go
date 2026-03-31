@@ -413,7 +413,7 @@ func (k *Keeper) GetBlockHeightByTime(ctx context.Context, cutoffUnix int64) (in
 	defer func(iterator collections.Iterator[collections.Pair[uint64, uint64], uint64]) {
 		err := iterator.Close()
 		if err != nil {
-			fmt.Printf("failed to close iterator for BlockTimeReverseIndex: %w", err)
+			fmt.Printf("failed to close iterator for BlockTimeReverseIndex: %v", err)
 		}
 	}(iterator)
 
