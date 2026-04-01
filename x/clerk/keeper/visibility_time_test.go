@@ -48,7 +48,8 @@ func (s *KeeperTestSuite) TestProcessPendingVisibilityEvents() {
 	}
 
 	// Pending list should be cleared
-	hasPending, _ := ck.PendingVisibilityEvents.Has(ctx, 1)
+	hasPending, err := ck.PendingVisibilityEvents.Has(ctx, 1)
+	require.NoError(err)
 	require.False(hasPending, "pending list should be empty after processing")
 }
 
@@ -680,8 +681,8 @@ func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	require.True(vt.Equal(blockH2Time))
 }
 
-// TestStoreBlockTime verifies that StoreBlockTime stores [height, blockTime] mappings
-// and that they can be retrieved via the BlockTimeIndex.
+// TestStoreBlockTime verifies that StoreBlockTime stores block time mappings
+// that can be resolved via GetBlockHeightByTime (the reverse index).
 func (s *KeeperTestSuite) TestStoreBlockTime() {
 	ctx, ck := s.ctx, s.keeper
 	require := s.Require()
@@ -701,11 +702,11 @@ func (s *KeeperTestSuite) TestStoreBlockTime() {
 		require.NoError(ck.StoreBlockTime(ctx))
 	}
 
-	// Verify each mapping exists
+	// Verify each mapping is resolvable via GetBlockHeightByTime
 	for _, tt := range times {
-		storedTime, err := ck.BlockTimeIndex.Get(ctx, uint64(tt.height))
+		resolvedHeight, err := ck.GetBlockHeightByTime(ctx, tt.time.Unix())
 		require.NoError(err)
-		require.Equal(uint64(tt.time.Unix()), storedTime)
+		require.Equal(tt.height, resolvedHeight)
 	}
 }
 
@@ -1297,14 +1298,6 @@ func (s *KeeperTestSuite) TestStoreBlockTime_WritesReverseIndex() {
 	for _, b := range blocks {
 		ctx = ctx.WithBlockHeight(b.height).WithBlockHeader(cmtproto.Header{Time: b.time, Height: b.height})
 		require.NoError(ck.StoreBlockTime(ctx))
-	}
-
-	// Verify forward index (BlockTimeIndex): height → time entries exist
-	for _, b := range blocks {
-		storedTime, err := ck.BlockTimeIndex.Get(ctx, uint64(b.height))
-		require.NoError(err, "forward index should have entry for height %d", b.height)
-		require.Equal(uint64(b.time.Unix()), storedTime,
-			"forward index time mismatch for height %d", b.height)
 	}
 
 	// Verify reverse index (BlockTimeReverseIndex): (time, height) → height entries exist

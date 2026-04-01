@@ -34,7 +34,6 @@ type Keeper struct {
 	VisibilityTimeUpgradeID collections.Item[uint64]
 	PendingVisibilityEvents collections.Map[uint64, []byte]
 	VisibilityTimeByID      collections.Map[uint64, uint64]                           // stores time as unix nanoseconds
-	BlockTimeIndex          collections.Map[uint64, uint64]                           // height → blockTime as unix seconds
 	BlockTimeReverseIndex   collections.Map[collections.Pair[uint64, uint64], uint64] // (blockTime, height) → height for O(log N) cutoff lookup
 	VisibilityHeightByID    collections.Map[uint64, uint64]                           // event_id → heimdall block height where visibility was assigned
 }
@@ -58,7 +57,6 @@ func NewKeeper(
 		VisibilityTimeUpgradeID: collections.NewItem(sb, types.VisibilityTimeUpgradeIDKeyPrefix, "visibilityTimeUpgradeID", collections.Uint64Value),
 		PendingVisibilityEvents: collections.NewMap(sb, types.PendingVisibilityEventsKeyPrefix, "pendingVisibilityEvents", collections.Uint64Key, collections.BytesValue),
 		VisibilityTimeByID:      collections.NewMap(sb, types.VisibilityTimeByIDKeyPrefix, "visibilityTimeByID", collections.Uint64Key, collections.Uint64Value),
-		BlockTimeIndex:          collections.NewMap(sb, types.BlockTimeIndexKeyPrefix, "blockTimeIndex", collections.Uint64Key, collections.Uint64Value),
 		BlockTimeReverseIndex:   collections.NewMap(sb, types.BlockTimeReverseIndexKeyPrefix, "blockTimeReverseIndex", collections.PairKeyCodec(collections.Uint64Key, collections.Uint64Key), collections.Uint64Value),
 		VisibilityHeightByID:    collections.NewMap(sb, types.VisibilityHeightByIDKeyPrefix, "visibilityHeightByID", collections.Uint64Key, collections.Uint64Value),
 	}
@@ -384,10 +382,6 @@ func (k *Keeper) StoreBlockTime(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	height := uint64(sdkCtx.BlockHeight())
 	blockTime := uint64(sdkCtx.BlockTime().Unix())
-
-	if err := k.BlockTimeIndex.Set(ctx, height, blockTime); err != nil {
-		return err
-	}
 
 	return k.BlockTimeReverseIndex.Set(ctx, collections.Join(blockTime, height), height)
 }
