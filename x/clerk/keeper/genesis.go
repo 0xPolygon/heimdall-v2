@@ -103,7 +103,12 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	// Export visibility heights by ID.
 	vhIter, err := k.VisibilityHeightByID.Iterate(ctx, nil)
 	if err == nil {
-		defer vhIter.Close()
+		defer func(vhIter collections.Iterator[uint64, uint64]) {
+			err := vhIter.Close()
+			if err != nil {
+				k.Logger(ctx).Error("Error closing visibility height iterator", "error", err)
+			}
+		}(vhIter)
 		for ; vhIter.Valid(); vhIter.Next() {
 			if kv, err := vhIter.KeyValue(); err == nil {
 				gs.VisibilityHeightsById = append(gs.VisibilityHeightsById, types.Uint64Pair{

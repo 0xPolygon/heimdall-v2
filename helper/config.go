@@ -517,7 +517,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
-		visibilityTimeHeight = 1000
+		visibilityTimeHeight = 0
 	}
 }
 

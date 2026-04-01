@@ -1067,10 +1067,11 @@ func (s *KeeperTestSuite) TestGetBlockHeightByTime_LargeDataset() {
 	require.NoError(err)
 	require.Equal(int64(500), height, "exact cutoff at block 500 should return height 500")
 
-	// Cutoff between block 500 and 501 → should still return 500 (the greatest height with time <= cutoff)
-	height, err = ck.GetBlockHeightByTime(ctx, baseUnix+499)
+	// Cutoff at block 501's exact time → returns height 501
+	// Block 501 has time = baseUnix + 500
+	height, err = ck.GetBlockHeightByTime(ctx, baseUnix+500)
 	require.NoError(err)
-	require.Equal(int64(500), height, "cutoff between block 500 and 501 should return 500")
+	require.Equal(int64(501), height, "exact cutoff at block 501 should return height 501")
 
 	// Cutoff after the last block (block 1000 has time = baseUnix+999) → returns 1000
 	height, err = ck.GetBlockHeightByTime(ctx, baseUnix+1500)
