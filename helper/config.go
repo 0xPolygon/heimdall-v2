@@ -702,6 +702,10 @@ func GetProducerDowntimeSpanFixHeight() int64 {
 	return producerDowntimeSpanFixHeight
 }
 
+func SetProducerDowntimeSpanFixHeight(height int64) {
+	producerDowntimeSpanFixHeight = height
+}
+
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
 	chainMigration := chainManagerAddressMigrations[conf.Custom.Chain]
 	if chainMigration == nil {

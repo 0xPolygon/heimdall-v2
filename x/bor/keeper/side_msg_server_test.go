@@ -783,6 +783,9 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 }
 
 func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime_VeBlopSpanDuration() {
+	helper.SetProducerDowntimeSpanFixHeight(100)
+	defer helper.SetProducerDowntimeSpanFixHeight(0)
+
 	fixHeight := helper.GetProducerDowntimeSpanFixHeight()
 
 	tests := []struct {
@@ -796,6 +799,12 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime_VeBlopSpanDuration()
 			blockHeight:      fixHeight - 1,
 			expectedEndBlock: func(start, dur uint64) uint64 { return start + dur },
 			expectedDuration: func(dur uint64) uint64 { return dur + 1 },
+		},
+		{
+			name:             "at fork height: span has exactly SpanDuration blocks",
+			blockHeight:      fixHeight,
+			expectedEndBlock: func(start, dur uint64) uint64 { return start + dur - 1 },
+			expectedDuration: func(dur uint64) uint64 { return dur },
 		},
 		{
 			name:             "post-fork: span has exactly SpanDuration blocks",
