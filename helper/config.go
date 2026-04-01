@@ -238,6 +238,8 @@ var faultyMilestoneNumber int64 = 0
 
 var producerDowntimeHeight int64 = 0
 
+var producerDowntimeSpanFixHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -485,6 +487,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 25723063
 		initialHeight = 24404501
 		producerDowntimeHeight = 34966593
+		producerDowntimeSpanFixHeight = 0 // TBD
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -494,6 +497,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
+		producerDowntimeSpanFixHeight = 0 // TBD
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -503,6 +507,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 10618299
 		initialHeight = 8788501
 		producerDowntimeHeight = 20457139
+		producerDowntimeSpanFixHeight = 0 // TBD
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -512,6 +517,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
+		producerDowntimeSpanFixHeight = 0
 	}
 }
 
@@ -690,6 +696,10 @@ func GetFaultyMilestoneNumber() uint64 {
 
 func GetSetProducerDowntimeHeight() int64 {
 	return producerDowntimeHeight
+}
+
+func GetProducerDowntimeSpanFixHeight() int64 {
+	return producerDowntimeSpanFixHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {

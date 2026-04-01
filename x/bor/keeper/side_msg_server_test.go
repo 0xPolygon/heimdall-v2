@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -777,6 +778,124 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 				require.NoError(err)
 				require.Equal(initialLastID+uint64(tc.expectSpanDelta), last.Id)
 			}
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime_VeBlopSpanDuration() {
+	fixHeight := helper.GetProducerDowntimeSpanFixHeight()
+
+	tests := []struct {
+		name             string
+		blockHeight      int64
+		expectedEndBlock func(start, spanDuration uint64) uint64
+		expectedDuration func(spanDuration uint64) uint64
+	}{
+		{
+			name:             "pre-fork: span is one block longer than SpanDuration",
+			blockHeight:      fixHeight - 1,
+			expectedEndBlock: func(start, dur uint64) uint64 { return start + dur },
+			expectedDuration: func(dur uint64) uint64 { return dur + 1 },
+		},
+		{
+			name:             "post-fork: span has exactly SpanDuration blocks",
+			blockHeight:      fixHeight + 1,
+			expectedEndBlock: func(start, dur uint64) uint64 { return start + dur - 1 },
+			expectedDuration: func(dur uint64) uint64 { return dur },
+		},
+	}
+
+	for _, tc := range tests {
+		s.T().Run(tc.name, func(t *testing.T) {
+			s.SetupTest()
+			require := s.Require()
+
+			id1, id2, id3 := uint64(1), uint64(2), uint64(3)
+			addr1 := common.HexToAddress("0x0000000000000000000000000000000000000001").Hex()
+			addr2 := common.HexToAddress("0x0000000000000000000000000000000000000002").Hex()
+			addr3 := common.HexToAddress("0x0000000000000000000000000000000000000003").Hex()
+
+			s.stakeKeeper.EXPECT().
+				GetValidatorSet(gomock.Any()).
+				Return(stakeTypes.ValidatorSet{
+					Validators: []*stakeTypes.Validator{
+						{ValId: id1, Signer: addr1, VotingPower: 100},
+						{ValId: id2, Signer: addr2, VotingPower: 100},
+						{ValId: id3, Signer: addr3, VotingPower: 100},
+					},
+				}, nil).
+				AnyTimes()
+
+			s.stakeKeeper.EXPECT().
+				GetSpanEligibleValidators(gomock.Any()).
+				Return([]stakeTypes.Validator{
+					{ValId: id1, Signer: addr1, VotingPower: 100},
+					{ValId: id2, Signer: addr2, VotingPower: 100},
+					{ValId: id3, Signer: addr3, VotingPower: 100},
+				}).
+				AnyTimes()
+
+			s.stakeKeeper.EXPECT().
+				GetValidatorFromValID(gomock.Any(), gomock.Any()).
+				DoAndReturn(func(_ sdk.Context, vid uint64) (stakeTypes.Validator, error) {
+					switch vid {
+					case id1:
+						return stakeTypes.Validator{ValId: id1, Signer: addr1, VotingPower: 100}, nil
+					case id2:
+						return stakeTypes.Validator{ValId: id2, Signer: addr2, VotingPower: 100}, nil
+					case id3:
+						return stakeTypes.Validator{ValId: id3, Signer: addr3, VotingPower: 100}, nil
+					default:
+						return stakeTypes.Validator{}, fmt.Errorf("unknown validator id %d", vid)
+					}
+				}).
+				AnyTimes()
+
+			s.stakeKeeper.EXPECT().
+				GetValIdFromAddress(gomock.Any(), addr1).
+				Return(id1, nil).
+				AnyTimes()
+
+			require.NoError(s.borKeeper.ClearProducerVotes(s.ctx))
+			for _, voter := range []uint64{id1, id2, id3} {
+				require.NoError(s.borKeeper.SetProducerVotes(s.ctx, voter, types.ProducerVotes{Votes: []uint64{id1, id2, id3}}))
+			}
+
+			params := types.DefaultParams()
+			require.NoError(s.borKeeper.SetParams(s.ctx, params))
+			require.NoError(s.borKeeper.UpdateLatestActiveProducer(s.ctx, map[uint64]struct{}{id2: {}, id3: {}}))
+
+			valSet, vals := s.genTestValidators()
+			require.NotEmpty(vals)
+
+			sp0Prods := make([]stakeTypes.Validator, len(vals))
+			copy(sp0Prods, vals)
+			sp0Prods[0].ValId = id1
+
+			for i, sp := range []types.Span{
+				{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+				{Id: 1, StartBlock: 200, EndBlock: 299, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+			} {
+				require.NoError(s.borKeeper.AddNewSpan(s.ctx, &[]types.Span{sp}[0]), "failed to add span %d", i)
+			}
+
+			downtimeStart := uint64(150)
+			msg := &types.MsgSetProducerDowntime{
+				Producer:      addr1,
+				DowntimeRange: types.BlockRange{StartBlock: downtimeStart, EndBlock: 350},
+			}
+
+			ctx := s.ctx.WithBlockHeight(tc.blockHeight)
+			handler := s.sideMsgServer.PostTxHandler(sdk.MsgTypeURL(&types.MsgSetProducerDowntime{}))
+			err := handler(ctx, msg, sidetxs.Vote_VOTE_YES)
+			require.NoError(err)
+
+			lastSpan, err := s.borKeeper.GetLastSpan(s.ctx)
+			require.NoError(err)
+			require.Equal(uint64(2), lastSpan.Id)
+			require.Equal(downtimeStart, lastSpan.StartBlock)
+			require.Equal(tc.expectedEndBlock(downtimeStart, params.SpanDuration), lastSpan.EndBlock)
+			require.Equal(tc.expectedDuration(params.SpanDuration), lastSpan.EndBlock-lastSpan.StartBlock+1)
 		})
 	}
 }
