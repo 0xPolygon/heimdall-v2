@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"math/big"
-	"strings"
 	"time"
 
 	"cosmossdk.io/collections"
@@ -312,7 +311,7 @@ func (q queryServer) GetBlockHeightByTime(ctx context.Context, request *types.Bl
 
 	height, err := q.k.GetBlockHeightByTime(ctx, request.CutoffTime)
 	if err != nil {
-		if strings.Contains(err.Error(), "no block found") {
+		if errors.Is(err, ErrNoBlockFound) {
 			return nil, status.Error(codes.NotFound, err.Error())
 		}
 		return nil, status.Error(codes.Internal, err.Error())

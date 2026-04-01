@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,6 +16,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
+// ErrNoBlockFound is returned when no committed block exists at or before the requested cutoff time.
+var ErrNoBlockFound = errors.New("no block found before cutoff")
+
 // Keeper stores all the related data.
 type Keeper struct {
 	storeService storetypes.KVStoreService
@@ -23,17 +27,16 @@ type Keeper struct {
 	ChainKeeper    types.ChainKeeper
 	contractCaller helper.IContractCaller
 
-	Schema                    collections.Schema
-	RecordsWithID             collections.Map[uint64, types.EventRecord]
-	RecordsWithTime           collections.Map[collections.Pair[time.Time, uint64], uint64]
-	RecordSequences           collections.Map[string, []byte]
-	RecordsWithVisibilityTime collections.Map[collections.Pair[time.Time, uint64], uint64]
-	VisibilityTimeUpgradeID   collections.Item[uint64]
-	PendingVisibilityEvents   collections.Map[uint64, []byte]
-	VisibilityTimeByID        collections.Map[uint64, uint64]                           // stores time as unix nanoseconds
-	BlockTimeIndex            collections.Map[uint64, uint64]                           // height → blockTime as unix seconds
-	BlockTimeReverseIndex     collections.Map[collections.Pair[uint64, uint64], uint64] // (blockTime, height) → height for O(log N) cutoff lookup
-	VisibilityHeightByID      collections.Map[uint64, uint64]                           // event_id → heimdall block height where visibility was assigned
+	Schema                  collections.Schema
+	RecordsWithID           collections.Map[uint64, types.EventRecord]
+	RecordsWithTime         collections.Map[collections.Pair[time.Time, uint64], uint64]
+	RecordSequences         collections.Map[string, []byte]
+	VisibilityTimeUpgradeID collections.Item[uint64]
+	PendingVisibilityEvents collections.Map[uint64, []byte]
+	VisibilityTimeByID      collections.Map[uint64, uint64]                           // stores time as unix nanoseconds
+	BlockTimeIndex          collections.Map[uint64, uint64]                           // height → blockTime as unix seconds
+	BlockTimeReverseIndex   collections.Map[collections.Pair[uint64, uint64], uint64] // (blockTime, height) → height for O(log N) cutoff lookup
+	VisibilityHeightByID    collections.Map[uint64, uint64]                           // event_id → heimdall block height where visibility was assigned
 }
 
 // NewKeeper creates a new keeper.
@@ -45,20 +48,19 @@ func NewKeeper(
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
 	keeper := Keeper{
-		storeService:              storeService,
-		cdc:                       cdc,
-		ChainKeeper:               ChainKeeper,
-		contractCaller:            contractCaller,
-		RecordsWithID:             collections.NewMap(sb, types.RecordsWithIDKeyPrefix, "recordsWithID", collections.Uint64Key, codec.CollValue[types.EventRecord](cdc)),
-		RecordsWithTime:           collections.NewMap(sb, types.RecordsWithTimeKeyPrefix, "recordsWithTime", collections.PairKeyCodec(sdk.TimeKey, collections.Uint64Key), collections.Uint64Value),
-		RecordSequences:           collections.NewMap(sb, types.RecordSequencesKeyPrefix, "recordSequences", collections.StringKey, collections.BytesValue),
-		RecordsWithVisibilityTime: collections.NewMap(sb, types.RecordsWithVisibilityTimeKeyPrefix, "recordsWithVisibilityTime", collections.PairKeyCodec(sdk.TimeKey, collections.Uint64Key), collections.Uint64Value),
-		VisibilityTimeUpgradeID:   collections.NewItem(sb, types.VisibilityTimeUpgradeIDKeyPrefix, "visibilityTimeUpgradeID", collections.Uint64Value),
-		PendingVisibilityEvents:   collections.NewMap(sb, types.PendingVisibilityEventsKeyPrefix, "pendingVisibilityEvents", collections.Uint64Key, collections.BytesValue),
-		VisibilityTimeByID:        collections.NewMap(sb, types.VisibilityTimeByIDKeyPrefix, "visibilityTimeByID", collections.Uint64Key, collections.Uint64Value),
-		BlockTimeIndex:            collections.NewMap(sb, types.BlockTimeIndexKeyPrefix, "blockTimeIndex", collections.Uint64Key, collections.Uint64Value),
-		BlockTimeReverseIndex:     collections.NewMap(sb, types.BlockTimeReverseIndexKeyPrefix, "blockTimeReverseIndex", collections.PairKeyCodec(collections.Uint64Key, collections.Uint64Key), collections.Uint64Value),
-		VisibilityHeightByID:      collections.NewMap(sb, types.VisibilityHeightByIDKeyPrefix, "visibilityHeightByID", collections.Uint64Key, collections.Uint64Value),
+		storeService:            storeService,
+		cdc:                     cdc,
+		ChainKeeper:             ChainKeeper,
+		contractCaller:          contractCaller,
+		RecordsWithID:           collections.NewMap(sb, types.RecordsWithIDKeyPrefix, "recordsWithID", collections.Uint64Key, codec.CollValue[types.EventRecord](cdc)),
+		RecordsWithTime:         collections.NewMap(sb, types.RecordsWithTimeKeyPrefix, "recordsWithTime", collections.PairKeyCodec(sdk.TimeKey, collections.Uint64Key), collections.Uint64Value),
+		RecordSequences:         collections.NewMap(sb, types.RecordSequencesKeyPrefix, "recordSequences", collections.StringKey, collections.BytesValue),
+		VisibilityTimeUpgradeID: collections.NewItem(sb, types.VisibilityTimeUpgradeIDKeyPrefix, "visibilityTimeUpgradeID", collections.Uint64Value),
+		PendingVisibilityEvents: collections.NewMap(sb, types.PendingVisibilityEventsKeyPrefix, "pendingVisibilityEvents", collections.Uint64Key, collections.BytesValue),
+		VisibilityTimeByID:      collections.NewMap(sb, types.VisibilityTimeByIDKeyPrefix, "visibilityTimeByID", collections.Uint64Key, collections.Uint64Value),
+		BlockTimeIndex:          collections.NewMap(sb, types.BlockTimeIndexKeyPrefix, "blockTimeIndex", collections.Uint64Key, collections.Uint64Value),
+		BlockTimeReverseIndex:   collections.NewMap(sb, types.BlockTimeReverseIndexKeyPrefix, "blockTimeReverseIndex", collections.PairKeyCodec(collections.Uint64Key, collections.Uint64Key), collections.Uint64Value),
+		VisibilityHeightByID:    collections.NewMap(sb, types.VisibilityHeightByIDKeyPrefix, "visibilityHeightByID", collections.Uint64Key, collections.Uint64Value),
 	}
 
 	schema, err := sb.Build()
@@ -298,13 +300,8 @@ func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
 	return isPresent
 }
 
-// SetEventRecordWithVisibilityTime sets the secondary index (visibility_time, event_id) → event_id
-// and the reverse lookup event_id → visibility_time.
+// SetEventRecordWithVisibilityTime stores the event_id → visibility_time mapping.
 func (k *Keeper) SetEventRecordWithVisibilityTime(ctx context.Context, eventID uint64, visibilityTime time.Time) error {
-	if err := k.RecordsWithVisibilityTime.Set(ctx, collections.Join(visibilityTime, eventID), eventID); err != nil {
-		return fmt.Errorf("failed to set visibility time index for event %d: %w", eventID, err)
-	}
-
 	return k.VisibilityTimeByID.Set(ctx, eventID, uint64(visibilityTime.UnixNano()))
 }
 
@@ -419,7 +416,7 @@ func (k *Keeper) GetBlockHeightByTime(ctx context.Context, cutoffUnix int64) (in
 	}()
 
 	if !iterator.Valid() {
-		return 0, fmt.Errorf("no block found with time <= %d: cutoff is before any stored block", cutoffUnix)
+		return 0, fmt.Errorf("%w: time <= %d", ErrNoBlockFound, cutoffUnix)
 	}
 
 	kv, err := iterator.KeyValue()

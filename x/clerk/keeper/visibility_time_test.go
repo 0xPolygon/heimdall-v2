@@ -331,19 +331,6 @@ func (s *KeeperTestSuite) TestMultipleEventsInSameBlock() {
 		require.True(vt.Equal(blockTime), "event %d should have visibility_time = blockTime", i)
 	}
 
-	// Verify the secondary index has all entries (different composite keys)
-	iter, err := ck.RecordsWithVisibilityTime.Iterate(ctx, nil)
-	require.NoError(err)
-	defer func(iter collections.Iterator[collections.Pair[time.Time, uint64], uint64]) {
-		err = iter.Close()
-		require.NoError(err)
-	}(iter)
-
-	count := 0
-	for ; iter.Valid(); iter.Next() {
-		count++
-	}
-	require.Equal(5, count, "should have 5 entries in RecordsWithVisibilityTime")
 }
 
 // TestVisibilityTimeFeatureFlag tests the IsVisibilityTimeEnabled helper function.
