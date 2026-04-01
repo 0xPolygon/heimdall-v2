@@ -223,7 +223,12 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 		}
 
 		// Set the upgrade boundary marker on the first post-upgrade event
-		if _, err := srv.GetVisibilityTimeUpgradeID(ctx); err != nil {
+		hasUpgradeID, err := srv.VisibilityTimeUpgradeID.Has(ctx)
+		if err != nil {
+			logger.Error("Unable to check visibility time upgrade ID", heimdallTypes.LogKeyError, err)
+			return err
+		}
+		if !hasUpgradeID {
 			if setErr := srv.SetVisibilityTimeUpgradeID(ctx, record.Id); setErr != nil {
 				logger.Error("Unable to set visibility time upgrade ID", "id", record.Id, heimdallTypes.LogKeyError, setErr)
 				return setErr

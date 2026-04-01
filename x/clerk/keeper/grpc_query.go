@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"errors"
 	"math/big"
 	"time"
 
@@ -105,6 +106,9 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	// Determine the upgrade boundary. If not set, all events use the legacy path.
 	upgradeId, err := q.k.GetVisibilityTimeUpgradeID(ctx)
 	if err != nil {
+		if !errors.Is(err, collections.ErrNotFound) {
+			return nil, status.Errorf(codes.Internal, "failed to get visibility time upgrade ID: %v", err)
+		}
 		upgradeId = ^uint64(0)
 	}
 
@@ -330,10 +334,16 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimit {
 		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxRecordListLimit)
 	}
+	if request.ToTime.IsZero() {
+		return nil, status.Errorf(codes.InvalidArgument, "to_time must be set")
+	}
 
 	// Determine the upgrade boundary. If not set, all events use the legacy path.
 	upgradeId, err := q.k.GetVisibilityTimeUpgradeID(ctx)
 	if err != nil {
+		if !errors.Is(err, collections.ErrNotFound) {
+			return nil, status.Errorf(codes.Internal, "failed to get visibility time upgrade ID: %v", err)
+		}
 		upgradeId = ^uint64(0)
 	}
 

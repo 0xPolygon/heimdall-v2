@@ -862,23 +862,6 @@ func (s *KeeperTestSuite) TestProcessPendingVisibilityEvents_StoresHeight() {
 		require.Equal(uint64(blockHeight), vh, "event %d visibility_height should equal block height", i)
 	}
 
-	// Verify RecordsWithVisibilityHeight index has all entries
-	iter, err := ck.RecordsWithVisibilityHeight.Iterate(ctx, nil)
-	require.NoError(err)
-	defer func(iter collections.Iterator[collections.Pair[uint64, uint64], uint64]) {
-		err = iter.Close()
-		require.NoError(err)
-	}(iter)
-
-	count := 0
-	for ; iter.Valid(); iter.Next() {
-		kv, err := iter.KeyValue()
-		require.NoError(err)
-		require.Equal(uint64(blockHeight), kv.Key.K1(), "composite key height should match")
-		require.Equal(kv.Key.K2(), kv.Value, "composite key event_id should equal value")
-		count++
-	}
-	require.Equal(3, count, "should have 3 entries in RecordsWithVisibilityHeight")
 }
 
 // TestGetRecordListVisibleAtHeight_BasicFlow stores events with different visibility
@@ -899,7 +882,6 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_BasicFlow() {
 		// Assign visibility at height 100+i
 		visHeight := 100 + i
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, visHeight))
-		require.NoError(ck.RecordsWithVisibilityHeight.Set(ctx, collections.Join(visHeight, i), i))
 	}
 
 	// Query at height 103 → events 1,2,3 visible (vis heights 101,102,103)
@@ -944,7 +926,6 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_HybridQuery() {
 		require.NoError(ck.SetEventRecord(ctx, rec))
 		visHeight := 200 + i
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, visHeight))
-		require.NoError(ck.RecordsWithVisibilityHeight.Set(ctx, collections.Join(visHeight, i), i))
 	}
 
 	qs := clerkKeeper.NewQueryServer(&ck)
@@ -992,10 +973,8 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_PendingExcluded() {
 		require.NoError(ck.SetEventRecord(ctx, rec))
 	}
 	require.NoError(ck.VisibilityHeightByID.Set(ctx, 1, 100))
-	require.NoError(ck.RecordsWithVisibilityHeight.Set(ctx, collections.Join(uint64(100), uint64(1)), uint64(1)))
 	// event 2: no visibility height (pending)
 	require.NoError(ck.VisibilityHeightByID.Set(ctx, 3, 102))
-	require.NoError(ck.RecordsWithVisibilityHeight.Set(ctx, collections.Join(uint64(102), uint64(3)), uint64(3)))
 
 	qs := clerkKeeper.NewQueryServer(&ck)
 	resp, err := qs.(interface {
@@ -1027,7 +1006,6 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_DeterministicAcrossLa
 		require.NoError(ck.SetEventRecord(ctx, rec))
 		visHeight := 99 + i
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, visHeight))
-		require.NoError(ck.RecordsWithVisibilityHeight.Set(ctx, collections.Join(visHeight, i), i))
 	}
 
 	qs := clerkKeeper.NewQueryServer(&ck)
@@ -1066,7 +1044,6 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_DeterministicAcrossLa
 		require.NoError(ck.SetEventRecord(ctx, rec))
 		visHeight := 99 + i // heights 103, 104, 105
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, visHeight))
-		require.NoError(ck.RecordsWithVisibilityHeight.Set(ctx, collections.Join(visHeight, i), i))
 	}
 
 	resp3, err := qs.(interface {
@@ -1207,7 +1184,6 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_ContiguousIDs() {
 			visHeight = 200
 		}
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, visHeight))
-		require.NoError(ck.RecordsWithVisibilityHeight.Set(ctx, collections.Join(visHeight, i), i))
 	}
 
 	// Query at height 150 → should return events 1-7 (vis_height 100 <= 150), break at event 8 (vis_height 200 > 150)
@@ -1257,7 +1233,6 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_PreAndPostUpgradeMix(
 
 		visHeight := 50 + i // heights 54, 55, 56
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, visHeight))
-		require.NoError(ck.RecordsWithVisibilityHeight.Set(ctx, collections.Join(visHeight, i), i))
 	}
 
 	// Query: height=100 (includes all post-upgrade events), to_time includes all the pre-upgrade events
