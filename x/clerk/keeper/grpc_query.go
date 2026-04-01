@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math/big"
+	"strings"
 	"time"
 
 	"cosmossdk.io/collections"
@@ -148,8 +149,11 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 			// Post-upgrade event: filter by visibility_time < to_time
 			visTime, err := q.k.GetVisibilityTimeForEvent(ctx, value.Id)
 			if err != nil {
-				// Event exists but has no visibility_time yet → still pending.
-				break
+				if errors.Is(err, collections.ErrNotFound) {
+					// Event exists but has no visibility_time yet → still pending.
+					break
+				}
+				return nil, status.Errorf(codes.Internal, "failed to get visibility time for event %d: %v", value.Id, err)
 			}
 			if !visTime.Before(request.ToTime) {
 				break
@@ -308,6 +312,9 @@ func (q queryServer) GetBlockHeightByTime(ctx context.Context, request *types.Bl
 
 	height, err := q.k.GetBlockHeightByTime(ctx, request.CutoffTime)
 	if err != nil {
+		if strings.Contains(err.Error(), "no block found") {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -384,8 +391,11 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 			// This is monotonic with contiguous IDs, as happens for GetRecordListWithTime.
 			visibilityHeight, err := q.k.GetVisibilityHeightForEvent(ctx, value.Id)
 			if err != nil {
-				// Event exists but has no visibility_height yet (still pending).
-				break
+				if errors.Is(err, collections.ErrNotFound) {
+					// Event exists but has no visibility_height yet (still pending).
+					break
+				}
+				return nil, status.Errorf(codes.Internal, "failed to get visibility height for event %d: %v", value.Id, err)
 			}
 			if visibilityHeight > requestedHeight {
 				break
