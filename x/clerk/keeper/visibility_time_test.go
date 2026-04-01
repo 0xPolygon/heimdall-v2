@@ -107,28 +107,28 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_LegacyQueryPreserved() {
 	require.Len(res.EventRecords, 5)
 }
 
-// TestGetRecordListWithTime_PostUpgradeVisibilityTimeFiltering verifies that
-// post-upgrade events are filtered by visibility_time, not record_time.
-func (s *KeeperTestSuite) TestGetRecordListWithTime_PostUpgradeVisibilityTimeFiltering() {
+// TestGetRecordListWithTime_AlwaysUsesRecordTime verifies that GetRecordListWithTime
+// always filters by record_time, even for post-upgrade events with visibility_time set.
+// This preserves backward compatibility for EL clients using the old (from_id, to_time) pattern.
+func (s *KeeperTestSuite) TestGetRecordListWithTime_AlwaysUsesRecordTime() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
 
 	baseTime := time.Date(2026, 1, 12, 16, 50, 0, 0, time.UTC)
 
-	// Set upgrade boundary at event ID 1
 	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
 
-	// Create an event with a record_time that falls within the query window
+	// Create an event with record_time within the query window
 	rec := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1",
 		baseTime.Add(8*time.Minute+14*time.Second))
 	require.NoError(ck.SetEventRecord(ctx, rec))
 
-	// Set visibility_time to smth after the query to_time
+	// Set visibility_time AFTER the query to_time (doesn't matter — old endpoint ignores it)
 	visTime := baseTime.Add(15*time.Minute + 40*time.Second)
 	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 1, visTime))
 
 	// Query with to_time after record_time but before visibility_time
-	// The event's record_time < to_time, but visibility_time >= to_time, hence the event should not be returned
+	// Old endpoint uses record_time, so event IS returned
 	toTime := baseTime.Add(8*time.Minute + 30*time.Second)
 	req := &types.RecordListWithTimeRequest{
 		FromId:     1,
@@ -137,11 +137,14 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PostUpgradeVisibilityTimeFil
 	}
 	res, err := queryClient.GetRecordListWithTime(ctx, req)
 	require.NoError(err)
-	require.Empty(res.EventRecords, "event should be excluded because visibility_time >= to_time")
+	require.Len(res.EventRecords, 1, "old endpoint uses record_time: event returned when record_time < to_time")
 }
 
-// TestGetRecordListWithTime_HaltSimulation simulates the scenario of a Heimdall halt,
-// where an event has record_time within the query window but visibility_time outside it.
+// TestGetRecordListWithTime_HaltSimulation simulates the January 2026 halt scenario.
+// The old /clerk/time endpoint uses record_time, so it returns the event regardless
+// of visibility_time. This is the pre-existing non-deterministic behavior.
+// The FIX for determinism is in GetRecordListVisibleAtHeight (the new endpoint),
+// not in the old endpoint — the old endpoint must remain backward-compatible.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_HaltSimulation() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
@@ -156,7 +159,8 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HaltSimulation() {
 	require.NoError(ck.SetEventRecord(ctx, rec))
 	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 3131120, visibilityTime))
 
-	// Query during heimdall halt, where to_time < visibility_time, hence the event is excluded
+	// Old endpoint: record_time (16:58:14) < borToTime (16:58:30), so event IS returned.
+	// This is the non-deterministic behavior the old endpoint has always had.
 	req := &types.RecordListWithTimeRequest{
 		FromId:     3131120,
 		ToTime:     borToTime,
@@ -164,29 +168,21 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HaltSimulation() {
 	}
 	res, err := queryClient.GetRecordListWithTime(ctx, req)
 	require.NoError(err)
-	require.Empty(res.EventRecords, "halt: event should be excluded")
+	require.Len(res.EventRecords, 1, "old endpoint uses record_time: event returned")
 
-	// Query from history gives now the same result, proving determinism
+	// Deterministic query uses record_time too — same result, hence deterministic
+	// for the same committed state (the non-determinism was across different Heimdall states,
+	// not across repeated queries of the same state)
 	res2, err := queryClient.GetRecordListWithTime(ctx, req)
 	require.NoError(err)
-	require.Empty(res2.EventRecords, "history: same query should return same result")
-
-	// After the halt is resolved, the query with to_time > visibility_time should ensure the event is included
-	postHaltToTime := time.Date(2026, 1, 12, 17, 10, 0, 0, time.UTC)
-	reqAfterHalt := &types.RecordListWithTimeRequest{
-		FromId:     3131120,
-		ToTime:     postHaltToTime,
-		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
-	}
-	resAfterHalt, err := queryClient.GetRecordListWithTime(ctx, reqAfterHalt)
-	require.NoError(err)
-	require.Len(resAfterHalt.EventRecords, 1, "after halt: event should be returned")
-	require.Equal(uint64(3131120), resAfterHalt.EventRecords[0].Id)
+	require.Len(res2.EventRecords, 1, "repeat query returns same result")
 }
 
-// TestGetRecordListWithTime_PendingEventsExcluded verifies that
-// the query does not return the events in the pending list (no visibility_time yet).
-func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingEventsExcluded() {
+// TestGetRecordListWithTime_PendingEventsIncluded verifies that GetRecordListWithTime
+// always filters by record_time, so pending events (no visibility_time yet) ARE returned
+// as long as their record_time < to_time. Visibility-time filtering is only in
+// GetRecordListVisibleAtHeight.
+func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingEventsIncluded() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
 
@@ -209,7 +205,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingEventsExcluded() {
 	}
 	res, err := queryClient.GetRecordListWithTime(ctx, req)
 	require.NoError(err)
-	require.Empty(res.EventRecords, "pending events should not be returned")
+	require.Len(res.EventRecords, 1, "old endpoint uses record_time: pending event returned when record_time < to_time")
 }
 
 // TestGetRecordListWithTime_HybridQuery verifies the hybrid path where some events
@@ -257,11 +253,11 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HybridQuery() {
 	}
 }
 
-// TestGetRecordListWithTime_HybridQueryHaltAtUpgradeBoundary verifies the hybrid path
-// when a halt occurs right at the upgrade boundary: pre-upgrade events returned,
-// but the first post-upgrade event's visibility_time exceeds to_time, hence the iteration stops there,
-// preserving contiguous IDs.
-func (s *KeeperTestSuite) TestGetRecordListWithTime_HybridQueryHaltAtUpgradeBoundary() {
+// TestGetRecordListWithTime_AllEventsReturnedByRecordTime verifies that GetRecordListWithTime
+// always filters by record_time regardless of the upgrade boundary or visibility_time.
+// Even when visibility_time is far in the future (e.g., due to a halt), the old endpoint
+// returns events based solely on record_time < to_time.
+func (s *KeeperTestSuite) TestGetRecordListWithTime_AllEventsReturnedByRecordTime() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
 
@@ -289,8 +285,8 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HybridQueryHaltAtUpgradeBoun
 	require.NoError(ck.SetEventRecord(ctx, rec4))
 	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 4, baseTime.Add(33*time.Minute+3*time.Second)))
 
-	// Query with to_time=16:10: events 1,2 returned (legacy); event 3 has vis_time=16:33 -> break
-	// the expected result is {1, 2} with contiguous prefixes
+	// Query with to_time=16:10: all 4 events have record_time < 16:10, so all are returned.
+	// The old endpoint ignores visibility_time entirely.
 	toTime := baseTime.Add(10 * time.Minute)
 	req := &types.RecordListWithTimeRequest{
 		FromId:     1,
@@ -299,9 +295,10 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HybridQueryHaltAtUpgradeBoun
 	}
 	res, err := queryClient.GetRecordListWithTime(ctx, req)
 	require.NoError(err)
-	require.Len(res.EventRecords, 2, "should return only pre-upgrade events")
-	require.Equal(uint64(1), res.EventRecords[0].Id)
-	require.Equal(uint64(2), res.EventRecords[1].Id)
+	require.Len(res.EventRecords, 4, "old endpoint uses record_time: all 4 events returned when record_time < to_time")
+	for i, rec := range res.EventRecords {
+		require.Equal(uint64(i+1), rec.Id, "IDs must be contiguous")
+	}
 }
 
 // TestMultipleEventsInSameBlock verifies that multiple events in the same block
@@ -455,9 +452,10 @@ func (s *KeeperTestSuite) TestUpgradeIDBoundarySetOnce() {
 	require.Equal(uint64(10), upgradeID, "upgrade ID should remain at first event")
 }
 
-// TestGetRecordListWithTime_PendingAtFirstID verifies that if the first event in
-// the query range is pending (no visibility_time), the query returns empty — it does
-// not skip to later IDs. This preserves Bor's contiguous-ID invariant.
+// TestGetRecordListWithTime_PendingAtFirstID verifies that GetRecordListWithTime
+// returns all events based on record_time, regardless of pending status.
+// Pending events (no visibility_time) are still returned because the old endpoint
+// filters only by record_time.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingAtFirstID() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
@@ -482,11 +480,15 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingAtFirstID() {
 	}
 	res, err := queryClient.GetRecordListWithTime(ctx, req)
 	require.NoError(err)
-	require.Empty(res.EventRecords, "should return empty: first event is pending, break preserves contiguity")
+	require.Len(res.EventRecords, 3, "old endpoint uses record_time: all 3 events returned regardless of pending status")
+	for i, rec := range res.EventRecords {
+		require.Equal(uint64(i+1), rec.Id, "IDs must be contiguous")
+	}
 }
 
-// TestGetRecordListWithTime_PendingGapInMiddle verifies that if event N is pending
-// but N+1 has visibility_time, the query stops at N — returning a contiguous prefix.
+// TestGetRecordListWithTime_PendingGapInMiddle verifies that GetRecordListWithTime
+// returns all events based on record_time, even when some events in the middle
+// are pending (no visibility_time). The old endpoint ignores visibility_time entirely.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingGapInMiddle() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
@@ -513,22 +515,23 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingGapInMiddle() {
 	}
 	res, err := queryClient.GetRecordListWithTime(ctx, req)
 	require.NoError(err)
-	require.Len(res.EventRecords, 2, "should return events 1,2 and stop at pending event 3")
-	require.Equal(uint64(1), res.EventRecords[0].Id)
-	require.Equal(uint64(2), res.EventRecords[1].Id)
+	require.Len(res.EventRecords, 4, "old endpoint uses record_time: all 4 events returned regardless of pending status")
+	for i, rec := range res.EventRecords {
+		require.Equal(uint64(i+1), rec.Id, "IDs must be contiguous")
+	}
 }
 
-// TestGetRecordListWithTime_VisTimeBreakPreservesContiguity verifies that when a
-// post-upgrade event has visibility_time >= to_time, the query breaks (not continues),
-// ensuring no later events with lower IDs are skipped and returned out of order.
-func (s *KeeperTestSuite) TestGetRecordListWithTime_VisTimeBreakPreservesContiguity() {
+// TestGetRecordListWithTime_RecordTimeBreakPreservesContiguity verifies that
+// GetRecordListWithTime always uses record_time for filtering (even post-visibility-upgrade),
+// and breaks at the first event with record_time >= to_time, preserving contiguous ID order.
+func (s *KeeperTestSuite) TestGetRecordListWithTime_RecordTimeBreakPreservesContiguity() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
 
 	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
 	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
 
-	// Events 1-5: all post-upgrade with monotonically increasing visibility_time
+	// Events 1-5: post-upgrade with increasing record_time
 	for i := uint64(1); i <= 5; i++ {
 		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
 			baseTime.Add(time.Duration(i)*time.Minute))
@@ -537,9 +540,9 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_VisTimeBreakPreservesContigu
 			baseTime.Add(time.Duration(i)*time.Minute+3*time.Second)))
 	}
 
-	// Query with to_time between event 3's and event 4's visibility_time
-	// Events 1-3 should be returned (vis_time < to_time), event 4 breaks
-	toTime := baseTime.Add(4*time.Minute + 2*time.Second)
+	// Query with to_time between event 3's and event 4's record_time
+	// Events 1-3 should be returned (record_time < to_time), event 4 breaks
+	toTime := baseTime.Add(3*time.Minute + 30*time.Second)
 	req := &types.RecordListWithTimeRequest{
 		FromId:     1,
 		ToTime:     toTime,
@@ -553,14 +556,14 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_VisTimeBreakPreservesContigu
 	}
 }
 
-// TestQueryDeterminismAcrossCommittedStates verifies that the query result is
-// deterministic for a given committed state, regardless of wall-clock timing.
+// TestQueryDeterminismAcrossCommittedStates verifies that GetRecordListWithTime
+// (the old /clerk/time endpoint) always uses record_time for filtering, even after
+// the visibility_time upgrade. This preserves backward compatibility: EL clients
+// using the old (from_id, to_time) query pattern continue to get consistent results
+// until they switch to GetRecordListVisibleAtHeight after the EL HF.
 //
-// Scenario: event stored in block H. Block H+1 runs ProcessPendingVisibilityEvents
-// and assigns visibility_time = blockTime(H+1). We test that:
-//   - At committed state H (before ProcessPendingVisibilityEvents): the query returns empty
-//   - At committed state H+1 (after ProcessPendingVisibilityEvents): the query returns the event
-//   - Both results are deterministic — re-querying the same state returns the same answer
+// Determinism for post-EL-fork nodes is provided by GetRecordListVisibleAtHeight,
+// which filters by visibility_height — tested separately.
 func (s *KeeperTestSuite) TestQueryDeterminismAcrossCommittedStates() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
@@ -573,8 +576,9 @@ func (s *KeeperTestSuite) TestQueryDeterminismAcrossCommittedStates() {
 	require.NoError(ck.SetEventRecord(ctx, rec))
 	require.NoError(ck.AddPendingVisibilityEvent(ctx, 1))
 
-	// Simulate a query at committed state H (event pending, no visibility_time)
-	// Even with to_time well after record_time, the event is not returned
+	// Query with to_time after record_time: event IS returned because the old endpoint
+	// always filters by record_time, not visibility_time. This is correct for backward
+	// compatibility with EL clients still using the old query pattern.
 	queryToTime := time.Date(2026, 1, 12, 17, 10, 0, 0, time.UTC)
 	req := &types.RecordListWithTimeRequest{
 		FromId:     1,
@@ -582,53 +586,33 @@ func (s *KeeperTestSuite) TestQueryDeterminismAcrossCommittedStates() {
 		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
 	}
 
-	// Query 1 at state H: empty
 	res1, err := queryClient.GetRecordListWithTime(ctx, req)
 	require.NoError(err)
-	require.Empty(res1.EventRecords, "state H: event should not be visible")
+	require.Len(res1.EventRecords, 1, "old endpoint uses record_time: event visible when record_time < to_time")
 
-	// Query 2 at state H (same state, same query): still empty, hence deterministic
+	// Re-query: same result (deterministic)
 	res2, err := queryClient.GetRecordListWithTime(ctx, req)
 	require.NoError(err)
-	require.Empty(res2.EventRecords, "state H: repeat query must return same result")
+	require.Len(res2.EventRecords, 1, "repeat query returns same result")
 
-	// Block H+1: ProcessPendingVisibilityEvents runs.
-	// Simulate propose-to-commit delay: blockTime(H+1) = 17:06:00, but the block
-	// doesn't "commit" until 17:12:00. The visibility_time is 17:06:00 regardless
-	// of when the block commits — it's the header timestamp.
-	blockH1Time := time.Date(2026, 1, 12, 17, 6, 0, 0, time.UTC)
-	ctx = ctx.WithBlockHeader(cmtproto.Header{Time: blockH1Time})
-	require.NoError(ck.ProcessPendingVisibilityEvents(ctx))
-
-	// Query 3 at state H+1 (after ProcessPendingVisibilityEvents committed):
-	// visibility_time = 17:06:00 < queryToTime(17:10:00) -> event returned
-	res3, err := queryClient.GetRecordListWithTime(ctx, req)
-	require.NoError(err)
-	require.Len(res3.EventRecords, 1, "state H+1: event should be visible")
-
-	// Query 4 at state H+1: same result, hence deterministic
-	res4, err := queryClient.GetRecordListWithTime(ctx, req)
-	require.NoError(err)
-	require.Len(res4.EventRecords, 1, "state H+1: repeat query must return same result")
-
-	// Edge case: query with to_time between record_time and visibility_time
-	// to_time = 17:00:00 — after record_time (16:58:14) but before visibility_time (17:06:00)
-	// With old code (record_time filtering): event would be returned
-	// With new code (visibility_time filtering): event not returned → correct
-	edgeToTime := time.Date(2026, 1, 12, 17, 0, 0, 0, time.UTC)
-	edgeReq := &types.RecordListWithTimeRequest{
+	// Query with to_time before record_time: event NOT returned
+	earlyToTime := time.Date(2026, 1, 12, 16, 50, 0, 0, time.UTC)
+	earlyReq := &types.RecordListWithTimeRequest{
 		FromId:     1,
-		ToTime:     edgeToTime,
+		ToTime:     earlyToTime,
 		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
 	}
-	edgeRes, err := queryClient.GetRecordListWithTime(ctx, edgeReq)
+	earlyRes, err := queryClient.GetRecordListWithTime(ctx, earlyReq)
 	require.NoError(err)
-	require.Empty(edgeRes.EventRecords,
-		"to_time between record_time and visibility_time: event must not be returned")
+	require.Empty(earlyRes.EventRecords, "to_time before record_time: event not returned")
 }
 
 // TestEndToEndVisibilityTimeLifecycle simulates the full event lifecycle:
 // Block H: event created → Block H+1: stored with pending → Block H+2: visibility_time assigned
+//
+// GetRecordListWithTime always uses record_time, so the event is visible immediately
+// after being stored (even while pending). The visibility_time is only relevant for
+// GetRecordListVisibleAtHeight (the new deterministic endpoint).
 func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	ctx, ck, queryClient, postHandler := s.ctx, s.keeper, s.queryClient, s.postHandler
 	require := s.Require()
@@ -645,7 +629,8 @@ func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 		Address1, TxHash1, 1, 500, 1000, []byte(Address2), make([]byte, 0), s.chainId,
 	)), sidetxs.Vote_VOTE_YES)
 
-	// Event is stored but not yet queryable via visibility_time
+	// Old endpoint uses record_time: event IS returned even while pending,
+	// because record_time < to_time. The event's record_time is set by NewMsgEventRecord.
 	toTime := blockH1Time.Add(time.Minute)
 	req := &types.RecordListWithTimeRequest{
 		FromId:     1000,
@@ -654,7 +639,8 @@ func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	}
 	res, err := queryClient.GetRecordListWithTime(ctx, req)
 	require.NoError(err)
-	require.Empty(res.EventRecords, "event should not be visible yet (pending)")
+	require.Len(res.EventRecords, 1, "old endpoint uses record_time: pending event returned when record_time < to_time")
+	require.Equal(uint64(1000), res.EventRecords[0].Id)
 
 	// Block H+2: PreBlocker processes pending → assigns visibility_time
 	blockH2Time := time.Date(2026, 3, 15, 10, 0, 3, 0, time.UTC) // ~3s later
@@ -662,8 +648,7 @@ func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 
 	require.NoError(ck.ProcessPendingVisibilityEvents(ctx))
 
-	// Now the event should be queryable (visibility_time = blockH2Time < toTime)
-	// Need to_time > blockH2Time for the event to appear
+	// Event is still returned (record_time hasn't changed)
 	toTimeAfter := blockH2Time.Add(time.Minute)
 	reqAfter := &types.RecordListWithTimeRequest{
 		FromId:     1000,
@@ -675,7 +660,7 @@ func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	require.Len(resAfter.EventRecords, 1)
 	require.Equal(uint64(1000), resAfter.EventRecords[0].Id)
 
-	// Verify visibility_time was set correctly
+	// Verify visibility_time was set correctly (used by GetRecordListVisibleAtHeight)
 	vt, err := ck.GetVisibilityTimeForEvent(ctx, 1000)
 	require.NoError(err)
 	require.True(vt.Equal(blockH2Time))

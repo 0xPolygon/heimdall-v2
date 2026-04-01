@@ -101,19 +101,6 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Errorf(codes.InvalidArgument, "to_time must be set")
 	}
 
-	// Mitigation for deterministic state syncs per committed snapshot.
-	// Post Bor's DeterministicStateSync fork, Bor uses GetRecordListVisibleAtHeight instead,
-	// which filters by immutable visibility_height indexes on the latest Heimdall state
-
-	// Determine the upgrade boundary. If not set, all events use the legacy path.
-	upgradeId, err := q.k.GetVisibilityTimeUpgradeID(ctx)
-	if err != nil {
-		if !errors.Is(err, collections.ErrNotFound) {
-			return nil, status.Errorf(codes.Internal, "failed to get visibility time upgrade ID: %v", err)
-		}
-		upgradeId = ^uint64(0)
-	}
-
 	// Collect the records based on pagination parameters.
 	result := make([]types.EventRecord, 0, request.Pagination.Limit)
 
@@ -141,25 +128,11 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 			return nil, status.Errorf(codes.Internal, "error reading event record from iterator: %v", err)
 		}
 
-		if value.Id < upgradeId {
-			// Legacy event: filter by record_time < to_time
-			if !value.RecordTime.Before(request.ToTime) {
-				break
-			}
-		} else {
-			// Post-upgrade event: filter by visibility_time < to_time
-			var visTime time.Time
-			visTime, err = q.k.GetVisibilityTimeForEvent(ctx, value.Id)
-			if err != nil {
-				if errors.Is(err, collections.ErrNotFound) {
-					// Event exists but has no visibility_time yet → still pending.
-					break
-				}
-				return nil, status.Errorf(codes.Internal, "failed to get visibility time for event %d: %v", value.Id, err)
-			}
-			if !visTime.Before(request.ToTime) {
-				break
-			}
+		// Always filter by record_time for backward compatibility.
+		// Post heimdall fork, clients switch to GetRecordListVisibleAtHeight which uses
+		// visibility_height for deterministic filtering.
+		if !value.RecordTime.Before(request.ToTime) {
+			break
 		}
 
 		// Skip records based on the pagination offset.
@@ -395,8 +368,10 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 				break
 			}
 		} else {
-			// Post-upgrade event: filter by visibility_height.
-			// This is monotonic with contiguous IDs, as happens for GetRecordListWithTime.
+			// Post-upgrade event: filter by visibility_height and record_time.
+			// visibility_height ensures deterministic results pinned to a specific Heimdall state.
+			// record_time ensures the same cutoff semantics as the old endpoint and bor's
+			// client-side validateEventRecord filter — events with record_time >= to_time are excluded.
 			var visibilityHeight uint64
 			visibilityHeight, err = q.k.GetVisibilityHeightForEvent(ctx, value.Id)
 			if err != nil {
@@ -407,6 +382,9 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 				return nil, status.Errorf(codes.Internal, "failed to get visibility height for event %d: %v", value.Id, err)
 			}
 			if visibilityHeight > requestedHeight {
+				break
+			}
+			if !value.RecordTime.Before(request.ToTime) {
 				break
 			}
 		}
