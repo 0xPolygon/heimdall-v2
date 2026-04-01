@@ -98,6 +98,9 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	if request.FromId < 1 {
 		return nil, status.Errorf(codes.InvalidArgument, "fromId cannot be less than 1")
 	}
+	if request.ToTime.IsZero() {
+		return nil, status.Errorf(codes.InvalidArgument, "to_time must be set")
+	}
 
 	// Mitigation for deterministic state syncs per committed snapshot.
 	// Post Bor's DeterministicStateSync fork, Bor uses GetRecordListVisibleAtHeight instead,
@@ -302,6 +305,10 @@ func (q queryServer) GetRecordCount(ctx context.Context, _ *types.RecordCountReq
 // timestamp is <= the given cutoff time. This is used by Bor to resolve a deterministic
 // Heimdall height for height-pinned state sync queries.
 func (q queryServer) GetBlockHeightByTime(ctx context.Context, request *types.BlockHeightByTimeRequest) (*types.BlockHeightByTimeResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordClerkQueryMetric(api.GetBlockHeightByTimeMethod, startTime, &err)
+
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
@@ -324,6 +331,10 @@ func (q queryServer) GetBlockHeightByTime(ctx context.Context, request *types.Bl
 // Used by Bor for deterministic state syncs: all validators derive the same height
 // from the same Bor block header and get identical results from the latest Heimdall state.
 func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error) {
+	var err error
+	startTime := time.Now()
+	defer recordClerkQueryMetric(api.GetRecordListVisibleAtHeightMethod, startTime, &err)
+
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
