@@ -375,8 +375,8 @@ func (k *Keeper) SetVisibilityTimeUpgradeID(ctx context.Context, id uint64) erro
 	return k.VisibilityTimeUpgradeID.Set(ctx, id)
 }
 
-// StoreBlockTime stores the current block's height → blockTime mapping in both the
-// forward index (height → time) and the reverse index ((time, height) → height).
+// StoreBlockTime stores the current block's (blockTime, height) → height mapping in the
+// reverse index, enabling O(log N) cutoff lookups via GetBlockHeightByTime.
 // Called in PreBlocker for each block from the visibility_time activation height onward.
 func (k *Keeper) StoreBlockTime(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

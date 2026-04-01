@@ -304,8 +304,7 @@ func (q queryServer) GetRecordCount(ctx context.Context, _ *types.RecordCountReq
 // GetBlockHeightByTime returns the greatest committed Heimdall height whose header
 // timestamp is <= the given cutoff time. This is used by Bor to resolve a deterministic
 // Heimdall height for height-pinned state sync queries.
-func (q queryServer) GetBlockHeightByTime(ctx context.Context, request *types.BlockHeightByTimeRequest) (*types.BlockHeightByTimeResponse, error) {
-	var err error
+func (q queryServer) GetBlockHeightByTime(ctx context.Context, request *types.BlockHeightByTimeRequest) (_ *types.BlockHeightByTimeResponse, err error) {
 	startTime := time.Now()
 	defer recordClerkQueryMetric(api.GetBlockHeightByTimeMethod, startTime, &err)
 
@@ -330,8 +329,7 @@ func (q queryServer) GetBlockHeightByTime(ctx context.Context, request *types.Bl
 // GetRecordListVisibleAtHeight queries events visible at a specific Heimdall height.
 // Used by Bor for deterministic state syncs: all validators derive the same height
 // from the same Bor block header and get identical results from the latest Heimdall state.
-func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error) {
-	var err error
+func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *types.RecordListVisibleAtHeightRequest) (_ *types.RecordListVisibleAtHeightResponse, err error) {
 	startTime := time.Now()
 	defer recordClerkQueryMetric(api.GetRecordListVisibleAtHeightMethod, startTime, &err)
 
