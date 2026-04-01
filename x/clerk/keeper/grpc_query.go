@@ -80,8 +80,7 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 	return &types.RecordListResponse{EventRecords: records}, nil
 }
 
-func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.RecordListWithTimeRequest) (*types.RecordListWithTimeResponse, error) {
-	var err error
+func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.RecordListWithTimeRequest) (_ *types.RecordListWithTimeResponse, err error) {
 	startTime := time.Now()
 	defer recordClerkQueryMetric(api.GetRecordListWithTimeMethod, startTime, &err)
 
@@ -136,10 +135,10 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	collected := uint64(0) // Records collected based on pagination limit.
 
 	for ; iterator.Valid(); iterator.Next() {
-		value, err := iterator.Value()
+		var value types.EventRecord
+		value, err = iterator.Value()
 		if err != nil {
-			q.k.Logger(ctx).Debug("Error in fetching event record from iterator for GetRecordListWithTime", "error", err)
-			break
+			return nil, status.Errorf(codes.Internal, "error reading event record from iterator: %v", err)
 		}
 
 		if value.Id < upgradeId {
@@ -149,7 +148,8 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 			}
 		} else {
 			// Post-upgrade event: filter by visibility_time < to_time
-			visTime, err := q.k.GetVisibilityTimeForEvent(ctx, value.Id)
+			var visTime time.Time
+			visTime, err = q.k.GetVisibilityTimeForEvent(ctx, value.Id)
 			if err != nil {
 				if errors.Is(err, collections.ErrNotFound) {
 					// Event exists but has no visibility_time yet → still pending.
@@ -383,10 +383,10 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 	collected := uint64(0)
 
 	for ; iterator.Valid(); iterator.Next() {
-		value, err := iterator.Value()
+		var value types.EventRecord
+		value, err = iterator.Value()
 		if err != nil {
-			q.k.Logger(ctx).Debug("Error in fetching event record from iterator for GetRecordListVisibleAtHeight", "error", err)
-			break
+			return nil, status.Errorf(codes.Internal, "error reading event record from iterator: %v", err)
 		}
 
 		if value.Id < upgradeId {
@@ -397,7 +397,8 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 		} else {
 			// Post-upgrade event: filter by visibility_height.
 			// This is monotonic with contiguous IDs, as happens for GetRecordListWithTime.
-			visibilityHeight, err := q.k.GetVisibilityHeightForEvent(ctx, value.Id)
+			var visibilityHeight uint64
+			visibilityHeight, err = q.k.GetVisibilityHeightForEvent(ctx, value.Id)
 			if err != nil {
 				if errors.Is(err, collections.ErrNotFound) {
 					// Event exists but has no visibility_height yet (still pending).

@@ -24,6 +24,114 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Uint64Pair is a generic key-value pair of uint64s, used for genesis
+// export/import of visibility indexes.
+type Uint64Pair struct {
+	Key   uint64 `protobuf:"varint,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value uint64 `protobuf:"varint,2,opt,name=value,proto3" json:"value,omitempty"`
+}
+
+func (m *Uint64Pair) Reset()         { *m = Uint64Pair{} }
+func (m *Uint64Pair) String() string { return proto.CompactTextString(m) }
+func (*Uint64Pair) ProtoMessage()    {}
+func (*Uint64Pair) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5fd4c4f420a779a6, []int{0}
+}
+func (m *Uint64Pair) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Uint64Pair) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Uint64Pair.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Uint64Pair) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Uint64Pair.Merge(m, src)
+}
+func (m *Uint64Pair) XXX_Size() int {
+	return m.Size()
+}
+func (m *Uint64Pair) XXX_DiscardUnknown() {
+	xxx_messageInfo_Uint64Pair.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Uint64Pair proto.InternalMessageInfo
+
+func (m *Uint64Pair) GetKey() uint64 {
+	if m != nil {
+		return m.Key
+	}
+	return 0
+}
+
+func (m *Uint64Pair) GetValue() uint64 {
+	if m != nil {
+		return m.Value
+	}
+	return 0
+}
+
+// BlockTimeEntry stores a (block_time, height) → height mapping for the reverse
+// index.
+type BlockTimeEntry struct {
+	BlockTime uint64 `protobuf:"varint,1,opt,name=block_time,json=blockTime,proto3" json:"block_time,omitempty"`
+	Height    uint64 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+}
+
+func (m *BlockTimeEntry) Reset()         { *m = BlockTimeEntry{} }
+func (m *BlockTimeEntry) String() string { return proto.CompactTextString(m) }
+func (*BlockTimeEntry) ProtoMessage()    {}
+func (*BlockTimeEntry) Descriptor() ([]byte, []int) {
+	return fileDescriptor_5fd4c4f420a779a6, []int{1}
+}
+func (m *BlockTimeEntry) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *BlockTimeEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_BlockTimeEntry.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *BlockTimeEntry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BlockTimeEntry.Merge(m, src)
+}
+func (m *BlockTimeEntry) XXX_Size() int {
+	return m.Size()
+}
+func (m *BlockTimeEntry) XXX_DiscardUnknown() {
+	xxx_messageInfo_BlockTimeEntry.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BlockTimeEntry proto.InternalMessageInfo
+
+func (m *BlockTimeEntry) GetBlockTime() uint64 {
+	if m != nil {
+		return m.BlockTime
+	}
+	return 0
+}
+
+func (m *BlockTimeEntry) GetHeight() uint64 {
+	if m != nil {
+		return m.Height
+	}
+	return 0
+}
+
 // GenesisState defines the clerk module's genesis state.
 type GenesisState struct {
 	// Initial event records at genesis.
@@ -31,13 +139,25 @@ type GenesisState struct {
 	// Record sequences for tracking processed events.
 	// Format: "txHash-logIndex" mapping to ensure events are not processed twice.
 	RecordSequences []string `protobuf:"bytes,2,rep,name=record_sequences,json=recordSequences,proto3" json:"record_sequences,omitempty"`
+	// The first event ID using visibility_time filtering (upgrade boundary).
+	// Zero means not yet set.
+	VisibilityTimeUpgradeId uint64 `protobuf:"varint,3,opt,name=visibility_time_upgrade_id,json=visibilityTimeUpgradeId,proto3" json:"visibility_time_upgrade_id,omitempty"`
+	// Event IDs awaiting visibility_time assignment in the next block's
+	// PreBlocker.
+	PendingVisibilityEventIds []uint64 `protobuf:"varint,4,rep,packed,name=pending_visibility_event_ids,json=pendingVisibilityEventIds,proto3" json:"pending_visibility_event_ids,omitempty"`
+	// Per-event visibility_time: event_id → unix nanoseconds.
+	VisibilityTimesById []Uint64Pair `protobuf:"bytes,5,rep,name=visibility_times_by_id,json=visibilityTimesById,proto3" json:"visibility_times_by_id"`
+	// Per-event visibility_height: event_id → Heimdall block height.
+	VisibilityHeightsById []Uint64Pair `protobuf:"bytes,6,rep,name=visibility_heights_by_id,json=visibilityHeightsById,proto3" json:"visibility_heights_by_id"`
+	// Block time reverse index: (block_time, height) → height for cutoff lookups.
+	BlockTimeEntries []BlockTimeEntry `protobuf:"bytes,7,rep,name=block_time_entries,json=blockTimeEntries,proto3" json:"block_time_entries"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
 func (m *GenesisState) String() string { return proto.CompactTextString(m) }
 func (*GenesisState) ProtoMessage()    {}
 func (*GenesisState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5fd4c4f420a779a6, []int{0}
+	return fileDescriptor_5fd4c4f420a779a6, []int{2}
 }
 func (m *GenesisState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -80,31 +200,149 @@ func (m *GenesisState) GetRecordSequences() []string {
 	return nil
 }
 
+func (m *GenesisState) GetVisibilityTimeUpgradeId() uint64 {
+	if m != nil {
+		return m.VisibilityTimeUpgradeId
+	}
+	return 0
+}
+
+func (m *GenesisState) GetPendingVisibilityEventIds() []uint64 {
+	if m != nil {
+		return m.PendingVisibilityEventIds
+	}
+	return nil
+}
+
+func (m *GenesisState) GetVisibilityTimesById() []Uint64Pair {
+	if m != nil {
+		return m.VisibilityTimesById
+	}
+	return nil
+}
+
+func (m *GenesisState) GetVisibilityHeightsById() []Uint64Pair {
+	if m != nil {
+		return m.VisibilityHeightsById
+	}
+	return nil
+}
+
+func (m *GenesisState) GetBlockTimeEntries() []BlockTimeEntry {
+	if m != nil {
+		return m.BlockTimeEntries
+	}
+	return nil
+}
+
 func init() {
+	proto.RegisterType((*Uint64Pair)(nil), "heimdallv2.clerk.Uint64Pair")
+	proto.RegisterType((*BlockTimeEntry)(nil), "heimdallv2.clerk.BlockTimeEntry")
 	proto.RegisterType((*GenesisState)(nil), "heimdallv2.clerk.GenesisState")
 }
 
 func init() { proto.RegisterFile("heimdallv2/clerk/genesis.proto", fileDescriptor_5fd4c4f420a779a6) }
 
 var fileDescriptor_5fd4c4f420a779a6 = []byte{
-	// 262 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0xcb, 0x48, 0xcd, 0xcc,
-	0x4d, 0x49, 0xcc, 0xc9, 0x29, 0x33, 0xd2, 0x4f, 0xce, 0x49, 0x2d, 0xca, 0xd6, 0x4f, 0x4f, 0xcd,
-	0x4b, 0x2d, 0xce, 0x2c, 0xd6, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0x40, 0xc8, 0xeb, 0x81,
-	0xe5, 0xa5, 0x04, 0x13, 0x73, 0x33, 0xf3, 0xf2, 0xf5, 0xc1, 0x24, 0x44, 0x91, 0x94, 0x48, 0x7a,
-	0x7e, 0x7a, 0x3e, 0x98, 0xa9, 0x0f, 0x62, 0x41, 0x45, 0x65, 0x30, 0x8c, 0x06, 0x93, 0x10, 0x59,
-	0xa5, 0x7e, 0x46, 0x2e, 0x1e, 0x77, 0x88, 0x55, 0xc1, 0x25, 0x89, 0x25, 0xa9, 0x42, 0xbe, 0x5c,
-	0xbc, 0xa9, 0x65, 0xa9, 0x79, 0x25, 0xf1, 0x45, 0xa9, 0xc9, 0xf9, 0x45, 0x29, 0xc5, 0x12, 0x8c,
-	0x0a, 0xcc, 0x1a, 0xdc, 0x46, 0xb2, 0x7a, 0xe8, 0x2e, 0xd0, 0x73, 0x05, 0x29, 0x0b, 0x02, 0xab,
-	0x72, 0xe2, 0x3c, 0x71, 0x4f, 0x9e, 0x61, 0xc5, 0xf3, 0x0d, 0x5a, 0x8c, 0x41, 0x3c, 0xa9, 0x08,
-	0xf1, 0x62, 0x21, 0x03, 0x2e, 0x01, 0x88, 0x41, 0xf1, 0xc5, 0xa9, 0x85, 0xa5, 0xa9, 0x79, 0xc9,
-	0xa9, 0xc5, 0x12, 0x4c, 0x0a, 0xcc, 0x1a, 0x9c, 0x4e, 0xac, 0x10, 0xe5, 0xfc, 0x10, 0xe9, 0x60,
-	0x98, 0xac, 0x93, 0xc7, 0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e, 0xc9, 0x31, 0x3e, 0x78, 0x24, 0xc7,
-	0x38, 0xe1, 0xb1, 0x1c, 0xc3, 0x85, 0xc7, 0x72, 0x0c, 0x37, 0x1e, 0xcb, 0x31, 0x44, 0xe9, 0xa5,
-	0x67, 0x96, 0x64, 0x94, 0x26, 0xe9, 0x25, 0xe7, 0xe7, 0xea, 0x1b, 0x54, 0x04, 0xe4, 0xe7, 0x54,
-	0xa6, 0xe7, 0xe7, 0xe9, 0xc3, 0xdc, 0xa5, 0x5b, 0x66, 0xa4, 0x5f, 0x01, 0xf5, 0x61, 0x49, 0x65,
-	0x41, 0x6a, 0x71, 0x12, 0x1b, 0xd8, 0x8b, 0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0x3a, 0x46,
-	0x58, 0x64, 0x5d, 0x01, 0x00, 0x00,
+	// 503 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0xcd, 0x6e, 0xd3, 0x40,
+	0x10, 0xc7, 0xe3, 0xe6, 0x03, 0x65, 0x29, 0x10, 0x96, 0x52, 0x4c, 0x94, 0x1a, 0x2b, 0xa7, 0x08,
+	0x09, 0xbb, 0x0a, 0x15, 0x17, 0x0e, 0x48, 0x96, 0xaa, 0x36, 0x07, 0xa4, 0xca, 0x6d, 0x41, 0x82,
+	0x83, 0xe5, 0x8f, 0x91, 0xb3, 0x8a, 0xbd, 0x1b, 0xbc, 0x1b, 0xab, 0x7e, 0x0b, 0xae, 0xbc, 0x01,
+	0x47, 0x1e, 0xa3, 0xc7, 0x1e, 0x39, 0x21, 0x94, 0x1c, 0x78, 0x0d, 0xe4, 0x5d, 0x07, 0xa7, 0xcd,
+	0x85, 0xcb, 0x6a, 0x76, 0xfe, 0x7f, 0xfd, 0x66, 0x67, 0x76, 0x90, 0x31, 0x05, 0x92, 0x46, 0x7e,
+	0x92, 0xe4, 0x63, 0x3b, 0x4c, 0x20, 0x9b, 0xd9, 0x31, 0x50, 0xe0, 0x84, 0x5b, 0xf3, 0x8c, 0x09,
+	0x86, 0x7b, 0xb5, 0x6e, 0x49, 0xbd, 0xff, 0xd8, 0x4f, 0x09, 0x65, 0xb6, 0x3c, 0x95, 0xa9, 0xbf,
+	0x17, 0xb3, 0x98, 0xc9, 0xd0, 0x2e, 0xa3, 0x2a, 0x3b, 0xd8, 0x42, 0xcb, 0x53, 0xa9, 0xc3, 0x23,
+	0x84, 0x2e, 0x09, 0x15, 0x6f, 0x8e, 0xce, 0x7c, 0x92, 0xe1, 0x1e, 0x6a, 0xce, 0xa0, 0xd0, 0x35,
+	0x53, 0x1b, 0xb5, 0xdc, 0x32, 0xc4, 0x7b, 0xa8, 0x9d, 0xfb, 0xc9, 0x02, 0xf4, 0x1d, 0x99, 0x53,
+	0x97, 0xe1, 0x09, 0x7a, 0xe8, 0x24, 0x2c, 0x9c, 0x5d, 0x90, 0x14, 0x8e, 0xa9, 0xc8, 0x0a, 0x7c,
+	0x80, 0x50, 0x50, 0x66, 0x3c, 0x41, 0x52, 0xa8, 0x00, 0xdd, 0x60, 0xed, 0xc1, 0xfb, 0xa8, 0x33,
+	0x05, 0x12, 0x4f, 0x45, 0xc5, 0xa9, 0x6e, 0xc3, 0x6f, 0x2d, 0xb4, 0x7b, 0xa2, 0x3a, 0x3d, 0x17,
+	0xbe, 0x00, 0xfc, 0x1e, 0x3d, 0x80, 0x1c, 0xa8, 0xf0, 0x32, 0x08, 0x59, 0x16, 0x71, 0x5d, 0x33,
+	0x9b, 0xa3, 0xfb, 0xe3, 0x03, 0xeb, 0xee, 0x00, 0xac, 0xe3, 0xd2, 0xe6, 0x4a, 0x97, 0xd3, 0xbd,
+	0xfe, 0xf5, 0xa2, 0xf1, 0xfd, 0xcf, 0x8f, 0x97, 0x9a, 0xbb, 0x0b, 0x75, 0x9e, 0xe3, 0x43, 0xd4,
+	0x53, 0x20, 0x8f, 0xc3, 0x97, 0x05, 0xd0, 0x10, 0xb8, 0xbe, 0x63, 0x36, 0x47, 0x5d, 0xa7, 0xad,
+	0xec, 0x8f, 0x94, 0x7c, 0xbe, 0x56, 0xf1, 0x5b, 0xd4, 0xcf, 0x09, 0x27, 0x01, 0x49, 0x88, 0x28,
+	0x64, 0x37, 0xde, 0x62, 0x1e, 0x67, 0x7e, 0x04, 0x1e, 0x89, 0xf4, 0xa6, 0x7c, 0xfd, 0xb3, 0xda,
+	0x51, 0x76, 0x77, 0xa9, 0xf4, 0x49, 0x84, 0xdf, 0xa1, 0xc1, 0x1c, 0x68, 0x44, 0x68, 0xec, 0x6d,
+	0x40, 0x54, 0x43, 0x24, 0xe2, 0x7a, 0xcb, 0x6c, 0x8e, 0x5a, 0xee, 0xf3, 0xca, 0xf3, 0xe1, 0x9f,
+	0x45, 0xf6, 0x32, 0x89, 0x38, 0xfe, 0x88, 0xf6, 0xef, 0x54, 0xe7, 0x5e, 0x50, 0x94, 0x95, 0xdb,
+	0x72, 0x0e, 0x83, 0xed, 0x39, 0xd4, 0xdf, 0xe7, 0xb4, 0xca, 0x31, 0xb8, 0x4f, 0x6e, 0xbf, 0x8e,
+	0x3b, 0xc5, 0x24, 0xc2, 0x9f, 0x91, 0xbe, 0x01, 0x56, 0xd3, 0x5f, 0xa3, 0x3b, 0xff, 0x8d, 0x7e,
+	0x5a, 0x33, 0x4e, 0x15, 0x42, 0xc2, 0x2f, 0x10, 0xae, 0x3f, 0xdf, 0x03, 0x2a, 0x32, 0x02, 0x5c,
+	0xbf, 0x27, 0xb1, 0xe6, 0x36, 0xf6, 0xf6, 0xea, 0x54, 0xe8, 0x5e, 0xb0, 0x99, 0x25, 0xc0, 0x9d,
+	0xd3, 0xeb, 0xa5, 0xa1, 0xdd, 0x2c, 0x0d, 0xed, 0xf7, 0xd2, 0xd0, 0xbe, 0xae, 0x8c, 0xc6, 0xcd,
+	0xca, 0x68, 0xfc, 0x5c, 0x19, 0x8d, 0x4f, 0x56, 0x4c, 0xc4, 0x74, 0x11, 0x58, 0x21, 0x4b, 0xed,
+	0xc3, 0xab, 0x33, 0x96, 0x14, 0x31, 0xa3, 0xf6, 0xba, 0xce, 0xab, 0x7c, 0x6c, 0x5f, 0x55, 0xab,
+	0x2e, 0x8a, 0x39, 0xf0, 0xa0, 0x23, 0x77, 0xfd, 0xf5, 0xdf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x58,
+	0x8e, 0xb2, 0x79, 0x66, 0x03, 0x00, 0x00,
+}
+
+func (m *Uint64Pair) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Uint64Pair) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Uint64Pair) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Value != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.Value))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Key != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.Key))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *BlockTimeEntry) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *BlockTimeEntry) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *BlockTimeEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Height != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.Height))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.BlockTime != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.BlockTime))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *GenesisState) Marshal() (dAtA []byte, err error) {
@@ -127,6 +365,71 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.BlockTimeEntries) > 0 {
+		for iNdEx := len(m.BlockTimeEntries) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.BlockTimeEntries[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x3a
+		}
+	}
+	if len(m.VisibilityHeightsById) > 0 {
+		for iNdEx := len(m.VisibilityHeightsById) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.VisibilityHeightsById[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x32
+		}
+	}
+	if len(m.VisibilityTimesById) > 0 {
+		for iNdEx := len(m.VisibilityTimesById) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.VisibilityTimesById[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if len(m.PendingVisibilityEventIds) > 0 {
+		dAtA2 := make([]byte, len(m.PendingVisibilityEventIds)*10)
+		var j1 int
+		for _, num := range m.PendingVisibilityEventIds {
+			for num >= 1<<7 {
+				dAtA2[j1] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j1++
+			}
+			dAtA2[j1] = uint8(num)
+			j1++
+		}
+		i -= j1
+		copy(dAtA[i:], dAtA2[:j1])
+		i = encodeVarintGenesis(dAtA, i, uint64(j1))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.VisibilityTimeUpgradeId != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.VisibilityTimeUpgradeId))
+		i--
+		dAtA[i] = 0x18
+	}
 	if len(m.RecordSequences) > 0 {
 		for iNdEx := len(m.RecordSequences) - 1; iNdEx >= 0; iNdEx-- {
 			i -= len(m.RecordSequences[iNdEx])
@@ -164,6 +467,36 @@ func encodeVarintGenesis(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *Uint64Pair) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Key != 0 {
+		n += 1 + sovGenesis(uint64(m.Key))
+	}
+	if m.Value != 0 {
+		n += 1 + sovGenesis(uint64(m.Value))
+	}
+	return n
+}
+
+func (m *BlockTimeEntry) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.BlockTime != 0 {
+		n += 1 + sovGenesis(uint64(m.BlockTime))
+	}
+	if m.Height != 0 {
+		n += 1 + sovGenesis(uint64(m.Height))
+	}
+	return n
+}
+
 func (m *GenesisState) Size() (n int) {
 	if m == nil {
 		return 0
@@ -182,6 +515,34 @@ func (m *GenesisState) Size() (n int) {
 			n += 1 + l + sovGenesis(uint64(l))
 		}
 	}
+	if m.VisibilityTimeUpgradeId != 0 {
+		n += 1 + sovGenesis(uint64(m.VisibilityTimeUpgradeId))
+	}
+	if len(m.PendingVisibilityEventIds) > 0 {
+		l = 0
+		for _, e := range m.PendingVisibilityEventIds {
+			l += sovGenesis(uint64(e))
+		}
+		n += 1 + sovGenesis(uint64(l)) + l
+	}
+	if len(m.VisibilityTimesById) > 0 {
+		for _, e := range m.VisibilityTimesById {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.VisibilityHeightsById) > 0 {
+		for _, e := range m.VisibilityHeightsById {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.BlockTimeEntries) > 0 {
+		for _, e := range m.BlockTimeEntries {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -190,6 +551,182 @@ func sovGenesis(x uint64) (n int) {
 }
 func sozGenesis(x uint64) (n int) {
 	return sovGenesis(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *Uint64Pair) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Uint64Pair: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Uint64Pair: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			m.Key = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Key |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Value", wireType)
+			}
+			m.Value = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Value |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *BlockTimeEntry) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: BlockTimeEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: BlockTimeEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockTime", wireType)
+			}
+			m.BlockTime = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BlockTime |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
+			}
+			m.Height = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Height |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *GenesisState) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -285,6 +822,203 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.RecordSequences = append(m.RecordSequences, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VisibilityTimeUpgradeId", wireType)
+			}
+			m.VisibilityTimeUpgradeId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.VisibilityTimeUpgradeId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType == 0 {
+				var v uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGenesis
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.PendingVisibilityEventIds = append(m.PendingVisibilityEventIds, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowGenesis
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthGenesis
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthGenesis
+				}
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				var elementCount int
+				var count int
+				for _, integer := range dAtA[iNdEx:postIndex] {
+					if integer < 128 {
+						count++
+					}
+				}
+				elementCount = count
+				if elementCount != 0 && len(m.PendingVisibilityEventIds) == 0 {
+					m.PendingVisibilityEventIds = make([]uint64, 0, elementCount)
+				}
+				for iNdEx < postIndex {
+					var v uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowGenesis
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.PendingVisibilityEventIds = append(m.PendingVisibilityEventIds, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field PendingVisibilityEventIds", wireType)
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VisibilityTimesById", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VisibilityTimesById = append(m.VisibilityTimesById, Uint64Pair{})
+			if err := m.VisibilityTimesById[len(m.VisibilityTimesById)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VisibilityHeightsById", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VisibilityHeightsById = append(m.VisibilityHeightsById, Uint64Pair{})
+			if err := m.VisibilityHeightsById[len(m.VisibilityHeightsById)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockTimeEntries", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BlockTimeEntries = append(m.BlockTimeEntries, BlockTimeEntry{})
+			if err := m.BlockTimeEntries[len(m.BlockTimeEntries)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

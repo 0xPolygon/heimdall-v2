@@ -7,6 +7,20 @@ import "heimdallv2/clerk/clerk.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 
+// Uint64Pair is a generic key-value pair of uint64s, used for genesis
+// export/import of visibility indexes.
+message Uint64Pair {
+  uint64 key = 1;
+  uint64 value = 2;
+}
+
+// BlockTimeEntry stores a (block_time, height) → height mapping for the reverse
+// index.
+message BlockTimeEntry {
+  uint64 block_time = 1;
+  uint64 height = 2;
+}
+
 // GenesisState defines the clerk module's genesis state.
 message GenesisState {
   // Initial event records at genesis.
@@ -15,4 +29,27 @@ message GenesisState {
   // Record sequences for tracking processed events.
   // Format: "txHash-logIndex" mapping to ensure events are not processed twice.
   repeated string record_sequences = 2 [ (amino.dont_omitempty) = true ];
+
+  // Deterministic state sync fields (populated from visibility_time activation
+  // onward).
+
+  // The first event ID using visibility_time filtering (upgrade boundary).
+  // Zero means not yet set.
+  uint64 visibility_time_upgrade_id = 3;
+
+  // Event IDs awaiting visibility_time assignment in the next block's
+  // PreBlocker.
+  repeated uint64 pending_visibility_event_ids = 4;
+
+  // Per-event visibility_time: event_id → unix nanoseconds.
+  repeated Uint64Pair visibility_times_by_id = 5
+      [ (gogoproto.nullable) = false ];
+
+  // Per-event visibility_height: event_id → Heimdall block height.
+  repeated Uint64Pair visibility_heights_by_id = 6
+      [ (gogoproto.nullable) = false ];
+
+  // Block time reverse index: (block_time, height) → height for cutoff lookups.
+  repeated BlockTimeEntry block_time_entries = 7
+      [ (gogoproto.nullable) = false ];
 }
