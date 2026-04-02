@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"cosmossdk.io/collections"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
@@ -324,6 +325,14 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 	}
 	if request.ToTime.IsZero() {
 		return nil, status.Errorf(codes.InvalidArgument, "to_time must be set")
+	}
+
+	// Reject future heights
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	currentHeight := sdkCtx.BlockHeight()
+	if request.HeimdallHeight > currentHeight {
+		return nil, status.Errorf(codes.InvalidArgument,
+			"heimdall_height %d exceeds current committed height %d", request.HeimdallHeight, currentHeight)
 	}
 
 	// Determine the upgrade boundary. If not set, all events use the legacy path.

@@ -841,6 +841,7 @@ func (s *KeeperTestSuite) TestProcessPendingVisibilityEvents_StoresHeight() {
 // heights, queries at a specific height, and verifies correct filtering.
 func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_BasicFlow() {
 	ctx, ck := s.ctx, s.keeper
+	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
 
 	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
@@ -878,6 +879,7 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_BasicFlow() {
 // and post-upgrade (visibility_height filtered) events.
 func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_HybridQuery() {
 	ctx, ck := s.ctx, s.keeper
+	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
 
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
@@ -933,6 +935,7 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_HybridQuery() {
 // without visibility_height (still pending) break iteration (contiguous IDs).
 func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_PendingExcluded() {
 	ctx, ck := s.ctx, s.keeper
+	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
 
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
@@ -967,6 +970,7 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_PendingExcluded() {
 // same query against the latest state always returns the same result regardless of when called.
 func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_DeterministicAcrossLatestState() {
 	ctx, ck := s.ctx, s.keeper
+	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
 
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
@@ -1140,6 +1144,7 @@ func (s *KeeperTestSuite) TestGetBlockHeightByTime_ActivationBoundary() {
 // Querying at height 150 should return events 1-7 (contiguous) and break at event 8.
 func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_ContiguousIDs() {
 	ctx, ck := s.ctx, s.keeper
+	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
 
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
@@ -1185,6 +1190,7 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_ContiguousIDs() {
 // visibility_height filtering.
 func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_PreAndPostUpgradeMix() {
 	ctx, ck := s.ctx, s.keeper
+	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
 
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)

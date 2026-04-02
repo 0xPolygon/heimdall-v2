@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"errors"
+
 	"cosmossdk.io/collections"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -55,86 +57,109 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 
 // ExportGenesis returns a GenesisState for a given context and keeper.
 func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
+	logger := k.Logger(ctx)
+
 	gs := &types.GenesisState{
 		EventRecords:    k.GetAllEventRecords(ctx),
 		RecordSequences: k.GetRecordSequences(ctx),
 	}
 
 	// Export visibility time upgrade ID.
-	if upgradeID, err := k.GetVisibilityTimeUpgradeID(ctx); err == nil {
+	upgradeID, err := k.GetVisibilityTimeUpgradeID(ctx)
+	if err != nil {
+		if !errors.Is(err, collections.ErrNotFound) {
+			logger.Error("Error exporting visibility time upgrade ID", "error", err)
+		}
+	} else {
 		gs.VisibilityTimeUpgradeId = upgradeID
 	}
 
 	// Export pending visibility events.
 	pendingIter, err := k.PendingVisibilityEvents.Iterate(ctx, nil)
-	if err == nil {
-		defer func(pendingIter collections.Iterator[uint64, []byte]) {
-			err := pendingIter.Close()
-			if err != nil {
-				k.Logger(ctx).Error("Error closing pending visibility events iterator", "error", err)
+	if err != nil {
+		logger.Error("Error creating pending visibility events iterator for export", "error", err)
+	} else {
+		defer func() {
+			if err := pendingIter.Close(); err != nil {
+				logger.Error("Error closing pending visibility events iterator", "error", err)
 			}
-		}(pendingIter)
+		}()
 		for ; pendingIter.Valid(); pendingIter.Next() {
-			if key, err := pendingIter.Key(); err == nil {
-				gs.PendingVisibilityEventIds = append(gs.PendingVisibilityEventIds, key)
+			key, err := pendingIter.Key()
+			if err != nil {
+				logger.Error("Error reading pending visibility event key during export", "error", err)
+				continue
 			}
+			gs.PendingVisibilityEventIds = append(gs.PendingVisibilityEventIds, key)
 		}
 	}
 
 	// Export visibility times by ID.
 	vtIter, err := k.VisibilityTimeByID.Iterate(ctx, nil)
-	if err == nil {
-		defer func(vtIter collections.Iterator[uint64, uint64]) {
-			err := vtIter.Close()
-			if err != nil {
-				k.Logger(ctx).Error("Error closing visibility time iterator", "error", err)
+	if err != nil {
+		logger.Error("Error creating visibility time iterator for export", "error", err)
+	} else {
+		defer func() {
+			if err := vtIter.Close(); err != nil {
+				logger.Error("Error closing visibility time iterator", "error", err)
 			}
-		}(vtIter)
+		}()
 		for ; vtIter.Valid(); vtIter.Next() {
-			if kv, err := vtIter.KeyValue(); err == nil {
-				gs.VisibilityTimesById = append(gs.VisibilityTimesById, types.Uint64Pair{
-					Key:   kv.Key,
-					Value: kv.Value,
-				})
+			kv, err := vtIter.KeyValue()
+			if err != nil {
+				logger.Error("Error reading visibility time entry during export", "error", err)
+				continue
 			}
+			gs.VisibilityTimesById = append(gs.VisibilityTimesById, types.Uint64Pair{
+				Key:   kv.Key,
+				Value: kv.Value,
+			})
 		}
 	}
 
 	// Export visibility heights by ID.
 	vhIter, err := k.VisibilityHeightByID.Iterate(ctx, nil)
-	if err == nil {
-		defer func(vhIter collections.Iterator[uint64, uint64]) {
-			err := vhIter.Close()
-			if err != nil {
-				k.Logger(ctx).Error("Error closing visibility height iterator", "error", err)
+	if err != nil {
+		logger.Error("Error creating visibility height iterator for export", "error", err)
+	} else {
+		defer func() {
+			if err := vhIter.Close(); err != nil {
+				logger.Error("Error closing visibility height iterator", "error", err)
 			}
-		}(vhIter)
+		}()
 		for ; vhIter.Valid(); vhIter.Next() {
-			if kv, err := vhIter.KeyValue(); err == nil {
-				gs.VisibilityHeightsById = append(gs.VisibilityHeightsById, types.Uint64Pair{
-					Key:   kv.Key,
-					Value: kv.Value,
-				})
+			kv, err := vhIter.KeyValue()
+			if err != nil {
+				logger.Error("Error reading visibility height entry during export", "error", err)
+				continue
 			}
+			gs.VisibilityHeightsById = append(gs.VisibilityHeightsById, types.Uint64Pair{
+				Key:   kv.Key,
+				Value: kv.Value,
+			})
 		}
 	}
 
 	// Export block time reverse index.
 	btIter, err := k.BlockTimeReverseIndex.Iterate(ctx, nil)
-	if err == nil {
-		defer func(btIter collections.Iterator[collections.Pair[uint64, uint64], uint64]) {
-			err := btIter.Close()
-			if err != nil {
-				k.Logger(ctx).Error("Error closing block time reverse", "error", err)
+	if err != nil {
+		logger.Error("Error creating block time reverse index iterator for export", "error", err)
+	} else {
+		defer func() {
+			if err := btIter.Close(); err != nil {
+				logger.Error("Error closing block time reverse index iterator", "error", err)
 			}
-		}(btIter)
+		}()
 		for ; btIter.Valid(); btIter.Next() {
-			if kv, err := btIter.KeyValue(); err == nil {
-				gs.BlockTimeEntries = append(gs.BlockTimeEntries, types.BlockTimeEntry{
-					BlockTime: kv.Key.K1(),
-					Height:    kv.Key.K2(),
-				})
+			kv, err := btIter.KeyValue()
+			if err != nil {
+				logger.Error("Error reading block time entry during export", "error", err)
+				continue
 			}
+			gs.BlockTimeEntries = append(gs.BlockTimeEntries, types.BlockTimeEntry{
+				BlockTime: kv.Key.K1(),
+				Height:    kv.Key.K2(),
+			})
 		}
 	}
 
