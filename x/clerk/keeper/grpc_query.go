@@ -444,8 +444,20 @@ func (q queryServer) GetStateSyncsByTime(ctx context.Context, request *types.Sta
 		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxRecordListLimit)
 	}
 
-	// Resolve cutoff time to Heimdall height.
+	// Stability gate: the resolved height is only frozen once a heimdall block with
+	// time > cutoff has been committed (block times are monotonically increasing, so no
+	// new blocks can then have time <= cutoff, and no new events can get a visibility_height
+	// <= the resolved height).  Before this point the result could change between queries,
+	// breaking cross-client determinism.  Returning empty matches bor's pre-fork behaviour
+	// when heimdall is behind.
 	cutoffUnix := request.ToTime.Unix()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if sdkCtx.BlockTime().Unix() <= cutoffUnix {
+		return &types.StateSyncsByTimeResponse{
+			EventRecords: []types.EventRecord{},
+		}, nil
+	}
+
 	height, err := q.k.GetBlockHeightByTime(ctx, cutoffUnix)
 	if err != nil {
 		if errors.Is(err, ErrNoBlockFound) {
