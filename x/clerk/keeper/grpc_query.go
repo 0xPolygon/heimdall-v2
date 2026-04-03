@@ -422,6 +422,57 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 	}, nil
 }
 
+// GetStateSyncsByTime resolves a cutoff time to a Heimdall height, then returns
+// events visible at that height. Combines GetBlockHeightByTime + GetRecordListVisibleAtHeight.
+func (q queryServer) GetStateSyncsByTime(ctx context.Context, request *types.StateSyncsByTimeRequest) (_ *types.StateSyncsByTimeResponse, err error) {
+	startTime := time.Now()
+	defer recordClerkQueryMetric(api.GetStateSyncsByTimeMethod, startTime, &err)
+
+	if request == nil {
+		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
+	}
+	if request.FromId < 1 {
+		return nil, status.Errorf(codes.InvalidArgument, "from_id cannot be less than 1")
+	}
+	if request.ToTime.IsZero() {
+		return nil, status.Errorf(codes.InvalidArgument, "to_time must be set")
+	}
+	if isPaginationEmpty(request.Pagination) {
+		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one argument must be set)")
+	}
+	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimit {
+		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxRecordListLimit)
+	}
+
+	// Resolve cutoff time to Heimdall height.
+	cutoffUnix := request.ToTime.Unix()
+	height, err := q.k.GetBlockHeightByTime(ctx, cutoffUnix)
+	if err != nil {
+		if errors.Is(err, ErrNoBlockFound) {
+			return &types.StateSyncsByTimeResponse{
+				EventRecords: []types.EventRecord{},
+			}, nil
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Delegate to the existing visible-at-height logic.
+	innerResp, err := q.GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
+		FromId:         request.FromId,
+		HeimdallHeight: height,
+		ToTime:         request.ToTime,
+		Pagination:     request.Pagination,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.StateSyncsByTimeResponse{
+		EventRecords:   innerResp.EventRecords,
+		HeimdallHeight: height,
+	}, nil
+}
+
 func isPaginationEmpty(p query.PageRequest) bool {
 	return p.Key == nil &&
 		p.Offset == 0 &&

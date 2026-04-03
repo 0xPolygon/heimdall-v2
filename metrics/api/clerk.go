@@ -12,6 +12,7 @@ const (
 	IsClerkTxOldMethod                 = "IsClerkTxOld"
 	GetBlockHeightByTimeMethod         = "GetBlockHeightByTime"
 	GetRecordListVisibleAtHeightMethod = "GetRecordListVisibleAtHeight"
+	GetStateSyncsByTimeMethod          = "GetStateSyncsByTime"
 
 	// Transaction API methods.
 

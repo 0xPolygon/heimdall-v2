@@ -7627,6 +7627,1110 @@ func (x *fastReflection_BlockHeightByTimeResponse) ProtoMethods() *protoiface.Me
 	}
 }
 
+var (
+	md_StateSyncsByTimeRequest            protoreflect.MessageDescriptor
+	fd_StateSyncsByTimeRequest_from_id    protoreflect.FieldDescriptor
+	fd_StateSyncsByTimeRequest_to_time    protoreflect.FieldDescriptor
+	fd_StateSyncsByTimeRequest_pagination protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_heimdallv2_clerk_query_proto_init()
+	md_StateSyncsByTimeRequest = File_heimdallv2_clerk_query_proto.Messages().ByName("StateSyncsByTimeRequest")
+	fd_StateSyncsByTimeRequest_from_id = md_StateSyncsByTimeRequest.Fields().ByName("from_id")
+	fd_StateSyncsByTimeRequest_to_time = md_StateSyncsByTimeRequest.Fields().ByName("to_time")
+	fd_StateSyncsByTimeRequest_pagination = md_StateSyncsByTimeRequest.Fields().ByName("pagination")
+}
+
+var _ protoreflect.Message = (*fastReflection_StateSyncsByTimeRequest)(nil)
+
+type fastReflection_StateSyncsByTimeRequest StateSyncsByTimeRequest
+
+func (x *StateSyncsByTimeRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_StateSyncsByTimeRequest)(x)
+}
+
+func (x *StateSyncsByTimeRequest) slowProtoReflect() protoreflect.Message {
+	mi := &file_heimdallv2_clerk_query_proto_msgTypes[17]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_StateSyncsByTimeRequest_messageType fastReflection_StateSyncsByTimeRequest_messageType
+var _ protoreflect.MessageType = fastReflection_StateSyncsByTimeRequest_messageType{}
+
+type fastReflection_StateSyncsByTimeRequest_messageType struct{}
+
+func (x fastReflection_StateSyncsByTimeRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_StateSyncsByTimeRequest)(nil)
+}
+func (x fastReflection_StateSyncsByTimeRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_StateSyncsByTimeRequest)
+}
+func (x fastReflection_StateSyncsByTimeRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_StateSyncsByTimeRequest
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_StateSyncsByTimeRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_StateSyncsByTimeRequest
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_StateSyncsByTimeRequest) Type() protoreflect.MessageType {
+	return _fastReflection_StateSyncsByTimeRequest_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_StateSyncsByTimeRequest) New() protoreflect.Message {
+	return new(fastReflection_StateSyncsByTimeRequest)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_StateSyncsByTimeRequest) Interface() protoreflect.ProtoMessage {
+	return (*StateSyncsByTimeRequest)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_StateSyncsByTimeRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.FromId != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.FromId)
+		if !f(fd_StateSyncsByTimeRequest_from_id, value) {
+			return
+		}
+	}
+	if x.ToTime != nil {
+		value := protoreflect.ValueOfMessage(x.ToTime.ProtoReflect())
+		if !f(fd_StateSyncsByTimeRequest_to_time, value) {
+			return
+		}
+	}
+	if x.Pagination != nil {
+		value := protoreflect.ValueOfMessage(x.Pagination.ProtoReflect())
+		if !f(fd_StateSyncsByTimeRequest_pagination, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_StateSyncsByTimeRequest) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.from_id":
+		return x.FromId != uint64(0)
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.to_time":
+		return x.ToTime != nil
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.pagination":
+		return x.Pagination != nil
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.StateSyncsByTimeRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.clerk.StateSyncsByTimeRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_StateSyncsByTimeRequest) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.from_id":
+		x.FromId = uint64(0)
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.to_time":
+		x.ToTime = nil
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.pagination":
+		x.Pagination = nil
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.StateSyncsByTimeRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.clerk.StateSyncsByTimeRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_StateSyncsByTimeRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.from_id":
+		value := x.FromId
+		return protoreflect.ValueOfUint64(value)
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.to_time":
+		value := x.ToTime
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.pagination":
+		value := x.Pagination
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.StateSyncsByTimeRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.clerk.StateSyncsByTimeRequest does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_StateSyncsByTimeRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.from_id":
+		x.FromId = value.Uint()
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.to_time":
+		x.ToTime = value.Message().Interface().(*timestamppb.Timestamp)
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.pagination":
+		x.Pagination = value.Message().Interface().(*v1beta1.PageRequest)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.StateSyncsByTimeRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.clerk.StateSyncsByTimeRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_StateSyncsByTimeRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.to_time":
+		if x.ToTime == nil {
+			x.ToTime = new(timestamppb.Timestamp)
+		}
+		return protoreflect.ValueOfMessage(x.ToTime.ProtoReflect())
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.pagination":
+		if x.Pagination == nil {
+			x.Pagination = new(v1beta1.PageRequest)
+		}
+		return protoreflect.ValueOfMessage(x.Pagination.ProtoReflect())
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.from_id":
+		panic(fmt.Errorf("field from_id of message heimdallv2.clerk.StateSyncsByTimeRequest is not mutable"))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.StateSyncsByTimeRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.clerk.StateSyncsByTimeRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_StateSyncsByTimeRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.from_id":
+		return protoreflect.ValueOfUint64(uint64(0))
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.to_time":
+		m := new(timestamppb.Timestamp)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
+	case "heimdallv2.clerk.StateSyncsByTimeRequest.pagination":
+		m := new(v1beta1.PageRequest)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.StateSyncsByTimeRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.clerk.StateSyncsByTimeRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_StateSyncsByTimeRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.clerk.StateSyncsByTimeRequest", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_StateSyncsByTimeRequest) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_StateSyncsByTimeRequest) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_StateSyncsByTimeRequest) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_StateSyncsByTimeRequest) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*StateSyncsByTimeRequest)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if x.FromId != 0 {
+			n += 1 + runtime.Sov(uint64(x.FromId))
+		}
+		if x.ToTime != nil {
+			l = options.Size(x.ToTime)
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if x.Pagination != nil {
+			l = options.Size(x.Pagination)
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*StateSyncsByTimeRequest)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.Pagination != nil {
+			encoded, err := options.Marshal(x.Pagination)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+			i--
+			dAtA[i] = 0x1a
+		}
+		if x.ToTime != nil {
+			encoded, err := options.Marshal(x.ToTime)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+			i--
+			dAtA[i] = 0x12
+		}
+		if x.FromId != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.FromId))
+			i--
+			dAtA[i] = 0x8
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*StateSyncsByTimeRequest)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: StateSyncsByTimeRequest: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: StateSyncsByTimeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field FromId", wireType)
+				}
+				x.FromId = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.FromId |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+			case 2:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ToTime", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.ToTime == nil {
+					x.ToTime = &timestamppb.Timestamp{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.ToTime); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			case 3:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.Pagination == nil {
+					x.Pagination = &v1beta1.PageRequest{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Pagination); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var _ protoreflect.List = (*_StateSyncsByTimeResponse_1_list)(nil)
+
+type _StateSyncsByTimeResponse_1_list struct {
+	list *[]*EventRecord
+}
+
+func (x *_StateSyncsByTimeResponse_1_list) Len() int {
+	if x.list == nil {
+		return 0
+	}
+	return len(*x.list)
+}
+
+func (x *_StateSyncsByTimeResponse_1_list) Get(i int) protoreflect.Value {
+	return protoreflect.ValueOfMessage((*x.list)[i].ProtoReflect())
+}
+
+func (x *_StateSyncsByTimeResponse_1_list) Set(i int, value protoreflect.Value) {
+	valueUnwrapped := value.Message()
+	concreteValue := valueUnwrapped.Interface().(*EventRecord)
+	(*x.list)[i] = concreteValue
+}
+
+func (x *_StateSyncsByTimeResponse_1_list) Append(value protoreflect.Value) {
+	valueUnwrapped := value.Message()
+	concreteValue := valueUnwrapped.Interface().(*EventRecord)
+	*x.list = append(*x.list, concreteValue)
+}
+
+func (x *_StateSyncsByTimeResponse_1_list) AppendMutable() protoreflect.Value {
+	v := new(EventRecord)
+	*x.list = append(*x.list, v)
+	return protoreflect.ValueOfMessage(v.ProtoReflect())
+}
+
+func (x *_StateSyncsByTimeResponse_1_list) Truncate(n int) {
+	for i := n; i < len(*x.list); i++ {
+		(*x.list)[i] = nil
+	}
+	*x.list = (*x.list)[:n]
+}
+
+func (x *_StateSyncsByTimeResponse_1_list) NewElement() protoreflect.Value {
+	v := new(EventRecord)
+	return protoreflect.ValueOfMessage(v.ProtoReflect())
+}
+
+func (x *_StateSyncsByTimeResponse_1_list) IsValid() bool {
+	return x.list != nil
+}
+
+var (
+	md_StateSyncsByTimeResponse                 protoreflect.MessageDescriptor
+	fd_StateSyncsByTimeResponse_event_records   protoreflect.FieldDescriptor
+	fd_StateSyncsByTimeResponse_heimdall_height protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_heimdallv2_clerk_query_proto_init()
+	md_StateSyncsByTimeResponse = File_heimdallv2_clerk_query_proto.Messages().ByName("StateSyncsByTimeResponse")
+	fd_StateSyncsByTimeResponse_event_records = md_StateSyncsByTimeResponse.Fields().ByName("event_records")
+	fd_StateSyncsByTimeResponse_heimdall_height = md_StateSyncsByTimeResponse.Fields().ByName("heimdall_height")
+}
+
+var _ protoreflect.Message = (*fastReflection_StateSyncsByTimeResponse)(nil)
+
+type fastReflection_StateSyncsByTimeResponse StateSyncsByTimeResponse
+
+func (x *StateSyncsByTimeResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_StateSyncsByTimeResponse)(x)
+}
+
+func (x *StateSyncsByTimeResponse) slowProtoReflect() protoreflect.Message {
+	mi := &file_heimdallv2_clerk_query_proto_msgTypes[18]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_StateSyncsByTimeResponse_messageType fastReflection_StateSyncsByTimeResponse_messageType
+var _ protoreflect.MessageType = fastReflection_StateSyncsByTimeResponse_messageType{}
+
+type fastReflection_StateSyncsByTimeResponse_messageType struct{}
+
+func (x fastReflection_StateSyncsByTimeResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_StateSyncsByTimeResponse)(nil)
+}
+func (x fastReflection_StateSyncsByTimeResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_StateSyncsByTimeResponse)
+}
+func (x fastReflection_StateSyncsByTimeResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_StateSyncsByTimeResponse
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_StateSyncsByTimeResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_StateSyncsByTimeResponse
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_StateSyncsByTimeResponse) Type() protoreflect.MessageType {
+	return _fastReflection_StateSyncsByTimeResponse_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_StateSyncsByTimeResponse) New() protoreflect.Message {
+	return new(fastReflection_StateSyncsByTimeResponse)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_StateSyncsByTimeResponse) Interface() protoreflect.ProtoMessage {
+	return (*StateSyncsByTimeResponse)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_StateSyncsByTimeResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if len(x.EventRecords) != 0 {
+		value := protoreflect.ValueOfList(&_StateSyncsByTimeResponse_1_list{list: &x.EventRecords})
+		if !f(fd_StateSyncsByTimeResponse_event_records, value) {
+			return
+		}
+	}
+	if x.HeimdallHeight != int64(0) {
+		value := protoreflect.ValueOfInt64(x.HeimdallHeight)
+		if !f(fd_StateSyncsByTimeResponse_heimdall_height, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_StateSyncsByTimeResponse) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "heimdallv2.clerk.StateSyncsByTimeResponse.event_records":
+		return len(x.EventRecords) != 0
+	case "heimdallv2.clerk.StateSyncsByTimeResponse.heimdall_height":
+		return x.HeimdallHeight != int64(0)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.StateSyncsByTimeResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.clerk.StateSyncsByTimeResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_StateSyncsByTimeResponse) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "heimdallv2.clerk.StateSyncsByTimeResponse.event_records":
+		x.EventRecords = nil
+	case "heimdallv2.clerk.StateSyncsByTimeResponse.heimdall_height":
+		x.HeimdallHeight = int64(0)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.StateSyncsByTimeResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.clerk.StateSyncsByTimeResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_StateSyncsByTimeResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "heimdallv2.clerk.StateSyncsByTimeResponse.event_records":
+		if len(x.EventRecords) == 0 {
+			return protoreflect.ValueOfList(&_StateSyncsByTimeResponse_1_list{})
+		}
+		listValue := &_StateSyncsByTimeResponse_1_list{list: &x.EventRecords}
+		return protoreflect.ValueOfList(listValue)
+	case "heimdallv2.clerk.StateSyncsByTimeResponse.heimdall_height":
+		value := x.HeimdallHeight
+		return protoreflect.ValueOfInt64(value)
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.StateSyncsByTimeResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.clerk.StateSyncsByTimeResponse does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_StateSyncsByTimeResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "heimdallv2.clerk.StateSyncsByTimeResponse.event_records":
+		lv := value.List()
+		clv := lv.(*_StateSyncsByTimeResponse_1_list)
+		x.EventRecords = *clv.list
+	case "heimdallv2.clerk.StateSyncsByTimeResponse.heimdall_height":
+		x.HeimdallHeight = value.Int()
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.StateSyncsByTimeResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.clerk.StateSyncsByTimeResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_StateSyncsByTimeResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.clerk.StateSyncsByTimeResponse.event_records":
+		if x.EventRecords == nil {
+			x.EventRecords = []*EventRecord{}
+		}
+		value := &_StateSyncsByTimeResponse_1_list{list: &x.EventRecords}
+		return protoreflect.ValueOfList(value)
+	case "heimdallv2.clerk.StateSyncsByTimeResponse.heimdall_height":
+		panic(fmt.Errorf("field heimdall_height of message heimdallv2.clerk.StateSyncsByTimeResponse is not mutable"))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.StateSyncsByTimeResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.clerk.StateSyncsByTimeResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_StateSyncsByTimeResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.clerk.StateSyncsByTimeResponse.event_records":
+		list := []*EventRecord{}
+		return protoreflect.ValueOfList(&_StateSyncsByTimeResponse_1_list{list: &list})
+	case "heimdallv2.clerk.StateSyncsByTimeResponse.heimdall_height":
+		return protoreflect.ValueOfInt64(int64(0))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.StateSyncsByTimeResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.clerk.StateSyncsByTimeResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_StateSyncsByTimeResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.clerk.StateSyncsByTimeResponse", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_StateSyncsByTimeResponse) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_StateSyncsByTimeResponse) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_StateSyncsByTimeResponse) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_StateSyncsByTimeResponse) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*StateSyncsByTimeResponse)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if len(x.EventRecords) > 0 {
+			for _, e := range x.EventRecords {
+				l = options.Size(e)
+				n += 1 + l + runtime.Sov(uint64(l))
+			}
+		}
+		if x.HeimdallHeight != 0 {
+			n += 1 + runtime.Sov(uint64(x.HeimdallHeight))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*StateSyncsByTimeResponse)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.HeimdallHeight != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.HeimdallHeight))
+			i--
+			dAtA[i] = 0x10
+		}
+		if len(x.EventRecords) > 0 {
+			for iNdEx := len(x.EventRecords) - 1; iNdEx >= 0; iNdEx-- {
+				encoded, err := options.Marshal(x.EventRecords[iNdEx])
+				if err != nil {
+					return protoiface.MarshalOutput{
+						NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+						Buf:               input.Buf,
+					}, err
+				}
+				i -= len(encoded)
+				copy(dAtA[i:], encoded)
+				i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+				i--
+				dAtA[i] = 0xa
+			}
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*StateSyncsByTimeResponse)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: StateSyncsByTimeResponse: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: StateSyncsByTimeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field EventRecords", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.EventRecords = append(x.EventRecords, &EventRecord{})
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.EventRecords[len(x.EventRecords)-1]); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			case 2:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field HeimdallHeight", wireType)
+				}
+				x.HeimdallHeight = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.HeimdallHeight |= int64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
 // Code generated by protoc-gen-go. DO NOT EDIT.
 // versions:
 // 	protoc-gen-go v1.27.0
@@ -8321,6 +9425,110 @@ func (x *BlockHeightByTimeResponse) GetHeight() int64 {
 	return 0
 }
 
+// StateSyncsByTimeRequest is the request type for GetStateSyncsByTime.
+// Combines block-height-by-time resolution and event fetching in one call.
+type StateSyncsByTimeRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Starting record ID (inclusive).
+	FromId uint64 `protobuf:"varint,1,opt,name=from_id,json=fromId,proto3" json:"from_id,omitempty"`
+	// Cutoff time: resolves to the greatest Heimdall height with header.time <=
+	// this value, then returns events visible at that height with record_time <
+	// this value.
+	ToTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=to_time,json=toTime,proto3" json:"to_time,omitempty"`
+	// Pagination parameters.
+	Pagination *v1beta1.PageRequest `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination,omitempty"`
+}
+
+func (x *StateSyncsByTimeRequest) Reset() {
+	*x = StateSyncsByTimeRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_heimdallv2_clerk_query_proto_msgTypes[17]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StateSyncsByTimeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StateSyncsByTimeRequest) ProtoMessage() {}
+
+// Deprecated: Use StateSyncsByTimeRequest.ProtoReflect.Descriptor instead.
+func (*StateSyncsByTimeRequest) Descriptor() ([]byte, []int) {
+	return file_heimdallv2_clerk_query_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *StateSyncsByTimeRequest) GetFromId() uint64 {
+	if x != nil {
+		return x.FromId
+	}
+	return 0
+}
+
+func (x *StateSyncsByTimeRequest) GetToTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ToTime
+	}
+	return nil
+}
+
+func (x *StateSyncsByTimeRequest) GetPagination() *v1beta1.PageRequest {
+	if x != nil {
+		return x.Pagination
+	}
+	return nil
+}
+
+// StateSyncsByTimeResponse is the response type for GetStateSyncsByTime.
+type StateSyncsByTimeResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Event records visible at the resolved height.
+	EventRecords []*EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records,omitempty"`
+	// The Heimdall height that was resolved from the cutoff time.
+	HeimdallHeight int64 `protobuf:"varint,2,opt,name=heimdall_height,json=heimdallHeight,proto3" json:"heimdall_height,omitempty"`
+}
+
+func (x *StateSyncsByTimeResponse) Reset() {
+	*x = StateSyncsByTimeResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_heimdallv2_clerk_query_proto_msgTypes[18]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StateSyncsByTimeResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StateSyncsByTimeResponse) ProtoMessage() {}
+
+// Deprecated: Use StateSyncsByTimeResponse.ProtoReflect.Descriptor instead.
+func (*StateSyncsByTimeResponse) Descriptor() ([]byte, []int) {
+	return file_heimdallv2_clerk_query_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *StateSyncsByTimeResponse) GetEventRecords() []*EventRecord {
+	if x != nil {
+		return x.EventRecords
+	}
+	return nil
+}
+
+func (x *StateSyncsByTimeResponse) GetHeimdallHeight() int64 {
+	if x != nil {
+		return x.HeimdallHeight
+	}
+	return 0
+}
+
 var File_heimdallv2_clerk_query_proto protoreflect.FileDescriptor
 
 var file_heimdallv2_clerk_query_proto_rawDesc = []byte{
@@ -8439,100 +9647,132 @@ var file_heimdallv2_clerk_query_proto_rawDesc = []byte{
 	0x3a, 0x0a, 0x19, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x42, 0x79,
 	0x54, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1d, 0x0a, 0x06,
 	0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x42, 0x05, 0xa8, 0xe7,
-	0xb0, 0x2a, 0x01, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x32, 0x86, 0x0a, 0x0a, 0x05,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x86, 0x01, 0x0a, 0x0e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63,
-	0x6f, 0x72, 0x64, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f,
-	0x72, 0x64, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25,
-	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72,
-	0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x27, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x1c, 0x12, 0x1a, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x65, 0x76, 0x65, 0x6e, 0x74,
-	0x2d, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x2f, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x82,
-	0x01, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74,
-	0x12, 0x23, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c,
-	0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
-	0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c,
-	0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x26, 0x88, 0xe7, 0xb0,
-	0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1b, 0x12, 0x19, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b,
-	0x2f, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x2d, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x2f, 0x6c,
-	0x69, 0x73, 0x74, 0x12, 0x8e, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x74, 0x65, 0x73,
-	0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x49, 0x64, 0x12, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x4c, 0x61, 0x74,
-	0x65, 0x73, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x1a, 0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
-	0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x52, 0x65, 0x63, 0x6f,
-	0x72, 0x64, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x26, 0x82, 0xd3,
-	0xe4, 0x93, 0x02, 0x20, 0x12, 0x1e, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x65, 0x76, 0x65,
-	0x6e, 0x74, 0x2d, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x2f, 0x6c, 0x61, 0x74, 0x65, 0x73,
-	0x74, 0x2d, 0x69, 0x64, 0x12, 0x81, 0x01, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63, 0x6f,
-	0x72, 0x64, 0x42, 0x79, 0x49, 0x64, 0x12, 0x1f, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x20, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0xb0, 0x2a, 0x01, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0xd0, 0x01, 0x0a, 0x17,
+	0x53, 0x74, 0x61, 0x74, 0x65, 0x53, 0x79, 0x6e, 0x63, 0x73, 0x42, 0x79, 0x54, 0x69, 0x6d, 0x65,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1e, 0x0a, 0x07, 0x66, 0x72, 0x6f, 0x6d, 0x5f,
+	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52,
+	0x06, 0x66, 0x72, 0x6f, 0x6d, 0x49, 0x64, 0x12, 0x42, 0x0a, 0x07, 0x74, 0x6f, 0x5f, 0x74, 0x69,
+	0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c,
+	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73,
+	0x74, 0x61, 0x6d, 0x70, 0x42, 0x0d, 0xc8, 0xde, 0x1f, 0x00, 0x90, 0xdf, 0x1f, 0x01, 0xa8, 0xe7,
+	0xb0, 0x2a, 0x01, 0x52, 0x06, 0x74, 0x6f, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x51, 0x0a, 0x0a, 0x70,
+	0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x26, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x71, 0x75,
+	0x65, 0x72, 0x79, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x50, 0x61, 0x67, 0x65,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x42, 0x09, 0xc8, 0xde, 0x1f, 0x00, 0xa8, 0xe7, 0xb0,
+	0x2a, 0x01, 0x52, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x99,
+	0x01, 0x0a, 0x18, 0x53, 0x74, 0x61, 0x74, 0x65, 0x53, 0x79, 0x6e, 0x63, 0x73, 0x42, 0x79, 0x54,
+	0x69, 0x6d, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x4d, 0x0a, 0x0d, 0x65,
+	0x76, 0x65, 0x6e, 0x74, 0x5f, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x18, 0x01, 0x20, 0x03,
+	0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72,
+	0x64, 0x42, 0x09, 0xc8, 0xde, 0x1f, 0x00, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0c, 0x65, 0x76,
+	0x65, 0x6e, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x12, 0x2e, 0x0a, 0x0f, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x03, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0e, 0x68, 0x65, 0x69, 0x6d,
+	0x64, 0x61, 0x6c, 0x6c, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x32, 0x9e, 0x0b, 0x0a, 0x05, 0x51,
+	0x75, 0x65, 0x72, 0x79, 0x12, 0x86, 0x01, 0x0a, 0x0e, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63, 0x6f,
+	0x72, 0x64, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
 	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72,
-	0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2d, 0x88, 0xe7, 0xb0, 0x2a, 0x01,
-	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x22, 0x12, 0x20, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x65,
-	0x76, 0x65, 0x6e, 0x74, 0x2d, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x2f, 0x7b, 0x72, 0x65,
-	0x63, 0x6f, 0x72, 0x64, 0x5f, 0x69, 0x64, 0x7d, 0x12, 0x8c, 0x01, 0x0a, 0x15, 0x47, 0x65, 0x74,
-	0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x57, 0x69, 0x74, 0x68, 0x54, 0x69,
-	0x6d, 0x65, 0x12, 0x2b, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
-	0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74,
-	0x57, 0x69, 0x74, 0x68, 0x54, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
-	0x2c, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65,
-	0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x57, 0x69, 0x74,
-	0x68, 0x54, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x18, 0x88,
-	0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x0d, 0x12, 0x0b, 0x2f, 0x63, 0x6c, 0x65,
-	0x72, 0x6b, 0x2f, 0x74, 0x69, 0x6d, 0x65, 0x12, 0x7f, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x52, 0x65,
-	0x63, 0x6f, 0x72, 0x64, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x27, 0x2e, 0x68,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e,
-	0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
-	0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53,
-	0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0x17, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x11, 0x12, 0x0f, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f,
-	0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x79, 0x0a, 0x0c, 0x49, 0x73, 0x43, 0x6c,
-	0x65, 0x72, 0x6b, 0x54, 0x78, 0x4f, 0x6c, 0x64, 0x12, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f,
-	0x72, 0x64, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63,
-	0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x49, 0x73, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0x54, 0x78, 0x4f, 0x6c,
-	0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x18, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x12, 0x12, 0x10, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x69, 0x73, 0x2d, 0x6f, 0x6c, 0x64,
-	0x2d, 0x74, 0x78, 0x12, 0x99, 0x01, 0x0a, 0x14, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
-	0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x42, 0x79, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x2a, 0x2e, 0x68,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e,
-	0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x42, 0x79, 0x54, 0x69, 0x6d,
-	0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2b, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x42, 0x6c, 0x6f, 0x63,
-	0x6b, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x42, 0x79, 0x54, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x28, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x1d, 0x12, 0x1b, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x62, 0x6c, 0x6f, 0x63, 0x6b,
-	0x2d, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x2d, 0x62, 0x79, 0x2d, 0x74, 0x69, 0x6d, 0x65, 0x12,
-	0xb2, 0x01, 0x0a, 0x1c, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73,
-	0x74, 0x56, 0x69, 0x73, 0x69, 0x62, 0x6c, 0x65, 0x41, 0x74, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74,
-	0x12, 0x32, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c,
-	0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x56, 0x69,
-	0x73, 0x69, 0x62, 0x6c, 0x65, 0x41, 0x74, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x33, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x64, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e,
+	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b,
+	0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x27, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x1c, 0x12, 0x1a, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x2d,
+	0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x2f, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x82, 0x01,
+	0x0a, 0x0d, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x12,
+	0x23, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65,
+	0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
 	0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69,
-	0x73, 0x74, 0x56, 0x69, 0x73, 0x69, 0x62, 0x6c, 0x65, 0x41, 0x74, 0x48, 0x65, 0x69, 0x67, 0x68,
-	0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x88, 0xe7, 0xb0, 0x2a, 0x01,
-	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1e, 0x12, 0x1c, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x73,
-	0x74, 0x61, 0x74, 0x65, 0x2d, 0x73, 0x79, 0x6e, 0x63, 0x73, 0x2d, 0x61, 0x74, 0x2d, 0x68, 0x65,
-	0x69, 0x67, 0x68, 0x74, 0x42, 0xba, 0x01, 0x0a, 0x14, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x42, 0x0a, 0x51,
-	0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x35, 0x67, 0x69, 0x74,
-	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f,
-	0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70,
-	0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x63, 0x6c, 0x65,
-	0x72, 0x6b, 0xa2, 0x02, 0x03, 0x48, 0x43, 0x58, 0xaa, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0xca, 0x02, 0x10, 0x48, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0xe2, 0x02,
-	0x1c, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x6c, 0x65, 0x72,
-	0x6b, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x11,
-	0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x43, 0x6c, 0x65, 0x72,
-	0x6b, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x26, 0x88, 0xe7, 0xb0, 0x2a,
+	0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1b, 0x12, 0x19, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f,
+	0x65, 0x76, 0x65, 0x6e, 0x74, 0x2d, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x2f, 0x6c, 0x69,
+	0x73, 0x74, 0x12, 0x8e, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74,
+	0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x49, 0x64, 0x12, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
+	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x4c, 0x61, 0x74, 0x65,
+	0x73, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63,
+	0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72,
+	0x64, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x26, 0x82, 0xd3, 0xe4,
+	0x93, 0x02, 0x20, 0x12, 0x1e, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x65, 0x76, 0x65, 0x6e,
+	0x74, 0x2d, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x2f, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74,
+	0x2d, 0x69, 0x64, 0x12, 0x81, 0x01, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72,
+	0x64, 0x42, 0x79, 0x49, 0x64, 0x12, 0x1f, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x20, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2d, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82,
+	0xd3, 0xe4, 0x93, 0x02, 0x22, 0x12, 0x20, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x65, 0x76,
+	0x65, 0x6e, 0x74, 0x2d, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x2f, 0x7b, 0x72, 0x65, 0x63,
+	0x6f, 0x72, 0x64, 0x5f, 0x69, 0x64, 0x7d, 0x12, 0x8c, 0x01, 0x0a, 0x15, 0x47, 0x65, 0x74, 0x52,
+	0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x57, 0x69, 0x74, 0x68, 0x54, 0x69, 0x6d,
+	0x65, 0x12, 0x2b, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63,
+	0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x57,
+	0x69, 0x74, 0x68, 0x54, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c,
+	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72,
+	0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x57, 0x69, 0x74, 0x68,
+	0x54, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x18, 0x88, 0xe7,
+	0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x0d, 0x12, 0x0b, 0x2f, 0x63, 0x6c, 0x65, 0x72,
+	0x6b, 0x2f, 0x74, 0x69, 0x6d, 0x65, 0x12, 0x7f, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63,
+	0x6f, 0x72, 0x64, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x27, 0x2e, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52,
+	0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x65,
+	0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x17,
+	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x11, 0x12, 0x0f, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x73,
+	0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x79, 0x0a, 0x0c, 0x49, 0x73, 0x43, 0x6c, 0x65,
+	0x72, 0x6b, 0x54, 0x78, 0x4f, 0x6c, 0x64, 0x12, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72,
+	0x64, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c,
+	0x65, 0x72, 0x6b, 0x2e, 0x49, 0x73, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0x54, 0x78, 0x4f, 0x6c, 0x64,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x18, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x12,
+	0x12, 0x10, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x69, 0x73, 0x2d, 0x6f, 0x6c, 0x64, 0x2d,
+	0x74, 0x78, 0x12, 0x99, 0x01, 0x0a, 0x14, 0x47, 0x65, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x48,
+	0x65, 0x69, 0x67, 0x68, 0x74, 0x42, 0x79, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x2a, 0x2e, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x42,
+	0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x42, 0x79, 0x54, 0x69, 0x6d, 0x65,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2b, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
+	0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x42, 0x79, 0x54, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x28, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x1d, 0x12, 0x1b, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x2d,
+	0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x2d, 0x62, 0x79, 0x2d, 0x74, 0x69, 0x6d, 0x65, 0x12, 0xb2,
+	0x01, 0x0a, 0x1c, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74,
+	0x56, 0x69, 0x73, 0x69, 0x62, 0x6c, 0x65, 0x41, 0x74, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12,
+	0x32, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65,
+	0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x56, 0x69, 0x73,
+	0x69, 0x62, 0x6c, 0x65, 0x41, 0x74, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x33, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73,
+	0x74, 0x56, 0x69, 0x73, 0x69, 0x62, 0x6c, 0x65, 0x41, 0x74, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82,
+	0xd3, 0xe4, 0x93, 0x02, 0x1e, 0x12, 0x1c, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x73, 0x74,
+	0x61, 0x74, 0x65, 0x2d, 0x73, 0x79, 0x6e, 0x63, 0x73, 0x2d, 0x61, 0x74, 0x2d, 0x68, 0x65, 0x69,
+	0x67, 0x68, 0x74, 0x12, 0x95, 0x01, 0x0a, 0x13, 0x47, 0x65, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65,
+	0x53, 0x79, 0x6e, 0x63, 0x73, 0x42, 0x79, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x29, 0x2e, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x53,
+	0x74, 0x61, 0x74, 0x65, 0x53, 0x79, 0x6e, 0x63, 0x73, 0x42, 0x79, 0x54, 0x69, 0x6d, 0x65, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2a, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x65, 0x53,
+	0x79, 0x6e, 0x63, 0x73, 0x42, 0x79, 0x54, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x22, 0x27, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1c, 0x12,
+	0x1a, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x73, 0x74, 0x61, 0x74, 0x65, 0x2d, 0x73, 0x79,
+	0x6e, 0x63, 0x73, 0x2d, 0x62, 0x79, 0x2d, 0x74, 0x69, 0x6d, 0x65, 0x42, 0xba, 0x01, 0x0a, 0x14,
+	0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63,
+	0x6c, 0x65, 0x72, 0x6b, 0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f,
+	0x50, 0x01, 0x5a, 0x35, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30,
+	0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0xa2, 0x02, 0x03, 0x48, 0x43, 0x58, 0xaa,
+	0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x43, 0x6c, 0x65,
+	0x72, 0x6b, 0xca, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c,
+	0x43, 0x6c, 0x65, 0x72, 0x6b, 0xe2, 0x02, 0x1c, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x5c, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61,
+	0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x11, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x3a, 0x3a, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -8547,7 +9787,7 @@ func file_heimdallv2_clerk_query_proto_rawDescGZIP() []byte {
 	return file_heimdallv2_clerk_query_proto_rawDescData
 }
 
-var file_heimdallv2_clerk_query_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_heimdallv2_clerk_query_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_heimdallv2_clerk_query_proto_goTypes = []interface{}{
 	(*RecordRequest)(nil),                     // 0: heimdallv2.clerk.RecordRequest
 	(*RecordResponse)(nil),                    // 1: heimdallv2.clerk.RecordResponse
@@ -8566,42 +9806,49 @@ var file_heimdallv2_clerk_query_proto_goTypes = []interface{}{
 	(*RecordListVisibleAtHeightResponse)(nil), // 14: heimdallv2.clerk.RecordListVisibleAtHeightResponse
 	(*BlockHeightByTimeRequest)(nil),          // 15: heimdallv2.clerk.BlockHeightByTimeRequest
 	(*BlockHeightByTimeResponse)(nil),         // 16: heimdallv2.clerk.BlockHeightByTimeResponse
-	(*EventRecord)(nil),                       // 17: heimdallv2.clerk.EventRecord
-	(*timestamppb.Timestamp)(nil),             // 18: google.protobuf.Timestamp
-	(*v1beta1.PageRequest)(nil),               // 19: cosmos.base.query.v1beta1.PageRequest
+	(*StateSyncsByTimeRequest)(nil),           // 17: heimdallv2.clerk.StateSyncsByTimeRequest
+	(*StateSyncsByTimeResponse)(nil),          // 18: heimdallv2.clerk.StateSyncsByTimeResponse
+	(*EventRecord)(nil),                       // 19: heimdallv2.clerk.EventRecord
+	(*timestamppb.Timestamp)(nil),             // 20: google.protobuf.Timestamp
+	(*v1beta1.PageRequest)(nil),               // 21: cosmos.base.query.v1beta1.PageRequest
 }
 var file_heimdallv2_clerk_query_proto_depIdxs = []int32{
-	17, // 0: heimdallv2.clerk.RecordResponse.record:type_name -> heimdallv2.clerk.EventRecord
-	17, // 1: heimdallv2.clerk.RecordListResponse.event_records:type_name -> heimdallv2.clerk.EventRecord
-	18, // 2: heimdallv2.clerk.RecordListWithTimeRequest.to_time:type_name -> google.protobuf.Timestamp
-	19, // 3: heimdallv2.clerk.RecordListWithTimeRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
-	17, // 4: heimdallv2.clerk.RecordListWithTimeResponse.event_records:type_name -> heimdallv2.clerk.EventRecord
-	18, // 5: heimdallv2.clerk.RecordListVisibleAtHeightRequest.to_time:type_name -> google.protobuf.Timestamp
-	19, // 6: heimdallv2.clerk.RecordListVisibleAtHeightRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
-	17, // 7: heimdallv2.clerk.RecordListVisibleAtHeightResponse.event_records:type_name -> heimdallv2.clerk.EventRecord
-	11, // 8: heimdallv2.clerk.Query.GetRecordCount:input_type -> heimdallv2.clerk.RecordCountRequest
-	2,  // 9: heimdallv2.clerk.Query.GetRecordList:input_type -> heimdallv2.clerk.RecordListRequest
-	9,  // 10: heimdallv2.clerk.Query.GetLatestRecordId:input_type -> heimdallv2.clerk.LatestRecordIdRequest
-	0,  // 11: heimdallv2.clerk.Query.GetRecordById:input_type -> heimdallv2.clerk.RecordRequest
-	4,  // 12: heimdallv2.clerk.Query.GetRecordListWithTime:input_type -> heimdallv2.clerk.RecordListWithTimeRequest
-	6,  // 13: heimdallv2.clerk.Query.GetRecordSequence:input_type -> heimdallv2.clerk.RecordSequenceRequest
-	6,  // 14: heimdallv2.clerk.Query.IsClerkTxOld:input_type -> heimdallv2.clerk.RecordSequenceRequest
-	15, // 15: heimdallv2.clerk.Query.GetBlockHeightByTime:input_type -> heimdallv2.clerk.BlockHeightByTimeRequest
-	13, // 16: heimdallv2.clerk.Query.GetRecordListVisibleAtHeight:input_type -> heimdallv2.clerk.RecordListVisibleAtHeightRequest
-	12, // 17: heimdallv2.clerk.Query.GetRecordCount:output_type -> heimdallv2.clerk.RecordCountResponse
-	3,  // 18: heimdallv2.clerk.Query.GetRecordList:output_type -> heimdallv2.clerk.RecordListResponse
-	10, // 19: heimdallv2.clerk.Query.GetLatestRecordId:output_type -> heimdallv2.clerk.LatestRecordIdResponse
-	1,  // 20: heimdallv2.clerk.Query.GetRecordById:output_type -> heimdallv2.clerk.RecordResponse
-	5,  // 21: heimdallv2.clerk.Query.GetRecordListWithTime:output_type -> heimdallv2.clerk.RecordListWithTimeResponse
-	7,  // 22: heimdallv2.clerk.Query.GetRecordSequence:output_type -> heimdallv2.clerk.RecordSequenceResponse
-	8,  // 23: heimdallv2.clerk.Query.IsClerkTxOld:output_type -> heimdallv2.clerk.IsClerkTxOldResponse
-	16, // 24: heimdallv2.clerk.Query.GetBlockHeightByTime:output_type -> heimdallv2.clerk.BlockHeightByTimeResponse
-	14, // 25: heimdallv2.clerk.Query.GetRecordListVisibleAtHeight:output_type -> heimdallv2.clerk.RecordListVisibleAtHeightResponse
-	17, // [17:26] is the sub-list for method output_type
-	8,  // [8:17] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	19, // 0: heimdallv2.clerk.RecordResponse.record:type_name -> heimdallv2.clerk.EventRecord
+	19, // 1: heimdallv2.clerk.RecordListResponse.event_records:type_name -> heimdallv2.clerk.EventRecord
+	20, // 2: heimdallv2.clerk.RecordListWithTimeRequest.to_time:type_name -> google.protobuf.Timestamp
+	21, // 3: heimdallv2.clerk.RecordListWithTimeRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	19, // 4: heimdallv2.clerk.RecordListWithTimeResponse.event_records:type_name -> heimdallv2.clerk.EventRecord
+	20, // 5: heimdallv2.clerk.RecordListVisibleAtHeightRequest.to_time:type_name -> google.protobuf.Timestamp
+	21, // 6: heimdallv2.clerk.RecordListVisibleAtHeightRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	19, // 7: heimdallv2.clerk.RecordListVisibleAtHeightResponse.event_records:type_name -> heimdallv2.clerk.EventRecord
+	20, // 8: heimdallv2.clerk.StateSyncsByTimeRequest.to_time:type_name -> google.protobuf.Timestamp
+	21, // 9: heimdallv2.clerk.StateSyncsByTimeRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	19, // 10: heimdallv2.clerk.StateSyncsByTimeResponse.event_records:type_name -> heimdallv2.clerk.EventRecord
+	11, // 11: heimdallv2.clerk.Query.GetRecordCount:input_type -> heimdallv2.clerk.RecordCountRequest
+	2,  // 12: heimdallv2.clerk.Query.GetRecordList:input_type -> heimdallv2.clerk.RecordListRequest
+	9,  // 13: heimdallv2.clerk.Query.GetLatestRecordId:input_type -> heimdallv2.clerk.LatestRecordIdRequest
+	0,  // 14: heimdallv2.clerk.Query.GetRecordById:input_type -> heimdallv2.clerk.RecordRequest
+	4,  // 15: heimdallv2.clerk.Query.GetRecordListWithTime:input_type -> heimdallv2.clerk.RecordListWithTimeRequest
+	6,  // 16: heimdallv2.clerk.Query.GetRecordSequence:input_type -> heimdallv2.clerk.RecordSequenceRequest
+	6,  // 17: heimdallv2.clerk.Query.IsClerkTxOld:input_type -> heimdallv2.clerk.RecordSequenceRequest
+	15, // 18: heimdallv2.clerk.Query.GetBlockHeightByTime:input_type -> heimdallv2.clerk.BlockHeightByTimeRequest
+	13, // 19: heimdallv2.clerk.Query.GetRecordListVisibleAtHeight:input_type -> heimdallv2.clerk.RecordListVisibleAtHeightRequest
+	17, // 20: heimdallv2.clerk.Query.GetStateSyncsByTime:input_type -> heimdallv2.clerk.StateSyncsByTimeRequest
+	12, // 21: heimdallv2.clerk.Query.GetRecordCount:output_type -> heimdallv2.clerk.RecordCountResponse
+	3,  // 22: heimdallv2.clerk.Query.GetRecordList:output_type -> heimdallv2.clerk.RecordListResponse
+	10, // 23: heimdallv2.clerk.Query.GetLatestRecordId:output_type -> heimdallv2.clerk.LatestRecordIdResponse
+	1,  // 24: heimdallv2.clerk.Query.GetRecordById:output_type -> heimdallv2.clerk.RecordResponse
+	5,  // 25: heimdallv2.clerk.Query.GetRecordListWithTime:output_type -> heimdallv2.clerk.RecordListWithTimeResponse
+	7,  // 26: heimdallv2.clerk.Query.GetRecordSequence:output_type -> heimdallv2.clerk.RecordSequenceResponse
+	8,  // 27: heimdallv2.clerk.Query.IsClerkTxOld:output_type -> heimdallv2.clerk.IsClerkTxOldResponse
+	16, // 28: heimdallv2.clerk.Query.GetBlockHeightByTime:output_type -> heimdallv2.clerk.BlockHeightByTimeResponse
+	14, // 29: heimdallv2.clerk.Query.GetRecordListVisibleAtHeight:output_type -> heimdallv2.clerk.RecordListVisibleAtHeightResponse
+	18, // 30: heimdallv2.clerk.Query.GetStateSyncsByTime:output_type -> heimdallv2.clerk.StateSyncsByTimeResponse
+	21, // [21:31] is the sub-list for method output_type
+	11, // [11:21] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_heimdallv2_clerk_query_proto_init() }
@@ -8815,6 +10062,30 @@ func file_heimdallv2_clerk_query_proto_init() {
 				return nil
 			}
 		}
+		file_heimdallv2_clerk_query_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StateSyncsByTimeRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_heimdallv2_clerk_query_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StateSyncsByTimeResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -8822,7 +10093,7 @@ func file_heimdallv2_clerk_query_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_heimdallv2_clerk_query_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

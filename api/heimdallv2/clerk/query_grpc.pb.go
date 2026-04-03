@@ -28,6 +28,7 @@ const (
 	Query_IsClerkTxOld_FullMethodName                 = "/heimdallv2.clerk.Query/IsClerkTxOld"
 	Query_GetBlockHeightByTime_FullMethodName         = "/heimdallv2.clerk.Query/GetBlockHeightByTime"
 	Query_GetRecordListVisibleAtHeight_FullMethodName = "/heimdallv2.clerk.Query/GetRecordListVisibleAtHeight"
+	Query_GetStateSyncsByTime_FullMethodName          = "/heimdallv2.clerk.Query/GetStateSyncsByTime"
 )
 
 // QueryClient is the client API for Query service.
@@ -56,6 +57,10 @@ type QueryClient interface {
 	// same height from the same Bor block header and get identical results from
 	// latest Heimdall state.
 	GetRecordListVisibleAtHeight(ctx context.Context, in *RecordListVisibleAtHeightRequest, opts ...grpc.CallOption) (*RecordListVisibleAtHeightResponse, error)
+	// GetStateSyncsByTime resolves a cutoff time to a Heimdall height and returns
+	// events visible at that height. Combines GetBlockHeightByTime and
+	// GetRecordListVisibleAtHeight into a single call for bor/erigon clients.
+	GetStateSyncsByTime(ctx context.Context, in *StateSyncsByTimeRequest, opts ...grpc.CallOption) (*StateSyncsByTimeResponse, error)
 }
 
 type queryClient struct {
@@ -147,6 +152,15 @@ func (c *queryClient) GetRecordListVisibleAtHeight(ctx context.Context, in *Reco
 	return out, nil
 }
 
+func (c *queryClient) GetStateSyncsByTime(ctx context.Context, in *StateSyncsByTimeRequest, opts ...grpc.CallOption) (*StateSyncsByTimeResponse, error) {
+	out := new(StateSyncsByTimeResponse)
+	err := c.cc.Invoke(ctx, Query_GetStateSyncsByTime_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -173,6 +187,10 @@ type QueryServer interface {
 	// same height from the same Bor block header and get identical results from
 	// latest Heimdall state.
 	GetRecordListVisibleAtHeight(context.Context, *RecordListVisibleAtHeightRequest) (*RecordListVisibleAtHeightResponse, error)
+	// GetStateSyncsByTime resolves a cutoff time to a Heimdall height and returns
+	// events visible at that height. Combines GetBlockHeightByTime and
+	// GetRecordListVisibleAtHeight into a single call for bor/erigon clients.
+	GetStateSyncsByTime(context.Context, *StateSyncsByTimeRequest) (*StateSyncsByTimeResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -206,6 +224,9 @@ func (UnimplementedQueryServer) GetBlockHeightByTime(context.Context, *BlockHeig
 }
 func (UnimplementedQueryServer) GetRecordListVisibleAtHeight(context.Context, *RecordListVisibleAtHeightRequest) (*RecordListVisibleAtHeightResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRecordListVisibleAtHeight not implemented")
+}
+func (UnimplementedQueryServer) GetStateSyncsByTime(context.Context, *StateSyncsByTimeRequest) (*StateSyncsByTimeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetStateSyncsByTime not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -382,6 +403,24 @@ func _Query_GetRecordListVisibleAtHeight_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_GetStateSyncsByTime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StateSyncsByTimeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetStateSyncsByTime(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetStateSyncsByTime_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetStateSyncsByTime(ctx, req.(*StateSyncsByTimeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -424,6 +463,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRecordListVisibleAtHeight",
 			Handler:    _Query_GetRecordListVisibleAtHeight_Handler,
+		},
+		{
+			MethodName: "GetStateSyncsByTime",
+			Handler:    _Query_GetStateSyncsByTime_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
