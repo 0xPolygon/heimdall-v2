@@ -3,14 +3,11 @@ package listener
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"math/big"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/prometheus/client_golang/prometheus"
@@ -48,40 +45,23 @@ type subGraphClient struct {
 	httpClient *http.Client
 }
 
-// startSelfHealing starts self-healing processes for all required events.
-// State-sync self-heal works without a subgraph by calling L1 contracts directly.
-// Stake update and checkpoint self-heal still require a subgraph.
+// startSelfHealing starts self-healing processes for all required events
 func (rl *RootChainListener) startSelfHealing(ctx context.Context) {
-	if !helper.GetConfig().EnableSH {
+	if !helper.GetConfig().EnableSH || helper.GetConfig().SubGraphUrl == "" {
 		rl.Logger.Info("Self-healing is disabled")
 		return
 	}
 
-	hasSubGraph := helper.GetConfig().SubGraphUrl != ""
-	if hasSubGraph {
-		rl.subGraphClient = &subGraphClient{
-			graphUrl:   helper.GetConfig().SubGraphUrl,
-			httpClient: &http.Client{Timeout: 5 * time.Second},
-		}
-	} else {
-		rl.Logger.Info("Self-healing: no subgraph URL, only state-sync self-heal will run")
+	rl.subGraphClient = &subGraphClient{
+		graphUrl:   helper.GetConfig().SubGraphUrl,
+		httpClient: &http.Client{Timeout: 5 * time.Second},
 	}
 
-	stakeUpdateInterval := helper.GetConfig().SHStakeUpdateInterval
-	stateSyncedInterval := helper.GetConfig().SHStateSyncedInterval
-	checkpointAckInterval := helper.GetConfig().SHCheckpointAckInterval
+	stakeUpdateTicker := time.NewTicker(helper.GetConfig().SHStakeUpdateInterval)
+	stateSyncedTicker := time.NewTicker(helper.GetConfig().SHStateSyncedInterval)
+	checkpointAckTicker := time.NewTicker(helper.GetConfig().SHCheckpointAckInterval)
 
-	stakeUpdateTicker := time.NewTicker(stakeUpdateInterval)
-	stateSyncedTicker := time.NewTicker(stateSyncedInterval)
-	checkpointAckTicker := time.NewTicker(checkpointAckInterval)
-
-	// Stop subgraph-dependent tickers immediately if no subgraph
-	if !hasSubGraph {
-		stakeUpdateTicker.Stop()
-		checkpointAckTicker.Stop()
-	}
-
-	rl.Logger.Info("Self-healing: started", "subgraph", hasSubGraph)
+	rl.Logger.Info("Self-healing: started")
 
 	for {
 		select {
@@ -263,8 +243,7 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 	wg.Wait()
 }
 
-// processStateSynced checks if chains are in sync, otherwise syncs them by broadcasting missing events.
-// Uses direct L1 contract calls (no subgraph needed).
+// processStateSynced checks if chains are in sync, otherwise syncs them by broadcasting missing events
 func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 	latestPolygonStateId, err := rl.getCurrentStateID(ctx)
 	if err != nil {
@@ -272,7 +251,7 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 		return
 	}
 
-	latestEthereumStateId, err := rl.getLatestStateIDFromContract(ctx)
+	latestEthereumStateId, err := rl.getLatestStateID(ctx)
 	if err != nil {
 		rl.Logger.Error("Self-healing: failed to fetch latest Ethereum stateId from StateSender contract", "error", err)
 		return
@@ -303,7 +282,7 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 		var stateSynced *types.Log
 
 		if err = helper.ExponentialBackoff(func() error {
-			stateSynced, err = rl.getStateSyncedFromL1(ctx, i)
+			stateSynced, err = rl.getStateSynced(ctx, i)
 			return err
 		}, 3, time.Second); err != nil {
 			rl.Logger.Error("Self-healing: failed to retrieve StateSynced event for missing state", "stateId", i, "error", err)
@@ -389,70 +368,4 @@ func (rl *RootChainListener) processEvent(ctx context.Context, vLog *types.Log) 
 	}
 
 	return false, nil
-}
-
-// getLatestStateIDFromContract returns the latest state ID directly from the
-// StateSender contract on L1, without requiring a subgraph.
-func (rl *RootChainListener) getLatestStateIDFromContract(ctx context.Context) (*big.Int, error) {
-	rootChainContext, err := rl.getRootChainContext()
-	if err != nil {
-		return nil, err
-	}
-
-	stateSenderInstance, err := rl.contractCaller.GetStateSenderInstance(
-		rootChainContext.ChainmanagerParams.ChainParams.StateSenderAddress,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	counter, err := stateSenderInstance.Counter(&bind.CallOpts{Context: ctx})
-	if err != nil {
-		return nil, fmt.Errorf("self-healing: failed to call StateSender.Counter: %w", err)
-	}
-
-	rl.Logger.Info("Self-healing: fetched latest stateId from L1 contract", "stateId", counter)
-
-	return counter, nil
-}
-
-// getStateSyncedFromL1 retrieves the StateSynced event log for a given state ID
-// directly from L1 using the StateSender contract's event filter, without a subgraph.
-func (rl *RootChainListener) getStateSyncedFromL1(ctx context.Context, stateId int64) (*types.Log, error) {
-	rootChainContext, err := rl.getRootChainContext()
-	if err != nil {
-		return nil, err
-	}
-
-	stateSenderInstance, err := rl.contractCaller.GetStateSenderInstance(
-		rootChainContext.ChainmanagerParams.ChainParams.StateSenderAddress,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	id := big.NewInt(stateId)
-	iter, err := stateSenderInstance.FilterStateSynced(
-		&bind.FilterOpts{Context: ctx},
-		[]*big.Int{id},
-		nil,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("self-healing: failed to filter StateSynced events for stateId %d: %w", stateId, err)
-	}
-	defer iter.Close()
-
-	if !iter.Next() {
-		return nil, fmt.Errorf("self-healing: no StateSynced event found on L1 for stateId %d", stateId)
-	}
-
-	log := iter.Event.Raw
-	rl.Logger.Info("Self-healing: retrieved StateSynced event from L1",
-		"stateId", stateId,
-		"logIndex", log.Index,
-		"txHash", log.TxHash.Hex(),
-		"blockNumber", log.BlockNumber,
-	)
-
-	return &log, nil
 }
