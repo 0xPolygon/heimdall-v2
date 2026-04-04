@@ -931,7 +931,7 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_HybridQuery() {
 }
 
 // TestGetRecordListVisibleAtHeight_PendingExcluded verifies that post-upgrade events
-// without visibility_height (still pending) break iteration (contiguous IDs).
+// without visibility_height are skipped, while later visible events are still returned.
 func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_PendingExcluded() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
@@ -961,8 +961,45 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_PendingExcluded() {
 		Pagination:     query.PageRequest{Limit: 10, Key: []byte{0x00}},
 	})
 	require.NoError(err)
-	require.Len(resp.EventRecords, 1, "should return only event 1, break at pending event 2")
+	require.Len(resp.EventRecords, 2, "should return visible events 1 and 3, skipping pending event 2")
 	require.Equal(uint64(1), resp.EventRecords[0].Id)
+	require.Equal(uint64(3), resp.EventRecords[1].Id)
+}
+
+// TestGetRecordListVisibleAtHeight_OutOfOrderVisibilityHeights verifies that a
+// lower-ID event becoming visible later does not hide a higher-ID event that is
+// already visible at the requested height.
+func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_OutOfOrderVisibilityHeights() {
+	ctx, ck := s.ctx, s.keeper
+	ctx = ctx.WithBlockHeight(10000)
+	require := s.Require()
+
+	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
+
+	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
+
+	for i := uint64(1); i <= 2; i++ {
+		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
+			baseTime.Add(time.Duration(i)*time.Minute))
+		require.NoError(ck.SetEventRecord(ctx, rec))
+	}
+
+	// Event 1 becomes visible later than event 2.
+	require.NoError(ck.VisibilityHeightByID.Set(ctx, 1, 300))
+	require.NoError(ck.VisibilityHeightByID.Set(ctx, 2, 200))
+
+	qs := clerkKeeper.NewQueryServer(&ck)
+	resp, err := qs.(interface {
+		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
+	}).GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
+		FromId:         1,
+		HeimdallHeight: 250,
+		ToTime:         baseTime.Add(time.Hour),
+		Pagination:     query.PageRequest{Limit: 10, Key: []byte{0x00}},
+	})
+	require.NoError(err)
+	require.Len(resp.EventRecords, 1, "should return event 2 even though event 1 becomes visible later")
+	require.Equal(uint64(2), resp.EventRecords[0].Id)
 }
 
 // TestGetRecordListVisibleAtHeight_DeterministicAcrossLatestState verifies that the

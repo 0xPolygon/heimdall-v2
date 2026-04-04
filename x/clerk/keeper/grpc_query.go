@@ -409,12 +409,12 @@ func (q queryServer) recordListVisibleAtHeight(
 			if err != nil {
 				if errors.Is(err, collections.ErrNotFound) {
 					// Event exists but has no visibility_height yet (still pending).
-					break
+					continue
 				}
 				return nil, status.Errorf(codes.Internal, "failed to get visibility height for event %d: %v", value.Id, err)
 			}
 			if visibilityHeight > requestedHeight {
-				break
+				continue
 			}
 			if !value.RecordTime.Before(toTime) {
 				break
