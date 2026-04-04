@@ -19,6 +19,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
@@ -365,4 +366,54 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 		// post-handler should prevent replay attack
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 	})
+}
+
+func (s *KeeperTestSuite) TestPostHandleMsgEventRecord_InvalidMsgTypeReturnsError() {
+	ctx := s.ctx
+	require := s.Require()
+
+	postHandler := clerkKeeper.NewSideMsgServerImpl(s.keeper).(interface {
+		PostHandleMsgEventRecord(sdk.Context, sdk.Msg, sidetxs.Vote) error
+	})
+
+	require.NotPanics(func() {
+		err := postHandler.PostHandleMsgEventRecord(ctx, nil, sidetxs.Vote_VOTE_YES)
+		require.Error(err)
+		require.Contains(err.Error(), "MsgEventRecord")
+	})
+}
+
+func (s *KeeperTestSuite) TestPostHandleMsgEventRecord_ReplayReturnsError() {
+	ctx, ck, chainId := s.ctx, s.keeper, s.chainId
+	require := s.Require()
+
+	postHandler := clerkKeeper.NewSideMsgServerImpl(s.keeper).(interface {
+		PostHandleMsgEventRecord(sdk.Context, sdk.Msg, sidetxs.Vote) error
+	})
+
+	ac := address.NewHexCodec()
+	addrBz2, err := ac.StringToBytes(Address2)
+	require.NoError(err)
+
+	msg := types.NewMsgEventRecord(
+		util.FormatAddress(Address1),
+		TxHash1,
+		1,
+		1,
+		1,
+		addrBz2,
+		make([]byte, 0),
+		chainId,
+	)
+
+	err = postHandler.PostHandleMsgEventRecord(ctx, &msg, sidetxs.Vote_VOTE_YES)
+	require.NoError(err)
+
+	err = postHandler.PostHandleMsgEventRecord(ctx, &msg, sidetxs.Vote_VOTE_YES)
+	require.Error(err)
+	require.Contains(err.Error(), "already processed")
+
+	storedEventRecord, getErr := ck.GetEventRecord(ctx, msg.Id)
+	require.NoError(getErr)
+	require.NotNil(storedEventRecord)
 }

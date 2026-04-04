@@ -207,9 +207,9 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingEventsIncluded() {
 	require.Len(res.EventRecords, 1, "old endpoint uses record_time: pending event returned when record_time < to_time")
 }
 
-// TestGetRecordListWithTime_HybridQuery verifies the hybrid path where some events
-// are pre-upgrade (filtered by record_time) and others are post-upgrade (filtered
-// by visibility_height).
+// TestGetRecordListWithTime_HybridQuery verifies that the legacy time-based
+// endpoint always filters by record_time, even when some events are post-upgrade
+// and already have visibility_height set.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_HybridQuery() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()

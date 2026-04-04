@@ -101,6 +101,9 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	if request.ToTime.IsZero() {
 		return nil, status.Errorf(codes.InvalidArgument, "to_time must be set")
 	}
+	if request.ToTime.Unix() <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "to_time must be greater than Unix epoch")
+	}
 
 	// Collect the records based on pagination parameters.
 	result := make([]types.EventRecord, 0, request.Pagination.Limit)
@@ -325,6 +328,9 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 	}
 	if request.ToTime.IsZero() {
 		return nil, status.Errorf(codes.InvalidArgument, "to_time must be set")
+	}
+	if request.ToTime.Unix() <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "to_time must be greater than Unix epoch")
 	}
 
 	// Reject future heights

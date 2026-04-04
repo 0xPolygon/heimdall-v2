@@ -178,6 +178,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 	if !ok {
 		err := errors.New(helper.ErrTypeMismatch("MsgEventRecord"))
 		logger.Error(err.Error())
+		return err
 	}
 
 	// Skip handler if clerk is not approved
@@ -188,8 +189,9 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 
 	// check for replay
 	if srv.HasEventRecord(ctx, msg.Id) {
+		err = errors.New("clerk record already processed")
 		logger.Debug("Skipping new clerk record as it's already processed")
-		return errors.New("clerk record already processed")
+		return err
 	}
 
 	logger.Debug("Persisting clerk state", "sideTxResult", sideTxResult)

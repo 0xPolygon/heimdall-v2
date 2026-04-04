@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
@@ -41,6 +42,19 @@ func (s *KeeperTestSuite) TestGetGRPCRecord_NotFound() {
 	res, err := queryClient.GetRecordById(ctx, req)
 	require.Error(err)
 	require.Nil(res)
+}
+
+func (s *KeeperTestSuite) TestGetRecordListWithTime_RejectsUnixEpochTimestamp() {
+	ctx, queryClient, require := s.ctx, s.queryClient, s.Require()
+
+	res, err := queryClient.GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
+		FromId:     1,
+		ToTime:     time.Unix(0, 0).UTC(),
+		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
+	})
+	require.Error(err)
+	require.Nil(res)
+	require.Equal(codes.InvalidArgument, status.Code(err))
 }
 
 func (s *KeeperTestSuite) TestGetRecordListWithTime_Success() {
@@ -480,6 +494,26 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_DelegatesToVisibleAtHeight() {
 	for i := range combinedResp.EventRecords {
 		require.Equal(directResp.EventRecords[i].Id, combinedResp.EventRecords[i].Id)
 	}
+}
+
+func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_RejectsUnixEpochTimestamp() {
+	ctx := s.ctx.WithBlockHeight(helper.GetInitialHeight() + 10)
+	require := s.Require()
+
+	queryServer := clerkKeeper.NewQueryServer(&s.keeper)
+	qs := queryServer.(interface {
+		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
+	})
+
+	resp, err := qs.GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
+		FromId:         1,
+		HeimdallHeight: helper.GetInitialHeight() + 1,
+		ToTime:         time.Unix(0, 0).UTC(),
+		Pagination:     query.PageRequest{Limit: 10, Key: []byte{0x00}},
+	})
+	require.Error(err)
+	require.Nil(resp)
+	require.Equal(codes.InvalidArgument, status.Code(err))
 }
 
 // ---------------------------------------------------------------------------
