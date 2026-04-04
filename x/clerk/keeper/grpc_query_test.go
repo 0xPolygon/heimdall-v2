@@ -6,6 +6,8 @@ import (
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
@@ -327,6 +329,14 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_InvalidArgs() {
 			},
 		},
 		{
+			name: "explicit unix epoch to_time",
+			req: &types.StateSyncsByTimeRequest{
+				FromId:     1,
+				ToTime:     time.Unix(0, 0).UTC(),
+				Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
+			},
+		},
+		{
 			name: "empty pagination",
 			req: &types.StateSyncsByTimeRequest{
 				FromId: 1,
@@ -358,6 +368,25 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_InvalidArgs() {
 			require.Nil(resp)
 		})
 	}
+}
+
+func (s *KeeperTestSuite) TestGetStateSyncsByTime_RejectsUnixEpochTimestamp() {
+	ctx := s.ctx
+	require := s.Require()
+
+	queryServer := clerkKeeper.NewQueryServer(&s.keeper)
+	qs := queryServer.(interface {
+		GetStateSyncsByTime(context.Context, *types.StateSyncsByTimeRequest) (*types.StateSyncsByTimeResponse, error)
+	})
+
+	resp, err := qs.GetStateSyncsByTime(ctx, &types.StateSyncsByTimeRequest{
+		FromId:     1,
+		ToTime:     time.Unix(0, 0).UTC(),
+		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
+	})
+	require.Error(err)
+	require.Nil(resp)
+	require.Equal(codes.InvalidArgument, status.Code(err))
 }
 
 // TestGetStateSyncsByTime_HeightResolutionFails verifies that when no blocks
@@ -561,4 +590,3 @@ func (s *KeeperTestSuite) TestGRPC_GetBlockHeightByTime_NilRequest() {
 	require.Error(err)
 	require.Nil(resp)
 }
-

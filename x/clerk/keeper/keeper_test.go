@@ -244,3 +244,31 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	require.Equal(t, len(recordSequences), len(actualParams.RecordSequences))
 	require.Equal(t, len(eventRecords), len(actualParams.EventRecords))
 }
+
+func (s *KeeperTestSuite) TestInitExportGenesis_RoundTripDeterministicStateSyncFields() {
+	t, ctx, ck := s.T(), s.ctx, s.keeper
+
+	recordTime := time.Unix(1_700_000_000, 0).UTC()
+	eventRecord := types.NewEventRecord(TxHash1, 7, 9, Address1, []byte{0x01, 0x02}, "1", recordTime)
+	eventRecord.RecordTime = eventRecord.RecordTime.UTC()
+
+	genesisState := types.GenesisState{
+		EventRecords:              []types.EventRecord{eventRecord},
+		RecordSequences:           []string{"seq-1", "seq-2"},
+		VisibilityTimeUpgradeId:   42,
+		PendingVisibilityEventIds: []uint64{11, 12},
+		VisibilityHeightsById: []types.Uint64Pair{
+			{Key: 11, Value: 111},
+			{Key: 12, Value: 222},
+		},
+		BlockTimeEntries: []types.BlockTimeEntry{
+			{BlockTime: 1_700_000_100, Height: 100},
+			{BlockTime: 1_700_000_200, Height: 101},
+		},
+	}
+
+	ck.InitGenesis(ctx, &genesisState)
+	exported := ck.ExportGenesis(ctx)
+
+	require.Equal(t, &genesisState, exported)
+}

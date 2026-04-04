@@ -450,6 +450,9 @@ func (q queryServer) GetStateSyncsByTime(ctx context.Context, request *types.Sta
 	if request.ToTime.IsZero() {
 		return nil, status.Errorf(codes.InvalidArgument, "to_time must be set")
 	}
+	if request.ToTime.Unix() <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "to_time must be greater than Unix epoch")
+	}
 	if isPaginationEmpty(request.Pagination) {
 		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one argument must be set)")
 	}
