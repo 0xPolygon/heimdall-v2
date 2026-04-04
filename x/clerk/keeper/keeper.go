@@ -329,8 +329,11 @@ func (k *Keeper) AddPendingVisibilityEvent(ctx context.Context, eventID uint64) 
 
 // ProcessPendingVisibilityEvents assigns visibility_time, visibility_height to events
 // from the previous block, then clears the pending list.
-// Events are not queryable until this runs, ensuring deterministic results:
-// during halts no new blocks arrive, so pending events stay excluded.
+// Pending events remain excluded from the height-pinned / visibility_height-based
+// query path until this runs, ensuring deterministic results there: during halts,
+// no new blocks arrive, so pending events stay excluded from that query path.
+// Legacy time-based queries such as GetRecordListWithTime still use record_time
+// and may return pending events before this processing occurs.
 func (k *Keeper) ProcessPendingVisibilityEvents(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	blockTime := sdkCtx.BlockTime()
