@@ -300,7 +300,12 @@ func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
 
 // SetEventRecordWithVisibilityTime stores the event_id → visibility_time mapping.
 func (k *Keeper) SetEventRecordWithVisibilityTime(ctx context.Context, eventID uint64, visibilityTime time.Time) error {
-	return k.VisibilityTimeByID.Set(ctx, eventID, uint64(visibilityTime.UnixNano()))
+	nanos := visibilityTime.UnixNano()
+	if nanos < 0 {
+		return fmt.Errorf("visibility time %v has negative UnixNano (%d); pre-epoch times are not supported", visibilityTime, nanos)
+	}
+
+	return k.VisibilityTimeByID.Set(ctx, eventID, uint64(nanos))
 }
 
 // GetVisibilityTimeForEvent returns the visibility_time for the given event ID.
