@@ -215,7 +215,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 	}
 
 	// If visibility time is enabled, add event to the pending list.
-	// Its visibility_time will be set in the next block's PreBlocker.
+	// Its visibility_height will be assigned in the next block's PreBlocker.
 	if helper.IsVisibilityTimeEnabled(ctx.BlockHeight()) {
 		err = srv.AddPendingVisibilityEvent(ctx, record.Id)
 		if err != nil {

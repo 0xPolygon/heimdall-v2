@@ -33,7 +33,7 @@ type Keeper struct {
 	RecordSequences         collections.Map[string, []byte]
 	VisibilityTimeUpgradeID collections.Item[uint64]
 	PendingVisibilityEvents collections.Map[uint64, []byte]
-	BlockTimeReverseIndex collections.Map[collections.Pair[uint64, uint64], uint64] // (blockTime, height) → height for O(log N) cutoff lookup
+	BlockTimeReverseIndex   collections.Map[collections.Pair[uint64, uint64], uint64] // (blockTime, height) → height for O(log N) cutoff lookup
 	VisibilityHeightByID    collections.Map[uint64, uint64]                           // event_id → heimdall block height where visibility was assigned
 }
 
@@ -55,7 +55,7 @@ func NewKeeper(
 		RecordSequences:         collections.NewMap(sb, types.RecordSequencesKeyPrefix, "recordSequences", collections.StringKey, collections.BytesValue),
 		VisibilityTimeUpgradeID: collections.NewItem(sb, types.VisibilityTimeUpgradeIDKeyPrefix, "visibilityTimeUpgradeID", collections.Uint64Value),
 		PendingVisibilityEvents: collections.NewMap(sb, types.PendingVisibilityEventsKeyPrefix, "pendingVisibilityEvents", collections.Uint64Key, collections.BytesValue),
-		BlockTimeReverseIndex: collections.NewMap(sb, types.BlockTimeReverseIndexKeyPrefix, "blockTimeReverseIndex", collections.PairKeyCodec(collections.Uint64Key, collections.Uint64Key), collections.Uint64Value),
+		BlockTimeReverseIndex:   collections.NewMap(sb, types.BlockTimeReverseIndexKeyPrefix, "blockTimeReverseIndex", collections.PairKeyCodec(collections.Uint64Key, collections.Uint64Key), collections.Uint64Value),
 		VisibilityHeightByID:    collections.NewMap(sb, types.VisibilityHeightByIDKeyPrefix, "visibilityHeightByID", collections.Uint64Key, collections.Uint64Value),
 	}
 
@@ -306,7 +306,7 @@ func (k *Keeper) AddPendingVisibilityEvent(ctx context.Context, eventID uint64) 
 	return k.PendingVisibilityEvents.Set(ctx, eventID, types.DefaultValue)
 }
 
-// ProcessPendingVisibilityEvents assigns visibility_time, visibility_height to events
+// ProcessPendingVisibilityEvents assigns visibility_height to events
 // from the previous block, then clears the pending list.
 // Pending events remain excluded from the height-pinned / visibility_height-based
 // query path until this runs, ensuring deterministic results there: during halts,
@@ -348,19 +348,19 @@ func (k *Keeper) ProcessPendingVisibilityEvents(ctx context.Context) error {
 	return nil
 }
 
-// GetVisibilityTimeUpgradeID returns the first event ID that uses visibility_time filtering.
+// GetVisibilityTimeUpgradeID returns the first event ID that uses visibility_height filtering.
 func (k *Keeper) GetVisibilityTimeUpgradeID(ctx context.Context) (uint64, error) {
 	return k.VisibilityTimeUpgradeID.Get(ctx)
 }
 
-// SetVisibilityTimeUpgradeID sets the first event ID that uses visibility_time filtering.
+// SetVisibilityTimeUpgradeID sets the first event ID that uses visibility_height filtering.
 func (k *Keeper) SetVisibilityTimeUpgradeID(ctx context.Context, id uint64) error {
 	return k.VisibilityTimeUpgradeID.Set(ctx, id)
 }
 
 // StoreBlockTime stores the current block's (blockTime, height) → height mapping in the
 // reverse index, enabling O(log N) cutoff lookups via GetBlockHeightByTime.
-// Called in PreBlocker for each block from the visibility_time activation height onward.
+// Called in PreBlocker for each block from the visibility_height activation height onward.
 func (k *Keeper) StoreBlockTime(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	height := uint64(sdkCtx.BlockHeight())

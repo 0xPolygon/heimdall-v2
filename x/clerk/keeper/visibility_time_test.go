@@ -15,7 +15,7 @@ import (
 )
 
 // TestProcessPendingVisibilityEvents verifies that pending events get assigned
-// visibility_time and are cleared from the pending collection.
+// visibility_height and are cleared from the pending collection.
 func (s *KeeperTestSuite) TestProcessPendingVisibilityEvents() {
 	ctx, ck := s.ctx, s.keeper
 	require := s.Require()
@@ -109,7 +109,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_LegacyQueryPreserved() {
 }
 
 // TestGetRecordListWithTime_AlwaysUsesRecordTime verifies that GetRecordListWithTime
-// always filters by record_time, even for post-upgrade events with visibility_time set.
+// always filters by record_time, even for post-upgrade events with visibility_height set.
 // This preserves backward compatibility for EL clients using the old (from_id, to_time) pattern.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_AlwaysUsesRecordTime() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
@@ -142,7 +142,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_AlwaysUsesRecordTime() {
 
 // TestGetRecordListWithTime_HaltSimulation simulates the January 2026 halt scenario.
 // The old /clerk/time endpoint uses record_time, so it returns the event regardless
-// of visibility_time. This is the pre-existing non-deterministic behavior.
+// of visibility_height. This is the pre-existing non-deterministic behavior.
 // The FIX for determinism is in GetRecordListVisibleAtHeight (the new endpoint),
 // not in the old endpoint — the old endpoint must remain backward-compatible.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_HaltSimulation() {
@@ -178,7 +178,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HaltSimulation() {
 }
 
 // TestGetRecordListWithTime_PendingEventsIncluded verifies that GetRecordListWithTime
-// always filters by record_time, so pending events (no visibility_time yet) ARE returned
+// always filters by record_time, so pending events (no visibility_height yet) ARE returned
 // as long as their record_time < to_time. Visibility-time filtering is only in
 // GetRecordListVisibleAtHeight.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingEventsIncluded() {
@@ -194,7 +194,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingEventsIncluded() {
 		now.Add(-5*time.Minute))
 	require.NoError(ck.SetEventRecord(ctx, rec))
 
-	// Add to pending but don't set visibility time
+	// Add to pending but don't assign visibility_height
 	require.NoError(ck.AddPendingVisibilityEvent(ctx, 1))
 
 	req := &types.RecordListWithTimeRequest{
@@ -209,7 +209,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingEventsIncluded() {
 
 // TestGetRecordListWithTime_HybridQuery verifies the hybrid path where some events
 // are pre-upgrade (filtered by record_time) and others are post-upgrade (filtered
-// by visibility_time).
+// by visibility_height).
 func (s *KeeperTestSuite) TestGetRecordListWithTime_HybridQuery() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
@@ -253,8 +253,8 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HybridQuery() {
 }
 
 // TestGetRecordListWithTime_AllEventsReturnedByRecordTime verifies that GetRecordListWithTime
-// always filters by record_time regardless of the upgrade boundary or visibility_time.
-// Even when visibility_time is far in the future (e.g., due to a halt), the old endpoint
+// always filters by record_time regardless of the upgrade boundary or visibility_height.
+// Even when visibility_height is far in the future (e.g., due to a halt), the old endpoint
 // returns events based solely on record_time < to_time.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_AllEventsReturnedByRecordTime() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
@@ -285,7 +285,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_AllEventsReturnedByRecordTim
 	require.NoError(ck.VisibilityHeightByID.Set(ctx, 4, 1001))
 
 	// Query with to_time=16:10: all 4 events have record_time < 16:10, so all are returned.
-	// The old endpoint ignores visibility_time entirely.
+	// The old endpoint ignores visibility_height entirely.
 	toTime := baseTime.Add(10 * time.Minute)
 	req := &types.RecordListWithTimeRequest{
 		FromId:     1,
@@ -301,7 +301,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_AllEventsReturnedByRecordTim
 }
 
 // TestMultipleEventsInSameBlock verifies that multiple events in the same block
-// all get the same visibility_time but have distinct composite keys.
+// all get the same visibility_height but have distinct composite keys.
 func (s *KeeperTestSuite) TestMultipleEventsInSameBlock() {
 	ctx, ck := s.ctx, s.keeper
 	require := s.Require()
@@ -488,7 +488,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingAtFirstID() {
 
 // TestGetRecordListWithTime_PendingGapInMiddle verifies that GetRecordListWithTime
 // returns all events based on record_time, even when some events in the middle
-// are pending (no visibility_time). The old endpoint ignores visibility_time entirely.
+// are pending (no visibility_time). The old endpoint ignores visibility_height entirely.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingGapInMiddle() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
