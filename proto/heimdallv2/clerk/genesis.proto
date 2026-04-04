@@ -41,15 +41,11 @@ message GenesisState {
   // PreBlocker.
   repeated uint64 pending_visibility_event_ids = 4;
 
-  // Per-event visibility_time: event_id → unix nanoseconds.
-  repeated Uint64Pair visibility_times_by_id = 5
-      [ (gogoproto.nullable) = false ];
-
   // Per-event visibility_height: event_id → Heimdall block height.
-  repeated Uint64Pair visibility_heights_by_id = 6
+  repeated Uint64Pair visibility_heights_by_id = 5
       [ (gogoproto.nullable) = false ];
 
   // Block time reverse index: (block_time, height) → height for cutoff lookups.
-  repeated BlockTimeEntry block_time_entries = 7
+  repeated BlockTimeEntry block_time_entries = 6
       [ (gogoproto.nullable) = false ];
 }

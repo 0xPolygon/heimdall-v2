@@ -21,7 +21,8 @@ func (s *KeeperTestSuite) TestProcessPendingVisibilityEvents() {
 	require := s.Require()
 
 	blockTime := time.Date(2026, 1, 12, 17, 5, 40, 0, time.UTC)
-	ctx = ctx.WithBlockHeader(cmtproto.Header{Time: blockTime})
+	blockHeight := int64(500)
+	ctx = ctx.WithBlockHeight(blockHeight).WithBlockHeader(cmtproto.Header{Time: blockTime, Height: blockHeight})
 
 	// Store 3 events and add them as pending
 	for i := uint64(1); i <= 3; i++ {
@@ -31,20 +32,20 @@ func (s *KeeperTestSuite) TestProcessPendingVisibilityEvents() {
 		require.NoError(ck.AddPendingVisibilityEvent(ctx, i))
 	}
 
-	// Verify events are pending (no visibility time yet)
+	// Verify events are pending (no visibility height yet)
 	for i := uint64(1); i <= 3; i++ {
-		_, err := ck.GetVisibilityTimeForEvent(ctx, i)
-		require.Error(err, "event %d should not have visibility time before processing", i)
+		_, err := ck.GetVisibilityHeightForEvent(ctx, i)
+		require.Error(err, "event %d should not have visibility height before processing", i)
 	}
 
 	// Process pending events
 	require.NoError(ck.ProcessPendingVisibilityEvents(ctx))
 
-	// All events should now have visibility_time = blockTime
+	// All events should now have visibility_height = blockHeight
 	for i := uint64(1); i <= 3; i++ {
-		vt, err := ck.GetVisibilityTimeForEvent(ctx, i)
-		require.NoError(err, "event %d should have visibility time after processing", i)
-		require.True(vt.Equal(blockTime), "event %d visibility_time should equal block time, got %v", i, vt)
+		vh, err := ck.GetVisibilityHeightForEvent(ctx, i)
+		require.NoError(err, "event %d should have visibility height after processing", i)
+		require.Equal(uint64(blockHeight), vh, "event %d visibility_height should equal block height", i)
 	}
 
 	// Pending list should be cleared
@@ -123,11 +124,10 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_AlwaysUsesRecordTime() {
 		baseTime.Add(8*time.Minute+14*time.Second))
 	require.NoError(ck.SetEventRecord(ctx, rec))
 
-	// Set visibility_time AFTER the query to_time (doesn't matter — old endpoint ignores it)
-	visTime := baseTime.Add(15*time.Minute + 40*time.Second)
-	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 1, visTime))
+	// Set visibility_height (production uses height, not time)
+	require.NoError(ck.VisibilityHeightByID.Set(ctx, 1, 200))
 
-	// Query with to_time after record_time but before visibility_time
+	// Query with to_time after record_time
 	// Old endpoint uses record_time, so event IS returned
 	toTime := baseTime.Add(8*time.Minute + 30*time.Second)
 	req := &types.RecordListWithTimeRequest{
@@ -150,14 +150,13 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HaltSimulation() {
 	require := s.Require()
 
 	recordTime := time.Date(2026, 1, 12, 16, 58, 14, 0, time.UTC)
-	visibilityTime := time.Date(2026, 1, 12, 17, 5, 40, 0, time.UTC)
 	borToTime := time.Date(2026, 1, 12, 16, 58, 30, 0, time.UTC)
 
 	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 3131120))
 
 	rec := types.NewEventRecord(TxHash1, 1, 3131120, Address1, make([]byte, 1), "1", recordTime)
 	require.NoError(ck.SetEventRecord(ctx, rec))
-	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 3131120, visibilityTime))
+	require.NoError(ck.VisibilityHeightByID.Set(ctx, 3131120, 500))
 
 	// Old endpoint: record_time (16:58:14) < borToTime (16:58:30), so event IS returned.
 	// This is the non-deterministic behavior the old endpoint has always had.
@@ -227,16 +226,16 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HybridQuery() {
 		require.NoError(ck.SetEventRecord(ctx, rec))
 	}
 
-	// Events 3-4: post-upgrade, both have visibility_time within the query window.
+	// Events 3-4: post-upgrade, both have visibility_height set.
 	rec3 := types.NewEventRecord(TxHash1, 3, 3, Address1, make([]byte, 1), "1",
 		baseTime.Add(3*time.Minute)) // 16:03
 	require.NoError(ck.SetEventRecord(ctx, rec3))
-	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 3, baseTime.Add(3*time.Minute+3*time.Second)))
+	require.NoError(ck.VisibilityHeightByID.Set(ctx, 3, 100))
 
 	rec4 := types.NewEventRecord(TxHash1, 4, 4, Address1, make([]byte, 1), "1",
 		baseTime.Add(4*time.Minute)) // 16:04
 	require.NoError(ck.SetEventRecord(ctx, rec4))
-	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 4, baseTime.Add(4*time.Minute+3*time.Second)))
+	require.NoError(ck.VisibilityHeightByID.Set(ctx, 4, 101))
 
 	// Query with from_id=1 and to_time=16:10 should return all 4 contiguous events
 	toTime := baseTime.Add(10 * time.Minute)
@@ -273,17 +272,17 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_AllEventsReturnedByRecordTim
 		require.NoError(ck.SetEventRecord(ctx, rec))
 	}
 
-	// Event 3: post-upgrade, stored during a halt, hence the visibility_time is 30 minutes later
+	// Event 3: post-upgrade, stored during a halt, hence the visibility_height is much later
 	rec3 := types.NewEventRecord(TxHash1, 3, 3, Address1, make([]byte, 1), "1",
 		baseTime.Add(3*time.Minute))
 	require.NoError(ck.SetEventRecord(ctx, rec3))
-	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 3, baseTime.Add(33*time.Minute)))
+	require.NoError(ck.VisibilityHeightByID.Set(ctx, 3, 1000))
 
-	// Event 4: post-upgrade, also stored during the same halt, hence visibility_time also late
+	// Event 4: post-upgrade, also stored during the same halt
 	rec4 := types.NewEventRecord(TxHash1, 4, 4, Address1, make([]byte, 1), "1",
 		baseTime.Add(4*time.Minute))
 	require.NoError(ck.SetEventRecord(ctx, rec4))
-	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 4, baseTime.Add(33*time.Minute+3*time.Second)))
+	require.NoError(ck.VisibilityHeightByID.Set(ctx, 4, 1001))
 
 	// Query with to_time=16:10: all 4 events have record_time < 16:10, so all are returned.
 	// The old endpoint ignores visibility_time entirely.
@@ -308,7 +307,8 @@ func (s *KeeperTestSuite) TestMultipleEventsInSameBlock() {
 	require := s.Require()
 
 	blockTime := time.Date(2026, 3, 15, 10, 0, 0, 0, time.UTC)
-	ctx = ctx.WithBlockHeader(cmtproto.Header{Time: blockTime})
+	blockHeight := int64(500)
+	ctx = ctx.WithBlockHeight(blockHeight).WithBlockHeader(cmtproto.Header{Time: blockTime, Height: blockHeight})
 
 	// Store 5 events and add them as pending
 	for i := uint64(1); i <= 5; i++ {
@@ -322,11 +322,11 @@ func (s *KeeperTestSuite) TestMultipleEventsInSameBlock() {
 	// Process all pending events
 	require.NoError(ck.ProcessPendingVisibilityEvents(ctx))
 
-	// All should have the same visibility_time
+	// All should have the same visibility_height
 	for i := uint64(1); i <= 5; i++ {
-		vt, err := ck.GetVisibilityTimeForEvent(ctx, i)
+		vh, err := ck.GetVisibilityHeightForEvent(ctx, i)
 		require.NoError(err)
-		require.True(vt.Equal(blockTime), "event %d should have visibility_time = blockTime", i)
+		require.Equal(uint64(blockHeight), vh, "event %d should have visibility_height = blockHeight", i)
 	}
 
 }
@@ -469,9 +469,9 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingAtFirstID() {
 			now.Add(-time.Duration(5-i)*time.Minute))
 		require.NoError(ck.SetEventRecord(ctx, rec))
 	}
-	// Only set visibility_time for events 2 and 3 (the first event remains pending)
-	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 2, now.Add(-2*time.Minute)))
-	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 3, now.Add(-1*time.Minute)))
+	// Only set visibility_height for events 2 and 3 (the first event remains pending)
+	require.NoError(ck.VisibilityHeightByID.Set(ctx, 2, 100))
+	require.NoError(ck.VisibilityHeightByID.Set(ctx, 3, 101))
 
 	req := &types.RecordListWithTimeRequest{
 		FromId:     1,
@@ -502,11 +502,11 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingGapInMiddle() {
 			now.Add(-time.Duration(10-i)*time.Minute))
 		require.NoError(ck.SetEventRecord(ctx, rec))
 	}
-	// Set visibility_time for 1, 2, and 4 — but not 3 (simulating a pending event)
-	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 1, now.Add(-8*time.Minute)))
-	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 2, now.Add(-7*time.Minute)))
-	// event 3: pending (no visibility_time)
-	require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, 4, now.Add(-5*time.Minute)))
+	// Set visibility_height for 1, 2, and 4 — but not 3 (simulating a pending event)
+	require.NoError(ck.VisibilityHeightByID.Set(ctx, 1, 100))
+	require.NoError(ck.VisibilityHeightByID.Set(ctx, 2, 101))
+	// event 3: pending (no visibility_height)
+	require.NoError(ck.VisibilityHeightByID.Set(ctx, 4, 103))
 
 	req := &types.RecordListWithTimeRequest{
 		FromId:     1,
@@ -536,8 +536,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_RecordTimeBreakPreservesCont
 		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
 			baseTime.Add(time.Duration(i)*time.Minute))
 		require.NoError(ck.SetEventRecord(ctx, rec))
-		require.NoError(ck.SetEventRecordWithVisibilityTime(ctx, i,
-			baseTime.Add(time.Duration(i)*time.Minute+3*time.Second)))
+		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, 100+i))
 	}
 
 	// Query with to_time between event 3's and event 4's record_time
@@ -660,10 +659,10 @@ func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	require.Len(resAfter.EventRecords, 1)
 	require.Equal(uint64(1000), resAfter.EventRecords[0].Id)
 
-	// Verify visibility_time was set correctly (used by GetRecordListVisibleAtHeight)
-	vt, err := ck.GetVisibilityTimeForEvent(ctx, 1000)
+	// Verify visibility_height was set correctly (used by GetRecordListVisibleAtHeight)
+	vh, err := ck.GetVisibilityHeightForEvent(ctx, 1000)
 	require.NoError(err)
-	require.True(vt.Equal(blockH2Time))
+	require.Equal(uint64(101), vh)
 }
 
 // TestStoreBlockTime verifies that StoreBlockTime stores block time mappings
@@ -1272,8 +1271,8 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_PreAndPostUpgradeMix(
 }
 
 // TestStoreBlockTime_WritesReverseIndex verifies that StoreBlockTime correctly writes
-// both the forward index (height → time) and the reverse index ((time, height) → height),
-// and that GetBlockHeightByTime uses the reverse index to return correct results.
+// the reverse index ((time, height) → height), and that GetBlockHeightByTime uses
+// the reverse index to return correct results.
 func (s *KeeperTestSuite) TestStoreBlockTime_WritesReverseIndex() {
 	ctx, ck := s.ctx, s.keeper
 	require := s.Require()

@@ -36,12 +36,6 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 		}
 	}
 
-	for _, entry := range data.VisibilityTimesById {
-		if err := k.VisibilityTimeByID.Set(ctx, entry.Key, entry.Value); err != nil {
-			k.Logger(ctx).Error("Error setting visibility time by ID", "id", entry.Key, "error", err)
-		}
-	}
-
 	for _, entry := range data.VisibilityHeightsById {
 		if err := k.VisibilityHeightByID.Set(ctx, entry.Key, entry.Value); err != nil {
 			k.Logger(ctx).Error("Error setting visibility height by ID", "id", entry.Key, "error", err)
@@ -91,29 +85,6 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 				continue
 			}
 			gs.PendingVisibilityEventIds = append(gs.PendingVisibilityEventIds, key)
-		}
-	}
-
-	// Export visibility times by ID.
-	vtIter, err := k.VisibilityTimeByID.Iterate(ctx, nil)
-	if err != nil {
-		logger.Error("Error creating visibility time iterator for export", "error", err)
-	} else {
-		defer func() {
-			if err := vtIter.Close(); err != nil {
-				logger.Error("Error closing visibility time iterator", "error", err)
-			}
-		}()
-		for ; vtIter.Valid(); vtIter.Next() {
-			kv, err := vtIter.KeyValue()
-			if err != nil {
-				logger.Error("Error reading visibility time entry during export", "error", err)
-				continue
-			}
-			gs.VisibilityTimesById = append(gs.VisibilityTimesById, types.Uint64Pair{
-				Key:   kv.Key,
-				Value: kv.Value,
-			})
 		}
 	}
 

@@ -1115,7 +1115,7 @@ func (x *_GenesisState_5_list) IsValid() bool {
 var _ protoreflect.List = (*_GenesisState_6_list)(nil)
 
 type _GenesisState_6_list struct {
-	list *[]*Uint64Pair
+	list *[]*BlockTimeEntry
 }
 
 func (x *_GenesisState_6_list) Len() int {
@@ -1131,18 +1131,18 @@ func (x *_GenesisState_6_list) Get(i int) protoreflect.Value {
 
 func (x *_GenesisState_6_list) Set(i int, value protoreflect.Value) {
 	valueUnwrapped := value.Message()
-	concreteValue := valueUnwrapped.Interface().(*Uint64Pair)
+	concreteValue := valueUnwrapped.Interface().(*BlockTimeEntry)
 	(*x.list)[i] = concreteValue
 }
 
 func (x *_GenesisState_6_list) Append(value protoreflect.Value) {
 	valueUnwrapped := value.Message()
-	concreteValue := valueUnwrapped.Interface().(*Uint64Pair)
+	concreteValue := valueUnwrapped.Interface().(*BlockTimeEntry)
 	*x.list = append(*x.list, concreteValue)
 }
 
 func (x *_GenesisState_6_list) AppendMutable() protoreflect.Value {
-	v := new(Uint64Pair)
+	v := new(BlockTimeEntry)
 	*x.list = append(*x.list, v)
 	return protoreflect.ValueOfMessage(v.ProtoReflect())
 }
@@ -1155,62 +1155,11 @@ func (x *_GenesisState_6_list) Truncate(n int) {
 }
 
 func (x *_GenesisState_6_list) NewElement() protoreflect.Value {
-	v := new(Uint64Pair)
+	v := new(BlockTimeEntry)
 	return protoreflect.ValueOfMessage(v.ProtoReflect())
 }
 
 func (x *_GenesisState_6_list) IsValid() bool {
-	return x.list != nil
-}
-
-var _ protoreflect.List = (*_GenesisState_7_list)(nil)
-
-type _GenesisState_7_list struct {
-	list *[]*BlockTimeEntry
-}
-
-func (x *_GenesisState_7_list) Len() int {
-	if x.list == nil {
-		return 0
-	}
-	return len(*x.list)
-}
-
-func (x *_GenesisState_7_list) Get(i int) protoreflect.Value {
-	return protoreflect.ValueOfMessage((*x.list)[i].ProtoReflect())
-}
-
-func (x *_GenesisState_7_list) Set(i int, value protoreflect.Value) {
-	valueUnwrapped := value.Message()
-	concreteValue := valueUnwrapped.Interface().(*BlockTimeEntry)
-	(*x.list)[i] = concreteValue
-}
-
-func (x *_GenesisState_7_list) Append(value protoreflect.Value) {
-	valueUnwrapped := value.Message()
-	concreteValue := valueUnwrapped.Interface().(*BlockTimeEntry)
-	*x.list = append(*x.list, concreteValue)
-}
-
-func (x *_GenesisState_7_list) AppendMutable() protoreflect.Value {
-	v := new(BlockTimeEntry)
-	*x.list = append(*x.list, v)
-	return protoreflect.ValueOfMessage(v.ProtoReflect())
-}
-
-func (x *_GenesisState_7_list) Truncate(n int) {
-	for i := n; i < len(*x.list); i++ {
-		(*x.list)[i] = nil
-	}
-	*x.list = (*x.list)[:n]
-}
-
-func (x *_GenesisState_7_list) NewElement() protoreflect.Value {
-	v := new(BlockTimeEntry)
-	return protoreflect.ValueOfMessage(v.ProtoReflect())
-}
-
-func (x *_GenesisState_7_list) IsValid() bool {
 	return x.list != nil
 }
 
@@ -1220,7 +1169,6 @@ var (
 	fd_GenesisState_record_sequences             protoreflect.FieldDescriptor
 	fd_GenesisState_visibility_time_upgrade_id   protoreflect.FieldDescriptor
 	fd_GenesisState_pending_visibility_event_ids protoreflect.FieldDescriptor
-	fd_GenesisState_visibility_times_by_id       protoreflect.FieldDescriptor
 	fd_GenesisState_visibility_heights_by_id     protoreflect.FieldDescriptor
 	fd_GenesisState_block_time_entries           protoreflect.FieldDescriptor
 )
@@ -1232,7 +1180,6 @@ func init() {
 	fd_GenesisState_record_sequences = md_GenesisState.Fields().ByName("record_sequences")
 	fd_GenesisState_visibility_time_upgrade_id = md_GenesisState.Fields().ByName("visibility_time_upgrade_id")
 	fd_GenesisState_pending_visibility_event_ids = md_GenesisState.Fields().ByName("pending_visibility_event_ids")
-	fd_GenesisState_visibility_times_by_id = md_GenesisState.Fields().ByName("visibility_times_by_id")
 	fd_GenesisState_visibility_heights_by_id = md_GenesisState.Fields().ByName("visibility_heights_by_id")
 	fd_GenesisState_block_time_entries = md_GenesisState.Fields().ByName("block_time_entries")
 }
@@ -1326,20 +1273,14 @@ func (x *fastReflection_GenesisState) Range(f func(protoreflect.FieldDescriptor,
 			return
 		}
 	}
-	if len(x.VisibilityTimesById) != 0 {
-		value := protoreflect.ValueOfList(&_GenesisState_5_list{list: &x.VisibilityTimesById})
-		if !f(fd_GenesisState_visibility_times_by_id, value) {
-			return
-		}
-	}
 	if len(x.VisibilityHeightsById) != 0 {
-		value := protoreflect.ValueOfList(&_GenesisState_6_list{list: &x.VisibilityHeightsById})
+		value := protoreflect.ValueOfList(&_GenesisState_5_list{list: &x.VisibilityHeightsById})
 		if !f(fd_GenesisState_visibility_heights_by_id, value) {
 			return
 		}
 	}
 	if len(x.BlockTimeEntries) != 0 {
-		value := protoreflect.ValueOfList(&_GenesisState_7_list{list: &x.BlockTimeEntries})
+		value := protoreflect.ValueOfList(&_GenesisState_6_list{list: &x.BlockTimeEntries})
 		if !f(fd_GenesisState_block_time_entries, value) {
 			return
 		}
@@ -1367,8 +1308,6 @@ func (x *fastReflection_GenesisState) Has(fd protoreflect.FieldDescriptor) bool 
 		return x.VisibilityTimeUpgradeId != uint64(0)
 	case "heimdallv2.clerk.GenesisState.pending_visibility_event_ids":
 		return len(x.PendingVisibilityEventIds) != 0
-	case "heimdallv2.clerk.GenesisState.visibility_times_by_id":
-		return len(x.VisibilityTimesById) != 0
 	case "heimdallv2.clerk.GenesisState.visibility_heights_by_id":
 		return len(x.VisibilityHeightsById) != 0
 	case "heimdallv2.clerk.GenesisState.block_time_entries":
@@ -1397,8 +1336,6 @@ func (x *fastReflection_GenesisState) Clear(fd protoreflect.FieldDescriptor) {
 		x.VisibilityTimeUpgradeId = uint64(0)
 	case "heimdallv2.clerk.GenesisState.pending_visibility_event_ids":
 		x.PendingVisibilityEventIds = nil
-	case "heimdallv2.clerk.GenesisState.visibility_times_by_id":
-		x.VisibilityTimesById = nil
 	case "heimdallv2.clerk.GenesisState.visibility_heights_by_id":
 		x.VisibilityHeightsById = nil
 	case "heimdallv2.clerk.GenesisState.block_time_entries":
@@ -1440,23 +1377,17 @@ func (x *fastReflection_GenesisState) Get(descriptor protoreflect.FieldDescripto
 		}
 		listValue := &_GenesisState_4_list{list: &x.PendingVisibilityEventIds}
 		return protoreflect.ValueOfList(listValue)
-	case "heimdallv2.clerk.GenesisState.visibility_times_by_id":
-		if len(x.VisibilityTimesById) == 0 {
-			return protoreflect.ValueOfList(&_GenesisState_5_list{})
-		}
-		listValue := &_GenesisState_5_list{list: &x.VisibilityTimesById}
-		return protoreflect.ValueOfList(listValue)
 	case "heimdallv2.clerk.GenesisState.visibility_heights_by_id":
 		if len(x.VisibilityHeightsById) == 0 {
-			return protoreflect.ValueOfList(&_GenesisState_6_list{})
+			return protoreflect.ValueOfList(&_GenesisState_5_list{})
 		}
-		listValue := &_GenesisState_6_list{list: &x.VisibilityHeightsById}
+		listValue := &_GenesisState_5_list{list: &x.VisibilityHeightsById}
 		return protoreflect.ValueOfList(listValue)
 	case "heimdallv2.clerk.GenesisState.block_time_entries":
 		if len(x.BlockTimeEntries) == 0 {
-			return protoreflect.ValueOfList(&_GenesisState_7_list{})
+			return protoreflect.ValueOfList(&_GenesisState_6_list{})
 		}
-		listValue := &_GenesisState_7_list{list: &x.BlockTimeEntries}
+		listValue := &_GenesisState_6_list{list: &x.BlockTimeEntries}
 		return protoreflect.ValueOfList(listValue)
 	default:
 		if descriptor.IsExtension() {
@@ -1492,17 +1423,13 @@ func (x *fastReflection_GenesisState) Set(fd protoreflect.FieldDescriptor, value
 		lv := value.List()
 		clv := lv.(*_GenesisState_4_list)
 		x.PendingVisibilityEventIds = *clv.list
-	case "heimdallv2.clerk.GenesisState.visibility_times_by_id":
-		lv := value.List()
-		clv := lv.(*_GenesisState_5_list)
-		x.VisibilityTimesById = *clv.list
 	case "heimdallv2.clerk.GenesisState.visibility_heights_by_id":
 		lv := value.List()
-		clv := lv.(*_GenesisState_6_list)
+		clv := lv.(*_GenesisState_5_list)
 		x.VisibilityHeightsById = *clv.list
 	case "heimdallv2.clerk.GenesisState.block_time_entries":
 		lv := value.List()
-		clv := lv.(*_GenesisState_7_list)
+		clv := lv.(*_GenesisState_6_list)
 		x.BlockTimeEntries = *clv.list
 	default:
 		if fd.IsExtension() {
@@ -1542,23 +1469,17 @@ func (x *fastReflection_GenesisState) Mutable(fd protoreflect.FieldDescriptor) p
 		}
 		value := &_GenesisState_4_list{list: &x.PendingVisibilityEventIds}
 		return protoreflect.ValueOfList(value)
-	case "heimdallv2.clerk.GenesisState.visibility_times_by_id":
-		if x.VisibilityTimesById == nil {
-			x.VisibilityTimesById = []*Uint64Pair{}
-		}
-		value := &_GenesisState_5_list{list: &x.VisibilityTimesById}
-		return protoreflect.ValueOfList(value)
 	case "heimdallv2.clerk.GenesisState.visibility_heights_by_id":
 		if x.VisibilityHeightsById == nil {
 			x.VisibilityHeightsById = []*Uint64Pair{}
 		}
-		value := &_GenesisState_6_list{list: &x.VisibilityHeightsById}
+		value := &_GenesisState_5_list{list: &x.VisibilityHeightsById}
 		return protoreflect.ValueOfList(value)
 	case "heimdallv2.clerk.GenesisState.block_time_entries":
 		if x.BlockTimeEntries == nil {
 			x.BlockTimeEntries = []*BlockTimeEntry{}
 		}
-		value := &_GenesisState_7_list{list: &x.BlockTimeEntries}
+		value := &_GenesisState_6_list{list: &x.BlockTimeEntries}
 		return protoreflect.ValueOfList(value)
 	case "heimdallv2.clerk.GenesisState.visibility_time_upgrade_id":
 		panic(fmt.Errorf("field visibility_time_upgrade_id of message heimdallv2.clerk.GenesisState is not mutable"))
@@ -1586,15 +1507,12 @@ func (x *fastReflection_GenesisState) NewField(fd protoreflect.FieldDescriptor) 
 	case "heimdallv2.clerk.GenesisState.pending_visibility_event_ids":
 		list := []uint64{}
 		return protoreflect.ValueOfList(&_GenesisState_4_list{list: &list})
-	case "heimdallv2.clerk.GenesisState.visibility_times_by_id":
-		list := []*Uint64Pair{}
-		return protoreflect.ValueOfList(&_GenesisState_5_list{list: &list})
 	case "heimdallv2.clerk.GenesisState.visibility_heights_by_id":
 		list := []*Uint64Pair{}
-		return protoreflect.ValueOfList(&_GenesisState_6_list{list: &list})
+		return protoreflect.ValueOfList(&_GenesisState_5_list{list: &list})
 	case "heimdallv2.clerk.GenesisState.block_time_entries":
 		list := []*BlockTimeEntry{}
-		return protoreflect.ValueOfList(&_GenesisState_7_list{list: &list})
+		return protoreflect.ValueOfList(&_GenesisState_6_list{list: &list})
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.GenesisState"))
@@ -1686,12 +1604,6 @@ func (x *fastReflection_GenesisState) ProtoMethods() *protoiface.Methods {
 			}
 			n += 1 + runtime.Sov(uint64(l)) + l
 		}
-		if len(x.VisibilityTimesById) > 0 {
-			for _, e := range x.VisibilityTimesById {
-				l = options.Size(e)
-				n += 1 + l + runtime.Sov(uint64(l))
-			}
-		}
 		if len(x.VisibilityHeightsById) > 0 {
 			for _, e := range x.VisibilityHeightsById {
 				l = options.Size(e)
@@ -1746,28 +1658,12 @@ func (x *fastReflection_GenesisState) ProtoMethods() *protoiface.Methods {
 				copy(dAtA[i:], encoded)
 				i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
 				i--
-				dAtA[i] = 0x3a
+				dAtA[i] = 0x32
 			}
 		}
 		if len(x.VisibilityHeightsById) > 0 {
 			for iNdEx := len(x.VisibilityHeightsById) - 1; iNdEx >= 0; iNdEx-- {
 				encoded, err := options.Marshal(x.VisibilityHeightsById[iNdEx])
-				if err != nil {
-					return protoiface.MarshalOutput{
-						NoUnkeyedLiterals: input.NoUnkeyedLiterals,
-						Buf:               input.Buf,
-					}, err
-				}
-				i -= len(encoded)
-				copy(dAtA[i:], encoded)
-				i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
-				i--
-				dAtA[i] = 0x32
-			}
-		}
-		if len(x.VisibilityTimesById) > 0 {
-			for iNdEx := len(x.VisibilityTimesById) - 1; iNdEx >= 0; iNdEx-- {
-				encoded, err := options.Marshal(x.VisibilityTimesById[iNdEx])
 				if err != nil {
 					return protoiface.MarshalOutput{
 						NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2043,40 +1939,6 @@ func (x *fastReflection_GenesisState) ProtoMethods() *protoiface.Methods {
 				}
 			case 5:
 				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field VisibilityTimesById", wireType)
-				}
-				var msglen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					msglen |= int(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if msglen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + msglen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				x.VisibilityTimesById = append(x.VisibilityTimesById, &Uint64Pair{})
-				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.VisibilityTimesById[len(x.VisibilityTimesById)-1]); err != nil {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
-				}
-				iNdEx = postIndex
-			case 6:
-				if wireType != 2 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field VisibilityHeightsById", wireType)
 				}
 				var msglen int
@@ -2109,7 +1971,7 @@ func (x *fastReflection_GenesisState) ProtoMethods() *protoiface.Methods {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
 				}
 				iNdEx = postIndex
-			case 7:
+			case 6:
 				if wireType != 2 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field BlockTimeEntries", wireType)
 				}
@@ -2298,12 +2160,10 @@ type GenesisState struct {
 	// Event IDs awaiting visibility_time assignment in the next block's
 	// PreBlocker.
 	PendingVisibilityEventIds []uint64 `protobuf:"varint,4,rep,packed,name=pending_visibility_event_ids,json=pendingVisibilityEventIds,proto3" json:"pending_visibility_event_ids,omitempty"`
-	// Per-event visibility_time: event_id → unix nanoseconds.
-	VisibilityTimesById []*Uint64Pair `protobuf:"bytes,5,rep,name=visibility_times_by_id,json=visibilityTimesById,proto3" json:"visibility_times_by_id,omitempty"`
 	// Per-event visibility_height: event_id → Heimdall block height.
-	VisibilityHeightsById []*Uint64Pair `protobuf:"bytes,6,rep,name=visibility_heights_by_id,json=visibilityHeightsById,proto3" json:"visibility_heights_by_id,omitempty"`
+	VisibilityHeightsById []*Uint64Pair `protobuf:"bytes,5,rep,name=visibility_heights_by_id,json=visibilityHeightsById,proto3" json:"visibility_heights_by_id,omitempty"`
 	// Block time reverse index: (block_time, height) → height for cutoff lookups.
-	BlockTimeEntries []*BlockTimeEntry `protobuf:"bytes,7,rep,name=block_time_entries,json=blockTimeEntries,proto3" json:"block_time_entries,omitempty"`
+	BlockTimeEntries []*BlockTimeEntry `protobuf:"bytes,6,rep,name=block_time_entries,json=blockTimeEntries,proto3" json:"block_time_entries,omitempty"`
 }
 
 func (x *GenesisState) Reset() {
@@ -2354,13 +2214,6 @@ func (x *GenesisState) GetPendingVisibilityEventIds() []uint64 {
 	return nil
 }
 
-func (x *GenesisState) GetVisibilityTimesById() []*Uint64Pair {
-	if x != nil {
-		return x.VisibilityTimesById
-	}
-	return nil
-}
-
 func (x *GenesisState) GetVisibilityHeightsById() []*Uint64Pair {
 	if x != nil {
 		return x.VisibilityHeightsById
@@ -2393,7 +2246,7 @@ var file_heimdallv2_clerk_genesis_proto_rawDesc = []byte{
 	0x79, 0x12, 0x1d, 0x0a, 0x0a, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x09, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x54, 0x69, 0x6d, 0x65,
 	0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04,
-	0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x99, 0x04, 0x0a, 0x0c, 0x47, 0x65, 0x6e,
+	0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0xc0, 0x03, 0x0a, 0x0c, 0x47, 0x65, 0x6e,
 	0x65, 0x73, 0x69, 0x73, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x4d, 0x0a, 0x0d, 0x65, 0x76, 0x65,
 	0x6e, 0x74, 0x5f, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b,
 	0x32, 0x1d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c,
@@ -2410,36 +2263,31 @@ var file_heimdallv2_clerk_genesis_proto_rawDesc = []byte{
 	0x6e, 0x67, 0x5f, 0x76, 0x69, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x5f, 0x65, 0x76,
 	0x65, 0x6e, 0x74, 0x5f, 0x69, 0x64, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x04, 0x52, 0x19, 0x70,
 	0x65, 0x6e, 0x64, 0x69, 0x6e, 0x67, 0x56, 0x69, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79,
-	0x45, 0x76, 0x65, 0x6e, 0x74, 0x49, 0x64, 0x73, 0x12, 0x57, 0x0a, 0x16, 0x76, 0x69, 0x73, 0x69,
-	0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x5f, 0x62, 0x79, 0x5f,
-	0x69, 0x64, 0x18, 0x05, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x55, 0x69, 0x6e, 0x74,
-	0x36, 0x34, 0x50, 0x61, 0x69, 0x72, 0x42, 0x04, 0xc8, 0xde, 0x1f, 0x00, 0x52, 0x13, 0x76, 0x69,
-	0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x42, 0x79, 0x49,
-	0x64, 0x12, 0x5b, 0x0a, 0x18, 0x76, 0x69, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x5f,
-	0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x73, 0x5f, 0x62, 0x79, 0x5f, 0x69, 0x64, 0x18, 0x06, 0x20,
-	0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x55, 0x69, 0x6e, 0x74, 0x36, 0x34, 0x50, 0x61, 0x69,
-	0x72, 0x42, 0x04, 0xc8, 0xde, 0x1f, 0x00, 0x52, 0x15, 0x76, 0x69, 0x73, 0x69, 0x62, 0x69, 0x6c,
-	0x69, 0x74, 0x79, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74, 0x73, 0x42, 0x79, 0x49, 0x64, 0x12, 0x54,
-	0x0a, 0x12, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x65, 0x6e, 0x74,
-	0x72, 0x69, 0x65, 0x73, 0x18, 0x07, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x68, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x42, 0x6c,
-	0x6f, 0x63, 0x6b, 0x54, 0x69, 0x6d, 0x65, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x42, 0x04, 0xc8, 0xde,
-	0x1f, 0x00, 0x52, 0x10, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x54, 0x69, 0x6d, 0x65, 0x45, 0x6e, 0x74,
-	0x72, 0x69, 0x65, 0x73, 0x42, 0xbc, 0x01, 0x0a, 0x14, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x42, 0x0c, 0x47,
-	0x65, 0x6e, 0x65, 0x73, 0x69, 0x73, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x35, 0x67,
-	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79,
-	0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f,
-	0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x63,
-	0x6c, 0x65, 0x72, 0x6b, 0xa2, 0x02, 0x03, 0x48, 0x43, 0x58, 0xaa, 0x02, 0x10, 0x48, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0xca, 0x02, 0x10,
-	0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x6c, 0x65, 0x72, 0x6b,
-	0xe2, 0x02, 0x1c, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x6c,
-	0x65, 0x72, 0x6b, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea,
-	0x02, 0x11, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x43, 0x6c,
-	0x65, 0x72, 0x6b, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x45, 0x76, 0x65, 0x6e, 0x74, 0x49, 0x64, 0x73, 0x12, 0x5b, 0x0a, 0x18, 0x76, 0x69, 0x73, 0x69,
+	0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x5f, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x73, 0x5f, 0x62,
+	0x79, 0x5f, 0x69, 0x64, 0x18, 0x05, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x68, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x55, 0x69,
+	0x6e, 0x74, 0x36, 0x34, 0x50, 0x61, 0x69, 0x72, 0x42, 0x04, 0xc8, 0xde, 0x1f, 0x00, 0x52, 0x15,
+	0x76, 0x69, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x48, 0x65, 0x69, 0x67, 0x68, 0x74,
+	0x73, 0x42, 0x79, 0x49, 0x64, 0x12, 0x54, 0x0a, 0x12, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x74,
+	0x69, 0x6d, 0x65, 0x5f, 0x65, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x18, 0x06, 0x20, 0x03, 0x28,
+	0x0b, 0x32, 0x20, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63,
+	0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x54, 0x69, 0x6d, 0x65, 0x45, 0x6e,
+	0x74, 0x72, 0x79, 0x42, 0x04, 0xc8, 0xde, 0x1f, 0x00, 0x52, 0x10, 0x62, 0x6c, 0x6f, 0x63, 0x6b,
+	0x54, 0x69, 0x6d, 0x65, 0x45, 0x6e, 0x74, 0x72, 0x69, 0x65, 0x73, 0x42, 0xbc, 0x01, 0x0a, 0x14,
+	0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63,
+	0x6c, 0x65, 0x72, 0x6b, 0x42, 0x0c, 0x47, 0x65, 0x6e, 0x65, 0x73, 0x69, 0x73, 0x50, 0x72, 0x6f,
+	0x74, 0x6f, 0x50, 0x01, 0x5a, 0x35, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
+	0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64,
+	0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64,
+	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0xa2, 0x02, 0x03, 0x48, 0x43,
+	0x58, 0xaa, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x43,
+	0x6c, 0x65, 0x72, 0x6b, 0xca, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x5c, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0xe2, 0x02, 0x1c, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65,
+	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x11, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 }
 
 var (
@@ -2463,14 +2311,13 @@ var file_heimdallv2_clerk_genesis_proto_goTypes = []interface{}{
 }
 var file_heimdallv2_clerk_genesis_proto_depIdxs = []int32{
 	3, // 0: heimdallv2.clerk.GenesisState.event_records:type_name -> heimdallv2.clerk.EventRecord
-	0, // 1: heimdallv2.clerk.GenesisState.visibility_times_by_id:type_name -> heimdallv2.clerk.Uint64Pair
-	0, // 2: heimdallv2.clerk.GenesisState.visibility_heights_by_id:type_name -> heimdallv2.clerk.Uint64Pair
-	1, // 3: heimdallv2.clerk.GenesisState.block_time_entries:type_name -> heimdallv2.clerk.BlockTimeEntry
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	0, // 1: heimdallv2.clerk.GenesisState.visibility_heights_by_id:type_name -> heimdallv2.clerk.Uint64Pair
+	1, // 2: heimdallv2.clerk.GenesisState.block_time_entries:type_name -> heimdallv2.clerk.BlockTimeEntry
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_heimdallv2_clerk_genesis_proto_init() }

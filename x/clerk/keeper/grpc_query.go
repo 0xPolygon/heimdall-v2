@@ -335,6 +335,26 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 			"heimdall_height %d exceeds current committed height %d", request.HeimdallHeight, currentHeight)
 	}
 
+	records, err := q.recordListVisibleAtHeight(ctx, request.FromId, request.HeimdallHeight, request.ToTime, request.Pagination)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.RecordListVisibleAtHeightResponse{
+		EventRecords: records,
+	}, nil
+}
+
+// recordListVisibleAtHeight is the shared implementation used by both
+// GetRecordListVisibleAtHeight and GetStateSyncsByTime. Extracting it avoids
+// double-counting Prometheus metrics when the combined endpoint delegates.
+func (q queryServer) recordListVisibleAtHeight(
+	ctx context.Context,
+	fromId uint64,
+	heimdallHeight int64,
+	toTime time.Time,
+	pagination query.PageRequest,
+) ([]types.EventRecord, error) {
 	// Determine the upgrade boundary. If not set, all events use the legacy path.
 	upgradeId, err := q.k.GetVisibilityTimeUpgradeID(ctx)
 	if err != nil {
@@ -344,11 +364,11 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 		upgradeId = ^uint64(0)
 	}
 
-	requestedHeight := uint64(request.HeimdallHeight)
+	requestedHeight := uint64(heimdallHeight)
 
-	result := make([]types.EventRecord, 0, request.Pagination.Limit)
+	result := make([]types.EventRecord, 0, pagination.Limit)
 
-	rng := (&collections.Range[uint64]{}).StartInclusive(request.FromId)
+	rng := (&collections.Range[uint64]{}).StartInclusive(fromId)
 
 	iterator, err := q.k.RecordsWithID.Iterate(ctx, rng)
 	if err != nil {
@@ -373,14 +393,11 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 
 		if value.Id < upgradeId {
 			// Legacy event: filter by record_time < to_time for backward compatibility
-			if !value.RecordTime.Before(request.ToTime) {
+			if !value.RecordTime.Before(toTime) {
 				break
 			}
 		} else {
 			// Post-upgrade event: filter by visibility_height and record_time.
-			// visibility_height ensures deterministic results pinned to a specific Heimdall state.
-			// record_time ensures the same cutoff semantics as the old endpoint and bor's
-			// client-side validateEventRecord filter — events with record_time >= to_time are excluded.
 			var visibilityHeight uint64
 			visibilityHeight, err = q.k.GetVisibilityHeightForEvent(ctx, value.Id)
 			if err != nil {
@@ -393,17 +410,17 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 			if visibilityHeight > requestedHeight {
 				break
 			}
-			if !value.RecordTime.Before(request.ToTime) {
+			if !value.RecordTime.Before(toTime) {
 				break
 			}
 		}
 
-		if skipped < request.Pagination.Offset {
+		if skipped < pagination.Offset {
 			skipped++
 			continue
 		}
 
-		if collected < request.Pagination.Limit {
+		if collected < pagination.Limit {
 			result = append(result, value)
 			collected++
 		} else {
@@ -412,14 +429,10 @@ func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *
 	}
 
 	if len(result) == 0 {
-		return &types.RecordListVisibleAtHeightResponse{
-			EventRecords: []types.EventRecord{},
-		}, nil
+		return []types.EventRecord{}, nil
 	}
 
-	return &types.RecordListVisibleAtHeightResponse{
-		EventRecords: result,
-	}, nil
+	return result, nil
 }
 
 // GetStateSyncsByTime resolves a cutoff time to a Heimdall height, then returns
@@ -468,19 +481,15 @@ func (q queryServer) GetStateSyncsByTime(ctx context.Context, request *types.Sta
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Delegate to the existing visible-at-height logic.
-	innerResp, err := q.GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         request.FromId,
-		HeimdallHeight: height,
-		ToTime:         request.ToTime,
-		Pagination:     request.Pagination,
-	})
+	// Use the shared helper to avoid double-counting metrics (the public
+	// GetRecordListVisibleAtHeight handler has its own recordClerkQueryMetric).
+	records, err := q.recordListVisibleAtHeight(ctx, request.FromId, height, request.ToTime, request.Pagination)
 	if err != nil {
 		return nil, err
 	}
 
 	return &types.StateSyncsByTimeResponse{
-		EventRecords:   innerResp.EventRecords,
+		EventRecords:   records,
 		HeimdallHeight: height,
 	}, nil
 }

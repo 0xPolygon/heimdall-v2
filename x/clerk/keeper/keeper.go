@@ -33,8 +33,7 @@ type Keeper struct {
 	RecordSequences         collections.Map[string, []byte]
 	VisibilityTimeUpgradeID collections.Item[uint64]
 	PendingVisibilityEvents collections.Map[uint64, []byte]
-	VisibilityTimeByID      collections.Map[uint64, uint64]                           // stores time as unix nanoseconds
-	BlockTimeReverseIndex   collections.Map[collections.Pair[uint64, uint64], uint64] // (blockTime, height) → height for O(log N) cutoff lookup
+	BlockTimeReverseIndex collections.Map[collections.Pair[uint64, uint64], uint64] // (blockTime, height) → height for O(log N) cutoff lookup
 	VisibilityHeightByID    collections.Map[uint64, uint64]                           // event_id → heimdall block height where visibility was assigned
 }
 
@@ -56,8 +55,7 @@ func NewKeeper(
 		RecordSequences:         collections.NewMap(sb, types.RecordSequencesKeyPrefix, "recordSequences", collections.StringKey, collections.BytesValue),
 		VisibilityTimeUpgradeID: collections.NewItem(sb, types.VisibilityTimeUpgradeIDKeyPrefix, "visibilityTimeUpgradeID", collections.Uint64Value),
 		PendingVisibilityEvents: collections.NewMap(sb, types.PendingVisibilityEventsKeyPrefix, "pendingVisibilityEvents", collections.Uint64Key, collections.BytesValue),
-		VisibilityTimeByID:      collections.NewMap(sb, types.VisibilityTimeByIDKeyPrefix, "visibilityTimeByID", collections.Uint64Key, collections.Uint64Value),
-		BlockTimeReverseIndex:   collections.NewMap(sb, types.BlockTimeReverseIndexKeyPrefix, "blockTimeReverseIndex", collections.PairKeyCodec(collections.Uint64Key, collections.Uint64Key), collections.Uint64Value),
+		BlockTimeReverseIndex: collections.NewMap(sb, types.BlockTimeReverseIndexKeyPrefix, "blockTimeReverseIndex", collections.PairKeyCodec(collections.Uint64Key, collections.Uint64Key), collections.Uint64Value),
 		VisibilityHeightByID:    collections.NewMap(sb, types.VisibilityHeightByIDKeyPrefix, "visibilityHeightByID", collections.Uint64Key, collections.Uint64Value),
 	}
 
@@ -298,25 +296,6 @@ func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
 	return isPresent
 }
 
-// SetEventRecordWithVisibilityTime stores the event_id → visibility_time mapping.
-func (k *Keeper) SetEventRecordWithVisibilityTime(ctx context.Context, eventID uint64, visibilityTime time.Time) error {
-	nanos := visibilityTime.UnixNano()
-	if nanos < 0 {
-		return fmt.Errorf("visibility time %v has negative UnixNano (%d); pre-epoch times are not supported", visibilityTime, nanos)
-	}
-
-	return k.VisibilityTimeByID.Set(ctx, eventID, uint64(nanos))
-}
-
-// GetVisibilityTimeForEvent returns the visibility_time for the given event ID.
-func (k *Keeper) GetVisibilityTimeForEvent(ctx context.Context, eventID uint64) (time.Time, error) {
-	nanos, err := k.VisibilityTimeByID.Get(ctx, eventID)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return time.Unix(0, int64(nanos)).UTC(), nil
-}
-
 // GetVisibilityHeightForEvent returns the visibility_height for the given event ID.
 func (k *Keeper) GetVisibilityHeightForEvent(ctx context.Context, eventID uint64) (uint64, error) {
 	return k.VisibilityHeightByID.Get(ctx, eventID)
@@ -336,7 +315,6 @@ func (k *Keeper) AddPendingVisibilityEvent(ctx context.Context, eventID uint64) 
 // and may return pending events before this processing occurs.
 func (k *Keeper) ProcessPendingVisibilityEvents(ctx context.Context) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	blockTime := sdkCtx.BlockTime()
 	blockHeight := uint64(sdkCtx.BlockHeight())
 
 	iterator, err := k.PendingVisibilityEvents.Iterate(ctx, nil)
@@ -359,9 +337,6 @@ func (k *Keeper) ProcessPendingVisibilityEvents(ctx context.Context) error {
 	}
 
 	for _, eventID := range eventIDs {
-		if err := k.SetEventRecordWithVisibilityTime(ctx, eventID, blockTime); err != nil {
-			return err
-		}
 		if err := k.VisibilityHeightByID.Set(ctx, eventID, blockHeight); err != nil {
 			return fmt.Errorf("failed to set visibility height for event %d: %w", eventID, err)
 		}

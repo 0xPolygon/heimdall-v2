@@ -19,9 +19,8 @@ var (
 	RecordSequencesKeyPrefix         = collections.NewPrefix(2)
 	VisibilityTimeUpgradeIDKeyPrefix = collections.NewPrefix(3)
 	PendingVisibilityEventsKeyPrefix = collections.NewPrefix(4)
-	VisibilityTimeByIDKeyPrefix      = collections.NewPrefix(5)
-	BlockTimeReverseIndexKeyPrefix   = collections.NewPrefix(6)
-	VisibilityHeightByIDKeyPrefix    = collections.NewPrefix(7)
+	BlockTimeReverseIndexKeyPrefix   = collections.NewPrefix(5)
+	VisibilityHeightByIDKeyPrefix    = collections.NewPrefix(6)
 
 	// DefaultValue of the record sequence
 	DefaultValue = []byte{0x01}
