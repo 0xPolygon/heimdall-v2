@@ -2154,10 +2154,10 @@ type GenesisState struct {
 	// Record sequences for tracking processed events.
 	// Format: "txHash-logIndex" mapping to ensure events are not processed twice.
 	RecordSequences []string `protobuf:"bytes,2,rep,name=record_sequences,json=recordSequences,proto3" json:"record_sequences,omitempty"`
-	// The first event ID using visibility_time filtering (upgrade boundary).
+	// The first event ID using visibility_height filtering (upgrade boundary).
 	// Zero means not yet set.
 	VisibilityTimeUpgradeId uint64 `protobuf:"varint,3,opt,name=visibility_time_upgrade_id,json=visibilityTimeUpgradeId,proto3" json:"visibility_time_upgrade_id,omitempty"`
-	// Event IDs awaiting visibility_time assignment in the next block's
+	// Event IDs awaiting visibility_height assignment in the next block's
 	// PreBlocker.
 	PendingVisibilityEventIds []uint64 `protobuf:"varint,4,rep,packed,name=pending_visibility_event_ids,json=pendingVisibilityEventIds,proto3" json:"pending_visibility_event_ids,omitempty"`
 	// Per-event visibility_height: event_id → Heimdall block height.

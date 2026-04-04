@@ -454,7 +454,7 @@ func (s *KeeperTestSuite) TestUpgradeIDBoundarySetOnce() {
 
 // TestGetRecordListWithTime_PendingAtFirstID verifies that GetRecordListWithTime
 // returns all events based on record_time, regardless of pending status.
-// Pending events (no visibility_time) are still returned because the old endpoint
+// Pending events (no visibility_height yet) are still returned because the old endpoint
 // filters only by record_time.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingAtFirstID() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
@@ -463,7 +463,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingAtFirstID() {
 	now := time.Now().UTC()
 	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
 
-	// Events 1-3: all post-upgrade. Event 1 is pending, events 2-3 have visibility_time.
+	// Events 1-3: all post-upgrade. Event 1 is pending, events 2-3 have visibility_height.
 	for i := uint64(1); i <= 3; i++ {
 		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
 			now.Add(-time.Duration(5-i)*time.Minute))
@@ -488,7 +488,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingAtFirstID() {
 
 // TestGetRecordListWithTime_PendingGapInMiddle verifies that GetRecordListWithTime
 // returns all events based on record_time, even when some events in the middle
-// are pending (no visibility_time). The old endpoint ignores visibility_height entirely.
+// are pending (no visibility_height yet). The old endpoint ignores visibility_height entirely.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingGapInMiddle() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
@@ -557,7 +557,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_RecordTimeBreakPreservesCont
 
 // TestQueryDeterminismAcrossCommittedStates verifies that GetRecordListWithTime
 // (the old /clerk/time endpoint) always uses record_time for filtering, even after
-// the visibility_time upgrade. This preserves backward compatibility: EL clients
+// the visibility-height upgrade. This preserves backward compatibility: EL clients
 // using the old (from_id, to_time) query pattern continue to get consistent results
 // until they switch to GetRecordListVisibleAtHeight after the EL HF.
 //
@@ -576,7 +576,7 @@ func (s *KeeperTestSuite) TestQueryDeterminismAcrossCommittedStates() {
 	require.NoError(ck.AddPendingVisibilityEvent(ctx, 1))
 
 	// Query with to_time after record_time: event IS returned because the old endpoint
-	// always filters by record_time, not visibility_time. This is correct for backward
+	// always filters by record_time, not visibility_height. This is correct for backward
 	// compatibility with EL clients still using the old query pattern.
 	queryToTime := time.Date(2026, 1, 12, 17, 10, 0, 0, time.UTC)
 	req := &types.RecordListWithTimeRequest{
@@ -607,10 +607,10 @@ func (s *KeeperTestSuite) TestQueryDeterminismAcrossCommittedStates() {
 }
 
 // TestEndToEndVisibilityTimeLifecycle simulates the full event lifecycle:
-// Block H: event created → Block H+1: stored with pending → Block H+2: visibility_time assigned
+// Block H: event created → Block H+1: stored with pending → Block H+2: visibility_height assigned
 //
 // GetRecordListWithTime always uses record_time, so the event is visible immediately
-// after being stored (even while pending). The visibility_time is only relevant for
+// after being stored (even while pending). The visibility_height is only relevant for
 // GetRecordListVisibleAtHeight (the new deterministic endpoint).
 func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	ctx, ck, queryClient, postHandler := s.ctx, s.keeper, s.queryClient, s.postHandler
@@ -641,7 +641,7 @@ func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	require.Len(res.EventRecords, 1, "old endpoint uses record_time: pending event returned when record_time < to_time")
 	require.Equal(uint64(1000), res.EventRecords[0].Id)
 
-	// Block H+2: PreBlocker processes pending → assigns visibility_time
+	// Block H+2: PreBlocker processes pending → assigns visibility_height
 	blockH2Time := time.Date(2026, 3, 15, 10, 0, 3, 0, time.UTC) // ~3s later
 	ctx = ctx.WithBlockHeight(101).WithBlockHeader(cmtproto.Header{Time: blockH2Time, Height: 101})
 

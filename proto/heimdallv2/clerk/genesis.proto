@@ -30,14 +30,14 @@ message GenesisState {
   // Format: "txHash-logIndex" mapping to ensure events are not processed twice.
   repeated string record_sequences = 2 [ (amino.dont_omitempty) = true ];
 
-  // Deterministic state sync fields (populated from visibility_time activation
-  // onward).
+  // Deterministic state sync fields (populated from visibility-height
+  // activation onward).
 
-  // The first event ID using visibility_time filtering (upgrade boundary).
+  // The first event ID using visibility_height filtering (upgrade boundary).
   // Zero means not yet set.
   uint64 visibility_time_upgrade_id = 3;
 
-  // Event IDs awaiting visibility_time assignment in the next block's
+  // Event IDs awaiting visibility_height assignment in the next block's
   // PreBlocker.
   repeated uint64 pending_visibility_event_ids = 4;
 
