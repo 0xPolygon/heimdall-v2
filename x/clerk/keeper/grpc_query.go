@@ -400,7 +400,7 @@ func (q queryServer) recordListVisibleAtHeight(
 		if value.Id < upgradeId {
 			// Legacy event: filter by record_time < to_time for backward compatibility
 			if !value.RecordTime.Before(toTime) {
-				break
+				continue
 			}
 		} else {
 			// Post-upgrade event: filter by visibility_height and record_time.
@@ -417,7 +417,7 @@ func (q queryServer) recordListVisibleAtHeight(
 				continue
 			}
 			if !value.RecordTime.Before(toTime) {
-				break
+				continue
 			}
 		}
 
