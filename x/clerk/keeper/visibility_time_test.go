@@ -1286,6 +1286,7 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_PreAndPostUpgradeMix() {
 	resp3, err := s.queryDeterministicStateSyncs(ctx, 100, 1, baseTime.Add(2*time.Minute+30*time.Second), 20)
 	require.NoError(err)
 	require.Len(resp3.EventRecords, 2, "restricting to_time should filter out pre-upgrade event 3")
+	require.Equal(int64(100), resp3.HeimdallHeight, "first query should resolve the requested height")
 	require.Equal(uint64(1), resp3.EventRecords[0].Id)
 	require.Equal(uint64(2), resp3.EventRecords[1].Id)
 
@@ -1294,13 +1295,17 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_PreAndPostUpgradeMix() {
 	resp2, err := s.queryDeterministicStateSyncs(ctx, 55, 1, baseTime.Add(time.Hour), 20)
 	require.NoError(err)
 	require.Len(resp2.EventRecords, 5, "should return events 1-5 (3 pre-upgrade + 2 post-upgrade)")
+	require.Equal(int64(55), resp2.HeimdallHeight, "second query should resolve the requested lower height")
 	for i, rec := range resp2.EventRecords {
 		require.Equal(uint64(i+1), rec.Id, "IDs must be contiguous")
 	}
 
-	resp, err := s.queryDeterministicStateSyncs(ctx, 100, 1, baseTime.Add(time.Hour+time.Second), 20)
+	// Use a later cutoff than the previous query so the reverse index resolves the
+	// freshly-added height 100 instead of reusing height 56 from the earlier call.
+	resp, err := s.queryDeterministicStateSyncs(ctx, 100, 1, baseTime.Add(2*time.Hour), 20)
 	require.NoError(err)
 	require.Len(resp.EventRecords, 6, "should return all 6 events (3 pre-upgrade + 3 post-upgrade)")
+	require.Equal(int64(100), resp.HeimdallHeight, "final query should resolve the intended height")
 
 	// Verify events 1-3 are pre-upgrade (id < upgradeID=4)
 	for i := 0; i < 3; i++ {

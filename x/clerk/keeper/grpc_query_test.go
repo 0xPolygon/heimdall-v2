@@ -293,10 +293,12 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_StabilityGate() {
 
 	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
 
-	// Create a record
-	rec := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1",
-		baseTime.Add(-time.Minute))
-	require.NoError(ck.SetEventRecord(ctx, rec))
+	// Store a block time so the indexed block-time path is exercised.
+	ctx = ctx.WithBlockHeight(100).WithBlockHeader(cmtproto.Header{
+		Time:   baseTime.Add(10 * time.Minute),
+		Height: 100,
+	})
+	require.NoError(ck.StoreBlockTime(ctx))
 
 	// Set blockTime equal to the cutoff (gate should fire: blockTime <= cutoff)
 	cutoff := baseTime.Add(10 * time.Minute)
@@ -326,14 +328,16 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_NoEvents() {
 
 	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
 
-	// Store a block time so height resolution succeeds
+	// Store block times on both sides of the cutoff so the query resolves a
+	// deterministic height instead of returning early from the stability gate.
 	ctx = ctx.WithBlockHeight(100).WithBlockHeader(cmtproto.Header{Time: baseTime, Height: 100})
 	require.NoError(ck.StoreBlockTime(ctx))
+	ctx = ctx.WithBlockHeight(101).WithBlockHeader(cmtproto.Header{Time: baseTime.Add(2 * time.Minute), Height: 101})
+	require.NoError(ck.StoreBlockTime(ctx))
 
-	// Set current block past the cutoff
 	cutoff := baseTime.Add(time.Minute)
 	ctx = ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{
-		Time:   cutoff.Add(time.Minute),
+		Time:   cutoff.Add(2 * time.Minute),
 		Height: 10000,
 	})
 
@@ -450,16 +454,23 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_RejectsUnixEpochTimestamp() {
 // TestGetStateSyncsByTime_HeightResolutionFails verifies that when no blocks
 // exist in the index, the handler returns empty (not an error).
 func (s *KeeperTestSuite) TestGetStateSyncsByTime_HeightResolutionFails() {
-	ctx := s.ctx
+	ctx, ck := s.ctx, s.keeper
 	require := s.Require()
 
 	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
 
-	// No blocks stored in the index; set blockTime past cutoff so stability gate passes
+	// Store only blocks AFTER the cutoff so the stability gate passes, but
+	// GetBlockHeightByTime still returns ErrNoBlockFound.
+	ctx = ctx.WithBlockHeight(300).WithBlockHeader(cmtproto.Header{
+		Time:   baseTime.Add(2 * time.Minute),
+		Height: 300,
+	})
+	require.NoError(ck.StoreBlockTime(ctx))
+
 	cutoff := baseTime.Add(time.Minute)
-	ctx = ctx.WithBlockHeight(200).WithBlockHeader(cmtproto.Header{
-		Time:   cutoff.Add(time.Minute),
-		Height: 200,
+	ctx = ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{
+		Time:   cutoff.Add(3 * time.Minute),
+		Height: 10000,
 	})
 
 	queryServer := clerkKeeper.NewQueryServer(&s.keeper)
