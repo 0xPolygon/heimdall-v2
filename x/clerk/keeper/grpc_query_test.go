@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
@@ -206,7 +205,7 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_HappyPath() {
 
 	for i := uint64(1); i <= 3; i++ {
 		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
-			baseTime.Add(time.Duration(i)*time.Minute))
+			baseTime.Add(time.Duration(i)*time.Second))
 		require.NoError(ck.SetEventRecord(ctx, rec))
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, 100+i))
 	}
@@ -221,7 +220,7 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_HappyPath() {
 
 	// Set current block well past the cutoff so stability gate passes and
 	// HeimdallHeight <= currentHeight validation succeeds inside the delegate.
-	cutoffTime := baseTime.Add(10 * time.Minute)
+	cutoffTime := baseTime.Add(10 * time.Second)
 	ctx = ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{
 		Time:   cutoffTime.Add(time.Minute), // blockTime > cutoff
 		Height: 10000,
@@ -239,6 +238,51 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_HappyPath() {
 	require.NotNil(resp)
 	require.NotEmpty(resp.EventRecords, "should return events when stability gate passes")
 	require.Greater(resp.HeimdallHeight, int64(0), "should return a resolved height")
+}
+
+// TestGetStateSyncsByTime_UsesIndexedBlockTimeForStabilityGate verifies the
+// combined endpoint still works when the query context itself does not carry the
+// latest committed block time, as is common for REST queries.
+func (s *KeeperTestSuite) TestGetStateSyncsByTime_UsesIndexedBlockTimeForStabilityGate() {
+	ctx, ck := s.ctx, s.keeper
+	require := s.Require()
+
+	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+
+	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
+
+	for i := uint64(1); i <= 3; i++ {
+		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
+			baseTime.Add(time.Duration(i)*time.Second))
+		require.NoError(ck.SetEventRecord(ctx, rec))
+		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, 100+i))
+	}
+
+	for i := int64(0); i < 5; i++ {
+		h := 100 + i
+		bt := baseTime.Add(time.Duration(i*3) * time.Second)
+		ctx = ctx.WithBlockHeight(h).WithBlockHeader(cmtproto.Header{Time: bt, Height: h})
+		require.NoError(ck.StoreBlockTime(ctx))
+	}
+
+	queryCtx := ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{
+		Height: 10000,
+	})
+
+	cutoffTime := baseTime.Add(10 * time.Second)
+
+	queryServer := clerkKeeper.NewQueryServer(&ck)
+	resp, err := queryServer.(interface {
+		GetStateSyncsByTime(context.Context, *types.StateSyncsByTimeRequest) (*types.StateSyncsByTimeResponse, error)
+	}).GetStateSyncsByTime(queryCtx, &types.StateSyncsByTimeRequest{
+		FromId:     1,
+		ToTime:     cutoffTime,
+		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
+	})
+	require.NoError(err)
+	require.NotNil(resp)
+	require.NotEmpty(resp.EventRecords, "should resolve via indexed block time even with zero query block time")
+	require.Equal(int64(103), resp.HeimdallHeight)
 }
 
 // TestGetStateSyncsByTime_StabilityGate verifies that when blockTime <= cutoff,
@@ -429,198 +473,4 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_HeightResolutionFails() {
 	require.NoError(err, "height resolution failure (no blocks) should return empty, not error")
 	require.NotNil(resp)
 	require.Empty(resp.EventRecords)
-}
-
-// TestGetStateSyncsByTime_DelegatesToVisibleAtHeight verifies that the combined
-// endpoint returns the same events as a direct GetRecordListVisibleAtHeight call.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_DelegatesToVisibleAtHeight() {
-	ctx, ck := s.ctx, s.keeper
-	require := s.Require()
-
-	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
-
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
-
-	// Create events with visibility heights
-	for i := uint64(1); i <= 4; i++ {
-		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
-			baseTime.Add(time.Duration(i)*time.Minute))
-		require.NoError(ck.SetEventRecord(ctx, rec))
-		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, 100+i))
-	}
-
-	// Store block times at heights 100-104
-	for i := int64(0); i < 5; i++ {
-		h := 100 + i
-		bt := baseTime.Add(time.Duration(i*3) * time.Second)
-		ctx = ctx.WithBlockHeight(h).WithBlockHeader(cmtproto.Header{Time: bt, Height: h})
-		require.NoError(ck.StoreBlockTime(ctx))
-	}
-
-	cutoff := baseTime.Add(10 * time.Minute)
-	ctx = ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{
-		Time:   cutoff.Add(time.Minute),
-		Height: 10000,
-	})
-
-	queryServer := clerkKeeper.NewQueryServer(&ck)
-
-	// Call GetStateSyncsByTime
-	combinedResp, err := queryServer.(interface {
-		GetStateSyncsByTime(context.Context, *types.StateSyncsByTimeRequest) (*types.StateSyncsByTimeResponse, error)
-	}).GetStateSyncsByTime(ctx, &types.StateSyncsByTimeRequest{
-		FromId:     1,
-		ToTime:     cutoff,
-		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
-	})
-	require.NoError(err)
-	require.NotNil(combinedResp)
-
-	// Call GetRecordListVisibleAtHeight with the resolved height
-	directResp, err := queryServer.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         1,
-		HeimdallHeight: combinedResp.HeimdallHeight,
-		ToTime:         cutoff,
-		Pagination:     query.PageRequest{Limit: 10, Key: []byte{0x00}},
-	})
-	require.NoError(err)
-	require.NotNil(directResp)
-
-	// Both should return identical event sets
-	require.Equal(len(directResp.EventRecords), len(combinedResp.EventRecords),
-		"combined endpoint must return same events as direct visible-at-height query")
-	for i := range combinedResp.EventRecords {
-		require.Equal(directResp.EventRecords[i].Id, combinedResp.EventRecords[i].Id)
-	}
-}
-
-func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_RejectsUnixEpochTimestamp() {
-	ctx := s.ctx.WithBlockHeight(helper.GetInitialHeight() + 10)
-	require := s.Require()
-
-	queryServer := clerkKeeper.NewQueryServer(&s.keeper)
-	qs := queryServer.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	})
-
-	resp, err := qs.GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         1,
-		HeimdallHeight: helper.GetInitialHeight() + 1,
-		ToTime:         time.Unix(0, 0).UTC(),
-		Pagination:     query.PageRequest{Limit: 10, Key: []byte{0x00}},
-	})
-	require.Error(err)
-	require.Nil(resp)
-	require.Equal(codes.InvalidArgument, status.Code(err))
-}
-
-// ---------------------------------------------------------------------------
-// GetBlockHeightByTime gRPC handler tests
-// ---------------------------------------------------------------------------
-
-// TestGRPC_GetBlockHeightByTime_HappyPath verifies correct height resolution.
-func (s *KeeperTestSuite) TestGRPC_GetBlockHeightByTime_HappyPath() {
-	ctx, ck := s.ctx, s.keeper
-	require := s.Require()
-
-	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
-
-	// Store block times at heights 100-104
-	for i := int64(0); i < 5; i++ {
-		h := 100 + i
-		bt := baseTime.Add(time.Duration(i*3) * time.Second)
-		ctx = ctx.WithBlockHeight(h).WithBlockHeader(cmtproto.Header{Time: bt, Height: h})
-		require.NoError(ck.StoreBlockTime(ctx))
-	}
-
-	queryServer := clerkKeeper.NewQueryServer(&ck)
-	qs := queryServer.(interface {
-		GetBlockHeightByTime(context.Context, *types.BlockHeightByTimeRequest) (*types.BlockHeightByTimeResponse, error)
-	})
-
-	// Cutoff at block 102's time (baseTime + 6s) should return height 102
-	resp, err := qs.GetBlockHeightByTime(ctx, &types.BlockHeightByTimeRequest{
-		CutoffTime: baseTime.Add(6 * time.Second).Unix(),
-	})
-	require.NoError(err)
-	require.Equal(int64(102), resp.Height)
-
-	// Cutoff between block 102 and 103 should still return 102
-	resp, err = qs.GetBlockHeightByTime(ctx, &types.BlockHeightByTimeRequest{
-		CutoffTime: baseTime.Add(7 * time.Second).Unix(),
-	})
-	require.NoError(err)
-	require.Equal(int64(102), resp.Height)
-}
-
-// TestGRPC_GetBlockHeightByTime_NoBlockFound verifies NotFound when cutoff is
-// before any stored block.
-func (s *KeeperTestSuite) TestGRPC_GetBlockHeightByTime_NoBlockFound() {
-	ctx, ck := s.ctx, s.keeper
-	require := s.Require()
-
-	bt := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
-	ctx = ctx.WithBlockHeight(100).WithBlockHeader(cmtproto.Header{Time: bt, Height: 100})
-	require.NoError(ck.StoreBlockTime(ctx))
-
-	queryServer := clerkKeeper.NewQueryServer(&ck)
-	qs := queryServer.(interface {
-		GetBlockHeightByTime(context.Context, *types.BlockHeightByTimeRequest) (*types.BlockHeightByTimeResponse, error)
-	})
-
-	// Cutoff before any block -> NotFound
-	resp, err := qs.GetBlockHeightByTime(ctx, &types.BlockHeightByTimeRequest{
-		CutoffTime: bt.Add(-time.Second).Unix(),
-	})
-	require.Error(err)
-	require.Nil(resp)
-	require.Contains(err.Error(), "no block found")
-}
-
-// TestGRPC_GetBlockHeightByTime_InvalidCutoff verifies error for zero and
-// negative cutoff values.
-func (s *KeeperTestSuite) TestGRPC_GetBlockHeightByTime_InvalidCutoff() {
-	ctx := s.ctx
-	require := s.Require()
-
-	queryServer := clerkKeeper.NewQueryServer(&s.keeper)
-	qs := queryServer.(interface {
-		GetBlockHeightByTime(context.Context, *types.BlockHeightByTimeRequest) (*types.BlockHeightByTimeResponse, error)
-	})
-
-	tests := []struct {
-		name   string
-		cutoff int64
-	}{
-		{"zero cutoff", 0},
-		{"negative cutoff", -100},
-	}
-
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			resp, err := qs.GetBlockHeightByTime(ctx, &types.BlockHeightByTimeRequest{
-				CutoffTime: tc.cutoff,
-			})
-			require.Error(err, "should reject %s", tc.name)
-			require.Nil(resp)
-			require.Contains(err.Error(), "cutoff_time must be a positive unix timestamp")
-		})
-	}
-}
-
-// TestGRPC_GetBlockHeightByTime_NilRequest verifies error on nil request.
-func (s *KeeperTestSuite) TestGRPC_GetBlockHeightByTime_NilRequest() {
-	ctx := s.ctx
-	require := s.Require()
-
-	queryServer := clerkKeeper.NewQueryServer(&s.keeper)
-	qs := queryServer.(interface {
-		GetBlockHeightByTime(context.Context, *types.BlockHeightByTimeRequest) (*types.BlockHeightByTimeResponse, error)
-	})
-
-	resp, err := qs.GetBlockHeightByTime(ctx, nil)
-	require.Error(err)
-	require.Nil(resp)
 }

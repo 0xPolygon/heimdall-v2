@@ -2581,60 +2581,6 @@ paths:
           format: uint64
       tags:
         - Query
-  /clerk/block-height-by-time:
-    get:
-      summary: |-
-        GetBlockHeightByTime returns the greatest committed Heimdall height
-        whose header timestamp is <= the given cutoff time.
-      operationId: GetBlockHeightByTime
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              height:
-                type: string
-                format: int64
-                description: >-
-                  The greatest committed Heimdall height with header.time <=
-                  cutoff_time.
-            description: >-
-              BlockHeightByTimeResponse is the response type for
-              GetBlockHeightByTime.
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      parameters:
-        - name: cutoff_time
-          description: >-
-            Cutoff as unix seconds. Returns greatest height with header time <=
-            this.
-          in: query
-          required: false
-          type: string
-          format: int64
-      tags:
-        - Query
   /clerk/event-records/count:
     get:
       summary: GetRecordCount queries the total number of event records.
@@ -3010,179 +2956,15 @@ paths:
           format: uint64
       tags:
         - Query
-  /clerk/state-syncs-at-height:
-    get:
-      summary: >-
-        GetRecordListVisibleAtHeight queries events visible at a specific
-        Heimdall
-
-        height. Used by Bor for deterministic state sync: all validators derive
-        the
-
-        same height from the same Bor block header and get identical results
-        from
-
-        latest Heimdall state.
-      operationId: GetRecordListVisibleAtHeight
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              event_records:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      format: uint64
-                      description: Unique sequential identifier for this event record.
-                    contract:
-                      type: string
-                      description: >-
-                        Address of the contract that emitted this event on the
-                        root chain.
-                    data:
-                      type: string
-                      format: byte
-                      description: Encoded event data from the contract log.
-                    tx_hash:
-                      type: string
-                      description: >-
-                        Transaction hash on the root chain where this event was
-                        emitted.
-                    log_index:
-                      type: string
-                      format: uint64
-                      description: Index of this log entry within the transaction.
-                    bor_chain_id:
-                      type: string
-                      description: Chain ID of the Bor chain this record applies to.
-                    record_time:
-                      type: string
-                      format: date-time
-                      description: Timestamp when this record was created.
-                  description: >-
-                    EventRecord represents a state sync event from the Ethereum
-                    root chain to the
-
-                    Bor chain. These records are used to relay events from
-                    Ethereum to Polygon,
-
-                    enabling cross-chain communication for deposits, state
-                    updates, and other
-
-                    operations.
-            description: |-
-              RecordListVisibleAtHeightResponse is the response type for the
-              GetRecordListVisibleAtHeight query.
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      parameters:
-        - name: from_id
-          in: query
-          required: false
-          type: string
-          format: uint64
-        - name: heimdall_height
-          in: query
-          required: false
-          type: string
-          format: int64
-        - name: to_time
-          in: query
-          required: false
-          type: string
-          format: date-time
-        - name: pagination.key
-          description: |-
-            key is a value returned in PageResponse.next_key to begin
-            querying the next page most efficiently. Only one of offset or key
-            should be set.
-          in: query
-          required: false
-          type: string
-          format: byte
-        - name: pagination.offset
-          description: >-
-            offset is a numeric offset that can be used when key is unavailable.
-
-            It is less efficient than using key. Only one of offset or key
-            should
-
-            be set.
-          in: query
-          required: false
-          type: string
-          format: uint64
-        - name: pagination.limit
-          description: >-
-            limit is the total number of results to be returned in the result
-            page.
-
-            If left empty it will default to a value to be set by each app.
-          in: query
-          required: false
-          type: string
-          format: uint64
-        - name: pagination.count_total
-          description: >-
-            count_total is set to true  to indicate that the result set should
-            include
-
-            a count of the total number of items available for pagination in
-            UIs.
-
-            count_total is only respected when offset is used. It is ignored
-            when key
-
-            is set.
-          in: query
-          required: false
-          type: boolean
-        - name: pagination.reverse
-          description: >-
-            reverse is set to true if results are to be returned in the
-            descending order.
-
-
-            Since: cosmos-sdk 0.43
-          in: query
-          required: false
-          type: boolean
-      tags:
-        - Query
   /clerk/state-syncs-by-time:
     get:
       summary: >-
         GetStateSyncsByTime resolves a cutoff time to a Heimdall height and
         returns
 
-        events visible at that height. Combines GetBlockHeightByTime and
+        events visible at that height in a single deterministic query for
 
-        GetRecordListVisibleAtHeight into a single call for bor/erigon clients.
+        bor/erigon clients.
       operationId: GetStateSyncsByTime
       responses:
         '200':
@@ -7069,16 +6851,6 @@ definitions:
     description: >-
       QueryParamsResponse is the response type for the GetCheckpointParams
       query.
-  heimdallv2.clerk.BlockHeightByTimeResponse:
-    type: object
-    properties:
-      height:
-        type: string
-        format: int64
-        description: >-
-          The greatest committed Heimdall height with header.time <=
-          cutoff_time.
-    description: BlockHeightByTimeResponse is the response type for GetBlockHeightByTime.
   heimdallv2.clerk.EventRecord:
     type: object
     properties:
@@ -7193,55 +6965,6 @@ definitions:
             operations.
         description: List of event records for the requested page.
     description: RecordListResponse is the response type for the GetRecordList query.
-  heimdallv2.clerk.RecordListVisibleAtHeightResponse:
-    type: object
-    properties:
-      event_records:
-        type: array
-        items:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uint64
-              description: Unique sequential identifier for this event record.
-            contract:
-              type: string
-              description: >-
-                Address of the contract that emitted this event on the root
-                chain.
-            data:
-              type: string
-              format: byte
-              description: Encoded event data from the contract log.
-            tx_hash:
-              type: string
-              description: Transaction hash on the root chain where this event was emitted.
-            log_index:
-              type: string
-              format: uint64
-              description: Index of this log entry within the transaction.
-            bor_chain_id:
-              type: string
-              description: Chain ID of the Bor chain this record applies to.
-            record_time:
-              type: string
-              format: date-time
-              description: Timestamp when this record was created.
-          description: >-
-            EventRecord represents a state sync event from the Ethereum root
-            chain to the
-
-            Bor chain. These records are used to relay events from Ethereum to
-            Polygon,
-
-            enabling cross-chain communication for deposits, state updates, and
-            other
-
-            operations.
-    description: |-
-      RecordListVisibleAtHeightResponse is the response type for the
-      GetRecordListVisibleAtHeight query.
   heimdallv2.clerk.RecordListWithTimeResponse:
     type: object
     properties:

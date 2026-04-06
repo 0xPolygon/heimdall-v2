@@ -6,6 +6,7 @@ import (
 
 	"cosmossdk.io/collections"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -13,6 +14,40 @@ import (
 	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
+
+func (s *KeeperTestSuite) queryDeterministicStateSyncs(
+	ctx sdk.Context,
+	resolvedHeight int64,
+	fromID uint64,
+	toTime time.Time,
+	limit uint64,
+) (*types.StateSyncsByTimeResponse, error) {
+	storeCtx := ctx.WithBlockHeight(resolvedHeight).WithBlockHeader(cmtproto.Header{
+		Time:   toTime.Add(-time.Second),
+		Height: resolvedHeight,
+	})
+	if err := s.keeper.StoreBlockTime(storeCtx); err != nil {
+		return nil, err
+	}
+
+	queryCtx := ctx.WithBlockHeight(resolvedHeight + 1).WithBlockHeader(cmtproto.Header{
+		Time:   toTime.Add(time.Second),
+		Height: resolvedHeight + 1,
+	})
+	if err := s.keeper.StoreBlockTime(queryCtx); err != nil {
+		return nil, err
+	}
+
+	queryServer := clerkKeeper.NewQueryServer(&s.keeper)
+
+	return queryServer.(interface {
+		GetStateSyncsByTime(context.Context, *types.StateSyncsByTimeRequest) (*types.StateSyncsByTimeResponse, error)
+	}).GetStateSyncsByTime(queryCtx, &types.StateSyncsByTimeRequest{
+		FromId:     fromID,
+		ToTime:     toTime,
+		Pagination: query.PageRequest{Limit: limit, Key: []byte{0x00}},
+	})
+}
 
 // TestProcessPendingVisibilityEvents verifies that pending events get assigned
 // visibility_height and are cleared from the pending collection.
@@ -143,7 +178,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_AlwaysUsesRecordTime() {
 // TestGetRecordListWithTime_HaltSimulation simulates the January 2026 halt scenario.
 // The old /clerk/time endpoint uses record_time, so it returns the event regardless
 // of visibility_height. This is the pre-existing non-deterministic behavior.
-// The FIX for determinism is in GetRecordListVisibleAtHeight (the new endpoint),
+// The FIX for determinism is in GetStateSyncsByTime (the deterministic endpoint),
 // not in the old endpoint — the old endpoint must remain backward-compatible.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_HaltSimulation() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
@@ -180,7 +215,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HaltSimulation() {
 // TestGetRecordListWithTime_PendingEventsIncluded verifies that GetRecordListWithTime
 // always filters by record_time, so pending events (no visibility_height yet) ARE returned
 // as long as their record_time < to_time. Visibility-time filtering is only in
-// GetRecordListVisibleAtHeight.
+// GetStateSyncsByTime.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingEventsIncluded() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
@@ -559,9 +594,9 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_RecordTimeBreakPreservesCont
 // (the old /clerk/time endpoint) always uses record_time for filtering, even after
 // the visibility-height upgrade. This preserves backward compatibility: EL clients
 // using the old (from_id, to_time) query pattern continue to get consistent results
-// until they switch to GetRecordListVisibleAtHeight after the EL HF.
+// until they switch to GetStateSyncsByTime after the EL HF.
 //
-// Determinism for post-EL-fork nodes is provided by GetRecordListVisibleAtHeight,
+// Determinism for post-EL-fork nodes is provided by GetStateSyncsByTime,
 // which filters by visibility_height — tested separately.
 func (s *KeeperTestSuite) TestQueryDeterminismAcrossCommittedStates() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
@@ -611,7 +646,7 @@ func (s *KeeperTestSuite) TestQueryDeterminismAcrossCommittedStates() {
 //
 // GetRecordListWithTime always uses record_time, so the event is visible immediately
 // after being stored (even while pending). The visibility_height is only relevant for
-// GetRecordListVisibleAtHeight (the new deterministic endpoint).
+// GetStateSyncsByTime (the deterministic endpoint).
 func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	ctx, ck, queryClient, postHandler := s.ctx, s.keeper, s.queryClient, s.postHandler
 	require := s.Require()
@@ -659,7 +694,7 @@ func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	require.Len(resAfter.EventRecords, 1)
 	require.Equal(uint64(1000), resAfter.EventRecords[0].Id)
 
-	// Verify visibility_height was set correctly (used by GetRecordListVisibleAtHeight)
+	// Verify visibility_height was set correctly (used by GetStateSyncsByTime)
 	vh, err := ck.GetVisibilityHeightForEvent(ctx, 1000)
 	require.NoError(err)
 	require.Equal(uint64(101), vh)
@@ -836,9 +871,9 @@ func (s *KeeperTestSuite) TestProcessPendingVisibilityEvents_StoresHeight() {
 
 }
 
-// TestGetRecordListVisibleAtHeight_BasicFlow stores events with different visibility
-// heights, queries at a specific height, and verifies correct filtering.
-func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_BasicFlow() {
+// TestGetStateSyncsByTime_BasicFlow stores events with different visibility
+// heights, resolves a specific height from cutoff time, and verifies filtering.
+func (s *KeeperTestSuite) TestGetStateSyncsByTime_BasicFlow() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -857,16 +892,7 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_BasicFlow() {
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, visHeight))
 	}
 
-	// Query at height 103 → events 1,2,3 visible (vis heights 101,102,103)
-	qs := clerkKeeper.NewQueryServer(&ck)
-	resp, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         1,
-		HeimdallHeight: 103,
-		ToTime:         baseTime.Add(time.Hour), // generous to_time for legacy compatibility
-		Pagination:     query.PageRequest{Limit: 10, Key: []byte{0x00}},
-	})
+	resp, err := s.queryDeterministicStateSyncs(ctx, 103, 1, baseTime.Add(time.Hour), 10)
 	require.NoError(err)
 	require.Len(resp.EventRecords, 3)
 	for i, rec := range resp.EventRecords {
@@ -874,10 +900,11 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_BasicFlow() {
 	}
 }
 
-// TestGetRecordListVisibleAtHeight_HybridQuery mixes pre-upgrade (record_time filtered)
-// and post-upgrade (visibility_height filtered) events. It verifies the new endpoint
-// uses record_time for legacy events and visibility_height for post-upgrade events.
-func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_HybridQuery() {
+// TestGetStateSyncsByTime_HybridQuery mixes pre-upgrade (record_time filtered)
+// and post-upgrade (visibility_height filtered) events. It verifies the
+// deterministic endpoint resolves the height internally while preserving the same
+// legacy-vs-post-upgrade filtering rules.
+func (s *KeeperTestSuite) TestGetStateSyncsByTime_HybridQuery() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -903,38 +930,22 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_HybridQuery() {
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, visHeight))
 	}
 
-	qs := clerkKeeper.NewQueryServer(&ck)
-	resp, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         1,
-		HeimdallHeight: 204, // includes all post-upgrade events
-		ToTime:         baseTime.Add(time.Hour),
-		Pagination:     query.PageRequest{Limit: 10, Key: []byte{0x00}},
-	})
+	resp2, err := s.queryDeterministicStateSyncs(ctx, 203, 1, baseTime.Add(time.Hour), 10)
+	require.NoError(err)
+	require.Len(resp2.EventRecords, 3, "should return 2 legacy + 1 post-upgrade")
+
+	resp, err := s.queryDeterministicStateSyncs(ctx, 204, 1, baseTime.Add(time.Hour+time.Second), 10)
 	require.NoError(err)
 	require.Len(resp.EventRecords, 4, "should return all 4 events (2 legacy + 2 post-upgrade)")
 	for i, rec := range resp.EventRecords {
 		require.Equal(uint64(i+1), rec.Id, "IDs must be contiguous")
 	}
-
-	// Query at height 203 → only events 1,2,3 (event 4 has vis height 204)
-	resp2, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         1,
-		HeimdallHeight: 203,
-		ToTime:         baseTime.Add(time.Hour),
-		Pagination:     query.PageRequest{Limit: 10, Key: []byte{0x00}},
-	})
-	require.NoError(err)
-	require.Len(resp2.EventRecords, 3, "should return 2 legacy + 1 post-upgrade")
 }
 
-// TestGetRecordListVisibleAtHeight_LegacyOutOfOrderRecordTimes verifies that a
+// TestGetStateSyncsByTime_LegacyOutOfOrderRecordTimes verifies that a
 // legacy event with record_time >= to_time does not hide a later-ID legacy event
 // whose record_time is still before to_time.
-func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_LegacyOutOfOrderRecordTimes() {
+func (s *KeeperTestSuite) TestGetStateSyncsByTime_LegacyOutOfOrderRecordTimes() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -952,23 +963,15 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_LegacyOutOfOrderRecor
 		TxHash1, 101, 101, Address1, make([]byte, 1), "1", baseTime.Add(50*time.Minute),
 	)))
 
-	qs := clerkKeeper.NewQueryServer(&ck)
-	resp, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         100,
-		HeimdallHeight: 1000,
-		ToTime:         toTime,
-		Pagination:     query.PageRequest{Limit: 10, Key: []byte{0x00}},
-	})
+	resp, err := s.queryDeterministicStateSyncs(ctx, 1000, 100, toTime, 10)
 	require.NoError(err)
 	require.Len(resp.EventRecords, 1, "later eligible legacy events must not be hidden by an earlier ineligible ID")
 	require.Equal(uint64(101), resp.EventRecords[0].Id)
 }
 
-// TestGetRecordListVisibleAtHeight_PendingExcluded verifies that post-upgrade events
+// TestGetStateSyncsByTime_PendingExcluded verifies that post-upgrade events
 // without visibility_height are skipped, while later visible events are still returned.
-func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_PendingExcluded() {
+func (s *KeeperTestSuite) TestGetStateSyncsByTime_PendingExcluded() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -987,25 +990,17 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_PendingExcluded() {
 	// event 2: no visibility height (pending)
 	require.NoError(ck.VisibilityHeightByID.Set(ctx, 3, 102))
 
-	qs := clerkKeeper.NewQueryServer(&ck)
-	resp, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         1,
-		HeimdallHeight: 200,
-		ToTime:         baseTime.Add(time.Hour),
-		Pagination:     query.PageRequest{Limit: 10, Key: []byte{0x00}},
-	})
+	resp, err := s.queryDeterministicStateSyncs(ctx, 200, 1, baseTime.Add(time.Hour), 10)
 	require.NoError(err)
 	require.Len(resp.EventRecords, 2, "should return visible events 1 and 3, skipping pending event 2")
 	require.Equal(uint64(1), resp.EventRecords[0].Id)
 	require.Equal(uint64(3), resp.EventRecords[1].Id)
 }
 
-// TestGetRecordListVisibleAtHeight_OutOfOrderVisibilityHeights verifies that a
+// TestGetStateSyncsByTime_OutOfOrderVisibilityHeights verifies that a
 // lower-ID event becoming visible later does not hide a higher-ID event that is
 // already visible at the requested height.
-func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_OutOfOrderVisibilityHeights() {
+func (s *KeeperTestSuite) TestGetStateSyncsByTime_OutOfOrderVisibilityHeights() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -1024,24 +1019,16 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_OutOfOrderVisibilityH
 	require.NoError(ck.VisibilityHeightByID.Set(ctx, 1, 300))
 	require.NoError(ck.VisibilityHeightByID.Set(ctx, 2, 200))
 
-	qs := clerkKeeper.NewQueryServer(&ck)
-	resp, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         1,
-		HeimdallHeight: 250,
-		ToTime:         baseTime.Add(time.Hour),
-		Pagination:     query.PageRequest{Limit: 10, Key: []byte{0x00}},
-	})
+	resp, err := s.queryDeterministicStateSyncs(ctx, 250, 1, baseTime.Add(time.Hour), 10)
 	require.NoError(err)
 	require.Len(resp.EventRecords, 1, "should return event 2 even though event 1 becomes visible later")
 	require.Equal(uint64(2), resp.EventRecords[0].Id)
 }
 
-// TestGetRecordListVisibleAtHeight_LegacyEventDoesNotHidePostUpgradeEvents verifies
+// TestGetStateSyncsByTime_LegacyEventDoesNotHidePostUpgradeEvents verifies
 // that an out-of-order legacy event near the upgrade boundary does not truncate the
 // scan before eligible post-upgrade events.
-func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_LegacyEventDoesNotHidePostUpgradeEvents() {
+func (s *KeeperTestSuite) TestGetStateSyncsByTime_LegacyEventDoesNotHidePostUpgradeEvents() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -1062,24 +1049,16 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_LegacyEventDoesNotHid
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, 200+i))
 	}
 
-	qs := clerkKeeper.NewQueryServer(&ck)
-	resp, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         100,
-		HeimdallHeight: 500,
-		ToTime:         toTime,
-		Pagination:     query.PageRequest{Limit: 10, Key: []byte{0x00}},
-	})
+	resp, err := s.queryDeterministicStateSyncs(ctx, 500, 100, toTime, 10)
 	require.NoError(err)
 	require.Len(resp.EventRecords, 2, "eligible post-upgrade events must still be returned")
 	require.Equal(uint64(101), resp.EventRecords[0].Id)
 	require.Equal(uint64(102), resp.EventRecords[1].Id)
 }
 
-// TestGetRecordListVisibleAtHeight_DeterministicAcrossLatestState verifies that the
+// TestGetStateSyncsByTime_DeterministicAcrossLatestState verifies that the
 // same query against the latest state always returns the same result regardless of when called.
-func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_DeterministicAcrossLatestState() {
+func (s *KeeperTestSuite) TestGetStateSyncsByTime_DeterministicAcrossLatestState() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -1096,24 +1075,12 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_DeterministicAcrossLa
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, visHeight))
 	}
 
-	qs := clerkKeeper.NewQueryServer(&ck)
-	req := &types.RecordListVisibleAtHeightRequest{
-		FromId:         1,
-		HeimdallHeight: 101, // events 1,2 visible
-		ToTime:         baseTime.Add(time.Hour),
-		Pagination:     query.PageRequest{Limit: 10, Key: []byte{0x00}},
-	}
-
 	// Query twice and ensure results are identical (determinism)
-	resp1, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, req)
+	resp1, err := s.queryDeterministicStateSyncs(ctx, 101, 1, baseTime.Add(time.Hour), 10)
 	require.NoError(err)
 	require.Len(resp1.EventRecords, 2)
 
-	resp2, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, req)
+	resp2, err := s.queryDeterministicStateSyncs(ctx, 101, 1, baseTime.Add(time.Hour), 10)
 	require.NoError(err)
 	require.Len(resp2.EventRecords, 2)
 
@@ -1134,9 +1101,7 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_DeterministicAcrossLa
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, visHeight))
 	}
 
-	resp3, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, req)
+	resp3, err := s.queryDeterministicStateSyncs(ctx, 101, 1, baseTime.Add(time.Hour), 10)
 	require.NoError(err)
 	require.Len(resp3.EventRecords, 2, "same height query returns same count even after new events added")
 	require.Equal(uint64(1), resp3.EventRecords[0].Id)
@@ -1250,10 +1215,10 @@ func (s *KeeperTestSuite) TestGetBlockHeightByTime_ActivationBoundary() {
 	require.Equal(activationHeight+1, height)
 }
 
-// TestGetRecordListVisibleAtHeight_ContiguousIDs stores 10 post-upgrade events where
+// TestGetStateSyncsByTime_ContiguousIDs stores 10 post-upgrade events where
 // events 1-7 have visibility_height=100 and events 8-10 have visibility_height=200.
 // Querying at height 150 should return only events 1-7.
-func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_ContiguousIDs() {
+func (s *KeeperTestSuite) TestGetStateSyncsByTime_ContiguousIDs() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -1276,16 +1241,7 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_ContiguousIDs() {
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, visHeight))
 	}
 
-	// Query at height 150 → should return events 1-7 (vis_height 100 <= 150).
-	qs := clerkKeeper.NewQueryServer(&ck)
-	resp, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         1,
-		HeimdallHeight: 150,
-		ToTime:         baseTime.Add(time.Hour),
-		Pagination:     query.PageRequest{Limit: 20, Key: []byte{0x00}},
-	})
+	resp, err := s.queryDeterministicStateSyncs(ctx, 150, 1, baseTime.Add(time.Hour), 20)
 	require.NoError(err)
 	require.Len(resp.EventRecords, 7, "should return events 1-7")
 
@@ -1295,11 +1251,11 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_ContiguousIDs() {
 	}
 }
 
-// TestGetRecordListVisibleAtHeight_PreAndPostUpgradeMix stores pre-upgrade events
+// TestGetStateSyncsByTime_PreAndPostUpgradeMix stores pre-upgrade events
 // (record_time based) and post-upgrade events (visibility_height based). Verifies
 // that pre-upgrade events use record_time filtering and post-upgrade events use
 // visibility_height filtering.
-func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_PreAndPostUpgradeMix() {
+func (s *KeeperTestSuite) TestGetStateSyncsByTime_PreAndPostUpgradeMix() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -1326,16 +1282,23 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_PreAndPostUpgradeMix(
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, visHeight))
 	}
 
-	// Query: height=100 (includes all post-upgrade events), to_time includes all the pre-upgrade events
-	qs := clerkKeeper.NewQueryServer(&ck)
-	resp, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         1,
-		HeimdallHeight: 100,
-		ToTime:         baseTime.Add(time.Hour), // generous to_time for all pre-upgrade events
-		Pagination:     query.PageRequest{Limit: 20, Key: []byte{0x00}},
-	})
+	// First test that pre-upgrade record_time filtering works by restricting to_time.
+	resp3, err := s.queryDeterministicStateSyncs(ctx, 100, 1, baseTime.Add(2*time.Minute+30*time.Second), 20)
+	require.NoError(err)
+	require.Len(resp3.EventRecords, 2, "restricting to_time should filter out pre-upgrade event 3")
+	require.Equal(uint64(1), resp3.EventRecords[0].Id)
+	require.Equal(uint64(2), resp3.EventRecords[1].Id)
+
+	// Then test that post-upgrade filtering works by querying at a lower height
+	// that excludes event 6 (vis_height=56).
+	resp2, err := s.queryDeterministicStateSyncs(ctx, 55, 1, baseTime.Add(time.Hour), 20)
+	require.NoError(err)
+	require.Len(resp2.EventRecords, 5, "should return events 1-5 (3 pre-upgrade + 2 post-upgrade)")
+	for i, rec := range resp2.EventRecords {
+		require.Equal(uint64(i+1), rec.Id, "IDs must be contiguous")
+	}
+
+	resp, err := s.queryDeterministicStateSyncs(ctx, 100, 1, baseTime.Add(time.Hour+time.Second), 20)
 	require.NoError(err)
 	require.Len(resp.EventRecords, 6, "should return all 6 events (3 pre-upgrade + 3 post-upgrade)")
 
@@ -1350,36 +1313,6 @@ func (s *KeeperTestSuite) TestGetRecordListVisibleAtHeight_PreAndPostUpgradeMix(
 		require.Equal(uint64(i+1), resp.EventRecords[i].Id)
 		require.True(resp.EventRecords[i].Id >= 4, "events 4-6 are post-upgrade (visibility_height filtered)")
 	}
-
-	// Now test that post-upgrade filtering actually works by querying at a lower height
-	// that excludes event 6 (vis_height=56)
-	resp2, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         1,
-		HeimdallHeight: 55, // includes events 4 (54) and 5 (55), excludes event 6 (56)
-		ToTime:         baseTime.Add(time.Hour),
-		Pagination:     query.PageRequest{Limit: 20, Key: []byte{0x00}},
-	})
-	require.NoError(err)
-	require.Len(resp2.EventRecords, 5, "should return events 1-5 (3 pre-upgrade + 2 post-upgrade)")
-	for i, rec := range resp2.EventRecords {
-		require.Equal(uint64(i+1), rec.Id, "IDs must be contiguous")
-	}
-
-	// Also test that pre-upgrade record_time filtering works by restricting to_time
-	resp3, err := qs.(interface {
-		GetRecordListVisibleAtHeight(context.Context, *types.RecordListVisibleAtHeightRequest) (*types.RecordListVisibleAtHeightResponse, error)
-	}).GetRecordListVisibleAtHeight(ctx, &types.RecordListVisibleAtHeightRequest{
-		FromId:         1,
-		HeimdallHeight: 100,
-		ToTime:         baseTime.Add(2*time.Minute + 30*time.Second), // includes events 1,2 but not event 3 (record_time = baseTime+3min)
-		Pagination:     query.PageRequest{Limit: 20, Key: []byte{0x00}},
-	})
-	require.NoError(err)
-	require.Len(resp3.EventRecords, 2, "restricting to_time should filter out pre-upgrade event 3 and break")
-	require.Equal(uint64(1), resp3.EventRecords[0].Id)
-	require.Equal(uint64(2), resp3.EventRecords[1].Id)
 }
 
 // TestStoreBlockTime_WritesReverseIndex verifies that StoreBlockTime correctly writes

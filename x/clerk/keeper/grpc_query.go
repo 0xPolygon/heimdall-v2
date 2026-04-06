@@ -7,14 +7,12 @@ import (
 	"time"
 
 	"cosmossdk.io/collections"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/common/hex"
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
@@ -133,8 +131,8 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		}
 
 		// Always filter by record_time for backward compatibility.
-		// Post heimdall fork, clients switch to GetRecordListVisibleAtHeight which uses
-		// visibility_height for deterministic filtering.
+		// Post heimdall fork, clients switch to GetStateSyncsByTime, which resolves
+		// a deterministic height and filters with visibility_height.
 		if !value.RecordTime.Before(request.ToTime) {
 			break
 		}
@@ -278,82 +276,8 @@ func (q queryServer) GetRecordCount(ctx context.Context, _ *types.RecordCountReq
 	return &types.RecordCountResponse{Count: q.k.GetEventRecordCount(ctx)}, nil
 }
 
-// GetBlockHeightByTime returns the greatest committed Heimdall height whose header
-// timestamp is <= the given cutoff time. This is used by Bor to resolve a deterministic
-// Heimdall height for height-pinned state sync queries.
-func (q queryServer) GetBlockHeightByTime(ctx context.Context, request *types.BlockHeightByTimeRequest) (_ *types.BlockHeightByTimeResponse, err error) {
-	startTime := time.Now()
-	defer recordClerkQueryMetric(api.GetBlockHeightByTimeMethod, startTime, &err)
-
-	if request == nil {
-		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
-	}
-	if request.CutoffTime <= 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "cutoff_time must be a positive unix timestamp, got %d", request.CutoffTime)
-	}
-
-	height, err := q.k.GetBlockHeightByTime(ctx, request.CutoffTime)
-	if err != nil {
-		if errors.Is(err, ErrNoBlockFound) {
-			return nil, status.Error(codes.NotFound, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &types.BlockHeightByTimeResponse{Height: height}, nil
-}
-
-// GetRecordListVisibleAtHeight queries events visible at a specific Heimdall height.
-// Used by Bor for deterministic state syncs: all validators derive the same height
-// from the same Bor block header and get identical results from the latest Heimdall state.
-func (q queryServer) GetRecordListVisibleAtHeight(ctx context.Context, request *types.RecordListVisibleAtHeightRequest) (_ *types.RecordListVisibleAtHeightResponse, err error) {
-	startTime := time.Now()
-	defer recordClerkQueryMetric(api.GetRecordListVisibleAtHeightMethod, startTime, &err)
-
-	if request == nil {
-		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
-	}
-
-	if request.FromId < 1 {
-		return nil, status.Errorf(codes.InvalidArgument, "from_id cannot be less than 1")
-	}
-	if request.HeimdallHeight <= helper.GetInitialHeight() {
-		return nil, status.Errorf(codes.InvalidArgument, "heimdall_height must be greater than initial height %d", helper.GetInitialHeight())
-	}
-	if isPaginationEmpty(request.Pagination) {
-		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty (at least one argument must be set)")
-	}
-	if request.Pagination.Limit == 0 || request.Pagination.Limit > MaxRecordListLimit {
-		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxRecordListLimit)
-	}
-	if request.ToTime.IsZero() {
-		return nil, status.Errorf(codes.InvalidArgument, "to_time must be set")
-	}
-	if request.ToTime.Unix() <= 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "to_time must be greater than Unix epoch")
-	}
-
-	// Reject future heights
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	currentHeight := sdkCtx.BlockHeight()
-	if request.HeimdallHeight > currentHeight {
-		return nil, status.Errorf(codes.InvalidArgument,
-			"heimdall_height %d exceeds current committed height %d", request.HeimdallHeight, currentHeight)
-	}
-
-	records, err := q.recordListVisibleAtHeight(ctx, request.FromId, request.HeimdallHeight, request.ToTime, request.Pagination)
-	if err != nil {
-		return nil, err
-	}
-
-	return &types.RecordListVisibleAtHeightResponse{
-		EventRecords: records,
-	}, nil
-}
-
-// recordListVisibleAtHeight is the shared implementation used by both
-// GetRecordListVisibleAtHeight and GetStateSyncsByTime. Extracting it avoids
-// double-counting Prometheus metrics when the combined endpoint delegates.
+// recordListVisibleAtHeight is the shared deterministic filtering implementation
+// used internally by GetStateSyncsByTime after it resolves the Heimdall height.
 func (q queryServer) recordListVisibleAtHeight(
 	ctx context.Context,
 	fromId uint64,
@@ -398,12 +322,16 @@ func (q queryServer) recordListVisibleAtHeight(
 		}
 
 		if value.Id < upgradeId {
-			// Legacy event: filter by record_time < to_time for backward compatibility
+			// Legacy event: filter by record_time < to_time for backward compatibility.
+			// Event IDs can be committed out of record_time order, so an ineligible
+			// event must be skipped rather than terminating the scan.
 			if !value.RecordTime.Before(toTime) {
 				continue
 			}
 		} else {
 			// Post-upgrade event: filter by visibility_height and record_time.
+			// Neither visibility_height nor record_time is guaranteed to be monotonic
+			// in event ID order, so skip ineligible records instead of breaking.
 			var visibilityHeight uint64
 			visibilityHeight, err = q.k.GetVisibilityHeightForEvent(ctx, value.Id)
 			if err != nil {
@@ -442,7 +370,7 @@ func (q queryServer) recordListVisibleAtHeight(
 }
 
 // GetStateSyncsByTime resolves a cutoff time to a Heimdall height, then returns
-// events visible at that height. Combines GetBlockHeightByTime + GetRecordListVisibleAtHeight.
+// the events visible at that height in one deterministic query.
 func (q queryServer) GetStateSyncsByTime(ctx context.Context, request *types.StateSyncsByTimeRequest) (_ *types.StateSyncsByTimeResponse, err error) {
 	startTime := time.Now()
 	defer recordClerkQueryMetric(api.GetStateSyncsByTimeMethod, startTime, &err)
@@ -466,15 +394,24 @@ func (q queryServer) GetStateSyncsByTime(ctx context.Context, request *types.Sta
 		return nil, status.Errorf(codes.InvalidArgument, "limit cannot be 0 or greater than %d", MaxRecordListLimit)
 	}
 
-	// Stability gate: the resolved height is only frozen once a heimdall block with
-	// time > cutoff has been committed (block times are monotonically increasing, so no
-	// new blocks can then have time <= cutoff, and no new events can get a visibility_height
-	// <= the resolved height).  Before this point the result could change between queries,
-	// breaking cross-client determinism.  Returning empty matches bor's pre-fork behaviour
-	// when heimdall is behind.
+	// Stability gate: the resolved height is only frozen once a committed Heimdall
+	// block with time > cutoff has been indexed (block times are monotonically
+	// increasing, so no new blocks can then have time <= cutoff, and no new events
+	// can get a visibility_height <= the resolved height). Before this point the
+	// result could change between queries, breaking cross-client determinism.
+	// Use the indexed block-time store rather than sdkCtx.BlockTime(), because query
+	// contexts may not carry the latest committed header time.
 	cutoffUnix := request.ToTime.Unix()
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if sdkCtx.BlockTime().Unix() <= cutoffUnix {
+	latestIndexedTime, err := q.k.GetLatestIndexedBlockTime(ctx)
+	if err != nil {
+		if errors.Is(err, ErrNoBlockFound) {
+			return &types.StateSyncsByTimeResponse{
+				EventRecords: []types.EventRecord{},
+			}, nil
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if latestIndexedTime <= cutoffUnix {
 		return &types.StateSyncsByTimeResponse{
 			EventRecords: []types.EventRecord{},
 		}, nil
@@ -490,8 +427,8 @@ func (q queryServer) GetStateSyncsByTime(ctx context.Context, request *types.Sta
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// Use the shared helper to avoid double-counting metrics (the public
-	// GetRecordListVisibleAtHeight handler has its own recordClerkQueryMetric).
+	// Use the shared helper so visibility-height filtering stays in one place
+	// while the public API remains a single deterministic query.
 	records, err := q.recordListVisibleAtHeight(ctx, request.FromId, height, request.ToTime, request.Pagination)
 	if err != nil {
 		return nil, err

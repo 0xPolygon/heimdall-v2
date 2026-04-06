@@ -404,6 +404,31 @@ func (k *Keeper) GetBlockHeightByTime(ctx context.Context, cutoffUnix int64) (in
 	return int64(kv.Value), nil
 }
 
+// GetLatestIndexedBlockTime returns the newest committed block time present in the
+// reverse index used for deterministic state-sync height resolution.
+func (k *Keeper) GetLatestIndexedBlockTime(ctx context.Context) (int64, error) {
+	iterator, err := k.BlockTimeReverseIndex.Iterate(ctx, (&collections.Range[collections.Pair[uint64, uint64]]{}).Descending())
+	if err != nil {
+		return 0, fmt.Errorf("failed to create iterator for latest BlockTimeReverseIndex entry: %w", err)
+	}
+	defer func() {
+		if err := iterator.Close(); err != nil {
+			k.Logger(ctx).Error("failed to close iterator for latest BlockTimeReverseIndex entry", "error", err)
+		}
+	}()
+
+	if !iterator.Valid() {
+		return 0, fmt.Errorf("%w: block time index is empty", ErrNoBlockFound)
+	}
+
+	kv, err := iterator.KeyValue()
+	if err != nil {
+		return 0, fmt.Errorf("failed to read latest BlockTimeReverseIndex entry: %w", err)
+	}
+
+	return int64(kv.Key.K1()), nil
+}
+
 // GetEventRecordCount returns the total count of event records.
 func (k *Keeper) GetEventRecordCount(ctx context.Context) uint64 {
 	// Create a reverse iterator to get the highest key efficiently.

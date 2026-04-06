@@ -48,25 +48,9 @@ service Query {
   rpc IsClerkTxOld(RecordSequenceRequest) returns (IsClerkTxOldResponse) {
     option (google.api.http).get = "/clerk/is-old-tx";
   }
-  // GetBlockHeightByTime returns the greatest committed Heimdall height
-  // whose header timestamp is <= the given cutoff time.
-  rpc GetBlockHeightByTime(BlockHeightByTimeRequest)
-      returns (BlockHeightByTimeResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/clerk/block-height-by-time";
-  }
-  // GetRecordListVisibleAtHeight queries events visible at a specific Heimdall
-  // height. Used by Bor for deterministic state sync: all validators derive the
-  // same height from the same Bor block header and get identical results from
-  // latest Heimdall state.
-  rpc GetRecordListVisibleAtHeight(RecordListVisibleAtHeightRequest)
-      returns (RecordListVisibleAtHeightResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/clerk/state-syncs-at-height";
-  }
   // GetStateSyncsByTime resolves a cutoff time to a Heimdall height and returns
-  // events visible at that height. Combines GetBlockHeightByTime and
-  // GetRecordListVisibleAtHeight into a single call for bor/erigon clients.
+  // events visible at that height in a single deterministic query for
+  // bor/erigon clients.
   rpc GetStateSyncsByTime(StateSyncsByTimeRequest)
       returns (StateSyncsByTimeResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
@@ -167,41 +151,9 @@ message RecordCountResponse {
   uint64 count = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// RecordListVisibleAtHeightRequest is the request type for the
-// GetRecordListVisibleAtHeight query.
-message RecordListVisibleAtHeightRequest {
-  uint64 from_id = 1 [ (amino.dont_omitempty) = true ];
-  int64 heimdall_height = 2 [ (amino.dont_omitempty) = true ];
-  google.protobuf.Timestamp to_time = 3 [
-    (gogoproto.stdtime) = true,
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
-  cosmos.base.query.v1beta1.PageRequest pagination = 4
-      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
-}
-
-// RecordListVisibleAtHeightResponse is the response type for the
-// GetRecordListVisibleAtHeight query.
-message RecordListVisibleAtHeightResponse {
-  repeated EventRecord event_records = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-}
-
-// BlockHeightByTimeRequest is the request type for GetBlockHeightByTime.
-message BlockHeightByTimeRequest {
-  // Cutoff as unix seconds. Returns greatest height with header time <= this.
-  int64 cutoff_time = 1 [ (amino.dont_omitempty) = true ];
-}
-
-// BlockHeightByTimeResponse is the response type for GetBlockHeightByTime.
-message BlockHeightByTimeResponse {
-  // The greatest committed Heimdall height with header.time <= cutoff_time.
-  int64 height = 1 [ (amino.dont_omitempty) = true ];
-}
-
 // StateSyncsByTimeRequest is the request type for GetStateSyncsByTime.
-// Combines block-height-by-time resolution and event fetching in one call.
+// Resolves the deterministic Heimdall height internally and returns all
+// visible events in one call.
 message StateSyncsByTimeRequest {
   // Starting record ID (inclusive).
   uint64 from_id = 1 [ (amino.dont_omitempty) = true ];
