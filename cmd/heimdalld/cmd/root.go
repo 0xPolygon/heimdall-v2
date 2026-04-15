@@ -141,7 +141,7 @@ func NewRootCmd() *cobra.Command {
 			// as RFC3339 (second precision) before the ConsoleWriter ever gets a
 			// chance to format it, resulting in second-only output.
 			// Using 3 decimal places ("000") matches bor's log timestamp format.
-			zerolog.TimeFieldFormat = "2006-01-02T15:04:05.000Z07:00"
+			zerolog.TimeFieldFormat = helper.LogTimestampFormat
 			var logOpts []log.Option
 			if serverCtx.Viper.GetString(flags.FlagLogFormat) == flags.OutputFormatJSON {
 				logOpts = append(logOpts, log.OutputJSONOption())
@@ -150,7 +150,7 @@ func NewRootCmd() *cobra.Command {
 			}
 			logOpts = append(logOpts,
 				log.LevelOption(logLevel),
-				log.TimeFormatOption("2006-01-02T15:04:05.000Z07:00"),
+				log.TimeFormatOption(helper.LogTimestampFormat),
 			)
 
 			serverCtx.Logger = log.NewLogger(cmd.OutOrStdout(), logOpts...).With(log.ModuleKey, "server")
