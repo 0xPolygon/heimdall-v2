@@ -93,6 +93,11 @@ const (
 
 	DefaultMilestonePollInterval = 30 * time.Second
 
+	// LogTimestampFormat is the millisecond-precision timestamp layout used for
+	// all heimdall log output. Matches bor's log format for consistent
+	// cross-service log analysis.
+	LogTimestampFormat = "2006-01-02T15:04:05.000Z07:00"
+
 	// Self-healing defaults
 
 	DefaultEnableSH                = false
@@ -368,7 +373,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 	logOpts = append(logOpts,
 		logger.LevelOption(logLevel),
-		logger.TimeFormatOption(time.RFC3339Nano),
+		logger.TimeFormatOption(LogTimestampFormat),
 	)
 
 	Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logOpts...)
