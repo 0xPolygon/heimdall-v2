@@ -32,13 +32,20 @@ type RootChainListener struct {
 	stakingInfoAbi *abi.ABI
 	stateSenderAbi *abi.ABI
 
+	// Pre-built topic→event lookup (avoids per-log linear scan across ABIs)
+	eventMap map[ethCommon.Hash]*abi.Event
+
 	// For self-healing, it will be only initialized if sub_graph_url is provided
 	subGraphClient *subGraphClient
+
+	// taskStaggerDelay is set per-event in queryAndBroadcastEvents to spread task ETAs.
+	taskStaggerDelay time.Duration
 }
 
 const (
 	lastRootBlockKey       = "rootchain-last-block" // storage key
 	maxRootChainBlockRange = 5000                   // max number of blocks to fetch logs for in a single FilterLogs call
+	taskStaggerInterval    = 1 * time.Second // delay between consecutive task ETAs in a batch to avoid thundering herd
 )
 
 // NewRootChainListener - constructor func
@@ -54,10 +61,19 @@ func NewRootChainListener() *RootChainListener {
 		&contractCaller.StakingInfoABI,
 	}
 
+	eventMap := make(map[ethCommon.Hash]*abi.Event)
+	for _, abiObj := range abis {
+		for _, event := range abiObj.Events {
+			e := event
+			eventMap[e.ID] = &e
+		}
+	}
+
 	return &RootChainListener{
 		abis:           abis,
 		stakingInfoAbi: &contractCaller.StakingInfoABI,
 		stateSenderAbi: &contractCaller.StateSenderABI,
+		eventMap:       eventMap,
 	}
 }
 
@@ -212,17 +228,19 @@ func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChain
 		rl.Logger.Debug("RootChainListener: new logs found", "numberOfLogs", len(logs))
 	}
 
-	// Process filtered log
-	for _, vLog := range logs {
-		topic := vLog.Topics[0].Bytes()
-		for _, abiObject := range rl.abis {
-			selectedEvent := helper.EventByID(abiObject, topic)
-			if selectedEvent == nil {
-				continue
-			}
-
-			rl.handleLog(vLog, selectedEvent)
+	for i, vLog := range logs {
+		if len(vLog.Topics) == 0 {
+			continue
 		}
+
+		selectedEvent, ok := rl.eventMap[vLog.Topics[0]]
+		if !ok {
+			continue
+		}
+
+		// Stagger events so tasks don't all fire at the same time.
+		rl.taskStaggerDelay = time.Duration(i) * taskStaggerInterval
+		rl.handleLog(vLog, selectedEvent)
 	}
 
 	return nil
@@ -244,12 +262,14 @@ func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string
 			},
 		},
 	}
-	signature.RetryCount = 3
+	signature.RetryCount = 10
 
 	// add delay for the task so that multiple validators won't send same transaction at same time
-	eta := time.Now().Add(delay)
+	// taskStaggerDelay spreads events in a batch so they don't all fire simultaneously
+	eta := time.Now().Add(delay + rl.taskStaggerDelay)
 	signature.ETA = &eta
 	rl.Logger.Info("RootChainListener: Sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)
+	rl.Logger.Info("[Bridge-Improvements] task staggered", "taskName", taskName, "baseDelay", delay, "stagger", rl.taskStaggerDelay, "retryCount", signature.RetryCount)
 
 	_, err := rl.queueConnector.Server.SendTask(signature)
 	if err != nil {

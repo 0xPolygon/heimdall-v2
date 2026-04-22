@@ -3,10 +3,13 @@ package helper
 import (
 	"encoding/hex"
 	"errors"
+	"math/big"
+	"sync"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -190,3 +193,108 @@ func TestPopulateABIs(t *testing.T) {
 	assert.Equalf(t, ContractsABIsMap[erc20.Erc20MetaData.ABI], &contractCallerObjSecond.PolTokenABI,
 		"values for %s not equals", erc20.Erc20MetaData.ABI)
 }
+
+func makeHeader(blockNum uint64) *ethTypes.Header {
+	return &ethTypes.Header{Number: new(big.Int).SetUint64(blockNum)}
+}
+
+func TestGetCachedFinalizedBlockNumber_EmptyCache(t *testing.T) {
+	t.Parallel()
+
+	cc := &ContractCaller{finalizedBlockCache: &finalizedBlockCache{}}
+	assert.Equal(t, uint64(0), cc.getCachedFinalizedBlockNumber())
+}
+
+func TestGetCachedFinalizedBlockNumber_NilCachePointer(t *testing.T) {
+	t.Parallel()
+
+	cc := &ContractCaller{finalizedBlockCache: nil}
+	assert.Equal(t, uint64(0), cc.getCachedFinalizedBlockNumber())
+}
+
+func TestUpdateFinalizedBlockCache_SetsValue(t *testing.T) {
+	t.Parallel()
+
+	cc := &ContractCaller{finalizedBlockCache: &finalizedBlockCache{}}
+
+	cc.updateFinalizedBlockCache(makeHeader(1000))
+	assert.Equal(t, uint64(1000), cc.getCachedFinalizedBlockNumber())
+}
+
+func TestUpdateFinalizedBlockCache_MonotonicIncrease(t *testing.T) {
+	t.Parallel()
+
+	cc := &ContractCaller{finalizedBlockCache: &finalizedBlockCache{}}
+
+	cc.updateFinalizedBlockCache(makeHeader(1000))
+	assert.Equal(t, uint64(1000), cc.getCachedFinalizedBlockNumber())
+
+	// Higher value should update
+	cc.updateFinalizedBlockCache(makeHeader(2000))
+	assert.Equal(t, uint64(2000), cc.getCachedFinalizedBlockNumber())
+
+	// Lower value must NOT update (monotonic guarantee)
+	cc.updateFinalizedBlockCache(makeHeader(1500))
+	assert.Equal(t, uint64(2000), cc.getCachedFinalizedBlockNumber())
+
+	// Equal value should not change anything
+	cc.updateFinalizedBlockCache(makeHeader(2000))
+	assert.Equal(t, uint64(2000), cc.getCachedFinalizedBlockNumber())
+}
+
+func TestUpdateFinalizedBlockCache_NilInputIgnored(t *testing.T) {
+	t.Parallel()
+
+	cc := &ContractCaller{finalizedBlockCache: &finalizedBlockCache{}}
+
+	cc.updateFinalizedBlockCache(makeHeader(1000))
+
+	// nil header should be ignored
+	cc.updateFinalizedBlockCache(nil)
+	assert.Equal(t, uint64(1000), cc.getCachedFinalizedBlockNumber())
+
+	// header with nil Number should be ignored
+	cc.updateFinalizedBlockCache(&ethTypes.Header{Number: nil})
+	assert.Equal(t, uint64(1000), cc.getCachedFinalizedBlockNumber())
+}
+
+func TestUpdateFinalizedBlockCache_NilCachePointerNoOp(t *testing.T) {
+	t.Parallel()
+
+	cc := &ContractCaller{finalizedBlockCache: nil}
+
+	// Should not panic when finalizedBlockCache pointer is nil
+	cc.updateFinalizedBlockCache(makeHeader(1000))
+	assert.Equal(t, uint64(0), cc.getCachedFinalizedBlockNumber())
+}
+
+func TestFinalizedBlockCache_ConcurrentAccess(t *testing.T) {
+	t.Parallel()
+
+	cc := &ContractCaller{finalizedBlockCache: &finalizedBlockCache{}}
+
+	var wg sync.WaitGroup
+
+	// Simulate concurrent reads and writes (race detector will catch issues)
+	for i := 0; i < 100; i++ {
+		wg.Add(2)
+
+		blockNum := uint64(i)
+
+		go func() {
+			defer wg.Done()
+			cc.updateFinalizedBlockCache(makeHeader(blockNum))
+		}()
+
+		go func() {
+			defer wg.Done()
+			_ = cc.getCachedFinalizedBlockNumber()
+		}()
+	}
+
+	wg.Wait()
+
+	// Cache should hold the highest value written
+	assert.Equal(t, uint64(99), cc.getCachedFinalizedBlockNumber())
+}
+

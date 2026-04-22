@@ -48,6 +48,7 @@ func (rl *RootChainListener) handleNewHeaderBlockLog(vLog types.Log, selectedEve
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
 		rl.Logger.Error(failedToMarshalLog, "error", err)
+		return
 	}
 
 	if isCurrentValidator, delay := util.CalculateTaskDelay(selectedEvent, rl.cliCtx.Codec); isCurrentValidator {
@@ -59,6 +60,7 @@ func (rl *RootChainListener) handleStakedLog(vLog types.Log, selectedEvent *abi.
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
 		rl.Logger.Error(failedToMarshalLog, "error", err)
+		return
 	}
 
 	pubKey := helper.GetPubKey()
@@ -66,6 +68,7 @@ func (rl *RootChainListener) handleStakedLog(vLog types.Log, selectedEvent *abi.
 	event := new(stakinginfo.StakinginfoStaked)
 	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
 		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
+		return
 	}
 
 	if len(pubKey) < 1 {
@@ -89,12 +92,14 @@ func (rl *RootChainListener) handleStakedLog(vLog types.Log, selectedEvent *abi.
 func (rl *RootChainListener) handleStakeUpdateLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "Error", err)
+		rl.Logger.Error(failedToMarshalLog, "error", err)
+		return
 	}
 
 	event := new(stakinginfo.StakinginfoStakeUpdate)
 	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
 		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
+		return
 	}
 
 	if util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec) {
@@ -107,7 +112,8 @@ func (rl *RootChainListener) handleStakeUpdateLog(vLog types.Log, selectedEvent 
 func (rl *RootChainListener) handleSignerChangeLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "Error", err)
+		rl.Logger.Error(failedToMarshalLog, "error", err)
+		return
 	}
 
 	pubKey := helper.GetPubKey()
@@ -115,6 +121,7 @@ func (rl *RootChainListener) handleSignerChangeLog(vLog types.Log, selectedEvent
 	event := new(stakinginfo.StakinginfoSignerChange)
 	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
 		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
+		return
 	}
 
 	if bytes.Equal(event.SignerPubkey, pubKey[1:]) && helper.IsPubKeyFirstByteValid(pubKey[0:1]) {
@@ -127,12 +134,14 @@ func (rl *RootChainListener) handleSignerChangeLog(vLog types.Log, selectedEvent
 func (rl *RootChainListener) handleUnstakeInitLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "Error", err)
+		rl.Logger.Error(failedToMarshalLog, "error", err)
+		return
 	}
 
 	event := new(stakinginfo.StakinginfoUnstakeInit)
 	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
 		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
+		return
 	}
 
 	if util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec) {
@@ -145,12 +154,14 @@ func (rl *RootChainListener) handleUnstakeInitLog(vLog types.Log, selectedEvent 
 func (rl *RootChainListener) handleStateSyncedLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "Error", err)
+		rl.Logger.Error(failedToMarshalLog, "error", err)
+		return
 	}
 
 	event := new(statesender.StatesenderStateSynced)
 	if err = helper.UnpackLog(rl.stateSenderAbi, event, selectedEvent.Name, &vLog); err != nil {
 		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
+		return
 	}
 
 	rl.Logger.Info("RootChainListener: StateSyncedEvent detected", "stateSyncId", event.Id)
@@ -163,12 +174,14 @@ func (rl *RootChainListener) handleStateSyncedLog(vLog types.Log, selectedEvent 
 func (rl *RootChainListener) handleTopUpFeeLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "Error", err)
+		rl.Logger.Error(failedToMarshalLog, "error", err)
+		return
 	}
 
 	event := new(stakinginfo.StakinginfoTopUpFee)
 	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
-		rl.Logger.Error("RootChainListener: error while parsing event", "name", selectedEvent.Name, "error", err)
+		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
+		return
 	}
 
 	if bytes.Equal(event.User.Bytes(), helper.GetAddress()) {
@@ -181,7 +194,8 @@ func (rl *RootChainListener) handleTopUpFeeLog(vLog types.Log, selectedEvent *ab
 func (rl *RootChainListener) handleSlashedLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "Error", err)
+		rl.Logger.Error(failedToMarshalLog, "error", err)
+		return
 	}
 
 	if isCurrentValidator, delay := util.CalculateTaskDelay(selectedEvent, rl.cliCtx.Codec); isCurrentValidator {
@@ -192,12 +206,14 @@ func (rl *RootChainListener) handleSlashedLog(vLog types.Log, selectedEvent *abi
 func (rl *RootChainListener) handleUnJailedLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "Error", err)
+		rl.Logger.Error(failedToMarshalLog, "error", err)
+		return
 	}
 
 	event := new(stakinginfo.StakinginfoUnJailed)
 	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
-		rl.Logger.Error("RootChainListener: error while parsing event", "name", selectedEvent.Name, "error", err)
+		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
+		return
 	}
 
 	if util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec) {

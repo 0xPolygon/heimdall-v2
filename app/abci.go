@@ -2,11 +2,13 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"runtime"
 	"time"
 
+	"cosmossdk.io/log"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -24,9 +26,11 @@ import (
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
@@ -265,6 +269,10 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		nonRpVoteExt := dummyVoteExt
 
 		txs := req.Txs[1:]
+
+		// Prefetch L1 receipts in a single batch RPC call to warm the cache.
+		logger.Info("[Bridge-Improvements] starting receipt prefetch for ExtendVote", "txCount", len(txs))
+		app.prefetchReceipts(ctx, txs, logger)
 
 		// decode txs and execute side txs
 		for _, rawTx := range txs {
@@ -695,12 +703,10 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 
 		var txBytes cmtTypes.Tx = rawTx
-
 		txHash := common.Bytes2Hex(txBytes.Hash())
 
 		if approvedTxsMap[txHash] {
-
-			// execute post-handler for the approved side tx
+			// execute post-handlers for the approved side txs
 			msgs := decodedTx.GetMsgs()
 			executedPostHandlers := 0
 			for _, msg := range msgs {
@@ -964,4 +970,99 @@ func rejectUnknownVoteExtFields(bz []byte) error {
 	}
 
 	return nil
+}
+
+// prefetchReceiptsTimeout is half of timeout_precommit (1s).
+const prefetchReceiptsTimeout = 500 * time.Millisecond
+
+// prefetchReceipts decodes txs, extracts L1 tx hashes from side-tx messages,
+// and batch-fetches their receipts into the cache.
+func (app *HeimdallApp) prefetchReceipts(ctx sdk.Context, txs [][]byte, logger log.Logger) {
+	seen := make(map[common.Hash]struct{})
+	var hashes []common.Hash
+	sideTxCount := 0
+
+	for _, rawTx := range txs {
+		tx, err := app.TxDecode(rawTx)
+		if err != nil {
+			continue
+		}
+
+		for _, msg := range tx.GetMsgs() {
+			if app.sideTxCfg.GetSideHandler(msg) == nil {
+				continue
+			}
+
+			sideTxCount++
+
+			h, ok := extractTxHash(msg)
+			if !ok {
+				continue
+			}
+
+			if _, dup := seen[h]; !dup {
+				seen[h] = struct{}{}
+				hashes = append(hashes, h)
+			}
+
+			if sideTxCount >= maxSideTxResponsesCount {
+				break
+			}
+		}
+
+		if sideTxCount >= maxSideTxResponsesCount {
+			break
+		}
+	}
+
+	if len(hashes) == 0 {
+		logger.Info("[Bridge-Improvements] no L1 tx hashes to prefetch")
+		return
+	}
+
+	prefetchCtx, cancel := context.WithTimeout(ctx.Context(), prefetchReceiptsTimeout)
+	defer cancel()
+
+	helper.PrefetchReceipts(prefetchCtx, app.caller, hashes, logger)
+}
+
+func extractTxHash(msg sdk.Msg) (common.Hash, bool) {
+	switch m := msg.(type) {
+	case *clerkTypes.MsgEventRecord:
+		if m.TxHash == "" {
+			return common.Hash{}, false
+		}
+		return common.HexToHash(m.TxHash), true
+	case *stakeTypes.MsgValidatorJoin:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	case *stakeTypes.MsgStakeUpdate:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	case *stakeTypes.MsgSignerUpdate:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	case *stakeTypes.MsgValidatorExit:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	case *topupTypes.MsgTopupTx:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	default:
+		return common.Hash{}, false
+	}
+}
+
+func verifyTxHash(txHash []byte) bool {
+	return len(txHash) == common.HashLength
 }

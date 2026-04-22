@@ -185,7 +185,6 @@ func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration
 	// For 1000-2000 It will be 24 seconds.
 	// For 2000-3000 it will be 36 seconds.
 	// Basically, for every 1000 txs it will increase the factor by 1.
-
 	mempoolFactor := GetUnconfirmedTxnCount(event) / mempoolTxnCountDivisor
 
 	// calculate delay
@@ -565,7 +564,6 @@ func LogElapsedTimeForStateSyncedEvent(event interface{}, functionName string, s
 		if e == nil {
 			return
 		}
-
 		typedEvent = *e
 	default:
 		return
