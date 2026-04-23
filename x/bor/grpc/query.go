@@ -280,6 +280,10 @@ func protoHeaderToEthHeader(p *proto.Header) *ethTypes.Header {
 	if len(p.Difficulty) > 32 || len(p.BaseFee) > 32 {
 		return nil
 	}
+	// ethTypes.Header.Nonce is a fixed BlockNonceLength (8) byte array.
+	if len(p.Nonce) != 0 && len(p.Nonce) != len(ethTypes.BlockNonce{}) {
+		return nil
+	}
 
 	h := &ethTypes.Header{
 		ParentHash:  protoH256ToHash(p.ParentHash),

@@ -88,14 +88,14 @@ func TestGetBorChainBlockInfoInBatch_NonGRPCCancelledContext(t *testing.T) {
 	// If panicVal != nil, the nil BorChainClient was dereferenced — correct branch was taken.
 }
 
-// TestGetBorChainBlockAuthor_GRPCPath_NilClientPropagatesError verifies the nil-author
-// handling in the HTTP dispatch path. When BorChainGrpcFlag=false and the
-// HTTP client returns a nil author, the function returns ethereum.NotFound.
+// TestGetBorChainBlockAuthor_GRPCPath_NilClientPropagatesError verifies that
+// when BorChainGrpcFlag=true and BorChainGrpcClient=nil, GetBorChainBlockAuthor
+// propagates the "gRPC client is nil" error from getRequiredBorGRPCClient
+// without reaching the nil-author / NotFound path below it.
 func TestGetBorChainBlockAuthor_GRPCPath_NilClientPropagatesError(t *testing.T) {
 	t.Parallel()
 
 	c := makeDispatcherCaller(true)
-	// With nil gRPC client, the function must not reach the nil-author check.
 	author, err := c.GetBorChainBlockAuthor(context.Background(), nil)
 	require.Error(t, err)
 	require.Nil(t, author)

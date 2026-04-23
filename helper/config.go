@@ -631,6 +631,9 @@ func runBorGRPCHashParityCheckWith(
 				"Either upgrade bor to a matching version or disable BorGRPCFlag.",
 				"consecutiveMismatches", next,
 			)
+			// Return so control flow does not depend on fatalFunc exiting the
+			// process.
+			return
 		}
 		mismatches = next
 		// Removal doesn't change loop termination, only wall-clock pacing; untestable without clock injection.
