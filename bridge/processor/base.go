@@ -224,7 +224,7 @@ func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{})
 		}
 
 		if mempoolClerkMsg.TxHash == targetTxHash && mempoolClerkMsg.LogIndex == targetLogIndex {
-			bp.Logger.Info("[Bridge-Improvements] duplicate clerk tx found in mempool", "txHash", targetTxHash, "logIndex", targetLogIndex)
+			bp.Logger.Debug("Duplicate clerk tx found in mempool", "txHash", targetTxHash, "logIndex", targetLogIndex)
 			return true, nil
 		}
 	}

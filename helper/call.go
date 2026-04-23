@@ -575,12 +575,12 @@ func (c *ContractCaller) cacheReceipt(tx common.Hash, receipt *ethTypes.Receipt)
 func (c *ContractCaller) getOrFetchReceipt(tx common.Hash) (*ethTypes.Receipt, error) {
 	if c.receiptCache != nil {
 		if cached, ok := c.receiptCache.Get(tx); ok {
-			Logger.Info("[Bridge-Improvements] receipt cache hit", "tx", tx.Hex())
+			Logger.Debug("Receipt cache hit", "tx", tx.Hex())
 			return cached, nil
 		}
 	}
 
-	Logger.Info("[Bridge-Improvements] receipt cache miss, fetching from L1", "tx", tx.Hex())
+	Logger.Debug("Receipt cache miss, fetching from L1", "tx", tx.Hex())
 
 	receipt, err := c.GetMainTxReceipt(tx)
 	if err != nil {
@@ -828,11 +828,10 @@ func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmat
 	cachedFinalizedNum := c.getCachedFinalizedBlockNumber()
 	if cachedFinalizedNum > 0 && receiptBlockNumber <= cachedFinalizedNum {
 		Logger.Debug("Tx confirmed via cached finalized block")
-		Logger.Info("[Bridge-Improvements] finalized block cache hit", "receiptBlock", receiptBlockNumber, "cachedFinalizedBlock", cachedFinalizedNum)
 		return receipt, nil
 	}
 
-	Logger.Info("[Bridge-Improvements] finalized block cache miss, fetching from L1", "receiptBlock", receiptBlockNumber, "cachedFinalizedBlock", cachedFinalizedNum)
+	Logger.Debug("Finalized block cache miss, fetching from L1", "receiptBlock", receiptBlockNumber, "cachedFinalizedBlock", cachedFinalizedNum)
 
 	latestFinalizedBlock, err := c.GetMainChainFinalizedBlock()
 	if err != nil {
@@ -1207,7 +1206,6 @@ func (c *ContractCaller) BatchGetMainChainTxReceipts(ctx context.Context, txHash
 
 	if err := c.MainChainRPCClient.BatchCallContext(ctx, batch); err != nil {
 		Logger.Error("Batch receipt fetch failed", "error", err)
-		Logger.Info("[Bridge-Improvements] batch RPC call failed", "count", len(txHashes), "error", err)
 		return nil
 	}
 

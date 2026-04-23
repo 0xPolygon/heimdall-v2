@@ -45,7 +45,7 @@ type RootChainListener struct {
 const (
 	lastRootBlockKey       = "rootchain-last-block" // storage key
 	maxRootChainBlockRange = 5000                   // max number of blocks to fetch logs for in a single FilterLogs call
-	taskStaggerInterval    = 1 * time.Second // delay between consecutive task ETAs in a batch to avoid thundering herd
+	taskStaggerInterval    = 1 * time.Second        // delay between consecutive task ETAs in a batch to avoid thundering herd
 )
 
 // NewRootChainListener - constructor func
@@ -269,7 +269,6 @@ func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string
 	eta := time.Now().Add(delay + rl.taskStaggerDelay)
 	signature.ETA = &eta
 	rl.Logger.Info("RootChainListener: Sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)
-	rl.Logger.Info("[Bridge-Improvements] task staggered", "taskName", taskName, "baseDelay", delay, "stagger", rl.taskStaggerDelay, "retryCount", signature.RetryCount)
 
 	_, err := rl.queueConnector.Server.SendTask(signature)
 	if err != nil {

@@ -114,7 +114,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		existingRecord, _ := util.GetClerkEventRecord(event.Id.Int64(), cp.cliCtx.Codec)
 
 		if existingRecord != nil {
-			cp.Logger.Info("[Bridge-Improvements] clerk event already processed, skipping", "id", event.Id)
+			cp.Logger.Info("ClerkProcessor: clerk event already processed, skipping", "id", event.Id)
 			cp.Logger.Info(infoMsgClerkIgnoringAlreadyProcessed,
 				"event", eventName,
 				"id", event.Id,

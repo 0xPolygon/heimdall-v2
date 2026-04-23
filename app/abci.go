@@ -271,7 +271,6 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		txs := req.Txs[1:]
 
 		// Prefetch L1 receipts in a single batch RPC call to warm the cache.
-		logger.Info("[Bridge-Improvements] starting receipt prefetch for ExtendVote", "txCount", len(txs))
 		app.prefetchReceipts(ctx, txs, logger)
 
 		// decode txs and execute side txs
@@ -1016,7 +1015,7 @@ func (app *HeimdallApp) prefetchReceipts(ctx sdk.Context, txs [][]byte, logger l
 	}
 
 	if len(hashes) == 0 {
-		logger.Info("[Bridge-Improvements] no L1 tx hashes to prefetch")
+		logger.Debug("No L1 tx hashes to prefetch")
 		return
 	}
 
@@ -1024,6 +1023,10 @@ func (app *HeimdallApp) prefetchReceipts(ctx sdk.Context, txs [][]byte, logger l
 	defer cancel()
 
 	helper.PrefetchReceipts(prefetchCtx, app.caller, hashes, logger)
+
+	if prefetchCtx.Err() == context.DeadlineExceeded {
+		logger.Error("Receipt prefetch timed out")
+	}
 }
 
 func extractTxHash(msg sdk.Msg) (common.Hash, bool) {
