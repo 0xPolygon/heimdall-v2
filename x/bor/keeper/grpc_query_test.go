@@ -48,6 +48,7 @@ func (s *KeeperTestSuite) TestGetNextSpan() {
 
 	for _, v := range vals {
 		err = keeper.StoreSeedProducer(ctx, v.ValId, new(common.HexToAddress(v.GetOperator())))
+		require.NoError(err)
 	}
 
 	firstSpan := s.genTestSpans(1)

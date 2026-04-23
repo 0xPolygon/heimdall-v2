@@ -394,7 +394,15 @@ func (c *ContractCaller) GetRootHash(start, end, checkpointLength uint64) ([]byt
 		return nil, err
 	}
 
-	return common.FromHex(rootHash), nil
+	decoded := common.FromHex(rootHash)
+	if len(decoded) != common.HashLength {
+		return nil, fmt.Errorf("bor rootHash: expected %d bytes, got %d", common.HashLength, len(decoded))
+	}
+	if (common.BytesToHash(decoded) == common.Hash{}) {
+		return nil, errors.New("bor rootHash: zero value")
+	}
+
+	return decoded, nil
 }
 
 // GetVoteOnHash get vote on hash from the bor chain for the corresponding milestone

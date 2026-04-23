@@ -83,8 +83,20 @@ func parseBenchRange(b *testing.B) (uint64, uint64) {
 		return 10, 100
 	}
 	parts := strings.SplitN(raw, ":", 2)
-	startN, _ := strconv.ParseUint(parts[0], 10, 64)
-	endN, _ := strconv.ParseUint(parts[1], 10, 64)
+	if len(parts) != 2 {
+		b.Fatalf("BENCH_BLOCK_RANGE must be in the form start:end, got %q", raw)
+	}
+	startN, err := strconv.ParseUint(parts[0], 10, 64)
+	if err != nil {
+		b.Fatalf("BENCH_BLOCK_RANGE start %q: %v", parts[0], err)
+	}
+	endN, err := strconv.ParseUint(parts[1], 10, 64)
+	if err != nil {
+		b.Fatalf("BENCH_BLOCK_RANGE end %q: %v", parts[1], err)
+	}
+	if endN < startN {
+		b.Fatalf("BENCH_BLOCK_RANGE end (%d) must be >= start (%d)", endN, startN)
+	}
 	return startN, endN
 }
 

@@ -120,7 +120,7 @@ func TestGetRootHash(t *testing.T) {
 		mockClient := new(MockBorApiClient)
 		grpcClient := &BorGRPCClient{client: mockClient}
 
-		expectedHash := "0x1234567890abcdef"
+		expectedHash := "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 		mockClient.On("GetRootHash", mock.Anything, mock.MatchedBy(func(req *proto.GetRootHashRequest) bool {
 			return req.StartBlockNumber == 100 && req.EndBlockNumber == 200
 		})).Return(&proto.GetRootHashResponse{RootHash: expectedHash}, nil)
