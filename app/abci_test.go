@@ -530,7 +530,6 @@ func TestPreBlocker(t *testing.T) {
 	validators := app.StakeKeeper.GetAllValidators(ctx)
 
 	msg := &borTypes.MsgProposeSpan{
-		// SpanId:     2,
 		Proposer:   validators[0].Signer,
 		StartBlock: 26657,
 		EndBlock:   30000,
@@ -652,8 +651,6 @@ func TestSideTxsHappyPath(t *testing.T) {
 		),
 	)
 
-	// coins, _ := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
-
 	testCases := []struct {
 		name string
 		msg  sdk.Msg
@@ -673,7 +670,7 @@ func TestSideTxsHappyPath(t *testing.T) {
 		{
 			name: "Clerk Module Happy Path",
 			msg: func() *clerkTypes.MsgEventRecord {
-				rec := clerkTypes.NewMsgEventRecord(
+				return new(clerkTypes.NewMsgEventRecord(
 					validators[0].Signer,
 					TxHash1,
 					1,
@@ -682,8 +679,7 @@ func TestSideTxsHappyPath(t *testing.T) {
 					propAddr,
 					make([]byte, 0),
 					"0",
-				)
-				return &rec
+				))
 			}(),
 		},
 	}
@@ -858,7 +854,7 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 	blockHeader1 := ethTypes.Header{Number: big.NewInt(int64(seedBlock1))}
 	blockHash1 := blockHeader1.Hash()
 
-	mockCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
+	mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&val1Addr, nil)
 
 	mockCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader1, nil)
 	mockCaller.
@@ -1116,17 +1112,6 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		Address2 := "0xb316fa9fa91700d7084d377bfdc81eb9f232f5ff"
 
 		addrBz2, err := ac.StringToBytes(Address2)
-		msg := clerkTypes.NewMsgEventRecord(
-			addressUtils.FormatAddress("0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"),
-			TxHash1,
-			logIndex,
-			blockNumber,
-			10,
-			addrBz2,
-			make([]byte, 0),
-			"101",
-		)
-
 		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.
 			On("GetBorChainBlock", mock.Anything, mock.Anything).
@@ -1137,7 +1122,16 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
-		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		txBytes, err := buildSignedTx(new(clerkTypes.NewMsgEventRecord(
+			addressUtils.FormatAddress("0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"),
+			TxHash1,
+			logIndex,
+			blockNumber,
+			10,
+			addrBz2,
+			make([]byte, 0),
+			"101",
+		)), validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
@@ -1194,7 +1188,14 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 
 		addrBz2, err := ac.StringToBytes(Address2)
 
-		msg := clerkTypes.NewMsgEventRecord(
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
+
+		mockCaller.
+			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
+
+		txBytes, err := buildSignedTx(new(clerkTypes.NewMsgEventRecord(
 			addressUtils.FormatAddress("0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"),
 			TxHash1,
 			logIndex,
@@ -1203,16 +1204,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 			addrBz2,
 			make([]byte, 0),
 			"0",
-		)
-
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
-		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
-
-		mockCaller.
-			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
-
-		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		)), validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
@@ -1363,17 +1355,6 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 
 		addrBz2, err := ac.StringToBytes(Address2)
 
-		msg := clerkTypes.NewMsgEventRecord(
-			addressUtils.FormatAddress("0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"),
-			TxHash1,
-			logIndex,
-			blockNumber,
-			id,
-			addrBz2,
-			make([]byte, 0),
-			"0",
-		)
-
 		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 
 		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
@@ -1383,7 +1364,16 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
-		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		txBytes, err := buildSignedTx(new(clerkTypes.NewMsgEventRecord(
+			addressUtils.FormatAddress("0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"),
+			TxHash1,
+			logIndex,
+			blockNumber,
+			id,
+			addrBz2,
+			make([]byte, 0),
+			"0",
+		)), validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
@@ -1528,15 +1518,6 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 
-		msg := *topUpTypes.NewMsgTopupTx(
-			addr1.String(),
-			addr1.String(),
-			coins.AmountOf(authTypes.FeeToken),
-			hash,
-			logIndex,
-			blockNumber,
-		)
-
 		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.
@@ -1548,7 +1529,14 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
-		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		txBytes, err := buildSignedTx(new(*topUpTypes.NewMsgTopupTx(
+			addr1.String(),
+			addr1.String(),
+			coins.AmountOf(authTypes.FeeToken),
+			hash,
+			logIndex,
+			blockNumber,
+		)), validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
@@ -1604,15 +1592,6 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 
-		msg := *topUpTypes.NewMsgTopupTx(
-			addr1.String(),
-			addr1.String(),
-			coins.AmountOf(authTypes.FeeToken),
-			hash,
-			logIndex,
-			blockNumber,
-		)
-
 		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 		mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 
@@ -1620,7 +1599,14 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
-		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		txBytes, err := buildSignedTx(new(*topUpTypes.NewMsgTopupTx(
+			addr1.String(),
+			addr1.String(),
+			coins.AmountOf(authTypes.FeeToken),
+			hash,
+			logIndex,
+			blockNumber,
+		)), validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
@@ -1675,14 +1661,6 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 
-		msg := *topUpTypes.NewMsgTopupTx(
-			addr1.String(),
-			addr1.String(),
-			coins.AmountOf(authTypes.FeeToken),
-			hash,
-			logIndex,
-			blockNumber,
-		)
 		event := &stakinginfo.StakinginfoTopUpFee{
 			User: common.Address(addr1.Bytes()),
 			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
@@ -1695,7 +1673,14 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
-		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		txBytes, err := buildSignedTx(new(*topUpTypes.NewMsgTopupTx(
+			addr1.String(),
+			addr1.String(),
+			coins.AmountOf(authTypes.FeeToken),
+			hash,
+			logIndex,
+			blockNumber,
+		)), validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
@@ -1750,14 +1735,6 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 
-		msg := *topUpTypes.NewMsgTopupTx(
-			addr1.String(),
-			addr1.String(),
-			coins.AmountOf(authTypes.FeeToken),
-			hash,
-			logIndex,
-			blockNumber,
-		)
 		event := &stakinginfo.StakinginfoTopUpFee{
 			User: common.Address(addr2.Bytes()),
 			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
@@ -1771,9 +1748,14 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
-		// mockChainKeeper.EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).AnyTimes()
-
-		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		txBytes, err := buildSignedTx(new(*topUpTypes.NewMsgTopupTx(
+			addr1.String(),
+			addr1.String(),
+			coins.AmountOf(authTypes.FeeToken),
+			hash,
+			logIndex,
+			blockNumber,
+		)), validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys, 2)
@@ -2517,7 +2499,6 @@ func TestPrepareProposal(t *testing.T) {
 		BlockHash:       goodExt.BlockHash,
 		Height:          goodExt.Height, // keep height correct
 		SideTxResponses: badSide,        // invalid payload
-		// MilestoneProposition: nil,        // optional
 	}
 	fakeBz2, err := gogoproto.Marshal(fakeExt2)
 	require.NoError(t, err, "gogo‐Marshal should succeed")
@@ -2568,7 +2549,6 @@ func TestPrepareProposal(t *testing.T) {
 	require.NoError(t, err)
 
 	msgBor := &borTypes.MsgProposeSpan{
-		// SpanId:     2,
 		Proposer:   validators[0].Signer,
 		StartBlock: 26657,
 		EndBlock:   30000,
@@ -2619,7 +2599,7 @@ func TestPrepareProposal(t *testing.T) {
 	_, err = app.PreBlocker(ctx, &finalizeReqBorSideTx)
 	require.NoError(t, err)
 
-	msgClerk := clerkTypes.NewMsgEventRecord(
+	require.NoError(t, txBuilder.SetMsgs(new(clerkTypes.NewMsgEventRecord(
 		validators[0].Signer,
 		TxHash1,
 		1,
@@ -2628,8 +2608,7 @@ func TestPrepareProposal(t *testing.T) {
 		propAddr,
 		make([]byte, 0),
 		"0",
-	)
-	require.NoError(t, txBuilder.SetMsgs(&msgClerk))
+	))))
 	require.NoError(t, err)
 	require.NoError(t, txBuilder.SetSignatures(sigV2))
 
@@ -3074,8 +3053,8 @@ func TestCheckAndRotateCurrentSpan(t *testing.T) {
 		// Mock IContractCaller with proper producer mapping
 		mockCaller := new(helpermocks.IContractCaller)
 		producerSignerStr := validators[0].Signer
-		producerSignerAddr := common.HexToAddress(producerSignerStr)
-		mockCaller.On("GetBorChainBlockAuthor", mock.Anything, lastMilestone.EndBlock+1).Return(&producerSignerAddr, nil)
+		mockCaller.On("GetBorChainBlockAuthor", mock.Anything, lastMilestone.EndBlock+1).
+			Return(new(common.HexToAddress(producerSignerStr)), nil)
 		app.BorKeeper.SetContractCaller(mockCaller)
 
 		// Call the function
@@ -3147,8 +3126,8 @@ func TestPreBlockerSpanRotationWithMinorityMilestone(t *testing.T) {
 
 	// Set up the mock contract caller
 	mockCaller := new(helpermocks.IContractCaller)
-	producerSigner := common.HexToAddress(validators[0].Signer)
-	mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&producerSigner, nil)
+	mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).
+		Return(new(common.HexToAddress(validators[0].Signer)), nil)
 	app.BorKeeper.SetContractCaller(mockCaller)
 
 	// Set context to trigger span rotation conditions
@@ -3229,8 +3208,8 @@ func TestPreBlockerSpanRotationWithoutMinorityMilestone(t *testing.T) {
 
 	// Set up the mock contract caller
 	mockCaller := new(helpermocks.IContractCaller)
-	producerSigner := common.HexToAddress(validators[0].Signer)
-	mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&producerSigner, nil)
+	mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).
+		Return(new(common.HexToAddress(validators[0].Signer)), nil)
 	app.BorKeeper.SetContractCaller(mockCaller)
 
 	// Set context to trigger span rotation conditions
@@ -3772,7 +3751,7 @@ func TestPrepareProposal_AccountSequenceMismatch(t *testing.T) {
 		require.NotNil(t, res)
 
 		// Only the first transaction should be accepted (sequence 0 is correct for the first tx)
-		// All subsequent transactions will fail because they also have sequence 0 but the account sequence is now 1
+		// All later transactions will fail because they also have sequence 0, but the account sequence is now 1
 		// Result should be: 1 ExtendedCommitInfo + 1 successful tx = 2 total
 		require.Equal(t, 2, len(res.Txs), "Should have exactly 2 transactions (1 ExtendedCommitInfo + 1 tx, others rejected due to sequence mismatch)")
 	})

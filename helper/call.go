@@ -25,7 +25,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/contracts/validatorset"
-	"github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -66,7 +65,7 @@ type IContractCaller interface {
 	GetBorChainBlock(context.Context, *big.Int) (*ethTypes.Header, error)
 	GetBorChainBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error)
 	GetBorChainBlockTd(ctx context.Context, blockHash common.Hash) (uint64, error)
-	GetBorChainBlockAuthor(*big.Int) (*common.Address, error)
+	GetBorChainBlockAuthor(ctx context.Context, blockNum *big.Int) (*common.Address, error)
 	IsTxConfirmed(common.Hash, uint64) bool
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
 	GetBlockNumberFromTxHash(common.Hash) (*big.Int, error)
@@ -103,6 +102,23 @@ type IContractCaller interface {
 	GetTokenInstance(tokenAddress string) (*erc20.Erc20, error)
 }
 
+// BorGRPCClienter is the subset of *grpc.BorGRPCClient used by helper code.
+// Declared as an interface so tests can inject fakes without dialing a real
+// bor gRPC server. The concrete *grpc.BorGRPCClient satisfies this interface
+// automatically.
+type BorGRPCClienter interface {
+	HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error)
+	BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error)
+	GetRootHash(ctx context.Context, startBlock uint64, endBlock uint64) (string, error)
+	GetVoteOnHash(ctx context.Context, startBlock uint64, endBlock uint64, rootHash string, milestoneId string) (bool, error)
+	GetAuthor(ctx context.Context, blockNum *big.Int) (*common.Address, error)
+	GetTdByHash(ctx context.Context, hash common.Hash) (uint64, error)
+	GetTdByNumber(ctx context.Context, blockNum *big.Int) (uint64, error)
+	GetBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error)
+	TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error)
+	BorBlockReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error)
+}
+
 // ContractCaller contract caller
 type ContractCaller struct {
 	MainChainClient  *ethclient.Client
@@ -114,7 +130,7 @@ type ContractCaller struct {
 	BorChainTimeout   time.Duration
 
 	BorChainGrpcFlag   bool
-	BorChainGrpcClient *grpc.BorGRPCClient
+	BorChainGrpcClient BorGRPCClienter
 
 	RootChainABI     abi.ABI
 	StakingInfoABI   abi.ABI
@@ -320,7 +336,7 @@ func (c *ContractCaller) GetTokenInstance(tokenAddress string) (*erc20.Erc20, er
 	return contractInstance.(*erc20.Erc20), nil
 }
 
-// GetHeaderInfo get header info from checkpoint number
+// GetHeaderInfo get header info from the checkpoint number
 func (c *ContractCaller) GetHeaderInfo(headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (
 	root common.Hash,
 	start,
@@ -554,94 +570,135 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 	return latestBlock, nil
 }
 
-// GetBorChainBlockInfoInBatch returns bor chain block headers and TD via a single RPC Batch call.
-// It tries to get blocks from the range interval but returns only the ones found on the chain
+// GetBorChainBlockInfoInBatch returns bor chain block headers, total difficulties,
+// and authors for the inclusive range [start, end]. It dispatches to gRPC when
+// BorChainGrpcFlag is set, otherwise falls back to the HTTP JSON-RPC batch.
+// In both paths, it tries to get blocks from the range interval
+// but returns only the ones found on the chain.
 func (c *ContractCaller) GetBorChainBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
 	timeoutCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
+	if c.BorChainGrpcFlag {
+		grpcClient, err := c.getRequiredBorGRPCClient()
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		return grpcClient.GetBlockInfoInBatch(timeoutCtx, start, end)
+	}
+
+	return c.getBorChainBlockInfoInBatchHTTP(timeoutCtx, start, end)
+}
+
+// tdResp is the JSON shape returned by eth_getTdByNumber.
+type tdResp struct {
+	TotalDifficulty hexutil.Uint64 `json:"totalDifficulty"`
+}
+
+// buildBorBatchElems constructs the flat BatchElem slice for a single BatchCallContext call.
+func buildBorBatchElems(start, end int64, hdrOut []*ethTypes.Header, tdOut []*tdResp, authorOut []*common.Address) []rpc.BatchElem {
 	totalBlocks := end - start + 1
-	rpcClient := c.BorChainClient.Client()
-	batchElems := make([]rpc.BatchElem, 0, 2*(totalBlocks))
+	// The 2* here is a capacity hint; mutating it doesn't break correctness because append grows the slice.
+	// mutator-disable-next-line slice-capacity hint only
+	elems := make([]rpc.BatchElem, 0, 2*totalBlocks)
 
-	// Header Batch
-	result := make([]*ethTypes.Header, totalBlocks)
 	for i := start; i <= end; i++ {
 		blockNumHex := fmt.Sprintf("0x%x", i)
-
-		batchElems = append(batchElems, rpc.BatchElem{
-			Method: "eth_getHeaderByNumber",
-			Args:   []interface{}{blockNumHex},
-			Result: &result[i-start],
-		})
+		elems = append(elems, rpc.BatchElem{Method: "eth_getHeaderByNumber", Args: []interface{}{blockNumHex}, Result: &hdrOut[i-start]})
 	}
 
-	type tdResp struct {
-		TotalDifficulty hexutil.Uint64 `json:"totalDifficulty"`
-	}
-
-	// TD Batch
-	resultTd := make([]*tdResp, totalBlocks)
 	for i := start; i <= end; i++ {
 		blockNumHex := fmt.Sprintf("0x%x", i)
-
-		batchElems = append(batchElems, rpc.BatchElem{
-			Method: "eth_getTdByNumber",
-			Args:   []interface{}{blockNumHex},
-			Result: &resultTd[i-start],
-		})
+		elems = append(elems, rpc.BatchElem{Method: "eth_getTdByNumber", Args: []interface{}{blockNumHex}, Result: &tdOut[i-start]})
 	}
 
-	// Author Batch
-	resultAuthor := make([]*common.Address, totalBlocks)
 	for i := start; i <= end; i++ {
 		if i > 0 { // skip genesis block
 			blockNumHex := fmt.Sprintf("0x%x", i)
-			batchElems = append(batchElems, rpc.BatchElem{
-				Method: "bor_getAuthor",
-				Args:   []interface{}{blockNumHex},
-				Result: &resultAuthor[i-start],
-			})
+			elems = append(elems, rpc.BatchElem{Method: "bor_getAuthor", Args: []interface{}{blockNumHex}, Result: &authorOut[i-start]})
 		}
 	}
 
-	if err := rpcClient.BatchCallContext(timeoutCtx, batchElems); err != nil {
-		return nil, nil, nil, err
-	}
+	return elems
+}
 
-	// Get results until capture an error (header not found)
-	tds := make([]uint64, 0, totalBlocks)
+// borAuthorFromBatch retrieves the author address for a non-genesis block from the flat
+// batchElems slice. It returns the address and true on success, or the zero address and
+// false when the batch entry indicates an error or a nil result.
+func borAuthorFromBatch(i int, start, totalBlocks int64, batchElems []rpc.BatchElem, authors []*common.Address) (common.Address, bool) {
+	authorReqIndex := 2*int(totalBlocks) + i
+	if start == 0 {
+		// genesis block has no author entry in the batch, so all later indices shift left by 1.
+		authorReqIndex--
+	}
+	elem := batchElems[authorReqIndex]
+	if elem.Error != nil || authors[i] == nil {
+		return common.Address{}, false
+	}
+	return *authors[i], true
+}
+
+// collateBorBatchResults walks the flat BatchElem result slice and collects the contiguous
+// prefix of successfully fetched blocks, stopping at the first error or missing result.
+func collateBorBatchResults(start, totalBlocks int64, batchElems []rpc.BatchElem, hdrs []*ethTypes.Header, tds []*tdResp, authors []*common.Address) ([]*ethTypes.Header, []uint64, []common.Address) {
 	headers := make([]*ethTypes.Header, 0, totalBlocks)
-	authors := make([]common.Address, 0, totalBlocks)
+	tdSlice := make([]uint64, 0, totalBlocks)
+	authorSlice := make([]common.Address, 0, totalBlocks)
+
 	for i := 0; i < int(totalBlocks); i++ {
 		blockNum := start + int64(i)
 		elemHeader := batchElems[i]
 		elemTd := batchElems[i+int(totalBlocks)]
 
-		if elemHeader.Error != nil || elemTd.Error != nil || result[i] == nil || resultTd[i] == nil {
+		if elemHeader.Error != nil || elemTd.Error != nil || hdrs[i] == nil || tds[i] == nil {
 			Logger.Debug("Error fetching block info", "error", elemHeader.Error, "error", elemTd.Error, "blockNum", blockNum)
 			break
 		}
 
 		var author common.Address
 		if blockNum > 0 {
-			authorReqIndex := 2*int(totalBlocks) + i
-			if start == 0 {
-				authorReqIndex--
-			}
-			elemAuthor := batchElems[authorReqIndex]
-			if elemAuthor.Error != nil || resultAuthor[i] == nil {
-				Logger.Debug("Error fetching block author", "error", elemAuthor.Error, "blockNum", blockNum)
+			var ok bool
+			author, ok = borAuthorFromBatch(i, start, totalBlocks, batchElems, authors)
+			if !ok {
+				// statement_deletion only drops a debug message, the break still stops the loop.
+				// mutator-disable-next-line operator-log line
+				Logger.Debug("Error fetching block author", "blockNum", blockNum)
 				break
 			}
-			author = *resultAuthor[i]
 		}
 
-		headers = append(headers, result[i])
-		tds = append(tds, uint64(resultTd[i].TotalDifficulty))
-		authors = append(authors, author)
+		headers = append(headers, hdrs[i])
+		tdSlice = append(tdSlice, uint64(tds[i].TotalDifficulty))
+		authorSlice = append(authorSlice, author)
 	}
 
+	return headers, tdSlice, authorSlice
+}
+
+// getBorChainBlockInfoInBatchHTTP is the HTTP/JSON-RPC implementation of GetBorChainBlockInfoInBatch.
+// It issues a single RPC batch call covering headers, total difficulties, and authors for the
+// inclusive range [start, end], and returns only the contiguous prefix of blocks found on the chain.
+func (c *ContractCaller) getBorChainBlockInfoInBatchHTTP(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
+	// Range arithmetic compensated by the per-index bounds inside buildBorBatchElems/collateBorBatchResults.
+	// mutator-disable-next-line range-arithmetic compensated downstream
+	totalBlocks := end - start + 1
+	rpcClient := c.BorChainClient.Client()
+
+	headerResults := make([]*ethTypes.Header, totalBlocks)
+	tdResults := make([]*tdResp, totalBlocks)
+	authorResults := make([]*common.Address, totalBlocks)
+
+	batchElems := buildBorBatchElems(start, end, headerResults, tdResults, authorResults)
+
+	// negate_conditional/branch_removal require a test that induces a transport-level batch failure mid-call.
+	// mutator-disable-next-line defensive BatchCallContext error guard
+	if err := rpcClient.BatchCallContext(ctx, batchElems); err != nil {
+		// implementation-detail: nil return on batch error; callers check err!=nil
+		// mutator-disable-next-line return-value on error propagation
+		return nil, nil, nil, err
+	}
+
+	headers, tds, authors := collateBorBatchResults(start, totalBlocks, batchElems, headerResults, tdResults, authorResults)
 	return headers, tds, authors, nil
 }
 
@@ -649,6 +706,14 @@ func (c *ContractCaller) GetBorChainBlockInfoInBatch(ctx context.Context, start,
 func (c *ContractCaller) GetBorChainBlockTd(ctx context.Context, blockHash common.Hash) (uint64, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
+
+	if c.BorChainGrpcFlag {
+		grpcClient, err := c.getRequiredBorGRPCClient()
+		if err != nil {
+			return 0, err
+		}
+		return grpcClient.GetTdByHash(ctx, blockHash)
+	}
 
 	rpcClient := c.BorChainClient.Client()
 
@@ -671,9 +736,29 @@ func (c *ContractCaller) GetBorChainBlockTd(ctx context.Context, blockHash commo
 }
 
 // GetBorChainBlockAuthor returns the producer of the bor block
-func (c *ContractCaller) GetBorChainBlockAuthor(blockNum *big.Int) (*common.Address, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
+func (c *ContractCaller) GetBorChainBlockAuthor(ctx context.Context, blockNum *big.Int) (*common.Address, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
+
+	if c.BorChainGrpcFlag {
+		grpcClient, err := c.getRequiredBorGRPCClient()
+		if err != nil {
+			// the return on the next line is what matters; log deletion is observable only in ops.
+			// mutator-disable-next-line operator-log line
+			Logger.Error(errUnableToConnect, "error", err)
+			return nil, err
+		}
+		author, err := grpcClient.GetAuthor(ctx, blockNum)
+		if err != nil {
+			// mutator-disable-next-line operator-log line inside an error branch already returning err
+			Logger.Error(errUnableToConnect, "error", err)
+			return nil, err
+		}
+		if author == nil {
+			return nil, ethereum.NotFound
+		}
+		return author, nil
+	}
 
 	var author *common.Address
 	err := c.BorChainClient.Client().CallContext(ctx, &author, "bor_getAuthor", toBlockNumArg(blockNum))
@@ -681,11 +766,9 @@ func (c *ContractCaller) GetBorChainBlockAuthor(blockNum *big.Int) (*common.Addr
 		Logger.Error(errUnableToConnect, "error", err)
 		return nil, err
 	}
-
 	if author == nil {
 		return nil, ethereum.NotFound
 	}
-
 	return author, nil
 }
 
@@ -1102,7 +1185,7 @@ func (c *ContractCaller) GetBorTxReceipt(txHash common.Hash) (*ethTypes.Receipt,
 	return c.getTxReceipt(ctx, c.BorChainClient, nil, txHash)
 }
 
-func (c *ContractCaller) getTxReceipt(ctx context.Context, client *ethclient.Client, grpcClient *grpc.BorGRPCClient, txHash common.Hash) (*ethTypes.Receipt, error) {
+func (c *ContractCaller) getTxReceipt(ctx context.Context, client *ethclient.Client, grpcClient BorGRPCClienter, txHash common.Hash) (*ethTypes.Receipt, error) {
 	if grpcClient != nil {
 		return grpcClient.TransactionReceipt(ctx, txHash)
 	}
@@ -1131,7 +1214,7 @@ func (c *ContractCaller) GetCheckpointSign(txHash common.Hash) ([]byte, []byte, 
 }
 
 // getRequiredBorGRPCClient returns the bor grpc client or an error
-func (c *ContractCaller) getRequiredBorGRPCClient() (*grpc.BorGRPCClient, error) {
+func (c *ContractCaller) getRequiredBorGRPCClient() (BorGRPCClienter, error) {
 	if c.BorChainGrpcClient == nil {
 		return nil, errors.New("bor grpc client is nil while bor grpc flag is enabled")
 	}

@@ -3,15 +3,19 @@ package helper
 import (
 	"fmt"
 	"testing"
+	"time"
 
+	logger "cosmossdk.io/log"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
 )
 
 // TestHeimdallConfig checks heimdall configs
 func TestHeimdallConfig(t *testing.T) {
-	t.Parallel()
+	// Not t.Parallel(): this test mutates package-level configs via InitTestHeimdallConfig
 
 	// cli context
 	cometBFTNode := "tcp://localhost:26657"
@@ -73,6 +77,86 @@ func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 	conf.Custom.Chain = oldConf
 }
 
+// TestVerifyBorGRPCHashParityNilClients checks that verifyBorGRPCHashParity
+// returns immediately without spawning a goroutine when either client is nil.
+// The happy path (hashes match) and the mismatch path (log.Fatal) both require
+// live Bor HTTP/gRPC servers and are integration-test only.
+func TestVerifyBorGRPCHashParityNilClients(t *testing.T) {
+	t.Parallel()
+
+	// Dispatcher must return without panic and without spawning a goroutine
+	// when either client is nil.
+	verifyBorGRPCHashParity(nil, nil, time.Second)
+}
+
+// TestUpdateParityMismatchStreak covers the mismatch-streak state machine that gates log.Fatal on
+// confirmed parity mismatches.
+func TestUpdateParityMismatchStreak(t *testing.T) {
+	t.Parallel()
+
+	const limit = 3
+
+	t.Run("transient failure resets streak", func(t *testing.T) {
+		t.Parallel()
+		next, fatal := updateParityMismatchStreak(2, false, limit)
+		require.Equal(t, 0, next)
+		require.False(t, fatal)
+	})
+
+	t.Run("single mismatch does not fatal", func(t *testing.T) {
+		t.Parallel()
+		next, fatal := updateParityMismatchStreak(0, true, limit)
+		require.Equal(t, 1, next)
+		require.False(t, fatal)
+	})
+
+	t.Run("mismatch below threshold does not fatal", func(t *testing.T) {
+		t.Parallel()
+		next, fatal := updateParityMismatchStreak(1, true, limit)
+		require.Equal(t, 2, next)
+		require.False(t, fatal)
+	})
+
+	t.Run("reaching threshold triggers fatal", func(t *testing.T) {
+		t.Parallel()
+		next, fatal := updateParityMismatchStreak(2, true, limit)
+		require.Equal(t, 3, next)
+		require.True(t, fatal)
+	})
+
+	t.Run("transient after mismatches resets cleanly", func(t *testing.T) {
+		t.Parallel()
+		// Simulate: mismatch, mismatch, transient-failure (reset), mismatch
+		n, fatal := updateParityMismatchStreak(0, true, limit) // 0 -> 1
+		require.Equal(t, 1, n)
+		require.False(t, fatal)
+		n, fatal = updateParityMismatchStreak(n, true, limit) // 1 -> 2
+		require.Equal(t, 2, n)
+		require.False(t, fatal)
+		n, fatal = updateParityMismatchStreak(n, false, limit) // transient -> reset to 0
+		require.Equal(t, 0, n)
+		require.False(t, fatal)
+		n, fatal = updateParityMismatchStreak(n, true, limit) // 0 -> 1 (not 3)
+		require.Equal(t, 1, n)
+		require.False(t, fatal)
+	})
+
+	t.Run("different streakLimit changes fatal threshold", func(t *testing.T) {
+		t.Parallel()
+		// Exercises streakLimit as a real parameter rather than a constant: with
+		// a higher limit, a single mismatch must not fatal even when it would
+		// under the standard limit=3.
+		const higher = 5
+		next, fatal := updateParityMismatchStreak(2, true, higher)
+		require.Equal(t, 3, next)
+		require.False(t, fatal, "limit=5 must not fatal at streak=3")
+
+		next, fatal = updateParityMismatchStreak(4, true, higher)
+		require.Equal(t, 5, next)
+		require.True(t, fatal, "limit=5 must fatal at streak=5")
+	})
+}
+
 func TestGetChainManagerAddressMigration(t *testing.T) {
 	// Backup and defer restore for chainManagerAddressMigrations
 	originalMigrations := make(map[string]map[int64]ChainManagerAddressMigration)
@@ -89,7 +173,7 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 	originalCustom := conf.Custom
 	defer func() { conf.Custom = originalCustom }()
 
-	// Backup and restore viper flags
+	// Back up and restore viper flags
 	originalChain := viper.GetString(ChainFlag)
 	defer viper.Set(ChainFlag, originalChain)
 
@@ -125,4 +209,33 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 	if found {
 		t.Errorf("Expected migration to not be found")
 	}
+}
+
+// TestDecorateWithHeimdallFlags_BorGRPCFlags verifies that DecorateWithHeimdallFlags
+// registers the BorGRPC flags so that the flag lookup and viper binding work.
+func TestDecorateWithHeimdallFlags_BorGRPCFlags(t *testing.T) {
+	t.Parallel()
+
+	cmd := &cobra.Command{Use: "test"}
+	v := viper.New()
+	log := logger.NewNopLogger()
+
+	DecorateWithHeimdallFlags(cmd, v, log, "test")
+
+	// Verify BorGRPCUrlFlag was registered
+	flag := cmd.PersistentFlags().Lookup(BorGRPCUrlFlag)
+	require.NotNil(t, flag, "BorGRPCUrlFlag must be registered by DecorateWithHeimdallFlags")
+	require.Equal(t, BorGRPCUrlFlag, flag.Name)
+
+	// Verify BorGRPCFlagFlag was registered.
+	flag = cmd.PersistentFlags().Lookup(BorGRPCFlagFlag)
+	require.NotNil(t, flag, "BorGRPCFlagFlag must be registered by DecorateWithHeimdallFlags")
+
+	// Verify BorGRPCTokenFlag was registered.
+	flag = cmd.PersistentFlags().Lookup(BorGRPCTokenFlag)
+	require.NotNil(t, flag, "BorGRPCTokenFlag must be registered by DecorateWithHeimdallFlags")
+
+	// Verify the viper binding works: set a value and retrieve via viper.
+	require.NoError(t, cmd.PersistentFlags().Set(BorGRPCUrlFlag, "grpc://example.com:9090"))
+	require.Equal(t, "grpc://example.com:9090", v.GetString(BorGRPCUrlFlag))
 }

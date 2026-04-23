@@ -7,11 +7,11 @@ import (
 	"math/big"
 
 	proto "github.com/0xPolygon/polyproto/bor"
+	commonproto "github.com/0xPolygon/polyproto/common"
 	protoutil "github.com/0xPolygon/polyproto/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -21,14 +21,10 @@ func (c *BorGRPCClient) GetRootHash(ctx context.Context, startBlock uint64, endB
 		EndBlockNumber:   endBlock,
 	}
 
-	log.Info("Fetching bor root hash")
-
 	res, err := c.client.GetRootHash(ctx, req)
 	if err != nil {
 		return "", err
 	}
-
-	log.Info("Fetched bor root hash")
 
 	return res.RootHash, nil
 }
@@ -41,14 +37,10 @@ func (c *BorGRPCClient) GetVoteOnHash(ctx context.Context, startBlock uint64, en
 		MilestoneId:      milestoneId,
 	}
 
-	log.Info("Fetching vote on hash")
-
 	res, err := c.client.GetVoteOnHash(ctx, req)
 	if err != nil {
 		return false, err
 	}
-
-	log.Info("Fetched vote on hash")
 
 	return res.Response, nil
 }
@@ -64,22 +56,12 @@ func (c *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*eth
 		Number: blockNumberAsString,
 	}
 
-	log.Info("Fetching header by number")
-
 	res, err := c.client.HeaderByNumber(ctx, req)
 	if err != nil {
 		return &ethTypes.Header{}, err
 	}
 
-	log.Info("Fetched header by number")
-
-	resp := &ethTypes.Header{
-		Number:     big.NewInt(int64(res.Header.Number)),
-		ParentHash: protoutil.ConvertH256ToHash(res.Header.ParentHash),
-		Time:       res.Header.Time,
-	}
-
-	return resp, nil
+	return protoHeaderToEthHeader(res.Header), nil
 }
 
 func (c *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error) {
@@ -93,21 +75,13 @@ func (c *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethT
 		Number: blockNumberAsString,
 	}
 
-	log.Info("Fetching block by number")
-
 	res, err := c.client.BlockByNumber(ctx, req)
 	if err != nil {
 		return &ethTypes.Block{}, err
 	}
 
-	log.Info("Fetched block by number")
-
-	header := ethTypes.Header{
-		Number:     big.NewInt(int64(res.Block.Header.Number)),
-		ParentHash: protoutil.ConvertH256ToHash(res.Block.Header.ParentHash),
-		Time:       res.Block.Header.Time,
-	}
-	return ethTypes.NewBlock(&header, nil, nil, nil), nil
+	header := protoHeaderToEthHeader(res.Block.Header)
+	return ethTypes.NewBlock(header, nil, nil, nil), nil
 }
 
 func (c *BorGRPCClient) TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error) {
@@ -115,14 +89,10 @@ func (c *BorGRPCClient) TransactionReceipt(ctx context.Context, txHash common.Ha
 		Hash: protoutil.ConvertHashToH256(txHash),
 	}
 
-	log.Info("Fetching transaction receipt")
-
 	res, err := c.client.TransactionReceipt(ctx, req)
 	if err != nil {
 		return &ethTypes.Receipt{}, err
 	}
-
-	log.Info("Fetched transaction receipt")
 
 	return receiptResponseToTypesReceipt(res.Receipt), nil
 }
@@ -132,16 +102,92 @@ func (c *BorGRPCClient) BorBlockReceipt(ctx context.Context, txHash common.Hash)
 		Hash: protoutil.ConvertHashToH256(txHash),
 	}
 
-	log.Info("Fetching bor block receipt")
-
 	res, err := c.client.BorBlockReceipt(ctx, req)
 	if err != nil {
 		return &ethTypes.Receipt{}, err
 	}
 
-	log.Info("Fetched bor block receipt")
-
 	return receiptResponseToTypesReceipt(res.Receipt), nil
+}
+
+// GetAuthor returns the author of the block at blockNum. Nil blockNum resolves
+// to the latest block (via ToBlockNumArg, which maps nil to "latest").
+func (c *BorGRPCClient) GetAuthor(ctx context.Context, blockNum *big.Int) (*common.Address, error) {
+	req := &proto.GetAuthorRequest{Number: ToBlockNumArg(blockNum)}
+
+	res, err := c.client.GetAuthor(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	if res.Author == nil {
+		return nil, fmt.Errorf("bor grpc GetAuthor: nil author")
+	}
+
+	arr := protoutil.ConvertH160toAddress(res.Author)
+	return new(common.BytesToAddress(arr[:])), nil
+}
+
+// GetTdByHash returns the total difficulty of the block identified by hash.
+func (c *BorGRPCClient) GetTdByHash(ctx context.Context, hash common.Hash) (uint64, error) {
+	req := &proto.GetTdByHashRequest{Hash: protoutil.ConvertHashToH256(hash)}
+	res, err := c.client.GetTdByHash(ctx, req)
+	if err != nil {
+		return 0, err
+	}
+	return res.TotalDifficulty, nil
+}
+
+// GetTdByNumber returns the total difficulty of the block at blockNum.
+// Nil blockNum resolves to the latest block.
+func (c *BorGRPCClient) GetTdByNumber(ctx context.Context, blockNum *big.Int) (uint64, error) {
+	req := &proto.GetTdByNumberRequest{Number: ToBlockNumArg(blockNum)}
+	res, err := c.client.GetTdByNumber(ctx, req)
+	if err != nil {
+		return 0, err
+	}
+	return res.TotalDifficulty, nil
+}
+
+// GetBlockInfoInBatch returns headers, total difficulties, and authors for the
+// inclusive block range [start, end]. Returns up to (end-start+1) entries; a
+// shorter slice means the server encountered a missing block or other error
+// mid-range, matching the HTTP eth_getHeaderByNumber batch semantics.
+// Returns an error for invalid input ranges.
+func (c *BorGRPCClient) GetBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
+	if start < 0 || end < 0 || end < start {
+		return nil, nil, nil, fmt.Errorf("invalid range [%d,%d]", start, end)
+	}
+
+	req := &proto.GetBlockInfoInBatchRequest{
+		StartBlockNumber: uint64(start),
+		EndBlockNumber:   uint64(end),
+	}
+	res, err := c.client.GetBlockInfoInBatch(ctx, req)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	n := len(res.Blocks)
+	headers := make([]*ethTypes.Header, 0, n)
+	tds := make([]uint64, 0, n)
+	authors := make([]common.Address, 0, n)
+
+	for _, b := range res.Blocks {
+		if b == nil || b.Header == nil {
+			break
+		}
+		headers = append(headers, protoHeaderToEthHeader(b.Header))
+		tds = append(tds, b.TotalDifficulty)
+
+		var addr common.Address
+		if b.Author != nil {
+			arr := protoutil.ConvertH160toAddress(b.Author)
+			addr = common.BytesToAddress(arr[:])
+		}
+		authors = append(authors, addr)
+	}
+
+	return headers, tds, authors, nil
 }
 
 func receiptResponseToTypesReceipt(receipt *proto.Receipt) *ethTypes.Receipt {
@@ -176,4 +222,68 @@ func ToBlockNumArg(number *big.Int) string {
 	}
 	// It's negative and large, which is invalid.
 	return fmt.Sprintf("<invalid %d>", number)
+}
+
+// protoHeaderToEthHeader rebuilds a full ethTypes.Header from the proto wire form.
+func protoHeaderToEthHeader(p *proto.Header) *ethTypes.Header {
+	if p == nil {
+		return nil
+	}
+
+	h := &ethTypes.Header{
+		ParentHash:  protoH256ToHash(p.ParentHash),
+		UncleHash:   protoH256ToHash(p.UncleHash),
+		Coinbase:    protoH160ToAddress(p.Coinbase),
+		Root:        protoH256ToHash(p.StateRoot),
+		TxHash:      protoH256ToHash(p.TxRoot),
+		ReceiptHash: protoH256ToHash(p.ReceiptRoot),
+		Difficulty:  new(big.Int).SetBytes(p.Difficulty),
+		Number:      new(big.Int).SetUint64(p.Number),
+		GasLimit:    p.GasLimit,
+		GasUsed:     p.GasUsed,
+		Time:        p.Time,
+		Extra:       append([]byte(nil), p.ExtraData...),
+		MixDigest:   protoH256ToHash(p.MixDigest),
+	}
+	h.Bloom.SetBytes(p.Bloom)
+	copy(h.Nonce[:], p.Nonce)
+
+	if len(p.BaseFee) > 0 {
+		h.BaseFee = new(big.Int).SetBytes(p.BaseFee)
+	}
+	if p.WithdrawalsHash != nil {
+		v := protoH256ToHash(p.WithdrawalsHash)
+		h.WithdrawalsHash = &v
+	}
+	// BlobGasUsed and ExcessBlobGas are proto3 `optional`.
+	// We use *uint64 as a direct pointer, so the copy preserves nil vs. zero.
+	h.BlobGasUsed = p.BlobGasUsed
+	h.ExcessBlobGas = p.ExcessBlobGas
+	if p.ParentBeaconBlockRoot != nil {
+		v := protoH256ToHash(p.ParentBeaconBlockRoot)
+		h.ParentBeaconRoot = &v
+	}
+	if p.RequestsHash != nil {
+		v := protoH256ToHash(p.RequestsHash)
+		h.RequestsHash = &v
+	}
+	return h
+}
+
+// protoH256ToHash converts a proto H256 (or nil) to a common.Hash.
+func protoH256ToHash(h *commonproto.H256) common.Hash {
+	if h == nil {
+		return common.Hash{}
+	}
+	b := protoutil.ConvertH256ToHash(h)
+	return common.BytesToHash(b[:])
+}
+
+// protoH160ToAddress converts a proto H160 (or nil) to a common.Address.
+func protoH160ToAddress(a *commonproto.H160) common.Address {
+	if a == nil {
+		return common.Address{}
+	}
+	arr := protoutil.ConvertH160toAddress(a)
+	return common.BytesToAddress(arr[:])
 }

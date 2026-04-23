@@ -26,6 +26,9 @@ bor_grpc_flag = "{{ .Custom.BorGRPCFlag }}"
 # GRPC endpoint for bor chain
 bor_grpc_url = "{{ .Custom.BorGRPCUrl }}"
 
+# Bearer token for bor gRPC authentication (empty disables auth)
+bor_grpc_token = "{{ .Custom.BorGRPCToken }}"
+
 # RPC endpoint for cometBFT
 comet_bft_rpc_url = "{{ .Custom.CometBFTRPCUrl }}"
 
