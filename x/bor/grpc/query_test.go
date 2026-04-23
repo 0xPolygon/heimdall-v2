@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/mock"
@@ -13,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 
 	proto "github.com/0xPolygon/polyproto/bor"
+	commonproto "github.com/0xPolygon/polyproto/common"
 	protoutil "github.com/0xPolygon/polyproto/utils"
 )
 
@@ -235,9 +237,6 @@ func TestHeaderByNumber(t *testing.T) {
 		mockClient.AssertExpectations(t)
 	})
 
-	// Note: The "blockID too large" check in the original code is unreachable
-	// since blockID is int64, so no test for it
-
 	t.Run("error retrieving header", func(t *testing.T) {
 		t.Parallel()
 
@@ -250,8 +249,23 @@ func TestHeaderByNumber(t *testing.T) {
 		header, err := grpcClient.HeaderByNumber(context.Background(), 100)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "header error")
-		require.NotNil(t, header) // Returns empty header on error
-		require.Nil(t, header.Number)
+		require.Nil(t, header, "returns nil on error, matching ethclient convention")
+
+		mockClient.AssertExpectations(t)
+	})
+
+	t.Run("nil header in response maps to ethereum.NotFound", func(t *testing.T) {
+		t.Parallel()
+
+		mockClient := new(MockBorApiClient)
+		grpcClient := &BorGRPCClient{client: mockClient}
+
+		mockClient.On("HeaderByNumber", mock.Anything, mock.Anything).
+			Return(&proto.GetHeaderByNumberResponse{Header: nil}, nil)
+
+		header, err := grpcClient.HeaderByNumber(context.Background(), 100)
+		require.ErrorIs(t, err, ethereum.NotFound)
+		require.Nil(t, header)
 
 		mockClient.AssertExpectations(t)
 	})
@@ -289,9 +303,6 @@ func TestBlockByNumber(t *testing.T) {
 		mockClient.AssertExpectations(t)
 	})
 
-	// Note: The "blockID too large" check in the original code is unreachable
-	// since blockID is int64, so no test for it
-
 	t.Run("error retrieving block", func(t *testing.T) {
 		t.Parallel()
 
@@ -304,7 +315,39 @@ func TestBlockByNumber(t *testing.T) {
 		block, err := grpcClient.BlockByNumber(context.Background(), 200)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "block error")
-		require.NotNil(t, block) // Returns empty block on error
+		require.Nil(t, block, "returns nil on error, matching ethclient convention")
+
+		mockClient.AssertExpectations(t)
+	})
+
+	t.Run("nil block in response maps to ethereum.NotFound", func(t *testing.T) {
+		t.Parallel()
+
+		mockClient := new(MockBorApiClient)
+		grpcClient := &BorGRPCClient{client: mockClient}
+
+		mockClient.On("BlockByNumber", mock.Anything, mock.Anything).
+			Return(&proto.GetBlockByNumberResponse{Block: nil}, nil)
+
+		block, err := grpcClient.BlockByNumber(context.Background(), 200)
+		require.ErrorIs(t, err, ethereum.NotFound)
+		require.Nil(t, block)
+
+		mockClient.AssertExpectations(t)
+	})
+
+	t.Run("block with nil header maps to ethereum.NotFound", func(t *testing.T) {
+		t.Parallel()
+
+		mockClient := new(MockBorApiClient)
+		grpcClient := &BorGRPCClient{client: mockClient}
+
+		mockClient.On("BlockByNumber", mock.Anything, mock.Anything).
+			Return(&proto.GetBlockByNumberResponse{Block: &proto.Block{Header: nil}}, nil)
+
+		block, err := grpcClient.BlockByNumber(context.Background(), 200)
+		require.ErrorIs(t, err, ethereum.NotFound)
+		require.Nil(t, block)
 
 		mockClient.AssertExpectations(t)
 	})
@@ -373,7 +416,7 @@ func TestTransactionReceipt(t *testing.T) {
 		receipt, err := grpcClient.TransactionReceipt(context.Background(), txHash)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "receipt error")
-		require.NotNil(t, receipt) // Returns empty receipt on error
+		require.Nil(t, receipt, "returns nil on error, matching ethclient convention")
 
 		mockClient.AssertExpectations(t)
 	})
@@ -434,7 +477,7 @@ func TestBorBlockReceipt(t *testing.T) {
 		receipt, err := grpcClient.BorBlockReceipt(context.Background(), txHash)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "bor receipt error")
-		require.NotNil(t, receipt)
+		require.Nil(t, receipt, "returns nil on error, matching ethclient convention")
 
 		mockClient.AssertExpectations(t)
 	})
@@ -953,6 +996,48 @@ func TestProtoHeaderToEthHeader_NilInput(t *testing.T) {
 
 	result := protoHeaderToEthHeader(nil)
 	require.Nil(t, result, "protoHeaderToEthHeader(nil) must return nil")
+}
+
+// TestProtoHeaderToEthHeader_OversizedBloom verifies that a server response
+// with a Bloom larger than 256 bytes is rejected as nil rather than panicking
+// inside ethTypes.Bloom.SetBytes.
+func TestProtoHeaderToEthHeader_OversizedBloom(t *testing.T) {
+	t.Parallel()
+
+	p := &proto.Header{Bloom: make([]byte, ethTypes.BloomByteLength+1)}
+	require.Nil(t, protoHeaderToEthHeader(p), "oversized bloom must return nil")
+}
+
+// TestProtoH256ToHash_InnerNil verifies that a non-nil outer H256 with a nil
+// Hi or Lo sub-message decodes to the zero hash rather than panicking inside
+// protoutil.ConvertH256ToHash.
+func TestProtoH256ToHash_InnerNil(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		h    *commonproto.H256
+	}{
+		{"nil Hi", &commonproto.H256{Hi: nil, Lo: &commonproto.H128{Hi: 1, Lo: 2}}},
+		{"nil Lo", &commonproto.H256{Hi: &commonproto.H128{Hi: 1, Lo: 2}, Lo: nil}},
+		{"both nil", &commonproto.H256{Hi: nil, Lo: nil}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, common.Hash{}, protoH256ToHash(tc.h))
+		})
+	}
+}
+
+// TestProtoH160ToAddress_InnerNil verifies that a non-nil outer H160 with a
+// nil Hi sub-message decodes to the zero address rather than panicking inside
+// protoutil.ConvertH160toAddress.
+func TestProtoH160ToAddress_InnerNil(t *testing.T) {
+	t.Parallel()
+
+	a := &commonproto.H160{Hi: nil, Lo: 0}
+	require.Equal(t, common.Address{}, protoH160ToAddress(a))
 }
 
 // makeTestHeader builds a header for batch tests.

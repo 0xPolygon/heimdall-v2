@@ -108,6 +108,13 @@ func resolveHTTPS(u *url.URL, address string, logger log.Logger) (string, []grpc
 
 func resolveHTTP(u *url.URL, token string, logger log.Logger) (string, []grpc.DialOption, bool, error) {
 	addr := u.Host
+	if addr == "" {
+		err := fmt.Errorf("invalid Bor gRPC http URL %q: empty host", u.String())
+		// Operator-log line; err below carries the same content.
+		// mutator-disable-next-line operator-log line
+		logger.Error("Invalid Bor gRPC http URL", "url", u.String(), "err", err)
+		return "", nil, false, err
+	}
 	if !isLocalhost(addr) {
 		// Bearer token + non-local plaintext would leak the token.
 		if token != "" {
@@ -153,9 +160,9 @@ func resolveNoScheme(addr string, logger log.Logger) (string, []grpc.DialOption,
 // retryInterceptors returns the standard retry unary+stream client interceptors.
 func retryInterceptors() []grpc.DialOption {
 	retryOpts := []grpcRetry.CallOption{
-		grpcRetry.WithMax(10000),
-		grpcRetry.WithBackoff(grpcRetry.BackoffLinear(5 * time.Second)),
-		grpcRetry.WithCodes(codes.Internal, codes.Unavailable, codes.Aborted, codes.NotFound),
+		grpcRetry.WithMax(4),
+		grpcRetry.WithBackoff(grpcRetry.BackoffLinear(500 * time.Millisecond)),
+		grpcRetry.WithCodes(codes.Unavailable, codes.Aborted),
 	}
 	return []grpc.DialOption{
 		grpc.WithStreamInterceptor(grpcRetry.StreamClientInterceptor(retryOpts...)),

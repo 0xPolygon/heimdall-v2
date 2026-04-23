@@ -3,12 +3,12 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"math"
 	"math/big"
 
 	proto "github.com/0xPolygon/polyproto/bor"
 	commonproto "github.com/0xPolygon/polyproto/common"
 	protoutil "github.com/0xPolygon/polyproto/utils"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
@@ -46,10 +46,6 @@ func (c *BorGRPCClient) GetVoteOnHash(ctx context.Context, startBlock uint64, en
 }
 
 func (c *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error) {
-	if blockID > math.MaxInt64 {
-		return nil, fmt.Errorf("blockID too large: %d", blockID)
-	}
-
 	blockNumberAsString := ToBlockNumArg(big.NewInt(blockID))
 
 	req := &proto.GetHeaderByNumberRequest{
@@ -58,17 +54,16 @@ func (c *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*eth
 
 	res, err := c.client.HeaderByNumber(ctx, req)
 	if err != nil {
-		return &ethTypes.Header{}, err
+		return nil, err
+	}
+	if res == nil || res.Header == nil {
+		return nil, ethereum.NotFound
 	}
 
 	return protoHeaderToEthHeader(res.Header), nil
 }
 
 func (c *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error) {
-	if blockID > math.MaxInt64 {
-		return nil, fmt.Errorf("blockID too large: %d", blockID)
-	}
-
 	blockNumberAsString := ToBlockNumArg(big.NewInt(blockID))
 
 	req := &proto.GetBlockByNumberRequest{
@@ -77,7 +72,10 @@ func (c *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethT
 
 	res, err := c.client.BlockByNumber(ctx, req)
 	if err != nil {
-		return &ethTypes.Block{}, err
+		return nil, err
+	}
+	if res == nil || res.Block == nil || res.Block.Header == nil {
+		return nil, ethereum.NotFound
 	}
 
 	header := protoHeaderToEthHeader(res.Block.Header)
@@ -91,7 +89,10 @@ func (c *BorGRPCClient) TransactionReceipt(ctx context.Context, txHash common.Ha
 
 	res, err := c.client.TransactionReceipt(ctx, req)
 	if err != nil {
-		return &ethTypes.Receipt{}, err
+		return nil, err
+	}
+	if res == nil || res.Receipt == nil {
+		return nil, ethereum.NotFound
 	}
 
 	return receiptResponseToTypesReceipt(res.Receipt), nil
@@ -104,7 +105,10 @@ func (c *BorGRPCClient) BorBlockReceipt(ctx context.Context, txHash common.Hash)
 
 	res, err := c.client.BorBlockReceipt(ctx, req)
 	if err != nil {
-		return &ethTypes.Receipt{}, err
+		return nil, err
+	}
+	if res == nil || res.Receipt == nil {
+		return nil, ethereum.NotFound
 	}
 
 	return receiptResponseToTypesReceipt(res.Receipt), nil
@@ -124,7 +128,8 @@ func (c *BorGRPCClient) GetAuthor(ctx context.Context, blockNum *big.Int) (*comm
 	}
 
 	arr := protoutil.ConvertH160toAddress(res.Author)
-	return new(common.BytesToAddress(arr[:])), nil
+	addr := common.BytesToAddress(arr[:])
+	return &addr, nil
 }
 
 // GetTdByHash returns the total difficulty of the block identified by hash.
@@ -224,9 +229,19 @@ func ToBlockNumArg(number *big.Int) string {
 	return fmt.Sprintf("<invalid %d>", number)
 }
 
-// protoHeaderToEthHeader rebuilds a full ethTypes.Header from the proto wire form.
+// protoHeaderToEthHeader rebuilds a full ethTypes.Header from the proto wire
+// form. Returns nil on a nil or malformed input (e.g., out-of-bounds bloom) so
+// callers can map it to ethereum.NotFound.
 func protoHeaderToEthHeader(p *proto.Header) *ethTypes.Header {
 	if p == nil {
+		return nil
+	}
+
+	if len(p.Bloom) > ethTypes.BloomByteLength {
+		return nil
+	}
+
+	if len(p.Difficulty) > 32 || len(p.BaseFee) > 32 {
 		return nil
 	}
 
@@ -272,7 +287,7 @@ func protoHeaderToEthHeader(p *proto.Header) *ethTypes.Header {
 
 // protoH256ToHash converts a proto H256 (or nil) to a common.Hash.
 func protoH256ToHash(h *commonproto.H256) common.Hash {
-	if h == nil {
+	if h == nil || h.Hi == nil || h.Lo == nil {
 		return common.Hash{}
 	}
 	b := protoutil.ConvertH256ToHash(h)
@@ -281,7 +296,7 @@ func protoH256ToHash(h *commonproto.H256) common.Hash {
 
 // protoH160ToAddress converts a proto H160 (or nil) to a common.Address.
 func protoH160ToAddress(a *commonproto.H160) common.Address {
-	if a == nil {
+	if a == nil || a.Hi == nil {
 		return common.Address{}
 	}
 	arr := protoutil.ConvertH160toAddress(a)

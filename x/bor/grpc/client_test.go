@@ -265,6 +265,17 @@ func TestResolveHTTP(t *testing.T) {
 		require.Contains(t, err.Error(), "plaintext")
 		require.False(t, isTLS)
 	})
+
+	t.Run("empty host returns error and isTLS=false", func(t *testing.T) {
+		t.Parallel()
+
+		u := mustParseURL(t, "http://")
+		_, _, isTLS, err := resolveHTTP(u, "", logger)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "empty host")
+		require.False(t, isTLS)
+	})
 }
 
 // TestResolveUnix verifies the unix:// path prefix is prepended correctly and

@@ -1367,12 +1367,14 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 		c.Custom.BorRPCUrl = cc.BorRPCUrl
 	}
 
-	if !cc.BorGRPCFlag {
-		c.Custom.BorGRPCFlag = cc.BorGRPCFlag
-	}
+	c.Custom.BorGRPCFlag = cc.BorGRPCFlag
 
 	if cc.BorGRPCUrl != "" {
 		c.Custom.BorGRPCUrl = cc.BorGRPCUrl
+	}
+
+	if cc.BorGRPCToken != "" {
+		c.Custom.BorGRPCToken = cc.BorGRPCToken
 	}
 
 	if cc.CometBFTRPCUrl != "" {
