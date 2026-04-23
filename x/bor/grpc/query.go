@@ -59,8 +59,14 @@ func (c *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*eth
 	if res == nil || res.Header == nil {
 		return nil, ethereum.NotFound
 	}
-
-	return protoHeaderToEthHeader(res.Header), nil
+	// protoHeaderToEthHeader returns nil for a malformed header
+	// (e.g., oversized bloom / difficulty / baseFee).
+	// Surface that as NotFound so callers never nil-deref downstream.
+	h := protoHeaderToEthHeader(res.Header)
+	if h == nil {
+		return nil, ethereum.NotFound
+	}
+	return h, nil
 }
 
 func (c *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error) {
@@ -77,8 +83,11 @@ func (c *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethT
 	if res == nil || res.Block == nil || res.Block.Header == nil {
 		return nil, ethereum.NotFound
 	}
-
+	// Same malformed-header guard as HeaderByNumber
 	header := protoHeaderToEthHeader(res.Block.Header)
+	if header == nil {
+		return nil, ethereum.NotFound
+	}
 	return ethTypes.NewBlock(header, nil, nil, nil), nil
 }
 
@@ -127,8 +136,10 @@ func (c *BorGRPCClient) GetAuthor(ctx context.Context, blockNum *big.Int) (*comm
 		return nil, fmt.Errorf("bor grpc GetAuthor: nil author")
 	}
 
-	arr := protoutil.ConvertH160toAddress(res.Author)
-	addr := common.BytesToAddress(arr[:])
+	// Use the nil-safe wrapper: a crafted server could send a non-nil *H160
+	// with a nil inner Hi sub-message, which would panic inside
+	// protoutil.ConvertH160toAddress (no inner-pointer guards).
+	addr := protoH160ToAddress(res.Author)
 	return &addr, nil
 }
 
@@ -138,6 +149,9 @@ func (c *BorGRPCClient) GetTdByHash(ctx context.Context, hash common.Hash) (uint
 	res, err := c.client.GetTdByHash(ctx, req)
 	if err != nil {
 		return 0, err
+	}
+	if res == nil {
+		return 0, ethereum.NotFound
 	}
 	return res.TotalDifficulty, nil
 }
@@ -149,6 +163,9 @@ func (c *BorGRPCClient) GetTdByNumber(ctx context.Context, blockNum *big.Int) (u
 	res, err := c.client.GetTdByNumber(ctx, req)
 	if err != nil {
 		return 0, err
+	}
+	if res == nil {
+		return 0, ethereum.NotFound
 	}
 	return res.TotalDifficulty, nil
 }
@@ -171,6 +188,9 @@ func (c *BorGRPCClient) GetBlockInfoInBatch(ctx context.Context, start, end int6
 	if err != nil {
 		return nil, nil, nil, err
 	}
+	if res == nil {
+		return nil, nil, nil, ethereum.NotFound
+	}
 
 	n := len(res.Blocks)
 	headers := make([]*ethTypes.Header, 0, n)
@@ -181,14 +201,16 @@ func (c *BorGRPCClient) GetBlockInfoInBatch(ctx context.Context, start, end int6
 		if b == nil || b.Header == nil {
 			break
 		}
-		headers = append(headers, protoHeaderToEthHeader(b.Header))
+		// Stop on a malformed header, matching the HTTP side
+		h := protoHeaderToEthHeader(b.Header)
+		if h == nil {
+			break
+		}
+		headers = append(headers, h)
 		tds = append(tds, b.TotalDifficulty)
 
-		var addr common.Address
-		if b.Author != nil {
-			arr := protoutil.ConvertH160toAddress(b.Author)
-			addr = common.BytesToAddress(arr[:])
-		}
+		// Use the nil-safe wrapper
+		addr := protoH160ToAddress(b.Author)
 		authors = append(authors, addr)
 	}
 

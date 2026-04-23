@@ -99,8 +99,9 @@ func resolveHTTPS(u *url.URL, address string, logger log.Logger) (string, []grpc
 		logger.Error("Invalid Bor gRPC https URL", "url", address, "err", err)
 		return "", nil, false, err
 	}
+
 	tlsCfg := &tls.Config{
-		ServerName: strings.Split(addr, ":")[0],
+		ServerName: u.Hostname(),
 		MinVersion: tls.VersionTLS12,
 	}
 	return addr, []grpc.DialOption{grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg))}, true, nil

@@ -576,6 +576,10 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 // In both paths, it tries to get blocks from the range interval
 // but returns only the ones found on the chain.
 func (c *ContractCaller) GetBorChainBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
+	if start < 0 || end < 0 || end < start {
+		return nil, nil, nil, fmt.Errorf("invalid range [%d,%d]", start, end)
+	}
+
 	timeoutCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
@@ -651,7 +655,7 @@ func collateBorBatchResults(start, totalBlocks int64, batchElems []rpc.BatchElem
 		elemTd := batchElems[i+int(totalBlocks)]
 
 		if elemHeader.Error != nil || elemTd.Error != nil || hdrs[i] == nil || tds[i] == nil {
-			Logger.Debug("Error fetching block info", "error", elemHeader.Error, "error", elemTd.Error, "blockNum", blockNum)
+			Logger.Debug("Error fetching block info", "headerErr", elemHeader.Error, "tdErr", elemTd.Error, "blockNum", blockNum)
 			break
 		}
 

@@ -598,7 +598,10 @@ func runBorGRPCHashParityCheck(httpClient *ethclient.Client, grpcClient *borgrpc
 	runBorGRPCHashParityCheckWith(
 		httpClient, grpcClient, timeout,
 		borGRPCParityMaxAttempts, borGRPCParityRetryInterval,
-		func(msg string, _ ...interface{}) { log.Fatal(msg) },
+		func(msg string, keysAndValues ...interface{}) {
+			Logger.Error(msg, keysAndValues...)
+			os.Exit(1)
+		},
 	)
 }
 
