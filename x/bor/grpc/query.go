@@ -25,6 +25,9 @@ func (c *BorGRPCClient) GetRootHash(ctx context.Context, startBlock uint64, endB
 	if err != nil {
 		return "", err
 	}
+	if res == nil {
+		return "", ethereum.NotFound
+	}
 
 	return res.RootHash, nil
 }
@@ -40,6 +43,9 @@ func (c *BorGRPCClient) GetVoteOnHash(ctx context.Context, startBlock uint64, en
 	res, err := c.client.GetVoteOnHash(ctx, req)
 	if err != nil {
 		return false, err
+	}
+	if res == nil {
+		return false, ethereum.NotFound
 	}
 
 	return res.Response, nil
@@ -95,7 +101,7 @@ func (c *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethT
 	if blockID >= 0 && header.Number.Int64() != blockID {
 		return nil, fmt.Errorf("bor grpc BlockByNumber: server returned block %d for request %d", header.Number.Int64(), blockID)
 	}
-	return ethTypes.NewBlock(header, nil, nil, nil), nil
+	return ethTypes.NewBlockWithHeader(header), nil
 }
 
 func (c *BorGRPCClient) TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error) {
@@ -211,6 +217,13 @@ func (c *BorGRPCClient) GetBlockInfoInBatch(ctx context.Context, start, end int6
 		// Stop on a malformed header, matching the HTTP side
 		h := protoHeaderToEthHeader(b.Header)
 		if h == nil {
+			break
+		}
+		// The block number must match the next expected slot in
+		// the requested range. Otherwise, wrong hashes land in
+		// downstream milestone propositions.
+		expected := uint64(start) + uint64(len(headers))
+		if h.Number.Uint64() != expected {
 			break
 		}
 		// Match HTTP collateBorBatchResults: a non-genesis block with no
