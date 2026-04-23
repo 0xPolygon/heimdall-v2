@@ -66,6 +66,9 @@ func (c *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*eth
 	if h == nil {
 		return nil, ethereum.NotFound
 	}
+	if blockID >= 0 && h.Number.Int64() != blockID {
+		return nil, fmt.Errorf("bor grpc HeaderByNumber: server returned block %d for request %d", h.Number.Int64(), blockID)
+	}
 	return h, nil
 }
 
@@ -87,6 +90,10 @@ func (c *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethT
 	header := protoHeaderToEthHeader(res.Block.Header)
 	if header == nil {
 		return nil, ethereum.NotFound
+	}
+	// Same guard as HeaderByNumber.
+	if blockID >= 0 && header.Number.Int64() != blockID {
+		return nil, fmt.Errorf("bor grpc BlockByNumber: server returned block %d for request %d", header.Number.Int64(), blockID)
 	}
 	return ethTypes.NewBlock(header, nil, nil, nil), nil
 }
@@ -132,13 +139,13 @@ func (c *BorGRPCClient) GetAuthor(ctx context.Context, blockNum *big.Int) (*comm
 	if err != nil {
 		return nil, err
 	}
-	if res.Author == nil {
-		return nil, fmt.Errorf("bor grpc GetAuthor: nil author")
+	// Missing-author and missing-response are both surfaced as ethereum.NotFound,
+	// matching the RPC methods (HeaderByNumber, BlockByNumber, GetTdByHash, GetTdByNumber) and
+	// the HTTP path's ethclient contract.
+	if res == nil || res.Author == nil {
+		return nil, ethereum.NotFound
 	}
 
-	// Use the nil-safe wrapper: a crafted server could send a non-nil *H160
-	// with a nil inner Hi sub-message, which would panic inside
-	// protoutil.ConvertH160toAddress (no inner-pointer guards).
 	addr := protoH160ToAddress(res.Author)
 	return &addr, nil
 }
@@ -206,10 +213,17 @@ func (c *BorGRPCClient) GetBlockInfoInBatch(ctx context.Context, start, end int6
 		if h == nil {
 			break
 		}
+		// Match HTTP collateBorBatchResults: a non-genesis block with no
+		// author entry is a failure. Break instead of appending a
+		// zero-address placeholder that diverges from the HTTP path.
+		if b.Author == nil && b.Header.Number != 0 {
+			break
+		}
 		headers = append(headers, h)
 		tds = append(tds, b.TotalDifficulty)
 
-		// Use the nil-safe wrapper
+		// Nil-safe wrapper: handles the (nil author | nil inner Hi) case
+		// for genesis blocks, where the server is allowed to send nil author.
 		addr := protoH160ToAddress(b.Author)
 		authors = append(authors, addr)
 	}

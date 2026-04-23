@@ -904,11 +904,12 @@ func TestGetBlockInfoInBatch_RangeBoundary(t *testing.T) {
 		grpcClient := &BorGRPCClient{client: mockClient}
 		hdr := makeTestHeader(t, 50)
 
+		authorAddr := common.HexToAddress("0x0123456789abcdef0123456789abcdef01234567")
 		mockClient.On("GetBlockInfoInBatch", mock.Anything, mock.MatchedBy(func(req *proto.GetBlockInfoInBatchRequest) bool {
 			return req.StartBlockNumber == 50 && req.EndBlockNumber == 50
 		})).Return(&proto.GetBlockInfoInBatchResponse{
 			Blocks: []*proto.BlockInfo{
-				{Header: ethHeaderToProtoForTest(hdr), TotalDifficulty: 100, Author: nil},
+				{Header: ethHeaderToProtoForTest(hdr), TotalDifficulty: 100, Author: protoutil.ConvertAddressToH160(authorAddr)},
 			},
 		}, nil)
 
@@ -974,10 +975,11 @@ func TestGetBlockInfoInBatch_NilHeaderBreak(t *testing.T) {
 
 	// Server returns block 100 with a valid header, then block 101 with a nil Header.
 	// Only block 100 must be returned.
+	authorAddr := common.HexToAddress("0x0123456789abcdef0123456789abcdef01234567")
 	mockClient.On("GetBlockInfoInBatch", mock.Anything, mock.Anything).
 		Return(&proto.GetBlockInfoInBatchResponse{
 			Blocks: []*proto.BlockInfo{
-				{Header: ethHeaderToProtoForTest(hdr100), TotalDifficulty: 500, Author: nil},
+				{Header: ethHeaderToProtoForTest(hdr100), TotalDifficulty: 500, Author: protoutil.ConvertAddressToH160(authorAddr)},
 				{Header: nil, TotalDifficulty: 600, Author: nil}, // nil Header — must trigger break
 			},
 		}, nil)
