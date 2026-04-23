@@ -483,7 +483,7 @@ func GetClerkEventRecord(stateId int64, cdc codec.Codec) (*clerktypes.EventRecor
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)))
 	if err != nil {
-		logger.Error("Error fetching event record by state ID", "error", err)
+		logger.Debug("Error fetching event record by state ID", "stateId", stateId, "error", err)
 		return nil, err
 	}
 

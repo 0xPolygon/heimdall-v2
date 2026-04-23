@@ -193,6 +193,10 @@ func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{})
 		return false, nil
 	}
 
+	if bp.httpClient == nil {
+		return false, nil
+	}
+
 	targetTxHash := clerkMsg.GetTxHash()
 	targetLogIndex := clerkMsg.GetLogIndex()
 

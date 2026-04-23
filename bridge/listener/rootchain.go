@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/RichardKnop/machinery/v1/tasks"
@@ -38,7 +39,8 @@ type RootChainListener struct {
 	// For self-healing, it will be only initialized if sub_graph_url is provided
 	subGraphClient *subGraphClient
 
-	// taskStaggerDelay is set per-event in queryAndBroadcastEvents to spread task ETAs.
+	// taskStaggerDelay spreads task ETAs when processing a batch of events.
+	staggerMu        sync.RWMutex
 	taskStaggerDelay time.Duration
 }
 
@@ -228,7 +230,8 @@ func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChain
 		rl.Logger.Debug("RootChainListener: new logs found", "numberOfLogs", len(logs))
 	}
 
-	for i, vLog := range logs {
+	validLogCount := 0
+	for _, vLog := range logs {
 		if len(vLog.Topics) == 0 {
 			continue
 		}
@@ -238,8 +241,13 @@ func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChain
 			continue
 		}
 
+		validLogCount++
+
 		// Stagger events so tasks don't all fire at the same time.
-		rl.taskStaggerDelay = time.Duration(i) * taskStaggerInterval
+		rl.staggerMu.Lock()
+		rl.taskStaggerDelay = time.Duration(validLogCount) * taskStaggerInterval
+		rl.staggerMu.Unlock()
+
 		rl.handleLog(vLog, selectedEvent)
 	}
 
@@ -262,11 +270,15 @@ func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string
 			},
 		},
 	}
-	signature.RetryCount = 10
+	signature.RetryCount = 5
 
 	// add delay for the task so that multiple validators won't send same transaction at same time
 	// taskStaggerDelay spreads events in a batch so they don't all fire simultaneously
-	eta := time.Now().Add(delay + rl.taskStaggerDelay)
+	rl.staggerMu.RLock()
+	stagger := rl.taskStaggerDelay
+	rl.staggerMu.RUnlock()
+
+	eta := time.Now().Add(delay + stagger)
 	signature.ETA = &eta
 	rl.Logger.Info("RootChainListener: Sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)
 

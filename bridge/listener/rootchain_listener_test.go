@@ -79,9 +79,16 @@ func TestTaskStagger_DelayIncrementsPerEvent(t *testing.T) {
 	}
 
 	for i := 0; i < 5; i++ {
+		listener.staggerMu.Lock()
 		listener.taskStaggerDelay = time.Duration(i) * taskStaggerInterval
+		listener.staggerMu.Unlock()
+
+		listener.staggerMu.RLock()
+		got := listener.taskStaggerDelay
+		listener.staggerMu.RUnlock()
+
 		expected := time.Duration(i) * taskStaggerInterval
-		require.Equal(t, expected, listener.taskStaggerDelay,
+		require.Equal(t, expected, got,
 			"event %d should have stagger %v", i, expected)
 	}
 }
@@ -95,8 +102,15 @@ func TestTaskStagger_ZeroForFirstEvent(t *testing.T) {
 		},
 	}
 
+	listener.staggerMu.Lock()
 	listener.taskStaggerDelay = time.Duration(0) * taskStaggerInterval
-	require.Equal(t, time.Duration(0), listener.taskStaggerDelay)
+	listener.staggerMu.Unlock()
+
+	listener.staggerMu.RLock()
+	got := listener.taskStaggerDelay
+	listener.staggerMu.RUnlock()
+
+	require.Equal(t, time.Duration(0), got)
 }
 
 func TestTaskStagger_BatchOf100Events(t *testing.T) {
@@ -108,7 +122,7 @@ func TestTaskStagger_BatchOf100Events(t *testing.T) {
 		"100 events should spread over 99s of stagger")
 }
 
-func TestEarlyReturn_MarshalError(t *testing.T) {
+func TestNilABI_PanicsOnUnpackLog(t *testing.T) {
 	t.Parallel()
 
 	listener := &RootChainListener{
@@ -129,11 +143,11 @@ func TestEarlyReturn_MarshalError(t *testing.T) {
 
 	selectedEvent := &abi.Event{Name: helper.StateSyncedEvent}
 
-	// nil stateSenderAbi triggers UnpackLog error → should return early, not panic
+	// nil stateSenderAbi causes a nil-pointer panic in UnpackLog.
 	listener.stateSenderAbi = nil
 	require.Panics(t, func() {
 		listener.handleStateSyncedLog(vLog, selectedEvent)
-	}, "nil ABI should panic on UnpackLog — testing that we reach the unpack call")
+	}, "nil ABI must panic, indicates a misconfigured listener")
 }
 
 func TestEarlyReturn_UnpackLogError(t *testing.T) {

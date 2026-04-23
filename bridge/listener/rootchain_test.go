@@ -35,7 +35,7 @@ func (r *rootChainListenerForTest) SendTaskWithDelay(taskName string, eventName 
 			},
 		},
 	}
-	signature.RetryCount = 3
+	signature.RetryCount = 5
 
 	eta := time.Now().Add(delay)
 	signature.ETA = &eta
@@ -78,7 +78,7 @@ func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
 			if sig.Args[1].Type != "string" || sig.Args[1].Value != string(logBytes) {
 				return false
 			}
-			if sig.RetryCount != 3 {
+			if sig.RetryCount != 5 {
 				return false
 			}
 			if sig.ETA == nil {
@@ -597,7 +597,7 @@ func TestRootChainListener_TaskSignatureStructure(t *testing.T) {
 				},
 			},
 		}
-		signature.RetryCount = 3
+		signature.RetryCount = 5
 		eta := time.Now()
 		signature.ETA = &eta
 
@@ -608,7 +608,7 @@ func TestRootChainListener_TaskSignatureStructure(t *testing.T) {
 		require.Equal(t, eventName, signature.Args[0].Value)
 		require.Equal(t, "string", signature.Args[1].Type)
 		require.Equal(t, string(logBytes), signature.Args[1].Value)
-		require.Equal(t, 3, signature.RetryCount)
+		require.Equal(t, 5, signature.RetryCount)
 		require.NotNil(t, signature.ETA)
 	})
 }

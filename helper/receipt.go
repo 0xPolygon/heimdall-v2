@@ -93,5 +93,5 @@ func PrefetchReceipts(ctx context.Context, contractCaller IContractCaller, txHas
 		caller.cacheReceipt(hash, receipt)
 	}
 
-	logger.Info("Receipt prefetch complete", "requested", len(txHashes), "uncached", len(uncached), "fetched", len(receipts), "time", time.Since(t0))
+	logger.Debug("Receipt prefetch complete", "requested", len(txHashes), "uncached", len(uncached), "fetched", len(receipts), "time", time.Since(t0))
 }
