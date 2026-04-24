@@ -184,13 +184,17 @@ func (c *BorGRPCClient) GetTdByNumber(ctx context.Context, blockNum *big.Int) (u
 }
 
 // GetBlockInfoInBatch returns headers, total difficulties, and authors for the
-// inclusive block range [start, end]. Returns up to (end-start+1) entries; a
+// inclusive block range [start, 	// Cap well below int64 overflow so (end-start+1) and its int conversionend]. Returns up to (end-start+1) entries; a
 // shorter slice means the server encountered a missing block or other error
 // mid-range, matching the HTTP eth_getHeaderByNumber batch semantics.
 // Returns an error for invalid input ranges.
 func (c *BorGRPCClient) GetBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
 	if start < 0 || end < 0 || end < start {
 		return nil, nil, nil, fmt.Errorf("invalid range [%d,%d]", start, end)
+	}
+	const maxBatchSize = 10000
+	if end-start > maxBatchSize-1 {
+		return nil, nil, nil, fmt.Errorf("range too large: %d blocks exceeds max %d", end-start+1, maxBatchSize)
 	}
 
 	req := &proto.GetBlockInfoInBatchRequest{

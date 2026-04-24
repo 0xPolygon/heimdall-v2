@@ -45,6 +45,10 @@ const (
 
 	errUnableToConnect = "unable to connect to bor chain"
 	errEventNotFound   = "event not found"
+
+	// maxBlockInfoBatchSize caps GetBorChainBlockInfoInBatch inputs below
+	// int64 overflow and above realistic checkpoint/milestone spans
+	maxBlockInfoBatchSize = 10000
 )
 
 // ContractsABIsMap is a cached map holding the ABIs of the contracts
@@ -586,6 +590,10 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 func (c *ContractCaller) GetBorChainBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
 	if start < 0 || end < 0 || end < start {
 		return nil, nil, nil, fmt.Errorf("invalid range [%d,%d]", start, end)
+	}
+	// Prevents int64 (end-start+1) overflow
+	if end-start > maxBlockInfoBatchSize-1 {
+		return nil, nil, nil, fmt.Errorf("range too large: %d blocks exceeds max %d", end-start+1, maxBlockInfoBatchSize)
 	}
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
