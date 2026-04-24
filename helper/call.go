@@ -676,6 +676,12 @@ func collateBorBatchResults(start, totalBlocks int64, batchElems []rpc.BatchElem
 			Logger.Debug("Error fetching block info", "headerErr", elemHeader.Error, "tdErr", elemTd.Error, "blockNum", blockNum)
 			break
 		}
+		// Verify the returned header's block number matches the requested slot,
+		// to avoid potential wrong hashes into downstream milestone propositions.
+		if hdrs[i].Number == nil || hdrs[i].Number.Uint64() != uint64(blockNum) {
+			Logger.Debug("bor batch returned header with mismatched block number", "want", blockNum, "got", hdrs[i].Number)
+			break
+		}
 
 		var author common.Address
 		if blockNum > 0 {
