@@ -210,7 +210,11 @@ func (c *BorGRPCClient) GetBlockInfoInBatch(ctx context.Context, start, end int6
 	tds := make([]uint64, 0, n)
 	authors := make([]common.Address, 0, n)
 
+	maxLen := int(end - start + 1)
 	for _, b := range res.Blocks {
+		if len(headers) >= maxLen {
+			break
+		}
 		if b == nil || b.Header == nil {
 			break
 		}
@@ -286,7 +290,7 @@ func protoHeaderToEthHeader(p *proto.Header) *ethTypes.Header {
 		return nil
 	}
 
-	if len(p.Bloom) > ethTypes.BloomByteLength {
+	if len(p.Bloom) != 0 && len(p.Bloom) != ethTypes.BloomByteLength {
 		return nil
 	}
 
