@@ -17,6 +17,7 @@ import (
 	"github.com/cosmos/gogoproto/jsonpb"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/0xPolygon/heimdall-v2/common/strutil"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -1045,7 +1046,7 @@ func (app *HeimdallApp) prefetchReceipts(ctx sdk.Context, txs [][]byte, logger l
 func extractTxHash(msg sdk.Msg) (common.Hash, bool) {
 	switch m := msg.(type) {
 	case *clerkTypes.MsgEventRecord:
-		if m.TxHash == "" {
+		if !verifyHexTxHash(m.TxHash) {
 			return common.Hash{}, false
 		}
 		return common.HexToHash(m.TxHash), true
@@ -1081,4 +1082,9 @@ func extractTxHash(msg sdk.Msg) (common.Hash, bool) {
 
 func verifyTxHash(txHash []byte) bool {
 	return len(txHash) == common.HashLength
+}
+
+func verifyHexTxHash(hexTxHash string) bool {
+	decodedHash, err := hexutil.Decode(hexTxHash)
+	return err == nil && len(decodedHash) == common.HashLength
 }

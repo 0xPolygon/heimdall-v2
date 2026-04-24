@@ -5310,3 +5310,43 @@ func createVoteExtensionsWithPartialSupport(t *testing.T, validators []*stakeTyp
 
 	return voteExtensions
 }
+
+func TestExtractTxHashMsgEventRecordValidation(t *testing.T) {
+	validHash := common.BigToHash(common.Big1)
+
+	testCases := []struct {
+		name   string
+		txHash string
+		ok     bool
+		hash   common.Hash
+	}{
+		{
+			name:   "valid 0x-prefixed 32-byte hash",
+			txHash: validHash.Hex(),
+			ok:     true,
+			hash:   validHash,
+		},
+		{
+			name:   "rejects non-prefixed hash string",
+			txHash: common.Bytes2Hex(validHash.Bytes()),
+			ok:     false,
+			hash:   common.Hash{},
+		},
+		{
+			name:   "rejects malformed short hash",
+			txHash: "0x1234",
+			ok:     false,
+			hash:   common.Hash{},
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			msg := &clerkTypes.MsgEventRecord{TxHash: tc.txHash}
+			hash, ok := extractTxHash(msg)
+			require.Equal(t, tc.ok, ok)
+			require.Equal(t, tc.hash, hash)
+		})
+	}
+}
