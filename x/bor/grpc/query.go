@@ -198,9 +198,8 @@ func (c *BorGRPCClient) GetBlockInfoInBatch(ctx context.Context, start, end int6
 	if start < 0 || end < 0 || end < start {
 		return nil, nil, nil, fmt.Errorf("invalid range [%d,%d]", start, end)
 	}
-	const maxBatchSize = 10000
-	if end-start > maxBatchSize-1 {
-		return nil, nil, nil, fmt.Errorf("range too large: %d blocks exceeds max %d", end-start+1, maxBatchSize)
+	if end-start > MaxBlockInfoBatchSize-1 {
+		return nil, nil, nil, fmt.Errorf("range too large: %d blocks exceeds max %d", end-start+1, MaxBlockInfoBatchSize)
 	}
 
 	req := &proto.GetBlockInfoInBatchRequest{

@@ -236,6 +236,6 @@ func TestDecorateWithHeimdallFlags_BorGRPCFlags(t *testing.T) {
 	require.NotNil(t, flag, "BorGRPCTokenFlag must be registered by DecorateWithHeimdallFlags")
 
 	// Verify the viper binding works: set a value and retrieve via viper.
-	require.NoError(t, cmd.PersistentFlags().Set(BorGRPCUrlFlag, "grpc://example.com:9090"))
-	require.Equal(t, "grpc://example.com:9090", v.GetString(BorGRPCUrlFlag))
+	require.NoError(t, cmd.PersistentFlags().Set(BorGRPCUrlFlag, "http://example.com:9090"))
+	require.Equal(t, "http://example.com:9090", v.GetString(BorGRPCUrlFlag))
 }

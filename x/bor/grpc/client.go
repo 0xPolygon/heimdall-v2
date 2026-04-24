@@ -26,6 +26,11 @@ type BorGRPCClient struct {
 // dialTimeout caps the per-attempt timeout for non-HTTP callers (currently just unix).
 const dialTimeout = 5 * time.Second
 
+// MaxBlockInfoBatchSize caps GetBlockInfoInBatch inputs below int64 overflow
+// and above realistic checkpoint/milestone spans. Single source of truth
+// shared with the helper/ dispatcher so the HTTP and gRPC paths cannot drift.
+const MaxBlockInfoBatchSize = 10000
+
 func NewBorGRPCClient(address, token string, logger log.Logger) (*BorGRPCClient, error) {
 	logger.Info("Setting up Bor gRPC client", "address", address)
 
