@@ -636,9 +636,10 @@ func runBorGRPCHashParityCheckWith(
 			return
 		}
 		mismatches = next
-		// Removal doesn't change loop termination, only wall-clock pacing; untestable without clock injection.
 		// mutator-disable-next-line retry pacing
-		time.Sleep(retryInterval)
+		if attempt < maxAttempts {
+			time.Sleep(retryInterval)
+		}
 	}
 	// Statement_deletion only drops an advisory message; no logic change.
 	// mutator-disable-next-line operator-log line
@@ -1238,6 +1239,12 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 	stringConfigValue = v.GetString(BorGRPCUrlFlag)
 	if stringConfigValue != "" {
 		c.Custom.BorGRPCUrl = stringConfigValue
+	}
+
+	// get bearer token for bor gRPC from viper/cobra
+	stringConfigValue = v.GetString(BorGRPCTokenFlag)
+	if stringConfigValue != "" {
+		c.Custom.BorGRPCToken = stringConfigValue
 	}
 
 	// get endpoint for cometBFT from viper/cobra

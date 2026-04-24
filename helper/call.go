@@ -575,7 +575,10 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 	}
 
 	if err != nil {
-		Logger.Error(errUnableToConnect, "error", err)
+		// both HTTP and gRPC map a missing block to ethereum.NotFound.
+		if !errors.Is(err, ethereum.NotFound) {
+			Logger.Error(errUnableToConnect, "error", err)
+		}
 		return
 	}
 
@@ -741,6 +744,10 @@ func (c *ContractCaller) GetBorChainBlockTd(ctx context.Context, blockHash commo
 	if err := rpcClient.CallContext(ctx, &resp, "eth_getTdByHash", blockHash.Hex()); err != nil {
 		return 0, err
 	}
+	// Same path for gRPC and HTTP: a missing block surfaces as ethereum.NotFound
+	if resp == nil || resp["totalDifficulty"] == nil {
+		return 0, ethereum.NotFound
+	}
 
 	raw, ok := resp["totalDifficulty"].(string)
 	if !ok {
@@ -770,8 +777,9 @@ func (c *ContractCaller) GetBorChainBlockAuthor(ctx context.Context, blockNum *b
 		}
 		author, err := grpcClient.GetAuthor(ctx, blockNum)
 		if err != nil {
-			// mutator-disable-next-line operator-log line inside an error branch already returning err
-			Logger.Error(errUnableToConnect, "error", err)
+			if !errors.Is(err, ethereum.NotFound) {
+				Logger.Error(errUnableToConnect, "error", err)
+			}
 			return nil, err
 		}
 		if author == nil {
@@ -783,7 +791,9 @@ func (c *ContractCaller) GetBorChainBlockAuthor(ctx context.Context, blockNum *b
 	var author *common.Address
 	err := c.BorChainClient.Client().CallContext(ctx, &author, "bor_getAuthor", toBlockNumArg(blockNum))
 	if err != nil {
-		Logger.Error(errUnableToConnect, "error", err)
+		if !errors.Is(err, ethereum.NotFound) {
+			Logger.Error(errUnableToConnect, "error", err)
+		}
 		return nil, err
 	}
 	if author == nil {
