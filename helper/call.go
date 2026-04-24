@@ -168,7 +168,9 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 	contractCallerObj.MainChainRPC = GetMainChainRPCClient()
 	contractCallerObj.BorChainRPCClient = GetBorRPCClient()
 	contractCallerObj.BorChainGrpcFlag = config.BorGRPCFlag
-	contractCallerObj.BorChainGrpcClient = GetBorGRPCClient()
+	if client := GetBorGRPCClient(); client != nil {
+		contractCallerObj.BorChainGrpcClient = client
+	}
 
 	// listeners and processors instance cache (address->ABI)
 	contractCallerObj.ContractInstanceCache = make(map[common.Address]interface{})

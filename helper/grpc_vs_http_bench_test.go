@@ -211,7 +211,10 @@ func BenchmarkM_CheckIfBlocksExist(b *testing.B) {
 	httpCC, grpcCC := newBenchCaller(b)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	h, _ := httpCC.BorChainClient.HeaderByNumber(ctx, nil)
+	h, err := httpCC.BorChainClient.HeaderByNumber(ctx, nil)
+	if err != nil {
+		b.Fatalf("latest header: %v", err)
+	}
 	num := h.Number.Uint64()
 	b.Run("http", func(b *testing.B) {
 		b.ReportAllocs()
@@ -233,7 +236,10 @@ func BenchmarkM_GetBlockByNumber(b *testing.B) {
 	httpCC, grpcCC := newBenchCaller(b)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	h, _ := httpCC.BorChainClient.HeaderByNumber(ctx, nil)
+	h, err := httpCC.BorChainClient.HeaderByNumber(ctx, nil)
+	if err != nil {
+		b.Fatalf("latest header: %v", err)
+	}
 	num := h.Number.Uint64()
 	b.Run("http", func(b *testing.B) {
 		b.ReportAllocs()

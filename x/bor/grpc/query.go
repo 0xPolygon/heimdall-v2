@@ -116,8 +116,11 @@ func (c *BorGRPCClient) TransactionReceipt(ctx context.Context, txHash common.Ha
 	if res == nil || res.Receipt == nil {
 		return nil, ethereum.NotFound
 	}
-
-	return receiptResponseToTypesReceipt(res.Receipt), nil
+	r := receiptResponseToTypesReceipt(res.Receipt)
+	if r == nil {
+		return nil, ethereum.NotFound
+	}
+	return r, nil
 }
 
 func (c *BorGRPCClient) BorBlockReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error) {
@@ -132,8 +135,11 @@ func (c *BorGRPCClient) BorBlockReceipt(ctx context.Context, txHash common.Hash)
 	if res == nil || res.Receipt == nil {
 		return nil, ethereum.NotFound
 	}
-
-	return receiptResponseToTypesReceipt(res.Receipt), nil
+	r := receiptResponseToTypesReceipt(res.Receipt)
+	if r == nil {
+		return nil, ethereum.NotFound
+	}
+	return r, nil
 }
 
 // GetAuthor returns the author of the block at blockNum. Nil blockNum resolves
@@ -253,6 +259,10 @@ func (c *BorGRPCClient) GetBlockInfoInBatch(ctx context.Context, start, end int6
 }
 
 func receiptResponseToTypesReceipt(receipt *proto.Receipt) *ethTypes.Receipt {
+	// Reject out-of-range values for fields that would truncate or overflow in ethTypes.Receipt, mapping them to NotFound.
+	if receipt.Type > 0xff {
+		return nil
+	}
 	// Bloom and Logs have been intentionally left out as they are not used in the current implementation
 	return &ethTypes.Receipt{
 		Type:              uint8(receipt.Type),
