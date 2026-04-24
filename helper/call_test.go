@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"math/big"
+	"sync"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -205,11 +206,12 @@ func makeReceipt(txHash common.Hash, blockNum uint64) *ethTypes.Receipt {
 	}
 }
 
-func TestBeginPrefetchRound_InitializesState(t *testing.T) {
+func TestBeginPrefetchRound_ResetsState(t *testing.T) {
 	t.Parallel()
 
 	tx := common.HexToHash("0x1")
 	cc := &ContractCaller{
+		prefetchMu: &sync.RWMutex{},
 		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
 			tx: makeReceipt(tx, 10),
 		},
@@ -229,6 +231,7 @@ func TestEndPrefetchRound_ClearsState(t *testing.T) {
 
 	tx := common.HexToHash("0x1")
 	cc := &ContractCaller{
+		prefetchMu: &sync.RWMutex{},
 		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
 			tx: makeReceipt(tx, 10),
 		},
@@ -242,16 +245,22 @@ func TestEndPrefetchRound_ClearsState(t *testing.T) {
 	require.Nil(t, cc.finalizedHeaderCache)
 }
 
-func TestEndPrefetchRound_ZeroValueNoPanic(t *testing.T) {
+func TestBeginPrefetchRound_ZeroValuePanics(t *testing.T) {
 	t.Parallel()
 
 	cc := &ContractCaller{}
-	cc.EndPrefetchRound()
+	require.Panics(t, func() {
+		cc.BeginPrefetchRound()
+	})
+}
 
-	require.NotNil(t, cc.prefetchMu)
-	require.NotNil(t, cc.prefetchedReceipts)
-	require.Len(t, cc.prefetchedReceipts, 0)
-	require.Nil(t, cc.finalizedHeaderCache)
+func TestEndPrefetchRound_ZeroValuePanics(t *testing.T) {
+	t.Parallel()
+
+	cc := &ContractCaller{}
+	require.Panics(t, func() {
+		cc.EndPrefetchRound()
+	})
 }
 
 func TestGetOrFetchReceipt_UsesPrefetchedMap(t *testing.T) {
@@ -261,6 +270,7 @@ func TestGetOrFetchReceipt_UsesPrefetchedMap(t *testing.T) {
 	receipt := makeReceipt(tx, 99)
 
 	cc := &ContractCaller{
+		prefetchMu: &sync.RWMutex{},
 		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
 			tx: receipt,
 		},
@@ -277,6 +287,7 @@ func TestGetConfirmedTxReceipt_UsesFinalizedHeaderCacheFastPath(t *testing.T) {
 	tx := common.HexToHash("0xfeed")
 	receipt := makeReceipt(tx, 100)
 	cc := &ContractCaller{
+		prefetchMu: &sync.RWMutex{},
 		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
 			tx: receipt,
 		},
@@ -293,6 +304,7 @@ func TestGetConfirmedTxReceipt_RequiresReceiptBlockNumber(t *testing.T) {
 
 	tx := common.HexToHash("0xdef")
 	cc := &ContractCaller{
+		prefetchMu: &sync.RWMutex{},
 		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
 			tx: &ethTypes.Receipt{TxHash: tx, BlockNumber: nil},
 		},
@@ -303,24 +315,13 @@ func TestGetConfirmedTxReceipt_RequiresReceiptBlockNumber(t *testing.T) {
 	require.Contains(t, err.Error(), "receipt has nil block number")
 }
 
-func TestGetPrefetchMu_LazyInitAndReuse(t *testing.T) {
-	t.Parallel()
-
-	cc := &ContractCaller{}
-
-	mu1 := cc.getPrefetchMu()
-	require.NotNil(t, mu1)
-
-	mu2 := cc.getPrefetchMu()
-	require.Same(t, mu1, mu2)
-}
-
 func TestBeginPrefetchRound_ReplacesExistingState(t *testing.T) {
 	t.Parallel()
 
 	tx := common.HexToHash("0x1")
 	receipt := makeReceipt(tx, 55)
 	cc := &ContractCaller{
+		prefetchMu: &sync.RWMutex{},
 		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
 			tx: receipt,
 		},
@@ -344,6 +345,7 @@ func TestEndPrefetchRound_ReplacesExistingState(t *testing.T) {
 
 	tx := common.HexToHash("0x1")
 	cc := &ContractCaller{
+		prefetchMu: &sync.RWMutex{},
 		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
 			tx: makeReceipt(tx, 77),
 		},
@@ -361,37 +363,3 @@ func TestEndPrefetchRound_ReplacesExistingState(t *testing.T) {
 	require.Len(t, cc.prefetchedReceipts, 0)
 }
 
-func TestGetOrFetchReceipt_ZeroValueCallerLazyInit(t *testing.T) {
-	t.Parallel()
-
-	tx := common.HexToHash("0xcafe")
-	receipt := makeReceipt(tx, 90)
-	cc := &ContractCaller{
-		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
-			tx: receipt,
-		},
-	}
-
-	got, err := cc.getOrFetchReceipt(tx)
-	require.NoError(t, err)
-	require.Same(t, receipt, got)
-	require.NotNil(t, cc.prefetchMu)
-}
-
-func TestGetConfirmedTxReceipt_ZeroValueCallerFastPathLazyInit(t *testing.T) {
-	t.Parallel()
-
-	tx := common.HexToHash("0xbeef")
-	receipt := makeReceipt(tx, 120)
-	cc := &ContractCaller{
-		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
-			tx: receipt,
-		},
-		finalizedHeaderCache: makeHeader(125),
-	}
-
-	got, err := cc.GetConfirmedTxReceipt(tx, 1)
-	require.NoError(t, err)
-	require.Same(t, receipt, got)
-	require.NotNil(t, cc.prefetchMu)
-}

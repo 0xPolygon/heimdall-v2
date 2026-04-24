@@ -526,16 +526,17 @@ func (c *ContractCaller) GetMainChainFinalizedBlock() (header *ethTypes.Header, 
 
 // getOrFetchReceipt returns a receipt from prefetched receipts or fetches from L1.
 func (c *ContractCaller) getOrFetchReceipt(tx common.Hash) (*ethTypes.Receipt, error) {
-	prefetchMu := c.getPrefetchMu()
-	prefetchMu.RLock()
+	c.prefetchMu.RLock()
+	var cachedReceipt *ethTypes.Receipt
 	if c.prefetchedReceipts != nil {
-		if receipt, ok := c.prefetchedReceipts[tx]; ok {
-			prefetchMu.RUnlock()
-			Logger.Debug("Receipt found in prefetched receipts", "tx", tx.Hex())
-			return receipt, nil
-		}
+		cachedReceipt = c.prefetchedReceipts[tx]
 	}
-	prefetchMu.RUnlock()
+	c.prefetchMu.RUnlock()
+
+	if cachedReceipt != nil {
+		Logger.Debug("Receipt found in prefetched receipts", "tx", tx.Hex())
+		return cachedReceipt, nil
+	}
 
 	Logger.Debug("Fetching the receipt from the main chain", "tx", tx.Hex())
 
@@ -781,10 +782,9 @@ func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmat
 	receiptBlockNumber := receipt.BlockNumber.Uint64()
 
 	// If the finalized header cache is set, use it to check if the receipt is finalized or not.
-	prefetchMu := c.getPrefetchMu()
-	prefetchMu.RLock()
+	c.prefetchMu.RLock()
 	cachedFinalizedHeader := c.finalizedHeaderCache
-	prefetchMu.RUnlock()
+	c.prefetchMu.RUnlock()
 
 	if cachedFinalizedHeader != nil && cachedFinalizedHeader.Number != nil {
 		if receiptBlockNumber <= cachedFinalizedHeader.Number.Uint64() {
@@ -804,9 +804,9 @@ func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmat
 		Logger.Debug("Fetched latest finalized main chain block",
 			"blockNumber", latestFinalizedBlock.Number.Uint64(),
 		)
-		prefetchMu.Lock()
+		c.prefetchMu.Lock()
 		c.finalizedHeaderCache = latestFinalizedBlock
-		prefetchMu.Unlock()
+		c.prefetchMu.Unlock()
 
 		if receiptBlockNumber > latestFinalizedBlock.Number.Uint64() {
 			return nil, errors.New("receipt block number is ahead of latest finalized main chain block")
@@ -1320,9 +1320,8 @@ func toBlockNumArg(number *big.Int) string {
 
 // BeginPrefetchRound starts a new round of prefetch lifecycle for ExtendVote.
 func (c *ContractCaller) BeginPrefetchRound() {
-	prefetchMu := c.getPrefetchMu()
-	prefetchMu.Lock()
-	defer prefetchMu.Unlock()
+	c.prefetchMu.Lock()
+	defer c.prefetchMu.Unlock()
 
 	c.prefetchedReceipts = make(map[common.Hash]*ethTypes.Receipt)
 	c.finalizedHeaderCache = nil
@@ -1330,18 +1329,9 @@ func (c *ContractCaller) BeginPrefetchRound() {
 
 // EndPrefetchRound clears the round of prefetch lifecycle for ExtendVote.
 func (c *ContractCaller) EndPrefetchRound() {
-	prefetchMu := c.getPrefetchMu()
-	prefetchMu.Lock()
-	defer prefetchMu.Unlock()
+	c.prefetchMu.Lock()
+	defer c.prefetchMu.Unlock()
 
 	c.prefetchedReceipts = make(map[common.Hash]*ethTypes.Receipt)
 	c.finalizedHeaderCache = nil
-}
-
-func (c *ContractCaller) getPrefetchMu() *sync.RWMutex {
-	if c.prefetchMu == nil {
-		c.prefetchMu = &sync.RWMutex{}
-	}
-
-	return c.prefetchMu
 }

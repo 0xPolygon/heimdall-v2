@@ -78,8 +78,7 @@ func PrefetchReceipts(ctx context.Context, contractCaller IContractCaller, txHas
 
 	logger.Debug("Receipt prefetch complete", "requested", len(txHashes), "fetched", len(receipts), "time", time.Since(t0))
 
-	prefetchMu := caller.getPrefetchMu()
-	prefetchMu.Lock()
-	defer prefetchMu.Unlock()
+	caller.prefetchMu.Lock()
 	caller.prefetchedReceipts = receipts
+	caller.prefetchMu.Unlock()
 }

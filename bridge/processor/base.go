@@ -205,7 +205,8 @@ func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{})
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	result, err := bp.httpClient.UnconfirmedTxs(ctx, nil)
+	limit := 100 // CometBFT caps at maxPerPage=100; higher values are silently clamped
+	result, err := bp.httpClient.UnconfirmedTxs(ctx, &limit)
 	if err != nil {
 		bp.Logger.Error("BaseProcessor: error fetching unconfirmed txs", "error", err)
 		return false, err

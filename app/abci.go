@@ -25,7 +25,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
@@ -312,7 +311,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				res := sideHandler(ctx, msg)
 
 				if res == sidetxs.Vote_VOTE_YES && checkpointTypes.IsCheckpointMsg(msg) {
-					checkpointMsg, ok := msg.(*types.MsgCheckpoint)
+					checkpointMsg, ok := msg.(*checkpointTypes.MsgCheckpoint)
 					if !ok {
 						logger.Error("ExtendVoteHandler: type mismatch for MsgCheckpoint")
 						continue
