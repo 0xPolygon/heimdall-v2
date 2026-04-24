@@ -7,21 +7,20 @@ import (
 	"cosmossdk.io/log"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-func buildTestEventMap() (map[ethCommon.Hash]*abi.Event, []*abi.Event) {
+func buildTestEventMap() (map[common.Hash]*abi.Event, []*abi.Event) {
 	events := []*abi.Event{
 		{Name: "EventA", ID: common.HexToHash("0xaaaa")},
 		{Name: "EventB", ID: common.HexToHash("0xbbbb")},
 		{Name: "EventC", ID: common.HexToHash("0xcccc")},
 	}
 
-	m := make(map[ethCommon.Hash]*abi.Event, len(events))
+	m := make(map[common.Hash]*abi.Event, len(events))
 	for _, e := range events {
 		m[e.ID] = e
 	}
@@ -55,7 +54,7 @@ func TestEventMap_NoABIDuplicates(t *testing.T) {
 		"Deposit": {Name: "Deposit", ID: common.HexToHash("0x3333")},
 	}}
 
-	eventMap := make(map[ethCommon.Hash]*abi.Event)
+	eventMap := make(map[common.Hash]*abi.Event)
 	for _, abiObj := range []*abi.ABI{&abiA, &abiB} {
 		for _, event := range abiObj.Events {
 			e := event
