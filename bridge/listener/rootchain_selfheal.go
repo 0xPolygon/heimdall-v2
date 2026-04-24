@@ -363,12 +363,7 @@ func (rl *RootChainListener) processEvent(ctx context.Context, vLog *types.Log) 
 
 	selectedEvent, ok := rl.eventMap[vLog.Topics[0]]
 	if ok {
-		// Reset stagger for self-heal.
-		rl.staggerMu.Lock()
-		rl.taskStaggerDelay = 0
-		rl.staggerMu.Unlock()
-
-		rl.handleLog(*vLog, selectedEvent)
+		rl.handleLog(*vLog, selectedEvent, 0)
 	}
 
 	return false, nil

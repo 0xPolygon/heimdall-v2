@@ -60,7 +60,7 @@ func TestRootChainListener_handleLog(t *testing.T) {
 
 			// Should not panic - these events handle marshaling errors gracefully
 			require.NotPanics(t, func() {
-				listener.handleLog(vLog, selectedEvent)
+				listener.handleLog(vLog, selectedEvent, 0)
 			})
 		})
 	}
@@ -114,7 +114,7 @@ func TestRootChainListener_handleLog_UnknownEvent(t *testing.T) {
 
 	// Should handle gracefully (no panic)
 	require.NotPanics(t, func() {
-		listener.handleLog(vLog, selectedEvent)
+		listener.handleLog(vLog, selectedEvent, 0)
 	})
 }
 
@@ -148,7 +148,7 @@ func TestRootChainListener_handleNewHeaderBlockLog(t *testing.T) {
 
 		// Should not panic and should be able to marshal
 		require.NotPanics(t, func() {
-			listener.handleNewHeaderBlockLog(vLog, selectedEvent)
+			listener.handleNewHeaderBlockLog(vLog, selectedEvent, 0)
 		})
 
 		// Verify log can be marshaled
@@ -178,7 +178,7 @@ func TestRootChainListener_handleNewHeaderBlockLog(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleNewHeaderBlockLog(vLog, selectedEvent)
+			listener.handleNewHeaderBlockLog(vLog, selectedEvent, 0)
 		})
 	})
 }
@@ -213,7 +213,7 @@ func TestRootChainListener_handleStateSyncedLog(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleStateSyncedLog(vLog, selectedEvent)
+			listener.handleStateSyncedLog(vLog, selectedEvent, 0)
 		})
 	})
 
@@ -247,7 +247,7 @@ func TestRootChainListener_handleStateSyncedLog(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleStateSyncedLog(vLog, selectedEvent)
+			listener.handleStateSyncedLog(vLog, selectedEvent, 0)
 		})
 	})
 }
@@ -281,7 +281,7 @@ func TestRootChainListener_handleSlashedLog(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleSlashedLog(vLog, selectedEvent)
+			listener.handleSlashedLog(vLog, selectedEvent, 0)
 		})
 	})
 }
@@ -416,7 +416,7 @@ func TestRootChainListener_LogHandlingEdgeCases(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleLog(vLog, selectedEvent)
+			listener.handleLog(vLog, selectedEvent, 0)
 		})
 	})
 
@@ -448,7 +448,7 @@ func TestRootChainListener_LogHandlingEdgeCases(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleStateSyncedLog(vLog, selectedEvent)
+			listener.handleStateSyncedLog(vLog, selectedEvent, 0)
 		})
 	})
 }
@@ -480,7 +480,7 @@ func TestRootChainListener_ConcurrentLogHandling(t *testing.T) {
 				Name: helper.NewHeaderBlockEvent,
 			}
 
-			listener.handleLog(vLog, selectedEvent)
+			listener.handleLog(vLog, selectedEvent, 0)
 		}(i)
 	}
 
@@ -537,7 +537,7 @@ func TestRootChainListener_LogDataSizes(t *testing.T) {
 			}
 
 			require.NotPanics(t, func() {
-				listener.handleStateSyncedLog(vLog, selectedEvent)
+				listener.handleStateSyncedLog(vLog, selectedEvent, 0)
 			})
 
 			// Verify marshaling works
@@ -589,7 +589,7 @@ func TestRootChainListener_AddressFormats(t *testing.T) {
 			}
 
 			require.NotPanics(t, func() {
-				listener.handleStateSyncedLog(vLog, selectedEvent)
+				listener.handleStateSyncedLog(vLog, selectedEvent, 0)
 			})
 		})
 	}

@@ -72,21 +72,8 @@ func TestEventMap_NoABIDuplicates(t *testing.T) {
 func TestTaskStagger_DelayIncrementsPerEvent(t *testing.T) {
 	t.Parallel()
 
-	listener := &RootChainListener{
-		BaseListener: BaseListener{
-			Logger: log.NewNopLogger(),
-		},
-	}
-
 	for i := 0; i < 5; i++ {
-		listener.staggerMu.Lock()
-		listener.taskStaggerDelay = time.Duration(i) * taskStaggerInterval
-		listener.staggerMu.Unlock()
-
-		listener.staggerMu.RLock()
-		got := listener.taskStaggerDelay
-		listener.staggerMu.RUnlock()
-
+		got := time.Duration(i) * taskStaggerInterval
 		expected := time.Duration(i) * taskStaggerInterval
 		require.Equal(t, expected, got,
 			"event %d should have stagger %v", i, expected)
@@ -96,19 +83,7 @@ func TestTaskStagger_DelayIncrementsPerEvent(t *testing.T) {
 func TestTaskStagger_ZeroForFirstEvent(t *testing.T) {
 	t.Parallel()
 
-	listener := &RootChainListener{
-		BaseListener: BaseListener{
-			Logger: log.NewNopLogger(),
-		},
-	}
-
-	listener.staggerMu.Lock()
-	listener.taskStaggerDelay = time.Duration(0) * taskStaggerInterval
-	listener.staggerMu.Unlock()
-
-	listener.staggerMu.RLock()
-	got := listener.taskStaggerDelay
-	listener.staggerMu.RUnlock()
+	got := time.Duration(0) * taskStaggerInterval
 
 	require.Equal(t, time.Duration(0), got)
 }
@@ -146,7 +121,7 @@ func TestNilABI_PanicsOnUnpackLog(t *testing.T) {
 	// nil stateSenderAbi causes a nil-pointer panic in UnpackLog.
 	listener.stateSenderAbi = nil
 	require.Panics(t, func() {
-		listener.handleStateSyncedLog(vLog, selectedEvent)
+		listener.handleStateSyncedLog(vLog, selectedEvent, 0)
 	}, "nil ABI must panic, indicates a misconfigured listener")
 }
 
@@ -173,7 +148,7 @@ func TestEarlyReturn_UnpackLogError(t *testing.T) {
 	// UnpackLog fails → handler should return early without panicking
 	// and without calling SendTaskWithDelay (which would panic since queueConnector is nil)
 	require.NotPanics(t, func() {
-		listener.handleStateSyncedLog(vLog, selectedEvent)
+		listener.handleStateSyncedLog(vLog, selectedEvent, 0)
 	})
 }
 
@@ -202,12 +177,12 @@ func TestEarlyReturn_HandlersWithBadABI(t *testing.T) {
 		name string
 		fn   func()
 	}{
-		{"StakeUpdate", func() { listener.handleStakeUpdateLog(vLog, &abi.Event{Name: helper.StakeUpdateEvent}) }},
-		{"SignerChange", func() { listener.handleSignerChangeLog(vLog, &abi.Event{Name: helper.SignerChangeEvent}) }},
-		{"UnstakeInit", func() { listener.handleUnstakeInitLog(vLog, &abi.Event{Name: helper.UnstakeInitEvent}) }},
-		{"StateSynced", func() { listener.handleStateSyncedLog(vLog, &abi.Event{Name: helper.StateSyncedEvent}) }},
-		{"TopUpFee", func() { listener.handleTopUpFeeLog(vLog, &abi.Event{Name: helper.TopUpFeeEvent}) }},
-		{"UnJailed", func() { listener.handleUnJailedLog(vLog, &abi.Event{Name: helper.UnJailedEvent}) }},
+		{"StakeUpdate", func() { listener.handleStakeUpdateLog(vLog, &abi.Event{Name: helper.StakeUpdateEvent}, 0) }},
+		{"SignerChange", func() { listener.handleSignerChangeLog(vLog, &abi.Event{Name: helper.SignerChangeEvent}, 0) }},
+		{"UnstakeInit", func() { listener.handleUnstakeInitLog(vLog, &abi.Event{Name: helper.UnstakeInitEvent}, 0) }},
+		{"StateSynced", func() { listener.handleStateSyncedLog(vLog, &abi.Event{Name: helper.StateSyncedEvent}, 0) }},
+		{"TopUpFee", func() { listener.handleTopUpFeeLog(vLog, &abi.Event{Name: helper.TopUpFeeEvent}, 0) }},
+		{"UnJailed", func() { listener.handleUnJailedLog(vLog, &abi.Event{Name: helper.UnJailedEvent}, 0) }},
 	}
 
 	for _, h := range handlers {

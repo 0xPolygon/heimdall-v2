@@ -223,10 +223,16 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 	return func(ctx sdk.Context, req *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 		startTime := time.Now()
-		defer metrics.RecordABCIHandlerDuration(metrics.ExtendVoteDuration, startTime)
 
 		logger := app.Logger()
 		logger.Debug("Extending Vote", "height", ctx.BlockHeight())
+
+		var extendVoteCaller *helper.ContractCaller
+		if caller, ok := app.caller.(*helper.ContractCaller); ok {
+			extendVoteCaller = caller
+			extendVoteCaller.BeginPrefetchRound()
+		}
+
 		defer func() {
 			// better debugging with this panic recover routine printing runtime.Stack
 			if r := recover(); r != nil {
@@ -239,6 +245,13 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				)
 				panic(r)
 			}
+		}()
+
+		defer func() {
+			if extendVoteCaller != nil {
+				extendVoteCaller.EndPrefetchRound()
+			}
+			metrics.RecordABCIHandlerDuration(metrics.ExtendVoteDuration, startTime)
 		}()
 
 		// check if VEs are enabled

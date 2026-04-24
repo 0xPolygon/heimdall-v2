@@ -71,27 +71,15 @@ func PrefetchReceipts(ctx context.Context, contractCaller IContractCaller, txHas
 		return
 	}
 
-	// Filter out hashes already in cache.
-	uncached := make([]common.Hash, 0, len(txHashes))
-	for _, h := range txHashes {
-		if caller.receiptCache == nil || !caller.receiptCache.Contains(h) {
-			uncached = append(uncached, h)
-		}
-	}
-
-	if len(uncached) == 0 {
-		logger.Debug("Prefetch skipped: all receipts already cached", "total", len(txHashes))
-		return
-	}
-
-	receipts := caller.BatchGetMainChainTxReceipts(ctx, uncached)
+	receipts := caller.BatchGetMainChainTxReceipts(ctx, txHashes)
 	if len(receipts) == 0 {
-		logger.Debug("Batch RPC returned no receipts", "requested", len(uncached))
+		logger.Debug("Batch RPC returned no receipts", "requested", len(txHashes))
 	}
 
-	for hash, receipt := range receipts {
-		caller.cacheReceipt(hash, receipt)
-	}
+	logger.Debug("Receipt prefetch complete", "requested", len(txHashes), "fetched", len(receipts), "time", time.Since(t0))
 
-	logger.Debug("Receipt prefetch complete", "requested", len(txHashes), "uncached", len(uncached), "fetched", len(receipts), "time", time.Since(t0))
+	prefetchMu := caller.getPrefetchMu()
+	prefetchMu.Lock()
+	defer prefetchMu.Unlock()
+	caller.prefetchedReceipts = receipts
 }

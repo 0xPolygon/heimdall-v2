@@ -4,11 +4,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"math/big"
-	"sync"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -198,103 +198,200 @@ func makeHeader(blockNum uint64) *ethTypes.Header {
 	return &ethTypes.Header{Number: new(big.Int).SetUint64(blockNum)}
 }
 
-func TestGetCachedFinalizedBlockNumber_EmptyCache(t *testing.T) {
-	t.Parallel()
-
-	cc := &ContractCaller{finalizedBlockCache: &finalizedBlockCache{}}
-	assert.Equal(t, uint64(0), cc.getCachedFinalizedBlockNumber())
+func makeReceipt(txHash common.Hash, blockNum uint64) *ethTypes.Receipt {
+	return &ethTypes.Receipt{
+		TxHash:      txHash,
+		BlockNumber: new(big.Int).SetUint64(blockNum),
+	}
 }
 
-func TestGetCachedFinalizedBlockNumber_NilCachePointer(t *testing.T) {
+func TestBeginPrefetchRound_InitializesState(t *testing.T) {
 	t.Parallel()
 
-	cc := &ContractCaller{finalizedBlockCache: nil}
-	assert.Equal(t, uint64(0), cc.getCachedFinalizedBlockNumber())
-}
-
-func TestUpdateFinalizedBlockCache_SetsValue(t *testing.T) {
-	t.Parallel()
-
-	cc := &ContractCaller{finalizedBlockCache: &finalizedBlockCache{}}
-
-	cc.updateFinalizedBlockCache(makeHeader(1000))
-	assert.Equal(t, uint64(1000), cc.getCachedFinalizedBlockNumber())
-}
-
-func TestUpdateFinalizedBlockCache_MonotonicIncrease(t *testing.T) {
-	t.Parallel()
-
-	cc := &ContractCaller{finalizedBlockCache: &finalizedBlockCache{}}
-
-	cc.updateFinalizedBlockCache(makeHeader(1000))
-	assert.Equal(t, uint64(1000), cc.getCachedFinalizedBlockNumber())
-
-	// Higher value should update
-	cc.updateFinalizedBlockCache(makeHeader(2000))
-	assert.Equal(t, uint64(2000), cc.getCachedFinalizedBlockNumber())
-
-	// Lower value must NOT update (monotonic guarantee)
-	cc.updateFinalizedBlockCache(makeHeader(1500))
-	assert.Equal(t, uint64(2000), cc.getCachedFinalizedBlockNumber())
-
-	// Equal value should not change anything
-	cc.updateFinalizedBlockCache(makeHeader(2000))
-	assert.Equal(t, uint64(2000), cc.getCachedFinalizedBlockNumber())
-}
-
-func TestUpdateFinalizedBlockCache_NilInputIgnored(t *testing.T) {
-	t.Parallel()
-
-	cc := &ContractCaller{finalizedBlockCache: &finalizedBlockCache{}}
-
-	cc.updateFinalizedBlockCache(makeHeader(1000))
-
-	// nil header should be ignored
-	cc.updateFinalizedBlockCache(nil)
-	assert.Equal(t, uint64(1000), cc.getCachedFinalizedBlockNumber())
-
-	// header with nil Number should be ignored
-	cc.updateFinalizedBlockCache(&ethTypes.Header{Number: nil})
-	assert.Equal(t, uint64(1000), cc.getCachedFinalizedBlockNumber())
-}
-
-func TestUpdateFinalizedBlockCache_NilCachePointerNoOp(t *testing.T) {
-	t.Parallel()
-
-	cc := &ContractCaller{finalizedBlockCache: nil}
-
-	// Should not panic when finalizedBlockCache pointer is nil
-	cc.updateFinalizedBlockCache(makeHeader(1000))
-	assert.Equal(t, uint64(0), cc.getCachedFinalizedBlockNumber())
-}
-
-func TestFinalizedBlockCache_ConcurrentAccess(t *testing.T) {
-	t.Parallel()
-
-	cc := &ContractCaller{finalizedBlockCache: &finalizedBlockCache{}}
-
-	var wg sync.WaitGroup
-
-	// Simulate concurrent reads and writes (race detector will catch issues)
-	for i := 0; i < 100; i++ {
-		wg.Add(2)
-
-		blockNum := uint64(i)
-
-		go func() {
-			defer wg.Done()
-			cc.updateFinalizedBlockCache(makeHeader(blockNum))
-		}()
-
-		go func() {
-			defer wg.Done()
-			_ = cc.getCachedFinalizedBlockNumber()
-		}()
+	tx := common.HexToHash("0x1")
+	cc := &ContractCaller{
+		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
+			tx: makeReceipt(tx, 10),
+		},
+		finalizedHeaderCache: makeHeader(100),
 	}
 
-	wg.Wait()
+	cc.BeginPrefetchRound()
 
-	// Cache should hold the highest value written
-	assert.Equal(t, uint64(99), cc.getCachedFinalizedBlockNumber())
+	require.NotNil(t, cc.prefetchMu)
+	require.NotNil(t, cc.prefetchedReceipts)
+	require.Len(t, cc.prefetchedReceipts, 0)
+	require.Nil(t, cc.finalizedHeaderCache)
 }
 
+func TestEndPrefetchRound_ClearsState(t *testing.T) {
+	t.Parallel()
+
+	tx := common.HexToHash("0x1")
+	cc := &ContractCaller{
+		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
+			tx: makeReceipt(tx, 10),
+		},
+		finalizedHeaderCache: makeHeader(100),
+	}
+
+	cc.EndPrefetchRound()
+
+	require.NotNil(t, cc.prefetchedReceipts)
+	require.Len(t, cc.prefetchedReceipts, 0)
+	require.Nil(t, cc.finalizedHeaderCache)
+}
+
+func TestEndPrefetchRound_ZeroValueNoPanic(t *testing.T) {
+	t.Parallel()
+
+	cc := &ContractCaller{}
+	cc.EndPrefetchRound()
+
+	require.NotNil(t, cc.prefetchMu)
+	require.NotNil(t, cc.prefetchedReceipts)
+	require.Len(t, cc.prefetchedReceipts, 0)
+	require.Nil(t, cc.finalizedHeaderCache)
+}
+
+func TestGetOrFetchReceipt_UsesPrefetchedMap(t *testing.T) {
+	t.Parallel()
+
+	tx := common.HexToHash("0xabc")
+	receipt := makeReceipt(tx, 99)
+
+	cc := &ContractCaller{
+		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
+			tx: receipt,
+		},
+	}
+
+	got, err := cc.getOrFetchReceipt(tx)
+	require.NoError(t, err)
+	require.Same(t, receipt, got)
+}
+
+func TestGetConfirmedTxReceipt_UsesFinalizedHeaderCacheFastPath(t *testing.T) {
+	t.Parallel()
+
+	tx := common.HexToHash("0xfeed")
+	receipt := makeReceipt(tx, 100)
+	cc := &ContractCaller{
+		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
+			tx: receipt,
+		},
+		finalizedHeaderCache: makeHeader(150),
+	}
+
+	got, err := cc.GetConfirmedTxReceipt(tx, 10)
+	require.NoError(t, err)
+	require.Same(t, receipt, got)
+}
+
+func TestGetConfirmedTxReceipt_RequiresReceiptBlockNumber(t *testing.T) {
+	t.Parallel()
+
+	tx := common.HexToHash("0xdef")
+	cc := &ContractCaller{
+		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
+			tx: &ethTypes.Receipt{TxHash: tx, BlockNumber: nil},
+		},
+	}
+
+	_, err := cc.GetConfirmedTxReceipt(tx, 0)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "receipt has nil block number")
+}
+
+func TestGetPrefetchMu_LazyInitAndReuse(t *testing.T) {
+	t.Parallel()
+
+	cc := &ContractCaller{}
+
+	mu1 := cc.getPrefetchMu()
+	require.NotNil(t, mu1)
+
+	mu2 := cc.getPrefetchMu()
+	require.Same(t, mu1, mu2)
+}
+
+func TestBeginPrefetchRound_ReplacesExistingState(t *testing.T) {
+	t.Parallel()
+
+	tx := common.HexToHash("0x1")
+	receipt := makeReceipt(tx, 55)
+	cc := &ContractCaller{
+		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
+			tx: receipt,
+		},
+		finalizedHeaderCache: makeHeader(200),
+	}
+
+	oldMap := cc.prefetchedReceipts
+	cc.BeginPrefetchRound()
+
+	// BeginPrefetchRound should reset to a fresh map/state.
+	require.NotNil(t, cc.prefetchedReceipts)
+	require.Len(t, cc.prefetchedReceipts, 0)
+	require.Nil(t, cc.finalizedHeaderCache)
+
+	oldMap[common.HexToHash("0x2")] = makeReceipt(common.HexToHash("0x2"), 56)
+	require.Len(t, cc.prefetchedReceipts, 0)
+}
+
+func TestEndPrefetchRound_ReplacesExistingState(t *testing.T) {
+	t.Parallel()
+
+	tx := common.HexToHash("0x1")
+	cc := &ContractCaller{
+		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
+			tx: makeReceipt(tx, 77),
+		},
+		finalizedHeaderCache: makeHeader(300),
+	}
+
+	oldMap := cc.prefetchedReceipts
+	cc.EndPrefetchRound()
+
+	require.NotNil(t, cc.prefetchedReceipts)
+	require.Len(t, cc.prefetchedReceipts, 0)
+	require.Nil(t, cc.finalizedHeaderCache)
+
+	oldMap[common.HexToHash("0x2")] = makeReceipt(common.HexToHash("0x2"), 78)
+	require.Len(t, cc.prefetchedReceipts, 0)
+}
+
+func TestGetOrFetchReceipt_ZeroValueCallerLazyInit(t *testing.T) {
+	t.Parallel()
+
+	tx := common.HexToHash("0xcafe")
+	receipt := makeReceipt(tx, 90)
+	cc := &ContractCaller{
+		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
+			tx: receipt,
+		},
+	}
+
+	got, err := cc.getOrFetchReceipt(tx)
+	require.NoError(t, err)
+	require.Same(t, receipt, got)
+	require.NotNil(t, cc.prefetchMu)
+}
+
+func TestGetConfirmedTxReceipt_ZeroValueCallerFastPathLazyInit(t *testing.T) {
+	t.Parallel()
+
+	tx := common.HexToHash("0xbeef")
+	receipt := makeReceipt(tx, 120)
+	cc := &ContractCaller{
+		prefetchedReceipts: map[common.Hash]*ethTypes.Receipt{
+			tx: receipt,
+		},
+		finalizedHeaderCache: makeHeader(125),
+	}
+
+	got, err := cc.GetConfirmedTxReceipt(tx, 1)
+	require.NoError(t, err)
+	require.Same(t, receipt, got)
+	require.NotNil(t, cc.prefetchMu)
+}
