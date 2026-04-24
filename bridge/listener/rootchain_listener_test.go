@@ -68,34 +68,6 @@ func TestEventMap_NoABIDuplicates(t *testing.T) {
 	require.Equal(t, "Deposit", eventMap[common.HexToHash("0x3333")].Name)
 }
 
-func TestTaskStagger_DelayIncrementsPerEvent(t *testing.T) {
-	t.Parallel()
-
-	for i := 0; i < 5; i++ {
-		got := time.Duration(i) * taskStaggerInterval
-		expected := time.Duration(i) * taskStaggerInterval
-		require.Equal(t, expected, got,
-			"event %d should have stagger %v", i, expected)
-	}
-}
-
-func TestTaskStagger_ZeroForFirstEvent(t *testing.T) {
-	t.Parallel()
-
-	got := time.Duration(0) * taskStaggerInterval
-
-	require.Equal(t, time.Duration(0), got)
-}
-
-func TestTaskStagger_BatchOf100Events(t *testing.T) {
-	t.Parallel()
-
-	n := 100
-	last := time.Duration(n-1) * taskStaggerInterval
-	require.Equal(t, 99*time.Second, last,
-		"100 events should spread over 99s of stagger")
-}
-
 func TestNilABI_PanicsOnUnpackLog(t *testing.T) {
 	t.Parallel()
 
@@ -105,9 +77,8 @@ func TestNilABI_PanicsOnUnpackLog(t *testing.T) {
 		},
 	}
 
-	// types.Log always marshals successfully, so we test that handlers
-	// with a valid log but invalid ABI (nil stateSenderAbi) return early
-	// on UnpackLog error instead of panicking or sending a task.
+	// nil stateSenderAbi causes a nil-pointer panic in UnpackLog,
+	// indicating a misconfigured listener.
 	vLog := types.Log{
 		Address:     common.HexToAddress("0x1234"),
 		Topics:      []common.Hash{common.HexToHash("0xabc")},

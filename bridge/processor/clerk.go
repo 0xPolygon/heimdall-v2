@@ -113,7 +113,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		// Check if this event has already been processed by querying the event record.
 		existingRecord, err := util.GetClerkEventRecord(event.Id.Int64(), cp.cliCtx.Codec)
 
-		if err == nil && existingRecord != nil {
+		if err == nil && existingRecord.Id != 0 {
 			cp.Logger.Info(infoMsgClerkIgnoringAlreadyProcessed,
 				"event", eventName,
 				"id", event.Id,

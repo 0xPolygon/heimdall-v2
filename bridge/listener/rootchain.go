@@ -26,8 +26,6 @@ type RootChainListenerContext struct {
 // RootChainListener - Listens to and process events from RootChain
 type RootChainListener struct {
 	BaseListener
-	// ABIs
-	abis []*abi.ABI
 
 	stakingInfoAbi *abi.ABI
 	stateSenderAbi *abi.ABI
@@ -67,7 +65,6 @@ func NewRootChainListener() *RootChainListener {
 	}
 
 	return &RootChainListener{
-		abis:           abis,
 		stakingInfoAbi: &contractCaller.StakingInfoABI,
 		stateSenderAbi: &contractCaller.StateSenderABI,
 		eventMap:       eventMap,
