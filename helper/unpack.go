@@ -108,8 +108,8 @@ func parseTopics(out interface{}, fields abi.Arguments, topics []common.Hash) er
 				field.Set(reflect.ValueOf(num))
 			default:
 				// Ran out of custom types, try the crazies
-				switch {
-				case arg.Type.T == abi.FixedBytesTy:
+				switch arg.Type.T {
+				case abi.FixedBytesTy:
 					reflect.Copy(field, reflect.ValueOf(topics[0][common.HashLength-arg.Type.Size:]))
 
 				default:

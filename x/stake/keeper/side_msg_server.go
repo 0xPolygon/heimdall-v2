@@ -886,35 +886,38 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 		return err
 	}
 
-	// Move heimdall fee to new signer
-	oldAccAddress, err := addrCodec.NewHexCodec().StringToBytes(oldValidator.Signer)
-	if err != nil {
-		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertHexToBytes, hmTypes.LogKeyError, err)
-		return err
-	}
-
-	newAccAddress, err := addrCodec.NewHexCodec().StringToBytes(validator.Signer)
-	if err != nil {
-		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertHexToBytes, hmTypes.LogKeyError, err)
-		return err
-	}
-
-	coins := s.k.bankKeeper.GetBalance(ctx, oldAccAddress, authTypes.FeeToken)
-
-	// validate balance
-	if coins.IsNegative() {
-		s.k.Logger(ctx).Error("Negative balance for fee token", "address", oldValidator.Signer, "balance", coins.String())
-		return errors.New("negative balance for fee token")
-	}
-
-	polTokensBalance := coins.Amount.Abs()
-	if !polTokensBalance.IsZero() {
-		s.k.Logger(ctx).Info("Transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polTokensBalance.String())
-
-		polCoins := sdk.Coins{coins}
-		if err := s.k.bankKeeper.SendCoins(ctx, oldAccAddress, newAccAddress, polCoins); err != nil {
-			s.k.Logger(ctx).Info("Error while transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polTokensBalance.String())
+	// Before the consensus-fixes hardfork, keep the legacy behavior of moving fee balance.
+	if !helper.IsPhuketHardfork(ctx.BlockHeight()) {
+		// Move heimdall fee to new signer.
+		oldAccAddress, err := addrCodec.NewHexCodec().StringToBytes(oldValidator.Signer)
+		if err != nil {
+			s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertHexToBytes, hmTypes.LogKeyError, err)
 			return err
+		}
+
+		newAccAddress, err := addrCodec.NewHexCodec().StringToBytes(validator.Signer)
+		if err != nil {
+			s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertHexToBytes, hmTypes.LogKeyError, err)
+			return err
+		}
+
+		coins := s.k.bankKeeper.GetBalance(ctx, oldAccAddress, authTypes.FeeToken)
+
+		// validate balance
+		if coins.IsNegative() {
+			s.k.Logger(ctx).Error("Negative balance for fee token", "address", oldValidator.Signer, "balance", coins.String())
+			return errors.New("negative balance for fee token")
+		}
+
+		polTokensBalance := coins.Amount.Abs()
+		if !polTokensBalance.IsZero() {
+			s.k.Logger(ctx).Info("Transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polTokensBalance.String())
+
+			polCoins := sdk.Coins{coins}
+			if err := s.k.bankKeeper.SendCoins(ctx, oldAccAddress, newAccAddress, polCoins); err != nil {
+				s.k.Logger(ctx).Info("Error while transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polTokensBalance.String())
+				return err
+			}
 		}
 	}
 

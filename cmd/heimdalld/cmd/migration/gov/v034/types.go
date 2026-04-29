@@ -19,6 +19,19 @@ const (
 	StatusRejected      ProposalStatus = 0x04
 	StatusFailed        ProposalStatus = 0x05
 
+	proposalStatusDepositPeriod = "DepositPeriod"
+	proposalStatusVotingPeriod  = "VotingPeriod"
+	proposalStatusPassed        = "Passed"
+	proposalStatusRejected      = "Rejected"
+	proposalStatusFailed        = "Failed"
+
+	voteOptionYes        = "Yes"
+	voteOptionAbstain    = "Abstain"
+	voteOptionNoWithVeto = "NoWithVeto"
+
+	proposalTypeText            = "Text"
+	proposalTypeParameterChange = "ParameterChange"
+
 	OptionEmpty      VoteOption = 0x00
 	OptionYes        VoteOption = 0x01
 	OptionAbstain    VoteOption = 0x02
@@ -132,19 +145,19 @@ func (tp TextProposal) ProposalType() ProposalKind { return ProposalTypeText }
 // ProposalStatusFromString turns a string into a ProposalStatus
 func ProposalStatusFromString(str string) (ProposalStatus, error) {
 	switch str {
-	case "DepositPeriod":
+	case proposalStatusDepositPeriod:
 		return StatusDepositPeriod, nil
 
-	case "VotingPeriod":
+	case proposalStatusVotingPeriod:
 		return StatusVotingPeriod, nil
 
-	case "Passed":
+	case proposalStatusPassed:
 		return StatusPassed, nil
 
-	case "Rejected":
+	case proposalStatusRejected:
 		return StatusRejected, nil
 
-	case "Failed":
+	case proposalStatusFailed:
 		return StatusFailed, nil
 
 	case "":
@@ -187,19 +200,19 @@ func (status *ProposalStatus) UnmarshalJSON(data []byte) error {
 func (status ProposalStatus) String() string {
 	switch status {
 	case StatusDepositPeriod:
-		return "DepositPeriod"
+		return proposalStatusDepositPeriod
 
 	case StatusVotingPeriod:
-		return "VotingPeriod"
+		return proposalStatusVotingPeriod
 
 	case StatusPassed:
-		return "Passed"
+		return proposalStatusPassed
 
 	case StatusRejected:
-		return "Rejected"
+		return proposalStatusRejected
 
 	case StatusFailed:
-		return "Failed"
+		return proposalStatusFailed
 
 	default:
 		return ""
@@ -208,16 +221,16 @@ func (status ProposalStatus) String() string {
 
 func VoteOptionFromString(str string) (VoteOption, error) {
 	switch str {
-	case "Yes":
+	case voteOptionYes:
 		return OptionYes, nil
 
-	case "Abstain":
+	case voteOptionAbstain:
 		return OptionAbstain, nil
 
 	case "No":
 		return OptionNo, nil
 
-	case "NoWithVeto":
+	case voteOptionNoWithVeto:
 		return OptionNoWithVeto, nil
 
 	default:
@@ -257,13 +270,13 @@ func (vo *VoteOption) UnmarshalJSON(data []byte) error {
 func (vo VoteOption) String() string {
 	switch vo {
 	case OptionYes:
-		return "Yes"
+		return voteOptionYes
 	case OptionAbstain:
-		return "Abstain"
+		return voteOptionAbstain
 	case OptionNo:
 		return "No"
 	case OptionNoWithVeto:
-		return "NoWithVeto"
+		return voteOptionNoWithVeto
 	default:
 		return ""
 	}
@@ -271,9 +284,9 @@ func (vo VoteOption) String() string {
 
 func ProposalTypeFromString(str string) (ProposalKind, error) {
 	switch str {
-	case "Text":
+	case proposalTypeText:
 		return ProposalTypeText, nil
-	case "ParameterChange":
+	case proposalTypeParameterChange:
 		return ProposalTypeParameterChange, nil
 	default:
 		return ProposalKind(0xff), fmt.Errorf("'%s' is not a valid proposal type", str)
@@ -311,9 +324,9 @@ func (pt *ProposalKind) UnmarshalJSON(data []byte) error {
 func (pt ProposalKind) String() string {
 	switch pt {
 	case ProposalTypeText:
-		return "Text"
+		return proposalTypeText
 	case ProposalTypeParameterChange:
-		return "ParameterChange"
+		return proposalTypeParameterChange
 	default:
 		return ""
 	}

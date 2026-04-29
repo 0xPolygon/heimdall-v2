@@ -40,6 +40,15 @@ var (
 const (
 	maxNonRpVoteExtensionSize = 500
 	maxSideTxResponsesCount   = 50
+
+	// Params to define the VEs size and the non-rp VEs size
+	// They correlate with network's size, because
+	// maxVESizePerValidator is calculated as [(MaxTxBytes / validatorsCount / safety_factor) - overhead]
+
+	safetyFactor         = 2
+	overheadPerValidator = 500       // bytes for additional data (e.g. signatures, metadata, protobuf...)
+	minVESize            = 10        // Minimum size for normal vote extensions (bytes)
+	maxVESize            = 10 * 1024 // 10KB maximum
 )
 
 // ValidateVoteExtensions verifies the vote extension correctness
@@ -70,6 +79,12 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 	ac := address.HexCodec{}
 
 	for _, vote := range extVoteInfo {
+		// Skip filtered placeholders (previously stripped by filterVoteExtensions due to size violations).
+		// They are kept in the slice for completeness but must not be validated or counted toward VP.
+		if isFilteredPlaceholder(vote) {
+			continue
+		}
+
 		// reject unknown fields
 		if err := rejectUnknownVoteExtFields(vote.VoteExtension); err != nil {
 			return fmt.Errorf("unknown fields detected in vote extensions at height %d: %w", reqHeight, err)
@@ -191,9 +206,51 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 	return nil
 }
 
-// FilterVoteExtensions verifies the vote extension correctness and filters out invalid ones
-func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, validatorSet *stakeTypes.ValidatorSet, milestoneKeeper milestoneKeeper.Keeper, logger log.Logger) ([]abciTypes.ExtendedVoteInfo, error) {
+// ValidateVoteExtensionsCompleteness checks that every validator who committed the previous block
+// has a corresponding entry in the proposer's ExtendedCommitInfo with a matching BlockIDFlagCommit.
+// This prevents a proposer from omitting or downgrading validators' vote extensions.
+func ValidateVoteExtensionsCompleteness(canonicalVotes []abciTypes.VoteInfo, extCommitVotes []abciTypes.ExtendedVoteInfo) error {
+	// Build a map of validator address -> BlockIdFlag from the ExtendedCommitInfo
+	extCommitFlags := make(map[string]cmtTypes.BlockIDFlag, len(extCommitVotes))
+	for _, vote := range extCommitVotes {
+		extCommitFlags[string(vote.Validator.Address)] = vote.BlockIdFlag
+	}
+
+	// Check that every canonical commit validator with BlockIDFlagCommit is present
+	// in the ExtendedCommitInfo and also has BlockIDFlagCommit there.
+	for _, vote := range canonicalVotes {
+		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
+			continue
+		}
+		flag, found := extCommitFlags[string(vote.Validator.Address)]
+		if !found {
+			return fmt.Errorf(
+				"validator %X committed the previous block but is missing from ExtendedCommitInfo",
+				vote.Validator.Address,
+			)
+		}
+		if flag != cmtTypes.BlockIDFlagCommit {
+			return fmt.Errorf(
+				"validator %X committed the previous block but has flag %s in ExtendedCommitInfo instead of Commit",
+				vote.Validator.Address,
+				flag.String(),
+			)
+		}
+	}
+
+	return nil
+}
+
+// filterVoteExtensions verifies the vote extension correctness and filters out invalid ones
+func filterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, validatorSet *stakeTypes.ValidatorSet, milestoneKeeper milestoneKeeper.Keeper, maxTxBytes int64, logger log.Logger) ([]abciTypes.ExtendedVoteInfo, error) {
 	validVoteExtensions := make([]abciTypes.ExtendedVoteInfo, 0)
+	toFilteredPlaceholder := func(vote abciTypes.ExtendedVoteInfo) abciTypes.ExtendedVoteInfo {
+		vote.VoteExtension = nil
+		vote.ExtensionSignature = nil
+		vote.NonRpVoteExtension = nil
+		vote.NonRpExtensionSignature = nil
+		return vote
+	}
 
 	// check if VEs are enabled
 	if err := checkIfVoteExtensionsDisabled(ctx, reqHeight+1); err != nil {
@@ -208,6 +265,35 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 		return nil, nil
 	}
 
+	applyVEsFilteringFixes := helper.IsPhuketHardfork(reqHeight)
+	maxVESizePerValidator := 0
+	if applyVEsFilteringFixes {
+		// Calculate per-validator VE's size limit based on actual MaxTxBytes.
+		validatorsCount := len(validatorSet.Validators)
+		if validatorsCount == 0 {
+			return nil, fmt.Errorf("no validators in filterVoteExtensions")
+		}
+
+		calculatedSize := (int(maxTxBytes) / validatorsCount / safetyFactor) - overheadPerValidator
+
+		// Clamp to [minNonRpVoteExtensionSize, maxVESize]
+		maxVESizePerValidator = calculatedSize
+		if maxVESizePerValidator < minNonRpVoteExtensionSize {
+			maxVESizePerValidator = minNonRpVoteExtensionSize
+			logger.Debug("Per-validator VE limit below minimum, using min value",
+				"calculatedSize", calculatedSize, "minimum", minNonRpVoteExtensionSize)
+		} else if maxVESizePerValidator > maxVESize {
+			maxVESizePerValidator = maxVESize
+			logger.Debug("Per-validator VE limit above maximum, using max value",
+				"calculatedSize", calculatedSize, "maximum", maxVESize)
+		}
+
+		logger.Debug("Calculated per-validator VE size limits",
+			"validatorsCount", validatorsCount,
+			"maxTxBytes", maxTxBytes,
+			"maxVESize", maxVESizePerValidator)
+	}
+
 	// Map to track seen validator addresses
 	seenValidators := make(map[string]struct{})
 	sumVPPerBlockHash := make(map[string]int64)
@@ -215,56 +301,136 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 	ac := address.HexCodec{}
 
 	for _, vote := range extVoteInfo {
+		valAddrStr, err := ac.BytesToString(vote.Validator.Address)
+		if err != nil {
+			return nil, fmt.Errorf("validator address %v is not valid", vote.Validator.Address)
+		}
+
+		if applyVEsFilteringFixes {
+			// Filter out undersized or oversized vote extensions.
+			// Instead of dropping the entry (which would break ValidateVoteExtensionsCompleteness),
+			// we emit a filtered placeholder: preserve Validator and BlockIdFlag but zero all
+			// extension payload fields. This maintains the completeness invariant while excluding
+			// the invalid VE from validation and VP tallying.
+			veSize := len(vote.VoteExtension)
+			nonRpSize := len(vote.NonRpVoteExtension)
+
+			sizeFiltered := false
+			if veSize < minVESize {
+				logger.Warn("Filtering out undersized vote extension, emitting placeholder",
+					"validator", valAddrStr,
+					"veSize", veSize,
+					"minVESize", minVESize)
+				sizeFiltered = true
+			} else if veSize > maxVESizePerValidator {
+				logger.Warn("Filtering out oversized vote extension, emitting placeholder",
+					"validator", valAddrStr,
+					"veSize", veSize,
+					"maxVESize", maxVESizePerValidator)
+				sizeFiltered = true
+			} else if nonRpSize < minNonRpVoteExtensionSize {
+				logger.Warn("Filtering out undersized non-rp vote extension, emitting placeholder",
+					"validator", valAddrStr,
+					"nonRpVeSize", nonRpSize,
+					"minNonRpSize", minNonRpVoteExtensionSize)
+				sizeFiltered = true
+			} else if nonRpSize > maxNonRpVoteExtensionSize {
+				logger.Warn("Filtering out oversized non-rp vote extension, emitting placeholder",
+					"validator", valAddrStr,
+					"nonRpVeSize", nonRpSize,
+					"maxNonRpSize", maxNonRpVoteExtensionSize)
+				sizeFiltered = true
+			}
+
+			if sizeFiltered {
+				// Emit placeholder: keep Validator + BlockIdFlag, zero payload.
+				// Append immediately and skip all downstream validation for this vote.
+				vote.VoteExtension = nil
+				vote.ExtensionSignature = nil
+				vote.NonRpVoteExtension = nil
+				vote.NonRpExtensionSignature = nil
+				validVoteExtensions = append(validVoteExtensions, vote)
+				continue
+			}
+		}
+
 		// reject unknown fields and skip invalid ones
 		if err := rejectUnknownVoteExtFields(vote.VoteExtension); err != nil {
-			logger.Error("Unknown fields detected in vote extensions, skipping",
+			if applyVEsFilteringFixes {
+				logger.Warn("Unknown fields detected in vote extensions, emitting placeholder",
+					"height", reqHeight, "error", err)
+				validVoteExtensions = append(validVoteExtensions, toFilteredPlaceholder(vote))
+				continue
+			}
+			logger.Warn("Unknown fields detected in vote extensions, skipping",
 				"height", reqHeight, "error", err)
 			continue
 		}
 
 		// make sure the BlockIdFlag is valid
 		if !isBlockIdFlagValid(vote.BlockIdFlag) {
-			logger.Error("Received vote with invalid block ID flag at height, skipping",
+			logger.Warn("Received vote with invalid block ID flag at height, skipping",
 				"blockIDFlag", vote.BlockIdFlag.String(),
 				"height", reqHeight)
 			continue
 		}
 		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
 		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
-			logger.Error("Wrong block id flag, skipping",
+			logger.Warn("Wrong block id flag, skipping",
 				"blockIDFlag", vote.BlockIdFlag.String(),
 				"height", reqHeight)
 			continue
 		}
 
-		valAddrStr, err := ac.BytesToString(vote.Validator.Address)
-		if err != nil {
-			return nil, fmt.Errorf("validator address %v is not valid", vote.Validator.Address)
-		}
-
 		if len(vote.ExtensionSignature) == 0 {
+			if applyVEsFilteringFixes {
+				logger.Warn("Received empty vote extension signature, emitting placeholder",
+					"height", reqHeight, "validator", valAddrStr)
+				validVoteExtensions = append(validVoteExtensions, toFilteredPlaceholder(vote))
+				continue
+			}
 			return nil, fmt.Errorf("received empty vote extension signature at height %d from validator %s", reqHeight, valAddrStr)
 		}
 
 		voteExtension := new(sidetxs.VoteExtension)
 		if err = voteExtension.Unmarshal(vote.VoteExtension); err != nil {
-			logger.Error("Error while unmarshalling vote extension", "error", err)
+			if applyVEsFilteringFixes {
+				logger.Warn("Error while unmarshalling vote extension, emitting placeholder", "error", err)
+				validVoteExtensions = append(validVoteExtensions, toFilteredPlaceholder(vote))
+				continue
+			}
+			logger.Warn("Error while unmarshalling vote extension", "error", err)
 			continue
 		}
 
 		if voteExtension.Height != reqHeight-1 {
-			logger.Error("Invalid height received for vote extension", "expected", reqHeight-1, "got", voteExtension.Height)
+			if applyVEsFilteringFixes {
+				logger.Warn("Invalid height received for vote extension, emitting placeholder", "expected", reqHeight-1, "got", voteExtension.Height)
+				validVoteExtensions = append(validVoteExtensions, toFilteredPlaceholder(vote))
+				continue
+			}
+			logger.Warn("Invalid height received for vote extension", "expected", reqHeight-1, "got", voteExtension.Height)
 			continue
 		}
 
 		txHash, err := validateSideTxResponses(voteExtension.SideTxResponses)
 		if err != nil {
-			logger.Error("Invalid sideTxResponses detected for validator", "validator", valAddrStr, "txHash", common.Bytes2Hex(txHash), "error", err)
+			if applyVEsFilteringFixes {
+				logger.Warn("Invalid sideTxResponses detected for validator, emitting placeholder", "validator", valAddrStr, "txHash", common.Bytes2Hex(txHash), "error", err)
+				validVoteExtensions = append(validVoteExtensions, toFilteredPlaceholder(vote))
+				continue
+			}
+			logger.Warn("Invalid sideTxResponses detected for validator", "validator", valAddrStr, "txHash", common.Bytes2Hex(txHash), "error", err)
 			continue
 		}
 
 		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &milestoneKeeper, voteExtension.MilestoneProposition); err != nil {
-			logger.Error("Invalid milestone proposition detected for validator", "validator", valAddrStr, "error", err)
+			if applyVEsFilteringFixes {
+				logger.Warn("Invalid milestone proposition detected for validator, emitting placeholder", "validator", valAddrStr, "error", err)
+				validVoteExtensions = append(validVoteExtensions, toFilteredPlaceholder(vote))
+				continue
+			}
+			logger.Warn("Invalid milestone proposition detected for validator", "validator", valAddrStr, "error", err)
 			continue
 		}
 
@@ -278,13 +444,26 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 		_, validator := validatorSet.GetByAddress(valAddrStr)
 		if validator == nil {
 			if milestoneAbci.ShouldErrorOnValidatorNotFound(ctx.BlockHeight()) {
-				logger.Error(helper.ErrFailedToGetValidator(valAddrStr))
+				logger.Warn(helper.ErrFailedToGetValidator(valAddrStr))
+			}
+			if applyVEsFilteringFixes {
+				validVoteExtensions = append(validVoteExtensions, toFilteredPlaceholder(vote))
 			}
 			continue
 		}
 
 		// ensure proposer-supplied power matches canonical power
 		if vote.Validator.Power != validator.VotingPower {
+			if applyVEsFilteringFixes {
+				logger.Warn(
+					"Mismatching voting power in FilterVoteExtension, emitting placeholder",
+					"validator", valAddrStr,
+					"receivedVotingPower", vote.Validator.Power,
+					"expectedVotingPower", validator.VotingPower,
+				)
+				validVoteExtensions = append(validVoteExtensions, toFilteredPlaceholder(vote))
+				continue
+			}
 			logger.Warn(
 				"Mismatching voting power in FilterVoteExtension",
 				"validator", valAddrStr,
@@ -321,7 +500,24 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 		}
 
 		if !cmtPubKey.VerifySignature(extSignBytes, vote.ExtensionSignature) {
+			if applyVEsFilteringFixes {
+				logger.Warn("Failed to verify ExtensionSignature, emitting placeholder",
+					"validator", valAddrStr)
+				validVoteExtensions = append(validVoteExtensions, toFilteredPlaceholder(vote))
+				continue
+			}
 			return nil, fmt.Errorf("failed to verify validator %s vote extension signature", valAddrStr)
+		}
+
+		// Verify NonRpExtensionSignature to prevent a pass for filterVoteExtensions
+		// with a valid ExtensionSignature but an invalid NonRpExtensionSignature.
+		if applyVEsFilteringFixes {
+			if !cmtPubKey.VerifySignature(vote.NonRpVoteExtension, vote.NonRpExtensionSignature) {
+				logger.Warn("Failed to verify NonRpExtensionSignature, emitting placeholder",
+					"validator", valAddrStr)
+				validVoteExtensions = append(validVoteExtensions, toFilteredPlaceholder(vote))
+				continue
+			}
 		}
 
 		sumVPPerBlockHash[common.Bytes2Hex(voteExtension.BlockHash)] += validator.VotingPower
@@ -354,12 +550,27 @@ func FilterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 
 	filteredByBlockHash := make([]abciTypes.ExtendedVoteInfo, 0, len(validVoteExtensions))
 	for _, vote := range validVoteExtensions {
+		// Preserve filtered placeholders through block-hash filtering
+		if isFilteredPlaceholder(vote) {
+			filteredByBlockHash = append(filteredByBlockHash, vote)
+			continue
+		}
 		ve := new(sidetxs.VoteExtension)
 		if err := ve.Unmarshal(vote.VoteExtension); err != nil {
+			if applyVEsFilteringFixes {
+				logger.Warn("Error unmarshalling VE during block-hash filtering, emitting placeholder",
+					"error", err)
+				filteredByBlockHash = append(filteredByBlockHash, toFilteredPlaceholder(vote))
+			}
 			continue
 		}
 		if common.Bytes2Hex(ve.BlockHash) == majorityBlockHash {
 			filteredByBlockHash = append(filteredByBlockHash, vote)
+		} else if applyVEsFilteringFixes {
+			logger.Warn("Vote extension block hash does not match majority, emitting placeholder",
+				"voteBlockHash", common.Bytes2Hex(ve.BlockHash),
+				"majorityBlockHash", majorityBlockHash)
+			filteredByBlockHash = append(filteredByBlockHash, toFilteredPlaceholder(vote))
 		}
 	}
 
@@ -439,6 +650,11 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, validatorSet *stak
 	ac := address.HexCodec{}
 
 	for _, vote := range extVoteInfo {
+		// Skip filtered placeholders (see isFilteredPlaceholder)
+		if isFilteredPlaceholder(vote) {
+			continue
+		}
+
 		// make sure the BlockIdFlag is valid
 		if !isBlockIdFlagValid(vote.BlockIdFlag) {
 			return nil, fmt.Errorf("received vote with invalid block ID %s flag at height %d", vote.BlockIdFlag.String(), currentHeight-1)
@@ -578,6 +794,19 @@ func isBlockIdFlagValid(flag cmtTypes.BlockIDFlag) bool {
 	return flag == cmtTypes.BlockIDFlagAbsent || flag == cmtTypes.BlockIDFlagCommit || flag == cmtTypes.BlockIDFlagNil
 }
 
+// isFilteredPlaceholder returns true when a vote entry was kept for completeness
+// but its payload was stripped after proposer-side filtering rejected the original VE.
+// Placeholder semantics: the validator committed the previous block (BlockIDFlagCommit)
+// but all extension data has been zeroed out. Consumers must skip these entries
+// without error and without counting their voting power.
+func isFilteredPlaceholder(vote abciTypes.ExtendedVoteInfo) bool {
+	return vote.BlockIdFlag == cmtTypes.BlockIDFlagCommit &&
+		len(vote.VoteExtension) == 0 &&
+		len(vote.ExtensionSignature) == 0 &&
+		len(vote.NonRpVoteExtension) == 0 &&
+		len(vote.NonRpExtensionSignature) == 0
+}
+
 // retrieveVoteExtensionsEnableHeight returns the height from which the vote extensions are enabled, which is equal to the initial height of the v2 genesis
 func retrieveVoteExtensionsEnableHeight(ctx sdk.Context) int64 {
 	consensusParams := ctx.ConsensusParams()
@@ -642,7 +871,7 @@ func ValidateNonRpVoteExtensions(
 	// NonRpVoteExtension is not a protobuf-encoded sidetxs.VoteExtension and
 	// it would incorrectly reject valid non-rp VEs.
 
-	if err := ValidateNonRpVoteExtension(ctx, height-1, majorityExt, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
+	if err := validateNonRpVoteExtensionData(ctx, height-1, majorityExt, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
 		return fmt.Errorf("failed to validate majority non rp vote extension: %w", err)
 	}
 
@@ -654,8 +883,8 @@ func ValidateNonRpVoteExtensions(
 	return nil
 }
 
-// ValidateNonRpVoteExtension validates the non-rp vote extension
-func ValidateNonRpVoteExtension(
+// validateNonRpVoteExtensionData validates the non-rp vote extension inner data
+func validateNonRpVoteExtensionData(
 	ctx sdk.Context,
 	height int64,
 	extension []byte,
@@ -695,6 +924,11 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 	ac := address.HexCodec{}
 
 	for _, vote := range extVoteInfo {
+		// Skip filtered placeholders
+		if isFilteredPlaceholder(vote) {
+			continue
+		}
+
 		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
 		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
 			continue
@@ -727,6 +961,7 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 }
 
 // getMajorityNonRpVoteExtension returns the non-rp vote extension with the majority voting power
+// It enforces that the majority extension must have >2/3 voting power
 func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, validatorSet *stakeTypes.ValidatorSet, logger log.Logger) ([]byte, error) {
 	ac := address.HexCodec{}
 
@@ -734,6 +969,11 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 	hashToVotingPower := make(map[string]int64)
 
 	for _, vote := range extVoteInfo {
+		// Skip filtered placeholders (see isFilteredPlaceholder)
+		if isFilteredPlaceholder(vote) {
+			continue
+		}
+
 		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
 		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
 			continue
@@ -765,6 +1005,10 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 		logger.Error("Multiple non-rp vote extensions detected, there should be only one: potential malicious activity")
 	}
 
+	isPhuketHardfork := helper.IsPhuketHardfork(ctx.BlockHeight())
+	totalVotingPower := validatorSet.GetTotalVotingPower()
+	majorityVP := totalVotingPower * 2 / 3
+
 	var maxVotingPower int64
 	var maxHash string
 
@@ -779,6 +1023,11 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 			maxVotingPower = votingPower
 			maxHash = hash
 		}
+	}
+
+	// Enforce >2/3 voting power threshold only after the consensus-fixes hardfork.
+	if isPhuketHardfork && maxVotingPower <= majorityVP {
+		return nil, fmt.Errorf("insufficient voting power for majority non-rp vote extension: got %d, required >%d", maxVotingPower, majorityVP)
 	}
 
 	return hashToExt[maxHash], nil

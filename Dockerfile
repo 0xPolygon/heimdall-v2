@@ -1,5 +1,5 @@
 # ─── BUILDER STAGE ───────────────────────────────────────────────────────────────
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 ARG HEIMDALL_DIR=/var/lib/heimdall/
 ENV HEIMDALL_DIR=${HEIMDALL_DIR}
@@ -9,6 +9,7 @@ RUN apk add --no-cache build-base git linux-headers
 WORKDIR ${HEIMDALL_DIR}
 
 COPY go.mod go.sum ./
+COPY 0xpolygon-deps/ ./0xpolygon-deps/
 
 RUN --mount=type=ssh \
     --mount=type=cache,target=/go/pkg/mod \
