@@ -26,9 +26,11 @@ const (
 	spanIdLog          = "spanId"
 )
 
-var SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpan{})
-var FillMissingSpansMsgTypeURL = sdk.MsgTypeURL(&types.MsgBackfillSpans{})
-var SetProducerDowntimeMsgTypeURL = sdk.MsgTypeURL(&types.MsgSetProducerDowntime{})
+var (
+	SpanProposeMsgTypeURL         = sdk.MsgTypeURL(&types.MsgProposeSpan{})
+	FillMissingSpansMsgTypeURL    = sdk.MsgTypeURL(&types.MsgBackfillSpans{})
+	SetProducerDowntimeMsgTypeURL = sdk.MsgTypeURL(&types.MsgSetProducerDowntime{})
+)
 
 type sideMsgServer struct {
 	k *Keeper
@@ -208,7 +210,7 @@ func (srv sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetx
 	}
 
 	// check if the proposed span is in-turn or not
-	if !(lastSpan.StartBlock <= currentBlock && currentBlock <= lastSpan.EndBlock) {
+	if lastSpan.StartBlock > currentBlock || currentBlock > lastSpan.EndBlock {
 		logger.Error(
 			"Span proposed is not in-turn",
 			"currentChildBlock", currentBlock,

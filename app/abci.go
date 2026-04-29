@@ -22,7 +22,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
@@ -43,7 +42,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			return nil, err
 		}
 
-		validVoteExtensions, err := FilterVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, validatorSet, app.MilestoneKeeper, logger)
+		validVoteExtensions, err := filterVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, validatorSet, app.MilestoneKeeper, req.MaxTxBytes, logger)
 		if err != nil {
 			logger.Error("Error occurred while filtering VEs in PrepareProposal", err)
 			return nil, err
@@ -52,7 +51,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		req.LocalLastCommit.Votes = validVoteExtensions
 
 		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, validatorSet, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
-			logger.Error("Error occurred while validating non-rp VEs in PrepareProposal", err)
+			logger.Warn("Error occurred while validating non-rp VEs in PrepareProposal", err)
 		}
 
 		// prepare the proposal with the vote extensions and the validators set's votes
@@ -112,7 +111,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			app.Logger().Info("Prepare proposal verify tx", "tx", tx.GetMsgs())
 			_, err = app.PrepareProposalVerifyTx(tx)
 			if err != nil {
-				logger.Error("RunTx returned an error in PrepareProposal", "error", err)
+				logger.Warn("RunTx returned an error in PrepareProposal", "error", err)
 				continue
 			}
 
@@ -164,6 +163,14 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
+		// Verify the proposer hasn't omitted any committing validators' vote extensions
+		if helper.IsPhuketHardfork(req.Height) {
+			if err := ValidateVoteExtensionsCompleteness(req.ProposedLastCommit.Votes, extCommitInfo.Votes); err != nil {
+				logger.Error("Vote extensions completeness check failed, rejecting proposal", "error", err)
+				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			}
+		}
+
 		// validate the vote extensions
 		if err := ValidateVoteExtensions(ctx, req.Height, extCommitInfo.Votes, req.ProposedLastCommit.Round, validatorSet, app.MilestoneKeeper); err != nil {
 			logger.Error("Invalid vote extension, rejecting proposal", "error", err)
@@ -172,7 +179,32 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 
 		// validate non-RP vote extensions
 		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, validatorSet, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
-			logger.Error("Invalid non-rp vote extension proposal", "error", err)
+			hasCheckpointTx := false
+			for _, tx := range req.Txs[1:] {
+				txn, decodeErr := app.TxDecode(tx)
+				if decodeErr != nil {
+					logger.Error("Error occurred while decoding tx bytes while checking checkpoint txs in ProcessProposalHandler", "error", decodeErr)
+					return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+				}
+
+				for _, msg := range txn.GetMsgs() {
+					if checkpointTypes.IsCheckpointMsg(msg) {
+						hasCheckpointTx = true
+						break
+					}
+				}
+
+				if hasCheckpointTx {
+					break
+				}
+			}
+
+			if helper.IsPhuketHardfork(req.Height) && hasCheckpointTx {
+				logger.Error("Invalid non-rp vote extension proposal for checkpoint tx, rejecting proposal", "error", err)
+				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			}
+
+			logger.Warn("Invalid non-rp vote extension proposal", "error", err)
 		}
 
 		for _, tx := range req.Txs[1:] {
@@ -293,9 +325,9 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				res := sideHandler(ctx, msg)
 
 				if res == sidetxs.Vote_VOTE_YES && checkpointTypes.IsCheckpointMsg(msg) {
-					checkpointMsg, ok := msg.(*types.MsgCheckpoint)
+					checkpointMsg, ok := msg.(*checkpointTypes.MsgCheckpoint)
 					if !ok {
-						logger.Error("ExtendVoteHandler: type mismatch for MsgCheckpoint")
+						logger.Warn("ExtendVoteHandler: type mismatch for MsgCheckpoint")
 						continue
 					}
 
@@ -337,12 +369,12 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			if errors.Is(err, milestoneAbci.ErrNoNewHeadersFound) {
 				logger.Debug("No new headers found for generating milestone proposition, continuing without it")
 			} else {
-				logger.Error("Error occurred while generating milestone proposition", "error", err)
+				logger.Warn("Error occurred while generating milestone proposition", "error", err)
 			}
 			// We still want to participate in the consensus even if we fail to generate the milestone proposition
 		} else if milestoneProp != nil {
 			if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, milestoneProp); err != nil {
-				logger.Error("Invalid milestone proposition generated",
+				logger.Warn("Invalid milestone proposition generated",
 					"startBlock", milestoneProp.StartBlockNumber,
 					"endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)-1),
 					"blockHashes", strutil.HashesToString(milestoneProp.BlockHashes),
@@ -365,9 +397,9 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, err
 		}
 
-		if err := ValidateNonRpVoteExtension(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper,
+		if err := validateNonRpVoteExtensionData(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper,
 			app.caller); err != nil {
-			logger.Error("Error occurred while validating non-rp vote extension", "error", err)
+			logger.Warn("Error occurred while validating non-rp vote extension", "error", err)
 		}
 
 		return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: nonRpVoteExt}, nil
@@ -423,8 +455,11 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
-		if err := ValidateNonRpVoteExtension(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller); err != nil {
+		if err := validateNonRpVoteExtensionData(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller); err != nil {
 			logger.Error(heimdallTypes.ErrAlertNonRpVoteExtensionRejected, "validator", valAddr, "error", err)
+			if helper.IsPhuketHardfork(req.Height) {
+				return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
+			}
 		}
 
 		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, voteExtension.MilestoneProposition); err != nil {
@@ -454,12 +489,12 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		milestoneNumber := helper.GetFaultyMilestoneNumber()
 		milestone, err := app.MilestoneKeeper.GetMilestoneByNumber(ctx, milestoneNumber)
 		if err != nil {
-			logger.Error("Error occurred while getting milestone by number", "error", err, "milestoneNumber", milestoneNumber)
+			logger.Warn("Error occurred while getting milestone by number", "error", err, "milestoneNumber", milestoneNumber)
 		}
 		if milestone != nil {
 			if app.MilestoneKeeper.IsFaultyMilestone(*milestone) {
 				if err := app.MilestoneKeeper.DeleteMilestone(ctx, milestoneNumber); err != nil {
-					logger.Error("Error occurred while deleting milestone", "error", err, "milestoneNumber", milestoneNumber)
+					logger.Warn("Error occurred while deleting milestone", "error", err, "milestoneNumber", milestoneNumber)
 				}
 			}
 		}
@@ -557,7 +592,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 
 		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, majorityMilestone); err != nil {
-			logger.Error("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
+			logger.Warn("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
 			// We don't want to halt consensus because of an invalid majority milestone proposition
 		} else if helper.IsRio(majorityMilestone.StartBlockNumber) && ctx.BlockHeight() == int64(lastSpanHeimdallBlock)+1 {
 			logger.Info("Last span was created in the previous block, skipping milestone addition", "lastSpanHeimdallBlock", lastSpanHeimdallBlock, "currentBlock", ctx.BlockHeight())
@@ -669,22 +704,35 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 	txs := lastBlockTxs.Txs
 
+	var checkpointTxHash string
 	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, validatorSet, logger)
 	if err != nil {
-		logger.Error("Error occurred while getting majority non-rp vote extension", "error", err)
-		return nil, err
-	}
-
-	checkpointTxHash := findCheckpointTx(txs, majorityExt[1:], app, logger) // skip the first byte because it's the vote
-	if approvedTxsMap[checkpointTxHash] {
-		signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
-		if err := app.CheckpointKeeper.SetCheckpointSignaturesTxHash(ctx, checkpointTxHash); err != nil {
-			logger.Error("Error occurred while setting checkpoint signatures tx hash", "error", err)
+		if helper.IsPhuketHardfork(req.Height) {
+			// If we can't get a VE with >2/3 VP, skip checkpoint signature storage.
+			logger.Warn("Could not get majority non-rp vote extension, skipping checkpoint signature storage", "error", err)
+		} else {
+			logger.Error("Error occurred while getting majority non-rp vote extension", "error", err)
 			return nil, err
 		}
-		if err := app.CheckpointKeeper.SetCheckpointSignatures(ctx, signatures); err != nil {
-			logger.Error("Error occurred while setting checkpoint signatures", "error", err)
-			return nil, err
+	} else if len(majorityExt) < 2 {
+		// Guard against a nil or too-short slice from getMajorityNonRpVoteExtension.
+		logger.Debug("Majority non-rp vote extension too short, skipping checkpoint signature storage",
+			"len", len(majorityExt))
+	} else {
+		checkpointTxHash = findCheckpointTx(txs, majorityExt[1:], app, logger) // skip the first byte because it's the vote
+		if checkpointTxHash == "" {
+			// majority VE doesn't match any checkpoint tx in the block, or we're using a dummy VE
+			logger.Debug("Majority non-rp vote extension does not match any checkpoint tx in block, skipping signature storage")
+		} else if approvedTxsMap[checkpointTxHash] {
+			signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
+			if err := app.CheckpointKeeper.SetCheckpointSignaturesTxHash(ctx, checkpointTxHash); err != nil {
+				logger.Error("Error occurred while setting checkpoint signatures tx hash", "error", err)
+				return nil, err
+			}
+			if err := app.CheckpointKeeper.SetCheckpointSignatures(ctx, signatures); err != nil {
+				logger.Error("Error occurred while setting checkpoint signatures", "error", err)
+				return nil, err
+			}
 		}
 	}
 
@@ -721,7 +769,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 					if err == nil {
 						msCache.Write()
 					} else {
-						logger.Error("Error occurred while executing post handler", "error", err, "msg", msg)
+						logger.Warn("Error occurred while executing post handler", "error", err, "msg", msg)
 					}
 
 					executedPostHandlers++

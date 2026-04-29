@@ -35,7 +35,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
-	"github.com/cosmos/cosmos-sdk/server/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -329,7 +328,7 @@ func checkServerStatus(ctx context.Context, url string, resultChan chan<- string
 }
 
 // AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
-func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome string, appCreator types.AppCreator, appExport types.AppExporter, opts server.StartCmdOptions) {
+func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome string, appCreator servertypes.AppCreator, appExport servertypes.AppExporter, opts server.StartCmdOptions) {
 	cometCmd := &cobra.Command{
 		Use:     "comet",
 		Aliases: []string{"cometbft", "tendermint"},

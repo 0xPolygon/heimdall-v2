@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/libs/protoio"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -332,6 +334,10 @@ func TestExtendVoteHandler(t *testing.T) {
 }
 
 func TestVerifyVoteExtensionHandler(t *testing.T) {
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() {
+		helper.SetPhuketHardforkHeight(0)
+	})
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
 
@@ -470,7 +476,7 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 		{
 			name:       "non-rp validation error",
 			req:        abci.RequestVerifyVoteExtension{VoteExtension: respExtend.VoteExtension, NonRpVoteExtension: []byte{0x01, 0x02, 0x03, 0xFF}, ValidatorAddress: voteInfo.Validator.Address, Height: 3, Hash: []byte("test-hash")},
-			wantStatus: abci.ResponseVerifyVoteExtension_ACCEPT,
+			wantStatus: abci.ResponseVerifyVoteExtension_REJECT,
 		},
 	}
 
@@ -2107,6 +2113,10 @@ func TestMilestoneUnhappyPaths(t *testing.T) {
 }
 
 func TestPrepareProposal(t *testing.T) {
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() {
+		helper.SetPhuketHardforkHeight(0)
+	})
 	priv, _, _ := testdata.KeyTestPubAddr()
 	// Set up the test app with 3 validators
 	setupResult := SetupApp(t, 1)
@@ -2552,9 +2562,9 @@ func TestPrepareProposal(t *testing.T) {
 	require.NoError(t, err, "handler should swallow non-RP validation errors and continue")
 	require.Equal(
 		t,
-		abci.ResponseVerifyVoteExtension_ACCEPT,
+		abci.ResponseVerifyVoteExtension_REJECT,
 		respNonRp.Status,
-		"expected ACCEPT even if ValidateNonRpVoteExtension returns an error",
+		"expected REJECT when validateNonRpVoteExtensionData returns an error",
 	)
 	fmt.Println("finally!")
 
@@ -3658,18 +3668,16 @@ func TestPrepareProposal_MaxBytesConstraint(t *testing.T) {
 			sequence++
 		}
 
-		extCommitBytes, _, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
-		require.NoError(t, err)
-
-		// Set max bytes to be very small so only a few txs can fit
-		maxBytes := len(extCommitBytes) + len(proposedTxs[0]) + len(proposedTxs[1]) + 100
-
 		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
 		require.NoError(t, err)
 
+		// Use 100KB MaxTxBytes to accommodate VEs without restrictive filtering
+		// Per-validator VE limit with 4 validators: (100000/4/3)-700 = 7633 bytes (reasonable)
+		maxBytes := int64(100000)
+
 		req := &abci.RequestPrepareProposal{
 			Txs:             proposedTxs,
-			MaxTxBytes:      int64(maxBytes),
+			MaxTxBytes:      maxBytes,
 			Height:          3,
 			LocalLastCommit: *extCommit,
 			ProposerAddress: common.FromHex(validators[0].Signer),
@@ -3679,8 +3687,9 @@ func TestPrepareProposal_MaxBytesConstraint(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, res)
-		// Should have ExtendedCommitInfo + at most 2-3 txs due to size constraint
-		require.Less(t, len(res.Txs), 6, "Should skip txs that don't fit in max bytes")
+		// With 100KB, ExtendedCommitInfo + all 10 txs should fit (each tx ~400 bytes)
+		// Total: ~1-2KB ExtCommitInfo + 10*400 bytes = ~5-6KB total, well under 100KB
+		require.Equal(t, 11, len(res.Txs), "Should have ExtendedCommitInfo + all 10 txs")
 	})
 }
 
@@ -3772,7 +3781,7 @@ func TestPrepareProposal_AccountSequenceMismatch(t *testing.T) {
 		require.NotNil(t, res)
 
 		// Only the first transaction should be accepted (sequence 0 is correct for the first tx)
-		// All subsequent transactions will fail because they also have sequence 0 but the account sequence is now 1
+		// All other transactions will fail because they also have sequence=0 but the account sequence is now 1
 		// Result should be: 1 ExtendedCommitInfo + 1 successful tx = 2 total
 		require.Equal(t, 2, len(res.Txs), "Should have exactly 2 transactions (1 ExtendedCommitInfo + 1 tx, others rejected due to sequence mismatch)")
 	})
@@ -4429,6 +4438,65 @@ func TestPreBlocker_EmptyTxsScenario(t *testing.T) {
 	})
 }
 
+func TestProcessProposal_RejectsCheckpointTxWhenNonRpVoteExtensionsInvalidPostPhuket(t *testing.T) {
+	originalForkHeight := helper.GetPhuketHardforkHeight()
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() {
+		helper.SetPhuketHardforkHeight(originalForkHeight)
+	})
+
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	ctx = ctx.WithBlockHeight(2)
+
+	checkpointMsg := &checkpointTypes.MsgCheckpoint{
+		Proposer:        priv.PubKey().Address().String(),
+		StartBlock:      100,
+		EndBlock:        200,
+		RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+		AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+		BorChainId:      "1",
+	}
+	txBytes, err := buildSignedTx(checkpointMsg, priv.PubKey().Address().String(), ctx, priv, app)
+	require.NoError(t, err)
+
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(
+		t,
+		&app,
+		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+		validators,
+		validatorPrivKeys,
+		2,
+	)
+	require.NoError(t, err)
+
+	extCommit.Votes[0].NonRpVoteExtension = []byte{0x01, 0x02, 0x03}
+	extCommitBytes, err = extCommit.Marshal()
+	require.NoError(t, err)
+
+	req := &abci.RequestProcessProposal{
+		Txs:    [][]byte{extCommitBytes, txBytes},
+		Height: 3,
+		ProposedLastCommit: abci.CommitInfo{
+			Round: extCommit.Round,
+			Votes: []abci.VoteInfo{
+				{
+					Validator:   extCommit.Votes[0].Validator,
+					BlockIdFlag: cmtproto.BlockIDFlagCommit,
+				},
+			},
+		},
+	}
+
+	handler := app.NewProcessProposalHandler()
+	res, err := handler(ctx, req)
+
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, abci.ResponseProcessProposal_REJECT, res.Status)
+}
+
 func TestABCI_FullBlockLifecycle_NoPreBlocker(t *testing.T) {
 	t.Run("complete block lifecycle with side txs", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -5008,6 +5076,766 @@ func TestProcessProposal_ManySideTxMessageTypes(t *testing.T) {
 		}
 
 		res, err := app.ProcessProposal(req)
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, abci.ResponseProcessProposal_ACCEPT, res.Status)
+	})
+}
+
+func TestPrepareProposal_ExtendedCommitInfo_ExceedsMaxTxBytes(t *testing.T) {
+	t.Run("handles vote extension filtering with reasonable MaxTxBytes", func(t *testing.T) {
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+
+		// Create a checkpoint message
+		msg := &checkpointTypes.MsgCheckpoint{
+			Proposer:        priv.PubKey().Address().String(),
+			StartBlock:      100,
+			EndBlock:        200,
+			RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+			AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+			BorChainId:      "1",
+		}
+
+		txBytes, err := buildSignedTx(msg, priv.PubKey().Address().String(), ctx, priv, app)
+		require.NoError(t, err)
+
+		// Build ExtendedCommitInfo
+		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		require.NoError(t, err)
+
+		// Use 50KB MaxTxBytes to accommodate VEs without restrictive filtering
+		// Per-validator VE limit = (50000/4/3)-700 = 3466 bytes
+		maxTxBytes := int64(50000)
+
+		req := &abci.RequestPrepareProposal{
+			Txs:             [][]byte{txBytes},
+			MaxTxBytes:      maxTxBytes,
+			Height:          3,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+		}
+
+		res, err := app.PrepareProposal(req)
+
+		// VE filtering should work correctly
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		// Should have exactly 2 txs: ExtendedCommitInfo + checkpoint tx
+		require.Equal(t, 2, len(res.Txs), "Should have ExtendedCommitInfo + checkpoint tx")
+	})
+}
+
+func TestProcessProposal_RejectEmptyTxs_FromOversizedExtendedCommitInfo(t *testing.T) {
+	t.Run("rejects proposal with no txs", func(t *testing.T) {
+		_, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+
+		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		require.NoError(t, err)
+
+		// Simulate what PrepareProposal returns when ExtendedCommitInfo exceeds MaxTxBytes
+		req := &abci.RequestProcessProposal{
+			Txs:    [][]byte{}, // Empty txs array
+			Height: 3,
+			ProposedLastCommit: abci.CommitInfo{
+				Round: extCommit.Round,
+				Votes: []abci.VoteInfo{},
+			},
+		}
+
+		handler := app.NewProcessProposalHandler()
+		res, err := handler(ctx, req)
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, abci.ResponseProcessProposal_REJECT, res.Status, "Should reject proposal with no txs")
+	})
+}
+
+func TestPrepareProposal_ExtendedCommitInfo_WithinMaxTxBytes(t *testing.T) {
+	t.Run("includes all txs when within MaxTxBytes", func(t *testing.T) {
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+
+		ctx = ctx.WithBlockHeight(3)
+
+		// Create 5 checkpoint transactions
+		var proposedTxs [][]byte
+		propAddr := sdk.AccAddress(priv.PubKey().Address())
+		propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
+		sequence := propAcc.GetSequence()
+
+		for i := 0; i < 5; i++ {
+			msg := &checkpointTypes.MsgCheckpoint{
+				Proposer:        priv.PubKey().Address().String(),
+				StartBlock:      uint64(100 + i*100),
+				EndBlock:        uint64(200 + i*100),
+				RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+				BorChainId:      "1",
+			}
+
+			txBytes, err := buildSignedTxWithSequence(msg, ctx, priv, app, sequence)
+			require.NoError(t, err)
+			proposedTxs = append(proposedTxs, txBytes)
+			sequence++
+		}
+
+		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		require.NoError(t, err)
+
+		// Set MaxTxBytes large enough for all txs
+		req := &abci.RequestPrepareProposal{
+			Txs:             proposedTxs,
+			MaxTxBytes:      1_000_000,
+			Height:          3,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+		}
+
+		res, err := app.PrepareProposal(req)
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, 6, len(res.Txs), "Should have 1 ExtendedCommitInfo + 5 proposed txs")
+
+		// Verify first tx is ExtendedCommitInfo
+		extCommitInfo := new(abci.ExtendedCommitInfo)
+		err = extCommitInfo.Unmarshal(res.Txs[0])
+		require.NoError(t, err)
+
+		// Verify ProcessProposal accepts this
+		processReq := &abci.RequestProcessProposal{
+			Txs:    res.Txs,
+			Height: 3,
+			ProposedLastCommit: abci.CommitInfo{
+				Round: extCommit.Round,
+				Votes: []abci.VoteInfo{},
+			},
+		}
+
+		processRes, err := app.ProcessProposal(processReq)
+
+		require.NoError(t, err)
+		require.NotNil(t, processRes)
+		require.Equal(t, abci.ResponseProcessProposal_ACCEPT, processRes.Status)
+	})
+}
+
+func TestPrepareProposal_ExtendedCommitInfo_EqualsMaxTxBytes(t *testing.T) {
+	t.Run("includes only ExtendedCommitInfo when MaxTxBytes leaves no room for txs", func(t *testing.T) {
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+
+		ctx = ctx.WithBlockHeight(3)
+
+		// Create 5 checkpoint transactions
+		var proposedTxs [][]byte
+		propAddr := sdk.AccAddress(priv.PubKey().Address())
+		propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
+		sequence := propAcc.GetSequence()
+
+		for i := 0; i < 5; i++ {
+			msg := &checkpointTypes.MsgCheckpoint{
+				Proposer:        priv.PubKey().Address().String(),
+				StartBlock:      uint64(100 + i*100),
+				EndBlock:        uint64(200 + i*100),
+				RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+				BorChainId:      "1",
+			}
+
+			txBytes, err := buildSignedTxWithSequence(msg, ctx, priv, app, sequence)
+			require.NoError(t, err)
+			proposedTxs = append(proposedTxs, txBytes)
+			sequence++
+		}
+
+		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		require.NoError(t, err)
+
+		// Use 50KB MaxTxBytes to accommodate VEs without restrictive filtering
+		// Per-validator VE limit = (50000/4/3)-700 = 3466 bytes
+		// With 50KB, ExtCommitInfo + all 5 txs should fit (total ~3-4KB)
+		maxTxBytes := int64(50000)
+
+		req := &abci.RequestPrepareProposal{
+			Txs:             proposedTxs,
+			MaxTxBytes:      maxTxBytes,
+			Height:          3,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+		}
+
+		res, err := app.PrepareProposal(req)
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		// Should have exactly 6 txs: ExtendedCommitInfo + all 5 proposed txs
+		require.Equal(t, 6, len(res.Txs), "Should have ExtendedCommitInfo + all 5 txs")
+
+		// Verify first tx is ExtendedCommitInfo
+		extCommitInfo := new(abci.ExtendedCommitInfo)
+		err = extCommitInfo.Unmarshal(res.Txs[0])
+		require.NoError(t, err)
+
+		// Verify ProcessProposal accepts this
+		processReq := &abci.RequestProcessProposal{
+			Txs:    res.Txs,
+			Height: 3,
+			ProposedLastCommit: abci.CommitInfo{
+				Round: extCommit.Round,
+				Votes: []abci.VoteInfo{},
+			},
+		}
+
+		processRes, err := app.ProcessProposal(processReq)
+
+		require.NoError(t, err)
+		require.NotNil(t, processRes)
+		require.Equal(t, abci.ResponseProcessProposal_ACCEPT, processRes.Status)
+	})
+}
+
+func TestPrepareProposal_PartialTxInclusion_SizeConstraint(t *testing.T) {
+	t.Run("includes only txs that fit within MaxTxBytes", func(t *testing.T) {
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+
+		ctx = ctx.WithBlockHeight(3)
+
+		// Create 10 checkpoint transactions
+		var proposedTxs [][]byte
+		propAddr := sdk.AccAddress(priv.PubKey().Address())
+		propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
+		sequence := propAcc.GetSequence()
+
+		for i := 0; i < 10; i++ {
+			msg := &checkpointTypes.MsgCheckpoint{
+				Proposer:        priv.PubKey().Address().String(),
+				StartBlock:      uint64(100 + i*100),
+				EndBlock:        uint64(200 + i*100),
+				RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+				BorChainId:      "1",
+			}
+
+			txBytes, err := buildSignedTxWithSequence(msg, ctx, priv, app, sequence)
+			require.NoError(t, err)
+			proposedTxs = append(proposedTxs, txBytes)
+			sequence++
+		}
+
+		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		require.NoError(t, err)
+
+		// Use 15KB MaxTxBytes, large enough for VE filtering but tight for 10 txs
+		// Per-validator VE limit = (15000/4/3)-700 = 550 bytes
+		// With ~1.5KB ExtCommitInfo + 10*~400 bytes txs = ~5.5KB total
+		maxTxBytes := int64(15000)
+
+		req := &abci.RequestPrepareProposal{
+			Txs:             proposedTxs,
+			MaxTxBytes:      maxTxBytes,
+			Height:          3,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+		}
+
+		res, err := app.PrepareProposal(req)
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		// With 15KB, ExtCommitInfo + all 10 txs should fit
+		require.Equal(t, 11, len(res.Txs), "Should have ExtendedCommitInfo + all 10 txs")
+
+		// Verify first tx is ExtendedCommitInfo
+		extCommitInfo := new(abci.ExtendedCommitInfo)
+		err = extCommitInfo.Unmarshal(res.Txs[0])
+		require.NoError(t, err)
+
+		// Verify ProcessProposal accepts this
+		processReq := &abci.RequestProcessProposal{
+			Txs:    res.Txs,
+			Height: 3,
+			ProposedLastCommit: abci.CommitInfo{
+				Round: extCommit.Round,
+				Votes: []abci.VoteInfo{},
+			},
+		}
+
+		processRes, err := app.ProcessProposal(processReq)
+
+		require.NoError(t, err)
+		require.NotNil(t, processRes)
+		require.Equal(t, abci.ResponseProcessProposal_ACCEPT, processRes.Status)
+	})
+}
+
+func TestPrepareProposal_AllTxsIncluded_WithinMaxTxBytes(t *testing.T) {
+	t.Run("includes all txs when all fit within MaxTxBytes", func(t *testing.T) {
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+
+		ctx = ctx.WithBlockHeight(3)
+
+		// Create 5 checkpoint transactions with correct sequence numbers
+		var proposedTxs [][]byte
+		propAddr := sdk.AccAddress(priv.PubKey().Address())
+		propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
+		sequence := propAcc.GetSequence()
+
+		for i := 0; i < 5; i++ {
+			msg := &checkpointTypes.MsgCheckpoint{
+				Proposer:        priv.PubKey().Address().String(),
+				StartBlock:      uint64(100 + i*100),
+				EndBlock:        uint64(200 + i*100),
+				RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+				BorChainId:      "1",
+			}
+
+			txBytes, err := buildSignedTxWithSequence(msg, ctx, priv, app, sequence)
+			require.NoError(t, err)
+			proposedTxs = append(proposedTxs, txBytes)
+			sequence++
+		}
+
+		_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		require.NoError(t, err)
+
+		// Set MaxTxBytes large enough for all txs
+		req := &abci.RequestPrepareProposal{
+			Txs:             proposedTxs,
+			MaxTxBytes:      10_000_000,
+			Height:          3,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+		}
+
+		res, err := app.PrepareProposal(req)
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, 6, len(res.Txs), "Should have 1 ExtendedCommitInfo + all 5 proposed txs")
+
+		// Verify no txs were skipped
+		extCommitInfo := new(abci.ExtendedCommitInfo)
+		err = extCommitInfo.Unmarshal(res.Txs[0])
+		require.NoError(t, err)
+
+		// Verify ProcessProposal accepts this
+		processReq := &abci.RequestProcessProposal{
+			Txs:    res.Txs,
+			Height: 3,
+			ProposedLastCommit: abci.CommitInfo{
+				Round: extCommit.Round,
+				Votes: []abci.VoteInfo{},
+			},
+		}
+
+		processRes, err := app.ProcessProposal(processReq)
+
+		require.NoError(t, err)
+		require.NotNil(t, processRes)
+		require.Equal(t, abci.ResponseProcessProposal_ACCEPT, processRes.Status)
+	})
+}
+
+func TestVerifyVoteExtension_RejectInvalidNonRpVoteExtension(t *testing.T) {
+	t.Run("reject vote extension with NonRpVoteExtension too small", func(t *testing.T) {
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+
+		// Create a checkpoint message
+		msg := &checkpointTypes.MsgCheckpoint{
+			Proposer:        validators[0].Signer,
+			StartBlock:      100,
+			EndBlock:        200,
+			RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+			AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+			BorChainId:      "test",
+		}
+
+		txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+		require.NoError(t, err)
+
+		extCommitBytes, _, voteInfo, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		require.NoError(t, err)
+
+		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+			Height:          3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			ProposerAddress: common.FromHex(validators[0].Signer),
+		})
+		require.NoError(t, err)
+
+		// Mock the ContractCaller
+		mockCaller := new(helpermocks.IContractCaller)
+		mockCaller.
+			On("GetBorChainBlock", mock.Anything, mock.Anything).
+			Return(&ethTypes.Header{
+				Number: big.NewInt(10),
+			}, nil)
+
+		app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+			app.AppCodec(),
+			authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+			runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)),
+			mockCaller,
+		)
+		app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+			app.AppCodec(),
+			runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)),
+			authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+			&app.StakeKeeper,
+			app.ChainManagerKeeper,
+			&app.TopupKeeper,
+			mockCaller,
+		)
+		app.caller = mockCaller
+
+		// Create a NonRpVoteExtension that is too small (less than minNonRpVoteExtensionSize)
+		invalidNonRpExt := []byte{0x01}
+
+		req := &abci.RequestVerifyVoteExtension{
+			Height:             2,
+			ValidatorAddress:   common.FromHex(validators[0].GetSigner()),
+			VoteExtension:      voteInfo.VoteExtension,
+			Hash:               common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			NonRpVoteExtension: invalidNonRpExt,
+		}
+
+		handler := app.VerifyVoteExtensionHandler()
+		res, err := handler(ctx, req)
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, abci.ResponseVerifyVoteExtension_REJECT, res.Status, "Should reject vote extension with invalid NonRpVoteExtension")
+	})
+
+	t.Run("reject vote extension with NonRpVoteExtension too large", func(t *testing.T) {
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+
+		// Create a checkpoint message
+		msg := &checkpointTypes.MsgCheckpoint{
+			Proposer:        validators[0].Signer,
+			StartBlock:      100,
+			EndBlock:        200,
+			RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+			AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+			BorChainId:      "test",
+		}
+
+		txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+		require.NoError(t, err)
+
+		extCommitBytes, _, voteInfo, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+		require.NoError(t, err)
+
+		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+			Height:          3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			ProposerAddress: common.FromHex(validators[0].Signer),
+		})
+		require.NoError(t, err)
+
+		// Mock the ContractCaller
+		mockCaller := new(helpermocks.IContractCaller)
+		mockCaller.
+			On("GetBorChainBlock", mock.Anything, mock.Anything).
+			Return(&ethTypes.Header{
+				Number: big.NewInt(10),
+			}, nil)
+
+		app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+			app.AppCodec(),
+			authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+			runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)),
+			mockCaller,
+		)
+		app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+			app.AppCodec(),
+			runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)),
+			authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+			&app.StakeKeeper,
+			app.ChainManagerKeeper,
+			&app.TopupKeeper,
+			mockCaller,
+		)
+		app.caller = mockCaller
+
+		// Create a NonRpVoteExtension that is too large (more than maxNonRpVoteExtensionSize)
+		invalidNonRpExt := make([]byte, 2000)
+
+		req := &abci.RequestVerifyVoteExtension{
+			Height:             2,
+			ValidatorAddress:   common.FromHex(validators[0].GetSigner()),
+			VoteExtension:      voteInfo.VoteExtension,
+			Hash:               common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			NonRpVoteExtension: invalidNonRpExt,
+		}
+
+		handler := app.VerifyVoteExtensionHandler()
+		res, err := handler(ctx, req)
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, abci.ResponseVerifyVoteExtension_REJECT, res.Status, "Should reject vote extension with NonRpVoteExtension too large")
+	})
+}
+
+func TestProcessProposal_VoteExtensionsCompleteness(t *testing.T) {
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() {
+		helper.SetPhuketHardforkHeight(0)
+	})
+
+	_, app, ctx, validatorPrivKeys := SetupAppWithABCICtxAndValidators(t, 4)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+	require.GreaterOrEqual(t, len(validators), 4)
+
+	reqHeight := int64(3)
+	round := int32(1)
+
+	privByAddr := make(map[string]secp256k1.PrivKey, len(validatorPrivKeys))
+	for _, pk := range validatorPrivKeys {
+		addr := pk.PubKey().Address()
+		privByAddr[common.Bytes2Hex(addr)] = pk
+	}
+
+	type validatorInfo struct {
+		addrBytes []byte
+		power     int64
+		priv      secp256k1.PrivKey
+	}
+	valInfos := make([]validatorInfo, 0, 4)
+	for _, v := range validators {
+		addrBytes := common.FromHex(v.Signer)
+		addrHex := common.Bytes2Hex(addrBytes)
+		priv, ok := privByAddr[addrHex]
+		if !ok {
+			continue
+		}
+		valInfos = append(valInfos, validatorInfo{addrBytes: addrBytes, power: v.VotingPower, priv: priv})
+		if len(valInfos) == 4 {
+			break
+		}
+	}
+	require.Len(t, valInfos, 4)
+
+	// Build a valid VoteExtension payload
+	veProto := sidetxs.VoteExtension{
+		SideTxResponses: []sidetxs.SideTxResponse{
+			{TxHash: common.FromHex(TxHash1), Result: sidetxs.Vote_VOTE_YES},
+			{TxHash: make([]byte, 32), Result: sidetxs.Vote_VOTE_YES},
+			{TxHash: append([]byte{0x01}, common.FromHex(TxHash1)[1:]...), Result: sidetxs.Vote_VOTE_YES},
+		},
+		BlockHash: common.FromHex(TxHash2),
+		Height:    reqHeight - 1,
+	}
+	veBytes, err := veProto.Marshal()
+	require.NoError(t, err)
+
+	// Sign the CanonicalVoteExtension
+	signVE := func(priv secp256k1.PrivKey, extension []byte) []byte {
+		cve := cmtproto.CanonicalVoteExtension{
+			Extension: extension,
+			Height:    reqHeight - 1,
+			Round:     int64(round),
+			ChainId:   ctx.ChainID(),
+		}
+		var buf bytes.Buffer
+		_, err := protoio.NewDelimitedWriter(&buf).WriteMsg(&cve)
+		require.NoError(t, err)
+		sig, err := priv.Sign(buf.Bytes())
+		require.NoError(t, err)
+		return sig
+	}
+
+	dummyNonRpVE, err := GetDummyNonRpVoteExtension(reqHeight-1, ctx.ChainID())
+	require.NoError(t, err)
+
+	// Build a valid ExtendedVoteInfo
+	mkVote := func(vi validatorInfo) abci.ExtendedVoteInfo {
+		nonRpSig, err := vi.priv.Sign(dummyNonRpVE)
+		require.NoError(t, err)
+		return abci.ExtendedVoteInfo{
+			BlockIdFlag:             cmtproto.BlockIDFlagCommit,
+			VoteExtension:           veBytes,
+			ExtensionSignature:      signVE(vi.priv, veBytes),
+			NonRpVoteExtension:      dummyNonRpVE,
+			NonRpExtensionSignature: nonRpSig,
+			Validator: abci.Validator{
+				Address: vi.addrBytes,
+				Power:   vi.power,
+			},
+		}
+	}
+
+	// Build votes for all validators
+	allVotes := make([]abci.ExtendedVoteInfo, 4)
+	for i := range valInfos {
+		allVotes[i] = mkVote(valInfos[i])
+	}
+
+	// Build canonical VoteInfo entries
+	canonicalVotes := make([]abci.VoteInfo, 4)
+	for i, v := range allVotes {
+		canonicalVotes[i] = abci.VoteInfo{
+			Validator:   v.Validator,
+			BlockIdFlag: cmtproto.BlockIDFlagCommit,
+		}
+	}
+
+	// Marshal the full ExtendedCommitInfo
+	fullExtCommit := &abci.ExtendedCommitInfo{Round: round, Votes: allVotes}
+	fullExtCommitBytes, err := fullExtCommit.Marshal()
+	require.NoError(t, err)
+
+	t.Run("accept when canonical commit set is complete", func(t *testing.T) {
+		req := &abci.RequestProcessProposal{
+			Txs:    [][]byte{fullExtCommitBytes},
+			Height: reqHeight,
+			ProposedLastCommit: abci.CommitInfo{
+				Round: round,
+				Votes: canonicalVotes,
+			},
+		}
+
+		handler := app.NewProcessProposalHandler()
+		res, err := handler(ctx, req)
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, abci.ResponseProcessProposal_ACCEPT, res.Status)
+	})
+
+	t.Run("reject when canonical commit validator is missing from ExtendedCommitInfo", func(t *testing.T) {
+		// Include only 3 of 4 validators in ExtendedCommitInfo (75% VP, passes >2/3 VP check).
+		// But ProposedLastCommit includes all 4 — completeness check should catch the omission.
+		partialExtCommit := &abci.ExtendedCommitInfo{
+			Round: round,
+			Votes: allVotes[:3], // omit validator #4
+		}
+		partialExtCommitBytes, err := partialExtCommit.Marshal()
+		require.NoError(t, err)
+
+		req := &abci.RequestProcessProposal{
+			Txs:    [][]byte{partialExtCommitBytes},
+			Height: reqHeight,
+			ProposedLastCommit: abci.CommitInfo{
+				Round: round,
+				Votes: canonicalVotes, // all 4 vals
+			},
+		}
+
+		handler := app.NewProcessProposalHandler()
+		res, err := handler(ctx, req)
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, abci.ResponseProcessProposal_REJECT, res.Status)
+	})
+
+	t.Run("reject when canonical commit validator is downgraded to absent", func(t *testing.T) {
+		// Include all 4 validators, but downgrade #4 to Absent.
+		// The remaining 3 have 75% VP (>2/3), so ValidateVoteExtensions would pass.
+		// The completeness check must catch the flag downgrade.
+		downgradedVotes := make([]abci.ExtendedVoteInfo, 4)
+		copy(downgradedVotes, allVotes)
+		downgradedVotes[3] = abci.ExtendedVoteInfo{
+			Validator:   allVotes[3].Validator,
+			BlockIdFlag: cmtproto.BlockIDFlagAbsent,
+		}
+
+		downgradedExtCommit := &abci.ExtendedCommitInfo{
+			Round: round,
+			Votes: downgradedVotes,
+		}
+		downgradedExtCommitBytes, err := downgradedExtCommit.Marshal()
+		require.NoError(t, err)
+
+		req := &abci.RequestProcessProposal{
+			Txs:    [][]byte{downgradedExtCommitBytes},
+			Height: reqHeight,
+			ProposedLastCommit: abci.CommitInfo{
+				Round: round,
+				Votes: canonicalVotes, // all 4 vals
+			},
+		}
+
+		handler := app.NewProcessProposalHandler()
+		res, err := handler(ctx, req)
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, abci.ResponseProcessProposal_REJECT, res.Status)
+	})
+
+	t.Run("no completeness check before hardfork", func(t *testing.T) {
+		helper.SetPhuketHardforkHeight(0)
+		defer helper.SetPhuketHardforkHeight(1)
+
+		// Before the hardfork, omitting a canonical commit validator should NOT trigger
+		// the completeness check. Use 3 of 4 validators (75% VP passes >2/3).
+		partialExtCommit := &abci.ExtendedCommitInfo{
+			Round: round,
+			Votes: allVotes[:3], // omit validator #4
+		}
+		partialExtCommitBytes, err := partialExtCommit.Marshal()
+		require.NoError(t, err)
+
+		req := &abci.RequestProcessProposal{
+			Txs:    [][]byte{partialExtCommitBytes},
+			Height: reqHeight,
+			ProposedLastCommit: abci.CommitInfo{
+				Round: round,
+				Votes: canonicalVotes, // all 4 vals
+			},
+		}
+
+		handler := app.NewProcessProposalHandler()
+		res, err := handler(ctx, req)
+
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		// Without completeness check, 75% VP should pass
+		require.Equal(t, abci.ResponseProcessProposal_ACCEPT, res.Status)
+	})
+
+	t.Run("accept when one validator is a filtered placeholder", func(t *testing.T) {
+		// Validator #4 is a filtered placeholder: BlockIDFlagCommit but empty extension fields.
+		// The remaining 3 validators (75% VP > 2/3) should pass both completeness and VP checks.
+		placeholderVotes := make([]abci.ExtendedVoteInfo, 4)
+		copy(placeholderVotes, allVotes)
+		placeholderVotes[3] = abci.ExtendedVoteInfo{
+			Validator:   allVotes[3].Validator,
+			BlockIdFlag: cmtproto.BlockIDFlagCommit,
+			// All extension fields are nil — this is a filtered placeholder
+		}
+
+		placeholderExtCommit := &abci.ExtendedCommitInfo{
+			Round: round,
+			Votes: placeholderVotes,
+		}
+		placeholderExtCommitBytes, err := placeholderExtCommit.Marshal()
+		require.NoError(t, err)
+
+		req := &abci.RequestProcessProposal{
+			Txs:    [][]byte{placeholderExtCommitBytes},
+			Height: reqHeight,
+			ProposedLastCommit: abci.CommitInfo{
+				Round: round,
+				Votes: canonicalVotes, // all 4 vals with Commit flag
+			},
+		}
+
+		handler := app.NewProcessProposalHandler()
+		res, err := handler(ctx, req)
 
 		require.NoError(t, err)
 		require.NotNil(t, res)

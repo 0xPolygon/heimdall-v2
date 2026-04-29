@@ -233,7 +233,7 @@ func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (
 			cp.Logger.Debug(debugMsgCpNoBufferedCheckpoint, "bufferedCheckpoint", bufferedCheckpoint)
 		}
 
-		if bufferedCheckpoint != nil && !(bufferedCheckpoint.Timestamp == 0 || ((timeStamp > bufferedCheckpoint.Timestamp) && timeStamp-bufferedCheckpoint.Timestamp >= checkpointBufferTime)) {
+		if bufferedCheckpoint != nil && bufferedCheckpoint.Timestamp != 0 && (timeStamp <= bufferedCheckpoint.Timestamp || timeStamp-bufferedCheckpoint.Timestamp < checkpointBufferTime) {
 			cp.Logger.Info(infoMsgCpCheckpointAlreadyInBuffer, "Checkpoint", bufferedCheckpoint.String())
 			return nil
 		}
@@ -616,7 +616,7 @@ func (cp *CheckpointProcessor) parseCheckpointSignatures(signatures []checkpoint
 		sig     []byte
 	}
 
-	sideTxSigs := make([]sideTxSig, 0)
+	sideTxSigs := make([]sideTxSig, 0, len(signatures))
 
 	for _, entry := range signatures {
 		sideTxSigs = append(sideTxSigs, sideTxSig{
