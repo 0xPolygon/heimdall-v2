@@ -456,10 +456,11 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		}
 
 		if err := validateNonRpVoteExtensionData(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller); err != nil {
-			logger.Error(heimdallTypes.ErrAlertNonRpVoteExtensionRejected, "validator", valAddr, "error", err)
-			if helper.IsPhuketHardfork(req.Height) {
+			if helper.IsPhuketHardfork(req.Height) && !errors.Is(err, borTypes.ErrFailedToQueryBor) {
+				logger.Error(heimdallTypes.ErrAlertNonRpVoteExtensionRejected, "validator", valAddr, "error", err)
 				return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 			}
+			logger.Warn("non-rp vote extension validation failed, accepting due to bor query error", "validator", valAddr, "error", err)
 		}
 
 		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, voteExtension.MilestoneProposition); err != nil {

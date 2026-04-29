@@ -489,6 +489,107 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 	}
 }
 
+func TestVerifyVoteExtensionHandler_AcceptsOnBorQueryError(t *testing.T) {
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() {
+		helper.SetPhuketHardforkHeight(0)
+	})
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	msg := &types.MsgCheckpoint{
+		Proposer:        validators[0].Signer,
+		StartBlock:      100,
+		EndBlock:        200,
+		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		BorChainId:      "test",
+	}
+
+	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+
+	extCommitBytes, _, voteInfo, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+
+	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height:          3,
+		Txs:             [][]byte{extCommitBytes, txBytes},
+		ProposerAddress: common.FromHex(validators[0].Signer),
+	})
+	require.NoError(t, err)
+
+	// First, get a valid VE with a working mock caller (for ExtendVote)
+	workingMockCaller := new(helpermocks.IContractCaller)
+	workingMockCaller.
+		On("GetBorChainBlock", mock.Anything, mock.Anything).
+		Return(&ethTypes.Header{Number: big.NewInt(10)}, nil)
+	workingMockCaller.
+		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
+
+	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+		app.AppCodec(),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)),
+		workingMockCaller,
+	)
+	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		&app.StakeKeeper,
+		app.ChainManagerKeeper,
+		&app.TopupKeeper,
+		workingMockCaller,
+	)
+	app.BorKeeper = borKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.ChainManagerKeeper,
+		&app.StakeKeeper,
+		nil,
+		nil,
+	)
+	app.BorKeeper.SetContractCaller(workingMockCaller)
+	app.MilestoneKeeper.IContractCaller = workingMockCaller
+	app.caller = workingMockCaller
+
+	reqExtend := abci.RequestExtendVote{
+		Txs:    [][]byte{extCommitBytes, txBytes},
+		Hash:   []byte("test-hash"),
+		Height: 3,
+	}
+	respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+	require.NoError(t, err)
+	require.NotNil(t, respExtend.VoteExtension)
+
+	// Now swap in a broken mock caller that simulates bor_getRootHash failure (e.g. not available like in erigon)
+	brokenMockCaller := new(helpermocks.IContractCaller)
+	brokenMockCaller.
+		On("CheckIfBlocksExist", mock.Anything).
+		Return(false, fmt.Errorf("the method bor_getRootHash does not exist/is not available"))
+	brokenMockCaller.
+		On("GetRootHash", mock.Anything, mock.Anything, mock.Anything).
+		Return([]byte(nil), fmt.Errorf("the method bor_getRootHash does not exist/is not available"))
+	app.caller = brokenMockCaller
+
+	// Verify: the NonRpVE contains valid checkpoint data, but bor is unreachable.
+	reqVerify := abci.RequestVerifyVoteExtension{
+		VoteExtension:      respExtend.VoteExtension,
+		NonRpVoteExtension: respExtend.NonRpExtension,
+		ValidatorAddress:   voteInfo.Validator.Address,
+		Height:             3,
+		Hash:               []byte("test-hash"),
+	}
+	respVerify, err := app.VerifyVoteExtensionHandler()(ctx, &reqVerify)
+	require.NoError(t, err)
+	require.Equal(t,
+		abci.ResponseVerifyVoteExtension_ACCEPT,
+		respVerify.Status,
+		"expected ACCEPT when NonRpVE validation fails with bor query error (ErrFailedToQueryBor)",
+	)
+}
+
 func TestVerifyVoteExtensionHandler_RejectsUnknownFieldsPadding(t *testing.T) {
 	setupAppResult := SetupApp(t, 1)
 	hApp := setupAppResult.App
