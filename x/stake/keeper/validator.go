@@ -194,7 +194,7 @@ func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validat
 // UpdateSigner updates validator fields in store
 func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubKey []byte, prevSigner string) error {
 	k.PanicIfSetupIsIncomplete()
-	// get old validator from state and make power 0
+	// get the old validator from state and make power 0
 	validator, err := k.GetValidatorInfo(ctx, util.FormatAddress(prevSigner))
 	if err != nil {
 		k.Logger(ctx).Error("Unable to fetch validator from store")

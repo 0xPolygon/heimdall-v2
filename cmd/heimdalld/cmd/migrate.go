@@ -183,10 +183,10 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		genesisData = nil
-
-		runtime.GC()
 	}
+
+	// Free large genesis data before verification pass to reduce peak memory usage.
+	runtime.GC()
 
 	if verifyData {
 		if err := verify.RunMigrationVerification(genesisFileV1, genesisFileV2, logger); err != nil {

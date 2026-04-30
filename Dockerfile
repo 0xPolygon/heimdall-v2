@@ -9,6 +9,7 @@ RUN apk add --no-cache build-base git linux-headers
 WORKDIR ${HEIMDALL_DIR}
 
 COPY go.mod go.sum ./
+COPY 0xpolygon-deps/ ./0xpolygon-deps/
 
 RUN --mount=type=ssh \
     --mount=type=cache,target=/go/pkg/mod \
