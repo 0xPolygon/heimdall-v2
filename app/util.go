@@ -2,6 +2,11 @@ package app
 
 import "net/http"
 
+const (
+	statusLevelWARN     = "WARN"
+	statusLevelCRITICAL = "CRITICAL"
+)
+
 // HealthStatus represents the health status with level, code, and message
 type HealthStatus struct {
 	Level   HealthStatusLevel `json:"level"`
@@ -24,9 +29,9 @@ func (h HealthStatusLevel) String() string {
 	case StatusOK:
 		return "OK"
 	case StatusWarn:
-		return "WARN"
+		return statusLevelWARN
 	case StatusCritical:
-		return "CRITICAL"
+		return statusLevelCRITICAL
 	default:
 		return "UNKNOWN"
 	}
@@ -62,9 +67,9 @@ func (h *HealthStatusLevel) UnmarshalJSON(data []byte) error {
 	switch str {
 	case "OK":
 		*h = StatusOK
-	case "WARN":
+	case statusLevelWARN:
 		*h = StatusWarn
-	case "CRITICAL":
+	case statusLevelCRITICAL:
 		*h = StatusCritical
 	default:
 		*h = StatusOK // Default to OK for unknown values

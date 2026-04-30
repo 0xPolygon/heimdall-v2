@@ -78,7 +78,7 @@ func NewBorGRPCClient(address string, logger log.Logger) (*BorGRPCClient, error)
 			addr = "unix://" + path
 			dialOpts = append(dialOpts,
 				grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
-					return net.DialTimeout("unix", strings.TrimPrefix(addr, "unix://"), timeout)
+					return (&net.Dialer{Timeout: timeout}).DialContext(ctx, "unix", strings.TrimPrefix(addr, "unix://"))
 				}),
 				grpc.WithTransportCredentials(insecure.NewCredentials()),
 			)

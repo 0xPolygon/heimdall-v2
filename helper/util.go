@@ -242,7 +242,7 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 
 	// First round: we gather all the signer infos. We use the "set empty
 	// signature" hack to do that.
-	var sigsV2 []signing.SignatureV2
+	sigsV2 := make([]signing.SignatureV2, 0, 1)
 	sigV2 := signing.SignatureV2{
 		PubKey: cosmosPrivKey.PubKey(),
 		Data: &signing.SingleSignatureData{
@@ -261,7 +261,7 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 	addrStr := sdk.MustHexifyAddressBytes(cosmosPrivKey.PubKey().Address())
 
 	// Second round: all signer infos are set, so each signer can sign.
-	sigsV2 = []signing.SignatureV2{}
+	sigsV2 = make([]signing.SignatureV2, 0, 1)
 	signerData := authsigning.SignerData{
 		Address:       addrStr,
 		ChainID:       txf.ChainID(),
