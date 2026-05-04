@@ -210,7 +210,7 @@ func (srv sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetx
 	}
 
 	// check if the proposed span is in-turn or not
-	if !(lastSpan.StartBlock <= currentBlock && currentBlock <= lastSpan.EndBlock) {
+	if lastSpan.StartBlock > currentBlock || currentBlock > lastSpan.EndBlock {
 		logger.Error(
 			"Span proposed is not in-turn",
 			"currentChildBlock", currentBlock,

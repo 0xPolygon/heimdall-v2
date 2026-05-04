@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"math"
 	"math/big"
 
 	proto "github.com/0xPolygon/polyproto/bor"
@@ -54,10 +53,6 @@ func (c *BorGRPCClient) GetVoteOnHash(ctx context.Context, startBlock uint64, en
 }
 
 func (c *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error) {
-	if blockID > math.MaxInt64 {
-		return nil, fmt.Errorf("blockID too large: %d", blockID)
-	}
-
 	blockNumberAsString := ToBlockNumArg(big.NewInt(blockID))
 
 	req := &proto.GetHeaderByNumberRequest{
@@ -83,10 +78,6 @@ func (c *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*eth
 }
 
 func (c *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error) {
-	if blockID > math.MaxInt64 {
-		return nil, fmt.Errorf("blockID too large: %d", blockID)
-	}
-
 	blockNumberAsString := ToBlockNumArg(big.NewInt(blockID))
 
 	req := &proto.GetBlockByNumberRequest{
