@@ -6,8 +6,10 @@ import (
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 )
 
-var _ sdk.Msg = &MsgProposeSpan{}
-var _ sdk.Msg = &MsgBackfillSpans{}
+var (
+	_ sdk.Msg = &MsgProposeSpan{}
+	_ sdk.Msg = &MsgBackfillSpans{}
+)
 
 // NewMsgProposeSpan creates a new MsgProposeSpan instance
 func NewMsgProposeSpan(

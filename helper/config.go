@@ -77,7 +77,7 @@ const (
 	DefaultBorRPCTimeout = 1 * time.Second
 
 	// DefaultAmqpURL represents default AMQP url
-	DefaultAmqpURL = "amqp://guest:guest@localhost:5672/"
+	DefaultAmqpURL = "amqp://guest:guest@localhost:5672/" //nolint:gosec // G101: well-known RabbitMQ default credentials for local development
 
 	DefaultHeimdallServerURL = "tcp://0.0.0.0:1317"
 
@@ -92,6 +92,11 @@ const (
 	DefaultSpanPollInterval       = 1 * time.Minute
 
 	DefaultMilestonePollInterval = 30 * time.Second
+
+	// LogTimestampFormat is the millisecond-precision timestamp layout used for
+	// all heimdall log output. Matches bor's log format for consistent
+	// cross-service log analysis.
+	LogTimestampFormat = "2006-01-02T15:04:05.000Z07:00"
 
 	// Self-healing defaults
 
@@ -238,6 +243,8 @@ var faultyMilestoneNumber int64 = 0
 
 var producerDowntimeHeight int64 = 0
 
+var phuketHardforkHeight int64 = 0
+
 var producerDowntimeSpanFixHeight int64 = 0
 
 type ChainManagerAddressMigration struct {
@@ -370,7 +377,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 	logOpts = append(logOpts,
 		logger.LevelOption(logLevel),
-		logger.TimeFormatOption(time.RFC3339Nano),
+		logger.TimeFormatOption(LogTimestampFormat),
 	)
 
 	Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logOpts...)
@@ -487,6 +494,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 25723063
 		initialHeight = 24404501
 		producerDowntimeHeight = 34966593
+		phuketHardforkHeight = 44070000
 		producerDowntimeSpanFixHeight = 0 // TBD
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
@@ -497,6 +505,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
+		phuketHardforkHeight = 0
 		producerDowntimeSpanFixHeight = 0 // TBD
 	case AmoyChain:
 		milestoneDeletionHeight = 0
@@ -507,6 +516,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 10618299
 		initialHeight = 8788501
 		producerDowntimeHeight = 20457139
+		phuketHardforkHeight = 32276400
 		producerDowntimeSpanFixHeight = 0 // TBD
 	default:
 		milestoneDeletionHeight = 0
@@ -517,6 +527,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
+		phuketHardforkHeight = 0
 		producerDowntimeSpanFixHeight = 0
 	}
 }
@@ -696,6 +707,18 @@ func GetFaultyMilestoneNumber() uint64 {
 
 func GetSetProducerDowntimeHeight() int64 {
 	return producerDowntimeHeight
+}
+
+func IsPhuketHardfork(height int64) bool {
+	return phuketHardforkHeight > 0 && height >= phuketHardforkHeight
+}
+
+func SetPhuketHardforkHeight(height int64) {
+	phuketHardforkHeight = height
+}
+
+func GetPhuketHardforkHeight() int64 {
+	return phuketHardforkHeight
 }
 
 func GetProducerDowntimeSpanFixHeight() int64 {

@@ -473,7 +473,7 @@ func (tb *TxBroadcaster) testBroadcastToHeimdall(msg sdk.Msg, event any) (*sdk.T
 		tb.logger.Error("Error while broadcasting the heimdall transaction", "error", err)
 
 		// Handle fetching account and updating seqNo
-		if handleAccountUpdateErr := updateAccountSequence(tb); handleAccountUpdateErr != nil {
+		if handleAccountUpdateErr := updateAccountSequence(context.Background(), tb); handleAccountUpdateErr != nil {
 			return txResponse, handleAccountUpdateErr
 		}
 
@@ -485,7 +485,7 @@ func (tb *TxBroadcaster) testBroadcastToHeimdall(msg sdk.Msg, event any) (*sdk.T
 		tb.logger.Error("Transaction response returned a non-ok code", "txResponseCode", txResponse.Code)
 
 		// Handle fetching account and updating seqNo
-		if handleAccountUpdateErr := updateAccountSequence(tb); handleAccountUpdateErr != nil {
+		if handleAccountUpdateErr := updateAccountSequence(context.Background(), tb); handleAccountUpdateErr != nil {
 			return txResponse, handleAccountUpdateErr
 		}
 
