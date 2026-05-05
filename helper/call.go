@@ -128,11 +128,9 @@ type ContractCaller struct {
 
 	// prefetchMu protects round-scoped prefetch state used by ExtendVote.
 	prefetchMu *sync.RWMutex
-
 	// prefetchedReceipts stores the prefetched L1 tx receipts from ExtendVoteHandler.
 	// Should be reset after each round of ExtendVoteHandler.
 	prefetchedReceipts map[common.Hash]*ethTypes.Receipt
-
 	// finalizedHeaderCache stores the last fetched finalized main chain block header.
 	// Should be reset after each round of ExtendVoteHandler.
 	finalizedHeaderCache *ethTypes.Header

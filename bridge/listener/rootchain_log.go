@@ -3,7 +3,6 @@ package listener
 import (
 	"bytes"
 	"encoding/json"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -20,32 +19,32 @@ const (
 )
 
 // handleLog handles the given log
-func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event, staggerDelay time.Duration) {
+func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event) {
 	rl.Logger.Debug("RootChainListener: receivedEvent", "eventName", selectedEvent.Name)
 
 	switch selectedEvent.Name {
 	case helper.NewHeaderBlockEvent:
-		rl.handleNewHeaderBlockLog(vLog, selectedEvent, staggerDelay)
+		rl.handleNewHeaderBlockLog(vLog, selectedEvent)
 	case helper.StakedEvent:
-		rl.handleStakedLog(vLog, selectedEvent, staggerDelay)
+		rl.handleStakedLog(vLog, selectedEvent)
 	case helper.StakeUpdateEvent:
-		rl.handleStakeUpdateLog(vLog, selectedEvent, staggerDelay)
+		rl.handleStakeUpdateLog(vLog, selectedEvent)
 	case helper.SignerChangeEvent:
-		rl.handleSignerChangeLog(vLog, selectedEvent, staggerDelay)
+		rl.handleSignerChangeLog(vLog, selectedEvent)
 	case helper.UnstakeInitEvent:
-		rl.handleUnstakeInitLog(vLog, selectedEvent, staggerDelay)
+		rl.handleUnstakeInitLog(vLog, selectedEvent)
 	case helper.StateSyncedEvent:
-		rl.handleStateSyncedLog(vLog, selectedEvent, staggerDelay)
+		rl.handleStateSyncedLog(vLog, selectedEvent)
 	case helper.TopUpFeeEvent:
-		rl.handleTopUpFeeLog(vLog, selectedEvent, staggerDelay)
+		rl.handleTopUpFeeLog(vLog, selectedEvent)
 	case helper.SlashedEvent:
-		rl.handleSlashedLog(vLog, selectedEvent, staggerDelay)
+		rl.handleSlashedLog(vLog, selectedEvent)
 	case helper.UnJailedEvent:
-		rl.handleUnJailedLog(vLog, selectedEvent, staggerDelay)
+		rl.handleUnJailedLog(vLog, selectedEvent)
 	}
 }
 
-func (rl *RootChainListener) handleNewHeaderBlockLog(vLog types.Log, selectedEvent *abi.Event, staggerDelay time.Duration) {
+func (rl *RootChainListener) handleNewHeaderBlockLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
 		rl.Logger.Error(failedToMarshalLog, "error", err)
@@ -53,11 +52,11 @@ func (rl *RootChainListener) handleNewHeaderBlockLog(vLog types.Log, selectedEve
 	}
 
 	if isCurrentValidator, delay := util.CalculateTaskDelay(selectedEvent, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendCheckpointAckToHeimdall", selectedEvent.Name, logBytes, delay+staggerDelay, selectedEvent)
+		rl.SendTaskWithDelay("sendCheckpointAckToHeimdall", selectedEvent.Name, logBytes, delay, selectedEvent)
 	}
 }
 
-func (rl *RootChainListener) handleStakedLog(vLog types.Log, selectedEvent *abi.Event, staggerDelay time.Duration) {
+func (rl *RootChainListener) handleStakedLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
 		rl.Logger.Error(failedToMarshalLog, "error", err)
@@ -82,15 +81,15 @@ func (rl *RootChainListener) handleStakedLog(vLog types.Log, selectedEvent *abi.
 	}
 
 	if bytes.Equal(event.SignerPubkey, pubKey[1:]) {
-		delay := util.TaskDelayBetweenEachVal + staggerDelay
+		delay := util.TaskDelayBetweenEachVal
 		rl.SendTaskWithDelay("sendValidatorJoinToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		delay = delay + util.TaskDelayBetweenEachVal + staggerDelay
+		delay = delay + util.TaskDelayBetweenEachVal
 		rl.SendTaskWithDelay("sendValidatorJoinToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }
 
-func (rl *RootChainListener) handleStakeUpdateLog(vLog types.Log, selectedEvent *abi.Event, staggerDelay time.Duration) {
+func (rl *RootChainListener) handleStakeUpdateLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
 		rl.Logger.Error(failedToMarshalLog, "error", err)
@@ -104,13 +103,13 @@ func (rl *RootChainListener) handleStakeUpdateLog(vLog types.Log, selectedEvent 
 	}
 
 	if util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec) {
-		rl.SendTaskWithDelay("sendStakeUpdateToHeimdall", selectedEvent.Name, logBytes, staggerDelay, event)
+		rl.SendTaskWithDelay("sendStakeUpdateToHeimdall", selectedEvent.Name, logBytes, 0, event)
 	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendStakeUpdateToHeimdall", selectedEvent.Name, logBytes, delay+staggerDelay, event)
+		rl.SendTaskWithDelay("sendStakeUpdateToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }
 
-func (rl *RootChainListener) handleSignerChangeLog(vLog types.Log, selectedEvent *abi.Event, staggerDelay time.Duration) {
+func (rl *RootChainListener) handleSignerChangeLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
 		rl.Logger.Error(failedToMarshalLog, "error", err)
@@ -126,13 +125,13 @@ func (rl *RootChainListener) handleSignerChangeLog(vLog types.Log, selectedEvent
 	}
 
 	if bytes.Equal(event.SignerPubkey, pubKey[1:]) && helper.IsPubKeyFirstByteValid(pubKey[0:1]) {
-		rl.SendTaskWithDelay("sendSignerChangeToHeimdall", selectedEvent.Name, logBytes, staggerDelay, event)
+		rl.SendTaskWithDelay("sendSignerChangeToHeimdall", selectedEvent.Name, logBytes, 0, event)
 	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendSignerChangeToHeimdall", selectedEvent.Name, logBytes, delay+staggerDelay, event)
+		rl.SendTaskWithDelay("sendSignerChangeToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }
 
-func (rl *RootChainListener) handleUnstakeInitLog(vLog types.Log, selectedEvent *abi.Event, staggerDelay time.Duration) {
+func (rl *RootChainListener) handleUnstakeInitLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
 		rl.Logger.Error(failedToMarshalLog, "error", err)
@@ -146,13 +145,13 @@ func (rl *RootChainListener) handleUnstakeInitLog(vLog types.Log, selectedEvent 
 	}
 
 	if util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec) {
-		rl.SendTaskWithDelay("sendUnstakeInitToHeimdall", selectedEvent.Name, logBytes, staggerDelay, event)
+		rl.SendTaskWithDelay("sendUnstakeInitToHeimdall", selectedEvent.Name, logBytes, 0, event)
 	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendUnstakeInitToHeimdall", selectedEvent.Name, logBytes, delay+staggerDelay, event)
+		rl.SendTaskWithDelay("sendUnstakeInitToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }
 
-func (rl *RootChainListener) handleStateSyncedLog(vLog types.Log, selectedEvent *abi.Event, staggerDelay time.Duration) {
+func (rl *RootChainListener) handleStateSyncedLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
 		rl.Logger.Error(failedToMarshalLog, "error", err)
@@ -168,11 +167,11 @@ func (rl *RootChainListener) handleStateSyncedLog(vLog types.Log, selectedEvent 
 	rl.Logger.Info("RootChainListener: StateSyncedEvent detected", "stateSyncId", event.Id)
 
 	if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendStateSyncedToHeimdall", selectedEvent.Name, logBytes, delay+staggerDelay, event)
+		rl.SendTaskWithDelay("sendStateSyncedToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }
 
-func (rl *RootChainListener) handleTopUpFeeLog(vLog types.Log, selectedEvent *abi.Event, staggerDelay time.Duration) {
+func (rl *RootChainListener) handleTopUpFeeLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
 		rl.Logger.Error(failedToMarshalLog, "error", err)
@@ -186,13 +185,13 @@ func (rl *RootChainListener) handleTopUpFeeLog(vLog types.Log, selectedEvent *ab
 	}
 
 	if bytes.Equal(event.User.Bytes(), helper.GetAddress()) {
-		rl.SendTaskWithDelay("sendTopUpFeeToHeimdall", selectedEvent.Name, logBytes, staggerDelay, event)
+		rl.SendTaskWithDelay("sendTopUpFeeToHeimdall", selectedEvent.Name, logBytes, 0, event)
 	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendTopUpFeeToHeimdall", selectedEvent.Name, logBytes, delay+staggerDelay, event)
+		rl.SendTaskWithDelay("sendTopUpFeeToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }
 
-func (rl *RootChainListener) handleSlashedLog(vLog types.Log, selectedEvent *abi.Event, staggerDelay time.Duration) {
+func (rl *RootChainListener) handleSlashedLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
 		rl.Logger.Error(failedToMarshalLog, "error", err)
@@ -200,11 +199,11 @@ func (rl *RootChainListener) handleSlashedLog(vLog types.Log, selectedEvent *abi
 	}
 
 	if isCurrentValidator, delay := util.CalculateTaskDelay(selectedEvent, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendTickAckToHeimdall", selectedEvent.Name, logBytes, delay+staggerDelay, selectedEvent)
+		rl.SendTaskWithDelay("sendTickAckToHeimdall", selectedEvent.Name, logBytes, delay, selectedEvent)
 	}
 }
 
-func (rl *RootChainListener) handleUnJailedLog(vLog types.Log, selectedEvent *abi.Event, staggerDelay time.Duration) {
+func (rl *RootChainListener) handleUnJailedLog(vLog types.Log, selectedEvent *abi.Event) {
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
 		rl.Logger.Error(failedToMarshalLog, "error", err)
@@ -218,8 +217,8 @@ func (rl *RootChainListener) handleUnJailedLog(vLog types.Log, selectedEvent *ab
 	}
 
 	if util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec) {
-		rl.SendTaskWithDelay("sendUnjailToHeimdall", selectedEvent.Name, logBytes, staggerDelay, event)
+		rl.SendTaskWithDelay("sendUnjailToHeimdall", selectedEvent.Name, logBytes, 0, event)
 	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendUnjailToHeimdall", selectedEvent.Name, logBytes, delay+staggerDelay, event)
+		rl.SendTaskWithDelay("sendUnjailToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }

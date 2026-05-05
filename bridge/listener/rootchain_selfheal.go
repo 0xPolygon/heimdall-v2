@@ -363,7 +363,7 @@ func (rl *RootChainListener) processEvent(ctx context.Context, vLog *types.Log) 
 
 	selectedEvent, ok := rl.eventMap[vLog.Topics[0]]
 	if ok {
-		rl.handleLog(*vLog, selectedEvent, 0)
+		rl.handleLog(*vLog, selectedEvent)
 	}
 
 	return false, nil
