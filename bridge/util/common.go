@@ -59,6 +59,7 @@ const (
 	TaskDelayBetweenEachVal = 10 * time.Second
 	RetryTaskDelay          = 12 * time.Second
 	RetryStateSyncTaskDelay = 24 * time.Second
+	StakeNonceRetryDelay    = 15 * time.Second
 
 	mempoolTxnCountDivisor = 1000
 

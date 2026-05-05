@@ -189,6 +189,91 @@ heimdalld tx stake stake-update [valAddress] [valId] [amount] [txHash] [logIndex
 heimdalld tx stake validator-exit [valAddress] [valId] [deactivationEpoch] [txHash] [logIndex] [blockNumber] [nonce]
 ```
 
+### Recovering Missed L1 Events
+
+Under normal operation the bridge listener picks up L1 staking events and broadcasts the corresponding messages to Heimdall automatically. In rare cases the listener can miss an event, leaving Heimdall with no record of it. Typical causes:
+
+* L1 RPC outage or rate limit during the relevant block range
+* Bridge listener restart with a stale block cursor that skipped past the event
+* Exhausted RabbitMQ task retries
+
+#### Detection
+
+A missed event leaves no Heimdall transaction. Confirm with:
+
+```bash
+heimdalld query stake is-old-tx <L1_TX_HASH> <LOG_INDEX>
+```
+
+If the L1 event exists on chain but the query returns `is_old=false`, the bridge missed it.
+
+#### Auto-recovery (when self-heal is enabled)
+
+With `enable_self_heal = "true"` and `sub_graph_url` set in `app.toml`, missed `StakeUpdate`, `SignerUpdate`, and `ValidatorExit` events are replayed automatically by the self-heal loop. Wait at least one `sh_stake_update_interval` cycle (default `3h`) before falling back to manual recovery. `ValidatorJoin` is not covered by self-heal; recovery for missed joins is always manual.
+
+#### Manual recovery
+
+Use the tx commands documented above. Only `validator-join` decodes the L1 receipt internally — for the other three commands the operator must extract the per-field values from the L1 event before invoking the CLI.
+
+The `--proposer` (or first positional arg) is just the Cosmos tx signer; any funded Heimdall account works. Side handlers authenticate the underlying L1 event via `tx_hash` + `log_index`, not the wrapper account, so the recovery tx does not need to come from the affected validator's own account.
+
+##### `validator-join` — receipt-decoding shortcut
+
+Operator only needs the L1 transaction hash, the validator's signer pubkey (with `04` prefix), the staked amount, and the activation epoch. The CLI fetches the receipt, finds the `Staked` event log, and reads `validatorId`, `nonce`, and `logIndex` from it.
+
+```bash
+heimdalld tx stake validator-join \
+  --proposer <SIGNER> \
+  --signer-pubkey <PUBKEY_WITH_04_PREFIX> \
+  --tx-hash <L1_HASH> \
+  --staked-amount <AMOUNT> \
+  --activation-epoch <EPOCH> \
+  --block-number <L1_BLOCK_NUMBER> \
+  --home "<HEIMDALL_HOME>"
+```
+
+##### `signer-update` — full field set required
+
+Operator must extract every field from the L1 `SignerChange` event: `validatorId`, the new signer pubkey (with `04` prefix), `txHash`, `logIndex`, `blockNumber`, and `nonce`. The CLI does not decode the receipt for this command.
+
+```bash
+heimdalld tx stake signer-update \
+  --proposer <SIGNER> \
+  --id <VAL_ID> \
+  --new-pubkey <NEW_PUBKEY_WITH_04_PREFIX> \
+  --tx-hash <L1_HASH> \
+  --log-index <LOG_INDEX> \
+  --block-number <L1_BLOCK_NUMBER> \
+  --nonce <NONCE> \
+  --home "<HEIMDALL_HOME>"
+```
+
+##### `stake-update` — full field set required (positional args)
+
+Operator must extract `valId`, `amount`, `txHash`, `logIndex`, `blockNumber`, and `nonce` from the L1 `StakeUpdate` event.
+
+```bash
+heimdalld tx stake stake-update <PROPOSER> <VAL_ID> <AMOUNT> <L1_HASH> <LOG_INDEX> <L1_BLOCK_NUMBER> <NONCE>
+```
+
+##### `validator-exit` — full field set required (positional args)
+
+Operator must extract `valId`, `deactivationEpoch`, `txHash`, `logIndex`, `blockNumber`, and `nonce` from the L1 `UnstakeInit` event.
+
+```bash
+heimdalld tx stake validator-exit <PROPOSER> <VAL_ID> <DEACTIVATION_EPOCH> <L1_HASH> <LOG_INDEX> <L1_BLOCK_NUMBER> <NONCE>
+```
+
+##### Extracting fields from an L1 event
+
+Use any L1 RPC client (cast, ethers, web3) to fetch the receipt and decode the relevant log via the StakingInfo ABI. Example with `cast`:
+
+```bash
+cast receipt <L1_HASH> --json | jq '.logs[]'
+# match the log by topic[0] (event signature) and topic[1] (validatorId, padded)
+# decode `data` per the event's non-indexed field layout
+```
+
 ### CLI Query Commands
 
 One can run the following query commands from the stake module:
