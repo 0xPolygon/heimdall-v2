@@ -98,8 +98,8 @@ github.com/0xPolygon/cometbft v0.3.6-polygon h1:V2ZB0ECg59xGrS1FKJv4p88UF2HeYMTm
 github.com/0xPolygon/cometbft v0.3.6-polygon/go.mod h1:ZFIXbBrjS2AlVL5UFIgnShMe3b2dso9M0yHLN+mBg4Y=
 github.com/0xPolygon/cometbft-db v0.14.1-polygon h1:sMlEPISgW0Wm9bC3bnLVPiPnyZ9EOuWJxoAV8ujrN3o=
 github.com/0xPolygon/cometbft-db v0.14.1-polygon/go.mod h1:KHP1YghilyGV/xjD5DP3+2hyigWx0WTp9X+0Gnx0RxQ=
-github.com/0xPolygon/cosmos-sdk v0.2.8-polygon h1:laS7/tnOmzM4l77TWlQTbkwQVY3QWa6JdjE/PwLDTZc=
-github.com/0xPolygon/cosmos-sdk v0.2.8-polygon/go.mod h1:Ogbng4keGEJeMj4KPlQzhfn4hf/G+CjqBqmvBKEB0jY=
+github.com/0xPolygon/cosmos-sdk v0.2.9-polygon h1:IshHc0bnq96BDRpRKMBs1VWvbdNPbfFtbG807Xv/uNg=
+github.com/0xPolygon/cosmos-sdk v0.2.9-polygon/go.mod h1:xxPkzsHnTQ5y0VFnhWzxgVV8k/YvkiEac+ama96u8IM=
 github.com/0xPolygon/cosmos-sdk/api v0.7.6-0.20250429154832-7177ebac408e h1:RLUwoGYtf4IahtrMHTJdesTXM+ggz+2iikaxmViCNGo=
 github.com/0xPolygon/cosmos-sdk/api v0.7.6-0.20250429154832-7177ebac408e/go.mod h1:IcxpYS5fMemZGqyYtErK7OqvdM0C8kdW3dq8Q/XIG38=
 github.com/0xPolygon/cosmos-sdk/client/v2 v2.0.0-beta.6 h1:+6AxZcMTWHaRHV0HILf/rADWexzB4FJckdO/DnUlk+s=
@@ -242,8 +242,9 @@ github.com/chenzhuoyu/base64x v0.0.0-20211019084208-fb5309c8db06/go.mod h1:DH46F
 github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311/go.mod h1:b583jCggY9gE99b6G5LEC39OIiVsWj+R97kbl5odCEk=
 github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d h1:77cEq6EriyTZ0g/qfRdp61a3Uu/AWrgIq2s0ClJV1g0=
 github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d/go.mod h1:8EPpVsBuRksnlj1mLy4AWzRNQYxauNi62uWcE3to6eA=
-github.com/chenzhuoyu/iasm v0.9.0 h1:9fhXjVzq5hUy2gkhhgHl95zG2cEAhw9OSGs8toWWAwo=
 github.com/chenzhuoyu/iasm v0.9.0/go.mod h1:Xjy2NpN3h7aUqeqM+woSuuvxmIe6+DDsiNLIrkAmYog=
+github.com/chenzhuoyu/iasm v0.9.1 h1:tUHQJXo3NhBqw6s33wkGn9SP3bvrWLdlVIJ3hQBL7P0=
+github.com/chenzhuoyu/iasm v0.9.1/go.mod h1:Xjy2NpN3h7aUqeqM+woSuuvxmIe6+DDsiNLIrkAmYog=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
 github.com/chzyer/logex v1.2.1 h1:XHDu3E6q+gdHgsdTPH6ImJMIp436vR6MPtH8gP05QzM=
 github.com/chzyer/logex v1.2.1/go.mod h1:JLbx6lG2kDbNRFnfkgvh4eRJRPX1QCoOIWomwysCBrQ=
@@ -433,8 +434,8 @@ github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMo
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=
 github.com/fsnotify/fsnotify v1.9.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
-github.com/gabriel-vasile/mimetype v1.4.2 h1:w5qFW6JKBz9Y393Y4q372O9A7cUSequkh1Q7OhCmWKU=
-github.com/gabriel-vasile/mimetype v1.4.2/go.mod h1:zApsH/mKG4w07erKIaJPFiX0Tsq9BFQgN3qGY5GnNgA=
+github.com/gabriel-vasile/mimetype v1.4.13 h1:46nXokslUBsAJE/wMsp5gtO500a4F3Nkz9Ufpk2AcUM=
+github.com/gabriel-vasile/mimetype v1.4.13/go.mod h1:d+9Oxyo1wTzWdyVUPMmXFvp4F9tea18J8ufA774AB3s=
 github.com/gammazero/deque v0.2.1 h1:qSdsbG6pgp6nL7A0+K/B7s12mcCY/5l5SIUpMOl+dC0=
 github.com/gammazero/deque v0.2.1/go.mod h1:LFroj8x4cMYCukHJDbxFCkT+r9AndaJnFMuZDV34tuU=
 github.com/gballet/go-libpcsclite v0.0.0-20250918194357-1ec6f2e601c6 h1:ko+DlyhLqUHpgrvwqs5ybydoGAqjpJQTXpAS7vUqVlM=
