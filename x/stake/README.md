@@ -209,7 +209,7 @@ If the L1 event exists on chain but the query returns `is_old=false`, the bridge
 
 #### Auto-recovery (when self-heal is enabled)
 
-With `enable_self_heal = "true"` and `sub_graph_url` set in `app.toml`, missed `StakeUpdate`, `SignerUpdate`, and `ValidatorExit` events are replayed automatically by the self-heal loop. Wait at least one `sh_stake_update_interval` cycle (default `3h`) before falling back to manual recovery. `ValidatorJoin` is not covered by self-heal; recovery for missed joins is always manual.
+With `enable_self_heal = "true"` and `sub_graph_url` set in `app.toml`, missed `StakeUpdate`, `SignerChange`, and `UnstakeInit` L1 events are replayed automatically by the self-heal loop. (These map to the Heimdall messages `MsgStakeUpdate`, `MsgSignerUpdate`, and `MsgValidatorExit` respectively.) Wait at least one `sh_stake_update_interval` cycle (default `3h`) before falling back to manual recovery. `ValidatorJoin` is not covered by self-heal; recovery for missed joins is always manual.
 
 #### Manual recovery
 

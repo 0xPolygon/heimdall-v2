@@ -152,19 +152,12 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 		rl.Logger.Error("Self-healing: failed to get transaction receipt for L1 checkpoint", "txHash", latestL1Checkpoint.TransactionHash, "error", err)
 		return
 	}
-	// Find the correct log within the transaction.
-	var targetLog *types.Log
-	for _, log := range receipt.Logs {
-		if strconv.Itoa(int(log.Index)) == latestL1Checkpoint.LogIndex {
-			targetLog = log
-			rl.Logger.Info("Self-healing: retrieved log for NewHeaderBlock event", "headerBlockId", l1HeaderBlockId, "logIndex", latestL1Checkpoint.LogIndex, "txHash", latestL1Checkpoint.TransactionHash)
-			break
-		}
-	}
+	targetLog := findLogByIndex(receipt.Logs, latestL1Checkpoint.LogIndex)
 	if targetLog == nil {
 		rl.Logger.Error("Self-healing: failed to find matching log in transaction receipt", "txHash", latestL1Checkpoint.TransactionHash, "expectedLogIndex", latestL1Checkpoint.LogIndex)
 		return
 	}
+	rl.Logger.Info("Self-healing: retrieved log for NewHeaderBlock event", "headerBlockId", l1HeaderBlockId, "logIndex", latestL1Checkpoint.LogIndex, "txHash", latestL1Checkpoint.TransactionHash)
 
 	// Marshal the log to JSON for the task queue.
 	logBytes, err := json.Marshal(*targetLog)
@@ -224,7 +217,11 @@ func (rl *RootChainListener) recoverStakeEventsForValidator(ctx context.Context,
 		}
 	}
 
-	if remaining := l1MaxNonce - heimdallNonce - queued; remaining > 0 {
+	// Only warn when the per-cycle limit is what stopped progress. Other early-break
+	// causes (subgraph fetch error, processEvent error, event too recent for
+	// SHMaxDepthDuration) are already logged by replayStakeEvent.
+	if queued == maxStakeNoncesPerCycle && uint64(maxStakeNoncesPerCycle) < l1MaxNonce-heimdallNonce {
+		remaining := l1MaxNonce - heimdallNonce - queued
 		rl.Logger.Warn("Self-healing: stake event backlog exceeds per-cycle limit; will continue next cycle", "validatorId", id, "queued", queued, "remaining", remaining, "perCycleLimit", maxStakeNoncesPerCycle)
 	}
 }

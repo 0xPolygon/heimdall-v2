@@ -102,7 +102,14 @@ func (rl *RootChainListener) querySubGraph(query []byte, ctx context.Context) (d
 		}
 	}()
 
-	return io.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("self-healing: subgraph returned HTTP %d: %s", response.StatusCode, body)
+	}
+	return body, nil
 }
 
 // getLatestStateID returns the state ID from the latest StateSynced event
@@ -210,14 +217,12 @@ func (rl *RootChainListener) getStateSynced(ctx context.Context, stateId int64) 
 		return nil, err
 	}
 
-	for _, log := range receipt.Logs {
-		if strconv.Itoa(int(log.Index)) == response.Data.StateSynceds[0].LogIndex {
-			rl.Logger.Info("Self-healing: retrieved log for StateSynced event", "stateId", stateId, "logIndex", response.Data.StateSynceds[0].LogIndex, "txHash", response.Data.StateSynceds[0].TransactionHash)
-			return log, nil
-		}
+	log := findLogByIndex(receipt.Logs, response.Data.StateSynceds[0].LogIndex)
+	if log == nil {
+		return nil, fmt.Errorf("self-healing: no log found for given log index %s and state id %d", response.Data.StateSynceds[0].LogIndex, stateId)
 	}
-
-	return nil, fmt.Errorf("self-healing: no log found for given log index %s and state id %d", response.Data.StateSynceds[0].LogIndex, stateId)
+	rl.Logger.Info("Self-healing: retrieved log for StateSynced event", "stateId", stateId, "logIndex", response.Data.StateSynceds[0].LogIndex, "txHash", response.Data.StateSynceds[0].TransactionHash)
+	return log, nil
 }
 
 // getMaxL1NonceForValidator returns the highest nonce across StakeUpdate,
@@ -334,17 +339,43 @@ func (rl *RootChainListener) getStakeEventLogByNonce(ctx context.Context, valida
 		return nil, fmt.Errorf("self-healing: no stake event found for validator %d and nonce %d", validatorId, nonce)
 	}
 
+	rootChainContext, err := rl.getRootChainContext()
+	if err != nil {
+		return nil, fmt.Errorf("self-healing: unable to fetch chain manager params: %w", err)
+	}
+	expectedAddr := common.HexToAddress(rootChainContext.ChainmanagerParams.ChainParams.StakingInfoAddress)
+
 	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(hit.TransactionHash))
 	if err != nil {
 		return nil, err
 	}
 
-	log := findLogByIndex(receipt.Logs, hit.LogIndex)
-	if log == nil {
-		return nil, fmt.Errorf("self-healing: no log found for log index %s, validator %d and nonce %d", hit.LogIndex, validatorId, nonce)
+	log, err := validateStakeEventReceipt(receipt, expectedAddr, hit)
+	if err != nil {
+		return nil, fmt.Errorf("self-healing: receipt validation failed for validator %d nonce %d: %w", validatorId, nonce, err)
 	}
 
 	rl.Logger.Info("Self-healing: retrieved stake event log from Ethereum", "validatorId", validatorId, "nonce", nonce, "txHash", log.TxHash.Hex())
+	return log, nil
+}
+
+// validateStakeEventReceipt verifies a fetched L1 receipt before its log is
+// trusted: the tx must have succeeded, the indexed log must exist,
+// and the log must come from the expected StakingInfo contract.
+func validateStakeEventReceipt(receipt *types.Receipt, expectedAddr common.Address, hit *txAndLogIndex) (*types.Log, error) {
+	if receipt == nil {
+		return nil, fmt.Errorf("nil receipt for tx %s", hit.TransactionHash)
+	}
+	if receipt.Status != types.ReceiptStatusSuccessful {
+		return nil, fmt.Errorf("tx %s reverted (status=%d)", hit.TransactionHash, receipt.Status)
+	}
+	log := findLogByIndex(receipt.Logs, hit.LogIndex)
+	if log == nil {
+		return nil, fmt.Errorf("no log found for log index %s in tx %s", hit.LogIndex, hit.TransactionHash)
+	}
+	if log.Address != expectedAddr {
+		return nil, fmt.Errorf("log address %s does not match expected StakingInfo %s", log.Address.Hex(), expectedAddr.Hex())
+	}
 	return log, nil
 }
 
