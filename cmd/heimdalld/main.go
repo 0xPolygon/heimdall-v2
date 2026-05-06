@@ -8,9 +8,11 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/app"
 	heimdalld "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd"
+	"github.com/0xPolygon/heimdall-v2/helper/memwatch"
 )
 
 func main() {
+	memwatch.StartIfEnabled()
 	rootCmd := heimdalld.NewRootCmd()
 	if err := svrcmd.Execute(rootCmd, "HD", app.DefaultNodeHome); err != nil {
 		_, _ = fmt.Fprintln(rootCmd.OutOrStderr(), err)
