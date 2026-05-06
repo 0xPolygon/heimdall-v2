@@ -8,9 +8,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const flagLong = "long"
-const flagOutput = "output"
-const outputJSON = "json"
+const (
+	flagLong   = "long"
+	flagOutput = "output"
+	outputJSON = "json"
+)
 
 func init() {
 	Cmd.Flags().BoolP(flagLong, "l", false, "Print long version information")

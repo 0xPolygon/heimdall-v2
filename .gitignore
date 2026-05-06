@@ -11,6 +11,7 @@ logs
 .vscode
 .dccache
 .idea*
+*.iml
 
 # Local heimdall data
 ./data
