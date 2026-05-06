@@ -237,7 +237,7 @@ func TestGetMaxL1NonceForValidator(t *testing.T) {
 	})
 }
 
-func TestGetStakeEventLogByNonce_subgraphPaths(t *testing.T) {
+func TestGetStakeEventRefByNonce_subgraphPaths(t *testing.T) {
 	t.Parallel()
 
 	t.Run("returns error when no entity matches", func(t *testing.T) {
@@ -245,7 +245,7 @@ func TestGetStakeEventLogByNonce_subgraphPaths(t *testing.T) {
 		server := newSubgraph(`{"data":{"stakeUpdates":[],"signerChanges":[],"unstakeInits":[]}}`)
 		defer server.Close()
 
-		got, err := newSelfHealTestListener(server.URL).getStakeEventLogByNonce(testContext(t), 42, 5)
+		got, err := newSelfHealTestListener(server.URL).getStakeEventRefByNonce(testContext(t), 42, 5)
 		require.Nil(t, got)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "no stake event found")
@@ -262,7 +262,7 @@ func TestGetStakeEventLogByNonce_subgraphPaths(t *testing.T) {
 		}))
 		defer server.Close()
 
-		_, _ = newSelfHealTestListener(server.URL).getStakeEventLogByNonce(testContext(t), 12345, 678)
+		_, _ = newSelfHealTestListener(server.URL).getStakeEventRefByNonce(testContext(t), 12345, 678)
 		require.Contains(t, seen, "validatorId: 12345")
 		require.Contains(t, seen, "nonce: 678")
 	})
@@ -272,7 +272,7 @@ func TestGetStakeEventLogByNonce_subgraphPaths(t *testing.T) {
 		server := newSubgraph(`{"data":null,"errors":[{"message":"field unstakeInits not found"}]}`)
 		defer server.Close()
 
-		got, err := newSelfHealTestListener(server.URL).getStakeEventLogByNonce(testContext(t), 42, 5)
+		got, err := newSelfHealTestListener(server.URL).getStakeEventRefByNonce(testContext(t), 42, 5)
 		require.Nil(t, got)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "subgraph returned errors")
@@ -286,7 +286,7 @@ func TestGetStakeEventLogByNonce_subgraphPaths(t *testing.T) {
 		}))
 		defer server.Close()
 
-		got, err := newSelfHealTestListener(server.URL).getStakeEventLogByNonce(testContext(t), 42, 5)
+		got, err := newSelfHealTestListener(server.URL).getStakeEventRefByNonce(testContext(t), 42, 5)
 		require.Nil(t, got)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "HTTP 502")

@@ -10,40 +10,16 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 // maxStakeNoncesPerCycle bounds queued nonces per validator per self-heal tick.
 // Polygon PoS runs one self-healing node per network, so total per-cycle calls
 // cap at validatorSetSize * maxStakeNoncesPerCycle on that single node.
 const maxStakeNoncesPerCycle = 10
-
-var (
-	stateSyncedCounter = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: "self_healing",
-		Subsystem: helper.GetConfig().Chain,
-		Name:      "StateSynced",
-		Help:      "The total number of missing StateSynced events processed",
-	})
-
-	stakeEventCounter = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: "self_healing",
-		Subsystem: helper.GetConfig().Chain,
-		Name:      "StakeEvent",
-		Help:      "The total number of missing nonce-gated stake events (StakeUpdate, SignerChange, UnstakeInit) processed",
-	})
-
-	checkpointAckCounter = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: "self_healing",
-		Subsystem: helper.GetConfig().Chain,
-		Name:      "NewHeaderBlock",
-		Help:      "The total number of acks sent for missing NewHeaderBlock events",
-	})
-)
 
 type subGraphClient struct {
 	graphUrl   string
@@ -166,7 +142,7 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 		return
 	}
 
-	checkpointAckCounter.Inc()
+	metrics.SelfHealCheckpointAcksProcessed.Inc()
 
 	// Send the checkpoint ACK task.
 	rl.SendTaskWithDelay("sendCheckpointAckToHeimdall", helper.NewHeaderBlockEvent, logBytes, 0, nil)
@@ -205,25 +181,35 @@ func (rl *RootChainListener) recoverStakeEventsForValidator(ctx context.Context,
 
 	// Successive iterations are paced by util.StakeNonceRetryDelay so the bridge
 	// processor sees nonces in committed order rather than firing its
-	// deferred-retry path with growing per-task multipliers.
+	// deferred-retry path with growing per-task multipliers. The pause runs
+	// before every iteration except the first; the loop condition guarantees
+	// we don't pause after the final iteration.
 	queued := uint64(0)
 	for nonce := heimdallNonce + 1; nonce <= l1MaxNonce && queued < maxStakeNoncesPerCycle; nonce++ {
+		if queued > 0 && !pauseBetweenReplays(ctx) {
+			return
+		}
 		if !rl.replayStakeEvent(ctx, id, l1MaxNonce, nonce) {
 			break
 		}
 		queued++
-		if nonce < l1MaxNonce && queued < maxStakeNoncesPerCycle && !pauseBetweenReplays(ctx) {
-			return
-		}
 	}
 
-	// Only warn when the per-cycle limit is what stopped progress. Other early-break
-	// causes (subgraph fetch error, processEvent error, event too recent for
-	// SHMaxDepthDuration) are already logged by replayStakeEvent.
-	if queued == maxStakeNoncesPerCycle && uint64(maxStakeNoncesPerCycle) < l1MaxNonce-heimdallNonce {
+	if perCycleLimitHit(queued, l1MaxNonce, heimdallNonce) {
 		remaining := l1MaxNonce - heimdallNonce - queued
 		rl.Logger.Warn("Self-healing: stake event backlog exceeds per-cycle limit; will continue next cycle", "validatorId", id, "queued", queued, "remaining", remaining, "perCycleLimit", maxStakeNoncesPerCycle)
 	}
+}
+
+// perCycleLimitHit reports whether the loop stopped because it hit the per-cycle
+// queue limit (rather than draining the backlog or breaking early on error).
+// Other early-break causes (subgraph fetch error, processEvent error, event
+// too recent for SHMaxDepthDuration) are already logged by replayStakeEvent.
+func perCycleLimitHit(queued, l1MaxNonce, heimdallNonce uint64) bool {
+	if queued < maxStakeNoncesPerCycle {
+		return false
+	}
+	return uint64(maxStakeNoncesPerCycle) < l1MaxNonce-heimdallNonce
 }
 
 // fetchValidatorNonces returns the validator's heimdall and L1 nonces
@@ -263,13 +249,19 @@ func pauseBetweenReplays(ctx context.Context) bool {
 func (rl *RootChainListener) replayStakeEvent(ctx context.Context, id, l1MaxNonce, nonce uint64) bool {
 	rl.Logger.Info("Self-healing: validator is behind; processing missing stake event", "validatorId", id, "ethereumNonce", l1MaxNonce, "nextExpectedNonce", nonce)
 
-	var stakeEventLog *types.Log
+	var hit *txAndLogIndex
 	var err error
 	if err = helper.ExponentialBackoff(func() error {
-		stakeEventLog, err = rl.getStakeEventLogByNonce(ctx, id, nonce)
+		hit, err = rl.getStakeEventRefByNonce(ctx, id, nonce)
 		return err
 	}, 3, time.Second); err != nil {
 		rl.Logger.Error("Self-healing: failed to retrieve stake event from subgraph", "validatorId", id, "nonce", nonce, "error", err)
+		return false
+	}
+
+	stakeEventLog, err := rl.fetchAndValidateStakeEventLog(ctx, hit)
+	if err != nil {
+		rl.Logger.Error("Self-healing: L1 receipt validation failed for stake event", "validatorId", id, "nonce", nonce, "txHash", hit.TransactionHash, "error", err)
 		return false
 	}
 	rl.Logger.Info("Self-healing: fetched stake event from Ethereum", "validatorId", id, "nonce", nonce, "blockNumber", stakeEventLog.BlockNumber, "txHash", stakeEventLog.TxHash.Hex())
@@ -284,7 +276,7 @@ func (rl *RootChainListener) replayStakeEvent(ctx context.Context, id, l1MaxNonc
 		return false
 	}
 
-	stakeEventCounter.Inc()
+	metrics.SelfHealStakeEventsProcessed.Inc()
 	rl.Logger.Info("Self-healing: successfully processed stake event", "validatorId", id, "nonce", nonce)
 	return true
 }
@@ -335,7 +327,7 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 			continue
 		}
 
-		stateSyncedCounter.Inc()
+		metrics.SelfHealStateSyncsProcessed.Inc()
 
 		var synced bool
 

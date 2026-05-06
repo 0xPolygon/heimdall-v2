@@ -300,10 +300,12 @@ func joinGraphQLErrors(errs []graphqlError) string {
 	return strings.Join(parts, "; ")
 }
 
-// getStakeEventLogByNonce fetches the L1 log for whichever of the three
-// nonce-gated stake event types carries (validatorId, nonce). The shared L1
-// nonce counter guarantees at most one entity matches.
-func (rl *RootChainListener) getStakeEventLogByNonce(ctx context.Context, validatorId, nonce uint64) (*types.Log, error) {
+// getStakeEventRefByNonce queries the subgraph for the (txHash, logIndex)
+// pointing at the L1 log carrying (validatorId, nonce) across the three
+// nonce-gated stake event entities. Returns a non-nil hit on a match, or an
+// error if the subgraph fails / returns errors / has no matching row. Does
+// NOT fetch the L1 receipt — see fetchAndValidateStakeEventLog for that.
+func (rl *RootChainListener) getStakeEventRefByNonce(ctx context.Context, validatorId, nonce uint64) (*txAndLogIndex, error) {
 	idStr := strconv.FormatUint(validatorId, 10)
 	nonceStr := strconv.FormatUint(nonce, 10)
 	query := map[string]string{
@@ -338,7 +340,13 @@ func (rl *RootChainListener) getStakeEventLogByNonce(ctx context.Context, valida
 	if hit == nil {
 		return nil, fmt.Errorf("self-healing: no stake event found for validator %d and nonce %d", validatorId, nonce)
 	}
+	return hit, nil
+}
 
+// fetchAndValidateStakeEventLog pulls the L1 receipt for the given hit and
+// runs validateStakeEventReceipt against the StakingInfo address from
+// ChainManager params. Returns the validated log on success.
+func (rl *RootChainListener) fetchAndValidateStakeEventLog(ctx context.Context, hit *txAndLogIndex) (*types.Log, error) {
 	rootChainContext, err := rl.getRootChainContext()
 	if err != nil {
 		return nil, fmt.Errorf("self-healing: unable to fetch chain manager params: %w", err)
@@ -347,15 +355,13 @@ func (rl *RootChainListener) getStakeEventLogByNonce(ctx context.Context, valida
 
 	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(hit.TransactionHash))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("self-healing: failed to fetch L1 receipt for tx %s: %w", hit.TransactionHash, err)
 	}
 
 	log, err := validateStakeEventReceipt(receipt, expectedAddr, hit)
 	if err != nil {
-		return nil, fmt.Errorf("self-healing: receipt validation failed for validator %d nonce %d: %w", validatorId, nonce, err)
+		return nil, fmt.Errorf("self-healing: %w", err)
 	}
-
-	rl.Logger.Info("Self-healing: retrieved stake event log from Ethereum", "validatorId", validatorId, "nonce", nonce, "txHash", log.TxHash.Hex())
 	return log, nil
 }
 
