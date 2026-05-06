@@ -10,10 +10,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 // stateSynced represents the StateSynced event.
@@ -345,7 +348,11 @@ func (rl *RootChainListener) getStakeEventRefByNonce(ctx context.Context, valida
 
 // fetchAndValidateStakeEventLog pulls the L1 receipt for the given hit and
 // runs validateStakeEventReceipt against the StakingInfo address from
-// ChainManager params. Returns the validated log on success.
+// ChainManager params. The receipt fetch is wrapped in ExponentialBackoff
+// so transient L1 RPC blips don't kill per-validator recovery for a
+// full self-heal cycle. validateStakeEventReceipt is intentionally outside
+// the retry — its checks are deterministic, retrying them would waste
+// cycles on permanent failures.
 func (rl *RootChainListener) fetchAndValidateStakeEventLog(ctx context.Context, hit *txAndLogIndex) (*types.Log, error) {
 	rootChainContext, err := rl.getRootChainContext()
 	if err != nil {
@@ -353,8 +360,11 @@ func (rl *RootChainListener) fetchAndValidateStakeEventLog(ctx context.Context, 
 	}
 	expectedAddr := common.HexToAddress(rootChainContext.ChainmanagerParams.ChainParams.StakingInfoAddress)
 
-	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(hit.TransactionHash))
-	if err != nil {
+	var receipt *types.Receipt
+	if err = helper.ExponentialBackoff(func() error {
+		receipt, err = rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(hit.TransactionHash))
+		return err
+	}, 3, time.Second); err != nil {
 		return nil, fmt.Errorf("self-healing: failed to fetch L1 receipt for tx %s: %w", hit.TransactionHash, err)
 	}
 
