@@ -92,8 +92,8 @@ cosmossdk.io/depinject v1.2.1/go.mod h1:lqQEycz0H2JXqvOgVwTsjEdMI0plswI7p6KX+MVq
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 filippo.io/edwards25519 v1.1.1 h1:YpjwWWlNmGIDyXOn8zLzqiD+9TyIlPhGFG96P39uBpw=
 filippo.io/edwards25519 v1.1.1/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4VDT4=
-github.com/0xPolygon/bor v1.14.14-0.20260423133202-fd961fa68a2d h1:wbCWrBCgFCo2RpzWyASbM8pOiQkoX4tudk5x22WgEFM=
-github.com/0xPolygon/bor v1.14.14-0.20260423133202-fd961fa68a2d/go.mod h1:uhAIzrrvF6ZE52PMtnXqJnYOqpy4CHxhEItZFceAw3U=
+github.com/0xPolygon/bor v1.14.14-0.20260508112740-10c49a44e3ea h1:7RHCSvRlYuZ8OZ+ThsKVVKpdb7F9z7VjBKlSnBKFtDs=
+github.com/0xPolygon/bor v1.14.14-0.20260508112740-10c49a44e3ea/go.mod h1:E42BCyNAh47K2pfidzdRa7DKfDEe0TR0RZ7SQeke6p8=
 github.com/0xPolygon/cometbft v0.3.6-polygon h1:V2ZB0ECg59xGrS1FKJv4p88UF2HeYMTmFl+UTLSuyFA=
 github.com/0xPolygon/cometbft v0.3.6-polygon/go.mod h1:ZFIXbBrjS2AlVL5UFIgnShMe3b2dso9M0yHLN+mBg4Y=
 github.com/0xPolygon/cometbft-db v0.14.1-polygon h1:sMlEPISgW0Wm9bC3bnLVPiPnyZ9EOuWJxoAV8ujrN3o=

@@ -13,6 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (c *BorGRPCClient) GetRootHash(ctx context.Context, startBlock uint64, endBlock uint64) (string, error) {
@@ -111,6 +113,11 @@ func (c *BorGRPCClient) TransactionReceipt(ctx context.Context, txHash common.Ha
 
 	res, err := c.client.TransactionReceipt(ctx, req)
 	if err != nil {
+		// Translate gRPC NotFound to ethereum.NotFound so callers see the
+		// same sentinel regardless of HTTP vs gRPC transport.
+		if status.Code(err) == codes.NotFound {
+			return nil, ethereum.NotFound
+		}
 		return nil, err
 	}
 	if res == nil || res.Receipt == nil {
@@ -130,6 +137,11 @@ func (c *BorGRPCClient) BorBlockReceipt(ctx context.Context, txHash common.Hash)
 
 	res, err := c.client.BorBlockReceipt(ctx, req)
 	if err != nil {
+		// Translate gRPC NotFound to ethereum.NotFound so callers see the
+		// same sentinel regardless of HTTP vs gRPC transport.
+		if status.Code(err) == codes.NotFound {
+			return nil, ethereum.NotFound
+		}
 		return nil, err
 	}
 	if res == nil || res.Receipt == nil {

@@ -1247,10 +1247,12 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 		c.Custom.BorRPCUrl = stringConfigValue
 	}
 
-	// get gRPC flag for bor chain from viper/cobra
-	boolConfigValue := v.GetBool(BorGRPCFlagFlag)
-	if boolConfigValue {
-		c.Custom.BorGRPCFlag = boolConfigValue
+	// get gRPC flag for bor chain from viper/cobra. Use IsSet so an explicit
+	// --bor_grpc_flag=false from CLI/env can override a config-file true,
+	// rather than silently being indistinguishable from "unset" via the bool
+	// zero value.
+	if v.IsSet(BorGRPCFlagFlag) {
+		c.Custom.BorGRPCFlag = v.GetBool(BorGRPCFlagFlag)
 	}
 
 	// get endpoint for bor chain from viper/cobra
@@ -1398,9 +1400,12 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 		c.Custom.BorRPCUrl = cc.BorRPCUrl
 	}
 
-	c.Custom.BorGRPCFlag = cc.BorGRPCFlag
-
+	// Only adopt cc.BorGRPCFlag when cc explicitly configures the gRPC block,
+	// signaled by a non-empty BorGRPCUrl. Without this guard, a layered config
+	// that omits the gRPC block would silently flip BorGRPCFlag to its bool
+	// zero value (false) and disable gRPC for an operator who set it elsewhere.
 	if cc.BorGRPCUrl != "" {
+		c.Custom.BorGRPCFlag = cc.BorGRPCFlag
 		c.Custom.BorGRPCUrl = cc.BorGRPCUrl
 	}
 

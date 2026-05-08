@@ -8,8 +8,6 @@ import (
 
 	"cosmossdk.io/log"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func TestIsLocalhost(t *testing.T) {
@@ -444,21 +442,6 @@ func TestNewBorGRPCClient_ErrorPath(t *testing.T) {
 
 	require.Error(t, err)
 	require.Nil(t, client)
-}
-
-// TestRetryInterceptors verifies that retryInterceptors returns exactly two
-// DialOptions (unary and stream).
-func TestRetryInterceptors(t *testing.T) {
-	t.Parallel()
-
-	opts := retryInterceptors()
-	require.Len(t, opts, 2, "retryInterceptors must return exactly 2 DialOptions")
-
-	// Verify the options are actually usable by creating a dummy client.
-	allOpts := append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	conn, err := grpc.NewClient("localhost:0", allOpts...)
-	require.NoError(t, err)
-	_ = conn.Close()
 }
 
 // mustParseURL is a test helper that parses a URL string or fails the test.

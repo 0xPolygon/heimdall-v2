@@ -11,9 +11,7 @@ import (
 
 	"cosmossdk.io/log"
 	proto "github.com/0xPolygon/polyproto/bor"
-	grpcRetry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -23,13 +21,14 @@ type BorGRPCClient struct {
 	client proto.BorApiClient
 }
 
-// dialTimeout caps the per-attempt timeout for non-HTTP callers (currently just unix).
-const dialTimeout = 5 * time.Second
+const (
+	// dialTimeout caps the per-attempt timeout for non-HTTP callers (currently just unix).
+	dialTimeout = 5 * time.Second
 
-// MaxBlockInfoBatchSize caps GetBlockInfoInBatch inputs below int64 overflow
-// and above realistic checkpoint/milestone spans. Single source of truth
-// shared with the helper/ dispatcher so the HTTP and gRPC paths cannot drift.
-const MaxBlockInfoBatchSize = 10000
+	// MaxBlockInfoBatchSize caps GetBlockInfoInBatch inputs to match bor's
+	// server-side cap. This avoids HTTP and gRPC paths to drift.
+	MaxBlockInfoBatchSize = 256
+)
 
 func NewBorGRPCClient(address, token string, logger log.Logger) (*BorGRPCClient, error) {
 	logger.Info("Setting up Bor gRPC client", "address", address)
@@ -45,7 +44,6 @@ func NewBorGRPCClient(address, token string, logger log.Logger) (*BorGRPCClient,
 	if token != "" {
 		dialOpts = append(dialOpts, grpc.WithPerRPCCredentials(bearerToken{token: token, requireSecurity: isTLS}))
 	}
-	dialOpts = append(dialOpts, retryInterceptors()...)
 
 	conn, err := grpc.NewClient(addr, dialOpts...)
 	// NewClient only errors on malformed URI, which resolveTransport has already validated.
@@ -161,19 +159,6 @@ func resolveNoScheme(addr string, logger log.Logger) (string, []grpc.DialOption,
 		return "", nil, false, err
 	}
 	return addr, []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}, false, nil
-}
-
-// retryInterceptors returns the standard retry unary+stream client interceptors.
-func retryInterceptors() []grpc.DialOption {
-	retryOpts := []grpcRetry.CallOption{
-		grpcRetry.WithMax(4),
-		grpcRetry.WithBackoff(grpcRetry.BackoffLinear(500 * time.Millisecond)),
-		grpcRetry.WithCodes(codes.Unavailable, codes.Aborted),
-	}
-	return []grpc.DialOption{
-		grpc.WithStreamInterceptor(grpcRetry.StreamClientInterceptor(retryOpts...)),
-		grpc.WithUnaryInterceptor(grpcRetry.UnaryClientInterceptor(retryOpts...)),
-	}
 }
 
 // bearerToken implements credentials.PerRPCCredentials, attaching the
