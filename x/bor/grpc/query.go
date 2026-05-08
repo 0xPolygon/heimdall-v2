@@ -62,6 +62,11 @@ func (c *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*eth
 
 	res, err := c.client.HeaderByNumber(ctx, req)
 	if err != nil {
+		// Translate gRPC NotFound to ethereum.NotFound so callers see the
+		// same sentinel regardless of HTTP vs gRPC transport.
+		if status.Code(err) == codes.NotFound {
+			return nil, ethereum.NotFound
+		}
 		return nil, err
 	}
 	if res == nil || res.Header == nil {
@@ -89,6 +94,11 @@ func (c *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethT
 
 	res, err := c.client.BlockByNumber(ctx, req)
 	if err != nil {
+		// Translate gRPC NotFound to ethereum.NotFound so callers see the
+		// same sentinel regardless of HTTP vs gRPC transport.
+		if status.Code(err) == codes.NotFound {
+			return nil, ethereum.NotFound
+		}
 		return nil, err
 	}
 	if res == nil || res.Block == nil || res.Block.Header == nil {
@@ -161,6 +171,11 @@ func (c *BorGRPCClient) GetAuthor(ctx context.Context, blockNum *big.Int) (*comm
 
 	res, err := c.client.GetAuthor(ctx, req)
 	if err != nil {
+		// Translate gRPC NotFound to ethereum.NotFound so callers see the
+		// same sentinel regardless of HTTP vs gRPC transport.
+		if status.Code(err) == codes.NotFound {
+			return nil, ethereum.NotFound
+		}
 		return nil, err
 	}
 	// Missing-author and missing-response are both surfaced as ethereum.NotFound,
@@ -179,6 +194,11 @@ func (c *BorGRPCClient) GetTdByHash(ctx context.Context, hash common.Hash) (uint
 	req := &proto.GetTdByHashRequest{Hash: protoutil.ConvertHashToH256(hash)}
 	res, err := c.client.GetTdByHash(ctx, req)
 	if err != nil {
+		// Translate gRPC NotFound to ethereum.NotFound so callers see the
+		// same sentinel regardless of HTTP vs gRPC transport.
+		if status.Code(err) == codes.NotFound {
+			return 0, ethereum.NotFound
+		}
 		return 0, err
 	}
 	if res == nil {
@@ -193,6 +213,11 @@ func (c *BorGRPCClient) GetTdByNumber(ctx context.Context, blockNum *big.Int) (u
 	req := &proto.GetTdByNumberRequest{Number: ToBlockNumArg(blockNum)}
 	res, err := c.client.GetTdByNumber(ctx, req)
 	if err != nil {
+		// Translate gRPC NotFound to ethereum.NotFound so callers see the
+		// same sentinel regardless of HTTP vs gRPC transport.
+		if status.Code(err) == codes.NotFound {
+			return 0, ethereum.NotFound
+		}
 		return 0, err
 	}
 	if res == nil {
@@ -226,12 +251,13 @@ func (c *BorGRPCClient) GetBlockInfoInBatch(ctx context.Context, start, end int6
 		return nil, nil, nil, ethereum.NotFound
 	}
 
-	n := len(res.Blocks)
-	headers := make([]*ethTypes.Header, 0, n)
-	tds := make([]uint64, 0, n)
-	authors := make([]common.Address, 0, n)
-
+	// maxLen is bounded by MaxBlockInfoBatchSize.
+	// Mirrors the HTTP-side collateBorBatchResults shape.
 	maxLen := int(end - start + 1)
+	headers := make([]*ethTypes.Header, 0, maxLen)
+	tds := make([]uint64, 0, maxLen)
+	authors := make([]common.Address, 0, maxLen)
+
 	for _, b := range res.Blocks {
 		if len(headers) >= maxLen {
 			break
