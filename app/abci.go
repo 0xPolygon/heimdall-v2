@@ -28,10 +28,11 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-// prepareProposalBudget caps the per-tx loop wall-clock so the handler returns
-// inside the consensus round. timeout_propose is 1s in the shipped config;
-// half of that leaves room for the post-loop marshaling and vote-extension work.
-// var (not const) so tests can shorten it.
+// prepareProposalBudget caps total handler wall-clock measured from handler
+// entry so PrepareProposal returns inside the 1s timeout_propose. The 500ms
+// ceiling leaves slack for network latency before the round closes.
+// var (not const) so tests can shorten it; tests that override it must not
+// use t.Parallel().
 var prepareProposalBudget = 500 * time.Millisecond
 
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
@@ -73,10 +74,10 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		totalTxBytes := len(bz)
 
 		deadline := startTime.Add(prepareProposalBudget)
-		for _, proposedTx := range req.Txs {
-			if time.Now().After(deadline) {
+		for i, proposedTx := range req.Txs {
+			if !time.Now().Before(deadline) {
 				logger.Warn("prepare proposal budget exhausted, returning early",
-					"remaining_txs", len(req.Txs)-len(txs),
+					"remaining_txs", len(req.Txs)-i,
 					"elapsed", time.Since(startTime))
 				break
 			}
