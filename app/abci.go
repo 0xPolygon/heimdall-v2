@@ -31,7 +31,8 @@ import (
 // prepareProposalBudget caps the per-tx loop wall-clock so the handler returns
 // inside the consensus round. timeout_propose is 1s in the shipped config;
 // half of that leaves room for the post-loop marshaling and vote-extension work.
-const prepareProposalBudget = 500 * time.Millisecond
+// var (not const) so tests can shorten it.
+var prepareProposalBudget = 500 * time.Millisecond
 
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
