@@ -28,6 +28,11 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
+// prepareProposalBudget caps the per-tx loop wall-clock so the handler returns
+// inside the consensus round. timeout_propose is 1s in the shipped config;
+// half of that leaves room for the post-loop marshaling and vote-extension work.
+const prepareProposalBudget = 500 * time.Millisecond
+
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
@@ -66,7 +71,14 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		// init totalTxBytes with the actual size of the marshaled vote info in bytes
 		totalTxBytes := len(bz)
 
+		deadline := startTime.Add(prepareProposalBudget)
 		for _, proposedTx := range req.Txs {
+			if time.Now().After(deadline) {
+				logger.Warn("prepare proposal budget exhausted, returning early",
+					"remaining_txs", len(req.Txs)-len(txs),
+					"elapsed", time.Since(startTime))
+				break
+			}
 
 			// check if the total tx bytes exceed the max tx bytes of the request
 			if totalTxBytes+len(proposedTx) > int(req.MaxTxBytes) {
