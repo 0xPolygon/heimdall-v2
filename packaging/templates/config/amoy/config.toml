@@ -474,7 +474,7 @@ compaction_interval = 1000
 [storage.pruning]
 
 # The time period between automated background pruning operations.
-interval = "3h"
+interval = "10m"
 
 # Indexer pruning enabling.
 indexer_pruning_enabled = false
@@ -490,12 +490,16 @@ indexer_pruning_enabled = false
 # to decide which txs to index based on configuration set in the application.
 #
 # Options:
-#   1) "null"
-#   2) "kv" (default) - the simplest possible indexer, backed by key-value storage (defaults to levelDB; see DBBackend).
-#               - When "kv" is chosen "tx.height" and "tx.hash" will always be indexed.
+#   1) "null" (default) - no transaction indexing. Saves ~30 GB/month of disk
+#               writes and removes the periodic ABCI-prune cycle's biggest
+#               compaction cost. The bridge does not need tx_index; the /tx
+#               and /tx_search RPC endpoints return "indexing is disabled".
+#   2) "kv" - the simplest possible indexer, backed by key-value storage
+#               (defaults to levelDB; see DBBackend). When "kv" is chosen
+#               "tx.height" and "tx.hash" will always be indexed.
 #   3) "psql" - the indexer services backed by PostgreSQL.
 # When "kv" or "psql" is chosen "tx.height" and "tx.hash" will always be indexed.
-indexer = "kv"
+indexer = "null"
 
 # The PostgreSQL connection configuration, the connection format:
 #   postgresql://<user>:<password>@<host>:<port>/<db>?<opts>

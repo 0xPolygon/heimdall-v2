@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -46,6 +47,48 @@ func QueryTxWithProof(cliCtx cosmosContext.Context, hash []byte) (*ctypes.Result
 	}
 
 	return node.Tx(ctx, hash, true)
+}
+
+// QueryTxBytesFromBlock returns the raw bytes of the tx with the given hash
+// inside the block at the given height. It reads from the BlockStore via the
+// node's /block RPC and does not depend on the cometbft tx_index — so it works
+// even when the node is configured with `indexer = "null"`.
+//
+// Used by the bridge checkpoint flow which previously called node.Tx(hash, true)
+// just to retrieve the tx bytes for sign-bytes recomputation. The bridge already
+// has the block height in hand, so the indexer detour is unnecessary.
+func QueryTxBytesFromBlock(cliCtx cosmosContext.Context, hash []byte, height int64) ([]byte, error) {
+	node, err := cliCtx.GetNode()
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := cliCtx.CmdContext
+	if ctx == nil {
+		ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		ctx = ctxWithTimeout
+	}
+
+	blk, err := node.Block(ctx, &height)
+	if err != nil {
+		return nil, err
+	}
+	if blk == nil || blk.Block == nil {
+		return nil, fmt.Errorf("block %d not available", height)
+	}
+	return findTxInBlock(blk.Block.Txs, hash)
+}
+
+// findTxInBlock scans the block's tx list for the tx whose hash matches `hash`
+// and returns its raw bytes. Pure function — extracted for testability.
+func findTxInBlock(txs cmtTypes.Txs, hash []byte) ([]byte, error) {
+	for _, raw := range txs {
+		if bytes.Equal(raw.Hash(), hash) {
+			return raw, nil
+		}
+	}
+	return nil, fmt.Errorf("tx %X not found in block", hash)
 }
 
 // GetBeginBlockEvents get block through per height
