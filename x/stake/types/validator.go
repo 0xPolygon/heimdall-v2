@@ -8,7 +8,6 @@ import (
 
 	"cosmossdk.io/math"
 	cmtprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	cosmosCryto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -246,7 +245,7 @@ func (*Validator) SharesFromTokensTruncated(_ math.Int) (math.LegacyDec, error) 
 }
 
 // TmConsPublicKey implements types.ValidatorI.
-func (*Validator) TmConsPublicKey() (cosmosCryto.PublicKey, error) {
+func (*Validator) TmConsPublicKey() (cmtprotocrypto.PublicKey, error) {
 	panic("unimplemented")
 }
 

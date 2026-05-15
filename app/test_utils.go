@@ -192,6 +192,42 @@ func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
 	requestFinalizeBlock(t, app, height, validators)
 }
 
+func RequestFinalizeBlockWithTxs(t *testing.T, app *HeimdallApp, height int64, txs ...[]byte) *abci.ResponseFinalizeBlock {
+	t.Helper()
+	validators := app.StakeKeeper.GetCurrentValidators(app.NewContext(true))
+	dummyExt, err := GetDummyNonRpVoteExtension(height, app.ChainID())
+	require.NoError(t, err)
+	consolidatedSideTxRes := sidetxs.VoteExtension{
+		SideTxResponses: []sidetxs.SideTxResponse{},
+		Height:          height - 1,
+	}
+	txResExt, err := consolidatedSideTxRes.Marshal()
+	require.NoError(t, err)
+	extCommitInfo := new(abci.ExtendedCommitInfo)
+	extCommitInfo.Votes = make([]abci.ExtendedVoteInfo, 0)
+	for _, validator := range validators {
+		extCommitInfo.Votes = append(extCommitInfo.Votes, abci.ExtendedVoteInfo{
+			VoteExtension:      txResExt,
+			NonRpVoteExtension: dummyExt,
+			BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
+			Validator: abci.Validator{
+				Address: common.FromHex(validator.Signer),
+				Power:   validator.VotingPower,
+			},
+		})
+	}
+	commitInfo, err := extCommitInfo.Marshal()
+	require.NoError(t, err)
+	allTxs := append([][]byte{commitInfo}, txs...)
+	res, err := app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Txs:             allTxs,
+		Height:          height,
+		ProposerAddress: common.FromHex(validators[0].Signer),
+	})
+	require.NoError(t, err)
+	return res
+}
+
 func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validators []stakeTypes.Validator) {
 	t.Helper()
 	dummyExt, err := GetDummyNonRpVoteExtension(height, app.ChainID())
@@ -229,7 +265,11 @@ func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validato
 
 func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]sidetxs.SideTxResponse) []byte {
 	t.Helper()
-	responses := make([]sidetxs.SideTxResponse, 0)
+	total := 0
+	for _, r := range respVotes {
+		total += len(r)
+	}
+	responses := make([]sidetxs.SideTxResponse, 0, total)
 	for _, r := range respVotes {
 		responses = append(responses, r...)
 	}

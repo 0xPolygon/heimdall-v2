@@ -156,7 +156,7 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(ctx context.Context, msg sdk.Msg, e
 		tb.logger.Error("Error while broadcasting the heimdall transaction", "error", err)
 
 		// Handle fetching account and updating seqNo
-		if handleAccountUpdateErr := updateAccountSequence(tb); handleAccountUpdateErr != nil {
+		if handleAccountUpdateErr := updateAccountSequence(ctx, tb); handleAccountUpdateErr != nil {
 			return txResponse, handleAccountUpdateErr
 		}
 
@@ -168,7 +168,7 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(ctx context.Context, msg sdk.Msg, e
 		tb.logger.Error("Transaction response returned a non-ok code", "txResponseCode", txResponse.Code)
 
 		// Handle fetching account and updating seqNo
-		if handleAccountUpdateErr := updateAccountSequence(tb); handleAccountUpdateErr != nil {
+		if handleAccountUpdateErr := updateAccountSequence(ctx, tb); handleAccountUpdateErr != nil {
 			return txResponse, handleAccountUpdateErr
 		}
 
@@ -186,7 +186,7 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(ctx context.Context, msg sdk.Msg, e
 }
 
 // Helper function to update account sequence
-func updateAccountSequence(tb *TxBroadcaster) error {
+func updateAccountSequence(ctx context.Context, tb *TxBroadcaster) error {
 	// current address
 	address, err := helper.GetAddressString()
 	if err != nil {
@@ -194,7 +194,7 @@ func updateAccountSequence(tb *TxBroadcaster) error {
 	}
 
 	// fetch from APIs
-	account, errAcc := util.GetAccount(context.Background(), tb.CliCtx, address)
+	account, errAcc := util.GetAccount(ctx, tb.CliCtx, address)
 	if errAcc != nil {
 		tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, address)))
 		return errAcc

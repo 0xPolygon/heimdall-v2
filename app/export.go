@@ -36,6 +36,6 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 		AppState:        appState,
 		Height:          height,
 		Validators:      validators,
-		ConsensusParams: app.BaseApp.GetConsensusParams(ctx),
+		ConsensusParams: app.GetConsensusParams(ctx),
 	}, err
 }
