@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"context"
 	"time"
 
 	"cosmossdk.io/collections"
@@ -15,13 +14,18 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
+// queryDeterministicStateSyncs drives the post-HF GetRecordListWithTime path.
 func (s *KeeperTestSuite) queryDeterministicStateSyncs(
 	ctx sdk.Context,
 	resolvedHeight int64,
 	fromID uint64,
 	toTime time.Time,
 	limit uint64,
-) (*types.StateSyncsByTimeResponse, error) {
+) (*types.RecordListWithTimeResponse, error) {
+	original := helper.GetVisibilityTimeHeight()
+	helper.SetVisibilityTimeHeight(1)
+	defer helper.SetVisibilityTimeHeight(original)
+
 	storeCtx := ctx.WithBlockHeight(resolvedHeight).WithBlockHeader(cmtproto.Header{
 		Time:   toTime.Add(-time.Second),
 		Height: resolvedHeight,
@@ -38,11 +42,7 @@ func (s *KeeperTestSuite) queryDeterministicStateSyncs(
 		return nil, err
 	}
 
-	queryServer := clerkKeeper.NewQueryServer(&s.keeper)
-
-	return queryServer.(interface {
-		GetStateSyncsByTime(context.Context, *types.StateSyncsByTimeRequest) (*types.StateSyncsByTimeResponse, error)
-	}).GetStateSyncsByTime(queryCtx, &types.StateSyncsByTimeRequest{
+	return clerkKeeper.NewQueryServer(&s.keeper).GetRecordListWithTime(queryCtx, &types.RecordListWithTimeRequest{
 		FromId:     fromID,
 		ToTime:     toTime,
 		Pagination: query.PageRequest{Limit: limit, Key: []byte{0x00}},
@@ -178,7 +178,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_AlwaysUsesRecordTime() {
 // TestGetRecordListWithTime_HaltSimulation simulates the January 2026 halt scenario.
 // The old /clerk/time endpoint uses record_time, so it returns the event regardless
 // of visibility_height. This is the pre-existing non-deterministic behavior.
-// The FIX for determinism is in GetStateSyncsByTime (the deterministic endpoint),
+// The FIX for determinism is in the post-HF deterministic GetRecordListWithTime path,
 // not in the old endpoint — the old endpoint must remain backward-compatible.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_HaltSimulation() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
@@ -212,10 +212,11 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HaltSimulation() {
 	require.Len(res2.EventRecords, 1, "repeat query returns same result")
 }
 
-// TestGetRecordListWithTime_PendingEventsIncluded verifies that GetRecordListWithTime
-// always filters by record_time, so pending events (no visibility_height yet) ARE returned
-// as long as their record_time < to_time. Visibility-time filtering is only in
-// GetStateSyncsByTime.
+// TestGetRecordListWithTime_PendingEventsIncluded verifies that the pre-HF
+// branch of GetRecordListWithTime always filters by record_time, so pending
+// events (no visibility_height yet) ARE returned as long as their record_time
+// < to_time. Visibility-height filtering only kicks in on the post-HF branch
+// of the same handler — covered separately by the Deterministic_* tests.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingEventsIncluded() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
@@ -590,14 +591,12 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_RecordTimeBreakPreservesCont
 	}
 }
 
-// TestQueryDeterminismAcrossCommittedStates verifies that GetRecordListWithTime
-// (the old /clerk/time endpoint) always uses record_time for filtering, even after
-// the visibility-height upgrade. This preserves backward compatibility: EL clients
-// using the old (from_id, to_time) query pattern continue to get consistent results
-// until they switch to GetStateSyncsByTime after the EL HF.
-//
-// Determinism for post-EL-fork nodes is provided by GetStateSyncsByTime,
-// which filters by visibility_height — tested separately.
+// TestQueryDeterminismAcrossCommittedStates verifies that the pre-HF branch of
+// GetRecordListWithTime (legacy /clerk/time semantics) keeps using record_time
+// for filtering when the visibility-time HF has not yet activated. EL clients
+// see the same non-deterministic-near-tip behaviour they did historically; the
+// post-HF branch of the same handler — covered by the Deterministic_* tests —
+// is what actually fixes the cross-validator divergence.
 func (s *KeeperTestSuite) TestQueryDeterminismAcrossCommittedStates() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
@@ -646,7 +645,7 @@ func (s *KeeperTestSuite) TestQueryDeterminismAcrossCommittedStates() {
 //
 // GetRecordListWithTime always uses record_time, so the event is visible immediately
 // after being stored (even while pending). The visibility_height is only relevant for
-// GetStateSyncsByTime (the deterministic endpoint).
+// the post-HF deterministic GetRecordListWithTime path.
 func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	ctx, ck, queryClient, postHandler := s.ctx, s.keeper, s.queryClient, s.postHandler
 	require := s.Require()
@@ -694,7 +693,7 @@ func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	require.Len(resAfter.EventRecords, 1)
 	require.Equal(uint64(1000), resAfter.EventRecords[0].Id)
 
-	// Verify visibility_height was set correctly (used by GetStateSyncsByTime)
+	// Verify visibility_height was set correctly (used by the post-HF GetRecordListWithTime path)
 	vh, err := ck.GetVisibilityHeightForEvent(ctx, 1000)
 	require.NoError(err)
 	require.Equal(uint64(101), vh)
@@ -871,9 +870,9 @@ func (s *KeeperTestSuite) TestProcessPendingVisibilityEvents_StoresHeight() {
 
 }
 
-// TestGetStateSyncsByTime_BasicFlow stores events with different visibility
+// TestRecordListWithTime_Deterministic_BasicFlow stores events with different visibility
 // heights, resolves a specific height from cutoff time, and verifies filtering.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_BasicFlow() {
+func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_BasicFlow() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -900,11 +899,11 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_BasicFlow() {
 	}
 }
 
-// TestGetStateSyncsByTime_HybridQuery mixes pre-upgrade (record_time filtered)
+// TestRecordListWithTime_Deterministic_HybridQuery mixes pre-upgrade (record_time filtered)
 // and post-upgrade (visibility_height filtered) events. It verifies the
 // deterministic endpoint resolves the height internally while preserving the same
 // legacy-vs-post-upgrade filtering rules.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_HybridQuery() {
+func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_HybridQuery() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -942,10 +941,10 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_HybridQuery() {
 	}
 }
 
-// TestGetStateSyncsByTime_LegacyOutOfOrderRecordTimes verifies that a
+// TestRecordListWithTime_Deterministic_LegacyOutOfOrderRecordTimes verifies that a
 // legacy event with record_time >= to_time does not hide a later-ID legacy event
 // whose record_time is still before to_time.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_LegacyOutOfOrderRecordTimes() {
+func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_LegacyOutOfOrderRecordTimes() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -969,9 +968,9 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_LegacyOutOfOrderRecordTimes() 
 	require.Equal(uint64(101), resp.EventRecords[0].Id)
 }
 
-// TestGetStateSyncsByTime_PendingExcluded verifies that post-upgrade events
+// TestRecordListWithTime_Deterministic_PendingExcluded verifies that post-upgrade events
 // without visibility_height are skipped, while later visible events are still returned.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_PendingExcluded() {
+func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_PendingExcluded() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -997,10 +996,10 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_PendingExcluded() {
 	require.Equal(uint64(3), resp.EventRecords[1].Id)
 }
 
-// TestGetStateSyncsByTime_OutOfOrderVisibilityHeights verifies that a
+// TestRecordListWithTime_Deterministic_OutOfOrderVisibilityHeights verifies that a
 // lower-ID event becoming visible later does not hide a higher-ID event that is
 // already visible at the requested height.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_OutOfOrderVisibilityHeights() {
+func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_OutOfOrderVisibilityHeights() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -1025,10 +1024,10 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_OutOfOrderVisibilityHeights() 
 	require.Equal(uint64(2), resp.EventRecords[0].Id)
 }
 
-// TestGetStateSyncsByTime_LegacyEventDoesNotHidePostUpgradeEvents verifies
+// TestRecordListWithTime_Deterministic_LegacyEventDoesNotHidePostUpgradeEvents verifies
 // that an out-of-order legacy event near the upgrade boundary does not truncate the
 // scan before eligible post-upgrade events.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_LegacyEventDoesNotHidePostUpgradeEvents() {
+func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_LegacyEventDoesNotHidePostUpgradeEvents() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -1056,9 +1055,9 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_LegacyEventDoesNotHidePostUpgr
 	require.Equal(uint64(102), resp.EventRecords[1].Id)
 }
 
-// TestGetStateSyncsByTime_DeterministicAcrossLatestState verifies that the
+// TestRecordListWithTime_Deterministic_DeterministicAcrossLatestState verifies that the
 // same query against the latest state always returns the same result regardless of when called.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_DeterministicAcrossLatestState() {
+func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_DeterministicAcrossLatestState() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -1215,10 +1214,10 @@ func (s *KeeperTestSuite) TestGetBlockHeightByTime_ActivationBoundary() {
 	require.Equal(activationHeight+1, height)
 }
 
-// TestGetStateSyncsByTime_ContiguousIDs stores 10 post-upgrade events where
+// TestRecordListWithTime_Deterministic_ContiguousIDs stores 10 post-upgrade events where
 // events 1-7 have visibility_height=100 and events 8-10 have visibility_height=200.
 // Querying at height 150 should return only events 1-7.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_ContiguousIDs() {
+func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_ContiguousIDs() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -1251,11 +1250,11 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_ContiguousIDs() {
 	}
 }
 
-// TestGetStateSyncsByTime_PreAndPostUpgradeMix stores pre-upgrade events
+// TestRecordListWithTime_Deterministic_PreAndPostUpgradeMix stores pre-upgrade events
 // (record_time based) and post-upgrade events (visibility_height based). Verifies
 // that pre-upgrade events use record_time filtering and post-upgrade events use
 // visibility_height filtering.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_PreAndPostUpgradeMix() {
+func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_PreAndPostUpgradeMix() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
@@ -1283,29 +1282,41 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_PreAndPostUpgradeMix() {
 	}
 
 	// First test that pre-upgrade record_time filtering works by restricting to_time.
-	resp3, err := s.queryDeterministicStateSyncs(ctx, 100, 1, baseTime.Add(2*time.Minute+30*time.Second), 20)
+	// queryDeterministicStateSyncs seeds the reverse index with two blocks bracketing
+	// toTime (toTime-1s at the resolvedHeight passed in, toTime+1s at resolvedHeight+1),
+	// so GetBlockHeightByTime resolves to the passed-in resolvedHeight value.
+	cutoff3 := baseTime.Add(2*time.Minute + 30*time.Second)
+	resp3, err := s.queryDeterministicStateSyncs(ctx, 100, 1, cutoff3, 20)
 	require.NoError(err)
 	require.Len(resp3.EventRecords, 2, "restricting to_time should filter out pre-upgrade event 3")
-	require.Equal(int64(100), resp3.HeimdallHeight, "first query should resolve the requested height")
+	resolved3, err := ck.GetBlockHeightByTime(ctx, cutoff3.Unix())
+	require.NoError(err)
+	require.Equal(int64(100), resolved3, "first query should resolve the requested height")
 	require.Equal(uint64(1), resp3.EventRecords[0].Id)
 	require.Equal(uint64(2), resp3.EventRecords[1].Id)
 
 	// Then test that post-upgrade filtering works by querying at a lower height
 	// that excludes event 6 (vis_height=56).
-	resp2, err := s.queryDeterministicStateSyncs(ctx, 55, 1, baseTime.Add(time.Hour), 20)
+	cutoff2 := baseTime.Add(time.Hour)
+	resp2, err := s.queryDeterministicStateSyncs(ctx, 55, 1, cutoff2, 20)
 	require.NoError(err)
 	require.Len(resp2.EventRecords, 5, "should return events 1-5 (3 pre-upgrade + 2 post-upgrade)")
-	require.Equal(int64(55), resp2.HeimdallHeight, "second query should resolve the requested lower height")
+	resolved2, err := ck.GetBlockHeightByTime(ctx, cutoff2.Unix())
+	require.NoError(err)
+	require.Equal(int64(55), resolved2, "second query should resolve the requested lower height")
 	for i, rec := range resp2.EventRecords {
 		require.Equal(uint64(i+1), rec.Id, "IDs must be contiguous")
 	}
 
 	// Use a later cutoff than the previous query so the reverse index resolves the
 	// freshly-added height 100 instead of reusing height 56 from the earlier call.
-	resp, err := s.queryDeterministicStateSyncs(ctx, 100, 1, baseTime.Add(2*time.Hour), 20)
+	cutoff := baseTime.Add(2 * time.Hour)
+	resp, err := s.queryDeterministicStateSyncs(ctx, 100, 1, cutoff, 20)
 	require.NoError(err)
 	require.Len(resp.EventRecords, 6, "should return all 6 events (3 pre-upgrade + 3 post-upgrade)")
-	require.Equal(int64(100), resp.HeimdallHeight, "final query should resolve the intended height")
+	resolved, err := ck.GetBlockHeightByTime(ctx, cutoff.Unix())
+	require.NoError(err)
+	require.Equal(int64(100), resolved, "final query should resolve the intended height")
 
 	// Verify events 1-3 are pre-upgrade (id < upgradeID=4)
 	for i := 0; i < 3; i++ {

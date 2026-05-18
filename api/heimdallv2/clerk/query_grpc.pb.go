@@ -26,7 +26,6 @@ const (
 	Query_GetRecordListWithTime_FullMethodName = "/heimdallv2.clerk.Query/GetRecordListWithTime"
 	Query_GetRecordSequence_FullMethodName     = "/heimdallv2.clerk.Query/GetRecordSequence"
 	Query_IsClerkTxOld_FullMethodName          = "/heimdallv2.clerk.Query/IsClerkTxOld"
-	Query_GetStateSyncsByTime_FullMethodName   = "/heimdallv2.clerk.Query/GetStateSyncsByTime"
 )
 
 // QueryClient is the client API for Query service.
@@ -47,10 +46,6 @@ type QueryClient interface {
 	GetRecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error)
 	// IsClerkTxOld checks if a clerk transaction has already been submitted.
 	IsClerkTxOld(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*IsClerkTxOldResponse, error)
-	// GetStateSyncsByTime resolves a cutoff time to a Heimdall height and returns
-	// events visible at that height in a single deterministic query for
-	// bor/erigon clients.
-	GetStateSyncsByTime(ctx context.Context, in *StateSyncsByTimeRequest, opts ...grpc.CallOption) (*StateSyncsByTimeResponse, error)
 }
 
 type queryClient struct {
@@ -124,15 +119,6 @@ func (c *queryClient) IsClerkTxOld(ctx context.Context, in *RecordSequenceReques
 	return out, nil
 }
 
-func (c *queryClient) GetStateSyncsByTime(ctx context.Context, in *StateSyncsByTimeRequest, opts ...grpc.CallOption) (*StateSyncsByTimeResponse, error) {
-	out := new(StateSyncsByTimeResponse)
-	err := c.cc.Invoke(ctx, Query_GetStateSyncsByTime_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -151,10 +137,6 @@ type QueryServer interface {
 	GetRecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error)
 	// IsClerkTxOld checks if a clerk transaction has already been submitted.
 	IsClerkTxOld(context.Context, *RecordSequenceRequest) (*IsClerkTxOldResponse, error)
-	// GetStateSyncsByTime resolves a cutoff time to a Heimdall height and returns
-	// events visible at that height in a single deterministic query for
-	// bor/erigon clients.
-	GetStateSyncsByTime(context.Context, *StateSyncsByTimeRequest) (*StateSyncsByTimeResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -182,9 +164,6 @@ func (UnimplementedQueryServer) GetRecordSequence(context.Context, *RecordSequen
 }
 func (UnimplementedQueryServer) IsClerkTxOld(context.Context, *RecordSequenceRequest) (*IsClerkTxOldResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsClerkTxOld not implemented")
-}
-func (UnimplementedQueryServer) GetStateSyncsByTime(context.Context, *StateSyncsByTimeRequest) (*StateSyncsByTimeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetStateSyncsByTime not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -325,24 +304,6 @@ func _Query_IsClerkTxOld_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_GetStateSyncsByTime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StateSyncsByTimeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).GetStateSyncsByTime(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Query_GetStateSyncsByTime_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetStateSyncsByTime(ctx, req.(*StateSyncsByTimeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -377,10 +338,6 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsClerkTxOld",
 			Handler:    _Query_IsClerkTxOld_Handler,
-		},
-		{
-			MethodName: "GetStateSyncsByTime",
-			Handler:    _Query_GetStateSyncsByTime_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

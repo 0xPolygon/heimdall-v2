@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"context"
 	"time"
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -9,6 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
@@ -188,19 +188,22 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Pagination() {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// GetStateSyncsByTime gRPC handler tests
-// ---------------------------------------------------------------------------
+func enableVisibilityTimeForTest(s *KeeperTestSuite, height int64) func() {
+	original := helper.GetVisibilityTimeHeight()
+	helper.SetVisibilityTimeHeight(height)
+	return func() { helper.SetVisibilityTimeHeight(original) }
+}
 
-// TestGetStateSyncsByTime_HappyPath verifies the combined endpoint returns events
-// when the stability gate passes (blockTime > cutoff) and a valid height resolves.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_HappyPath() {
+// TestGetRecordListWithTime_Deterministic_HappyPath verifies the post-HF path
+// returns events when the stability gate passes (blockTime > cutoff) and a
+// valid height resolves.
+func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_HappyPath() {
 	ctx, ck := s.ctx, s.keeper
 	require := s.Require()
+	defer enableVisibilityTimeForTest(s, 1)()
 
 	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
 
-	// Set upgrade boundary and create events with visibility heights
 	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
 
 	for i := uint64(1); i <= 3; i++ {
@@ -210,7 +213,6 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_HappyPath() {
 		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, 100+i))
 	}
 
-	// Store block times so GetBlockHeightByTime can resolve
 	for i := int64(0); i < 5; i++ {
 		h := 100 + i
 		bt := baseTime.Add(time.Duration(i*3) * time.Second)
@@ -218,18 +220,13 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_HappyPath() {
 		require.NoError(ck.StoreBlockTime(ctx))
 	}
 
-	// Set current block well past the cutoff so stability gate passes and
-	// HeimdallHeight <= currentHeight validation succeeds inside the delegate.
 	cutoffTime := baseTime.Add(10 * time.Second)
 	ctx = ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{
-		Time:   cutoffTime.Add(time.Minute), // blockTime > cutoff
+		Time:   cutoffTime.Add(time.Minute),
 		Height: 10000,
 	})
 
-	queryServer := clerkKeeper.NewQueryServer(&ck)
-	resp, err := queryServer.(interface {
-		GetStateSyncsByTime(context.Context, *types.StateSyncsByTimeRequest) (*types.StateSyncsByTimeResponse, error)
-	}).GetStateSyncsByTime(ctx, &types.StateSyncsByTimeRequest{
+	resp, err := clerkKeeper.NewQueryServer(&ck).GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
 		FromId:     1,
 		ToTime:     cutoffTime,
 		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
@@ -237,15 +234,15 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_HappyPath() {
 	require.NoError(err)
 	require.NotNil(resp)
 	require.NotEmpty(resp.EventRecords, "should return events when stability gate passes")
-	require.Greater(resp.HeimdallHeight, int64(0), "should return a resolved height")
 }
 
-// TestGetStateSyncsByTime_UsesIndexedBlockTimeForStabilityGate verifies the
-// combined endpoint still works when the query context itself does not carry the
-// latest committed block time, as is common for REST queries.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_UsesIndexedBlockTimeForStabilityGate() {
+// TestGetRecordListWithTime_Deterministic_UsesIndexedBlockTime verifies the
+// stability gate uses the indexed block time, not sdkCtx.BlockTime (which is
+// often zero on REST query paths).
+func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_UsesIndexedBlockTime() {
 	ctx, ck := s.ctx, s.keeper
 	require := s.Require()
+	defer enableVisibilityTimeForTest(s, 1)()
 
 	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
 
@@ -265,16 +262,10 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_UsesIndexedBlockTimeForStabili
 		require.NoError(ck.StoreBlockTime(ctx))
 	}
 
-	queryCtx := ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{
-		Height: 10000,
-	})
-
+	queryCtx := ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{Height: 10000})
 	cutoffTime := baseTime.Add(10 * time.Second)
 
-	queryServer := clerkKeeper.NewQueryServer(&ck)
-	resp, err := queryServer.(interface {
-		GetStateSyncsByTime(context.Context, *types.StateSyncsByTimeRequest) (*types.StateSyncsByTimeResponse, error)
-	}).GetStateSyncsByTime(queryCtx, &types.StateSyncsByTimeRequest{
+	resp, err := clerkKeeper.NewQueryServer(&ck).GetRecordListWithTime(queryCtx, &types.RecordListWithTimeRequest{
 		FromId:     1,
 		ToTime:     cutoffTime,
 		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
@@ -282,54 +273,49 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_UsesIndexedBlockTimeForStabili
 	require.NoError(err)
 	require.NotNil(resp)
 	require.NotEmpty(resp.EventRecords, "should resolve via indexed block time even with zero query block time")
-	require.Equal(int64(103), resp.HeimdallHeight)
 }
 
-// TestGetStateSyncsByTime_StabilityGate verifies that when blockTime <= cutoff,
-// the stability gate returns an empty response (height not yet frozen).
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_StabilityGate() {
+// TestGetRecordListWithTime_Deterministic_StabilityGate verifies that when the
+// latest indexed block time <= cutoff, the post-HF path returns an empty
+// response (height not yet frozen).
+func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_StabilityGate() {
 	ctx, ck := s.ctx, s.keeper
 	require := s.Require()
+	defer enableVisibilityTimeForTest(s, 1)()
 
 	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
 
-	// Store a block time so the indexed block-time path is exercised.
 	ctx = ctx.WithBlockHeight(100).WithBlockHeader(cmtproto.Header{
 		Time:   baseTime.Add(10 * time.Minute),
 		Height: 100,
 	})
 	require.NoError(ck.StoreBlockTime(ctx))
 
-	// Set blockTime equal to the cutoff (gate should fire: blockTime <= cutoff)
 	cutoff := baseTime.Add(10 * time.Minute)
 	ctx = ctx.WithBlockHeight(200).WithBlockHeader(cmtproto.Header{
-		Time:   cutoff, // blockTime == cutoff
+		Time:   cutoff,
 		Height: 200,
 	})
 
-	queryServer := clerkKeeper.NewQueryServer(&ck)
-	resp, err := queryServer.(interface {
-		GetStateSyncsByTime(context.Context, *types.StateSyncsByTimeRequest) (*types.StateSyncsByTimeResponse, error)
-	}).GetStateSyncsByTime(ctx, &types.StateSyncsByTimeRequest{
+	resp, err := clerkKeeper.NewQueryServer(&ck).GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
 		FromId:     1,
 		ToTime:     cutoff,
 		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
 	})
 	require.NoError(err)
 	require.NotNil(resp)
-	require.Empty(resp.EventRecords, "stability gate: empty when blockTime <= cutoff")
-	require.Equal(int64(0), resp.HeimdallHeight, "no height resolved when stability gate fires")
+	require.Empty(resp.EventRecords, "stability gate: empty when latestIndexedTime <= cutoff")
 }
 
-// TestGetStateSyncsByTime_NoEvents verifies empty response when no events exist.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_NoEvents() {
+// TestGetRecordListWithTime_Deterministic_NoEvents verifies empty response when
+// no events exist at the resolved height.
+func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_NoEvents() {
 	ctx, ck := s.ctx, s.keeper
 	require := s.Require()
+	defer enableVisibilityTimeForTest(s, 1)()
 
 	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
 
-	// Store block times on both sides of the cutoff so the query resolves a
-	// deterministic height instead of returning early from the stability gate.
 	ctx = ctx.WithBlockHeight(100).WithBlockHeader(cmtproto.Header{Time: baseTime, Height: 100})
 	require.NoError(ck.StoreBlockTime(ctx))
 	ctx = ctx.WithBlockHeight(101).WithBlockHeader(cmtproto.Header{Time: baseTime.Add(2 * time.Minute), Height: 101})
@@ -341,10 +327,7 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_NoEvents() {
 		Height: 10000,
 	})
 
-	queryServer := clerkKeeper.NewQueryServer(&ck)
-	resp, err := queryServer.(interface {
-		GetStateSyncsByTime(context.Context, *types.StateSyncsByTimeRequest) (*types.StateSyncsByTimeResponse, error)
-	}).GetStateSyncsByTime(ctx, &types.StateSyncsByTimeRequest{
+	resp, err := clerkKeeper.NewQueryServer(&ck).GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
 		FromId:     1,
 		ToTime:     cutoff,
 		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
@@ -354,113 +337,17 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_NoEvents() {
 	require.Empty(resp.EventRecords, "no events in store means empty response")
 }
 
-// TestGetStateSyncsByTime_InvalidArgs verifies validation errors for missing fields.
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_InvalidArgs() {
-	ctx := s.ctx
-	require := s.Require()
-
-	queryServer := clerkKeeper.NewQueryServer(&s.keeper)
-	qs := queryServer.(interface {
-		GetStateSyncsByTime(context.Context, *types.StateSyncsByTimeRequest) (*types.StateSyncsByTimeResponse, error)
-	})
-
-	now := time.Now().UTC()
-
-	tests := []struct {
-		name string
-		req  *types.StateSyncsByTimeRequest
-	}{
-		{
-			name: "nil request",
-			req:  nil,
-		},
-		{
-			name: "missing from_id (0)",
-			req: &types.StateSyncsByTimeRequest{
-				FromId:     0,
-				ToTime:     now,
-				Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
-			},
-		},
-		{
-			name: "missing to_time (zero)",
-			req: &types.StateSyncsByTimeRequest{
-				FromId:     1,
-				ToTime:     time.Time{},
-				Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
-			},
-		},
-		{
-			name: "explicit unix epoch to_time",
-			req: &types.StateSyncsByTimeRequest{
-				FromId:     1,
-				ToTime:     time.Unix(0, 0).UTC(),
-				Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
-			},
-		},
-		{
-			name: "empty pagination",
-			req: &types.StateSyncsByTimeRequest{
-				FromId: 1,
-				ToTime: now,
-			},
-		},
-		{
-			name: "limit 0",
-			req: &types.StateSyncsByTimeRequest{
-				FromId:     1,
-				ToTime:     now,
-				Pagination: query.PageRequest{Limit: 0, Key: []byte{0x00}},
-			},
-		},
-		{
-			name: "limit exceeds max",
-			req: &types.StateSyncsByTimeRequest{
-				FromId:     1,
-				ToTime:     now,
-				Pagination: query.PageRequest{Limit: 100, Key: []byte{0x00}},
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		s.Run(tc.name, func() {
-			resp, err := qs.GetStateSyncsByTime(ctx, tc.req)
-			require.Error(err, "should reject invalid request: %s", tc.name)
-			require.Nil(resp)
-		})
-	}
-}
-
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_RejectsUnixEpochTimestamp() {
-	ctx := s.ctx
-	require := s.Require()
-
-	queryServer := clerkKeeper.NewQueryServer(&s.keeper)
-	qs := queryServer.(interface {
-		GetStateSyncsByTime(context.Context, *types.StateSyncsByTimeRequest) (*types.StateSyncsByTimeResponse, error)
-	})
-
-	resp, err := qs.GetStateSyncsByTime(ctx, &types.StateSyncsByTimeRequest{
-		FromId:     1,
-		ToTime:     time.Unix(0, 0).UTC(),
-		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
-	})
-	require.Error(err)
-	require.Nil(resp)
-	require.Equal(codes.InvalidArgument, status.Code(err))
-}
-
-// TestGetStateSyncsByTime_HeightResolutionFails verifies that when no blocks
-// exist in the index, the handler returns empty (not an error).
-func (s *KeeperTestSuite) TestGetStateSyncsByTime_HeightResolutionFails() {
+// TestGetRecordListWithTime_Deterministic_HeightResolutionFails verifies that
+// when only blocks AFTER the cutoff exist (stability gate passes, but
+// GetBlockHeightByTime returns ErrNoBlockFound) the handler returns empty
+// rather than erroring.
+func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_HeightResolutionFails() {
 	ctx, ck := s.ctx, s.keeper
 	require := s.Require()
+	defer enableVisibilityTimeForTest(s, 1)()
 
 	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
 
-	// Store only blocks AFTER the cutoff so the stability gate passes, but
-	// GetBlockHeightByTime still returns ErrNoBlockFound.
 	ctx = ctx.WithBlockHeight(300).WithBlockHeader(cmtproto.Header{
 		Time:   baseTime.Add(2 * time.Minute),
 		Height: 300,
@@ -473,15 +360,32 @@ func (s *KeeperTestSuite) TestGetStateSyncsByTime_HeightResolutionFails() {
 		Height: 10000,
 	})
 
-	queryServer := clerkKeeper.NewQueryServer(&s.keeper)
-	resp, err := queryServer.(interface {
-		GetStateSyncsByTime(context.Context, *types.StateSyncsByTimeRequest) (*types.StateSyncsByTimeResponse, error)
-	}).GetStateSyncsByTime(ctx, &types.StateSyncsByTimeRequest{
+	resp, err := clerkKeeper.NewQueryServer(&ck).GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
 		FromId:     1,
 		ToTime:     cutoff,
 		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
 	})
-	require.NoError(err, "height resolution failure (no blocks) should return empty, not error")
+	require.NoError(err, "height resolution failure should return empty, not error")
 	require.NotNil(resp)
 	require.Empty(resp.EventRecords)
+}
+
+// TestGetRecordListWithTime_OffsetExceedsMax verifies the offset upper bound
+// validation (added to bound scans in the post-HF visibility path where
+// non-monotonic ordering prevents early termination).
+func (s *KeeperTestSuite) TestGetRecordListWithTime_OffsetExceedsMax() {
+	ctx, require := s.ctx, s.Require()
+
+	resp, err := s.queryClient.GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
+		FromId: 1,
+		ToTime: time.Now().UTC(),
+		Pagination: query.PageRequest{
+			Limit:  10,
+			Offset: clerkKeeper.MaxRecordListOffset + 1,
+			Key:    []byte{0x00},
+		},
+	})
+	require.Error(err)
+	require.Nil(resp)
+	require.Equal(codes.InvalidArgument, status.Code(err))
 }

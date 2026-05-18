@@ -48,14 +48,6 @@ service Query {
   rpc IsClerkTxOld(RecordSequenceRequest) returns (IsClerkTxOldResponse) {
     option (google.api.http).get = "/clerk/is-old-tx";
   }
-  // GetStateSyncsByTime resolves a cutoff time to a Heimdall height and returns
-  // events visible at that height in a single deterministic query for
-  // bor/erigon clients.
-  rpc GetStateSyncsByTime(StateSyncsByTimeRequest)
-      returns (StateSyncsByTimeResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/clerk/state-syncs-by-time";
-  }
 }
 
 // RecordRequest is the request type for the GetRecordById query.
@@ -149,32 +141,4 @@ message RecordCountRequest {}
 message RecordCountResponse {
   // Total number of event records.
   uint64 count = 1 [ (amino.dont_omitempty) = true ];
-}
-
-// StateSyncsByTimeRequest is the request type for GetStateSyncsByTime.
-// Resolves the deterministic Heimdall height internally and returns all
-// visible events in one call.
-message StateSyncsByTimeRequest {
-  // Starting record ID (inclusive).
-  uint64 from_id = 1 [ (amino.dont_omitempty) = true ];
-  // Cutoff time: resolves to the greatest Heimdall height with header.time <=
-  // this value, then returns events visible at that height with record_time <
-  // this value.
-  google.protobuf.Timestamp to_time = 2 [
-    (gogoproto.stdtime) = true,
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
-  // Pagination parameters.
-  cosmos.base.query.v1beta1.PageRequest pagination = 3
-      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
-}
-
-// StateSyncsByTimeResponse is the response type for GetStateSyncsByTime.
-message StateSyncsByTimeResponse {
-  // Event records visible at the resolved height.
-  repeated EventRecord event_records = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-  // The Heimdall height that was resolved from the cutoff time.
-  int64 heimdall_height = 2 [ (amino.dont_omitempty) = true ];
 }

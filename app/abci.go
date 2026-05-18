@@ -504,15 +504,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	// This assigns visibility_height = currentBlockHeight to events stored in the prior block.
 	// This runs before PostHandlers add new events to the pending list, ensuring a clean
 	// one-block delay: events stored in block H get visibility_height = H+1.
-	// The visibility_height only becomes part of the committed state when this block commits
+	// The visibility_height only becomes part of the committed state when this block commits.
 	if helper.IsVisibilityTimeEnabled(req.Height) {
 		if err := app.ClerkKeeper.ProcessPendingVisibilityEvents(ctx); err != nil {
-			logger.Error("Error processing pending visibility events", "error", err)
-			return nil, err
+			logger.Error("Error processing pending visibility events", "error", err, "height", req.Height)
 		}
 		if err := app.ClerkKeeper.StoreBlockTime(ctx); err != nil {
-			logger.Error("Error storing block time", "error", err)
-			return nil, err
+			logger.Error("Error storing block time", "error", err, "height", req.Height)
 		}
 	}
 

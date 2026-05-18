@@ -10,7 +10,6 @@ const (
 	GetRecordListWithTimeMethod = "GetRecordListWithTime"
 	GetRecordSequenceMethod     = "GetRecordSequence"
 	IsClerkTxOldMethod          = "IsClerkTxOld"
-	GetStateSyncsByTimeMethod   = "GetStateSyncsByTime"
 
 	// Transaction API methods.
 
