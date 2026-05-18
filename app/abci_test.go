@@ -103,6 +103,86 @@ func TestPrepareProposalHandler(t *testing.T) {
 	require.NotEmpty(t, respPrep.Txs)
 }
 
+func TestPrepareProposalHandler_BudgetExhausted(t *testing.T) {
+	original := prepareProposalBudget
+	prepareProposalBudget = 0
+	t.Cleanup(func() { prepareProposalBudget = original })
+
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	msg := &types.MsgCheckpoint{
+		Proposer:        priv.PubKey().Address().String(),
+		StartBlock:      100,
+		EndBlock:        200,
+		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		BorChainId:      "1",
+	}
+	txBytes, err := buildSignedTx(msg, priv.PubKey().Address().String(), ctx, priv, app)
+	require.NoError(t, err)
+
+	_, extCommit, _, err := buildExtensionCommits(
+		t, &app,
+		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+		validators, validatorPrivKeys, app.LastBlockHeight(),
+	)
+	require.NoError(t, err)
+
+	reqPrep := &abci.RequestPrepareProposal{
+		Txs:             [][]byte{txBytes},
+		MaxTxBytes:      1_000_000,
+		LocalLastCommit: *extCommit,
+		ProposerAddress: common.FromHex(validators[0].Signer),
+		Height:          app.LastBlockHeight() + 1,
+	}
+
+	respPrep, err := app.PrepareProposal(reqPrep)
+	require.NoError(t, err)
+	// loop breaks on iteration 0; response carries only the marshaled commit info.
+	require.Len(t, respPrep.Txs, 1)
+}
+
+func TestPrepareProposalHandler_BudgetNotReached(t *testing.T) {
+	original := prepareProposalBudget
+	prepareProposalBudget = time.Hour
+	t.Cleanup(func() { prepareProposalBudget = original })
+
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	msg := &types.MsgCheckpoint{
+		Proposer:        priv.PubKey().Address().String(),
+		StartBlock:      100,
+		EndBlock:        200,
+		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		BorChainId:      "1",
+	}
+	txBytes, err := buildSignedTx(msg, priv.PubKey().Address().String(), ctx, priv, app)
+	require.NoError(t, err)
+
+	_, extCommit, _, err := buildExtensionCommits(
+		t, &app,
+		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+		validators, validatorPrivKeys, app.LastBlockHeight(),
+	)
+	require.NoError(t, err)
+
+	reqPrep := &abci.RequestPrepareProposal{
+		Txs:             [][]byte{txBytes},
+		MaxTxBytes:      1_000_000,
+		LocalLastCommit: *extCommit,
+		ProposerAddress: common.FromHex(validators[0].Signer),
+		Height:          app.LastBlockHeight() + 1,
+	}
+
+	respPrep, err := app.PrepareProposal(reqPrep)
+	require.NoError(t, err)
+	// commit info + the proposed tx.
+	require.Len(t, respPrep.Txs, 2)
+}
+
 func TestProcessProposalHandler(t *testing.T) {
 
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
