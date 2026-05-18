@@ -14,7 +14,7 @@ require (
 	cosmossdk.io/store v1.1.1
 	cosmossdk.io/tools/confix v0.1.1
 	cosmossdk.io/x/tx v0.13.7
-	github.com/0xPolygon/polyproto v0.0.8-0.20260423132317-7d955b45ef8a
+	github.com/0xPolygon/polyproto v0.0.8
 	github.com/RichardKnop/machinery v1.10.8
 	github.com/bufbuild/buf v1.61.0
 	github.com/cbergoon/merkletree v0.2.0
