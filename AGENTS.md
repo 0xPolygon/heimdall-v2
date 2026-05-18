@@ -106,6 +106,7 @@ Security rules are in `.claude/rules/`. They load automatically based on which f
 - **`contract-interactions.md`** -- `helper/call.go`, `helper/tx.go`, `contracts/`, `x/bor/grpc/`, keepers, bridge processors: IContractCaller security, ABI encoding, tx construction, gRPC client
 - **`p2p-and-networking.md`** -- `helper/config.go`, `bridge/listener/`, `bridge/broadcaster/`, `cmd/`, `packaging/templates/`: CometBFT P2P config, RPC endpoint security, bridge networking, RabbitMQ
 - **`state-and-migration.md`** -- `migration/`, `types/`, `common/`, `proto/`, `x/*/types/`: state migration safety, proto compatibility, shared type integrity
+- **`hardfork-rollout.md`** -- `helper/config.go`, `app/`, `sidetxs/`, keepers, milestone ABCI, migrations, proto/state types: hardfork heights, height-gated consensus behavior, replay, migrations, ABCI symmetry
 
 #### Security-Critical Areas (ranked by impact)
 
@@ -123,6 +124,39 @@ Security rules are in `.claude/rules/`. They load automatically based on which f
 - Dependency updates (especially forked `cosmos-sdk`, `cometbft`, `bor`)
 - Changes to validation logic, threshold calculations, or signature verification
 - Any change touching `helper/call.go` (the L1 interface)
+- Any new or changed hardfork height, network-specific activation height, or
+  height-gated consensus behavior
+
+#### Standalone Hardfork and Height-Gated Rollout Review
+
+Even outside the PoS team workspace, treat hardforks and height-gated behavior
+changes as consensus-critical. A diff is hardfork-shaped if it adds or changes
+network heights in `helper/config.go`, ABCI behavior, vote-extension semantics,
+side/post handlers, keeper writes, milestone/checkpoint/span logic,
+validator-set behavior, module `ConsensusVersion`, store migrations, proto
+state, or genesis import/export.
+
+For every hardfork-shaped diff, explicitly verify:
+
+- Mainnet, Amoy, and local/devnet heights are all set intentionally in the same
+  runtime initialization path in `helper/config.go`.
+- Getters, setters, tests, and config loading all read the same height values.
+- A network is not silently left at `0` or TODO when the behavior should
+  activate at a specific height. Check each helper's zero semantics: for
+  example, `phuketHardforkHeight == 0` disables Phuket through the
+  `IsPhuketHardfork` guard, while a `*HeightMinus1` style gate such as
+  `height >= GetTallyFixHeight()-1` can make `0` active at block 1.
+- Off-by-one semantics are documented in tests: Heimdall height vs Bor block,
+  `height`, `height-1`, initial height, span boundary, milestone boundary, and
+  checkpoint boundary.
+- `PrepareProposal`, `ProcessProposal`, `VerifyVoteExtension`, `ExtendVote`,
+  and `PreBlocker` remain compatible. Proposer-only filtering is not enough;
+  validators must accept or reject proposals deterministically.
+- Deterministic paths contain no external RPC calls, wall-clock time, random
+  data, goroutine races, or unsorted map iteration.
+- State-shape changes update module `ConsensusVersion`, migrations, store keys,
+  proto generated code, genesis import/export, and replay tests from existing
+  state.
 
 ### Before Making Changes
 
