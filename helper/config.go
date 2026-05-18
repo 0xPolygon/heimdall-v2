@@ -131,7 +131,7 @@ const (
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hard fork
 	MaxStateSyncSize = 30000
 
-	EnforcedMinRetainBlocks = 2500000
+	EnforcedMinRetainBlocks = 2000000
 
 	privValJsonFile = "priv_validator_key.json"
 
