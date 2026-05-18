@@ -723,7 +723,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			// majority VE doesn't match any checkpoint tx in the block, or we're using a dummy VE
 			logger.Debug("Majority non-rp vote extension does not match any checkpoint tx in block, skipping signature storage")
 		} else if approvedTxsMap[checkpointTxHash] {
-			signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
+			signatures := getCheckpointSignatures(req.Height, majorityExt, extVoteInfo)
 			if err := app.CheckpointKeeper.SetCheckpointSignaturesTxHash(ctx, checkpointTxHash); err != nil {
 				logger.Error("Error occurred while setting checkpoint signatures tx hash", "error", err)
 				return nil, err
