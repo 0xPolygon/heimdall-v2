@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"cosmossdk.io/collections"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,14 +20,14 @@ import (
 )
 
 type sideMsgServer struct {
-	Keeper
+	*Keeper
 }
 
 var msgEventRecord = sdk.MsgTypeURL(&types.MsgEventRecord{})
 
 // NewSideMsgServerImpl returns an implementation of the clerk SideMsgServer interface
 // for the provided Keeper.
-func NewSideMsgServerImpl(keeper Keeper) sidetxs.SideMsgServer {
+func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 	return &sideMsgServer{Keeper: keeper}
 }
 
@@ -178,6 +179,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 	if !ok {
 		err := errors.New(helper.ErrTypeMismatch("MsgEventRecord"))
 		logger.Error(err.Error())
+		return err
 	}
 
 	// Skip handler if clerk is not approved
@@ -188,8 +190,9 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 
 	// check for replay
 	if srv.HasEventRecord(ctx, msg.Id) {
+		err = errors.New("clerk record already processed")
 		logger.Debug("Skipping new clerk record as it's already processed")
-		return errors.New("clerk record already processed")
+		return err
 	}
 
 	logger.Debug("Persisting clerk state", "sideTxResult", sideTxResult)
@@ -212,6 +215,38 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 	if err := srv.SetEventRecord(ctx, record); err != nil {
 		logger.Error("Unable to update event record", "id", msg.Id, heimdallTypes.LogKeyError, err)
 		return err
+	}
+
+	// If visibility time is enabled, add the event to the pending list.
+	// Its visibility_height will be assigned in the next block's PreBlocker.
+	if helper.IsV080Hardfork(ctx.BlockHeight()) {
+		err = srv.AddPendingVisibilityEvent(ctx, record.Id)
+		if err != nil {
+			logger.Error("Unable to add pending visibility event", "id", record.Id, heimdallTypes.LogKeyError, err)
+			return err
+		}
+
+		// Track the minimum post-HF event ID as the upgrade boundary.
+		// Side-tx PostHandlers run in proposer-chosen order, and the clerk module
+		// does not enforce monotonic record.Id, so the first ID observed after the
+		// HF activates is not necessarily the smallest. Without min tracking, any
+		// later event whose ID is below the recorded boundary would fall through
+		// the legacy record_time branch in recordListVisibleAtHeight and bypass
+		// the visibility_height gate.
+		var currentUpgradeID uint64
+		currentUpgradeID, err = srv.GetVisibilityTimeUpgradeID(ctx)
+		hasUpgradeID := err == nil
+		if err != nil && !errors.Is(err, collections.ErrNotFound) {
+			logger.Error("Unable to check visibility time upgrade ID", heimdallTypes.LogKeyError, err)
+			return err
+		}
+		if !hasUpgradeID || record.Id < currentUpgradeID {
+			err = srv.SetVisibilityTimeUpgradeID(ctx, record.Id)
+			if err != nil {
+				logger.Error("Unable to set visibility time upgrade ID", "id", record.Id, heimdallTypes.LogKeyError, err)
+				return err
+			}
+		}
 	}
 
 	// save the record sequence

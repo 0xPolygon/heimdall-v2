@@ -59,6 +59,7 @@ const (
 	TaskDelayBetweenEachVal = 10 * time.Second
 	RetryTaskDelay          = 12 * time.Second
 	RetryStateSyncTaskDelay = 24 * time.Second
+	StakeNonceRetryDelay    = 15 * time.Second
 
 	mempoolTxnCountDivisor = 1000
 
@@ -185,7 +186,6 @@ func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration
 	// For 1000-2000 It will be 24 seconds.
 	// For 2000-3000 it will be 36 seconds.
 	// Basically, for every 1000 txs it will increase the factor by 1.
-
 	mempoolFactor := GetUnconfirmedTxnCount(event) / mempoolTxnCountDivisor
 
 	// calculate delay
@@ -484,7 +484,7 @@ func GetClerkEventRecord(stateId int64, cdc codec.Codec) (*clerktypes.EventRecor
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)))
 	if err != nil {
-		logger.Error("Error fetching event record by state ID", "error", err)
+		logger.Debug("Error fetching event record by state ID", "stateId", stateId, "error", err)
 		return nil, err
 	}
 
@@ -565,7 +565,6 @@ func LogElapsedTimeForStateSyncedEvent(event interface{}, functionName string, s
 		if e == nil {
 			return
 		}
-
 		typedEvent = *e
 	default:
 		return

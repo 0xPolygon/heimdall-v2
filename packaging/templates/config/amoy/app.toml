@@ -51,7 +51,7 @@ halt-time = 0
 # with the unbonding (safety threshold) period, state pruning, state sync
 # snapshot parameters and evidence max age to determine the correct minimum value of
 # ResponseCommit.RetainHeight.
-# Minimum expected value of 2500000 (enforced by sanitization)
+# Minimum expected value of 2000000 (enforced by sanitization)
 min-retain-blocks = 0
 
 # InterBlockCache enables inter-block caching.
@@ -256,6 +256,9 @@ bor_grpc_flag = "false"
 
 # GRPC endpoint for bor chain
 bor_grpc_url = "http://localhost:3131"
+
+# Bearer token for bor gRPC authentication (empty disables auth)
+bor_grpc_token = ""
 
 # RPC endpoint for cometBFT
 comet_bft_rpc_url = "http://0.0.0.0:26657"

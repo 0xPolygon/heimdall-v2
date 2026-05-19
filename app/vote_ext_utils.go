@@ -1151,12 +1151,17 @@ func findCheckpointTx(txs [][]byte, extension []byte, txDecoder txDecoder, logge
 	return ""
 }
 
-// getCheckpointSignatures returns the checkpoint signatures from the given extVoteInfo
-func getCheckpointSignatures(extension []byte, extVoteInfo []abciTypes.ExtendedVoteInfo) checkpointTypes.CheckpointSignatures {
+// getCheckpointSignatures returns the checkpoint signatures from the given extVoteInfo.
+// From the v080 hardfork onward, non-commit entries are skipped.
+func getCheckpointSignatures(height int64, extension []byte, extVoteInfo []abciTypes.ExtendedVoteInfo) checkpointTypes.CheckpointSignatures {
 	result := checkpointTypes.CheckpointSignatures{
 		Signatures: make([]checkpointTypes.CheckpointSignature, 0),
 	}
+	commitOnly := helper.IsV080Hardfork(height)
 	for _, vote := range extVoteInfo {
+		if commitOnly && vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
+			continue
+		}
 		if bytes.Equal(vote.NonRpVoteExtension, extension) {
 			result.Signatures = append(result.Signatures, checkpointTypes.CheckpointSignature{
 				ValidatorAddress: vote.Validator.Address,

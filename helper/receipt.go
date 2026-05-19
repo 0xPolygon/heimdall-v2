@@ -1,6 +1,9 @@
 package helper
 
 import (
+	"context"
+	"time"
+
 	"cosmossdk.io/log"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
@@ -51,4 +54,31 @@ func FetchAndValidateReceipt(
 	}
 
 	return receipt
+}
+
+// PrefetchReceipts batch-fetches L1 receipts in a single JSON-RPC call and caches them.
+// Finality is checked later by GetConfirmedTxReceipt when side handlers run.
+func PrefetchReceipts(ctx context.Context, contractCaller IContractCaller, txHashes []common.Hash, logger log.Logger) {
+	t0 := time.Now()
+
+	if len(txHashes) == 0 {
+		return
+	}
+
+	caller, ok := contractCaller.(*ContractCaller)
+	if !ok {
+		logger.Debug("Prefetch skipped: contractCaller is not *ContractCaller")
+		return
+	}
+
+	receipts := caller.BatchGetMainChainTxReceipts(ctx, txHashes)
+	if len(receipts) == 0 {
+		logger.Debug("Batch RPC returned no receipts", "requested", len(txHashes))
+	}
+
+	logger.Debug("Receipt prefetch complete", "requested", len(txHashes), "fetched", len(receipts), "time", time.Since(t0))
+
+	caller.prefetchMu.Lock()
+	caller.prefetchedReceipts = receipts
+	caller.prefetchMu.Unlock()
 }

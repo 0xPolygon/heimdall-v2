@@ -135,6 +135,30 @@ heimdalld tx topup handle-topup-tx [proposer] [user] [fee] [tx_hash] [log_index]
 heimdalld tx topup withdraw-fee [proposer] [amount]
 ```
 
+### Recovering Missed L1 Events
+
+The bridge listener subscribes to `TopUpFee` events on L1 and broadcasts `MsgTopupTx` to Heimdall automatically. If the listener misses an event (L1 RPC outage, stale cursor on listener restart, exhausted RabbitMQ retries), the L1 deposit remains in the StakingInfo contract but Heimdall does not credit the user's fee balance.
+
+#### Detection
+
+```bash
+heimdalld query topup is-old-tx <L1_TX_HASH> <LOG_INDEX>
+```
+
+If the L1 event exists on chain but the query returns `is_old=false`, the bridge missed it.
+
+#### Recovery
+
+There is no auto-recovery for topup events. Use the tx command documented above to replay manually:
+
+```bash
+heimdalld tx topup handle-topup-tx <PROPOSER> <USER> <FEE> <TX_HASH> <LOG_INDEX> <BLOCK_NUMBER>
+```
+
+The proposer is just the Cosmos tx signer (any funded Heimdall account). The side handler authenticates the underlying L1 event via `tx_hash` and `log_index`, not the wrapper account.
+
+Do **not** re-submit the original L1 transaction as recovery — the L1 deposit is already locked in the StakingInfo contract; a second L1 call would deposit a second fee.
+
 ### CLI Query Commands
 
 One can run the following query commands from the topup module:

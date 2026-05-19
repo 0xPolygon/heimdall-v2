@@ -570,19 +570,21 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 // and sends a transaction to rootChain
 func (cp *CheckpointProcessor) createAndSendCheckpointToRootChain(checkpointContext *CheckpointContext, start uint64, end uint64, height int64, txHash []byte) error {
 	cp.Logger.Info(infoMsgCpPreparingCheckpointForRootChain, "height", height, "txHash", common.Bytes2Hex(txHash), "start", start, "end", end)
-	// proof
-	tx, err := helper.QueryTxWithProof(cp.cliCtx, txHash)
+	// Fetch the checkpoint tx bytes directly from the block at the known
+	// height. Avoids the cometbft tx_index lookup that the old node.Tx(hash)
+	// path required, so this works with `indexer = "null"`.
+	txBytes, err := helper.QueryTxBytesFromBlock(cp.cliCtx, txHash, height)
 	if err != nil {
-		cp.Logger.Error(errMsgCpQueryingCheckpointTxProof, "txHash", txHash)
+		cp.Logger.Error(errMsgCpQueryingCheckpointTxProof, "txHash", txHash, "height", height, "error", err)
 		return err
 	}
 
 	// fetch side txs sigs
 	decoder := authlegacytx.DefaultTxDecoder(cp.cliCtx.Codec)
 
-	stdTx, err := decoder(tx.Tx)
+	stdTx, err := decoder(txBytes)
 	if err != nil {
-		cp.Logger.Error(errMsgCpDecodingCheckpointTx, "txHash", tx.Tx.Hash(), "error", err)
+		cp.Logger.Error(errMsgCpDecodingCheckpointTx, "txHash", txHash, "error", err)
 		return err
 	}
 
@@ -590,7 +592,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootChain(checkpointCont
 
 	sideMsg, ok := msg.(*checkpointtypes.MsgCheckpoint)
 	if !ok {
-		cp.Logger.Error(errMsgCpInvalidSideTxMsg, "txHash", tx.Tx.Hash())
+		cp.Logger.Error(errMsgCpInvalidSideTxMsg, "txHash", txHash)
 		return err
 	}
 
