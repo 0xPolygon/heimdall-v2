@@ -1308,7 +1308,7 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 	blockHeader1 := ethTypes.Header{Number: big.NewInt(int64(seedBlock1))}
 	blockHash1 := blockHeader1.Hash()
 
-	mockCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
+	mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&val1Addr, nil)
 	mockCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader1, nil)
 	mockCaller.
 		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.Anything, mock.Anything).

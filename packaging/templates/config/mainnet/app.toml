@@ -257,6 +257,9 @@ bor_grpc_flag = "false"
 # GRPC endpoint for bor chain
 bor_grpc_url = "http://localhost:3131"
 
+# Bearer token for bor gRPC authentication (empty disables auth)
+bor_grpc_token = ""
+
 # RPC endpoint for cometBFT
 comet_bft_rpc_url = "http://0.0.0.0:26657"
 

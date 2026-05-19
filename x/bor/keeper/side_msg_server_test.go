@@ -107,7 +107,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			expSeed:          blockHash1,
 			expVote:          sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
-				contractCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
+				contractCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&val1Addr, nil)
 				contractCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader1, nil)
 			},
 		},
@@ -143,7 +143,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			expSeed:          blockHash1,
 			expVote:          sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
-				contractCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
+				contractCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&val1Addr, nil)
 				contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(16656)).Return(&blockHeader1, nil).Times(1)
 			},
 		},
@@ -163,7 +163,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			expSeed:          blockHash2,
 			expVote:          sidetxs.Vote_VOTE_YES,
 			mockFn: func() {
-				contractCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
+				contractCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&val1Addr, nil)
 				contractCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader2, nil)
 			},
 		},
@@ -213,8 +213,8 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 
 	lastBorBlockHeader := &ethTypes.Header{Number: big.NewInt(0)}
 	contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(0)).Return(lastBorBlockHeader, nil).Times(1)
-	contractCaller.On("GetBorChainBlockAuthor", big.NewInt(0)).Return(&producer1, nil).Times(1)
-	contractCaller.On("GetBorChainBlockAuthor", big.NewInt(100)).Return(&producer2, nil).Times(1)
+	contractCaller.On("GetBorChainBlockAuthor", mock.Anything, big.NewInt(0)).Return(&producer1, nil).Times(1)
+	contractCaller.On("GetBorChainBlockAuthor", mock.Anything, big.NewInt(100)).Return(&producer2, nil).Times(1)
 
 	testChainParams := chainmanagertypes.DefaultParams()
 	spans := s.genTestSpans(1)
