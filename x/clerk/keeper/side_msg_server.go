@@ -19,14 +19,14 @@ import (
 )
 
 type sideMsgServer struct {
-	Keeper
+	*Keeper
 }
 
 var msgEventRecord = sdk.MsgTypeURL(&types.MsgEventRecord{})
 
 // NewSideMsgServerImpl returns an implementation of the clerk SideMsgServer interface
 // for the provided Keeper.
-func NewSideMsgServerImpl(keeper Keeper) sidetxs.SideMsgServer {
+func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 	return &sideMsgServer{Keeper: keeper}
 }
 
@@ -216,9 +216,9 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 		return err
 	}
 
-	// If visibility time is enabled, add event to the pending list.
+	// If visibility time is enabled, add the event to the pending list.
 	// Its visibility_height will be assigned in the next block's PreBlocker.
-	if helper.IsVisibilityTimeEnabled(ctx.BlockHeight()) {
+	if helper.IsV080Hardfork(ctx.BlockHeight()) {
 		err = srv.AddPendingVisibilityEvent(ctx, record.Id)
 		if err != nil {
 			logger.Error("Unable to add pending visibility event", "id", record.Id, heimdallTypes.LogKeyError, err)

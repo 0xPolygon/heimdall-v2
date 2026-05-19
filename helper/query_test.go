@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	httpClient "github.com/cometbft/cometbft/rpc/client/http"
+	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -166,4 +167,47 @@ func TestGetBeginBlockEvents_BlockResultsFailsAndStatusFails(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, events)
 	require.Contains(t, err.Error(), "BlockResults failed for block 100")
+}
+
+// TestFindTxInBlock_HappyPath verifies the helper returns the matching tx
+// bytes for a hash that exists in the block.
+func TestFindTxInBlock_HappyPath(t *testing.T) {
+	t.Parallel()
+
+	tx1 := cmtTypes.Tx("checkpoint-tx-bytes-aaaa")
+	tx2 := cmtTypes.Tx("other-tx-bytes-bbbb")
+	tx3 := cmtTypes.Tx("decoy-tx-bytes-cccc")
+	txs := cmtTypes.Txs{tx1, tx2, tx3}
+
+	got, err := findTxInBlock(txs, tx2.Hash())
+	require.NoError(t, err)
+	require.Equal(t, []byte(tx2), got)
+}
+
+// TestFindTxInBlock_NotFound verifies a non-matching hash returns an error
+// rather than wrong bytes — protects the bridge from silently using the
+// wrong checkpoint tx.
+func TestFindTxInBlock_NotFound(t *testing.T) {
+	t.Parallel()
+
+	tx1 := cmtTypes.Tx("checkpoint-tx-bytes-aaaa")
+	tx2 := cmtTypes.Tx("other-tx-bytes-bbbb")
+	txs := cmtTypes.Txs{tx1, tx2}
+
+	missing := cmtTypes.Tx("does-not-exist").Hash()
+	got, err := findTxInBlock(txs, missing)
+	require.Error(t, err)
+	require.Nil(t, got)
+	require.Contains(t, err.Error(), "not found in block")
+}
+
+// TestFindTxInBlock_EmptyBlock verifies the helper returns an error for a
+// block with no txs.
+func TestFindTxInBlock_EmptyBlock(t *testing.T) {
+	t.Parallel()
+
+	tx := cmtTypes.Tx("some-tx-bytes")
+	got, err := findTxInBlock(cmtTypes.Txs{}, tx.Hash())
+	require.Error(t, err)
+	require.Nil(t, got)
 }

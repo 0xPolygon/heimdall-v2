@@ -372,7 +372,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventRecord_InvalidMsgTypeReturnsErro
 	ctx := s.ctx
 	require := s.Require()
 
-	postHandler := clerkKeeper.NewSideMsgServerImpl(s.keeper).(interface {
+	postHandler := clerkKeeper.NewSideMsgServerImpl(&s.keeper).(interface {
 		PostHandleMsgEventRecord(sdk.Context, sdk.Msg, sidetxs.Vote) error
 	})
 
@@ -387,7 +387,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventRecord_ReplayReturnsError() {
 	ctx, ck, chainId := s.ctx, s.keeper, s.chainId
 	require := s.Require()
 
-	postHandler := clerkKeeper.NewSideMsgServerImpl(s.keeper).(interface {
+	postHandler := clerkKeeper.NewSideMsgServerImpl(&s.keeper).(interface {
 		PostHandleMsgEventRecord(sdk.Context, sdk.Msg, sidetxs.Vote) error
 	})
 

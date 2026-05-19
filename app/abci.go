@@ -28,6 +28,13 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
+// prepareProposalBudget caps total handler wall-clock measured from handler
+// entry so PrepareProposal returns inside the 1s timeout_propose. The 500ms
+// ceiling leaves slack for network latency before the round closes.
+// var (not const) so tests can shorten it; tests that override it must not
+// use t.Parallel().
+var prepareProposalBudget = 500 * time.Millisecond
+
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
@@ -66,7 +73,14 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		// init totalTxBytes with the actual size of the marshaled vote info in bytes
 		totalTxBytes := len(bz)
 
-		for _, proposedTx := range req.Txs {
+		deadline := startTime.Add(prepareProposalBudget)
+		for i, proposedTx := range req.Txs {
+			if !time.Now().Before(deadline) {
+				logger.Warn("prepare proposal budget exhausted, returning early",
+					"remaining_txs", len(req.Txs)-i,
+					"elapsed", time.Since(startTime))
+				break
+			}
 
 			// check if the total tx bytes exceed the max tx bytes of the request
 			if totalTxBytes+len(proposedTx) > int(req.MaxTxBytes) {
@@ -505,7 +519,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	// This runs before PostHandlers add new events to the pending list, ensuring a clean
 	// one-block delay: events stored in block H get visibility_height = H+1.
 	// The visibility_height only becomes part of the committed state when this block commits.
-	if helper.IsVisibilityTimeEnabled(req.Height) {
+	if helper.IsV080Hardfork(req.Height) {
 		if err := app.ClerkKeeper.ProcessPendingVisibilityEvents(ctx); err != nil {
 			logger.Error("Error processing pending visibility events", "error", err, "height", req.Height)
 		}
@@ -737,7 +751,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			// majority VE doesn't match any checkpoint tx in the block, or we're using a dummy VE
 			logger.Debug("Majority non-rp vote extension does not match any checkpoint tx in block, skipping signature storage")
 		} else if approvedTxsMap[checkpointTxHash] {
-			signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
+			signatures := getCheckpointSignatures(req.Height, majorityExt, extVoteInfo)
 			if err := app.CheckpointKeeper.SetCheckpointSignaturesTxHash(ctx, checkpointTxHash); err != nil {
 				logger.Error("Error occurred while setting checkpoint signatures tx hash", "error", err)
 				return nil, err

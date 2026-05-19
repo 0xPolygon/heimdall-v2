@@ -77,6 +77,11 @@ func NewKeeper(
 	return k
 }
 
+// SetContractCaller sets the contract caller in the milestone keeper
+func (k *Keeper) SetContractCaller(contractCaller helper.IContractCaller) {
+	k.IContractCaller = contractCaller
+}
+
 func (k Keeper) SetLastMilestoneBlock(ctx context.Context, block uint64) error {
 	err := k.lastMilestoneBlock.Set(ctx, block)
 	if err != nil {

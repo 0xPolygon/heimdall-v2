@@ -84,7 +84,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	s.msgServer = clerkKeeper.NewMsgServerImpl(keeper)
 
 	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
-	types.RegisterSideMsgServer(s.sideMsgCfg, clerkKeeper.NewSideMsgServerImpl(keeper))
+	types.RegisterSideMsgServer(s.sideMsgCfg, clerkKeeper.NewSideMsgServerImpl(&keeper))
 }
 
 func (s *KeeperTestSuite) TestHasGetSetEventRecord() {

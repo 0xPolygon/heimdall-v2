@@ -121,7 +121,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if helper.IsVisibilityTimeEnabled(sdkCtx.BlockHeight()) {
+	if helper.IsV080Hardfork(sdkCtx.BlockHeight()) {
 		return q.recordListWithTimeDeterministic(ctx, request)
 	}
 

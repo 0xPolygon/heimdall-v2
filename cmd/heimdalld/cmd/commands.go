@@ -120,6 +120,14 @@ func initCometBFTConfig() *cmtcfg.Config {
 	customCMTConfig.Consensus.PeerGossipSleepDuration = 25 * time.Millisecond
 	customCMTConfig.Consensus.PeerQueryMaj23SleepDuration = 200 * time.Millisecond
 
+	// Default to no tx indexing. Heimdall's bridge fetches checkpoint tx bytes
+	// from the block store directly (see helper.QueryTxBytesFromBlock), and no
+	// other internal consumer depends on tx_index. Disabling it avoids ~30 GB/
+	// month of writes and removes the bulk of the periodic ABCI-prune cycle
+	// compaction cost. Operators who need the /tx or /tx_search RPC endpoints
+	// can re-enable by setting `indexer = "kv"` in config.toml.
+	customCMTConfig.TxIndex.Indexer = "null"
+
 	return customCMTConfig
 }
 

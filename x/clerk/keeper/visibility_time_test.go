@@ -22,9 +22,9 @@ func (s *KeeperTestSuite) queryDeterministicStateSyncs(
 	toTime time.Time,
 	limit uint64,
 ) (*types.RecordListWithTimeResponse, error) {
-	original := helper.GetVisibilityTimeHeight()
-	helper.SetVisibilityTimeHeight(1)
-	defer helper.SetVisibilityTimeHeight(original)
+	original := helper.GetV080HardforkHeight()
+	helper.SetV080HardforkHeight(1)
+	defer helper.SetV080HardforkHeight(original)
 
 	storeCtx := ctx.WithBlockHeight(resolvedHeight).WithBlockHeader(cmtproto.Header{
 		Time:   toTime.Add(-time.Second),
@@ -144,7 +144,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_LegacyQueryPreserved() {
 }
 
 // TestGetRecordListWithTime_AlwaysUsesRecordTime verifies that GetRecordListWithTime
-// always filters by record_time, even for post-upgrade events with visibility_height set.
+// always filters by record_time, even for post-upgrade events with the visibility_height set.
 // This preserves backward compatibility for EL clients using the old (from_id, to_time) pattern.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_AlwaysUsesRecordTime() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
@@ -193,7 +193,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HaltSimulation() {
 	require.NoError(ck.SetEventRecord(ctx, rec))
 	require.NoError(ck.VisibilityHeightByID.Set(ctx, 3131120, 500))
 
-	// Old endpoint: record_time (16:58:14) < borToTime (16:58:30), so event IS returned.
+	// Old endpoint: record_time (16:58:14) < borToTime (16:58:30), so the event is returned.
 	// This is the non-deterministic behavior the old endpoint has always had.
 	req := &types.RecordListWithTimeRequest{
 		FromId:     3131120,
@@ -372,19 +372,19 @@ func (s *KeeperTestSuite) TestVisibilityTimeFeatureFlag() {
 	require := s.Require()
 
 	// Save and restore the original value
-	original := helper.GetVisibilityTimeHeight()
-	defer helper.SetVisibilityTimeHeight(original)
+	original := helper.GetV080HardforkHeight()
+	defer helper.SetV080HardforkHeight(original)
 
 	// Height 0 means disabled
-	helper.SetVisibilityTimeHeight(0)
-	require.False(helper.IsVisibilityTimeEnabled(100))
-	require.False(helper.IsVisibilityTimeEnabled(0))
+	helper.SetV080HardforkHeight(0)
+	require.False(helper.IsV080Hardfork(100))
+	require.False(helper.IsV080Hardfork(0))
 
 	// Height 256 means enabled at block 256+
-	helper.SetVisibilityTimeHeight(256)
-	require.False(helper.IsVisibilityTimeEnabled(255))
-	require.True(helper.IsVisibilityTimeEnabled(256))
-	require.True(helper.IsVisibilityTimeEnabled(300))
+	helper.SetV080HardforkHeight(256)
+	require.False(helper.IsV080Hardfork(255))
+	require.True(helper.IsV080Hardfork(256))
+	require.True(helper.IsV080Hardfork(300))
 }
 
 // TestPostHandlerAddsToVisibilityPending verifies that PostHandleMsgEventRecord
@@ -394,11 +394,11 @@ func (s *KeeperTestSuite) TestPostHandlerAddsToVisibilityPending() {
 	require := s.Require()
 
 	// Save and restore the original value
-	original := helper.GetVisibilityTimeHeight()
-	defer helper.SetVisibilityTimeHeight(original)
+	original := helper.GetV080HardforkHeight()
+	defer helper.SetV080HardforkHeight(original)
 
 	// Enable visibility time at block 1
-	helper.SetVisibilityTimeHeight(1)
+	helper.SetV080HardforkHeight(1)
 
 	// Set block height to an enabled height
 	ctx = ctx.WithBlockHeight(10)
@@ -430,11 +430,11 @@ func (s *KeeperTestSuite) TestPostHandlerSkipsVisibilityWhenDisabled() {
 	require := s.Require()
 
 	// Save and restore
-	original := helper.GetVisibilityTimeHeight()
-	defer helper.SetVisibilityTimeHeight(original)
+	original := helper.GetV080HardforkHeight()
+	defer helper.SetV080HardforkHeight(original)
 
 	// Disable visibility time
-	helper.SetVisibilityTimeHeight(0)
+	helper.SetV080HardforkHeight(0)
 
 	ctx = ctx.WithBlockHeight(10)
 
@@ -463,10 +463,10 @@ func (s *KeeperTestSuite) TestUpgradeIDBoundarySetOnce() {
 	ctx, ck, postHandler := s.ctx, s.keeper, s.postHandler
 	require := s.Require()
 
-	original := helper.GetVisibilityTimeHeight()
-	defer helper.SetVisibilityTimeHeight(original)
+	original := helper.GetV080HardforkHeight()
+	defer helper.SetV080HardforkHeight(original)
 
-	helper.SetVisibilityTimeHeight(1)
+	helper.SetV080HardforkHeight(1)
 	ctx = ctx.WithBlockHeight(10)
 
 	// The first event sets the upgrade ID
@@ -594,7 +594,7 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_RecordTimeBreakPreservesCont
 // TestQueryDeterminismAcrossCommittedStates verifies that the pre-HF branch of
 // GetRecordListWithTime (legacy /clerk/time semantics) keeps using record_time
 // for filtering when the visibility-time HF has not yet activated. EL clients
-// see the same non-deterministic-near-tip behaviour they did historically; the
+// see the same non-deterministic-near-tip behavior they did historically; the
 // post-HF branch of the same handler — covered by the Deterministic_* tests —
 // is what actually fixes the cross-validator divergence.
 func (s *KeeperTestSuite) TestQueryDeterminismAcrossCommittedStates() {
@@ -650,9 +650,9 @@ func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	ctx, ck, queryClient, postHandler := s.ctx, s.keeper, s.queryClient, s.postHandler
 	require := s.Require()
 
-	original := helper.GetVisibilityTimeHeight()
-	defer helper.SetVisibilityTimeHeight(original)
-	helper.SetVisibilityTimeHeight(1)
+	original := helper.GetV080HardforkHeight()
+	defer helper.SetV080HardforkHeight(original)
+	helper.SetV080HardforkHeight(1)
 
 	// Block H+1: PostHandler stores event and adds to pending
 	blockH1Time := time.Date(2026, 3, 15, 10, 0, 0, 0, time.UTC)
@@ -902,7 +902,7 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_BasicFlow() {
 // TestRecordListWithTime_Deterministic_HybridQuery mixes pre-upgrade (record_time filtered)
 // and post-upgrade (visibility_height filtered) events. It verifies the
 // deterministic endpoint resolves the height internally while preserving the same
-// legacy-vs-post-upgrade filtering rules.
+// legacy vs. post-upgrade filtering rules.
 func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_HybridQuery() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
@@ -1308,8 +1308,8 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_PreAndPostUpgrade
 		require.Equal(uint64(i+1), rec.Id, "IDs must be contiguous")
 	}
 
-	// Use a later cutoff than the previous query so the reverse index resolves the
-	// freshly-added height 100 instead of reusing height 56 from the earlier call.
+	// Use a later cutoff than the previous query, so the reverse index resolves the
+	// freshly added height 100 instead of reusing height 56 from the earlier call.
 	cutoff := baseTime.Add(2 * time.Hour)
 	resp, err := s.queryDeterministicStateSyncs(ctx, 100, 1, cutoff, 20)
 	require.NoError(err)

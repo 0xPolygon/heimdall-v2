@@ -131,7 +131,7 @@ const (
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hard fork
 	MaxStateSyncSize = 30000
 
-	EnforcedMinRetainBlocks = 2500000
+	EnforcedMinRetainBlocks = 2000000
 
 	privValJsonFile = "priv_validator_key.json"
 
@@ -245,7 +245,7 @@ var producerDowntimeHeight int64 = 0
 
 var phuketHardforkHeight int64 = 0
 
-var visibilityTimeHeight int64 = 0
+var v080HardforkHeight int64 = 0
 
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
@@ -495,7 +495,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 24404501
 		producerDowntimeHeight = 34966593
 		phuketHardforkHeight = 44070000
-		visibilityTimeHeight = 0 // TODO marcello decide block height
+		v080HardforkHeight = 0 // TODO marcello set block number when needed
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -506,7 +506,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 0
 		producerDowntimeHeight = 0
 		phuketHardforkHeight = 0
-		visibilityTimeHeight = 0
+		v080HardforkHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -517,7 +517,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 8788501
 		producerDowntimeHeight = 20457139
 		phuketHardforkHeight = 32276400
-		visibilityTimeHeight = 0 // TODO marcello decide block height
+		v080HardforkHeight = 0 // TODO marcello set block number when needed
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -528,7 +528,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 0
 		producerDowntimeHeight = 0
 		phuketHardforkHeight = 0
-		visibilityTimeHeight = 0
+		v080HardforkHeight = 0
 	}
 }
 
@@ -721,17 +721,16 @@ func GetPhuketHardforkHeight() int64 {
 	return phuketHardforkHeight
 }
 
-func GetVisibilityTimeHeight() int64 {
-	return visibilityTimeHeight
+func IsV080Hardfork(height int64) bool {
+	return v080HardforkHeight > 0 && height >= v080HardforkHeight
 }
 
-func SetVisibilityTimeHeight(height int64) {
-	visibilityTimeHeight = height
+func SetV080HardforkHeight(height int64) {
+	v080HardforkHeight = height
 }
 
-// IsVisibilityTimeEnabled returns true if the visibility time feature is active (0 if disabled)
-func IsVisibilityTimeEnabled(blockHeight int64) bool {
-	return visibilityTimeHeight > 0 && blockHeight >= visibilityTimeHeight
+func GetV080HardforkHeight() int64 {
+	return v080HardforkHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
