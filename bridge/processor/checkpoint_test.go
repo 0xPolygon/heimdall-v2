@@ -334,3 +334,24 @@ func TestCheckpointProcessor_fetchCheckpointTxBytesForEvent(t *testing.T) {
 			"queryTxBytesFromBlock must default to helper.QueryTxBytesFromBlock so production code uses the real cometbft client")
 	})
 }
+
+// TestCheckpointProcessor_createAndSendCheckpointToRootChain_QueryError covers
+// the error branch in the caller (createAndSendCheckpointToRootChain). It pairs
+// with the helper-level test above: this one verifies that a tx-bytes lookup
+// failure short-circuits the L1 submission flow with the original error (so we
+// don't fall through into decoding/signing with nil bytes).
+func TestCheckpointProcessor_createAndSendCheckpointToRootChain_QueryError(t *testing.T) {
+	t.Parallel()
+
+	wantErr := errors.New("block not found")
+	cp := &CheckpointProcessor{
+		queryTxBytesFromBlock: func(_ client.Context, _ []byte, _ int64) ([]byte, error) {
+			return nil, wantErr
+		},
+	}
+	cp.BaseProcessor.Logger = log.NewNopLogger()
+
+	err := cp.createAndSendCheckpointToRootChain(nil, 0, 127, 128, []byte{0xab, 0xcd})
+	require.ErrorIs(t, err, wantErr,
+		"caller must propagate the query error verbatim; swallowing it would leave the bridge stuck without surfacing the cause")
+}
