@@ -3,12 +3,14 @@ package listener
 import (
 	"math/big"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/mock"
@@ -35,7 +37,7 @@ func (r *rootChainListenerForTest) SendTaskWithDelay(taskName string, eventName 
 			},
 		},
 	}
-	signature.RetryCount = 3
+	signature.RetryCount = 5
 
 	eta := time.Now().Add(delay)
 	signature.ETA = &eta
@@ -78,7 +80,7 @@ func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
 			if sig.Args[1].Type != "string" || sig.Args[1].Value != string(logBytes) {
 				return false
 			}
-			if sig.RetryCount != 3 {
+			if sig.RetryCount != 5 {
 				return false
 			}
 			if sig.ETA == nil {
@@ -242,6 +244,76 @@ func TestRootChainListener_MaxBlockRange(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestRootChainListener_SplitBlockRange(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		from     int64
+		to       int64
+		expected int64
+	}{
+		{
+			name:     "single block",
+			from:     100,
+			to:       100,
+			expected: 100,
+		},
+		{
+			name:     "two blocks returns left block",
+			from:     100,
+			to:       101,
+			expected: 100,
+		},
+		{
+			name:     "odd range",
+			from:     100,
+			to:       200,
+			expected: 150,
+		},
+		{
+			name:     "large range",
+			from:     0,
+			to:       4999,
+			expected: 2499,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			require.Equal(t, big.NewInt(tc.expected), splitBlockRange(big.NewInt(tc.from), big.NewInt(tc.to)))
+		})
+	}
+}
+
+func TestRootChainListener_RootChainEventTopics(t *testing.T) {
+	t.Parallel()
+
+	abiObject, err := abi.JSON(strings.NewReader(`[
+		{"anonymous":false,"inputs":[],"name":"StateSynced","type":"event"},
+		{"anonymous":false,"inputs":[],"name":"StakeUpdate","type":"event"},
+		{"anonymous":false,"inputs":[],"name":"IgnoredEvent","type":"event"}
+	]`))
+	require.NoError(t, err)
+
+	eventMap := make(map[common.Hash]*abi.Event)
+	for _, event := range abiObject.Events {
+		e := event
+		eventMap[e.ID] = &e
+	}
+	eventMap[common.HexToHash("0x1")] = nil
+
+	topics := rootChainEventTopics(eventMap)
+
+	require.Len(t, topics, 2)
+	require.Contains(t, topics, abiObject.Events["StateSynced"].ID)
+	require.Contains(t, topics, abiObject.Events["StakeUpdate"].ID)
+	require.NotContains(t, topics, abiObject.Events["IgnoredEvent"].ID)
+	require.Empty(t, rootChainEventTopics(nil))
 }
 
 func TestRootChainListener_StorageKeys(t *testing.T) {
@@ -597,7 +669,7 @@ func TestRootChainListener_TaskSignatureStructure(t *testing.T) {
 				},
 			},
 		}
-		signature.RetryCount = 3
+		signature.RetryCount = 5
 		eta := time.Now()
 		signature.ETA = &eta
 
@@ -608,7 +680,7 @@ func TestRootChainListener_TaskSignatureStructure(t *testing.T) {
 		require.Equal(t, eventName, signature.Args[0].Value)
 		require.Equal(t, "string", signature.Args[1].Type)
 		require.Equal(t, string(logBytes), signature.Args[1].Value)
-		require.Equal(t, 3, signature.RetryCount)
+		require.Equal(t, 5, signature.RetryCount)
 		require.NotNil(t, signature.ETA)
 	})
 }

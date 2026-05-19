@@ -2,11 +2,13 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"runtime"
 	"time"
 
+	"cosmossdk.io/log"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -15,6 +17,7 @@ import (
 	"github.com/cosmos/gogoproto/jsonpb"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/0xPolygon/heimdall-v2/common/strutil"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -23,9 +26,11 @@ import (
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 // prepareProposalBudget caps total handler wall-clock measured from handler
@@ -265,10 +270,16 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 	return func(ctx sdk.Context, req *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 		startTime := time.Now()
-		defer metrics.RecordABCIHandlerDuration(metrics.ExtendVoteDuration, startTime)
 
 		logger := app.Logger()
 		logger.Debug("Extending Vote", "height", ctx.BlockHeight())
+
+		var extendVoteCaller *helper.ContractCaller
+		if caller, ok := app.caller.(*helper.ContractCaller); ok {
+			extendVoteCaller = caller
+			extendVoteCaller.BeginPrefetchRound()
+		}
+
 		defer func() {
 			// better debugging with this panic recover routine printing runtime.Stack
 			if r := recover(); r != nil {
@@ -281,6 +292,13 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				)
 				panic(r)
 			}
+		}()
+
+		defer func() {
+			if extendVoteCaller != nil {
+				extendVoteCaller.EndPrefetchRound()
+			}
+			metrics.RecordABCIHandlerDuration(metrics.ExtendVoteDuration, startTime)
 		}()
 
 		// check if VEs are enabled
@@ -311,6 +329,9 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		nonRpVoteExt := dummyVoteExt
 
 		txs := req.Txs[1:]
+
+		// Prefetch L1 receipts in a single batch RPC call to warm the cache.
+		app.prefetchReceipts(ctx, txs, logger)
 
 		// decode txs and execute side txs
 		for _, rawTx := range txs {
@@ -772,12 +793,10 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 
 		var txBytes cmtTypes.Tx = rawTx
-
 		txHash := common.Bytes2Hex(txBytes.Hash())
 
 		if approvedTxsMap[txHash] {
-
-			// execute post-handler for the approved side tx
+			// execute post-handlers for the approved side txs
 			msgs := decodedTx.GetMsgs()
 			executedPostHandlers := 0
 			for _, msg := range msgs {
@@ -1041,4 +1060,108 @@ func rejectUnknownVoteExtFields(bz []byte) error {
 	}
 
 	return nil
+}
+
+// prefetchReceiptsTimeout is half of timeout_precommit (1s).
+const prefetchReceiptsTimeout = 500 * time.Millisecond
+
+// prefetchReceipts decodes txs, extracts L1 tx hashes from side-tx messages,
+// and batch-fetches their receipts into the cache.
+func (app *HeimdallApp) prefetchReceipts(ctx sdk.Context, txs [][]byte, logger log.Logger) {
+	seen := make(map[common.Hash]struct{})
+	var hashes []common.Hash
+	sideTxCount := 0
+
+	for _, rawTx := range txs {
+		tx, err := app.TxDecode(rawTx)
+		if err != nil {
+			continue
+		}
+
+		for _, msg := range tx.GetMsgs() {
+			if app.sideTxCfg.GetSideHandler(msg) == nil {
+				continue
+			}
+
+			sideTxCount++
+
+			h, ok := extractTxHash(msg)
+			if !ok {
+				continue
+			}
+
+			if _, dup := seen[h]; !dup {
+				seen[h] = struct{}{}
+				hashes = append(hashes, h)
+			}
+
+			if sideTxCount >= maxSideTxResponsesCount {
+				break
+			}
+		}
+
+		if sideTxCount >= maxSideTxResponsesCount {
+			break
+		}
+	}
+
+	if len(hashes) == 0 {
+		logger.Debug("No L1 tx hashes to prefetch")
+		return
+	}
+
+	prefetchCtx, cancel := context.WithTimeout(ctx.Context(), prefetchReceiptsTimeout)
+	defer cancel()
+
+	helper.PrefetchReceipts(prefetchCtx, app.caller, hashes, logger)
+
+	if prefetchCtx.Err() == context.DeadlineExceeded {
+		logger.Error("Receipt prefetch timed out")
+	}
+}
+
+func extractTxHash(msg sdk.Msg) (common.Hash, bool) {
+	switch m := msg.(type) {
+	case *clerkTypes.MsgEventRecord:
+		if !verifyHexTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.HexToHash(m.TxHash), true
+	case *stakeTypes.MsgValidatorJoin:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	case *stakeTypes.MsgStakeUpdate:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	case *stakeTypes.MsgSignerUpdate:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	case *stakeTypes.MsgValidatorExit:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	case *topupTypes.MsgTopupTx:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	default:
+		return common.Hash{}, false
+	}
+}
+
+func verifyTxHash(txHash []byte) bool {
+	return len(txHash) == common.HashLength
+}
+
+func verifyHexTxHash(hexTxHash string) bool {
+	decodedHash, err := hexutil.Decode(hexTxHash)
+	return err == nil && len(decodedHash) == common.HashLength
 }

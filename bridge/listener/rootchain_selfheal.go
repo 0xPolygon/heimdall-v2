@@ -357,13 +357,12 @@ func (rl *RootChainListener) processEvent(ctx context.Context, vLog *types.Log) 
 		return true, err
 	}
 
-	topic := vLog.Topics[0].Bytes()
-	for _, abiObject := range rl.abis {
-		selectedEvent := helper.EventByID(abiObject, topic)
-		if selectedEvent == nil {
-			continue
-		}
+	if len(vLog.Topics) == 0 {
+		return false, nil
+	}
 
+	selectedEvent, ok := rl.eventMap[vLog.Topics[0]]
+	if ok {
 		rl.handleLog(*vLog, selectedEvent)
 	}
 

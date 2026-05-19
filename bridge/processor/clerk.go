@@ -110,11 +110,10 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 			attribute.String("contract", event.ContractAddress.String()),
 		}...)
 
-		_, isOldTxSpan := tracing.StartSpan(sendStateSyncedToHeimdallCtx, "isOldTx")
-		isOld, _ := cp.isOldTx(cp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.ClerkEvent, event)
-		tracing.EndSpan(isOldTxSpan)
+		// Check if this event has already been processed by querying the event record.
+		existingRecord, err := util.GetClerkEventRecord(event.Id.Int64(), cp.cliCtx.Codec)
 
-		if isOld {
+		if err == nil && existingRecord.Id != 0 {
 			cp.Logger.Info(infoMsgClerkIgnoringAlreadyProcessed,
 				"event", eventName,
 				"id", event.Id,
@@ -125,7 +124,6 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 				"logIndex", uint64(vLog.Index),
 				"blockNumber", vLog.BlockNumber,
 			)
-
 			return nil
 		}
 
@@ -165,7 +163,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		)
 
 		_, checkTxAgainstMempoolSpan := tracing.StartSpan(sendStateSyncedToHeimdallCtx, "checkTxAgainstMempool")
-		// Check if we have the same transaction in mempool or not
+		// Check if we have the same transaction in mempool or not.
 		// Don't drop the transaction. Keep retrying after `util.RetryStateSyncTaskDelay = 24 seconds`,
 		// until the transaction in mempool is processed or canceled.
 		inMempool, _ := cp.checkTxAgainstMempool(&msg, event)
@@ -177,7 +175,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		}
 
 		_, BroadcastToHeimdallSpan := tracing.StartSpan(sendStateSyncedToHeimdallCtx, "BroadcastToHeimdall")
-		// return broadcast to heimdall
+		// Broadcast the transaction to heimdall.
 		_, err = cp.txBroadcaster.BroadcastToHeimdall(context.Background(), &msg, event)
 		tracing.EndSpan(BroadcastToHeimdallSpan)
 

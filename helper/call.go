@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -31,7 +32,6 @@ import (
 
 const (
 	// smart contracts' events names
-
 	NewHeaderBlockEvent = "NewHeaderBlock"
 	TopUpFeeEvent       = "TopUpFee"
 	StakedEvent         = "Staked"
@@ -43,7 +43,6 @@ const (
 	UnJailedEvent       = "UnJailed"
 
 	// error messages
-
 	errUnableToConnect = "unable to connect to bor chain"
 	errEventNotFound   = "event not found"
 )
@@ -105,9 +104,9 @@ type IContractCaller interface {
 
 // ContractCaller contract caller
 type ContractCaller struct {
-	MainChainClient  *ethclient.Client
-	MainChainRPC     *rpc.Client
-	MainChainTimeout time.Duration
+	MainChainClient    *ethclient.Client
+	MainChainRPCClient *rpc.Client
+	MainChainTimeout   time.Duration
 
 	BorChainClient    *ethclient.Client
 	BorChainRPCClient *rpc.Client
@@ -126,6 +125,15 @@ type ContractCaller struct {
 	PolTokenABI      abi.ABI
 
 	ContractInstanceCache map[common.Address]interface{}
+
+	// prefetchMu protects round-scoped prefetch state used by ExtendVote.
+	prefetchMu *sync.RWMutex
+	// prefetchedReceipts stores the prefetched L1 tx receipts from ExtendVoteHandler.
+	// Should be reset after each round of ExtendVoteHandler.
+	prefetchedReceipts map[common.Hash]*ethTypes.Receipt
+	// finalizedHeaderCache stores the last fetched finalized main chain block header.
+	// Should be reset after each round of ExtendVoteHandler.
+	finalizedHeaderCache *ethTypes.Header
 }
 
 type txExtraInfo struct {
@@ -145,13 +153,18 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 	contractCallerObj.MainChainTimeout = config.EthRPCTimeout
 	contractCallerObj.BorChainClient = GetBorClient()
 	contractCallerObj.BorChainTimeout = config.BorRPCTimeout
-	contractCallerObj.MainChainRPC = GetMainChainRPCClient()
+	contractCallerObj.MainChainRPCClient = GetMainChainRPCClient()
 	contractCallerObj.BorChainRPCClient = GetBorRPCClient()
 	contractCallerObj.BorChainGrpcFlag = config.BorGRPCFlag
 	contractCallerObj.BorChainGrpcClient = GetBorGRPCClient()
 
 	// listeners and processors instance cache (address->ABI)
 	contractCallerObj.ContractInstanceCache = make(map[common.Address]interface{})
+
+	contractCallerObj.prefetchMu = &sync.RWMutex{}
+	contractCallerObj.prefetchedReceipts = make(map[common.Hash]*ethTypes.Receipt)
+	contractCallerObj.finalizedHeaderCache = nil
+
 	// package global cache (string->ABI)
 	if err = populateABIs(&contractCallerObj); err != nil {
 		return contractCallerObj, err
@@ -509,6 +522,36 @@ func (c *ContractCaller) GetMainChainFinalizedBlock() (header *ethTypes.Header, 
 	return latestFinalizedBlock, nil
 }
 
+// getOrFetchReceipt returns a receipt from prefetched receipts or fetches from L1.
+func (c *ContractCaller) getOrFetchReceipt(tx common.Hash) (*ethTypes.Receipt, error) {
+	c.prefetchMu.RLock()
+	var cachedReceipt *ethTypes.Receipt
+	if c.prefetchedReceipts != nil {
+		cachedReceipt = c.prefetchedReceipts[tx]
+	}
+	c.prefetchMu.RUnlock()
+
+	if cachedReceipt != nil {
+		Logger.Debug("Receipt found in prefetched receipts", "tx", tx.Hex())
+		return cachedReceipt, nil
+	}
+
+	Logger.Debug("Fetching the receipt from the main chain", "tx", tx.Hex())
+
+	receipt, err := c.GetMainTxReceipt(tx)
+	if err != nil {
+		Logger.Error("Error while fetching receipt from ethereum", "txHash", tx.Hex(), "error", err)
+		return nil, err
+	}
+
+	if receipt == nil {
+		Logger.Error("Tx receipt not found on ethereum chain", "txHash", tx.Hex())
+		return nil, errors.New("ethereum tx receipt not found")
+	}
+
+	return receipt, nil
+}
+
 // GetMainChainBlockTime returns main chain block time
 func (c *ContractCaller) GetMainChainBlockTime(ctx context.Context, blockNum uint64) (time.Time, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.MainChainTimeout)
@@ -692,7 +735,7 @@ func (c *ContractCaller) GetBorChainBlockAuthor(blockNum *big.Int) (*common.Addr
 // GetBlockNumberFromTxHash gets the block number of transaction
 func (c *ContractCaller) GetBlockNumberFromTxHash(tx common.Hash) (*big.Int, error) {
 	var rpcTx rpcTransaction
-	if err := c.MainChainRPC.CallContext(context.Background(), &rpcTx, "eth_getTransactionByHash", tx); err != nil {
+	if err := c.MainChainRPCClient.CallContext(context.Background(), &rpcTx, "eth_getTransactionByHash", tx); err != nil {
 		return nil, err
 	}
 
@@ -725,58 +768,71 @@ func (c *ContractCaller) IsTxConfirmed(txHash common.Hash, requiredConfirmations
 
 // GetConfirmedTxReceipt returns a tx receipt only if it is finalized (or has the required confirmations).
 func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmations uint64) (*ethTypes.Receipt, error) {
-	// Always fetch the receipt from the ethereum chain
-	receipt, err := c.GetMainTxReceipt(tx)
+	receipt, err := c.getOrFetchReceipt(tx)
 	if err != nil {
-		Logger.Error("Error while fetching receipt from ethereum", "txHash", tx.Hex(), "error", err)
 		return nil, err
 	}
 
-	if receipt == nil {
-		// should not happen, in case treat it as tx not found, hence possibly reorged out.
-		Logger.Error("Tx receipt not found on ethereum chain", "txHash", tx.Hex())
-		return nil, errors.New("ethereum tx receipt not found")
+	if receipt.BlockNumber == nil {
+		return nil, errors.New("receipt has nil block number")
 	}
 
 	receiptBlockNumber := receipt.BlockNumber.Uint64()
 
-	Logger.Debug("Tx included in block", "block", receiptBlockNumber, "tx", tx)
+	// If the finalized header cache is set, use it to check if the receipt is finalized or not.
+	c.prefetchMu.RLock()
+	cachedFinalizedHeader := c.finalizedHeaderCache
+	c.prefetchMu.RUnlock()
 
-	// fetch the last finalized main chain block (available post-merge)
+	if cachedFinalizedHeader != nil && cachedFinalizedHeader.Number != nil {
+		if receiptBlockNumber <= cachedFinalizedHeader.Number.Uint64() {
+			return receipt, nil
+		}
+	}
+
+	// Fetch the latest finalized main chain block (available post-merge)
 	latestFinalizedBlock, err := c.GetMainChainFinalizedBlock()
 	if err != nil {
-		Logger.Error("Error getting latest finalized block from main chain", "error", err)
+		Logger.Error("Error getting latest finalized main chain block", "error", err)
 	}
 
 	// If the latest finalized block is available, use it to check if the receipt is finalized or not.
-	// Else, fallback to the `requiredConfirmations` value
-	if latestFinalizedBlock != nil {
-		Logger.Debug("Latest finalized block on main chain obtained",
-			"block", latestFinalizedBlock.Number.Uint64(),
-			"receiptBlock", receiptBlockNumber,
+	// Else, fallback to the `requiredConfirmations` value.
+	if latestFinalizedBlock != nil && latestFinalizedBlock.Number != nil {
+		Logger.Debug("Fetched latest finalized main chain block",
+			"blockNumber", latestFinalizedBlock.Number.Uint64(),
 		)
+		c.prefetchMu.Lock()
+		c.finalizedHeaderCache = latestFinalizedBlock
+		c.prefetchMu.Unlock()
 
 		if receiptBlockNumber > latestFinalizedBlock.Number.Uint64() {
-			return nil, errors.New("not enough confirmations for this block")
+			return nil, errors.New("receipt block number is ahead of latest finalized main chain block")
 		}
 
-		// At this point we trust the canonical chain
+		// At this point, we trust the canonical chain.
 		return receipt, nil
 	}
 
-	// No finalized API: fall back to N confirmations
-	latestBlk, err := c.GetMainChainBlock(nil)
+	// No finalized API: fall back to N confirmations.
+	latestBlock, err := c.GetMainChainBlock(nil)
 	if err != nil {
-		Logger.Error("Error getting latest block from ethereum chain", "error", err)
+		Logger.Error("Error getting latest main chain block", "error", err)
 		return nil, err
 	}
-
-	Logger.Debug("Latest block on ethereum chain obtained",
-		"block", latestBlk.Number.Uint64(),
-		"receiptBlock", receiptBlockNumber,
+	if latestBlock == nil || latestBlock.Number == nil {
+		return nil, errors.New("latest main chain block header or number is nil")
+	}
+	Logger.Debug("Fetched latest main chain block",
+		"blockNumber", latestBlock.Number.Uint64(),
 	)
 
-	diff := latestBlk.Number.Uint64() - receiptBlockNumber
+	latestNum := latestBlock.Number.Uint64()
+	if latestNum < receiptBlockNumber {
+		return nil, errors.New("receipt block number is ahead of latest main chain block")
+	}
+
+	diff := latestNum - receiptBlockNumber
 	if diff < requiredConfirmations {
 		return nil, errors.New("not enough confirmations")
 	}
@@ -1087,6 +1143,40 @@ func (c *ContractCaller) GetMainTxReceipt(txHash common.Hash) (*ethTypes.Receipt
 	return c.getTxReceipt(ctx, c.MainChainClient, nil, txHash)
 }
 
+// BatchGetMainChainTxReceipts fetches multiple main chain tx receipts in a single JSON-RPC batch call.
+// Returns a map of txHash → receipt. Failed individual requests are skipped.
+func (c *ContractCaller) BatchGetMainChainTxReceipts(ctx context.Context, txHashes []common.Hash) map[common.Hash]*ethTypes.Receipt {
+	if len(txHashes) == 0 || c.MainChainRPCClient == nil {
+		return nil
+	}
+
+	batch := make([]rpc.BatchElem, len(txHashes))
+	for i, hash := range txHashes {
+		batch[i] = rpc.BatchElem{
+			Method: "eth_getTransactionReceipt",
+			Args:   []interface{}{hash},
+			Result: new(ethTypes.Receipt),
+		}
+	}
+
+	if err := c.MainChainRPCClient.BatchCallContext(ctx, batch); err != nil {
+		Logger.Error("Batch receipt fetch failed", "error", err)
+		return nil
+	}
+
+	results := make(map[common.Hash]*ethTypes.Receipt, len(txHashes))
+	for i, elem := range batch {
+		if elem.Error != nil {
+			continue
+		}
+		if receipt, ok := elem.Result.(*ethTypes.Receipt); ok && receipt != nil && receipt.BlockNumber != nil {
+			results[txHashes[i]] = receipt
+		}
+	}
+
+	return results
+}
+
 // GetBorTxReceipt returns bor tx receipt
 func (c *ContractCaller) GetBorTxReceipt(txHash common.Hash) (*ethTypes.Receipt, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
@@ -1231,4 +1321,22 @@ func toBlockNumArg(number *big.Int) string {
 	}
 	// It's negative and large, which is invalid.
 	return fmt.Sprintf("<invalid %d>", number)
+}
+
+// BeginPrefetchRound starts a new round of prefetch lifecycle for ExtendVote.
+func (c *ContractCaller) BeginPrefetchRound() {
+	c.prefetchMu.Lock()
+	defer c.prefetchMu.Unlock()
+
+	c.prefetchedReceipts = make(map[common.Hash]*ethTypes.Receipt)
+	c.finalizedHeaderCache = nil
+}
+
+// EndPrefetchRound clears the round of prefetch lifecycle for ExtendVote.
+func (c *ContractCaller) EndPrefetchRound() {
+	c.prefetchMu.Lock()
+	defer c.prefetchMu.Unlock()
+
+	c.prefetchedReceipts = make(map[common.Hash]*ethTypes.Receipt)
+	c.finalizedHeaderCache = nil
 }
