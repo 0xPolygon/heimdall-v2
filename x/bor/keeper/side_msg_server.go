@@ -646,7 +646,7 @@ func (srv sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 
 	// Span duration is inclusive: endBlock = startBlock + spanDuration - 1.
 	var spanEndBlock uint64
-	if ctx.BlockHeight() >= helper.GetProducerDowntimeSpanFixHeight() {
+	if ctx.BlockHeight() >= helper.GetV080HardforkHeight() {
 		spanEndBlock = msg.DowntimeRange.StartBlock + params.SpanDuration - 1
 	} else {
 		spanEndBlock = msg.DowntimeRange.StartBlock + params.SpanDuration

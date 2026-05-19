@@ -783,10 +783,10 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 }
 
 func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime_VeBlopSpanDuration() {
-	helper.SetProducerDowntimeSpanFixHeight(100)
-	defer helper.SetProducerDowntimeSpanFixHeight(0)
+	helper.SetV080HardforkHeight(100)
+	defer helper.SetV080HardforkHeight(0)
 
-	fixHeight := helper.GetProducerDowntimeSpanFixHeight()
+	fixHeight := helper.GetV080HardforkHeight()
 
 	tests := []struct {
 		name             string
