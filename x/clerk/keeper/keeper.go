@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,6 +16,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
+// ErrNoBlockFound is returned when no committed block exists at or before the requested cutoff time.
+var ErrNoBlockFound = errors.New("no block found before cutoff")
+
 // Keeper stores all the related data.
 type Keeper struct {
 	storeService storetypes.KVStoreService
@@ -23,10 +27,14 @@ type Keeper struct {
 	ChainKeeper    types.ChainKeeper
 	contractCaller helper.IContractCaller
 
-	Schema          collections.Schema
-	RecordsWithID   collections.Map[uint64, types.EventRecord]
-	RecordsWithTime collections.Map[collections.Pair[time.Time, uint64], uint64]
-	RecordSequences collections.Map[string, []byte]
+	Schema                  collections.Schema
+	RecordsWithID           collections.Map[uint64, types.EventRecord]
+	RecordsWithTime         collections.Map[collections.Pair[time.Time, uint64], uint64]
+	RecordSequences         collections.Map[string, []byte]
+	VisibilityTimeUpgradeID collections.Item[uint64]
+	PendingVisibilityEvents collections.Map[uint64, []byte]
+	BlockTimeReverseIndex   collections.Map[collections.Pair[uint64, uint64], uint64] // (blockTime, height) → height for O(log N) cutoff lookup
+	VisibilityHeightByID    collections.Map[uint64, uint64]                           // event_id → heimdall block height where visibility was assigned
 }
 
 // NewKeeper creates a new keeper.
@@ -38,13 +46,17 @@ func NewKeeper(
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
 	keeper := Keeper{
-		storeService:    storeService,
-		cdc:             cdc,
-		ChainKeeper:     ChainKeeper,
-		contractCaller:  contractCaller,
-		RecordsWithID:   collections.NewMap(sb, types.RecordsWithIDKeyPrefix, "recordsWithID", collections.Uint64Key, codec.CollValue[types.EventRecord](cdc)),
-		RecordsWithTime: collections.NewMap(sb, types.RecordsWithTimeKeyPrefix, "recordsWithTime", collections.PairKeyCodec(sdk.TimeKey, collections.Uint64Key), collections.Uint64Value),
-		RecordSequences: collections.NewMap(sb, types.RecordSequencesKeyPrefix, "recordSequences", collections.StringKey, collections.BytesValue),
+		storeService:            storeService,
+		cdc:                     cdc,
+		ChainKeeper:             ChainKeeper,
+		contractCaller:          contractCaller,
+		RecordsWithID:           collections.NewMap(sb, types.RecordsWithIDKeyPrefix, "recordsWithID", collections.Uint64Key, codec.CollValue[types.EventRecord](cdc)),
+		RecordsWithTime:         collections.NewMap(sb, types.RecordsWithTimeKeyPrefix, "recordsWithTime", collections.PairKeyCodec(sdk.TimeKey, collections.Uint64Key), collections.Uint64Value),
+		RecordSequences:         collections.NewMap(sb, types.RecordSequencesKeyPrefix, "recordSequences", collections.StringKey, collections.BytesValue),
+		VisibilityTimeUpgradeID: collections.NewItem(sb, types.VisibilityTimeUpgradeIDKeyPrefix, "visibilityTimeUpgradeID", collections.Uint64Value),
+		PendingVisibilityEvents: collections.NewMap(sb, types.PendingVisibilityEventsKeyPrefix, "pendingVisibilityEvents", collections.Uint64Key, collections.BytesValue),
+		BlockTimeReverseIndex:   collections.NewMap(sb, types.BlockTimeReverseIndexKeyPrefix, "blockTimeReverseIndex", collections.PairKeyCodec(collections.Uint64Key, collections.Uint64Key), collections.Uint64Value),
+		VisibilityHeightByID:    collections.NewMap(sb, types.VisibilityHeightByIDKeyPrefix, "visibilityHeightByID", collections.Uint64Key, collections.Uint64Value),
 	}
 
 	schema, err := sb.Build()
@@ -287,6 +299,139 @@ func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
 	}
 
 	return isPresent
+}
+
+// GetVisibilityHeightForEvent returns the visibility_height for the given event ID.
+func (k *Keeper) GetVisibilityHeightForEvent(ctx context.Context, eventID uint64) (uint64, error) {
+	return k.VisibilityHeightByID.Get(ctx, eventID)
+}
+
+// AddPendingVisibilityEvent adds an event ID to the pending visibility events list.
+func (k *Keeper) AddPendingVisibilityEvent(ctx context.Context, eventID uint64) error {
+	return k.PendingVisibilityEvents.Set(ctx, eventID, types.DefaultValue)
+}
+
+// ProcessPendingVisibilityEvents assigns visibility_height to events
+// from the previous block, then clears the pending list.
+// Pending events remain excluded from the height-pinned / visibility_height-based
+// query path until this runs, ensuring deterministic results there: during halts,
+// no new blocks arrive, so pending events stay excluded from that query path.
+// Legacy time-based queries such as GetRecordListWithTime still use record_time
+// and may return pending events before this processing occurs.
+func (k *Keeper) ProcessPendingVisibilityEvents(ctx context.Context) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	blockHeight := uint64(sdkCtx.BlockHeight())
+
+	iterator, err := k.PendingVisibilityEvents.Iterate(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to iterate pending visibility events: %w", err)
+	}
+	defer func() {
+		if err := iterator.Close(); err != nil {
+			k.Logger(ctx).Error("failed to close iterator in ProcessPendingVisibilityEvents", "error", err)
+		}
+	}()
+
+	var eventIDs []uint64
+	for ; iterator.Valid(); iterator.Next() {
+		eventID, err := iterator.Key()
+		if err != nil {
+			return fmt.Errorf("failed to get pending event key: %w", err)
+		}
+		eventIDs = append(eventIDs, eventID)
+	}
+
+	for _, eventID := range eventIDs {
+		if err := k.VisibilityHeightByID.Set(ctx, eventID, blockHeight); err != nil {
+			return fmt.Errorf("failed to set visibility height for event %d: %w", eventID, err)
+		}
+		if err := k.PendingVisibilityEvents.Remove(ctx, eventID); err != nil {
+			return fmt.Errorf("failed to remove pending event %d: %w", eventID, err)
+		}
+	}
+
+	return nil
+}
+
+// GetVisibilityTimeUpgradeID returns the first event ID that uses visibility_height filtering.
+func (k *Keeper) GetVisibilityTimeUpgradeID(ctx context.Context) (uint64, error) {
+	return k.VisibilityTimeUpgradeID.Get(ctx)
+}
+
+// SetVisibilityTimeUpgradeID sets the first event ID that uses visibility_height filtering.
+func (k *Keeper) SetVisibilityTimeUpgradeID(ctx context.Context, id uint64) error {
+	return k.VisibilityTimeUpgradeID.Set(ctx, id)
+}
+
+// StoreBlockTime stores the current block's (blockTime, height) → height mapping in the
+// reverse index, enabling O(log N) cutoff lookups via GetBlockHeightByTime.
+// Called in PreBlocker for each block from the visibility_height activation height onward.
+func (k *Keeper) StoreBlockTime(ctx context.Context) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	height := uint64(sdkCtx.BlockHeight())
+	blockTime := uint64(sdkCtx.BlockTime().Unix())
+
+	return k.BlockTimeReverseIndex.Set(ctx, collections.Join(blockTime, height), height)
+}
+
+// GetBlockHeightByTime returns the greatest committed Heimdall height H such that
+// header.time(H) <= cutoff. If multiple heights share the same timestamp, the greatest
+// height wins.
+func (k *Keeper) GetBlockHeightByTime(ctx context.Context, cutoffUnix int64) (int64, error) {
+	if cutoffUnix <= 0 {
+		return 0, fmt.Errorf("cutoff time must be positive, got %d", cutoffUnix)
+	}
+	cutoff := uint64(cutoffUnix)
+
+	rng := new(collections.Range[collections.Pair[uint64, uint64]]).
+		EndInclusive(collections.Join(cutoff, ^uint64(0))).
+		Descending()
+
+	iterator, err := k.BlockTimeReverseIndex.Iterate(ctx, rng)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create iterator for BlockTimeReverseIndex: %w", err)
+	}
+	defer func() {
+		if err := iterator.Close(); err != nil {
+			k.Logger(ctx).Error("failed to close iterator for BlockTimeReverseIndex", "error", err)
+		}
+	}()
+
+	if !iterator.Valid() {
+		return 0, fmt.Errorf("%w: time <= %d", ErrNoBlockFound, cutoffUnix)
+	}
+
+	kv, err := iterator.KeyValue()
+	if err != nil {
+		return 0, fmt.Errorf("failed to read from BlockTimeReverseIndex: %w", err)
+	}
+
+	return int64(kv.Value), nil
+}
+
+// GetLatestIndexedBlockTime returns the newest committed block time present in the
+// reverse index used for deterministic state-sync height resolution.
+func (k *Keeper) GetLatestIndexedBlockTime(ctx context.Context) (int64, error) {
+	iterator, err := k.BlockTimeReverseIndex.Iterate(ctx, (&collections.Range[collections.Pair[uint64, uint64]]{}).Descending())
+	if err != nil {
+		return 0, fmt.Errorf("failed to create iterator for latest BlockTimeReverseIndex entry: %w", err)
+	}
+	defer func() {
+		if err := iterator.Close(); err != nil {
+			k.Logger(ctx).Error("failed to close iterator for latest BlockTimeReverseIndex entry", "error", err)
+		}
+	}()
+
+	if !iterator.Valid() {
+		return 0, fmt.Errorf("%w: block time index is empty", ErrNoBlockFound)
+	}
+
+	kv, err := iterator.KeyValue()
+	if err != nil {
+		return 0, fmt.Errorf("failed to read latest BlockTimeReverseIndex entry: %w", err)
+	}
+
+	return int64(kv.Key.K1()), nil
 }
 
 // GetEventRecordCount returns the total count of event records.

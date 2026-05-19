@@ -514,6 +514,20 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		logger.Info("Deleted milestone matching target condition", "milestone", milestoneNumber)
 	}
 
+	// Process pending visibility events from the previous block before new side txs are processed.
+	// This assigns visibility_height = currentBlockHeight to events stored in the prior block.
+	// This runs before PostHandlers add new events to the pending list, ensuring a clean
+	// one-block delay: events stored in block H get visibility_height = H+1.
+	// The visibility_height only becomes part of the committed state when this block commits.
+	if helper.IsV080Hardfork(req.Height) {
+		if err := app.ClerkKeeper.ProcessPendingVisibilityEvents(ctx); err != nil {
+			logger.Error("Error processing pending visibility events", "error", err, "height", req.Height)
+		}
+		if err := app.ClerkKeeper.StoreBlockTime(ctx); err != nil {
+			logger.Error("Error storing block time", "error", err, "height", req.Height)
+		}
+	}
+
 	// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
 	extCommitInfo := new(abci.ExtendedCommitInfo)
 

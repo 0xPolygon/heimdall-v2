@@ -178,6 +178,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 	if !ok {
 		err := errors.New(helper.ErrTypeMismatch("MsgEventRecord"))
 		logger.Error(err.Error())
+		return err
 	}
 
 	// Skip handler if clerk is not approved
@@ -188,8 +189,9 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 
 	// check for replay
 	if srv.HasEventRecord(ctx, msg.Id) {
+		err = errors.New("clerk record already processed")
 		logger.Debug("Skipping new clerk record as it's already processed")
-		return errors.New("clerk record already processed")
+		return err
 	}
 
 	logger.Debug("Persisting clerk state", "sideTxResult", sideTxResult)
@@ -212,6 +214,31 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 	if err := srv.SetEventRecord(ctx, record); err != nil {
 		logger.Error("Unable to update event record", "id", msg.Id, heimdallTypes.LogKeyError, err)
 		return err
+	}
+
+	// If visibility time is enabled, add the event to the pending list.
+	// Its visibility_height will be assigned in the next block's PreBlocker.
+	if helper.IsV080Hardfork(ctx.BlockHeight()) {
+		err = srv.AddPendingVisibilityEvent(ctx, record.Id)
+		if err != nil {
+			logger.Error("Unable to add pending visibility event", "id", record.Id, heimdallTypes.LogKeyError, err)
+			return err
+		}
+
+		// Set the upgrade boundary marker on the first post-upgrade event
+		var hasUpgradeID bool
+		hasUpgradeID, err = srv.VisibilityTimeUpgradeID.Has(ctx)
+		if err != nil {
+			logger.Error("Unable to check visibility time upgrade ID", heimdallTypes.LogKeyError, err)
+			return err
+		}
+		if !hasUpgradeID {
+			err = srv.SetVisibilityTimeUpgradeID(ctx, record.Id)
+			if err != nil {
+				logger.Error("Unable to set visibility time upgrade ID", "id", record.Id, heimdallTypes.LogKeyError, err)
+				return err
+			}
+		}
 	}
 
 	// save the record sequence
