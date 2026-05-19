@@ -570,12 +570,15 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 // and sends a transaction to rootChain
 func (cp *CheckpointProcessor) createAndSendCheckpointToRootChain(checkpointContext *CheckpointContext, start uint64, end uint64, height int64, txHash []byte) error {
 	cp.Logger.Info(infoMsgCpPreparingCheckpointForRootChain, "height", height, "txHash", common.Bytes2Hex(txHash), "start", start, "end", end)
-	// Fetch the checkpoint tx bytes directly from the block at the known
-	// height. Avoids the cometbft tx_index lookup that the old node.Tx(hash)
-	// path required, so this works with `indexer = "null"`.
-	txBytes, err := helper.QueryTxBytesFromBlock(cp.cliCtx, txHash, height)
+	// The EventTypeCheckpoint event is emitted from the side-tx post-handler,
+	// which runs in PreBlocker at height H against the txs of block H-1 (see
+	// StakeKeeper.SetLastBlockTxs/GetLastBlockTxs and app/abci.go). So the
+	// checkpoint MsgCheckpointBlock tx that produced this event lives in
+	// block height-1, not height.
+	txBlockHeight := height - 1
+	txBytes, err := helper.QueryTxBytesFromBlock(cp.cliCtx, txHash, txBlockHeight)
 	if err != nil {
-		cp.Logger.Error(errMsgCpQueryingCheckpointTxProof, "txHash", txHash, "height", height, "error", err)
+		cp.Logger.Error(errMsgCpQueryingCheckpointTxProof, "txHash", txHash, "height", txBlockHeight, "error", err)
 		return err
 	}
 
