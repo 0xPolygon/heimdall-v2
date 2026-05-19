@@ -483,7 +483,6 @@ func (s *KeeperTestSuite) TestBackfillSpans() {
 		{
 			name: "mismatch between calculated and provided last span id",
 			backfillSpans: types.MsgBackfillSpans{
-
 				Proposer:        common.HexToAddress("someProposer").String(),
 				ChainId:         testChainParams.ChainParams.BorChainId,
 				LatestSpanId:    1,
@@ -699,7 +698,87 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 			seedVotes:  []uint64{id1, id2},
 			msg:        newMsg(val1.hexAddr, 600, 600+maxRange),
 		},
+		{
+			name:       "success - target zero accepted (round-robin default)",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: types.RoundRobinDefault,
+			},
+		},
+		{
+			name:       "success - valid target in producer set",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}, {ValId: val3.id, Signer: val3.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: id2,
+			},
+		},
+		{
+			name:       "error - target is the current producer",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: id1,
+			},
+			expectErrSubstr: "target producer cannot be the same as the current producer",
+		},
+		{
+			name:       "error - target not in producer set",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}, {ValId: val3.id, Signer: val3.hexAddr}},
+			seedVotes:  []uint64{id1, id2}, // only id1 and id2 qualify; id3 does not
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: id3,
+			},
+			expectErrSubstr: "target producer id 3 is not in the current producer set",
+		},
+		{
+			name:       "error - target is non-existent validator",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: 999,
+			},
+			expectErrSubstr: "target producer id 999 is not in the current producer set",
+		},
 	}
+
+	// Pre-fork rejection: when targetProducerOverrideHeight is set high,
+	// non-zero target should be rejected.
+	preForkTests := []testCase{
+		{
+			name:       "error - target rejected before fork height",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}, {ValId: val3.id, Signer: val3.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: id2,
+			},
+			expectErrSubstr: "target producer override is not enabled until height",
+		},
+		{
+			name:       "success - round-robin default accepted before fork height",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: types.RoundRobinDefault,
+			},
+		},
+	}
+	tests = append(tests, preForkTests...)
 
 	for _, tc := range tests {
 		s.T().Run(tc.name, func(t *testing.T) {
@@ -707,6 +786,19 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 			s.SetupTest()
 			ctx := s.ctx
 			msgServer := s.msgServer
+
+			// Set fork height high for pre-fork tests, restore after.
+			isPreFork := false
+			for _, pf := range preForkTests {
+				if pf.name == tc.name {
+					isPreFork = true
+					break
+				}
+			}
+			if isPreFork {
+				helper.SetV080HardforkHeight(999999)
+				defer helper.SetV080HardforkHeight(0)
+			}
 
 			// Prime mocks and seed producer votes controlling the producer set
 			primeStakeMocks(tc.validators)

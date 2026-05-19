@@ -102,7 +102,6 @@ const (
 	LogTimestampFormat = "2006-01-02T15:04:05.000Z07:00"
 
 	// Self-healing defaults
-
 	DefaultEnableSH                = false
 	DefaultSHStateSyncedInterval   = 3 * time.Hour
 	DefaultSHStakeUpdateInterval   = 3 * time.Hour

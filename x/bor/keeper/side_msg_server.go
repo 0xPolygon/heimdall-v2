@@ -278,6 +278,54 @@ func (srv sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	// Reject non-default target before the fork height.
+	if msg.TargetProducerId != types.RoundRobinDefault && ctx.BlockHeight() < helper.GetV080HardforkHeight() {
+		logger.Error("Target producer override is not yet enabled",
+			"targetProducerId", msg.TargetProducerId, "forkHeight", helper.GetV080HardforkHeight())
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	if msg.TargetProducerId != types.RoundRobinDefault && ctx.BlockHeight() >= helper.GetV080HardforkHeight() {
+		// Target producer must be a validator.
+		_, err := srv.k.sk.GetValidatorFromValID(ctx, msg.TargetProducerId)
+		if err != nil {
+			logger.Error("Error fetching validator from valID", "targetProducerId", msg.TargetProducerId, "error", err)
+			return sidetxs.Vote_VOTE_NO
+		}
+		// Resolve the declaring producer's valID from address to perform an ID-based self-targeting check.
+		producerValID, err := srv.k.sk.GetValIdFromAddress(ctx, msg.Producer)
+		if err != nil {
+			logger.Error("Error resolving producer address to validator ID", "producer", msg.Producer, "error", err)
+			return sidetxs.Vote_VOTE_NO
+		}
+		if msg.TargetProducerId == producerValID {
+			logger.Error("Target producer cannot be the current producer", "targetProducerId", msg.TargetProducerId)
+			return sidetxs.Vote_VOTE_NO
+		}
+		// Target producer must be in the producer candidate set.
+		// The producer set may shift between vote time and execution time; SelectNextSpanProducer
+		// re-checks at execution and falls through to round-robin if the target is no longer eligible.
+		candidates, err := srv.k.CalculateProducerSet(ctx, helper.GetProducerSetLimit(ctx))
+		if err != nil {
+			logger.Error("Failed to calculate producer set for target validation", "error", err)
+			return sidetxs.Vote_VOTE_NO
+		}
+		if len(candidates) == 0 {
+			candidates = helper.GetFallbackProducerVotes()
+		}
+		targetInCandidates := false
+		for _, c := range candidates {
+			if c == msg.TargetProducerId {
+				targetInCandidates = true
+				break
+			}
+		}
+		if !targetInCandidates {
+			logger.Error("Target producer is not in the candidate producer set", "targetProducerId", msg.TargetProducerId)
+			return sidetxs.Vote_VOTE_NO
+		}
+	}
+
 	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock < types.PlannedDowntimeMinRange {
 		logger.Error("Time range for planned downtime is too small in bor side handler",
 			"startBlock", msg.DowntimeRange.StartBlock,
@@ -652,7 +700,7 @@ func (srv sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 		spanEndBlock = msg.DowntimeRange.StartBlock + params.SpanDuration
 	}
 
-	if err := srv.k.AddNewVeBlopSpan(ctx, validatorId, msg.DowntimeRange.StartBlock, spanEndBlock, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight())); err != nil {
+	if err := srv.k.AddNewVeBlopSpan(ctx, validatorId, msg.DowntimeRange.StartBlock, spanEndBlock, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), msg.TargetProducerId); err != nil {
 		logger.Error("Error occurred while adding new veBlop span", "error", err)
 		return err
 	}

@@ -113,11 +113,18 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 						break
 					}
 				}
-				if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+				if downtimeMsg, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
 					if err := app.BorKeeper.CanSetProducerDowntime(sdk.UnwrapSDKContext(ctx)); err != nil {
 						logger.Info("Skipping MsgSetProducerDowntime in PrepareProposal", "error", err)
 						shouldSkip = true
 						break
+					}
+					if downtimeMsg.TargetProducerId != borTypes.RoundRobinDefault {
+						if err := app.BorKeeper.CanUseTargetProducer(sdk.UnwrapSDKContext(ctx)); err != nil {
+							logger.Info("Skipping MsgSetProducerDowntime with TargetProducerId in PrepareProposal", "error", err)
+							shouldSkip = true
+							break
+						}
 					}
 				}
 			}
@@ -246,10 +253,16 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 						return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 					}
 				}
-				if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+				if downtimeMsg, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
 					if err := app.BorKeeper.CanSetProducerDowntime(sdk.UnwrapSDKContext(ctx)); err != nil {
 						logger.Error("Rejecting proposal with invalid MsgSetProducerDowntime", "error", err)
 						return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+					}
+					if downtimeMsg.TargetProducerId != borTypes.RoundRobinDefault {
+						if err := app.BorKeeper.CanUseTargetProducer(sdk.UnwrapSDKContext(ctx)); err != nil {
+							logger.Error("Rejecting proposal with MsgSetProducerDowntime containing TargetProducerId before fork height", "error", err)
+							return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+						}
 					}
 				}
 			}
@@ -895,7 +908,7 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 			return err
 		}
 
-		err = app.BorKeeper.AddNewVeBlopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()))
+		err = app.BorKeeper.AddNewVeBlopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault)
 		if err != nil {
 			logger.Error("Error occurred while adding new veblop span", "error", err)
 			return err
@@ -1003,7 +1016,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 
 		delete(latestActiveProducer, currentProducer)
 
-		err = app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()))
+		err = app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault)
 		if err != nil {
 			logger.Warn("Error occurred while adding new veblop span", "error", err)
 		} else {
