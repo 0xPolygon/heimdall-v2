@@ -264,8 +264,6 @@ var phuketHardforkHeight int64 = 0
 
 var v080HardforkHeight int64 = 0
 
-var targetProducerOverrideHeight int64 = 0
-
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -517,8 +515,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 24404501
 		producerDowntimeHeight = 34966593
 		phuketHardforkHeight = 44070000
-		v080HardforkHeight = 0           // TODO marcello set block number when needed
-		targetProducerOverrideHeight = 0 // TBD
+		v080HardforkHeight = 0 // TODO marcello set block number when needed
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -530,7 +527,6 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		producerDowntimeHeight = 0
 		phuketHardforkHeight = 0
 		v080HardforkHeight = 0
-		targetProducerOverrideHeight = 0 // TBD
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -541,8 +537,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 8788501
 		producerDowntimeHeight = 20457139
 		phuketHardforkHeight = 32276400
-		v080HardforkHeight = 0           // TODO marcello set block number when needed
-		targetProducerOverrideHeight = 0 // TBD
+		v080HardforkHeight = 0 // TODO marcello set block number when needed
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -554,7 +549,6 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		producerDowntimeHeight = 0
 		phuketHardforkHeight = 0
 		v080HardforkHeight = 0
-		targetProducerOverrideHeight = 0
 	}
 }
 
@@ -944,14 +938,6 @@ func SetV080HardforkHeight(height int64) {
 
 func GetV080HardforkHeight() int64 {
 	return v080HardforkHeight
-}
-
-func GetTargetProducerOverrideHeight() int64 {
-	return targetProducerOverrideHeight
-}
-
-func SetTargetProducerOverrideHeight(height int64) {
-	targetProducerOverrideHeight = height
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {

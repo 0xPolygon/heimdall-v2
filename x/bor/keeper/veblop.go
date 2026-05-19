@@ -267,7 +267,7 @@ func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64,
 	// If the declaring producer requested a specific replacement, try to honor it.
 	// The target must still be an active candidate and not down for the range.
 	// If any check fails, we fall through to round-robin rather than blocking span creation.
-	if targetProducerID != types.RoundRobinDefault && ctx.BlockHeight() >= helper.GetTargetProducerOverrideHeight() {
+	if targetProducerID != types.RoundRobinDefault && ctx.BlockHeight() >= helper.GetV080HardforkHeight() {
 		// Defense-in-depth: reject self-targeting even if upstream callers should have caught it.
 		if targetProducerID == currentProducer {
 			k.Logger(ctx).Warn("Target producer is the same as current producer, falling through to round-robin",

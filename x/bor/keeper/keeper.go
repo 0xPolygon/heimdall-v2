@@ -610,10 +610,10 @@ func (k Keeper) CanSetProducerDowntime(ctx sdk.Context) error {
 // CanUseTargetProducer checks if the current height is after the targetProducerOverrideHeight,
 // which gates the use of a non-default TargetProducerId in MsgSetProducerDowntime.
 func (k Keeper) CanUseTargetProducer(ctx sdk.Context) error {
-	if ctx.BlockHeight() < helper.GetTargetProducerOverrideHeight() {
+	if ctx.BlockHeight() < helper.GetV080HardforkHeight() {
 		return fmt.Errorf("MsgSetProducerDowntime with TargetProducerId not allowed: block %d is before the targetProducerOverrideHeight %d",
 			ctx.BlockHeight(),
-			helper.GetTargetProducerOverrideHeight(),
+			helper.GetV080HardforkHeight(),
 		)
 	}
 	return nil

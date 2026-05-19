@@ -612,8 +612,8 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntimeTargetProducer() {
 				}
 			}
 			if isPreFork {
-				helper.SetTargetProducerOverrideHeight(999999)
-				defer helper.SetTargetProducerOverrideHeight(0)
+				helper.SetV080HardforkHeight(999999)
+				defer helper.SetV080HardforkHeight(0)
 			}
 
 			s.contractCaller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).

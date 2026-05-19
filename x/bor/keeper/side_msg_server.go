@@ -279,13 +279,13 @@ func (srv sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 	}
 
 	// Reject non-default target before the fork height.
-	if msg.TargetProducerId != types.RoundRobinDefault && ctx.BlockHeight() < helper.GetTargetProducerOverrideHeight() {
+	if msg.TargetProducerId != types.RoundRobinDefault && ctx.BlockHeight() < helper.GetV080HardforkHeight() {
 		logger.Error("Target producer override is not yet enabled",
-			"targetProducerId", msg.TargetProducerId, "forkHeight", helper.GetTargetProducerOverrideHeight())
+			"targetProducerId", msg.TargetProducerId, "forkHeight", helper.GetV080HardforkHeight())
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	if msg.TargetProducerId != types.RoundRobinDefault && ctx.BlockHeight() >= helper.GetTargetProducerOverrideHeight() {
+	if msg.TargetProducerId != types.RoundRobinDefault && ctx.BlockHeight() >= helper.GetV080HardforkHeight() {
 		// Target producer must be a validator.
 		_, err := srv.k.sk.GetValidatorFromValID(ctx, msg.TargetProducerId)
 		if err != nil {

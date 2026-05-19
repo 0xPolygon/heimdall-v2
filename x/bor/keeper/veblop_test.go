@@ -534,7 +534,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducerWithTarget() {
 
 	// Ensure the target-producer override is enabled regardless of any future
 	// activation height configured in the binary.
-	helper.SetTargetProducerOverrideHeight(0)
+	helper.SetV080HardforkHeight(0)
 
 	s.milestoneKeeper.EXPECT().GetLastMilestone(ctx).Return(&milestoneTypes.Milestone{
 		EndBlock: 1000,
