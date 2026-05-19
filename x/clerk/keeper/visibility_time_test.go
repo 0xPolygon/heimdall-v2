@@ -458,7 +458,8 @@ func (s *KeeperTestSuite) TestPostHandlerSkipsVisibilityWhenDisabled() {
 }
 
 // TestUpgradeIDBoundarySetOnce verifies that the visibility time upgrade ID
-// is only set on the first post-upgrade event.
+// stays anchored when later post-HF events arrive with larger IDs (the common
+// monotonic case).
 func (s *KeeperTestSuite) TestUpgradeIDBoundarySetOnce() {
 	ctx, ck, postHandler := s.ctx, s.keeper, s.postHandler
 	require := s.Require()
@@ -478,14 +479,59 @@ func (s *KeeperTestSuite) TestUpgradeIDBoundarySetOnce() {
 	require.NoError(err)
 	require.Equal(uint64(10), upgradeID)
 
-	// The second event should not change the upgrade ID
+	// A later event with a larger ID must not raise the boundary
 	postHandler(ctx, new(types.NewMsgEventRecord(
 		Address1, TxHash1, 2, 200, 20, []byte(Address2), make([]byte, 0), s.chainId,
 	)), sidetxs.Vote_VOTE_YES)
 
 	upgradeID, err = ck.GetVisibilityTimeUpgradeID(ctx)
 	require.NoError(err)
-	require.Equal(uint64(10), upgradeID, "upgrade ID should remain at first event")
+	require.Equal(uint64(10), upgradeID, "upgrade ID should stay at the smaller seen ID")
+}
+
+// TestUpgradeIDBoundaryTracksMin verifies that when post-HF events arrive in
+// non-monotonic order (proposer reordering, mempool race), the boundary
+// converges to the smallest ID seen — never the first one observed. This
+// keeps every post-HF event on the visibility_height-gated query path; the
+// previous "first-seen" implementation would have left the smaller-ID event
+// on the legacy record_time path and leaked it one block early.
+func (s *KeeperTestSuite) TestUpgradeIDBoundaryTracksMin() {
+	ctx, ck, postHandler := s.ctx, s.keeper, s.postHandler
+	require := s.Require()
+
+	original := helper.GetV080HardforkHeight()
+	defer helper.SetV080HardforkHeight(original)
+
+	helper.SetV080HardforkHeight(1)
+	ctx = ctx.WithBlockHeight(10)
+
+	// Activation block — proposer placed the larger-ID side-tx first.
+	postHandler(ctx, new(types.NewMsgEventRecord(
+		Address1, TxHash1, 1, 100, 101, []byte(Address2), make([]byte, 0), s.chainId,
+	)), sidetxs.Vote_VOTE_YES)
+
+	upgradeID, err := ck.GetVisibilityTimeUpgradeID(ctx)
+	require.NoError(err)
+	require.Equal(uint64(101), upgradeID)
+
+	// Second side-tx in the same block carries a smaller ID — the boundary
+	// must drop to it so event 100 isn't routed through the legacy branch.
+	postHandler(ctx, new(types.NewMsgEventRecord(
+		Address1, TxHash1, 2, 100, 100, []byte(Address2), make([]byte, 0), s.chainId,
+	)), sidetxs.Vote_VOTE_YES)
+
+	upgradeID, err = ck.GetVisibilityTimeUpgradeID(ctx)
+	require.NoError(err)
+	require.Equal(uint64(100), upgradeID, "boundary must converge to min(seen ids)")
+
+	// A subsequent larger ID must not raise the boundary.
+	postHandler(ctx, new(types.NewMsgEventRecord(
+		Address1, TxHash1, 3, 100, 200, []byte(Address2), make([]byte, 0), s.chainId,
+	)), sidetxs.Vote_VOTE_YES)
+
+	upgradeID, err = ck.GetVisibilityTimeUpgradeID(ctx)
+	require.NoError(err)
+	require.Equal(uint64(100), upgradeID, "later larger ID must not raise the boundary")
 }
 
 // TestGetRecordListWithTime_PendingAtFirstID verifies that GetRecordListWithTime

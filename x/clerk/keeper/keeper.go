@@ -353,12 +353,17 @@ func (k *Keeper) ProcessPendingVisibilityEvents(ctx context.Context) error {
 	return nil
 }
 
-// GetVisibilityTimeUpgradeID returns the first event ID that uses visibility_height filtering.
+// GetVisibilityTimeUpgradeID returns the smallest event ID observed after the hardfork
+// the boundary below which events fall through the legacy
+// record_time path in recordListVisibleAtHeight.
 func (k *Keeper) GetVisibilityTimeUpgradeID(ctx context.Context) (uint64, error) {
 	return k.VisibilityTimeUpgradeID.Get(ctx)
 }
 
-// SetVisibilityTimeUpgradeID sets the first event ID that uses visibility_height filtering.
+// SetVisibilityTimeUpgradeID stores the upgrade boundary. The caller must
+// preserve the min(seen) invariant — never overwrite an existing value with a
+// larger one — so that every post-HF event satisfies id >= upgradeID and
+// stays on the visibility_height-gated query path.
 func (k *Keeper) SetVisibilityTimeUpgradeID(ctx context.Context, id uint64) error {
 	return k.VisibilityTimeUpgradeID.Set(ctx, id)
 }

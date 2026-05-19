@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"cosmossdk.io/collections"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -225,14 +226,21 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 			return err
 		}
 
-		// Set the upgrade boundary marker on the first post-upgrade event
-		var hasUpgradeID bool
-		hasUpgradeID, err = srv.VisibilityTimeUpgradeID.Has(ctx)
-		if err != nil {
+		// Track the minimum post-HF event ID as the upgrade boundary.
+		// Side-tx PostHandlers run in proposer-chosen order, and the clerk module
+		// does not enforce monotonic record.Id, so the first ID observed after the
+		// HF activates is not necessarily the smallest. Without min tracking, any
+		// later event whose ID is below the recorded boundary would fall through
+		// the legacy record_time branch in recordListVisibleAtHeight and bypass
+		// the visibility_height gate.
+		var currentUpgradeID uint64
+		currentUpgradeID, err = srv.GetVisibilityTimeUpgradeID(ctx)
+		hasUpgradeID := err == nil
+		if err != nil && !errors.Is(err, collections.ErrNotFound) {
 			logger.Error("Unable to check visibility time upgrade ID", heimdallTypes.LogKeyError, err)
 			return err
 		}
-		if !hasUpgradeID {
+		if !hasUpgradeID || record.Id < currentUpgradeID {
 			err = srv.SetVisibilityTimeUpgradeID(ctx, record.Id)
 			if err != nil {
 				logger.Error("Unable to set visibility time upgrade ID", "id", record.Id, heimdallTypes.LogKeyError, err)
