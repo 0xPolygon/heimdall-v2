@@ -1,8 +1,6 @@
 # This is an example docker-compose file for starting up heimdall-v2 required components.
 # To run standalone without Bor for development and testing purposes.
 # Do not use this for production.
-version: "3"
-
 services:
   rabbitmq:
     container_name: rabbitmq
@@ -18,53 +16,19 @@ services:
     restart: unless-stopped
     environment:
       - HEIMDALL_ETH_RPC_URL=https://sepolia.infura.io/v3/[YOUR_INFURA_PROJECT_ID]
+      - HEIMDALL_AMQP_URL=amqp://guest:guest@rabbitmq:5672
     volumes:
       - ./data:/heimdall
     ports:
       - "26656:26656" # P2P (TCP)
       - "26657:26657" # RPC (TCP)
+      - "1317:1317"   # Heimdall REST API
     depends_on:
       - rabbitmq
     command:
       - start
       - --p2p.laddr=tcp://0.0.0.0:26656
       - --rpc.laddr=tcp://0.0.0.0:26657
-
-  heimdallr:
-    container_name: heimdallr
-    image: 0xpolygon/heimdall-v2:latest
-    build: .
-    restart: unless-stopped
-    environment:
-      - HEIMDALL_ETH_RPC_URL=https://sepolia.infura.io/v3/[YOUR_INFURA_PROJECT_ID]
-    volumes:
-      - ./data:/heimdall
-    ports:
-      - "1317:1317" # Heimdall REST API
-    depends_on:
-      - heimdalld
-    command:
-      - rest-server
-      - --laddr=tcp://0.0.0.0:1317
-      - --node=tcp://heimdalld:26657
-
-  bridge:
-    container_name: bridge
-    image: 0xpolygon/heimdall-v2:latest
-    build: .
-    restart: unless-stopped
-    environment:
-      - HEIMDALL_ETH_RPC_URL=https://sepolia.infura.io/v3/[YOUR_INFURA_PROJECT_ID]
-      - HEIMDALL_AMQP_URL=amqp://guest:guest@rabbitmq:5672
-      - HEIMDALL_HEIMDALL_REST_SERVER=http://heimdallr:1317
-      - HEIMDALL_TENDERMINT_RPC_URL=http://heimdalld:26657
-    volumes:
-      - ./data:/heimdall
-    depends_on:
-      - heimdalld
-      - heimdallr
-      - rabbitmq
-    command:
-      - bridge
-      - start
+      - --rest-server
+      - --bridge
       - --all

@@ -77,7 +77,7 @@ const (
 	DefaultBorRPCTimeout = 1 * time.Second
 
 	// DefaultAmqpURL represents default AMQP url
-	DefaultAmqpURL = "amqp://guest:guest@localhost:5672/"
+	DefaultAmqpURL = "amqp://guest:guest@localhost:5672/" //nolint:gosec // G101: well-known RabbitMQ default credentials for local development
 
 	DefaultHeimdallServerURL = "tcp://0.0.0.0:1317"
 
@@ -92,6 +92,11 @@ const (
 	DefaultSpanPollInterval       = 1 * time.Minute
 
 	DefaultMilestonePollInterval = 30 * time.Second
+
+	// LogTimestampFormat is the millisecond-precision timestamp layout used for
+	// all heimdall log output. Matches bor's log format for consistent
+	// cross-service log analysis.
+	LogTimestampFormat = "2006-01-02T15:04:05.000Z07:00"
 
 	// Self-healing defaults
 
@@ -126,7 +131,7 @@ const (
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hard fork
 	MaxStateSyncSize = 30000
 
-	EnforcedMinRetainBlocks = 2500000
+	EnforcedMinRetainBlocks = 2000000
 
 	privValJsonFile = "priv_validator_key.json"
 
@@ -237,6 +242,10 @@ var milestoneDeletionHeight int64 = 0
 var faultyMilestoneNumber int64 = 0
 
 var producerDowntimeHeight int64 = 0
+
+var phuketHardforkHeight int64 = 0
+
+var v080HardforkHeight int64 = 0
 
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
@@ -368,7 +377,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 	logOpts = append(logOpts,
 		logger.LevelOption(logLevel),
-		logger.TimeFormatOption(time.RFC3339Nano),
+		logger.TimeFormatOption(LogTimestampFormat),
 	)
 
 	Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logOpts...)
@@ -485,6 +494,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 25723063
 		initialHeight = 24404501
 		producerDowntimeHeight = 34966593
+		phuketHardforkHeight = 44070000
+		v080HardforkHeight = 0 // TODO marcello set block number when needed
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -494,6 +505,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
+		phuketHardforkHeight = 0
+		v080HardforkHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -503,6 +516,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 10618299
 		initialHeight = 8788501
 		producerDowntimeHeight = 20457139
+		phuketHardforkHeight = 32276400
+		v080HardforkHeight = 0 // TODO marcello set block number when needed
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -512,6 +527,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
+		phuketHardforkHeight = 0
+		v080HardforkHeight = 0
 	}
 }
 
@@ -690,6 +707,30 @@ func GetFaultyMilestoneNumber() uint64 {
 
 func GetSetProducerDowntimeHeight() int64 {
 	return producerDowntimeHeight
+}
+
+func IsPhuketHardfork(height int64) bool {
+	return phuketHardforkHeight > 0 && height >= phuketHardforkHeight
+}
+
+func SetPhuketHardforkHeight(height int64) {
+	phuketHardforkHeight = height
+}
+
+func GetPhuketHardforkHeight() int64 {
+	return phuketHardforkHeight
+}
+
+func IsV080Hardfork(height int64) bool {
+	return v080HardforkHeight > 0 && height >= v080HardforkHeight
+}
+
+func SetV080HardforkHeight(height int64) {
+	v080HardforkHeight = height
+}
+
+func GetV080HardforkHeight() int64 {
+	return v080HardforkHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {

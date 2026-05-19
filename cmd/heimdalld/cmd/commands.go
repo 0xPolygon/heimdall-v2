@@ -35,7 +35,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
-	"github.com/cosmos/cosmos-sdk/server/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -120,6 +119,14 @@ func initCometBFTConfig() *cmtcfg.Config {
 	customCMTConfig.Consensus.TimeoutCommit = 500 * time.Millisecond
 	customCMTConfig.Consensus.PeerGossipSleepDuration = 25 * time.Millisecond
 	customCMTConfig.Consensus.PeerQueryMaj23SleepDuration = 200 * time.Millisecond
+
+	// Default to no tx indexing. Heimdall's bridge fetches checkpoint tx bytes
+	// from the block store directly (see helper.QueryTxBytesFromBlock), and no
+	// other internal consumer depends on tx_index. Disabling it avoids ~30 GB/
+	// month of writes and removes the bulk of the periodic ABCI-prune cycle
+	// compaction cost. Operators who need the /tx or /tx_search RPC endpoints
+	// can re-enable by setting `indexer = "kv"` in config.toml.
+	customCMTConfig.TxIndex.Indexer = "null"
 
 	return customCMTConfig
 }
@@ -329,7 +336,7 @@ func checkServerStatus(ctx context.Context, url string, resultChan chan<- string
 }
 
 // AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
-func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome string, appCreator types.AppCreator, appExport types.AppExporter, opts server.StartCmdOptions) {
+func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome string, appCreator servertypes.AppCreator, appExport servertypes.AppExporter, opts server.StartCmdOptions) {
 	cometCmd := &cobra.Command{
 		Use:     "comet",
 		Aliases: []string{"cometbft", "tendermint"},

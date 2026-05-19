@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -24,7 +25,7 @@ const (
 	errMsgSpanFetchingNextSpanDetails            = "SpanProcessor: unable to fetch next span details"
 	errMsgSpanRecoveredPanic                     = "SpanProcessor: recovered panic in propose goroutine"
 	errMsgSpanPropose                            = "SpanProcessor: error in propose"
-	errMsgSpanFetchingLastSpanForVotes           = "SpanProcessor: uable to fetch last span"
+	errMsgSpanFetchingLastSpanForVotes           = "SpanProcessor: unable to fetch last span"
 	errMsgSpanValidatorNotFound                  = "SpanProcessor: validator not found in last span"
 	errMsgSpanFetchingProducerVotes              = "SpanProcessor: unable to fetch producer votes"
 	errMsgSpanSendingProducerVotes               = "SpanProcessor: error while sending producer votes"
@@ -72,6 +73,9 @@ type SpanProcessor struct {
 
 	// header listener subscription
 	cancelSpanService context.CancelFunc
+
+	// proposeSpanInProgress prevents overlapping propose goroutines
+	proposeSpanInProgress atomic.Bool
 }
 
 // Start starts new block subscription
@@ -160,13 +164,19 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 		"endBlock", lastSpan.EndBlock,
 	)
 
-	nextSpanMsg, err := sp.fetchNextSpanDetails(lastSpan.Id+1, lastSpan.EndBlock+1)
+	nextSpanMsg, err := sp.fetchNextSpanDetails(ctx, lastSpan.Id+1, lastSpan.EndBlock+1)
 	if err != nil {
 		sp.Logger.Error(errMsgSpanFetchingNextSpanDetails, "error", err, "lastSpanId", lastSpan.Id)
 		return
 	}
 
+	if !sp.proposeSpanInProgress.CompareAndSwap(false, true) {
+		sp.Logger.Debug("SpanProcessor: skipping span proposal, previous propose still in progress")
+		return
+	}
+
 	go func() {
+		defer sp.proposeSpanInProgress.Store(false)
 		defer func() {
 			if r := recover(); r != nil {
 				sp.Logger.Error(errMsgSpanRecoveredPanic, "panic", r)
@@ -204,7 +214,7 @@ func (sp *SpanProcessor) checkAndVoteProducers(ctx context.Context) {
 		return
 	}
 
-	producerVotes, err := sp.getProducerVotesByValidatorId(validatorId)
+	producerVotes, err := sp.getProducerVotesByValidatorId(ctx, validatorId)
 	if err != nil {
 		sp.Logger.Error(errMsgSpanFetchingProducerVotes, "error", err)
 		return
@@ -331,8 +341,8 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 }
 
 // getProducerVotesByValidatorId gets the producer votes for a given voter id
-func (sp *SpanProcessor) getProducerVotesByValidatorId(validatorId uint64) (*types.ProducerVotes, error) {
-	req, err := http.NewRequest("GET", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.ProducerVotesURL, validatorId)), nil)
+func (sp *SpanProcessor) getProducerVotesByValidatorId(ctx context.Context, validatorId uint64) (*types.ProducerVotes, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.ProducerVotesURL, validatorId)), nil)
 	if err != nil {
 		sp.Logger.Error(errMsgSpanCreatingRequest, "error", err)
 		return nil, err
@@ -353,25 +363,6 @@ func (sp *SpanProcessor) getProducerVotesByValidatorId(validatorId uint64) (*typ
 	return &types.ProducerVotes{Votes: res.Votes}, nil
 }
 
-// getSpanById gets span details by id
-func (sp *SpanProcessor) getSpanById(id uint64) (*types.Span, error) {
-	// fetch the latest span from heimdall using the rest query
-	result, err := helper.FetchFromAPI(fmt.Sprintf(helper.GetHeimdallServerEndpoint(util.SpanByIdURL), strconv.FormatUint(id, 10)))
-	if err != nil {
-		sp.Logger.Error(errMsgSpanFetchingLatestSpan)
-		return nil, err
-	}
-
-	var span types.QuerySpanByIdResponse
-	if err = sp.cliCtx.Codec.UnmarshalJSON(result, &span); err != nil {
-		sp.Logger.Error(errMsgSpanUnmarshallingSpan, "error", err)
-		return nil, err
-	}
-
-	sp.Logger.Debug(debugMsgSpanDetails, "span", span.Span.String())
-	return span.Span, nil
-}
-
 // getCurrentChildBlock gets the current child block
 func (sp *SpanProcessor) getCurrentChildBlock(ctx context.Context) (uint64, error) {
 	childBlock, err := sp.contractCaller.GetBorChainBlock(ctx, nil)
@@ -383,8 +374,8 @@ func (sp *SpanProcessor) getCurrentChildBlock(ctx context.Context) (uint64, erro
 }
 
 // fetchNextSpanDetails fetches next span details from heimdall
-func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.Span, error) {
-	req, err := http.NewRequest("GET", helper.GetHeimdallServerEndpoint(util.NextSpanInfoURL), nil)
+func (sp *SpanProcessor) fetchNextSpanDetails(ctx context.Context, id uint64, start uint64) (*types.Span, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, helper.GetHeimdallServerEndpoint(util.NextSpanInfoURL), nil)
 	if err != nil {
 		sp.Logger.Error(errMsgSpanCreatingRequest, "error", err)
 		return nil, err

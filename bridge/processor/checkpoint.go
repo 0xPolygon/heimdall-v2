@@ -11,6 +11,7 @@ import (
 	"math/big"
 	"sort"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -112,6 +113,12 @@ type CheckpointProcessor struct {
 	// header listener subscription
 	cancelNoACKPolling context.CancelFunc
 
+	// noAckInProgress prevents overlapping handleCheckpointNoAck goroutines
+	noAckInProgress atomic.Bool
+
+	// noAckSkipCount tracks how many times a tick was skipped because noAckInProgress was true (used in tests)
+	noAckSkipCount atomic.Uint64
+
 	// RootChain abi
 	rootChainAbi *abi.ABI
 }
@@ -166,7 +173,16 @@ func (cp *CheckpointProcessor) startPollingForNoAck(ctx context.Context, interva
 	for {
 		select {
 		case <-ticker.C:
-			go cp.handleCheckpointNoAck(ctx)
+			if !cp.noAckInProgress.CompareAndSwap(false, true) {
+				cp.Logger.Debug("CheckpointProcessor: skipping no-ack check, previous run still in progress")
+				cp.noAckSkipCount.Add(1)
+				continue
+			}
+
+			go func() {
+				defer cp.noAckInProgress.Store(false)
+				cp.handleCheckpointNoAck(ctx)
+			}()
 		case <-ctx.Done():
 			cp.Logger.Info(infoMsgCpNoAckPollingStopped)
 			ticker.Stop()
@@ -233,7 +249,7 @@ func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (
 			cp.Logger.Debug(debugMsgCpNoBufferedCheckpoint, "bufferedCheckpoint", bufferedCheckpoint)
 		}
 
-		if bufferedCheckpoint != nil && !(bufferedCheckpoint.Timestamp == 0 || ((timeStamp > bufferedCheckpoint.Timestamp) && timeStamp-bufferedCheckpoint.Timestamp >= checkpointBufferTime)) {
+		if bufferedCheckpoint != nil && bufferedCheckpoint.Timestamp != 0 && (timeStamp <= bufferedCheckpoint.Timestamp || timeStamp-bufferedCheckpoint.Timestamp < checkpointBufferTime) {
 			cp.Logger.Info(infoMsgCpCheckpointAlreadyInBuffer, "Checkpoint", bufferedCheckpoint.String())
 			return nil
 		}
@@ -554,19 +570,21 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 // and sends a transaction to rootChain
 func (cp *CheckpointProcessor) createAndSendCheckpointToRootChain(checkpointContext *CheckpointContext, start uint64, end uint64, height int64, txHash []byte) error {
 	cp.Logger.Info(infoMsgCpPreparingCheckpointForRootChain, "height", height, "txHash", common.Bytes2Hex(txHash), "start", start, "end", end)
-	// proof
-	tx, err := helper.QueryTxWithProof(cp.cliCtx, txHash)
+	// Fetch the checkpoint tx bytes directly from the block at the known
+	// height. Avoids the cometbft tx_index lookup that the old node.Tx(hash)
+	// path required, so this works with `indexer = "null"`.
+	txBytes, err := helper.QueryTxBytesFromBlock(cp.cliCtx, txHash, height)
 	if err != nil {
-		cp.Logger.Error(errMsgCpQueryingCheckpointTxProof, "txHash", txHash)
+		cp.Logger.Error(errMsgCpQueryingCheckpointTxProof, "txHash", txHash, "height", height, "error", err)
 		return err
 	}
 
 	// fetch side txs sigs
 	decoder := authlegacytx.DefaultTxDecoder(cp.cliCtx.Codec)
 
-	stdTx, err := decoder(tx.Tx)
+	stdTx, err := decoder(txBytes)
 	if err != nil {
-		cp.Logger.Error(errMsgCpDecodingCheckpointTx, "txHash", tx.Tx.Hash(), "error", err)
+		cp.Logger.Error(errMsgCpDecodingCheckpointTx, "txHash", txHash, "error", err)
 		return err
 	}
 
@@ -574,7 +592,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootChain(checkpointCont
 
 	sideMsg, ok := msg.(*checkpointtypes.MsgCheckpoint)
 	if !ok {
-		cp.Logger.Error(errMsgCpInvalidSideTxMsg, "txHash", tx.Tx.Hash())
+		cp.Logger.Error(errMsgCpInvalidSideTxMsg, "txHash", txHash)
 		return err
 	}
 
@@ -616,7 +634,7 @@ func (cp *CheckpointProcessor) parseCheckpointSignatures(signatures []checkpoint
 		sig     []byte
 	}
 
-	sideTxSigs := make([]sideTxSig, 0)
+	sideTxSigs := make([]sideTxSig, 0, len(signatures))
 
 	for _, entry := range signatures {
 		sideTxSigs = append(sideTxSigs, sideTxSig{
