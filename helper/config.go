@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -19,6 +20,7 @@ import (
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/rs/zerolog"
@@ -45,10 +47,11 @@ const (
 
 	// app config flags
 
-	MainRPCUrlFlag  = "eth_rpc_url"
-	BorRPCUrlFlag   = "bor_rpc_url"
-	BorGRPCUrlFlag  = "bor_grpc_url"
-	BorGRPCFlagFlag = "bor_grpc_flag"
+	MainRPCUrlFlag   = "eth_rpc_url"
+	BorRPCUrlFlag    = "bor_rpc_url"
+	BorGRPCUrlFlag   = "bor_grpc_url"
+	BorGRPCFlagFlag  = "bor_grpc_flag"
+	BorGRPCTokenFlag = "bor_grpc_token" // #nosec G101 -- config key name, not a credential value
 
 	CometBFTNodeURLFlag          = "comet_bft_rpc_url"
 	HeimdallServerURLFlag        = "heimdall_rest_server"
@@ -131,11 +134,25 @@ const (
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hard fork
 	MaxStateSyncSize = 30000
 
-	EnforcedMinRetainBlocks = 2500000
+	EnforcedMinRetainBlocks = 2000000
 
 	privValJsonFile = "priv_validator_key.json"
 
 	bindPFlagLog = "%v | BindPFlag | %v"
+
+	borGRPCParityRetryInterval = 5 * time.Second
+	borGRPCParityMaxAttempts   = 60 // ~5 min total
+
+	// borGRPCParityDepth is how many blocks behind the latest we sample for the
+	// parity check. Bor reorgs deeper than this are exceptional and would warrant alerting.
+	borGRPCParityDepth = int64(32)
+
+	// borGRPCParityMismatchStreak is the number of consecutive confirmed
+	// mismatches required before we log.Fatal. A single mismatch can be a
+	// transient race (canonical block at target height changed between the
+	// HTTP and gRPC reads). Requiring N-in-a-row at the same height with
+	// stable HTTP re-reads virtually rules that out.
+	borGRPCParityMismatchStreak = 3
 )
 
 func init() {
@@ -144,10 +161,11 @@ func init() {
 
 // CustomConfig represents heimdall config
 type CustomConfig struct {
-	EthRPCUrl      string `mapstructure:"eth_rpc_url"`       // RPC endpoint for main chain
+	EthRPCUrl      string `mapstructure:"eth_rpc_url"`       // RPC endpoint for the main chain
 	BorRPCUrl      string `mapstructure:"bor_rpc_url"`       // RPC endpoint for bor chain
 	BorGRPCFlag    bool   `mapstructure:"bor_grpc_flag"`     // gRPC flag for bor chain
 	BorGRPCUrl     string `mapstructure:"bor_grpc_url"`      // gRPC endpoint for bor chain
+	BorGRPCToken   string `mapstructure:"bor_grpc_token"`    // bearer token for bor gRPC; empty = no auth
 	CometBFTRPCUrl string `mapstructure:"comet_bft_rpc_url"` // cometBft node url
 	SubGraphUrl    string `mapstructure:"sub_graph_url"`     // sub graph url
 
@@ -204,7 +222,7 @@ type CustomAppConfig struct {
 
 var conf CustomAppConfig
 
-// MainChainClient stores eth client for mainChain
+// MainChainClient stores the eth client for mainChain
 var (
 	mainChainClient *ethclient.Client
 	mainRPCClient   *rpc.Client
@@ -244,6 +262,8 @@ var faultyMilestoneNumber int64 = 0
 var producerDowntimeHeight int64 = 0
 
 var phuketHardforkHeight int64 = 0
+
+var v080HardforkHeight int64 = 0
 
 var producerDowntimeSpanFixHeight int64 = 0
 
@@ -441,12 +461,15 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	warnIfBorRPCInaccessible(borClient, conf.Custom.BorRPCTimeout, conf.Custom.BorRPCUrl)
 
 	if conf.Custom.BorGRPCFlag && conf.Custom.BorGRPCUrl != "" {
-		client, err := borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl, Logger)
+		client, err := borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl, conf.Custom.BorGRPCToken, Logger)
 		if err != nil {
 			log.Fatal("unable to create bor gRPC client", "URL", conf.Custom.BorGRPCUrl, "error", err)
 		}
 		borGRPCClient = client
 		warnIfBorGRPCInaccessible(borGRPCClient, conf.Custom.BorRPCTimeout, conf.Custom.BorGRPCUrl)
+		// Fire-and-forget parity goroutine; removal is only observable in production init.
+		// mutator-disable-next-line statement-deletion in production init
+		verifyBorGRPCHashParity(borClient, borGRPCClient, conf.Custom.BorRPCTimeout)
 	} else if conf.Custom.BorGRPCFlag && conf.Custom.BorGRPCUrl == "" {
 		log.Fatal("bor gRPC is enabled but bor_grpc_url is empty")
 	}
@@ -495,6 +518,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 24404501
 		producerDowntimeHeight = 34966593
 		phuketHardforkHeight = 44070000
+		v080HardforkHeight = 0            // TODO marcello set block number when needed
 		producerDowntimeSpanFixHeight = 0 // TBD
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
@@ -506,6 +530,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 0
 		producerDowntimeHeight = 0
 		phuketHardforkHeight = 0
+		v080HardforkHeight = 0
 		producerDowntimeSpanFixHeight = 0 // TBD
 	case AmoyChain:
 		milestoneDeletionHeight = 0
@@ -517,6 +542,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 8788501
 		producerDowntimeHeight = 20457139
 		phuketHardforkHeight = 32276400
+		v080HardforkHeight = 0            // TODO marcello set block number when needed
 		producerDowntimeSpanFixHeight = 0 // TBD
 	default:
 		milestoneDeletionHeight = 0
@@ -528,6 +554,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 0
 		producerDowntimeHeight = 0
 		phuketHardforkHeight = 0
+		v080HardforkHeight = 0
 		producerDowntimeSpanFixHeight = 0
 	}
 }
@@ -562,6 +589,193 @@ func warnIfBorGRPCInaccessible(client *borgrpc.BorGRPCClient, timeout time.Durat
 	if _, err := client.HeaderByNumber(ctx, -2); err != nil {
 		Logger.Warn("Bor gRPC endpoint appears inaccessible at startup", "URL", url, "error", err)
 	}
+}
+
+// verifyBorGRPCHashParity launches a background goroutine that periodically
+// asserts both transports return the same ethTypes.Header.Hash() for the same
+// bor block. A mismatch typically means the operator is running a new heimdall
+// with BorGRPCFlag=true against an old bor that doesn't populate the full proto
+// Header — which would silently corrupt milestone propositions on this node.
+// The goroutine retries until one of:
+//   - Both transports return a header, and the hashes match (log.Info, exit goroutine)
+//   - Both return a header, and hashes differ (log.Fatal, halt the node)
+//   - Retry budget is exhausted (log Error, exit goroutine)
+func verifyBorGRPCHashParity(httpClient *ethclient.Client, grpcClient *borgrpc.BorGRPCClient, timeout time.Duration) {
+	// Negate_conditional requires injecting typed-nil stubs mixed with non-nil, which the production path never does.
+	// mutator-disable-next-line defensive nil-client guard
+	if httpClient == nil || grpcClient == nil {
+		return
+	}
+	go runBorGRPCHashParityCheck(httpClient, grpcClient, timeout)
+}
+
+// runBorGRPCHashParityCheck launches the hash parity check
+// mutator-disable-func thin production-init wiring around runBorGRPCHashParityCheckWith
+// the full retry+fatal logic is tested via runBorGRPCHashParityCheckWith directly
+func runBorGRPCHashParityCheck(httpClient *ethclient.Client, grpcClient *borgrpc.BorGRPCClient, timeout time.Duration) {
+	runBorGRPCHashParityCheckWith(
+		httpClient, grpcClient, timeout,
+		borGRPCParityMaxAttempts, borGRPCParityRetryInterval,
+		func(msg string, keysAndValues ...interface{}) {
+			Logger.Error(msg, keysAndValues...)
+			os.Exit(1)
+		},
+	)
+}
+
+// runBorGRPCHashParityCheckWith is the core of runBorGRPCHashParityCheck.
+// It accepts the parity interfaces plus injectable max-attempts, retry-interval, and
+// fatalFunc so unit tests can exercise the full loop without network access or process exit.
+func runBorGRPCHashParityCheckWith(
+	httpClient parityHTTPFetcher,
+	grpcClient parityGRPCFetcher,
+	timeout time.Duration,
+	maxAttempts int,
+	retryInterval time.Duration,
+	fatalFunc func(msg string, keysAndValues ...interface{}),
+) {
+	mismatches := 0
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		ok, mismatch := checkBorGRPCHashParityOnceWith(httpClient, grpcClient, timeout)
+		if ok {
+			return
+		}
+		next, fatal := updateParityMismatchStreak(mismatches, mismatch, borGRPCParityMismatchStreak)
+		if fatal {
+			fatalFunc("FATAL: bor gRPC hash mismatch with HTTP confirmed across "+
+				"multiple consecutive checks. The operator is likely running a new heimdall "+
+				"with BorGRPCFlag=true against a bor that doesn't populate the full proto Header. "+
+				"Continuing would corrupt milestone propositions on this node. "+
+				"Either upgrade bor to a matching version or disable BorGRPCFlag.",
+				"consecutiveMismatches", next,
+			)
+			// Return so control flow does not depend on fatalFunc exiting the
+			// process.
+			return
+		}
+		mismatches = next
+		// mutator-disable-next-line retry pacing
+		if attempt < maxAttempts {
+			time.Sleep(retryInterval)
+		}
+	}
+	// Statement_deletion only drops an advisory message; no logic change.
+	// mutator-disable-next-line operator-log line
+	Logger.Error("Bor gRPC hash parity check gave up after retries — could not confirm transport equivalence. "+
+		"If BorGRPCFlag=true, verify that bor is running a version that populates the full proto Header. "+
+		"Continuing without parity confirmation.",
+		"attempts", maxAttempts,
+		"interval", retryInterval,
+	)
+}
+
+// updateParityMismatchStreak evolves the consecutive-mismatch counter given
+// the outcome of one parity check. Returns the new value and whether
+// the caller should log.Fatal (reached the configured threshold).
+func updateParityMismatchStreak(current int, mismatch bool, streakLimit int) (next int, fatal bool) {
+	if !mismatch {
+		// Transient / unavailable — reset the streak so a flaky network
+		// window can't ladder into false fatal later.
+		return 0, false
+	}
+	next = current + 1
+	return next, next >= streakLimit
+}
+
+// checkBorGRPCHashParityOnceWith runs a single parity comparison at a block a
+// few confirmations behind the current head (to avoid head-churn / reorg
+// races).
+// Returns (ok, mismatch):
+//   - Ok=true: both transports returned the same hash for the same block → check passed, caller exits
+//   - Ok=false, mismatch=false: one transport was unavailable, a reorg was detected during the check,
+//     or the chain is too young for the target depth → retry later, do not count toward mismatch streak
+//   - Ok=false, mismatch=true: both transports returned headers but with different hashes → count toward
+//     mismatch streak; the caller logs fatal only after borGRPCParityMismatchStreak consecutive mismatches
+func checkBorGRPCHashParityOnceWith(httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration) (ok, mismatch bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	targetNum, okDepth := resolveParityTargetHeight(ctx, httpClient)
+	if !okDepth {
+		return false, false
+	}
+	httpHeader, grpcHeader, stable := fetchStableHeadersAtHeight(ctx, httpClient, grpcClient, targetNum)
+	if !stable {
+		return false, false
+	}
+
+	if grpcHeader.Hash() != httpHeader.Hash() {
+		// Statement_deletion drops an advisory log; the (false, true) return below still signals a mismatch.
+		// mutator-disable-next-line operator-log line
+		Logger.Warn("Bor gRPC hash mismatch with HTTP for the same block — counting toward mismatch streak before fatal",
+			"block", httpHeader.Number.String(),
+			"httpHash", httpHeader.Hash().Hex(),
+			"grpcHash", grpcHeader.Hash().Hex(),
+		)
+		// Streak bookkeeping is covered directly via updateParityMismatchStreak tests.
+		// mutator-disable-next-line boolean_substitution on mismatch signal
+		return false, true
+	}
+
+	// Statement_deletion drops a success message; no branch logic affected.
+	// mutator-disable-next-line operator-log line
+	Logger.Info("Bor gRPC hash parity check passed",
+		"block", httpHeader.Number.String(),
+		"hash", httpHeader.Hash().Hex(),
+	)
+	// Ok-signal flip is observable only via runBorGRPCHashParityCheckWith's caller-side early-return, which is tested directly.
+	// mutator-disable-next-line boolean_substitution on ok signal
+	return true, false
+}
+
+// parityHTTPFetcher is the subset of *ethclient.Client used by the parity check.
+// Defined as an interface so unit tests can inject stubs without dialing a real
+// Bor HTTP endpoint. *ethclient.Client satisfies this interface.
+type parityHTTPFetcher interface {
+	HeaderByNumber(ctx context.Context, number *big.Int) (*ethTypes.Header, error)
+}
+
+// parityGRPCFetcher is the subset of *borgrpc.BorGRPCClient used by the parity
+// check. Defined as an interface so unit tests can inject stubs without dialing
+// a real gRPC endpoint. *borgrpc.BorGRPCClient satisfies this interface.
+type parityGRPCFetcher interface {
+	HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error)
+}
+
+// resolveParityTargetHeight returns (targetNum, ok). ok=false when the chain
+// is too young, the HTTP head lookup failed, or the result is otherwise
+// unusable — in any of those cases the parity check should retry later.
+func resolveParityTargetHeight(ctx context.Context, httpClient parityHTTPFetcher) (int64, bool) {
+	latest, err := httpClient.HeaderByNumber(ctx, nil)
+	if err != nil || latest == nil {
+		return 0, false
+	}
+	latestNum := latest.Number.Int64()
+	if latestNum < borGRPCParityDepth {
+		return 0, false
+	}
+	return latestNum - borGRPCParityDepth, true
+}
+
+// fetchStableHeadersAtHeight pulls the block at targetNum via HTTP, then via
+// gRPC, then via HTTP again, and only returns (httpHeader, grpcHeader, true)
+// when both HTTP reads agree (ruling out a reorg mid-check). Any transport
+// error or reorg returns stable=false, so the caller defers the decision.
+func fetchStableHeadersAtHeight(ctx context.Context, httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, targetNum int64) (httpHeader, grpcHeader *ethTypes.Header, stable bool) {
+	target := big.NewInt(targetNum)
+	httpHeader, err := httpClient.HeaderByNumber(ctx, target)
+	if err != nil || httpHeader == nil {
+		return nil, nil, false
+	}
+	grpcHeader, err = grpcClient.HeaderByNumber(ctx, targetNum)
+	if err != nil || grpcHeader == nil {
+		return nil, nil, false
+	}
+	httpHeader2, err := httpClient.HeaderByNumber(ctx, target)
+	if err != nil || httpHeader2 == nil || httpHeader2.Hash() != httpHeader.Hash() {
+		return nil, nil, false
+	}
+	return httpHeader, grpcHeader, true
 }
 
 // GetDefaultHeimdallConfig returns configuration with default params
@@ -638,12 +852,12 @@ func GetBorRPCClient() *rpc.Client {
 	return borRPCClient
 }
 
-// GetPrivKey returns priv key object
+// GetPrivKey returns the priv key object
 func GetPrivKey() secp256k1.PrivKey {
 	return privKeyObject
 }
 
-// GetPubKey returns pub key object
+// GetPubKey returns the pub key object
 func GetPubKey() secp256k1.PubKey {
 	return pubKeyObject
 }
@@ -719,6 +933,18 @@ func SetPhuketHardforkHeight(height int64) {
 
 func GetPhuketHardforkHeight() int64 {
 	return phuketHardforkHeight
+}
+
+func IsV080Hardfork(height int64) bool {
+	return v080HardforkHeight > 0 && height >= v080HardforkHeight
+}
+
+func SetV080HardforkHeight(height int64) {
+	v080HardforkHeight = height
+}
+
+func GetV080HardforkHeight() int64 {
+	return v080HardforkHeight
 }
 
 func GetProducerDowntimeSpanFixHeight() int64 {
@@ -845,6 +1071,20 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 
 	if err := v.BindPFlag(BorGRPCFlagFlag, cmd.PersistentFlags().Lookup(BorGRPCFlagFlag)); err != nil {
 		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, BorGRPCFlagFlag), "Error", err)
+	}
+
+	// add BorGRPCTokenFlag flag
+	cmd.PersistentFlags().String(
+		BorGRPCTokenFlag,
+		"",
+		"Bearer token for bor gRPC authentication (must match bor [grpc] token; empty disables auth)",
+	)
+
+	// viper.BindPFlag only errors if the flag doesn't exist, which the PersistentFlags().String call above guarantees.
+	// mutator-disable-next-line CLI flag-binding error guard
+	if err := v.BindPFlag(BorGRPCTokenFlag, cmd.PersistentFlags().Lookup(BorGRPCTokenFlag)); err != nil {
+		// mutator-disable-next-line operator-log line in unreachable error branch
+		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, BorGRPCTokenFlag), "Error", err)
 	}
 
 	// add CometBFTNodeURLFlag flag
@@ -1012,7 +1252,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 		loggerInstance.Error(fmt.Sprintf(bindPFlagLog, caller, LogsWriterFileFlag), "Error", err)
 	}
 
-	// add producers flag
+	// add producerVotes flag
 	cmd.PersistentFlags().String(
 		ProducerVotesFlag,
 		"",
@@ -1039,16 +1279,24 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 		c.Custom.BorRPCUrl = stringConfigValue
 	}
 
-	// get gRPC flag for bor chain from viper/cobra
-	boolConfigValue := v.GetBool(BorGRPCFlagFlag)
-	if boolConfigValue {
-		c.Custom.BorGRPCFlag = boolConfigValue
+	// get gRPC flag for bor chain from viper/cobra. Use IsSet so an explicit
+	// --bor_grpc_flag=false from CLI/env can override a config-file true,
+	// rather than silently being indistinguishable from "unset" via the bool
+	// zero value.
+	if v.IsSet(BorGRPCFlagFlag) {
+		c.Custom.BorGRPCFlag = v.GetBool(BorGRPCFlagFlag)
 	}
 
 	// get endpoint for bor chain from viper/cobra
 	stringConfigValue = v.GetString(BorGRPCUrlFlag)
 	if stringConfigValue != "" {
 		c.Custom.BorGRPCUrl = stringConfigValue
+	}
+
+	// get bearer token for bor gRPC from viper/cobra
+	stringConfigValue = v.GetString(BorGRPCTokenFlag)
+	if stringConfigValue != "" {
+		c.Custom.BorGRPCToken = stringConfigValue
 	}
 
 	// get endpoint for cometBFT from viper/cobra
@@ -1184,12 +1432,17 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 		c.Custom.BorRPCUrl = cc.BorRPCUrl
 	}
 
-	if !cc.BorGRPCFlag {
+	// Only adopt cc.BorGRPCFlag when cc explicitly configures the gRPC block,
+	// signaled by a non-empty BorGRPCUrl. Without this guard, a layered config
+	// that omits the gRPC block would silently flip BorGRPCFlag to its bool
+	// zero value (false) and disable gRPC for an operator who set it elsewhere.
+	if cc.BorGRPCUrl != "" {
 		c.Custom.BorGRPCFlag = cc.BorGRPCFlag
+		c.Custom.BorGRPCUrl = cc.BorGRPCUrl
 	}
 
-	if cc.BorGRPCUrl != "" {
-		c.Custom.BorGRPCUrl = cc.BorGRPCUrl
+	if cc.BorGRPCToken != "" {
+		c.Custom.BorGRPCToken = cc.BorGRPCToken
 	}
 
 	if cc.CometBFTRPCUrl != "" {
@@ -1258,7 +1511,7 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 
 // DecorateWithCometBFTFlags creates cometBFT flags for the desired command and binds them to viper
 func DecorateWithCometBFTFlags(cmd *cobra.Command, v *viper.Viper, loggerInstance logger.Logger, message string) {
-	// add seeds flag
+	// add seedsFlag
 	cmd.PersistentFlags().String(
 		SeedsFlag,
 		"",

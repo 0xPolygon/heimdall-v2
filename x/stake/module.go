@@ -18,7 +18,6 @@ import (
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
 	"github.com/0xPolygon/heimdall-v2/x/stake/keeper"
@@ -44,15 +43,13 @@ type AppModuleBasic struct{}
 
 // AppModule implements an application module for the stake module.
 type AppModule struct {
-	keeper         keeper.Keeper
-	contractCaller helper.IContractCaller
+	keeper *keeper.Keeper
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(keeper keeper.Keeper, contractCaller helper.IContractCaller) AppModule {
+func NewAppModule(keeper *keeper.Keeper) AppModule {
 	return AppModule{
-		keeper:         keeper,
-		contractCaller: contractCaller,
+		keeper: keeper,
 	}
 }
 
@@ -104,13 +101,13 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(&am.keeper))
-	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(&am.keeper))
+	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
+	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.keeper))
 }
 
 // RegisterSideMsgServices registers side handler module services.
 func (am AppModule) RegisterSideMsgServices(sideCfg sidetxs.SideTxConfigurator) {
-	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(&am.keeper))
+	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(am.keeper))
 }
 
 // QuerierRoute returns the stake module's querier route name.

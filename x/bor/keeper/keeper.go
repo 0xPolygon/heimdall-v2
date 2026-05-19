@@ -475,7 +475,7 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 
 	if proposedSpanID == 1 {
 		borBlock = 1
-		author, err = k.contractCaller.GetBorChainBlockAuthor(big.NewInt(int64(borBlock)))
+		author, err = k.contractCaller.GetBorChainBlockAuthor(ctx, big.NewInt(int64(borBlock)))
 		if err != nil {
 			logger.Error("Error fetching first block for span seed", "error", err, "block", borBlock)
 			return 0, nil, err
@@ -528,7 +528,7 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 	}
 
 	for borBlock = seedSpan.EndBlock; borBlock >= seedSpan.StartBlock; borBlock -= borParams.SprintDuration {
-		author, err = k.contractCaller.GetBorChainBlockAuthor(big.NewInt(int64(borBlock)))
+		author, err = k.contractCaller.GetBorChainBlockAuthor(ctx, big.NewInt(int64(borBlock)))
 		if err != nil {
 			logger.Error("Error fetching block author from bor chain while calculating next span seed", "error", err, "block", borBlock)
 			return 0, nil, err
@@ -550,7 +550,7 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 		borBlock = seedSpan.EndBlock
 	}
 
-	author, err = k.contractCaller.GetBorChainBlockAuthor(big.NewInt(int64(borBlock)))
+	author, err = k.contractCaller.GetBorChainBlockAuthor(ctx, big.NewInt(int64(borBlock)))
 	if err != nil {
 		logger.Error("Error fetching end block author from bor chain while calculating next span seed", "error", err, "block", borBlock)
 		return 0, nil, err

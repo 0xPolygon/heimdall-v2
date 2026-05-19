@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
 )
 
 func TestNewStakingProcessor(t *testing.T) {
@@ -27,7 +29,7 @@ func TestStakingProcessor_Constants(t *testing.T) {
 		t.Parallel()
 
 		delay := 15 * time.Second
-		require.Equal(t, defaultDelayDuration, delay)
+		require.Equal(t, util.StakeNonceRetryDelay, delay)
 		require.Greater(t, delay, time.Duration(0))
 	})
 

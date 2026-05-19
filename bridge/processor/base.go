@@ -1,10 +1,7 @@
 package processor
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"io"
-	"net/http"
+	"context"
 	"time"
 
 	"cosmossdk.io/log"
@@ -186,106 +183,56 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 	return false, nil
 }
 
-// checkTxAgainstMempool checks if the transaction is already in the mempool or not
-// It is consumed only for `clerk` processor
+// checkTxAgainstMempool checks if the transaction is already in the mempool or not.
+// It is consumed only for `clerk` processor.
 func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{}) (bool, error) {
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "checkTxAgainstMempool", time.Now())
 
-	endpoint := helper.GetConfig().CometBFTRPCUrl + util.CometBFTUnconfirmedTxsURL
-
-	resp, err := helper.Client.Get(endpoint)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		bp.Logger.Error("BaseProcessor: error fetching mempool tx", "url", endpoint, "error", err)
-		return false, err
+	clerkMsg, ok := msg.(*clerkTypes.MsgEventRecord)
+	if !ok {
+		return false, nil
 	}
 
-	// Limit the number of bytes read from the response body
-	limitedBody := http.MaxBytesReader(nil, resp.Body, helper.APIBodyLimit)
-	defer func(limitedBody io.ReadCloser) {
-		err := limitedBody.Close()
-		if err != nil {
-			bp.Logger.Error("BaseProcessor: error closing limited response body:", err)
-		}
-	}(limitedBody)
+	if bp.httpClient == nil {
+		return false, nil
+	}
 
-	body, err := io.ReadAll(limitedBody)
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			bp.Logger.Error("BaseProcessor: error closing response body:", err)
-		}
-	}()
+	targetTxHash := clerkMsg.GetTxHash()
+	targetLogIndex := clerkMsg.GetLogIndex()
+
+	// Use the typed CometBFT RPC client instead of raw HTTP + manual JSON/base64 decoding.
+	// The client returns txs as already-decoded []byte slices.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	limit := 100 // CometBFT caps at maxPerPage=100; higher values are silently clamped
+	result, err := bp.httpClient.UnconfirmedTxs(ctx, &limit)
 	if err != nil {
-		bp.Logger.Error("BaseProcessor: error reading response body for mempool tx", "error", err)
+		bp.Logger.Error("BaseProcessor: error fetching unconfirmed txs", "error", err)
 		return false, err
 	}
 
-	// a minimal response of the unconfirmed txs
-	var response util.CometBFTUnconfirmedTxs
-
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		bp.Logger.Error("BaseProcessor: error unmarshalling response received from Heimdall Server", "error", err)
-		return false, err
-	}
-
-	// Iterate over txs present in the mempool.
-	// We can verify if the message we're about to send is present by
-	// checking the type of transaction, the transaction hash and log index
-	// present in the data of the transaction
-
-	status := false
-Loop:
-	for _, txn := range response.Result.Txs {
-		// CometBFT encodes the transactions with base64 encoding. Decode it first.
-		txBytes, err := base64.StdEncoding.DecodeString(txn)
-		if err != nil {
-			bp.Logger.Error("BaseProcessor: error decoding tx (base64 decoder) while checking against mempool", "error", err)
-			continue
-		}
-
-		// Unmarshal the transaction from bytes
+	for _, txBytes := range result.Txs {
 		decodedTx, err := authlegacytx.DefaultTxDecoder(bp.cliCtx.Codec)(txBytes)
 		if err != nil {
-			bp.Logger.Error("BaseProcessor: error decoding tx (tx decoder) while checking against mempool", "error", err)
 			continue
 		}
-		txMsg := decodedTx.GetMsgs()[0]
 
-		// We only need to check for `event-record` type transactions.
-		switch txMsg.String() {
-		case "event-record":
+		msgs := decodedTx.GetMsgs()
+		if len(msgs) == 0 {
+			continue
+		}
 
-			// typecast the txs for the clerk type message
-			mempoolTxMsg, ok := txMsg.(*clerkTypes.MsgEventRecord)
-			if !ok {
-				bp.Logger.Error("BaseProcessor: unable to typecast message to clerk event record while checking against mempool")
-				continue Loop
-			}
+		mempoolClerkMsg, ok := msgs[0].(*clerkTypes.MsgEventRecord)
+		if !ok {
+			continue
+		}
 
-			// typecast the msg for the clerk type message
-			clerkMsg, ok := msg.(*clerkTypes.MsgEventRecord)
-			if !ok {
-				bp.Logger.Error("BaseProcessor: unable to typecast message to clerk event record while checking against mempool")
-				continue Loop
-			}
-
-			// check the transaction hash in the message
-			if clerkMsg.GetTxHash() != mempoolTxMsg.GetTxHash() {
-				continue Loop
-			}
-
-			// check the log index in the message
-			if clerkMsg.GetLogIndex() != mempoolTxMsg.GetLogIndex() {
-				continue Loop
-			}
-
-			// If we reach here, there's already a same transaction in the mempool
-			status = true
-			break Loop
-		default:
-			// ignore
+		if mempoolClerkMsg.TxHash == targetTxHash && mempoolClerkMsg.LogIndex == targetLogIndex {
+			bp.Logger.Debug("Duplicate clerk tx found in mempool", "txHash", targetTxHash, "logIndex", targetLogIndex)
+			return true, nil
 		}
 	}
 
-	return status, nil
+	return false, nil
 }

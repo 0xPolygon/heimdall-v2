@@ -16,7 +16,6 @@ import (
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor/client/cli"
 	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
@@ -73,13 +72,12 @@ func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 
 // RegisterSideMsgServices registers the side message services for the bor module.
 func (am AppModule) RegisterSideMsgServices(sideCfg sidetxs.SideTxConfigurator) {
-	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(&am.keeper))
+	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(am.keeper))
 }
 
 // AppModule implements an application module for the bor module.
 type AppModule struct {
-	keeper         keeper.Keeper
-	contractCaller helper.IContractCaller
+	keeper *keeper.Keeper
 }
 
 // GetTxCmd returns the root tx command for the bor module.
@@ -92,18 +90,16 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(&am.keeper))
-	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
+	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.keeper))
+	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(*am.keeper))
 }
 
 // NewAppModule creates a new AppModule object
 func NewAppModule(
-	keeper keeper.Keeper,
-	contractCaller helper.IContractCaller,
+	keeper *keeper.Keeper,
 ) AppModule {
 	return AppModule{
-		keeper:         keeper,
-		contractCaller: contractCaller,
+		keeper: keeper,
 	}
 }
 

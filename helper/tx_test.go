@@ -94,8 +94,9 @@ func setupMockClient(params mockClientParams) *mockEthClient {
 }
 
 func TestGenerateAuthObj_NormalEIP1559Flow(t *testing.T) {
-	t.Parallel()
-
+	// Not t.Parallel(): InitTestHeimdallConfig mutates package-level globals
+	// (conf, privKeyObject, pubKeyObject). Running these in parallel races
+	// with each other and with other tests that read the same globals.
 	InitTestHeimdallConfig("")
 
 	baseFee := big.NewInt(20000000000)     // 20 Gwei
@@ -136,8 +137,9 @@ func TestGenerateAuthObj_NormalEIP1559Flow(t *testing.T) {
 }
 
 func TestGenerateAuthObj_BaseFeeNil(t *testing.T) {
-	t.Parallel()
-
+	// Not t.Parallel(): InitTestHeimdallConfig mutates package-level globals
+	// (conf, privKeyObject, pubKeyObject). Running these in parallel races
+	// with each other and with other tests that read the same globals.
 	InitTestHeimdallConfig("")
 
 	mockClient := &mockEthClient{
@@ -163,8 +165,9 @@ func TestGenerateAuthObj_BaseFeeNil(t *testing.T) {
 }
 
 func TestGenerateAuthObj_FeeCapExceedsConfiguredMaximum(t *testing.T) {
-	t.Parallel()
-
+	// Not t.Parallel(): InitTestHeimdallConfig mutates package-level globals
+	// (conf, privKeyObject, pubKeyObject). Running these in parallel races
+	// with each other and with other tests that read the same globals.
 	InitTestHeimdallConfig("")
 
 	// Set a very high base fee that will cause calculated fee cap to exceed config.
@@ -188,14 +191,15 @@ func TestGenerateAuthObj_FeeCapExceedsConfiguredMaximum(t *testing.T) {
 	require.NotNil(t, auth)
 
 	// The calculated fee cap would be (300 * 2) + 1 = 601 Gwei.
-	// But it should be capped to configured maximum (500 Gwei = DefaultMainChainGasFeeCap).
+	// But it should be capped to the configured maximum (500 Gwei = DefaultMainChainGasFeeCap).
 	configuredMax := big.NewInt(DefaultMainChainGasFeeCap)
 	assert.Equal(t, configuredMax, auth.GasFeeCap, "GasFeeCap should be capped to configured maximum")
 }
 
 func TestGenerateAuthObj_TipCapExceedsConfiguredMaximum(t *testing.T) {
-	t.Parallel()
-
+	// Not t.Parallel(): InitTestHeimdallConfig mutates package-level globals
+	// (conf, privKeyObject, pubKeyObject). Running these in parallel races
+	// with each other and with other tests that read the same globals.
 	InitTestHeimdallConfig("")
 
 	baseFee := big.NewInt(20000000000)      // 20 Gwei
@@ -228,13 +232,14 @@ func TestGenerateAuthObj_TipCapExceedsConfiguredMaximum(t *testing.T) {
 }
 
 func TestGenerateAuthObj_TipCapExceedsFeeCap(t *testing.T) {
-	t.Parallel()
-
+	// Not t.Parallel(): InitTestHeimdallConfig mutates package-level globals
+	// (conf, privKeyObject, pubKeyObject). Running these in parallel races
+	// with each other and with other tests that read the same globals.
 	InitTestHeimdallConfig("")
 
-	// Edge case: very high base fee causes fee cap to be clamped, but tip cap is still below fee cap before clamping.
-	// but tip cap is still below fee cap before clamping.
-	// After fee cap clamping, tip might exceed fee cap.
+	// Edge case: a very high base fee causes the fee cap to be clamped,
+	// but the tip cap is still below the fee cap before clamping.
+	// After fee cap clamping, the tip might exceed the fee cap.
 	baseFee := big.NewInt(250000000000)    // 250 Gwei
 	suggestedTip := big.NewInt(5000000000) // 5 Gwei (below config max of 10 Gwei)
 
@@ -263,8 +268,9 @@ func TestGenerateAuthObj_TipCapExceedsFeeCap(t *testing.T) {
 }
 
 func TestGenerateAuthObj_BlockByNumberError(t *testing.T) {
-	t.Parallel()
-
+	// Not t.Parallel(): InitTestHeimdallConfig mutates package-level globals
+	// (conf, privKeyObject, pubKeyObject). Running these in parallel races
+	// with each other and with other tests that read the same globals.
 	InitTestHeimdallConfig("")
 
 	mockClient := &mockEthClient{
@@ -283,8 +289,9 @@ func TestGenerateAuthObj_BlockByNumberError(t *testing.T) {
 }
 
 func TestGenerateAuthObj_SuggestGasTipCapError(t *testing.T) {
-	t.Parallel()
-
+	// Not t.Parallel(): InitTestHeimdallConfig mutates package-level globals
+	// (conf, privKeyObject, pubKeyObject). Running these in parallel races
+	// with each other and with other tests that read the same globals.
 	InitTestHeimdallConfig("")
 
 	baseFee := big.NewInt(20000000000) // 20 Gwei
