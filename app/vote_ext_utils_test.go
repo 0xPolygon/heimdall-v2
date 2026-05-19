@@ -2311,3 +2311,77 @@ func TestFilterVoteExtensions_PlaceholderPassesCompleteness(t *testing.T) {
 	err = ValidateVoteExtensions(ctx, reqHeight, filtered, round, &valSet, hApp.MilestoneKeeper)
 	require.NoError(t, err, "VE validation must pass with placeholder when remaining VP > 2/3")
 }
+
+func setupEmptyExtendedVoteInfo(
+	t *testing.T,
+	flag cmtTypes.BlockIDFlag,
+	blockHashBytes []byte,
+	validator abci.Validator,
+	privKey cmtcrypto.PrivKey,
+	height int64,
+	app *HeimdallApp,
+) abci.ExtendedVoteInfo {
+	t.Helper()
+
+	nonRpDummyVoteExt, err := GetDummyNonRpVoteExtension(height, app.ChainID())
+	require.NoErrorf(t, err, "failed to get dummy nonRpVoteExtension: %v", err)
+
+	// create a protobuf msg for ConsolidatedSideTxResponse
+	voteExtensionProto := sidetxs.VoteExtension{
+		BlockHash: blockHashBytes,
+		Height:    VoteExtBlockHeight,
+	}
+
+	// marshal it into Protobuf bytes
+	voteExtensionBytes, err := voteExtensionProto.Marshal()
+	require.NoErrorf(t, err, "failed to marshal voteExtensionProto: %v", err)
+
+	voteInfo := abci.ExtendedVoteInfo{
+		BlockIdFlag:        flag,
+		VoteExtension:      voteExtensionBytes,
+		Validator:          validator,
+		NonRpVoteExtension: nonRpDummyVoteExt,
+	}
+
+	createSignatureForVoteExtension(t, height, privKey, voteExtensionBytes, nonRpDummyVoteExt, &voteInfo)
+
+	return voteInfo
+}
+
+func createSignatureForVoteExtension(
+	t *testing.T,
+	height int64,
+	privKey cmtcrypto.PrivKey,
+	voteExtensionBytes,
+	nonRpVoteExtensionBytes []byte,
+	voteInfo *abci.ExtendedVoteInfo,
+) {
+	cve := cmtTypes.CanonicalVoteExtension{
+		Extension: voteExtensionBytes,
+		Height:    height,
+		Round:     int64(0),
+		ChainId:   "",
+	}
+
+	marshalDelimitedFn := func(msg proto.Message) ([]byte, error) {
+		var buf bytes.Buffer
+		if _, err := protoio.NewDelimitedWriter(&buf).WriteMsg(msg); err != nil {
+			return nil, err
+		}
+
+		return buf.Bytes(), nil
+	}
+	extSignBytes, err := marshalDelimitedFn(&cve)
+	require.NoErrorf(t, err, "failed to encode CanonicalVoteExtension: %v", err)
+
+	// Sign the vote extension
+	signature, err := privKey.Sign(extSignBytes)
+	require.NoErrorf(t, err, "failed to sign extSignBytes: %v", err)
+
+	// Sign nonRpVE
+	signatureNonRpVE, err := privKey.Sign(nonRpVoteExtensionBytes)
+	require.NoErrorf(t, err, "failed to sign nonRpVoteExtensionBytes: %v", err)
+
+	voteInfo.ExtensionSignature = signature
+	voteInfo.NonRpExtensionSignature = signatureNonRpVE
+}

@@ -19,14 +19,14 @@ import (
 )
 
 type sideMsgServer struct {
-	Keeper
+	*Keeper
 }
 
 var msgEventRecord = sdk.MsgTypeURL(&types.MsgEventRecord{})
 
 // NewSideMsgServerImpl returns an implementation of the clerk SideMsgServer interface
 // for the provided Keeper.
-func NewSideMsgServerImpl(keeper Keeper) sidetxs.SideMsgServer {
+func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 	return &sideMsgServer{Keeper: keeper}
 }
 

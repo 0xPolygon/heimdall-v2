@@ -57,6 +57,11 @@ func NewKeeper(
 	return keeper
 }
 
+// SetContractCaller sets the contract caller in the clerk keeper
+func (k *Keeper) SetContractCaller(contractCaller helper.IContractCaller) {
+	k.contractCaller = contractCaller
+}
+
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx context.Context) log.Logger {
 	return sdk.UnwrapSDKContext(ctx).Logger().With("module", "x/"+types.ModuleName)
@@ -81,7 +86,7 @@ func (k *Keeper) SetEventRecordWithID(ctx context.Context, record types.EventRec
 	return k.RecordsWithID.Set(ctx, record.Id, record)
 }
 
-// SetEventRecord adds record to store.
+// SetEventRecord adds the record to the store.
 func (k *Keeper) SetEventRecord(ctx context.Context, record types.EventRecord) error {
 	if err := k.SetEventRecordWithID(ctx, record); err != nil {
 		return err
