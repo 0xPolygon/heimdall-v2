@@ -13,6 +13,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestIsV080Hardfork(t *testing.T) {
+	tests := []struct {
+		name           string
+		hardforkHeight int64
+		queryHeight    int64
+		want           bool
+	}{
+		{name: "dormant: hardfork height 0 stays false at height 0", hardforkHeight: 0, queryHeight: 0, want: false},
+		{name: "dormant: hardfork height 0 stays false at large height", hardforkHeight: 0, queryHeight: 1_000_000, want: false},
+		{name: "below hardfork height returns false", hardforkHeight: 100, queryHeight: 99, want: false},
+		{name: "exact hardfork height returns true", hardforkHeight: 100, queryHeight: 100, want: true},
+		{name: "above hardfork height returns true", hardforkHeight: 100, queryHeight: 101, want: true},
+	}
+
+	original := GetV080HardforkHeight()
+	t.Cleanup(func() {
+		SetV080HardforkHeight(original)
+	})
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			SetV080HardforkHeight(tc.hardforkHeight)
+			require.Equal(t, tc.want, IsV080Hardfork(tc.queryHeight))
+		})
+	}
+}
+
 // TestHeimdallConfig checks heimdall configs
 func TestHeimdallConfig(t *testing.T) {
 	// Not t.Parallel(): this test mutates package-level configs via InitTestHeimdallConfig

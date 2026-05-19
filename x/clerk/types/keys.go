@@ -14,9 +14,13 @@ const (
 )
 
 var (
-	RecordsWithIDKeyPrefix   = collections.NewPrefix(0)
-	RecordsWithTimeKeyPrefix = collections.NewPrefix(1)
-	RecordSequencesKeyPrefix = collections.NewPrefix(2)
+	RecordsWithIDKeyPrefix           = collections.NewPrefix(0)
+	RecordsWithTimeKeyPrefix         = collections.NewPrefix(1)
+	RecordSequencesKeyPrefix         = collections.NewPrefix(2)
+	VisibilityTimeUpgradeIDKeyPrefix = collections.NewPrefix(3)
+	PendingVisibilityEventsKeyPrefix = collections.NewPrefix(4)
+	BlockTimeReverseIndexKeyPrefix   = collections.NewPrefix(5)
+	VisibilityHeightByIDKeyPrefix    = collections.NewPrefix(6)
 
 	// DefaultValue of the record sequence
 	DefaultValue = []byte{0x01}

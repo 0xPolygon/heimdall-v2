@@ -61,9 +61,8 @@ func (hl *HeimdallListener) Stop() {
 	hl.Logger.Info("HeimdallListener: stopped")
 }
 
-// ProcessHeader -
-func (hl *HeimdallListener) ProcessHeader(_ *blockHeader) {
-}
+// ProcessHeader - no-op function for HeimdallListener
+func (hl *HeimdallListener) ProcessHeader(_ *blockHeader) {}
 
 // StartPolling - starts polling for heimdall events
 func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.Duration, _ *big.Int) {
