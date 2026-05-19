@@ -15,6 +15,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -121,6 +122,11 @@ type CheckpointProcessor struct {
 
 	// RootChain abi
 	rootChainAbi *abi.ABI
+
+	// queryTxBytesFromBlock returns the raw bytes of the tx with the given hash
+	// from the block at the given height. Defaults to helper.QueryTxBytesFromBlock;
+	// overridden in tests to assert the height computed for the checkpoint flow.
+	queryTxBytesFromBlock func(cliCtx client.Context, hash []byte, height int64) ([]byte, error)
 }
 
 // CheckpointContext represents checkpoint context
@@ -132,7 +138,8 @@ type CheckpointContext struct {
 // NewCheckpointProcessor - add rootChain abi to the checkpoint processor
 func NewCheckpointProcessor(rootChainAbi *abi.ABI) *CheckpointProcessor {
 	return &CheckpointProcessor{
-		rootChainAbi: rootChainAbi,
+		rootChainAbi:          rootChainAbi,
+		queryTxBytesFromBlock: helper.QueryTxBytesFromBlock,
 	}
 }
 
@@ -570,15 +577,9 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 // and sends a transaction to rootChain
 func (cp *CheckpointProcessor) createAndSendCheckpointToRootChain(checkpointContext *CheckpointContext, start uint64, end uint64, height int64, txHash []byte) error {
 	cp.Logger.Info(infoMsgCpPreparingCheckpointForRootChain, "height", height, "txHash", common.Bytes2Hex(txHash), "start", start, "end", end)
-	// The EventTypeCheckpoint event is emitted from the side-tx post-handler,
-	// which runs in PreBlocker at height H against the txs of block H-1 (see
-	// StakeKeeper.SetLastBlockTxs/GetLastBlockTxs and app/abci.go). So the
-	// checkpoint MsgCheckpointBlock tx that produced this event lives in
-	// block height-1, not height.
-	txBlockHeight := height - 1
-	txBytes, err := helper.QueryTxBytesFromBlock(cp.cliCtx, txHash, txBlockHeight)
+	txBytes, err := cp.fetchCheckpointTxBytesForEvent(txHash, height)
 	if err != nil {
-		cp.Logger.Error(errMsgCpQueryingCheckpointTxProof, "txHash", txHash, "height", txBlockHeight, "error", err)
+		cp.Logger.Error(errMsgCpQueryingCheckpointTxProof, "txHash", txHash, "eventHeight", height, "error", err)
 		return err
 	}
 
@@ -628,6 +629,18 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootChain(checkpointCont
 	}
 
 	return nil
+}
+
+// fetchCheckpointTxBytesForEvent returns the raw bytes of the MsgCheckpointBlock
+// tx whose post-handler emitted the EventTypeCheckpoint event at eventHeight.
+//
+// The side-tx post-handler runs in PreBlocker at height H against the txs of
+// block H-1 (see StakeKeeper.SetLastBlockTxs / GetLastBlockTxs and
+// app/abci.go), so the tx that produced the event lives in block
+// eventHeight-1, not eventHeight. Routing this through a single named helper
+// keeps the off-by-one invariant grep-able and unit-testable.
+func (cp *CheckpointProcessor) fetchCheckpointTxBytesForEvent(txHash []byte, eventHeight int64) ([]byte, error) {
+	return cp.queryTxBytesFromBlock(cp.cliCtx, txHash, eventHeight-1)
 }
 
 // parseCheckpointSignatures parse checkpoint signatures for the L1 checkpoint contract

@@ -2,10 +2,12 @@ package processor
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"cosmossdk.io/log"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/stretchr/testify/require"
 )
 
@@ -263,5 +265,72 @@ func TestCheckpointProcessor_Constants(t *testing.T) {
 			require.NotEmpty(t, msg)
 			require.Contains(t, msg, "CheckpointProcessor")
 		}
+	})
+}
+
+// TestCheckpointProcessor_fetchCheckpointTxBytesForEvent guards the off-by-one
+// that caused the checkpoint-on-L1 regression in #587.
+//
+// The MsgCheckpointBlock tx whose side-tx post-handler emits the
+// EventTypeCheckpoint event lives in block H-1, not block H — because the
+// post-handler runs in PreBlocker against the previous block's txs (saved via
+// StakeKeeper.SetLastBlockTxs/GetLastBlockTxs, see app/abci.go). A regression
+// here would silently break L1 checkpoint submission; the kurtosis E2E catches
+// it eventually, but this unit test fails immediately and points at the line
+// that needs attention.
+func TestCheckpointProcessor_fetchCheckpointTxBytesForEvent(t *testing.T) {
+	t.Parallel()
+
+	t.Run("queries block at eventHeight-1", func(t *testing.T) {
+		t.Parallel()
+
+		var (
+			gotHash   []byte
+			gotHeight int64
+			wantBytes = []byte("checkpoint-tx-bytes")
+		)
+
+		cp := &CheckpointProcessor{
+			queryTxBytesFromBlock: func(_ client.Context, hash []byte, height int64) ([]byte, error) {
+				gotHash = hash
+				gotHeight = height
+				return wantBytes, nil
+			},
+		}
+		cp.BaseProcessor.Logger = log.NewNopLogger()
+
+		const eventHeight = int64(101)
+		txHash := []byte{0xde, 0xad, 0xbe, 0xef}
+
+		got, err := cp.fetchCheckpointTxBytesForEvent(txHash, eventHeight)
+		require.NoError(t, err)
+		require.Equal(t, wantBytes, got)
+		require.Equal(t, txHash, gotHash)
+		require.Equal(t, eventHeight-1, gotHeight,
+			"checkpoint tx lives in PreBlocker's lastBlockTxs (block H-1); querying block H would miss it")
+	})
+
+	t.Run("propagates query error", func(t *testing.T) {
+		t.Parallel()
+
+		wantErr := errors.New("tx not found in block")
+		cp := &CheckpointProcessor{
+			queryTxBytesFromBlock: func(_ client.Context, _ []byte, _ int64) ([]byte, error) {
+				return nil, wantErr
+			},
+		}
+		cp.BaseProcessor.Logger = log.NewNopLogger()
+
+		got, err := cp.fetchCheckpointTxBytesForEvent([]byte{0x01}, 42)
+		require.ErrorIs(t, err, wantErr)
+		require.Nil(t, got)
+	})
+
+	t.Run("NewCheckpointProcessor wires the default query", func(t *testing.T) {
+		t.Parallel()
+
+		cp := NewCheckpointProcessor(nil)
+		require.NotNil(t, cp.queryTxBytesFromBlock,
+			"queryTxBytesFromBlock must default to helper.QueryTxBytesFromBlock so production code uses the real cometbft client")
 	})
 }
