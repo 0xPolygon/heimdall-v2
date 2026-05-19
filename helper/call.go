@@ -1254,7 +1254,7 @@ func (c *ContractCaller) GetMainTxReceipt(txHash common.Hash) (*ethTypes.Receipt
 	ctx, cancel := context.WithTimeout(context.Background(), c.MainChainTimeout)
 	defer cancel()
 
-	return c.getTxReceipt(ctx, c.MainChainClient, nil, txHash)
+	return c.getTxReceipt(ctx, c.MainChainClient, txHash)
 }
 
 // BatchGetMainChainTxReceipts fetches multiple main chain tx receipts in a single JSON-RPC batch call.
@@ -1297,10 +1297,13 @@ func (c *ContractCaller) GetBorTxReceipt(txHash common.Hash) (*ethTypes.Receipt,
 	defer cancel()
 
 	if c.BorChainGrpcFlag {
-		grpcClient := GetBorGRPCClient()
-		return c.getTxReceipt(ctx, nil, grpcClient, txHash)
+		grpcClient, err := c.getRequiredBorGRPCClient()
+		if err != nil {
+			return nil, err
+		}
+		return grpcClient.TransactionReceipt(ctx, txHash)
 	}
-	return c.getTxReceipt(ctx, c.BorChainClient, nil, txHash)
+	return c.getTxReceipt(ctx, c.BorChainClient, txHash)
 }
 
 func (c *ContractCaller) getTxReceipt(
@@ -1308,12 +1311,8 @@ func (c *ContractCaller) getTxReceipt(
 	client interface {
 		TransactionReceipt(context.Context, common.Hash) (*ethTypes.Receipt, error)
 	},
-	grpcClient *borgrpc.BorGRPCClient,
 	txHash common.Hash,
 ) (*ethTypes.Receipt, error) {
-	if grpcClient != nil {
-		return grpcClient.TransactionReceipt(ctx, txHash)
-	}
 	return client.TransactionReceipt(ctx, txHash)
 }
 
