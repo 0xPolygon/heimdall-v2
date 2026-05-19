@@ -447,7 +447,6 @@ func TestPrepareProposalHandler_BudgetNotReached(t *testing.T) {
 	require.Len(t, respPrep.Txs, 2)
 }
 
-// TestProcessProposalHandler tests the ProcessProposal handler of the HeimdallApp by creating a checkpoint message, building a signed transaction, preparing a proposal, and processing the proposal with valid and invalid transactions.
 func TestProcessProposalHandler(t *testing.T) {
 
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
@@ -2665,18 +2664,23 @@ func TestPrepareProposal(t *testing.T) {
 	txBytes, err := txConfig.TxEncoder()(txBuilder.GetTx())
 	require.NoError(t, err)
 
-	// Build a fake commit
-	voteInfo1 := setupEmptyExtendedVoteInfo(
+	// Build a fake commit for height=3
+	cmtPubKey, err := validators[0].CmtConsPublicKey()
+	require.NoError(t, err)
+	voteInfo1 := setupExtendedVoteInfoWithNonRp(
 		t,
 		cmtproto.BlockIDFlagCommit,
+		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
 		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000002dead"),
 		cometVal1,
 		validatorPrivKeys[0],
 		2,
 		app,
+		cmtPubKey.GetEd25519(),
 	)
 
 	extCommit := &abci.ExtendedCommitInfo{
+		Round: 1,
 		Votes: []abci.ExtendedVoteInfo{voteInfo1},
 	}
 	extCommitBytes, err := extCommit.Marshal()
@@ -4905,7 +4909,6 @@ func TestProcessProposal_RejectsCheckpointTxWhenNonRpVoteExtensionsInvalidPostPh
 	require.Equal(t, abci.ResponseProcessProposal_REJECT, res.Status)
 }
 
-// TestABCI_FullBlockLifecycle_NoPreBlocker tests the full block lifecycle from proposal to vote extension and verification without relying on the PreBlocker handler by simulating the creation of a block with an ExtendedCommitInfo and side transactions, preparing a proposal, extending the vote with the included transactions, and verifying the vote extension, ensuring that each step of the lifecycle functions correctly even when the PreBlocker is not involved, thus validating the robustness of the ABCI handlers in handling a complete block lifecycle independently.
 func TestABCI_FullBlockLifecycle_NoPreBlocker(t *testing.T) {
 	t.Run("complete block lifecycle with side txs", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
