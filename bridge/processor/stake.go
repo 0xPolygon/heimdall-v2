@@ -26,8 +26,6 @@ import (
 )
 
 const (
-	defaultDelayDuration = 15 * time.Second
-
 	// Error messages
 	errMsgUnmarshallingEvent  = "StakingProcessor: error while unmarshalling event from rootChain"
 	errMsgParsingEvent        = "StakingProcessor: error while parsing event"
@@ -222,7 +220,7 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 
 		if !validNonce {
 			sp.Logger.Info(fmt.Sprintf(infoMsgIgnoringNonceOutOfOrder, "unStakeInit"))
-			return tasks.NewErrRetryTaskLater(msgNonceOutOfOrder, defaultDelayDuration*time.Duration(nonceDelay))
+			return tasks.NewErrRetryTaskLater(msgNonceOutOfOrder, util.StakeNonceRetryDelay*time.Duration(nonceDelay))
 		}
 
 		sp.Logger.Info(
@@ -308,7 +306,7 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 
 		if !validNonce {
 			sp.Logger.Info(fmt.Sprintf(infoMsgIgnoringNonceOutOfOrder, "stakeUpdate"))
-			return tasks.NewErrRetryTaskLater(msgNonceOutOfOrder, defaultDelayDuration*time.Duration(nonceDelay))
+			return tasks.NewErrRetryTaskLater(msgNonceOutOfOrder, util.StakeNonceRetryDelay*time.Duration(nonceDelay))
 		}
 
 		sp.Logger.Info(
@@ -406,7 +404,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 
 		if !validNonce {
 			sp.Logger.Info(fmt.Sprintf(infoMsgIgnoringNonceOutOfOrder, "signerChange"))
-			return tasks.NewErrRetryTaskLater(msgNonceOutOfOrder, defaultDelayDuration*time.Duration(nonceDelay))
+			return tasks.NewErrRetryTaskLater(msgNonceOutOfOrder, util.StakeNonceRetryDelay*time.Duration(nonceDelay))
 		}
 
 		sp.Logger.Info(
@@ -472,7 +470,7 @@ func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txNonce uint64) 
 			diff = 10
 		}
 
-		sp.Logger.Error(errMsgNonceNotInOrder, "validatorId", validatorId, "currentNonce", currentNonce, "txNonce", txNonce, "delay", diff*uint64(defaultDelayDuration))
+		sp.Logger.Error(errMsgNonceNotInOrder, "validatorId", validatorId, "currentNonce", currentNonce, "txNonce", txNonce, "delay", diff*uint64(util.StakeNonceRetryDelay))
 
 		return false, diff, nil
 	}
