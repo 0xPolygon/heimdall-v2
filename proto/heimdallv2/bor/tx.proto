@@ -109,6 +109,9 @@ message MsgSetProducerDowntime {
   // Block range during which the producer will be offline.
   BlockRange downtime_range = 2
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  // Validator ID of the preferred producer to replace the downtime producer.
+  // 0 = round-robin (default).
+  uint64 target_producer_id = 3;
 }
 
 // MsgSetProducerDowntimeResponse defines the response for

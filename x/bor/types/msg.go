@@ -47,6 +47,7 @@ func NewMsgSetProducerDowntime(
 	producer string,
 	startBorBlock uint64,
 	endBorBlock uint64,
+	targetProducerID uint64,
 ) *MsgSetProducerDowntime {
 	return &MsgSetProducerDowntime{
 		Producer: util.FormatAddress(producer),
@@ -54,6 +55,7 @@ func NewMsgSetProducerDowntime(
 			StartBlock: startBorBlock,
 			EndBlock:   endBorBlock,
 		},
+		TargetProducerId: targetProducerID,
 	}
 }
 

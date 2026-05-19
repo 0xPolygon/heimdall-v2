@@ -325,6 +325,28 @@ func (srv msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetP
 		return nil, fmt.Errorf("producer with address %s and id %d is not in the current producer set", msg.Producer, producerId)
 	}
 
+	// Reject non-default target before the fork height.
+	if msg.TargetProducerId != types.RoundRobinDefault && sdkCtx.BlockHeight() < helper.GetV080HardforkHeight() {
+		return nil, fmt.Errorf("target producer override is not enabled until height %d", helper.GetV080HardforkHeight())
+	}
+
+	// Validate target producer if it is not the round-robin default and the block height is greater than the target producer override height.
+	if msg.TargetProducerId != types.RoundRobinDefault && sdkCtx.BlockHeight() >= helper.GetV080HardforkHeight() {
+		if msg.TargetProducerId == producerId {
+			return nil, fmt.Errorf("target producer cannot be the same as the current producer")
+		}
+		targetInCandidates := false
+		for _, c := range candidates {
+			if c == msg.TargetProducerId {
+				targetInCandidates = true
+				break
+			}
+		}
+		if !targetInCandidates {
+			return nil, fmt.Errorf("target producer id %d is not in the current producer set", msg.TargetProducerId)
+		}
+	}
+
 	return &types.MsgSetProducerDowntimeResponse{}, nil
 }
 

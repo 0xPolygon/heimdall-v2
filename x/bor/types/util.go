@@ -101,8 +101,9 @@ func CalcCurrentBorSpanId(latestBorBlock uint64, latestHeimdallSpan *Span) (uint
 const (
 	PlannedDowntimeMinimumTimeInFuture = 150
 	PlannedDowntimeMaximumTimeInFuture = 100 * DefaultSpanDuration // ~2 weeks
-	PlannedDowntimeMinRange            = 150                       // It will be down minimum for the whole span, this here is just for tx validation
+	PlannedDowntimeMinRange            = 150                       // It will be down minimum for the whole span, this here is just for tx validation.
 	PlannedDowntimeMaxRange            = 14 * DefaultSpanDuration  // ~48 hours
+	RoundRobinDefault                  = 0                         // No preferred replacement, the next producer is chosen via round-robin instead.
 )
 
 // LogSpan returns a human-readable summary of the span for logging purposes.

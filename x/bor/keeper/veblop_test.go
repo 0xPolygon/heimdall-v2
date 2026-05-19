@@ -1,8 +1,11 @@
 package keeper_test
 
 import (
+	"fmt"
+
 	"github.com/golang/mock/gomock"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -417,7 +420,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			startBlock := lastSpan.EndBlock + 1
 			endBlock := lastSpan.EndBlock + params.SpanDuration
 
-			result, err := borKeeper.SelectNextSpanProducer(ctx, 1, tc.activeValidatorIDs, tc.producerSetLimit, startBlock, endBlock)
+			result, err := borKeeper.SelectNextSpanProducer(ctx, 1, tc.activeValidatorIDs, tc.producerSetLimit, startBlock, endBlock, types.RoundRobinDefault)
 
 			if tc.expectedError {
 				require.Error(err)
@@ -503,7 +506,7 @@ func (s *KeeperTestSuite) TestAddNewVeBlopSpan() {
 	borChainID := "137"
 	heimdallBlock := uint64(5000)
 
-	err := borKeeper.AddNewVeBlopSpan(ctx, 1, startBlock, endBlock, borChainID, active, heimdallBlock)
+	err := borKeeper.AddNewVeBlopSpan(ctx, 1, startBlock, endBlock, borChainID, active, heimdallBlock, types.RoundRobinDefault)
 	require.NoError(err)
 
 	span, err := borKeeper.GetSpan(ctx, 1)
@@ -521,4 +524,324 @@ func (s *KeeperTestSuite) TestAddNewVeBlopSpan() {
 	lastBlock, err := borKeeper.GetLastSpanBlock(ctx)
 	require.NoError(err)
 	require.Equal(heimdallBlock, lastBlock)
+}
+
+func (s *KeeperTestSuite) TestSelectNextSpanProducerWithTarget() {
+	require := s.Require()
+	ctx := s.ctx
+	borKeeper := s.borKeeper
+	stakeKeeper := s.stakeKeeper
+
+	// Ensure the target-producer override is enabled regardless of any future
+	// activation height configured in the binary.
+	helper.SetV080HardforkHeight(0)
+
+	s.milestoneKeeper.EXPECT().GetLastMilestone(ctx).Return(&milestoneTypes.Milestone{
+		EndBlock: 1000,
+	}, nil).AnyTimes()
+
+	require.NoError(borKeeper.AddNewSpan(ctx, &types.Span{
+		Id:         0,
+		StartBlock: 0,
+		EndBlock:   1001,
+		SelectedProducers: []staketypes.Validator{
+			{ValId: 1, VotingPower: 100},
+		},
+	}))
+
+	val1 := staketypes.Validator{ValId: 1, VotingPower: 100}
+	val2 := staketypes.Validator{ValId: 2, VotingPower: 90}
+	val3 := staketypes.Validator{ValId: 3, VotingPower: 80}
+
+	setupMocks := func() {
+		valSet := staketypes.ValidatorSet{
+			Validators: []*staketypes.Validator{&val1, &val2, &val3},
+		}
+		stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).AnyTimes()
+		stakeKeeper.EXPECT().GetValidatorFromValID(ctx, val1.ValId).Return(val1, nil).AnyTimes()
+		stakeKeeper.EXPECT().GetValidatorFromValID(ctx, val2.ValId).Return(val2, nil).AnyTimes()
+		stakeKeeper.EXPECT().GetValidatorFromValID(ctx, val3.ValId).Return(val3, nil).AnyTimes()
+		stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).
+			Return(staketypes.Validator{VotingPower: 0}, nil).AnyTimes()
+
+		require.NoError(borKeeper.SetProducerVotes(ctx, val1.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
+		require.NoError(borKeeper.SetProducerVotes(ctx, val2.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
+		require.NoError(borKeeper.SetProducerVotes(ctx, val3.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
+	}
+
+	// Happy path: valid target, active, not down -> selected directly
+	s.Run("target in active candidates and not down", func() {
+		require.NoError(borKeeper.ClearProducerVotes(ctx))
+		setupMocks()
+
+		active := map[uint64]struct{}{2: {}, 3: {}}
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3)
+		require.NoError(err)
+		require.Equal(uint64(3), result)
+	})
+
+	// Target has planned downtime overlapping the range -> round-robin
+	s.Run("target down for range falls through to round-robin", func() {
+		require.NoError(borKeeper.ClearProducerVotes(ctx))
+		setupMocks()
+
+		require.NoError(borKeeper.ProducerPlannedDowntime.Set(ctx, 3, types.BlockRange{StartBlock: 1000, EndBlock: 2500}))
+
+		active := map[uint64]struct{}{2: {}, 3: {}}
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3)
+		require.NoError(err)
+		require.Equal(uint64(2), result)
+
+		require.NoError(borKeeper.ProducerPlannedDowntime.Remove(ctx, 3))
+	})
+
+	// Target exists in candidate set but not active -> round-robin
+	s.Run("target not in active candidates falls through", func() {
+		require.NoError(borKeeper.ClearProducerVotes(ctx))
+		setupMocks()
+
+		active := map[uint64]struct{}{2: {}}
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3)
+		require.NoError(err)
+		require.Equal(uint64(2), result)
+	})
+
+	// target=0 is the no-preference default -> always round-robin
+	s.Run("target zero uses round-robin", func() {
+		require.NoError(borKeeper.ClearProducerVotes(ctx))
+		setupMocks()
+
+		active := map[uint64]struct{}{2: {}, 3: {}}
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, types.RoundRobinDefault)
+		require.NoError(err)
+		require.Equal(uint64(2), result)
+	})
+
+	// Non-existent validator ID as target -> not in candidates -> round-robin
+	s.Run("target is non-existent validator falls through", func() {
+		require.NoError(borKeeper.ClearProducerVotes(ctx))
+		setupMocks()
+
+		active := map[uint64]struct{}{2: {}, 3: {}}
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 999)
+		require.NoError(err)
+		require.Equal(uint64(2), result)
+	})
+
+	// Target equals current producer — SelectNextSpanProducer now guards against
+	// self-targeting as defense-in-depth and falls through to round-robin.
+	s.Run("target equals current producer falls through to round-robin", func() {
+		require.NoError(borKeeper.ClearProducerVotes(ctx))
+		setupMocks()
+
+		active := map[uint64]struct{}{2: {}, 3: {}}
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 2, active, 2, 1002, 2001, 2)
+		require.NoError(err)
+		require.Equal(uint64(3), result) // round-robin: next after current=2 in [2,3] is 3
+	})
+
+	// Downtime overlaps only partially (start inside range) -> still considered down
+	s.Run("target with partial downtime overlap falls through", func() {
+		require.NoError(borKeeper.ClearProducerVotes(ctx))
+		setupMocks()
+
+		// Downtime [1500, 2500] overlaps range [1002, 2001]
+		require.NoError(borKeeper.ProducerPlannedDowntime.Set(ctx, 3, types.BlockRange{StartBlock: 1500, EndBlock: 2500}))
+
+		active := map[uint64]struct{}{2: {}, 3: {}}
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3)
+		require.NoError(err)
+		require.Equal(uint64(2), result)
+
+		require.NoError(borKeeper.ProducerPlannedDowntime.Remove(ctx, 3))
+	})
+
+	// Downtime range is entirely before the span range -> target NOT down -> selected
+	s.Run("target with non-overlapping downtime is selected", func() {
+		require.NoError(borKeeper.ClearProducerVotes(ctx))
+		setupMocks()
+
+		// Downtime [500, 900] does not overlap range [1002, 2001]
+		require.NoError(borKeeper.ProducerPlannedDowntime.Set(ctx, 3, types.BlockRange{StartBlock: 500, EndBlock: 900}))
+
+		active := map[uint64]struct{}{2: {}, 3: {}}
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3)
+		require.NoError(err)
+		require.Equal(uint64(3), result)
+
+		require.NoError(borKeeper.ProducerPlannedDowntime.Remove(ctx, 3))
+	})
+
+	// Round-robin result is deterministic regardless of whether a target was attempted
+	s.Run("fallthrough produces same result as no target", func() {
+		require.NoError(borKeeper.ClearProducerVotes(ctx))
+		setupMocks()
+
+		active := map[uint64]struct{}{2: {}, 3: {}}
+
+		// With invalid target (falls through)
+		resultWithTarget, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 999)
+		require.NoError(err)
+
+		require.NoError(borKeeper.ClearProducerVotes(ctx))
+		setupMocks()
+
+		// Without target
+		resultNoTarget, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 0)
+		require.NoError(err)
+
+		require.Equal(resultNoTarget, resultWithTarget)
+	})
+}
+
+func (s *KeeperTestSuite) TestAddNewVeBlopSpanWithTarget() {
+	require := s.Require()
+	ctx := s.ctx
+	borKeeper := s.borKeeper
+	stakeKeeper := s.stakeKeeper
+
+	require.NoError(borKeeper.AddNewSpan(ctx, &types.Span{
+		Id:         0,
+		StartBlock: 0,
+		EndBlock:   199,
+		SelectedProducers: []staketypes.Validator{
+			{ValId: 1, VotingPower: 100},
+		},
+	}))
+
+	val1 := staketypes.Validator{ValId: 1, VotingPower: 100}
+	val2 := staketypes.Validator{ValId: 2, VotingPower: 180}
+	val3 := staketypes.Validator{ValId: 3, VotingPower: 70}
+	valSet := staketypes.ValidatorSet{Validators: []*staketypes.Validator{&val1, &val2, &val3}}
+
+	stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).AnyTimes()
+	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(1)).Return(val1, nil).AnyTimes()
+	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(2)).Return(val2, nil).AnyTimes()
+	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(3)).Return(val3, nil).AnyTimes()
+
+	require.NoError(borKeeper.SetProducerVotes(ctx, val1.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
+	require.NoError(borKeeper.SetProducerVotes(ctx, val2.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
+	require.NoError(borKeeper.SetProducerVotes(ctx, val3.ValId, types.ProducerVotes{Votes: []uint64{3, 2}}))
+
+	active := map[uint64]struct{}{1: {}, 2: {}, 3: {}}
+
+	// Valid target=3 should be selected over round-robin
+	err := borKeeper.AddNewVeBlopSpan(ctx, 1, 200, 300, "137", active, 5000, 3)
+	require.NoError(err)
+
+	span, err := borKeeper.GetSpan(ctx, 1)
+	require.NoError(err)
+	require.Len(span.SelectedProducers, 1)
+	require.Equal(uint64(3), span.SelectedProducers[0].ValId)
+}
+
+func (s *KeeperTestSuite) TestAddNewVeBlopSpanTargetFallthrough() {
+	require := s.Require()
+	ctx := s.ctx
+	borKeeper := s.borKeeper
+	stakeKeeper := s.stakeKeeper
+
+	require.NoError(borKeeper.AddNewSpan(ctx, &types.Span{
+		Id:         0,
+		StartBlock: 0,
+		EndBlock:   199,
+		SelectedProducers: []staketypes.Validator{
+			{ValId: 1, VotingPower: 100},
+		},
+	}))
+
+	val1 := staketypes.Validator{ValId: 1, VotingPower: 100}
+	val2 := staketypes.Validator{ValId: 2, VotingPower: 180}
+	val3 := staketypes.Validator{ValId: 3, VotingPower: 70}
+	valSet := staketypes.ValidatorSet{Validators: []*staketypes.Validator{&val1, &val2, &val3}}
+
+	stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).AnyTimes()
+	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(1)).Return(val1, nil).AnyTimes()
+	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(2)).Return(val2, nil).AnyTimes()
+	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(3)).Return(val3, nil).AnyTimes()
+
+	require.NoError(borKeeper.SetProducerVotes(ctx, val1.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
+	require.NoError(borKeeper.SetProducerVotes(ctx, val2.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
+	require.NoError(borKeeper.SetProducerVotes(ctx, val3.ValId, types.ProducerVotes{Votes: []uint64{3, 2}}))
+
+	// Target=3 is down for the range -> should fall through to round-robin (val2)
+	require.NoError(borKeeper.ProducerPlannedDowntime.Set(ctx, 3, types.BlockRange{StartBlock: 150, EndBlock: 350}))
+
+	active := map[uint64]struct{}{1: {}, 2: {}, 3: {}}
+
+	err := borKeeper.AddNewVeBlopSpan(ctx, 1, 200, 300, "137", active, 5000, 3)
+	require.NoError(err)
+
+	span, err := borKeeper.GetSpan(ctx, 1)
+	require.NoError(err)
+	require.Len(span.SelectedProducers, 1)
+	require.Equal(uint64(2), span.SelectedProducers[0].ValId)
+}
+
+func (s *KeeperTestSuite) TestAddNewVeBlopSpanCalculateProducerSetError() {
+	require := s.Require()
+	ctx := s.ctx
+	borKeeper := s.borKeeper
+	stakeKeeper := s.stakeKeeper
+
+	require.NoError(borKeeper.AddNewSpan(ctx, &types.Span{
+		Id:         0,
+		StartBlock: 0,
+		EndBlock:   199,
+		SelectedProducers: []staketypes.Validator{
+			{ValId: 1, VotingPower: 100},
+		},
+	}))
+
+	// GetValidatorSet returns an error -> CalculateProducerSet fails -> SelectNextSpanProducer fails.
+	stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(staketypes.ValidatorSet{}, fmt.Errorf("validator set error")).AnyTimes()
+
+	active := map[uint64]struct{}{}
+
+	err := borKeeper.AddNewVeBlopSpan(ctx, 1, 200, 300, "137", active, 5000, types.RoundRobinDefault)
+	require.Error(err)
+	require.Contains(err.Error(), "validator set error")
+}
+
+func (s *KeeperTestSuite) TestAddNewVeBlopSpanGetValidatorSetError() {
+	require := s.Require()
+	ctx := s.ctx
+	borKeeper := s.borKeeper
+	stakeKeeper := s.stakeKeeper
+
+	require.NoError(borKeeper.AddNewSpan(ctx, &types.Span{
+		Id:         0,
+		StartBlock: 0,
+		EndBlock:   199,
+		SelectedProducers: []staketypes.Validator{
+			{ValId: 1, VotingPower: 100},
+		},
+	}))
+
+	val1 := staketypes.Validator{ValId: 1, VotingPower: 100}
+	val2 := staketypes.Validator{ValId: 2, VotingPower: 180}
+	valSet := staketypes.ValidatorSet{Validators: []*staketypes.Validator{&val1, &val2}}
+
+	// First call to GetValidatorSet (inside CalculateProducerSet) succeeds;
+	// second call (inside AddNewVeBlopSpan after SelectNextSpanProducer) fails.
+	callCount := 0
+	stakeKeeper.EXPECT().GetValidatorSet(ctx).DoAndReturn(func(_ interface{}) (staketypes.ValidatorSet, error) {
+		callCount++
+		if callCount <= 1 {
+			return valSet, nil
+		}
+		return staketypes.ValidatorSet{}, fmt.Errorf("validator set unavailable")
+	}).AnyTimes()
+
+	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(1)).Return(val1, nil).AnyTimes()
+	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(2)).Return(val2, nil).AnyTimes()
+
+	require.NoError(borKeeper.SetProducerVotes(ctx, val1.ValId, types.ProducerVotes{Votes: []uint64{2}}))
+	require.NoError(borKeeper.SetProducerVotes(ctx, val2.ValId, types.ProducerVotes{Votes: []uint64{2}}))
+
+	active := map[uint64]struct{}{1: {}, 2: {}}
+
+	err := borKeeper.AddNewVeBlopSpan(ctx, 1, 200, 300, "137", active, 5000, types.RoundRobinDefault)
+	require.Error(err)
+	require.Contains(err.Error(), "validator set unavailable")
 }

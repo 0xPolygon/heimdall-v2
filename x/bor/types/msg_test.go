@@ -102,6 +102,7 @@ func TestNewMsgSetProducerDowntime(t *testing.T) {
 			"0x1234567890abcdef1234567890abcdef12345678",
 			1000,
 			2000,
+			0,
 		)
 
 		require.NotNil(t, msg)
@@ -118,6 +119,7 @@ func TestNewMsgSetProducerDowntime(t *testing.T) {
 			"0xABCDEF1234567890ABCDEF1234567890ABCDEF12",
 			1000,
 			2000,
+			0,
 		)
 
 		require.NotNil(t, msg)
@@ -135,6 +137,7 @@ func TestNewMsgSetProducerDowntime(t *testing.T) {
 			"0x1234567890123456789012345678901234567890",
 			startBlock,
 			endBlock,
+			0,
 		)
 
 		require.NotNil(t, msg)
@@ -149,11 +152,29 @@ func TestNewMsgSetProducerDowntime(t *testing.T) {
 			"0x0000000000000000000000000000000000000000",
 			0,
 			0,
+			0,
 		)
 
 		require.NotNil(t, msg)
 		require.Equal(t, uint64(0), msg.DowntimeRange.StartBlock)
 		require.Equal(t, uint64(0), msg.DowntimeRange.EndBlock)
+		require.Equal(t, uint64(0), msg.TargetProducerId)
+	})
+
+	t.Run("sets target producer id", func(t *testing.T) {
+		t.Parallel()
+
+		msg := types.NewMsgSetProducerDowntime(
+			"0x1234567890abcdef1234567890abcdef12345678",
+			1000,
+			2000,
+			42,
+		)
+
+		require.NotNil(t, msg)
+		require.Equal(t, uint64(42), msg.TargetProducerId)
+		require.Equal(t, uint64(1000), msg.DowntimeRange.StartBlock)
+		require.Equal(t, uint64(2000), msg.DowntimeRange.EndBlock)
 	})
 }
 
