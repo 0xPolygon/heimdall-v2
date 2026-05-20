@@ -140,7 +140,6 @@ func GetMajorityMilestoneProposition(
 	validatorVotes := make(map[string]map[uint64][]byte) // validator -> block -> (hash + td)
 	validatorAddresses := make(map[string][]byte)
 	valAddressToVotingPower := make(map[string]int64)
-	parentHashes := make(map[string]struct{})
 	parentHashToVotingPower := make(map[string]int64)
 
 	// Track which validators we've already processed to prevent duplicate votes
@@ -230,7 +229,6 @@ func GetMajorityMilestoneProposition(
 			key := getParentChildKey(common.Bytes2Hex(prop.ParentHash), common.Bytes2Hex(blockHashAndTd))
 			parentHashToVotingPower[key] += validator.VotingPower
 		}
-		parentHashes[common.Bytes2Hex(prop.ParentHash)] = struct{}{}
 	}
 
 	// Find blocks with majority support - use a slice for deterministic ordering
@@ -254,24 +252,9 @@ func GetMajorityMilestoneProposition(
 		return nil, nil, "", nil, nil
 	}
 
-	var majorityParentHash string
-	isParentHashMajority := false
-
-	for parentHash := range parentHashes {
-		key := getParentChildKey(parentHash, common.Bytes2Hex(blockToHashAndTd[majorityBlocks[0]]))
-		if parentHashToVotingPower[key] >= majorityVP {
-			isParentHashMajority = true
-			majorityParentHash = parentHash
-			break
-		}
-	}
-
-	if !isParentHashMajority {
-		logger.Debug("No parent hash found with majority support")
-		return nil, nil, "", nil, nil
-	}
-
-	if majorityParentHash != common.Bytes2Hex(lastEndBlockHash) {
+	majorityParentHash := common.Bytes2Hex(lastEndBlockHash)
+	key := getParentChildKey(majorityParentHash, common.Bytes2Hex(blockToHashAndTd[majorityBlocks[0]]))
+	if parentHashToVotingPower[key] < majorityVP {
 		logger.Debug("Parent hash does not match last end block hash",
 			"majorityParentHash", majorityParentHash,
 			"lastEndBlockHash", common.Bytes2Hex(lastEndBlockHash))

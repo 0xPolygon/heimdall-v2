@@ -77,6 +77,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		// init totalTxBytes with the actual size of the marshaled vote info in bytes
 		totalTxBytes := len(bz)
+		sideTxsCount := 0
 
 		deadline := startTime.Add(prepareProposalBudget)
 		for i, proposedTx := range req.Txs {
@@ -98,7 +99,13 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			}
 
 			// ensure we allow transactions with only one side msg inside
-			if sidetxs.CountSideHandlers(app.sideTxCfg, tx) > 1 {
+			sideHandlersCount := sidetxs.CountSideHandlers(app.sideTxCfg, tx)
+			if sideHandlersCount > 1 {
+				continue
+			}
+			if sideHandlersCount == 1 && sideTxsCount >= maxSideTxResponsesCount {
+				logger.Debug("Skipping side tx because max side tx responses count reached",
+					"maxSideTxResponsesCount", maxSideTxResponsesCount)
 				continue
 			}
 
@@ -140,6 +147,9 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				continue
 			}
 
+			if sideHandlersCount == 1 {
+				sideTxsCount++
+			}
 			totalTxBytes += len(proposedTx)
 			txs = append(txs, proposedTx)
 		}
@@ -232,6 +242,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			logger.Warn("Invalid non-rp vote extension proposal", "error", err)
 		}
 
+		sideTxsCount := 0
 		for _, tx := range req.Txs[1:] {
 			txn, err := app.TxDecode(tx)
 			if err != nil {
@@ -240,7 +251,16 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			}
 
 			// ensure we allow transactions with only one side msg inside
-			if sidetxs.CountSideHandlers(app.sideTxCfg, txn) > 1 {
+			sideHandlersCount := sidetxs.CountSideHandlers(app.sideTxCfg, txn)
+			if sideHandlersCount > 1 {
+				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			}
+			if sideHandlersCount == 1 {
+				sideTxsCount++
+			}
+			if sideTxsCount > maxSideTxResponsesCount {
+				logger.Error("Rejecting proposal because side tx count exceeds max side tx responses count",
+					"sideTxsCount", sideTxsCount, "maxSideTxResponsesCount", maxSideTxResponsesCount)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 

@@ -180,6 +180,179 @@ func TestGetMajorityMilestoneProposition_MajorityWins(t *testing.T) {
 	assert.Equal(t, propMajor.BlockTds, resultProp.BlockTds, "majority validator's proposition should win")
 }
 
+func TestGetMajorityMilestoneProposition_MultipleMajorityParentsAlwaysUsesLastEndHash(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(100)
+
+	validators := []*stakeTypes.Validator{
+		{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 25},
+		{Signer: "0x2222222222222222222222222222222222222222", VotingPower: 25},
+		{Signer: "0x3333333333333333333333333333333333333333", VotingPower: 25},
+		{Signer: "0x4444444444444444444444444444444444444444", VotingPower: 25},
+	}
+	validatorSet := &stakeTypes.ValidatorSet{Validators: validators}
+
+	lastEndHash := []byte("parentA")
+	altParentHash := []byte("parentB")
+	startBlock := uint64(1)
+	blockHash := []byte("same-block-hash")
+	blockTd := uint64(1)
+
+	mkVote := func(val *stakeTypes.Validator, parentHash []byte) abciTypes.ExtendedVoteInfo {
+		prop := &types.MilestoneProposition{
+			BlockHashes:      [][]byte{blockHash},
+			StartBlockNumber: startBlock,
+			ParentHash:       parentHash,
+			BlockTds:         []uint64{blockTd},
+		}
+		ve := &sidetxs.VoteExtension{MilestoneProposition: prop}
+		data, err := ve.Marshal()
+		require.NoError(t, err)
+		return abciTypes.ExtendedVoteInfo{
+			BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
+			VoteExtension: data,
+			Validator:     abciTypes.Validator{Address: common.HexToAddress(val.Signer).Bytes()},
+		}
+	}
+
+	extVotes := []abciTypes.ExtendedVoteInfo{
+		mkVote(validators[0], lastEndHash),
+		mkVote(validators[1], lastEndHash),
+		mkVote(validators[2], altParentHash),
+		mkVote(validators[3], altParentHash),
+	}
+	logger := log.NewTestLogger(t)
+	lastEndBlock := startBlock - 1
+
+	for i := 0; i < 200; i++ {
+		// Rotate ordering to ensure outcome is independent from extVotes order.
+		orderedVotes := make([]abciTypes.ExtendedVoteInfo, 0, len(extVotes))
+		for j := 0; j < len(extVotes); j++ {
+			orderedVotes = append(orderedVotes, extVotes[(i+j)%len(extVotes)])
+		}
+
+		resultProp, _, _, _, err := GetMajorityMilestoneProposition(
+			ctx,
+			validatorSet,
+			orderedVotes,
+			34, // both parents independently satisfy this threshold
+			logger,
+			&lastEndBlock,
+			lastEndHash,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, resultProp, "iteration %d returned nil despite lastEndHash having majority support", i)
+	}
+}
+
+func TestGetMajorityMilestoneProposition_TwoThirdsThresholdWithLastEndParent(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(100)
+
+	validators := []*stakeTypes.Validator{
+		{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 40},
+		{Signer: "0x2222222222222222222222222222222222222222", VotingPower: 30},
+		{Signer: "0x3333333333333333333333333333333333333333", VotingPower: 30},
+	}
+	validatorSet := &stakeTypes.ValidatorSet{Validators: validators}
+
+	startBlock := uint64(1)
+	lastEndHash := []byte("parentA")
+	blockHash := []byte("same-block-hash")
+	blockTd := uint64(1)
+
+	mkVote := func(val *stakeTypes.Validator) abciTypes.ExtendedVoteInfo {
+		prop := &types.MilestoneProposition{
+			BlockHashes:      [][]byte{blockHash},
+			StartBlockNumber: startBlock,
+			ParentHash:       lastEndHash,
+			BlockTds:         []uint64{blockTd},
+		}
+		ve := &sidetxs.VoteExtension{MilestoneProposition: prop}
+		data, err := ve.Marshal()
+		require.NoError(t, err)
+		return abciTypes.ExtendedVoteInfo{
+			BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
+			VoteExtension: data,
+			Validator:     abciTypes.Validator{Address: common.HexToAddress(val.Signer).Bytes()},
+		}
+	}
+
+	extVotes := []abciTypes.ExtendedVoteInfo{
+		mkVote(validators[0]),
+		mkVote(validators[1]),
+		mkVote(validators[2]),
+	}
+
+	logger := log.NewTestLogger(t)
+	lastEndBlock := startBlock - 1
+
+	resultProp, _, _, _, err := GetMajorityMilestoneProposition(
+		ctx,
+		validatorSet,
+		extVotes,
+		67, // 2/3+1 of total voting power 100
+		logger,
+		&lastEndBlock,
+		lastEndHash,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, resultProp, "expected milestone proposition for 2/3+1 threshold")
+}
+
+func TestGetMajorityMilestoneProposition_ReturnsNilWhenLastEndParentBelowThreshold(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(100)
+
+	validators := []*stakeTypes.Validator{
+		{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 40},
+		{Signer: "0x2222222222222222222222222222222222222222", VotingPower: 30},
+		{Signer: "0x3333333333333333333333333333333333333333", VotingPower: 30},
+	}
+	validatorSet := &stakeTypes.ValidatorSet{Validators: validators}
+
+	startBlock := uint64(1)
+	lastEndHash := []byte("parentA")
+	altParentHash := []byte("parentB")
+	blockHash := []byte("same-block-hash")
+	blockTd := uint64(1)
+
+	mkVote := func(val *stakeTypes.Validator, parentHash []byte) abciTypes.ExtendedVoteInfo {
+		prop := &types.MilestoneProposition{
+			BlockHashes:      [][]byte{blockHash},
+			StartBlockNumber: startBlock,
+			ParentHash:       parentHash,
+			BlockTds:         []uint64{blockTd},
+		}
+		ve := &sidetxs.VoteExtension{MilestoneProposition: prop}
+		data, err := ve.Marshal()
+		require.NoError(t, err)
+		return abciTypes.ExtendedVoteInfo{
+			BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
+			VoteExtension: data,
+			Validator:     abciTypes.Validator{Address: common.HexToAddress(val.Signer).Bytes()},
+		}
+	}
+
+	extVotes := []abciTypes.ExtendedVoteInfo{
+		mkVote(validators[0], altParentHash), // 40
+		mkVote(validators[1], altParentHash), // +30 => 70 (meets threshold)
+		mkVote(validators[2], lastEndHash),   // 30 (below threshold)
+	}
+
+	logger := log.NewTestLogger(t)
+	lastEndBlock := startBlock - 1
+
+	resultProp, _, _, _, err := GetMajorityMilestoneProposition(
+		ctx,
+		validatorSet,
+		extVotes,
+		67, // 2/3+1 of total voting power 100
+		logger,
+		&lastEndBlock,
+		lastEndHash,
+	)
+	require.NoError(t, err)
+	require.Nil(t, resultProp, "expected nil when lastEndBlockHash parent does not have threshold support")
+}
+
 func TestValidateMilestonePropositionFork(t *testing.T) {
 	t.Parallel()
 

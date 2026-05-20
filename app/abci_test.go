@@ -4239,6 +4239,59 @@ func TestPrepareProposal_AccountSequenceMismatch(t *testing.T) {
 	})
 }
 
+func TestPrepareProposal_SideTxCap(t *testing.T) {
+	t.Run("includes at most maxSideTxResponsesCount side txs", func(t *testing.T) {
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+		ctx = ctx.WithBlockHeight(3)
+
+		var proposedTxs [][]byte
+		propAddr := sdk.AccAddress(priv.PubKey().Address())
+		propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
+		sequence := propAcc.GetSequence()
+
+		for i := 0; i < maxSideTxResponsesCount+1; i++ {
+			msg := &checkpointTypes.MsgCheckpoint{
+				Proposer:        priv.PubKey().Address().String(),
+				StartBlock:      uint64(100 + i*100),
+				EndBlock:        uint64(200 + i*100),
+				RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+				BorChainId:      "1",
+			}
+
+			txBytes, err := buildSignedTxWithSequence(msg, ctx, priv, app, sequence)
+			require.NoError(t, err)
+			proposedTxs = append(proposedTxs, txBytes)
+			sequence++
+		}
+
+		_, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
+
+		req := &abci.RequestPrepareProposal{
+			Txs:             proposedTxs,
+			MaxTxBytes:      10000000,
+			Height:          3,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+		}
+
+		res, err := app.PrepareProposal(req)
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, maxSideTxResponsesCount+1, len(res.Txs), "expected 1 commit tx + max side txs")
+	})
+}
+
 // TestProcessProposal_ValidProposalMultipleTxs tests the ProcessProposal handler's ability to process a valid proposal containing multiple transactions by including an ExtendedCommitInfo and several valid transactions in the proposal request, ensuring that the handler correctly processes all transactions, validates the ExtendedCommitInfo, and returns an acceptance response, thus validating the proper processing of valid proposals with multiple transactions during proposal evaluation.
 func TestProcessProposal_ValidProposalMultipleTxs(t *testing.T) {
 	t.Run("process proposal with 10 valid transactions", func(t *testing.T) {
@@ -4282,6 +4335,60 @@ func TestProcessProposal_ValidProposalMultipleTxs(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.Equal(t, abci.ResponseProcessProposal_ACCEPT, res.Status)
+	})
+}
+
+func TestProcessProposal_RejectsOverCapSideTxs(t *testing.T) {
+	t.Run("reject proposal with more than maxSideTxResponsesCount side txs", func(t *testing.T) {
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+		ctx = ctx.WithBlockHeight(3)
+
+		var txsToProcess [][]byte
+		propAddr := sdk.AccAddress(priv.PubKey().Address())
+		propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
+		sequence := propAcc.GetSequence()
+
+		for i := 0; i < maxSideTxResponsesCount+1; i++ {
+			msg := &checkpointTypes.MsgCheckpoint{
+				Proposer:        priv.PubKey().Address().String(),
+				StartBlock:      uint64(100 + i*100),
+				EndBlock:        uint64(200 + i*100),
+				RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+				BorChainId:      "1",
+			}
+
+			txBytes, err := buildSignedTxWithSequence(msg, ctx, priv, app, sequence)
+			require.NoError(t, err)
+			txsToProcess = append(txsToProcess, txBytes)
+			sequence++
+		}
+
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			&app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+		)
+		require.NoError(t, err)
+
+		allTxs := append([][]byte{extCommitBytes}, txsToProcess...)
+		req := &abci.RequestProcessProposal{
+			Txs:    allTxs,
+			Height: 3,
+			ProposedLastCommit: abci.CommitInfo{
+				Round: extCommit.Round,
+				Votes: []abci.VoteInfo{},
+			},
+		}
+
+		res, err := app.ProcessProposal(req)
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, abci.ResponseProcessProposal_REJECT, res.Status)
 	})
 }
 
