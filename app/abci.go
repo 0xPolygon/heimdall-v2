@@ -266,7 +266,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			if sideHandlersCount == 1 {
 				sideTxsCount++
 			}
-			if sideTxsCount > maxSideTxResponsesCount {
+			if helper.IsV080Hardfork(req.Height) && sideTxsCount > maxSideTxResponsesCount {
 				logger.Error("Rejecting proposal because side tx count exceeds max side tx responses count",
 					"sideTxsCount", sideTxsCount, "maxSideTxResponsesCount", maxSideTxResponsesCount)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
@@ -315,10 +315,16 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		logger := app.Logger()
 		logger.Debug("Extending Vote", "height", ctx.BlockHeight())
 
+		budgetActive := helper.IsV080Hardfork(req.Height)
+		deadline := startTime.Add(extendVoteBudget)
+
 		var extendVoteCaller *helper.ContractCaller
 		if caller, ok := app.caller.(*helper.ContractCaller); ok {
 			extendVoteCaller = caller
 			extendVoteCaller.BeginPrefetchRound()
+			if budgetActive {
+				extendVoteCaller.SetExtendVoteDeadline(deadline)
+			}
 		}
 
 		defer func() {
@@ -338,6 +344,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		defer func() {
 			if extendVoteCaller != nil {
 				extendVoteCaller.EndPrefetchRound()
+				extendVoteCaller.ClearExtendVoteDeadline()
 			}
 			metrics.RecordABCIHandlerDuration(metrics.ExtendVoteDuration, startTime)
 		}()
@@ -374,9 +381,6 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		// Prefetch L1 receipts in a single batch RPC call to warm the cache.
 		app.prefetchReceipts(ctx, txs, logger)
 
-		budgetActive := helper.IsV080Hardfork(req.Height)
-		deadline := startTime.Add(extendVoteBudget)
-
 		// decode txs and execute side txs
 		for _, rawTx := range txs {
 			if budgetActive && !time.Now().Before(deadline) {
@@ -397,9 +401,6 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			// e.g. bor, checkpoint, clerk, milestone, stake and topup
 			messages := tx.GetMsgs()
 			for _, msg := range messages {
-				if budgetActive && !time.Now().Before(deadline) {
-					break
-				}
 				// get the right module's side handler for the message
 				sideHandler := app.sideTxCfg.GetSideHandler(msg)
 				if sideHandler == nil {

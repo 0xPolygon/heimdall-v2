@@ -17,6 +17,8 @@ type HandlerOptions struct {
 }
 
 // maxMultiSendOutputs bounds the per-tx output count of bank MsgMultiSend.
+// Picked so a single MsgMultiSend can't dominate proposal byte budget under
+// our flat-fee ante.
 const maxMultiSendOutputs = 16
 
 // NewAnteHandler returns an AnteHandler that checks and increments sequence

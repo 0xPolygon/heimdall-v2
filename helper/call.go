@@ -11,6 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
@@ -148,6 +149,10 @@ type ContractCaller struct {
 	// prefetchedReceipts stores the prefetched L1 tx receipts from ExtendVoteHandler.
 	// Should be reset after each round of ExtendVoteHandler.
 	prefetchedReceipts map[common.Hash]*ethTypes.Receipt
+	// extendVoteDeadline is set by ExtendVoteHandler so RPC calls in the same
+	// handler clamp their per-call timeout to the remaining budget.
+	// Guarded by prefetchMu (same lifecycle: set on ExtendVote entry, cleared on exit).
+	extendVoteDeadline *time.Time
 	// finalizedHeaderCache stores the last fetched finalized main chain block header.
 	// Should be reset after each round of ExtendVoteHandler.
 	finalizedHeaderCache *ethTypes.Header
@@ -364,7 +369,9 @@ func (c *ContractCaller) GetHeaderInfo(headerID uint64, rootChainInstance *rootc
 	// get header from rootChain
 	checkpointBigInt := big.NewInt(0).Mul(big.NewInt(0).SetUint64(headerID), big.NewInt(0).SetUint64(childBlockInterval))
 
-	headerBlock, err := rootChainInstance.HeaderBlocks(nil, checkpointBigInt)
+	ctx, cancel := c.deadlineCtx(context.Background(), c.MainChainTimeout)
+	defer cancel()
+	headerBlock, err := rootChainInstance.HeaderBlocks(&bind.CallOpts{Context: ctx}, checkpointBigInt)
 	if err != nil {
 		return root, start, end, createdAt, proposer, errors.New("unable to fetch checkpoint block")
 	}
@@ -389,7 +396,7 @@ func (c *ContractCaller) GetRootHash(start, end, checkpointLength uint64) ([]byt
 		return nil, errors.New("number of headers requested exceeds checkpoint length")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
+	ctx, cancel := c.deadlineCtx(context.Background(), c.BorChainTimeout)
 	defer cancel()
 
 	var rootHash string
@@ -1192,7 +1199,7 @@ func (c *ContractCaller) CurrentStateCounter(stateSenderInstance *statesender.St
 // CheckIfBlocksExist - check if the given block number exists on the local chain.
 // Here we check if the block number exists by fetching the header from the bor chain.
 func (c *ContractCaller) CheckIfBlocksExist(number uint64) (bool, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
+	ctx, cancel := c.deadlineCtx(context.Background(), c.BorChainTimeout)
 	defer cancel()
 
 	var (
@@ -1431,6 +1438,40 @@ func toBlockNumArg(number *big.Int) string {
 	}
 	// It's negative and large, which is invalid.
 	return fmt.Sprintf("<invalid %d>", number)
+}
+
+// SetExtendVoteDeadline records the wall-clock the current ExtendVote handler
+// must return by. CheckIfBlocksExist / GetRootHash / GetHeaderInfo clamp their
+// per-call timeout to the remaining budget so one slow RPC can't blow past
+// timeout_precommit.
+func (c *ContractCaller) SetExtendVoteDeadline(d time.Time) {
+	c.prefetchMu.Lock()
+	defer c.prefetchMu.Unlock()
+	c.extendVoteDeadline = &d
+}
+
+// ClearExtendVoteDeadline drops the ExtendVote deadline so subsequent RPC
+// calls fall back to their default per-call timeout.
+func (c *ContractCaller) ClearExtendVoteDeadline() {
+	c.prefetchMu.Lock()
+	defer c.prefetchMu.Unlock()
+	c.extendVoteDeadline = nil
+}
+
+// deadlineCtx returns a context whose timeout is min(defaultTimeout, remaining
+// ExtendVote budget). When no ExtendVote deadline is set, behaves identically
+// to context.WithTimeout(parent, defaultTimeout).
+func (c *ContractCaller) deadlineCtx(parent context.Context, defaultTimeout time.Duration) (context.Context, context.CancelFunc) {
+	timeout := defaultTimeout
+	c.prefetchMu.RLock()
+	d := c.extendVoteDeadline
+	c.prefetchMu.RUnlock()
+	if d != nil {
+		if remaining := time.Until(*d); remaining < timeout {
+			timeout = remaining
+		}
+	}
+	return context.WithTimeout(parent, timeout)
 }
 
 // BeginPrefetchRound starts a new round of prefetch lifecycle for ExtendVote.
