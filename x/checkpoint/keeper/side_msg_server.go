@@ -223,31 +223,6 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 	contractCaller := srv.IContractCaller
 
-	chainParams, err := srv.ck.GetParams(ctx)
-	if err != nil {
-		logger.Error(hmTypes.ErrMsgErrorInGettingChainManagerParams, hmTypes.LogKeyError, err)
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	rootChainAddress := chainParams.ChainParams.RootChainAddress
-
-	// get params
-	params, err := srv.GetParams(ctx)
-	if err != nil {
-		logger.Error(hmTypes.ErrMsgFailedToFetchParams, hmTypes.LogKeyError, err)
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	rootChainInstance, err := contractCaller.GetRootChainInstance(rootChainAddress)
-	if err != nil {
-		logger.Error("Unable to fetch rootChain contract instance",
-			"eth address", rootChainAddress,
-			"error", err,
-		)
-
-		return sidetxs.Vote_VOTE_NO
-	}
-
 	logger.Info("Validating checkpoint ack",
 		"checkpointNumber", msg.Number,
 		"proposer", msg.Proposer,
@@ -255,12 +230,6 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		"endBlock", msg.EndBlock,
 		"rootHash", common.Bytes2Hex(msg.RootHash),
 	)
-
-	root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(msg.Number, rootChainInstance, params.ChildChainBlockInterval)
-	if err != nil {
-		logger.Error("Unable to fetch checkpoint from rootChain", "checkpointNumber", msg.Number, "error", err)
-		return sidetxs.Vote_VOTE_NO
-	}
 
 	// validate start and end blocks
 	if msg.StartBlock >= msg.EndBlock {
@@ -322,6 +291,34 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 			"rootExpected", common.Bytes2Hex(bufCheckpoint.RootHash),
 			"rootReceived", common.Bytes2Hex(msg.RootHash),
 		)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	chainParams, err := srv.ck.GetParams(ctx)
+	if err != nil {
+		logger.Error(hmTypes.ErrMsgErrorInGettingChainManagerParams, hmTypes.LogKeyError, err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	params, err := srv.GetParams(ctx)
+	if err != nil {
+		logger.Error(hmTypes.ErrMsgFailedToFetchParams, hmTypes.LogKeyError, err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	rootChainInstance, err := contractCaller.GetRootChainInstance(chainParams.ChainParams.RootChainAddress)
+	if err != nil {
+		logger.Error("Unable to fetch rootChain contract instance",
+			"eth address", chainParams.ChainParams.RootChainAddress,
+			"error", err,
+		)
+
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(msg.Number, rootChainInstance, params.ChildChainBlockInterval)
+	if err != nil {
+		logger.Error("Unable to fetch checkpoint from rootChain", "checkpointNumber", msg.Number, "error", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 

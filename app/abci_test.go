@@ -4367,11 +4367,12 @@ func TestProcessProposal_RejectsOverCapSideTxs(t *testing.T) {
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(
 			t,
-			&app,
+			app,
 			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
 			validators,
 			validatorPrivKeys,
 			2,
+			nil,
 		)
 		require.NoError(t, err)
 
@@ -5014,6 +5015,213 @@ func TestProcessProposal_RejectsCheckpointTxWhenNonRpVoteExtensionsInvalidPostPh
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, abci.ResponseProcessProposal_REJECT, res.Status)
+}
+
+func setupBorBlockNotFoundCaller() *helpermocks.IContractCaller {
+	c := new(helpermocks.IContractCaller)
+	c.On("CheckIfBlocksExist", mock.Anything).Return(false, nil)
+	c.On("GetRootHash", mock.Anything, mock.Anything, mock.Anything).
+		Return([]byte(nil), fmt.Errorf("bor unreachable"))
+	return c
+}
+
+// buildCheckpointNonRpVoteExt packs a real (non-dummy) checkpoint as a
+// NonRpVoteExtension so validateNonRpVoteExtensionData reaches IsValidCheckpoint.
+// Use a unique endBlock per call to avoid the package-level existsCache.
+func buildCheckpointNonRpVoteExt(t *testing.T, app *HeimdallApp, ctx sdk.Context, proposer string, endBlock uint64) ([]byte, *checkpointTypes.MsgCheckpoint) {
+	t.Helper()
+	chainParams, err := app.ChainManagerKeeper.GetParams(ctx)
+	require.NoError(t, err)
+	msg := &checkpointTypes.MsgCheckpoint{
+		Proposer:        proposer,
+		StartBlock:      endBlock - 100,
+		EndBlock:        endBlock,
+		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		BorChainId:      chainParams.ChainParams.BorChainId,
+	}
+	return packExtensionWithVote(msg.GetSideSignBytes()), msg
+}
+
+func TestVerifyVoteExtensionHandler_BorBlockNotFoundHardforkGated(t *testing.T) {
+	const runHeight = int64(3)
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() { helper.SetPhuketHardforkHeight(0) })
+
+	cases := []struct {
+		name       string
+		activation int64
+		endBlock   uint64 // unique per row to dodge the package-level existsCache
+		wantStatus abci.ResponseVerifyVoteExtension_VerifyStatus
+	}{
+		{name: "below activation: rejects", activation: runHeight + 1, endBlock: 1_000_001, wantStatus: abci.ResponseVerifyVoteExtension_REJECT},
+		{name: "at activation: accepts", activation: runHeight, endBlock: 1_000_002, wantStatus: abci.ResponseVerifyVoteExtension_ACCEPT},
+		{name: "above activation: accepts", activation: runHeight - 1, endBlock: 1_000_003, wantStatus: abci.ResponseVerifyVoteExtension_ACCEPT},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			helper.SetV080HardforkHeight(tc.activation)
+			t.Cleanup(func() { helper.SetV080HardforkHeight(0) })
+
+			_, app, ctx, _ := SetupAppWithABCICtx(t)
+			validators := app.StakeKeeper.GetAllValidators(ctx)
+
+			packedVE, _ := buildCheckpointNonRpVoteExt(t, app, ctx, validators[0].Signer, tc.endBlock)
+
+			vt := sidetxs.VoteExtension{Height: runHeight, BlockHash: []byte("test-hash")}
+			veBytes, err := vt.Marshal()
+			require.NoError(t, err)
+
+			app.caller = setupBorBlockNotFoundCaller()
+
+			res, err := app.VerifyVoteExtensionHandler()(ctx, &abci.RequestVerifyVoteExtension{
+				VoteExtension:      veBytes,
+				NonRpVoteExtension: packedVE,
+				ValidatorAddress:   common.FromHex(validators[0].Signer),
+				Height:             runHeight,
+				Hash:               []byte("test-hash"),
+			})
+			require.NoError(t, err)
+			require.Equal(t, tc.wantStatus, res.Status)
+		})
+	}
+}
+
+func TestProcessProposal_NonRpVoteExtensionBorErrorHardforkGated(t *testing.T) {
+	const runHeight = int64(3)
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() { helper.SetPhuketHardforkHeight(0) })
+
+	cases := []struct {
+		name       string
+		activation int64
+		endBlock   uint64
+		wantStatus abci.ResponseProcessProposal_ProposalStatus
+	}{
+		{name: "below activation: rejects", activation: runHeight + 1, endBlock: 2_000_001, wantStatus: abci.ResponseProcessProposal_REJECT},
+		{name: "at activation: accepts", activation: runHeight, endBlock: 2_000_002, wantStatus: abci.ResponseProcessProposal_ACCEPT},
+		{name: "above activation: accepts", activation: runHeight - 1, endBlock: 2_000_003, wantStatus: abci.ResponseProcessProposal_ACCEPT},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			helper.SetV080HardforkHeight(tc.activation)
+			t.Cleanup(func() { helper.SetV080HardforkHeight(0) })
+
+			priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+			validators := app.StakeKeeper.GetAllValidators(ctx)
+
+			// Proposer must equal the tx signer or the ante chain rejects.
+			packedVE, checkpointMsg := buildCheckpointNonRpVoteExt(t, app, ctx, priv.PubKey().Address().String(), tc.endBlock)
+			txBytes, err := buildSignedTx(checkpointMsg, ctx, priv, app)
+			require.NoError(t, err)
+
+			extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
+			require.NoError(t, err)
+			extCommit.Votes[0].NonRpVoteExtension = packedVE
+			extCommitBytes, err = extCommit.Marshal()
+			require.NoError(t, err)
+
+			app.caller = setupBorBlockNotFoundCaller()
+
+			// BaseApp.ProcessProposal sets up processProposalState that
+			// NewProcessProposalHandler's tx verification call requires.
+			res, err := app.ProcessProposal(&abci.RequestProcessProposal{
+				Txs:    [][]byte{extCommitBytes, txBytes},
+				Height: runHeight,
+				ProposedLastCommit: abci.CommitInfo{
+					Round: extCommit.Round,
+					Votes: []abci.VoteInfo{{Validator: extCommit.Votes[0].Validator, BlockIdFlag: cmtproto.BlockIDFlagCommit}},
+				},
+			})
+			require.NoError(t, err)
+			require.NotNil(t, res)
+			require.Equal(t, tc.wantStatus, res.Status)
+		})
+	}
+}
+
+// With the budget zeroed, the loop short-circuits when active and runs to
+// completion otherwise.
+func TestExtendVoteHandler_BudgetHardforkGated(t *testing.T) {
+	const runHeight = int64(3)
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() { helper.SetPhuketHardforkHeight(0) })
+
+	originalBudget := extendVoteBudget
+	extendVoteBudget = 0
+	t.Cleanup(func() { extendVoteBudget = originalBudget })
+
+	cases := []struct {
+		name          string
+		activation    int64
+		wantSideTxRes string // "empty" or "nonempty"
+	}{
+		{name: "below activation: full responses", activation: runHeight + 1, wantSideTxRes: "nonempty"},
+		{name: "at activation: empty", activation: runHeight, wantSideTxRes: "empty"},
+		{name: "above activation: empty", activation: runHeight - 1, wantSideTxRes: "empty"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			helper.SetV080HardforkHeight(tc.activation)
+			t.Cleanup(func() { helper.SetV080HardforkHeight(0) })
+
+			priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+			validators := app.StakeKeeper.GetAllValidators(ctx)
+
+			msg := &types.MsgCheckpoint{
+				Proposer:        validators[0].Signer,
+				StartBlock:      100,
+				EndBlock:        200,
+				RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+				AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+				BorChainId:      "test",
+			}
+			txBytes, err := buildSignedTx(msg, ctx, priv, app)
+			require.NoError(t, err)
+
+			extCommitBytes, _, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
+			require.NoError(t, err)
+
+			working := new(helpermocks.IContractCaller)
+			working.On("GetBorChainBlock", mock.Anything, mock.Anything).
+				Return(&ethTypes.Header{Number: big.NewInt(10)}, nil)
+			working.On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+				Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
+			working.On("CheckIfBlocksExist", mock.Anything).Return(true, nil)
+			working.On("GetRootHash", mock.Anything, mock.Anything, mock.Anything).
+				Return(common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"), nil)
+
+			app.MilestoneKeeper = milestoneKeeper.NewKeeper(app.AppCodec(), authTypes.NewModuleAddress(govtypes.ModuleName).String(), runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)), working)
+			app.CheckpointKeeper = checkpointKeeper.NewKeeper(app.AppCodec(), runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)), authTypes.NewModuleAddress(govtypes.ModuleName).String(), &app.StakeKeeper, app.ChainManagerKeeper, &app.TopupKeeper, working)
+			app.BorKeeper = borKeeper.NewKeeper(app.AppCodec(), runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)), authTypes.NewModuleAddress(govtypes.ModuleName).String(), app.ChainManagerKeeper, &app.StakeKeeper, nil, nil)
+			app.BorKeeper.SetContractCaller(working)
+			app.MilestoneKeeper.IContractCaller = working
+			app.caller = working
+
+			respExtend, err := app.ExtendVoteHandler()(ctx, &abci.RequestExtendVote{
+				Txs:    [][]byte{extCommitBytes, txBytes},
+				Hash:   []byte("test-hash"),
+				Height: runHeight,
+			})
+			require.NoError(t, err)
+			require.NotNil(t, respExtend.VoteExtension)
+
+			var ve sidetxs.VoteExtension
+			require.NoError(t, gogoproto.Unmarshal(respExtend.VoteExtension, &ve))
+
+			switch tc.wantSideTxRes {
+			case "empty":
+				require.Empty(t, ve.SideTxResponses,
+					"with budget active and zeroed, the side-tx loop must short-circuit")
+			case "nonempty":
+				require.NotEmpty(t, ve.SideTxResponses,
+					"with budget inactive, a zero budget must be a no-op")
+			}
+		})
+	}
 }
 
 func TestABCI_FullBlockLifecycle_NoPreBlocker(t *testing.T) {

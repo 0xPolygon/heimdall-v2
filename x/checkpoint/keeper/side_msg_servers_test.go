@@ -250,6 +250,43 @@ func (s *KeeperTestSuite) TestSideHandleMsgCpAck() {
 	})
 }
 
+// Stateless and local-state checks must run before any L1 call.
+func (s *KeeperTestSuite) TestSideHandleMsgCpAck_LocalChecksBeforeL1() {
+	ctx, require := s.ctx, s.Require()
+	sideHandler, contractCaller, cmKeeper := s.sideHandler, s.contractCaller, s.cmKeeper
+
+	cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(cmTypes.DefaultParams(), nil)
+
+	s.Run("StartBlock>=EndBlock rejects without L1 call", func() {
+		contractCaller.Mock = mock.Mock{}
+		msg := types.NewMsgCpAck(
+			common.HexToAddress(dummyAddress).String(),
+			uint64(1),
+			"0x1234567890123456789012345678901234567890",
+			uint64(100), uint64(100), // StartBlock == EndBlock
+			testutil.RandomBytes(),
+		)
+		require.Equal(sidetxs.Vote_VOTE_NO, sideHandler(ctx, &msg))
+		contractCaller.AssertNotCalled(s.T(), "GetRootChainInstance", mock.Anything)
+		contractCaller.AssertNotCalled(s.T(), "GetHeaderInfo", mock.Anything, mock.Anything, mock.Anything)
+	})
+
+	s.Run("non-sequential Number rejects without L1 call", func() {
+		contractCaller.Mock = mock.Mock{}
+		// State has no previous checkpoint, so expectedId = 1. Use Number != 1.
+		msg := types.NewMsgCpAck(
+			common.HexToAddress(dummyAddress).String(),
+			uint64(42),
+			"0x1234567890123456789012345678901234567890",
+			uint64(100), uint64(200),
+			testutil.RandomBytes(),
+		)
+		require.Equal(sidetxs.Vote_VOTE_NO, sideHandler(ctx, &msg))
+		contractCaller.AssertNotCalled(s.T(), "GetRootChainInstance", mock.Anything)
+		contractCaller.AssertNotCalled(s.T(), "GetHeaderInfo", mock.Anything, mock.Anything, mock.Anything)
+	})
+}
+
 func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 	ctx, require, keeper := s.ctx, s.Require(), s.checkpointKeeper
 	cmKeeper, stakeKeeper, postHandler := s.cmKeeper, s.stakeKeeper, s.postHandler

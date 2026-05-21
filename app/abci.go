@@ -40,6 +40,11 @@ import (
 // use t.Parallel().
 var prepareProposalBudget = 500 * time.Millisecond
 
+// extendVoteBudget caps total handler wall-clock so ExtendVote returns inside
+// the 1s timeout_precommit. var (not const) so tests can shorten it; tests
+// that override it must not use t.Parallel().
+var extendVoteBudget = 800 * time.Millisecond
+
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
@@ -234,7 +239,10 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 				}
 			}
 
-			if helper.IsPhuketHardfork(req.Height) && hasCheckpointTx {
+			tolerateBorErr := helper.IsV080Hardfork(req.Height) &&
+				(errors.Is(err, borTypes.ErrFailedToQueryBor) ||
+					errors.Is(err, borTypes.ErrBorBlockNotFound))
+			if helper.IsPhuketHardfork(req.Height) && hasCheckpointTx && !tolerateBorErr {
 				logger.Error("Invalid non-rp vote extension proposal for checkpoint tx, rejecting proposal", "error", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
@@ -366,8 +374,17 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		// Prefetch L1 receipts in a single batch RPC call to warm the cache.
 		app.prefetchReceipts(ctx, txs, logger)
 
+		budgetActive := helper.IsV080Hardfork(req.Height)
+		deadline := startTime.Add(extendVoteBudget)
+
 		// decode txs and execute side txs
 		for _, rawTx := range txs {
+			if budgetActive && !time.Now().Before(deadline) {
+				logger.Warn("extend vote budget exhausted, returning partial response",
+					"processed_side_handlers", len(sideTxRes),
+					"elapsed", time.Since(startTime))
+				break
+			}
 			// create a cache wrapped context for stateless execution
 			ctx, _ = app.cacheTxContext(ctx)
 			tx, err := app.TxDecode(rawTx)
@@ -380,6 +397,9 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			// e.g. bor, checkpoint, clerk, milestone, stake and topup
 			messages := tx.GetMsgs()
 			for _, msg := range messages {
+				if budgetActive && !time.Now().Before(deadline) {
+					break
+				}
 				// get the right module's side handler for the message
 				sideHandler := app.sideTxCfg.GetSideHandler(msg)
 				if sideHandler == nil {
@@ -430,7 +450,13 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return app.BorKeeper.GetProducersByBlockNumber(ctx, blockNumber)
 		}
 
-		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
+		var milestoneProp *milestoneTypes.MilestoneProposition
+		if budgetActive && !time.Now().Before(deadline) {
+			logger.Warn("extend vote budget exhausted before milestone proposition, skipping",
+				"elapsed", time.Since(startTime))
+		} else {
+			milestoneProp, err = milestoneAbci.GenMilestoneProposition(ctx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
+		}
 		if err != nil {
 			if errors.Is(err, milestoneAbci.ErrNoNewHeadersFound) {
 				logger.Debug("No new headers found for generating milestone proposition, continuing without it")
@@ -522,7 +548,9 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		}
 
 		if err := validateNonRpVoteExtensionData(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller); err != nil {
-			if helper.IsPhuketHardfork(req.Height) && !errors.Is(err, borTypes.ErrFailedToQueryBor) {
+			tolerateBorErr := errors.Is(err, borTypes.ErrFailedToQueryBor) ||
+				(helper.IsV080Hardfork(req.Height) && errors.Is(err, borTypes.ErrBorBlockNotFound))
+			if helper.IsPhuketHardfork(req.Height) && !tolerateBorErr {
 				logger.Error(heimdallTypes.ErrAlertNonRpVoteExtensionRejected, "validator", valAddr, "error", err)
 				return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 			}

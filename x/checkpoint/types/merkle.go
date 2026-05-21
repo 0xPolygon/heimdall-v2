@@ -2,7 +2,6 @@ package types
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -51,7 +50,13 @@ func IsValidCheckpoint(start uint64, end uint64, rootHash []byte, checkpointLeng
 			)
 		}
 		if !exists {
-			return false, errors.New("blocks not found locally")
+			return false, fmt.Errorf(
+				"%w: end=%d confirmations=%d target=%d",
+				borTypes.ErrBorBlockNotFound,
+				end,
+				confirmations,
+				end+confirmations,
+			)
 		}
 
 		existsCache.Set(existsKey, exists)
