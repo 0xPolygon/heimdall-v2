@@ -74,7 +74,10 @@ const (
 var tempDir = func() string {
 	dir, err := os.MkdirTemp("", "heimdall")
 	if err != nil {
-		dir = app.DefaultNodeHome
+		fmt.Printf("Failed to create temporary directory, falling back to the default node home: %v", err)
+		// Fallback to the default node home if the tmp directory cannot be created,
+		// we do NOT schedule this for deletion
+		return app.DefaultNodeHome
 	}
 	defer func() {
 		err := os.RemoveAll(dir)
