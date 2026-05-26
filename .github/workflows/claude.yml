@@ -48,7 +48,7 @@ jobs:
           # path_to_claude_code_executable: ${{ env.CLAUDE_PATH }}
           # This is an optional setting that allows Claude to read CI results on PRs
           claude_args: |
-            --model claude-opus-4-6
+            --model 'claude-opus-4-7[1m]'
           additional_permissions: |
             actions: read
           # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
@@ -58,4 +58,3 @@ jobs:
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
           # claude_args: '--allowed-tools Bash(gh pr:*)'
-
