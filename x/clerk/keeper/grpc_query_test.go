@@ -189,9 +189,9 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Pagination() {
 }
 
 func enableVisibilityTimeForTest(_ *KeeperTestSuite, height int64) func() {
-	original := helper.GetV080HardforkHeight()
-	helper.SetV080HardforkHeight(height)
-	return func() { helper.SetV080HardforkHeight(original) }
+	original := helper.GetZurichHardforkHeight()
+	helper.SetZurichHardforkHeight(height)
+	return func() { helper.SetZurichHardforkHeight(original) }
 }
 
 // TestGetRecordListWithTime_Deterministic_HappyPath verifies the post-HF path

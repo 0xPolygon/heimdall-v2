@@ -108,7 +108,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			if sideHandlersCount > 1 {
 				continue
 			}
-			if sideHandlersCount == 1 && sideTxsCount >= maxSideTxResponsesCount {
+			if helper.IsZurichHardfork(req.Height) && sideHandlersCount == 1 && sideTxsCount >= maxSideTxResponsesCount {
 				logger.Debug("Skipping side tx because max side tx responses count reached",
 					"maxSideTxResponsesCount", maxSideTxResponsesCount)
 				continue
@@ -239,7 +239,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 				}
 			}
 
-			tolerateBorErr := helper.IsV080Hardfork(req.Height) &&
+			tolerateBorErr := helper.IsZurichHardfork(req.Height) &&
 				(errors.Is(err, borTypes.ErrFailedToQueryBor) ||
 					errors.Is(err, borTypes.ErrBorBlockNotFound))
 			if helper.IsPhuketHardfork(req.Height) && hasCheckpointTx && !tolerateBorErr {
@@ -266,7 +266,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			if sideHandlersCount == 1 {
 				sideTxsCount++
 			}
-			if helper.IsV080Hardfork(req.Height) && sideTxsCount > maxSideTxResponsesCount {
+			if helper.IsZurichHardfork(req.Height) && sideTxsCount > maxSideTxResponsesCount {
 				logger.Error("Rejecting proposal because side tx count exceeds max side tx responses count",
 					"sideTxsCount", sideTxsCount, "maxSideTxResponsesCount", maxSideTxResponsesCount)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
@@ -315,20 +315,23 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		logger := app.Logger()
 		logger.Debug("Extending Vote", "height", ctx.BlockHeight())
 
-		budgetActive := helper.IsV080Hardfork(req.Height)
+		budgetActive := helper.IsZurichHardfork(req.Height)
 		deadline := startTime.Add(extendVoteBudget)
+
+		// Clamp ctx so every RPC reachable from this handler returns inside timeout_precommit.
+		if budgetActive {
+			dCtx, dCancel := context.WithDeadline(ctx.Context(), deadline)
+			defer dCancel()
+			ctx = ctx.WithContext(dCtx)
+		}
 
 		var extendVoteCaller *helper.ContractCaller
 		if caller, ok := app.caller.(*helper.ContractCaller); ok {
 			extendVoteCaller = caller
 			extendVoteCaller.BeginPrefetchRound()
-			if budgetActive {
-				extendVoteCaller.SetExtendVoteDeadline(deadline)
-			}
 		}
 
 		defer func() {
-			// better debugging with this panic recover routine printing runtime.Stack
 			if r := recover(); r != nil {
 				buf := make([]byte, 1<<16)
 				n := runtime.Stack(buf, false)
@@ -344,7 +347,6 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		defer func() {
 			if extendVoteCaller != nil {
 				extendVoteCaller.EndPrefetchRound()
-				extendVoteCaller.ClearExtendVoteDeadline()
 			}
 			metrics.RecordABCIHandlerDuration(metrics.ExtendVoteDuration, startTime)
 		}()
@@ -384,6 +386,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		// decode txs and execute side txs
 		for _, rawTx := range txs {
 			if budgetActive && !time.Now().Before(deadline) {
+				metrics.RecordExtendVoteBudgetExhausted("side_tx_loop")
 				logger.Warn("extend vote budget exhausted, returning partial response",
 					"processed_side_handlers", len(sideTxRes),
 					"elapsed", time.Since(startTime))
@@ -453,6 +456,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		var milestoneProp *milestoneTypes.MilestoneProposition
 		if budgetActive && !time.Now().Before(deadline) {
+			metrics.RecordExtendVoteBudgetExhausted("pre_milestone")
 			logger.Warn("extend vote budget exhausted before milestone proposition, skipping",
 				"elapsed", time.Since(startTime))
 		} else {
@@ -549,8 +553,9 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		}
 
 		if err := validateNonRpVoteExtensionData(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller); err != nil {
+			// VerifyVoteExtension preserves the pre-Zurich ErrFailedToQueryBor tolerance to keep per-validator VE acceptance live during Bor outages.
 			tolerateBorErr := errors.Is(err, borTypes.ErrFailedToQueryBor) ||
-				(helper.IsV080Hardfork(req.Height) && errors.Is(err, borTypes.ErrBorBlockNotFound))
+				(helper.IsZurichHardfork(req.Height) && errors.Is(err, borTypes.ErrBorBlockNotFound))
 			if helper.IsPhuketHardfork(req.Height) && !tolerateBorErr {
 				logger.Error(heimdallTypes.ErrAlertNonRpVoteExtensionRejected, "validator", valAddr, "error", err)
 				return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
@@ -605,7 +610,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	// Errors are propagated: ProcessPendingVisibilityEvents performs multiple keeper
 	// writes per event, and a mid-loop failure would commit partial state, permanently
 	// breaking the one-block-delay invariant for the affected events.
-	if helper.IsV080Hardfork(req.Height) {
+	if helper.IsZurichHardfork(req.Height) {
 		if err := app.ClerkKeeper.ProcessPendingVisibilityEvents(ctx); err != nil {
 			logger.Error("Error processing pending visibility events", "error", err, "height", req.Height)
 			return nil, err

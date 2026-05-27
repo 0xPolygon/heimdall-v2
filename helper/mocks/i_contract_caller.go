@@ -54,9 +54,9 @@ func (_m *IContractCaller) ApproveTokens(_a0 *big.Int, _a1 common.Address, _a2 c
 	return r0
 }
 
-// CheckIfBlocksExist provides a mock function with given fields: end
-func (_m *IContractCaller) CheckIfBlocksExist(end uint64) (bool, error) {
-	ret := _m.Called(end)
+// CheckIfBlocksExist provides a mock function with given fields: ctx, end
+func (_m *IContractCaller) CheckIfBlocksExist(ctx context.Context, end uint64) (bool, error) {
+	ret := _m.Called(ctx, end)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CheckIfBlocksExist")
@@ -64,17 +64,17 @@ func (_m *IContractCaller) CheckIfBlocksExist(end uint64) (bool, error) {
 
 	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(uint64) (bool, error)); ok {
-		return rf(end)
+	if rf, ok := ret.Get(0).(func(context.Context, uint64) (bool, error)); ok {
+		return rf(ctx, end)
 	}
-	if rf, ok := ret.Get(0).(func(uint64) bool); ok {
-		r0 = rf(end)
+	if rf, ok := ret.Get(0).(func(context.Context, uint64) bool); ok {
+		r0 = rf(ctx, end)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(uint64) error); ok {
-		r1 = rf(end)
+	if rf, ok := ret.Get(1).(func(context.Context, uint64) error); ok {
+		r1 = rf(ctx, end)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -724,9 +724,9 @@ func (_m *IContractCaller) GetCheckpointSign(txHash common.Hash) ([]byte, []byte
 	return r0, r1, r2, r3
 }
 
-// GetConfirmedTxReceipt provides a mock function with given fields: _a0, _a1
-func (_m *IContractCaller) GetConfirmedTxReceipt(_a0 common.Hash, _a1 uint64) (*types.Receipt, error) {
-	ret := _m.Called(_a0, _a1)
+// GetConfirmedTxReceipt provides a mock function with given fields: ctx, txHash, requiredConfirmations
+func (_m *IContractCaller) GetConfirmedTxReceipt(ctx context.Context, txHash common.Hash, requiredConfirmations uint64) (*types.Receipt, error) {
+	ret := _m.Called(ctx, txHash, requiredConfirmations)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetConfirmedTxReceipt")
@@ -734,19 +734,19 @@ func (_m *IContractCaller) GetConfirmedTxReceipt(_a0 common.Hash, _a1 uint64) (*
 
 	var r0 *types.Receipt
 	var r1 error
-	if rf, ok := ret.Get(0).(func(common.Hash, uint64) (*types.Receipt, error)); ok {
-		return rf(_a0, _a1)
+	if rf, ok := ret.Get(0).(func(context.Context, common.Hash, uint64) (*types.Receipt, error)); ok {
+		return rf(ctx, txHash, requiredConfirmations)
 	}
-	if rf, ok := ret.Get(0).(func(common.Hash, uint64) *types.Receipt); ok {
-		r0 = rf(_a0, _a1)
+	if rf, ok := ret.Get(0).(func(context.Context, common.Hash, uint64) *types.Receipt); ok {
+		r0 = rf(ctx, txHash, requiredConfirmations)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.Receipt)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(common.Hash, uint64) error); ok {
-		r1 = rf(_a0, _a1)
+	if rf, ok := ret.Get(1).(func(context.Context, common.Hash, uint64) error); ok {
+		r1 = rf(ctx, txHash, requiredConfirmations)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -754,9 +754,9 @@ func (_m *IContractCaller) GetConfirmedTxReceipt(_a0 common.Hash, _a1 uint64) (*
 	return r0, r1
 }
 
-// GetHeaderInfo provides a mock function with given fields: headerID, rootChainInstance, childBlockInterval
-func (_m *IContractCaller) GetHeaderInfo(headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (common.Hash, uint64, uint64, uint64, string, error) {
-	ret := _m.Called(headerID, rootChainInstance, childBlockInterval)
+// GetHeaderInfo provides a mock function with given fields: ctx, headerID, rootChainInstance, childBlockInterval
+func (_m *IContractCaller) GetHeaderInfo(ctx context.Context, headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (common.Hash, uint64, uint64, uint64, string, error) {
+	ret := _m.Called(ctx, headerID, rootChainInstance, childBlockInterval)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetHeaderInfo")
@@ -768,43 +768,43 @@ func (_m *IContractCaller) GetHeaderInfo(headerID uint64, rootChainInstance *roo
 	var r3 uint64
 	var r4 string
 	var r5 error
-	if rf, ok := ret.Get(0).(func(uint64, *rootchain.Rootchain, uint64) (common.Hash, uint64, uint64, uint64, string, error)); ok {
-		return rf(headerID, rootChainInstance, childBlockInterval)
+	if rf, ok := ret.Get(0).(func(context.Context, uint64, *rootchain.Rootchain, uint64) (common.Hash, uint64, uint64, uint64, string, error)); ok {
+		return rf(ctx, headerID, rootChainInstance, childBlockInterval)
 	}
-	if rf, ok := ret.Get(0).(func(uint64, *rootchain.Rootchain, uint64) common.Hash); ok {
-		r0 = rf(headerID, rootChainInstance, childBlockInterval)
+	if rf, ok := ret.Get(0).(func(context.Context, uint64, *rootchain.Rootchain, uint64) common.Hash); ok {
+		r0 = rf(ctx, headerID, rootChainInstance, childBlockInterval)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(common.Hash)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(uint64, *rootchain.Rootchain, uint64) uint64); ok {
-		r1 = rf(headerID, rootChainInstance, childBlockInterval)
+	if rf, ok := ret.Get(1).(func(context.Context, uint64, *rootchain.Rootchain, uint64) uint64); ok {
+		r1 = rf(ctx, headerID, rootChainInstance, childBlockInterval)
 	} else {
 		r1 = ret.Get(1).(uint64)
 	}
 
-	if rf, ok := ret.Get(2).(func(uint64, *rootchain.Rootchain, uint64) uint64); ok {
-		r2 = rf(headerID, rootChainInstance, childBlockInterval)
+	if rf, ok := ret.Get(2).(func(context.Context, uint64, *rootchain.Rootchain, uint64) uint64); ok {
+		r2 = rf(ctx, headerID, rootChainInstance, childBlockInterval)
 	} else {
 		r2 = ret.Get(2).(uint64)
 	}
 
-	if rf, ok := ret.Get(3).(func(uint64, *rootchain.Rootchain, uint64) uint64); ok {
-		r3 = rf(headerID, rootChainInstance, childBlockInterval)
+	if rf, ok := ret.Get(3).(func(context.Context, uint64, *rootchain.Rootchain, uint64) uint64); ok {
+		r3 = rf(ctx, headerID, rootChainInstance, childBlockInterval)
 	} else {
 		r3 = ret.Get(3).(uint64)
 	}
 
-	if rf, ok := ret.Get(4).(func(uint64, *rootchain.Rootchain, uint64) string); ok {
-		r4 = rf(headerID, rootChainInstance, childBlockInterval)
+	if rf, ok := ret.Get(4).(func(context.Context, uint64, *rootchain.Rootchain, uint64) string); ok {
+		r4 = rf(ctx, headerID, rootChainInstance, childBlockInterval)
 	} else {
 		r4 = ret.Get(4).(string)
 	}
 
-	if rf, ok := ret.Get(5).(func(uint64, *rootchain.Rootchain, uint64) error); ok {
-		r5 = rf(headerID, rootChainInstance, childBlockInterval)
+	if rf, ok := ret.Get(5).(func(context.Context, uint64, *rootchain.Rootchain, uint64) error); ok {
+		r5 = rf(ctx, headerID, rootChainInstance, childBlockInterval)
 	} else {
 		r5 = ret.Error(5)
 	}
@@ -840,9 +840,9 @@ func (_m *IContractCaller) GetLastChildBlock(rootChainInstance *rootchain.Rootch
 	return r0, r1
 }
 
-// GetMainChainBlock provides a mock function with given fields: _a0
-func (_m *IContractCaller) GetMainChainBlock(_a0 *big.Int) (*types.Header, error) {
-	ret := _m.Called(_a0)
+// GetMainChainBlock provides a mock function with given fields: ctx, blockNum
+func (_m *IContractCaller) GetMainChainBlock(ctx context.Context, blockNum *big.Int) (*types.Header, error) {
+	ret := _m.Called(ctx, blockNum)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetMainChainBlock")
@@ -850,19 +850,19 @@ func (_m *IContractCaller) GetMainChainBlock(_a0 *big.Int) (*types.Header, error
 
 	var r0 *types.Header
 	var r1 error
-	if rf, ok := ret.Get(0).(func(*big.Int) (*types.Header, error)); ok {
-		return rf(_a0)
+	if rf, ok := ret.Get(0).(func(context.Context, *big.Int) (*types.Header, error)); ok {
+		return rf(ctx, blockNum)
 	}
-	if rf, ok := ret.Get(0).(func(*big.Int) *types.Header); ok {
-		r0 = rf(_a0)
+	if rf, ok := ret.Get(0).(func(context.Context, *big.Int) *types.Header); ok {
+		r0 = rf(ctx, blockNum)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.Header)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(*big.Int) error); ok {
-		r1 = rf(_a0)
+	if rf, ok := ret.Get(1).(func(context.Context, *big.Int) error); ok {
+		r1 = rf(ctx, blockNum)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -870,9 +870,39 @@ func (_m *IContractCaller) GetMainChainBlock(_a0 *big.Int) (*types.Header, error
 	return r0, r1
 }
 
-// GetMainTxReceipt provides a mock function with given fields: _a0
-func (_m *IContractCaller) GetMainTxReceipt(_a0 common.Hash) (*types.Receipt, error) {
-	ret := _m.Called(_a0)
+// GetMainChainFinalizedBlock provides a mock function with given fields: ctx
+func (_m *IContractCaller) GetMainChainFinalizedBlock(ctx context.Context) (*types.Header, error) {
+	ret := _m.Called(ctx)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetMainChainFinalizedBlock")
+	}
+
+	var r0 *types.Header
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context) (*types.Header, error)); ok {
+		return rf(ctx)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context) *types.Header); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Header)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetMainTxReceipt provides a mock function with given fields: ctx, txHash
+func (_m *IContractCaller) GetMainTxReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
+	ret := _m.Called(ctx, txHash)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetMainTxReceipt")
@@ -880,19 +910,19 @@ func (_m *IContractCaller) GetMainTxReceipt(_a0 common.Hash) (*types.Receipt, er
 
 	var r0 *types.Receipt
 	var r1 error
-	if rf, ok := ret.Get(0).(func(common.Hash) (*types.Receipt, error)); ok {
-		return rf(_a0)
+	if rf, ok := ret.Get(0).(func(context.Context, common.Hash) (*types.Receipt, error)); ok {
+		return rf(ctx, txHash)
 	}
-	if rf, ok := ret.Get(0).(func(common.Hash) *types.Receipt); ok {
-		r0 = rf(_a0)
+	if rf, ok := ret.Get(0).(func(context.Context, common.Hash) *types.Receipt); ok {
+		r0 = rf(ctx, txHash)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*types.Receipt)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
-		r1 = rf(_a0)
+	if rf, ok := ret.Get(1).(func(context.Context, common.Hash) error); ok {
+		r1 = rf(ctx, txHash)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -930,9 +960,9 @@ func (_m *IContractCaller) GetRootChainInstance(rootChainAddress string) (*rootc
 	return r0, r1
 }
 
-// GetRootHash provides a mock function with given fields: start, end, checkpointLength
-func (_m *IContractCaller) GetRootHash(start uint64, end uint64, checkpointLength uint64) ([]byte, error) {
-	ret := _m.Called(start, end, checkpointLength)
+// GetRootHash provides a mock function with given fields: ctx, start, end, checkpointLength
+func (_m *IContractCaller) GetRootHash(ctx context.Context, start uint64, end uint64, checkpointLength uint64) ([]byte, error) {
+	ret := _m.Called(ctx, start, end, checkpointLength)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetRootHash")
@@ -940,19 +970,19 @@ func (_m *IContractCaller) GetRootHash(start uint64, end uint64, checkpointLengt
 
 	var r0 []byte
 	var r1 error
-	if rf, ok := ret.Get(0).(func(uint64, uint64, uint64) ([]byte, error)); ok {
-		return rf(start, end, checkpointLength)
+	if rf, ok := ret.Get(0).(func(context.Context, uint64, uint64, uint64) ([]byte, error)); ok {
+		return rf(ctx, start, end, checkpointLength)
 	}
-	if rf, ok := ret.Get(0).(func(uint64, uint64, uint64) []byte); ok {
-		r0 = rf(start, end, checkpointLength)
+	if rf, ok := ret.Get(0).(func(context.Context, uint64, uint64, uint64) []byte); ok {
+		r0 = rf(ctx, start, end, checkpointLength)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]byte)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(uint64, uint64, uint64) error); ok {
-		r1 = rf(start, end, checkpointLength)
+	if rf, ok := ret.Get(1).(func(context.Context, uint64, uint64, uint64) error); ok {
+		r1 = rf(ctx, start, end, checkpointLength)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1274,17 +1304,17 @@ func (_m *IContractCaller) GetVoteOnHash(start uint64, end uint64, hash string, 
 	return r0, r1
 }
 
-// IsTxConfirmed provides a mock function with given fields: _a0, _a1
-func (_m *IContractCaller) IsTxConfirmed(_a0 common.Hash, _a1 uint64) bool {
-	ret := _m.Called(_a0, _a1)
+// IsTxConfirmed provides a mock function with given fields: ctx, txHash, requiredConfirmations
+func (_m *IContractCaller) IsTxConfirmed(ctx context.Context, txHash common.Hash, requiredConfirmations uint64) bool {
+	ret := _m.Called(ctx, txHash, requiredConfirmations)
 
 	if len(ret) == 0 {
 		panic("no return value specified for IsTxConfirmed")
 	}
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(common.Hash, uint64) bool); ok {
-		r0 = rf(_a0, _a1)
+	if rf, ok := ret.Get(0).(func(context.Context, common.Hash, uint64) bool); ok {
+		r0 = rf(ctx, txHash, requiredConfirmations)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}

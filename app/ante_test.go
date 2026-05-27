@@ -306,12 +306,12 @@ func makeMultiSendOverCap() sdk.Msg {
 	}
 }
 
-// Heimdall wires NewMsgMultiSendCapDecorator(maxMultiSendOutputs, helper.IsV080Hardfork).
+// Heimdall wires NewMsgMultiSendCapDecorator(maxMultiSendOutputs, helper.IsZurichHardfork).
 // Pin both the activation predicate and the cap value at the wiring boundary.
 func TestAnteWiring_MsgMultiSendCapHardforkGated(t *testing.T) {
 	const activation = int64(100)
-	helper.SetV080HardforkHeight(activation)
-	t.Cleanup(func() { helper.SetV080HardforkHeight(0) })
+	helper.SetZurichHardforkHeight(activation)
+	t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
 
 	cases := []struct {
 		name       string
@@ -324,7 +324,7 @@ func TestAnteWiring_MsgMultiSendCapHardforkGated(t *testing.T) {
 	}
 
 	// Construct the same decorator instance the production ante chain wires.
-	dec := ante.NewMsgMultiSendCapDecorator(16, helper.IsV080Hardfork)
+	dec := ante.NewMsgMultiSendCapDecorator(16, helper.IsZurichHardfork)
 	terminal := func(ctx sdk.Context, _ sdk.Tx, _ bool) (sdk.Context, error) { return ctx, nil }
 
 	for _, tc := range cases {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -914,7 +915,7 @@ func TestVerifyVoteExtensionHandler_AcceptsOnBorQueryError(t *testing.T) {
 	// Now swap in a broken mock caller that simulates bor_getRootHash failure (e.g., not available like in erigon)
 	brokenMockCaller := new(helpermocks.IContractCaller)
 	brokenMockCaller.
-		On("CheckIfBlocksExist", mock.Anything).
+		On("CheckIfBlocksExist", mock.Anything, mock.Anything).
 		Return(false, fmt.Errorf("the method bor_getRootHash does not exist/is not available"))
 	brokenMockCaller.
 		On("GetRootHash", mock.Anything, mock.Anything, mock.Anything).
@@ -1047,7 +1048,7 @@ func TestSideTxsHappyPath(t *testing.T) {
 		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
-	mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.AnythingOfType("int64")).Return(txReceipt, nil)
+	mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.AnythingOfType("int64")).Return(txReceipt, nil)
 	mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 	app.TopupKeeper = topupKeeper.NewKeeper(
 		app.AppCodec(),
@@ -1138,7 +1139,7 @@ func TestSideTxsHappyPath(t *testing.T) {
 		},
 	}
 
-	mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+	mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil)
 	mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(stateSyncEvent, nil)
 
 	for _, tc := range testCases {
@@ -1563,7 +1564,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		Address2 := "0xb316fa9fa91700d7084d377bfdc81eb9f232f5ff"
 
 		addrBz2, err := ac.StringToBytes(Address2)
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.
 			On("GetBorChainBlock", mock.Anything, mock.Anything).
 			Return(&ethTypes.Header{
@@ -1639,7 +1640,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 
 		addrBz2, err := ac.StringToBytes(Address2)
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
@@ -1729,7 +1730,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 			"0",
 		)
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 		event := &statesender.StatesenderStateSynced{
 			Id:              new(big.Int).SetUint64(msg.Id),
 			ContractAddress: common.BytesToAddress([]byte(msg.ContractAddress)),
@@ -1805,7 +1806,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 
 		addrBz2, err := ac.StringToBytes(Address2)
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
@@ -1964,7 +1965,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.
 			On("GetBorChainBlock", mock.Anything, mock.Anything).
@@ -2038,7 +2039,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 		mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
@@ -2111,7 +2112,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
 		}
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 		mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil).Once()
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
@@ -2185,7 +2186,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		}
 		fmt.Println("txReceipt: ", txReceipt)
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil)
 		mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
@@ -4241,6 +4242,10 @@ func TestPrepareProposal_AccountSequenceMismatch(t *testing.T) {
 
 func TestPrepareProposal_SideTxCap(t *testing.T) {
 	t.Run("includes at most maxSideTxResponsesCount side txs", func(t *testing.T) {
+		// PrepareProposal cap is Zurich-gated to match ProcessProposal.
+		helper.SetZurichHardforkHeight(1)
+		t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
+
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 		validators := app.StakeKeeper.GetAllValidators(ctx)
 		ctx = ctx.WithBlockHeight(3)
@@ -4289,6 +4294,51 @@ func TestPrepareProposal_SideTxCap(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.Equal(t, maxSideTxResponsesCount+1, len(res.Txs), "expected 1 commit tx + max side txs")
+	})
+
+	t.Run("pre-Zurich: cap is dormant, all side txs included", func(t *testing.T) {
+		// Zurich inactive (height = 0): the gate function returns false and the
+		// cap branch is dead code, so all side-tx-bearing txs are included.
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+		ctx = ctx.WithBlockHeight(3)
+
+		var proposedTxs [][]byte
+		propAddr := sdk.AccAddress(priv.PubKey().Address())
+		propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
+		sequence := propAcc.GetSequence()
+
+		for i := 0; i < maxSideTxResponsesCount+2; i++ {
+			msg := &checkpointTypes.MsgCheckpoint{
+				Proposer:        priv.PubKey().Address().String(),
+				StartBlock:      uint64(100 + i*100),
+				EndBlock:        uint64(200 + i*100),
+				RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+				BorChainId:      "1",
+			}
+
+			txBytes, err := buildSignedTxWithSequence(msg, ctx, priv, app, sequence)
+			require.NoError(t, err)
+			proposedTxs = append(proposedTxs, txBytes)
+			sequence++
+		}
+
+		_, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
+		require.NoError(t, err)
+
+		req := &abci.RequestPrepareProposal{
+			Txs:             proposedTxs,
+			MaxTxBytes:      10000000,
+			Height:          3,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+		}
+
+		res, err := app.PrepareProposal(req)
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, maxSideTxResponsesCount+2+1, len(res.Txs), "pre-Zurich cap is dormant: expected 1 commit tx + all side txs")
 	})
 }
 
@@ -4340,6 +4390,10 @@ func TestProcessProposal_ValidProposalMultipleTxs(t *testing.T) {
 
 func TestProcessProposal_RejectsOverCapSideTxs(t *testing.T) {
 	t.Run("reject proposal with more than maxSideTxResponsesCount side txs", func(t *testing.T) {
+		// ProcessProposal cap is Zurich-gated.
+		helper.SetZurichHardforkHeight(1)
+		t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
+
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 		validators := app.StakeKeeper.GetAllValidators(ctx)
 		ctx = ctx.WithBlockHeight(3)
@@ -5019,7 +5073,7 @@ func TestProcessProposal_RejectsCheckpointTxWhenNonRpVoteExtensionsInvalidPostPh
 
 func setupBorBlockNotFoundCaller() *helpermocks.IContractCaller {
 	c := new(helpermocks.IContractCaller)
-	c.On("CheckIfBlocksExist", mock.Anything).Return(false, nil)
+	c.On("CheckIfBlocksExist", mock.Anything, mock.Anything).Return(false, nil)
 	c.On("GetRootHash", mock.Anything, mock.Anything, mock.Anything).
 		Return([]byte(nil), fmt.Errorf("bor unreachable"))
 	return c
@@ -5061,8 +5115,8 @@ func TestVerifyVoteExtensionHandler_BorBlockNotFoundHardforkGated(t *testing.T) 
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			helper.SetV080HardforkHeight(tc.activation)
-			t.Cleanup(func() { helper.SetV080HardforkHeight(0) })
+			helper.SetZurichHardforkHeight(tc.activation)
+			t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
 
 			_, app, ctx, _ := SetupAppWithABCICtx(t)
 			validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -5106,8 +5160,8 @@ func TestProcessProposal_NonRpVoteExtensionBorErrorHardforkGated(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			helper.SetV080HardforkHeight(tc.activation)
-			t.Cleanup(func() { helper.SetV080HardforkHeight(0) })
+			helper.SetZurichHardforkHeight(tc.activation)
+			t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
 
 			priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 			validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -5120,6 +5174,11 @@ func TestProcessProposal_NonRpVoteExtensionBorErrorHardforkGated(t *testing.T) {
 			extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
 			require.NoError(t, err)
 			extCommit.Votes[0].NonRpVoteExtension = packedVE
+			// Re-sign so checkNonRpVoteExtensionsSignatures sees
+			// a signature that matches the swapped-in NonRpVoteExtension.
+			nonRpSig, err := validatorPrivKeys[0].Sign(packedVE)
+			require.NoError(t, err)
+			extCommit.Votes[0].NonRpExtensionSignature = nonRpSig
 			extCommitBytes, err = extCommit.Marshal()
 			require.NoError(t, err)
 
@@ -5140,6 +5199,70 @@ func TestProcessProposal_NonRpVoteExtensionBorErrorHardforkGated(t *testing.T) {
 			require.Equal(t, tc.wantStatus, res.Status)
 		})
 	}
+}
+
+// TestProcessProposal_NonRpVoteExtensionTamperedSignatureAlwaysRejected
+// verifies that the proposal must be rejected even when Zurich HF would
+// otherwise tolerate Bor errors. The signature check runs before any
+// Bor-dependent payload validation, so the tolerateBorErr carve-out
+// cannot suppress a signature failure.
+func TestProcessProposal_NonRpVoteExtensionTamperedSignatureAlwaysRejected(t *testing.T) {
+	const runHeight = int64(3)
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() { helper.SetPhuketHardforkHeight(0) })
+	helper.SetZurichHardforkHeight(1) // Zurich active — tolerateBorErr would fire if reached
+	t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
+
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	packedVE, checkpointMsg := buildCheckpointNonRpVoteExt(t, app, ctx, priv.PubKey().Address().String(), 4_000_001)
+	txBytes, err := buildSignedTx(checkpointMsg, ctx, priv, app)
+	require.NoError(t, err)
+
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
+	require.NoError(t, err)
+	extCommit.Votes[0].NonRpVoteExtension = packedVE
+	// leave the original NonRpExtensionSignature (which signs the
+	// dummy VE that buildExtensionCommits inserted), do not re-sign packedVE.
+	// The signature check fires first and rejects.
+	extCommitBytes, err = extCommit.Marshal()
+	require.NoError(t, err)
+
+	app.caller = setupBorBlockNotFoundCaller()
+
+	res, err := app.ProcessProposal(&abci.RequestProcessProposal{
+		Txs:    [][]byte{extCommitBytes, txBytes},
+		Height: runHeight,
+		ProposedLastCommit: abci.CommitInfo{
+			Round: extCommit.Round,
+			Votes: []abci.VoteInfo{{Validator: extCommit.Votes[0].Validator, BlockIdFlag: cmtproto.BlockIDFlagCommit}},
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, abci.ResponseProcessProposal_REJECT, res.Status,
+		"tampered NonRpExtensionSignature must reject regardless of Zurich tolerateBorErr")
+}
+
+// TestValidateNonRpVoteExtensionData_ErrBorBlockNotFoundWrapChain asserts the
+// errors.Is stays intact end-to-end from IsValidCheckpoint through
+// validateCheckpointMsgData and validateNonRpVoteExtensionData.
+func TestValidateNonRpVoteExtensionData_ErrBorBlockNotFoundWrapChain(t *testing.T) {
+	const height = int64(3)
+
+	_, app, ctx, _ := SetupAppWithABCICtx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	packedVE, _ := buildCheckpointNonRpVoteExt(t, app, ctx, validators[0].Signer, 3_000_001)
+	caller := setupBorBlockNotFoundCaller()
+
+	err := validateNonRpVoteExtensionData(ctx, height, packedVE, app.ChainManagerKeeper, app.CheckpointKeeper, caller)
+	require.Error(t, err)
+	require.True(t,
+		errors.Is(err, borTypes.ErrBorBlockNotFound),
+		"errors.Is must traverse the full wrap chain (merkle.go → validateCheckpointMsgData → validateNonRpVoteExtensionData); got %v", err,
+	)
 }
 
 // With the budget zeroed, the loop short-circuits when active and runs to
@@ -5165,8 +5288,8 @@ func TestExtendVoteHandler_BudgetHardforkGated(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			helper.SetV080HardforkHeight(tc.activation)
-			t.Cleanup(func() { helper.SetV080HardforkHeight(0) })
+			helper.SetZurichHardforkHeight(tc.activation)
+			t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
 
 			priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
 			validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -5190,7 +5313,7 @@ func TestExtendVoteHandler_BudgetHardforkGated(t *testing.T) {
 				Return(&ethTypes.Header{Number: big.NewInt(10)}, nil)
 			working.On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 				Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
-			working.On("CheckIfBlocksExist", mock.Anything).Return(true, nil)
+			working.On("CheckIfBlocksExist", mock.Anything, mock.Anything).Return(true, nil)
 			working.On("GetRootHash", mock.Anything, mock.Anything, mock.Anything).
 				Return(common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"), nil)
 

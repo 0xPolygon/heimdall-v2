@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIsV080Hardfork(t *testing.T) {
+func TestIsZurichHardfork(t *testing.T) {
 	tests := []struct {
 		name           string
 		hardforkHeight int64
@@ -27,15 +27,15 @@ func TestIsV080Hardfork(t *testing.T) {
 		{name: "above hardfork height returns true", hardforkHeight: 100, queryHeight: 101, want: true},
 	}
 
-	original := GetV080HardforkHeight()
+	original := GetZurichHardforkHeight()
 	t.Cleanup(func() {
-		SetV080HardforkHeight(original)
+		SetZurichHardforkHeight(original)
 	})
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			SetV080HardforkHeight(tc.hardforkHeight)
-			require.Equal(t, tc.want, IsV080Hardfork(tc.queryHeight))
+			SetZurichHardforkHeight(tc.hardforkHeight)
+			require.Equal(t, tc.want, IsZurichHardfork(tc.queryHeight))
 		})
 	}
 }

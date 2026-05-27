@@ -262,7 +262,7 @@ var producerDowntimeHeight int64 = 0
 
 var phuketHardforkHeight int64 = 0
 
-var v080HardforkHeight int64 = 0
+var zurichHardforkHeight int64 = 0
 
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
@@ -508,47 +508,47 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case MainChain:
 		milestoneDeletionHeight = 28525000
 		faultyMilestoneNumber = 1941439
-		rioHeight = 77414656 // Rio height for Mainnet.
+		rioHeight = 77414656
 		tallyFixHeight = 28913694
 		disableVPCheckHeight = 25723000
 		disableValSetCheckHeight = 25723063
 		initialHeight = 24404501
 		producerDowntimeHeight = 34966593
 		phuketHardforkHeight = 44070000
-		v080HardforkHeight = 0 // TODO marcello set block number when needed
+		zurichHardforkHeight = 0 // TODO marcello set HF height
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 48473856 // Rio height for Mumbai testnet.
+		rioHeight = 48473856
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
 		phuketHardforkHeight = 0
-		v080HardforkHeight = 0
+		zurichHardforkHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 26272256 // Rio height for Amoy testnet.
+		rioHeight = 26272256
 		tallyFixHeight = 13143851
 		disableVPCheckHeight = 10618199
 		disableValSetCheckHeight = 10618299
 		initialHeight = 8788501
 		producerDowntimeHeight = 20457139
 		phuketHardforkHeight = 32276400
-		v080HardforkHeight = 0 // TODO marcello set block number when needed
+		zurichHardforkHeight = 0 // TODO marcello set HF height
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 128 // Rio height for local devnet.
+		rioHeight = 128
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
 		phuketHardforkHeight = 0
-		v080HardforkHeight = 0
+		zurichHardforkHeight = 0
 	}
 }
 
@@ -928,16 +928,16 @@ func GetPhuketHardforkHeight() int64 {
 	return phuketHardforkHeight
 }
 
-func IsV080Hardfork(height int64) bool {
-	return v080HardforkHeight > 0 && height >= v080HardforkHeight
+func IsZurichHardfork(height int64) bool {
+	return zurichHardforkHeight > 0 && height >= zurichHardforkHeight
 }
 
-func SetV080HardforkHeight(height int64) {
-	v080HardforkHeight = height
+func SetZurichHardforkHeight(height int64) {
+	zurichHardforkHeight = height
 }
 
-func GetV080HardforkHeight() int64 {
-	return v080HardforkHeight
+func GetZurichHardforkHeight() int64 {
+	return zurichHardforkHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {

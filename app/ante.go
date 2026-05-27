@@ -16,9 +16,7 @@ type HandlerOptions struct {
 	SideTxConfig sidetxs.SideTxConfigurator
 }
 
-// maxMultiSendOutputs bounds the per-tx output count of bank MsgMultiSend.
-// Picked so a single MsgMultiSend can't dominate proposal byte budget under
-// our flat-fee ante.
+// maxMultiSendOutputs bounds aggregate bank-transfer outputs per tx so flat-ante txs can't fan out unboundedly.
 const maxMultiSendOutputs = 16
 
 // NewAnteHandler returns an AnteHandler that checks and increments sequence
@@ -41,7 +39,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
 		ante.NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
 		ante.NewValidateBasicDecorator(),
-		ante.NewMsgMultiSendCapDecorator(maxMultiSendOutputs, helper.IsV080Hardfork),
+		ante.NewMsgMultiSendCapDecorator(maxMultiSendOutputs, helper.IsZurichHardfork),
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),

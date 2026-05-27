@@ -1,6 +1,7 @@
 package types_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -25,7 +26,7 @@ func TestIsValidCheckpoint_BorQueryFailures_WrapDistinctSentinels(t *testing.T) 
 		{
 			name: "ethereum.NotFound or nil header -> (false, nil)",
 			setupMock: func(c *helpermocks.IContractCaller) {
-				c.On("CheckIfBlocksExist", mock.Anything).Return(false, nil)
+				c.On("CheckIfBlocksExist", mock.Anything, mock.Anything).Return(false, nil)
 			},
 			start: 100_000, end: 200_000, checkpointLength: 256, confirmations: 10,
 			wantSentinel: borTypes.ErrBorBlockNotFound,
@@ -33,7 +34,7 @@ func TestIsValidCheckpoint_BorQueryFailures_WrapDistinctSentinels(t *testing.T) 
 		{
 			name: "JSON-RPC failure -> (false, err)",
 			setupMock: func(c *helpermocks.IContractCaller) {
-				c.On("CheckIfBlocksExist", mock.Anything).
+				c.On("CheckIfBlocksExist", mock.Anything, mock.Anything).
 					Return(false, fmt.Errorf("bor unreachable"))
 			},
 			start: 300_000, end: 400_000, checkpointLength: 256, confirmations: 10,
@@ -47,6 +48,7 @@ func TestIsValidCheckpoint_BorQueryFailures_WrapDistinctSentinels(t *testing.T) 
 			tt.setupMock(caller)
 
 			ok, err := checkpointTypes.IsValidCheckpoint(
+				context.Background(),
 				tt.start,
 				tt.end,
 				[]byte{0xde, 0xad},

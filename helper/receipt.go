@@ -18,20 +18,17 @@ type ReceiptValidationParams struct {
 	ModuleName     string
 }
 
-// FetchAndValidateReceipt fetches the confirmed transaction receipt and validates it.
-// It performs two key validations:
-// 1. Ensures the receipt exists and was fetched successfully
-// 2. Ensures the block number in the receipt matches the block number in the message
-//
-// Returns the receipt if validation succeeds, or nil if validation fails.
-// Callers should vote NO if this function returns nil.
+// FetchAndValidateReceipt fetches and validates the confirmed tx receipt;
+// returns nil if either the fetch fails or the receipt's block number
+// disagrees with the message's. Callers should vote NO on nil.
 func FetchAndValidateReceipt(
+	ctx context.Context,
 	contractCaller IContractCaller,
 	params ReceiptValidationParams,
 	logger log.Logger,
 ) *ethTypes.Receipt {
-	// Get confirmed tx receipt
 	receipt, err := contractCaller.GetConfirmedTxReceipt(
+		ctx,
 		common.BytesToHash(params.TxHash),
 		params.Confirmations,
 	)

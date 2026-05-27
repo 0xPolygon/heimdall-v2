@@ -121,7 +121,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if helper.IsV080Hardfork(sdkCtx.BlockHeight()) {
+	if helper.IsZurichHardfork(sdkCtx.BlockHeight()) {
 		return q.recordListWithTimeDeterministic(ctx, request)
 	}
 
@@ -233,7 +233,7 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 
 	// Get the main tx receipt.
 	txHash := common.FromHex(request.TxHash)
-	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
+	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(ctx, common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
 	if err != nil || receipt == nil {
 		return nil, status.Errorf(codes.Internal, "transaction is not confirmed yet. please wait for sometime and try again")
 	}
@@ -270,7 +270,7 @@ func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequ
 
 	// Get the main tx receipt.
 	txHash := common.FromHex(request.TxHash)
-	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
+	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(ctx, common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
 	if err != nil || receipt == nil {
 		return nil, status.Errorf(codes.Internal, "transaction is not confirmed yet. please wait for sometime and try again")
 	}

@@ -53,8 +53,8 @@ var ContractsABIsMap = make(map[string]*abi.ABI)
 
 // IContractCaller represents contract caller
 type IContractCaller interface {
-	GetHeaderInfo(headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (root common.Hash, start, end, createdAt uint64, proposer string, err error)
-	GetRootHash(start, end, checkpointLength uint64) ([]byte, error)
+	GetHeaderInfo(ctx context.Context, headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (root common.Hash, start, end, createdAt uint64, proposer string, err error)
+	GetRootHash(ctx context.Context, start, end, checkpointLength uint64) ([]byte, error)
 	GetVoteOnHash(start, end uint64, hash, milestoneID string) (bool, error)
 	GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error)
 	GetLastChildBlock(rootChainInstance *rootchain.Rootchain) (uint64, error)
@@ -62,13 +62,14 @@ type IContractCaller interface {
 	GetBalance(address common.Address) (*big.Int, error)
 	SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) (err error)
 	GetCheckpointSign(txHash common.Hash) ([]byte, []byte, []byte, error)
-	GetMainChainBlock(*big.Int) (*ethTypes.Header, error)
+	GetMainChainBlock(ctx context.Context, blockNum *big.Int) (*ethTypes.Header, error)
+	GetMainChainFinalizedBlock(ctx context.Context) (*ethTypes.Header, error)
 	GetBorChainBlock(context.Context, *big.Int) (*ethTypes.Header, error)
 	GetBorChainBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error)
 	GetBorChainBlockTd(ctx context.Context, blockHash common.Hash) (uint64, error)
 	GetBorChainBlockAuthor(ctx context.Context, blockNum *big.Int) (*common.Address, error)
-	IsTxConfirmed(common.Hash, uint64) bool
-	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
+	IsTxConfirmed(ctx context.Context, txHash common.Hash, requiredConfirmations uint64) bool
+	GetConfirmedTxReceipt(ctx context.Context, txHash common.Hash, requiredConfirmations uint64) (*ethTypes.Receipt, error)
 	GetBlockNumberFromTxHash(common.Hash) (*big.Int, error)
 
 	DecodeNewHeaderBlockEvent(string, *ethTypes.Receipt, uint64) (*rootchain.RootchainNewHeaderBlock, error)
@@ -84,7 +85,7 @@ type IContractCaller interface {
 	DecodeSlashedEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoSlashed, error)
 	DecodeUnJailedEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoUnJailed, error)
 
-	GetMainTxReceipt(common.Hash) (*ethTypes.Receipt, error)
+	GetMainTxReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error)
 	GetBorTxReceipt(common.Hash) (*ethTypes.Receipt, error)
 	ApproveTokens(*big.Int, common.Address, common.Address, *erc20.Erc20) error
 	StakeFor(common.Address, *big.Int, *big.Int, bool, common.Address, *stakemanager.Stakemanager) error
@@ -92,7 +93,7 @@ type IContractCaller interface {
 	CurrentSpanNumber(validatorSet *validatorset.Validatorset) (Number *big.Int)
 	GetSpanDetails(id *big.Int, validatorSet *validatorset.Validatorset) (*big.Int, *big.Int, *big.Int, error)
 	CurrentStateCounter(stateSenderInstance *statesender.Statesender) (Number *big.Int)
-	CheckIfBlocksExist(end uint64) (bool, error)
+	CheckIfBlocksExist(ctx context.Context, end uint64) (bool, error)
 	GetRootChainInstance(rootChainAddress string) (*rootchain.Rootchain, error)
 	GetStakingInfoInstance(stakingInfoAddress string) (*stakinginfo.Stakinginfo, error)
 	GetValidatorSetInstance(validatorSetAddress string) (*validatorset.Validatorset, error)
@@ -147,14 +148,10 @@ type ContractCaller struct {
 	// prefetchMu protects the round-scoped prefetch state used by ExtendVote.
 	prefetchMu *sync.RWMutex
 	// prefetchedReceipts stores the prefetched L1 tx receipts from ExtendVoteHandler.
-	// Should be reset after each round of ExtendVoteHandler.
+	// Reset after each round of ExtendVoteHandler.
 	prefetchedReceipts map[common.Hash]*ethTypes.Receipt
-	// extendVoteDeadline is set by ExtendVoteHandler so RPC calls in the same
-	// handler clamp their per-call timeout to the remaining budget.
-	// Guarded by prefetchMu (same lifecycle: set on ExtendVote entry, cleared on exit).
-	extendVoteDeadline *time.Time
 	// finalizedHeaderCache stores the last fetched finalized main chain block header.
-	// Should be reset after each round of ExtendVoteHandler.
+	// Reset after each round of ExtendVoteHandler.
 	finalizedHeaderCache *ethTypes.Header
 }
 
@@ -358,7 +355,7 @@ func (c *ContractCaller) GetTokenInstance(tokenAddress string) (*erc20.Erc20, er
 }
 
 // GetHeaderInfo get header info from the checkpoint number
-func (c *ContractCaller) GetHeaderInfo(headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (
+func (c *ContractCaller) GetHeaderInfo(ctx context.Context, headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (
 	root common.Hash,
 	start,
 	end,
@@ -366,12 +363,11 @@ func (c *ContractCaller) GetHeaderInfo(headerID uint64, rootChainInstance *rootc
 	proposer string,
 	err error,
 ) {
-	// get header from rootChain
 	checkpointBigInt := big.NewInt(0).Mul(big.NewInt(0).SetUint64(headerID), big.NewInt(0).SetUint64(childBlockInterval))
 
-	ctx, cancel := c.deadlineCtx(context.Background(), c.MainChainTimeout)
+	callCtx, cancel := context.WithTimeout(ctx, c.MainChainTimeout)
 	defer cancel()
-	headerBlock, err := rootChainInstance.HeaderBlocks(&bind.CallOpts{Context: ctx}, checkpointBigInt)
+	headerBlock, err := rootChainInstance.HeaderBlocks(&bind.CallOpts{Context: callCtx}, checkpointBigInt)
 	if err != nil {
 		return root, start, end, createdAt, proposer, errors.New("unable to fetch checkpoint block")
 	}
@@ -385,7 +381,7 @@ func (c *ContractCaller) GetHeaderInfo(headerID uint64, rootChainInstance *rootc
 }
 
 // GetRootHash get root hash from the bor chain for the corresponding start and end block
-func (c *ContractCaller) GetRootHash(start, end, checkpointLength uint64) ([]byte, error) {
+func (c *ContractCaller) GetRootHash(ctx context.Context, start, end, checkpointLength uint64) ([]byte, error) {
 	noOfBlock := end - start + 1
 
 	if start > end {
@@ -396,7 +392,7 @@ func (c *ContractCaller) GetRootHash(start, end, checkpointLength uint64) ([]byt
 		return nil, errors.New("number of headers requested exceeds checkpoint length")
 	}
 
-	ctx, cancel := c.deadlineCtx(context.Background(), c.BorChainTimeout)
+	callCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
 	var rootHash string
@@ -407,9 +403,9 @@ func (c *ContractCaller) GetRootHash(start, end, checkpointLength uint64) ([]byt
 		if grpcErr != nil {
 			return nil, grpcErr
 		}
-		rootHash, err = grpcClient.GetRootHash(ctx, start, end)
+		rootHash, err = grpcClient.GetRootHash(callCtx, start, end)
 	} else {
-		rootHash, err = c.BorChainClient.GetRootHash(ctx, start, end)
+		rootHash, err = c.BorChainClient.GetRootHash(callCtx, start, end)
 	}
 
 	if err != nil {
@@ -529,11 +525,11 @@ func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *sta
 }
 
 // GetMainChainBlock returns main chain block header
-func (c *ContractCaller) GetMainChainBlock(blockNum *big.Int) (header *ethTypes.Header, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.MainChainTimeout)
+func (c *ContractCaller) GetMainChainBlock(ctx context.Context, blockNum *big.Int) (header *ethTypes.Header, err error) {
+	callCtx, cancel := context.WithTimeout(ctx, c.MainChainTimeout)
 	defer cancel()
 
-	latestBlock, err := c.MainChainClient.HeaderByNumber(ctx, blockNum)
+	latestBlock, err := c.MainChainClient.HeaderByNumber(callCtx, blockNum)
 	if err != nil {
 		Logger.Error("Unable to connect to main chain", "error", err)
 		return
@@ -543,11 +539,11 @@ func (c *ContractCaller) GetMainChainBlock(blockNum *big.Int) (header *ethTypes.
 }
 
 // GetMainChainFinalizedBlock returns the finalized main chain block header (post-merge)
-func (c *ContractCaller) GetMainChainFinalizedBlock() (header *ethTypes.Header, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.MainChainTimeout)
+func (c *ContractCaller) GetMainChainFinalizedBlock(ctx context.Context) (header *ethTypes.Header, err error) {
+	callCtx, cancel := context.WithTimeout(ctx, c.MainChainTimeout)
 	defer cancel()
 
-	latestFinalizedBlock, err := c.MainChainClient.HeaderByNumber(ctx, big.NewInt(int64(rpc.FinalizedBlockNumber)))
+	latestFinalizedBlock, err := c.MainChainClient.HeaderByNumber(callCtx, big.NewInt(int64(rpc.FinalizedBlockNumber)))
 	if err != nil {
 		Logger.Error(errUnableToConnect, "error", err)
 		return
@@ -557,7 +553,7 @@ func (c *ContractCaller) GetMainChainFinalizedBlock() (header *ethTypes.Header, 
 }
 
 // getOrFetchReceipt returns a receipt from prefetched receipts or fetches from L1.
-func (c *ContractCaller) getOrFetchReceipt(tx common.Hash) (*ethTypes.Receipt, error) {
+func (c *ContractCaller) getOrFetchReceipt(ctx context.Context, tx common.Hash) (*ethTypes.Receipt, error) {
 	c.prefetchMu.RLock()
 	var cachedReceipt *ethTypes.Receipt
 	if c.prefetchedReceipts != nil {
@@ -572,7 +568,7 @@ func (c *ContractCaller) getOrFetchReceipt(tx common.Hash) (*ethTypes.Receipt, e
 
 	Logger.Debug("Fetching the receipt from the main chain", "tx", tx.Hex())
 
-	receipt, err := c.GetMainTxReceipt(tx)
+	receipt, err := c.GetMainTxReceipt(ctx, tx)
 	if err != nil {
 		Logger.Error("Error while fetching receipt from ethereum", "txHash", tx.Hex(), "error", err)
 		return nil, err
@@ -880,9 +876,8 @@ func (c *ContractCaller) GetBlockNumberFromTxHash(tx common.Hash) (*big.Int, err
 
 // IsTxConfirmed checks whether the tx corresponding to the given hash is confirmed with given
 // requiredConfirmations numbers
-func (c *ContractCaller) IsTxConfirmed(txHash common.Hash, requiredConfirmations uint64) bool {
-	// get main tx receipt
-	receipt, err := c.GetConfirmedTxReceipt(txHash, requiredConfirmations)
+func (c *ContractCaller) IsTxConfirmed(ctx context.Context, txHash common.Hash, requiredConfirmations uint64) bool {
+	receipt, err := c.GetConfirmedTxReceipt(ctx, txHash, requiredConfirmations)
 	if err != nil {
 		Logger.Error("Error while fetching the tx receipt", "error", err)
 		return false
@@ -892,8 +887,8 @@ func (c *ContractCaller) IsTxConfirmed(txHash common.Hash, requiredConfirmations
 }
 
 // GetConfirmedTxReceipt returns a tx receipt only if it is finalized (or has the required confirmations).
-func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmations uint64) (*ethTypes.Receipt, error) {
-	receipt, err := c.getOrFetchReceipt(tx)
+func (c *ContractCaller) GetConfirmedTxReceipt(ctx context.Context, tx common.Hash, requiredConfirmations uint64) (*ethTypes.Receipt, error) {
+	receipt, err := c.getOrFetchReceipt(ctx, tx)
 	if err != nil {
 		return nil, err
 	}
@@ -904,7 +899,6 @@ func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmat
 
 	receiptBlockNumber := receipt.BlockNumber.Uint64()
 
-	// If the finalized header cache is set, use it to check if the receipt is finalized or not.
 	c.prefetchMu.RLock()
 	cachedFinalizedHeader := c.finalizedHeaderCache
 	c.prefetchMu.RUnlock()
@@ -915,14 +909,11 @@ func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmat
 		}
 	}
 
-	// Fetch the latest finalized main chain block (available post-merge)
-	latestFinalizedBlock, err := c.GetMainChainFinalizedBlock()
+	latestFinalizedBlock, err := c.GetMainChainFinalizedBlock(ctx)
 	if err != nil {
 		Logger.Error("Error getting latest finalized main chain block", "error", err)
 	}
 
-	// If the latest finalized block is available, use it to check if the receipt is finalized or not.
-	// Else, fallback to the `requiredConfirmations` value.
 	if latestFinalizedBlock != nil && latestFinalizedBlock.Number != nil {
 		Logger.Debug("Fetched latest finalized main chain block",
 			"blockNumber", latestFinalizedBlock.Number.Uint64(),
@@ -935,12 +926,11 @@ func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmat
 			return nil, errors.New("receipt block number is ahead of latest finalized main chain block")
 		}
 
-		// At this point, we trust the canonical chain.
 		return receipt, nil
 	}
 
 	// No finalized API: fall back to N confirmations.
-	latestBlock, err := c.GetMainChainBlock(nil)
+	latestBlock, err := c.GetMainChainBlock(ctx, nil)
 	if err != nil {
 		Logger.Error("Error getting latest main chain block", "error", err)
 		return nil, err
@@ -1198,8 +1188,8 @@ func (c *ContractCaller) CurrentStateCounter(stateSenderInstance *statesender.St
 
 // CheckIfBlocksExist - check if the given block number exists on the local chain.
 // Here we check if the block number exists by fetching the header from the bor chain.
-func (c *ContractCaller) CheckIfBlocksExist(number uint64) (bool, error) {
-	ctx, cancel := c.deadlineCtx(context.Background(), c.BorChainTimeout)
+func (c *ContractCaller) CheckIfBlocksExist(ctx context.Context, number uint64) (bool, error) {
+	callCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
 	var (
@@ -1212,9 +1202,9 @@ func (c *ContractCaller) CheckIfBlocksExist(number uint64) (bool, error) {
 		if grpcErr != nil {
 			return false, grpcErr
 		}
-		header, err = grpcClient.HeaderByNumber(ctx, int64(number))
+		header, err = grpcClient.HeaderByNumber(callCtx, int64(number))
 	} else {
-		header, err = c.BorChainClient.HeaderByNumber(ctx, big.NewInt(int64(number)))
+		header, err = c.BorChainClient.HeaderByNumber(callCtx, big.NewInt(int64(number)))
 	}
 	if err != nil {
 		if errors.Is(err, ethereum.NotFound) {
@@ -1257,11 +1247,11 @@ func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint6
 //
 
 // GetMainTxReceipt returns main tx receipt
-func (c *ContractCaller) GetMainTxReceipt(txHash common.Hash) (*ethTypes.Receipt, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.MainChainTimeout)
+func (c *ContractCaller) GetMainTxReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error) {
+	callCtx, cancel := context.WithTimeout(ctx, c.MainChainTimeout)
 	defer cancel()
 
-	return c.getTxReceipt(ctx, c.MainChainClient, txHash)
+	return c.getTxReceipt(callCtx, c.MainChainClient, txHash)
 }
 
 // BatchGetMainChainTxReceipts fetches multiple main chain tx receipts in a single JSON-RPC batch call.
@@ -1440,39 +1430,6 @@ func toBlockNumArg(number *big.Int) string {
 	return fmt.Sprintf("<invalid %d>", number)
 }
 
-// SetExtendVoteDeadline records the wall-clock the current ExtendVote handler
-// must return by. CheckIfBlocksExist / GetRootHash / GetHeaderInfo clamp their
-// per-call timeout to the remaining budget so one slow RPC can't blow past
-// timeout_precommit.
-func (c *ContractCaller) SetExtendVoteDeadline(d time.Time) {
-	c.prefetchMu.Lock()
-	defer c.prefetchMu.Unlock()
-	c.extendVoteDeadline = &d
-}
-
-// ClearExtendVoteDeadline drops the ExtendVote deadline so subsequent RPC
-// calls fall back to their default per-call timeout.
-func (c *ContractCaller) ClearExtendVoteDeadline() {
-	c.prefetchMu.Lock()
-	defer c.prefetchMu.Unlock()
-	c.extendVoteDeadline = nil
-}
-
-// deadlineCtx returns a context whose timeout is min(defaultTimeout, remaining
-// ExtendVote budget). When no ExtendVote deadline is set, behaves identically
-// to context.WithTimeout(parent, defaultTimeout).
-func (c *ContractCaller) deadlineCtx(parent context.Context, defaultTimeout time.Duration) (context.Context, context.CancelFunc) {
-	timeout := defaultTimeout
-	c.prefetchMu.RLock()
-	d := c.extendVoteDeadline
-	c.prefetchMu.RUnlock()
-	if d != nil {
-		if remaining := time.Until(*d); remaining < timeout {
-			timeout = remaining
-		}
-	}
-	return context.WithTimeout(parent, timeout)
-}
 
 // BeginPrefetchRound starts a new round of prefetch lifecycle for ExtendVote.
 func (c *ContractCaller) BeginPrefetchRound() {

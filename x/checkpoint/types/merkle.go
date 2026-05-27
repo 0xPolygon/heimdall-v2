@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -19,7 +20,7 @@ var (
 )
 
 // IsValidCheckpoint validates if checkpoint rootHash matches or not
-func IsValidCheckpoint(start uint64, end uint64, rootHash []byte, checkpointLength uint64, contractCaller helper.IContractCaller, confirmations uint64) (bool, error) {
+func IsValidCheckpoint(ctx context.Context, start uint64, end uint64, rootHash []byte, checkpointLength uint64, contractCaller helper.IContractCaller, confirmations uint64) (bool, error) {
 	initOnce.Do(func() {
 		rootCache = cache.NewCache[[]byte](defaultTTL)
 		existsCache = cache.NewCache[bool](defaultTTL)
@@ -37,8 +38,7 @@ func IsValidCheckpoint(start uint64, end uint64, rootHash []byte, checkpointLeng
 				"error", err,
 			)
 		}
-		// Check if blocks exist locally
-		exists, err := contractCaller.CheckIfBlocksExist(end + confirmations)
+		exists, err := contractCaller.CheckIfBlocksExist(ctx, end+confirmations)
 		if err != nil {
 			return false, fmt.Errorf(
 				"%w: block existence check failed (end=%d confirmations=%d target=%d): %w",
@@ -73,8 +73,7 @@ func IsValidCheckpoint(start uint64, end uint64, rootHash []byte, checkpointLeng
 			"error", err,
 		)
 
-		// Compare RootHash
-		root, err = contractCaller.GetRootHash(start, end, checkpointLength)
+		root, err = contractCaller.GetRootHash(ctx, start, end, checkpointLength)
 		if err != nil {
 			return false, fmt.Errorf(
 				"%w: root hash query failed (start=%d end=%d checkpointLength=%d): %w",

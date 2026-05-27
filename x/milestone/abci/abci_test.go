@@ -181,8 +181,8 @@ func TestGetMajorityMilestoneProposition_MajorityWins(t *testing.T) {
 }
 
 func TestGetMajorityMilestoneProposition_MultipleMajorityParentsAlwaysUsesLastEndHash(t *testing.T) {
-	helper.SetV080HardforkHeight(1)
-	t.Cleanup(func() { helper.SetV080HardforkHeight(0) })
+	helper.SetZurichHardforkHeight(1)
+	t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
 	ctx := sdk.Context{}.WithBlockHeight(100)
 
 	validators := []*stakeTypes.Validator{
@@ -247,8 +247,8 @@ func TestGetMajorityMilestoneProposition_MultipleMajorityParentsAlwaysUsesLastEn
 }
 
 func TestGetMajorityMilestoneProposition_TwoThirdsThresholdWithLastEndParent(t *testing.T) {
-	helper.SetV080HardforkHeight(1)
-	t.Cleanup(func() { helper.SetV080HardforkHeight(0) })
+	helper.SetZurichHardforkHeight(1)
+	t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
 	ctx := sdk.Context{}.WithBlockHeight(100)
 
 	validators := []*stakeTypes.Validator{
@@ -303,8 +303,8 @@ func TestGetMajorityMilestoneProposition_TwoThirdsThresholdWithLastEndParent(t *
 }
 
 func TestGetMajorityMilestoneProposition_ReturnsNilWhenLastEndParentBelowThreshold(t *testing.T) {
-	helper.SetV080HardforkHeight(1)
-	t.Cleanup(func() { helper.SetV080HardforkHeight(0) })
+	helper.SetZurichHardforkHeight(1)
+	t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
 	ctx := sdk.Context{}.WithBlockHeight(100)
 
 	validators := []*stakeTypes.Validator{

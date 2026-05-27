@@ -65,7 +65,7 @@ func (s *KeeperTestSuite) TestSideHandler() {
 		BlockNumber: new(big.Int).SetUint64(blockNumber),
 	}
 
-	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil)
 	event := &statesender.StatesenderStateSynced{
 		Id:              new(big.Int).SetUint64(msg.Id),
 		ContractAddress: common.HexToAddress(msg.ContractAddress),
@@ -107,7 +107,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// mock external calls
-		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil)
 		event := &statesender.StatesenderStateSynced{
 			Id:              new(big.Int).SetUint64(msg.Id),
 			ContractAddress: common.HexToAddress(msg.ContractAddress),
@@ -142,7 +142,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// mock external calls -- no receipt
-		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 		contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 
 		// execute handler
@@ -170,7 +170,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// mock external calls -- no receipt
-		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil)
 		contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
@@ -206,7 +206,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// mock external calls
-		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil)
 		event := &statesender.StatesenderStateSynced{
 			Id:              new(big.Int).SetUint64(msg.Id),
 			ContractAddress: common.BytesToAddress([]byte(msg.ContractAddress)),
@@ -252,7 +252,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			Data:            msg.Data,
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 		contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil).Once()
 
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)

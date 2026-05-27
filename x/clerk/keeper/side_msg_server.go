@@ -99,6 +99,7 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg) (
 
 	// get and validate confirmed tx receipt
 	receipt := helper.FetchAndValidateReceipt(
+		ctx,
 		srv.contractCaller,
 		helper.ReceiptValidationParams{
 			TxHash:         common.HexToHash(msg.TxHash).Bytes(),
@@ -219,7 +220,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 
 	// If visibility time is enabled, add the event to the pending list.
 	// Its visibility_height will be assigned in the next block's PreBlocker.
-	if helper.IsV080Hardfork(ctx.BlockHeight()) {
+	if helper.IsZurichHardfork(ctx.BlockHeight()) {
 		err = srv.AddPendingVisibilityEvent(ctx, record.Id)
 		if err != nil {
 			logger.Error("Unable to add pending visibility event", "id", record.Id, heimdallTypes.LogKeyError, err)

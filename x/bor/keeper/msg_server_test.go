@@ -796,8 +796,8 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 				}
 			}
 			if isPreFork {
-				helper.SetV080HardforkHeight(999999)
-				defer helper.SetV080HardforkHeight(0)
+				helper.SetZurichHardforkHeight(999999)
+				defer helper.SetZurichHardforkHeight(0)
 			}
 
 			// Prime mocks and seed producer votes controlling the producer set

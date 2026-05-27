@@ -127,6 +127,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 
 	// get and validate the main tx receipt
 	receipt := helper.FetchAndValidateReceipt(
+		ctx,
 		contractCaller,
 		helper.ReceiptValidationParams{
 			TxHash:         msg.TxHash,
@@ -303,6 +304,7 @@ func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) 
 	// get and validate the main tx receipt
 	contractCaller := s.k.contractCaller
 	receipt := helper.FetchAndValidateReceipt(
+		ctx,
 		contractCaller,
 		helper.ReceiptValidationParams{
 			TxHash:         msg.TxHash,
@@ -403,6 +405,7 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 	// get and validate the main tx receipt
 	contractCaller := s.k.contractCaller
 	receipt := helper.FetchAndValidateReceipt(
+		ctx,
 		contractCaller,
 		helper.ReceiptValidationParams{
 			TxHash:         msg.TxHash,
@@ -543,6 +546,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 
 	// get and validate the main tx receipt
 	receipt := helper.FetchAndValidateReceipt(
+		ctx,
 		contractCaller,
 		helper.ReceiptValidationParams{
 			TxHash:         msg.TxHash,

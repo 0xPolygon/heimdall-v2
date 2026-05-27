@@ -107,6 +107,7 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 
 	// get and validate the main tx receipt
 	receipt := helper.FetchAndValidateReceipt(
+		ctx,
 		s.k.contractCaller,
 		helper.ReceiptValidationParams{
 			TxHash:         msg.TxHash,

@@ -254,7 +254,7 @@ func GetMajorityMilestoneProposition(
 		return nil, nil, "", nil, nil
 	}
 
-	if helper.IsV080Hardfork(ctx.BlockHeight()) {
+	if helper.IsZurichHardfork(ctx.BlockHeight()) {
 		majorityParentHash := common.Bytes2Hex(lastEndBlockHash)
 		key := getParentChildKey(majorityParentHash, common.Bytes2Hex(blockToHashAndTd[majorityBlocks[0]]))
 		if parentHashToVotingPower[key] < majorityVP {

@@ -178,7 +178,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	)
 
 	// validate checkpoint
-	validCheckpoint, err := types.IsValidCheckpoint(msg.StartBlock, msg.EndBlock, msg.RootHash, params.MaxCheckpointLength, contractCaller, borChainTxConfirmations)
+	validCheckpoint, err := types.IsValidCheckpoint(ctx, msg.StartBlock, msg.EndBlock, msg.RootHash, params.MaxCheckpointLength, contractCaller, borChainTxConfirmations)
 	if err != nil {
 		logger.Error("Error validating checkpoint",
 			"startBlock", msg.StartBlock,
@@ -316,7 +316,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(msg.Number, rootChainInstance, params.ChildChainBlockInterval)
+	root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(ctx, msg.Number, rootChainInstance, params.ChildChainBlockInterval)
 	if err != nil {
 		logger.Error("Unable to fetch checkpoint from rootChain", "checkpointNumber", msg.Number, "error", err)
 		return sidetxs.Vote_VOTE_NO

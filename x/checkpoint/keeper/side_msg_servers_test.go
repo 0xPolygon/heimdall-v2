@@ -64,8 +64,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", checkpoint.EndBlock+borChainTxConfirmations).Return(true, nil)
-		contractCaller.On("GetRootHash", checkpoint.StartBlock, checkpoint.EndBlock, uint64(1024)).Return(checkpoint.RootHash, nil)
+		contractCaller.On("CheckIfBlocksExist", mock.Anything, checkpoint.EndBlock+borChainTxConfirmations).Return(true, nil)
+		contractCaller.On("GetRootHash", mock.Anything, checkpoint.StartBlock, checkpoint.EndBlock, uint64(1024)).Return(checkpoint.RootHash, nil)
 
 		topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return([]hmTypes.DividendAccount{
 			{
@@ -99,8 +99,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", checkpoint.EndBlock+borChainTxConfirmations).Return(true, nil)
-		contractCaller.On("GetRootHash", checkpoint.StartBlock+1, checkpoint.EndBlock, uint64(1024)).Return(nil, nil)
+		contractCaller.On("CheckIfBlocksExist", mock.Anything, checkpoint.EndBlock+borChainTxConfirmations).Return(true, nil)
+		contractCaller.On("GetRootHash", mock.Anything, checkpoint.StartBlock+1, checkpoint.EndBlock, uint64(1024)).Return(nil, nil)
 
 		result := sideHandler(ctx, msgCheckpoint)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
@@ -127,8 +127,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", checkpoint.EndBlock+borChainTxConfirmations).Return(true, nil)
-		contractCaller.On("GetRootHash", checkpoint.StartBlock+1, checkpoint.EndBlock, uint64(1024)).Return([]byte{1}, nil)
+		contractCaller.On("CheckIfBlocksExist", mock.Anything, checkpoint.EndBlock+borChainTxConfirmations).Return(true, nil)
+		contractCaller.On("GetRootHash", mock.Anything, checkpoint.StartBlock+1, checkpoint.EndBlock, uint64(1024)).Return([]byte{1}, nil)
 
 		result := sideHandler(ctx, msgCheckpoint)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
@@ -211,7 +211,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCpAck() {
 		rootChainInstance := &rootchain.Rootchain{}
 
 		contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootChainInstance, nil)
-		contractCaller.On("GetHeaderInfo", cpNumber, rootChainInstance, params.ChildChainBlockInterval).Return(common.Hash(checkpoint.RootHash), checkpoint.StartBlock, checkpoint.EndBlock, checkpoint.Timestamp, checkpoint.Proposer, nil)
+		contractCaller.On("GetHeaderInfo", mock.Anything, cpNumber, rootChainInstance, params.ChildChainBlockInterval).Return(common.Hash(checkpoint.RootHash), checkpoint.StartBlock, checkpoint.EndBlock, checkpoint.Timestamp, checkpoint.Proposer, nil)
 
 		result := sideHandler(ctx, &MsgCpAck)
 		require.Equal(result, sidetxs.Vote_VOTE_YES, "Side tx handler should pass")
@@ -243,7 +243,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCpAck() {
 		rootChainInstance := &rootchain.Rootchain{}
 
 		contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootChainInstance, nil)
-		contractCaller.On("GetHeaderInfo", cpNumber, rootChainInstance, params.ChildChainBlockInterval).Return(nil, checkpoint.StartBlock, checkpoint.EndBlock, checkpoint.Timestamp, checkpoint.Proposer, nil)
+		contractCaller.On("GetHeaderInfo", mock.Anything, cpNumber, rootChainInstance, params.ChildChainBlockInterval).Return(nil, checkpoint.StartBlock, checkpoint.EndBlock, checkpoint.Timestamp, checkpoint.Proposer, nil)
 
 		result := sideHandler(ctx, &MsgCpAck)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
@@ -268,7 +268,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCpAck_LocalChecksBeforeL1() {
 		)
 		require.Equal(sidetxs.Vote_VOTE_NO, sideHandler(ctx, &msg))
 		contractCaller.AssertNotCalled(s.T(), "GetRootChainInstance", mock.Anything)
-		contractCaller.AssertNotCalled(s.T(), "GetHeaderInfo", mock.Anything, mock.Anything, mock.Anything)
+		contractCaller.AssertNotCalled(s.T(), "GetHeaderInfo", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	})
 
 	s.Run("non-sequential Number rejects without L1 call", func() {
@@ -283,7 +283,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCpAck_LocalChecksBeforeL1() {
 		)
 		require.Equal(sidetxs.Vote_VOTE_NO, sideHandler(ctx, &msg))
 		contractCaller.AssertNotCalled(s.T(), "GetRootChainInstance", mock.Anything)
-		contractCaller.AssertNotCalled(s.T(), "GetHeaderInfo", mock.Anything, mock.Anything, mock.Anything)
+		contractCaller.AssertNotCalled(s.T(), "GetHeaderInfo", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	})
 }
 

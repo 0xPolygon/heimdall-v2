@@ -22,9 +22,9 @@ func (s *KeeperTestSuite) queryDeterministicStateSyncs(
 	toTime time.Time,
 	limit uint64,
 ) (*types.RecordListWithTimeResponse, error) {
-	original := helper.GetV080HardforkHeight()
-	helper.SetV080HardforkHeight(1)
-	defer helper.SetV080HardforkHeight(original)
+	original := helper.GetZurichHardforkHeight()
+	helper.SetZurichHardforkHeight(1)
+	defer helper.SetZurichHardforkHeight(original)
 
 	storeCtx := ctx.WithBlockHeight(resolvedHeight).WithBlockHeader(cmtproto.Header{
 		Time:   toTime.Add(-time.Second),
@@ -372,19 +372,19 @@ func (s *KeeperTestSuite) TestVisibilityTimeFeatureFlag() {
 	require := s.Require()
 
 	// Save and restore the original value
-	original := helper.GetV080HardforkHeight()
-	defer helper.SetV080HardforkHeight(original)
+	original := helper.GetZurichHardforkHeight()
+	defer helper.SetZurichHardforkHeight(original)
 
 	// Height 0 means disabled
-	helper.SetV080HardforkHeight(0)
-	require.False(helper.IsV080Hardfork(100))
-	require.False(helper.IsV080Hardfork(0))
+	helper.SetZurichHardforkHeight(0)
+	require.False(helper.IsZurichHardfork(100))
+	require.False(helper.IsZurichHardfork(0))
 
 	// Height 256 means enabled at block 256+
-	helper.SetV080HardforkHeight(256)
-	require.False(helper.IsV080Hardfork(255))
-	require.True(helper.IsV080Hardfork(256))
-	require.True(helper.IsV080Hardfork(300))
+	helper.SetZurichHardforkHeight(256)
+	require.False(helper.IsZurichHardfork(255))
+	require.True(helper.IsZurichHardfork(256))
+	require.True(helper.IsZurichHardfork(300))
 }
 
 // TestPostHandlerAddsToVisibilityPending verifies that PostHandleMsgEventRecord
@@ -394,11 +394,11 @@ func (s *KeeperTestSuite) TestPostHandlerAddsToVisibilityPending() {
 	require := s.Require()
 
 	// Save and restore the original value
-	original := helper.GetV080HardforkHeight()
-	defer helper.SetV080HardforkHeight(original)
+	original := helper.GetZurichHardforkHeight()
+	defer helper.SetZurichHardforkHeight(original)
 
 	// Enable visibility time at block 1
-	helper.SetV080HardforkHeight(1)
+	helper.SetZurichHardforkHeight(1)
 
 	// Set block height to an enabled height
 	ctx = ctx.WithBlockHeight(10)
@@ -430,11 +430,11 @@ func (s *KeeperTestSuite) TestPostHandlerSkipsVisibilityWhenDisabled() {
 	require := s.Require()
 
 	// Save and restore
-	original := helper.GetV080HardforkHeight()
-	defer helper.SetV080HardforkHeight(original)
+	original := helper.GetZurichHardforkHeight()
+	defer helper.SetZurichHardforkHeight(original)
 
 	// Disable visibility time
-	helper.SetV080HardforkHeight(0)
+	helper.SetZurichHardforkHeight(0)
 
 	ctx = ctx.WithBlockHeight(10)
 
@@ -464,10 +464,10 @@ func (s *KeeperTestSuite) TestUpgradeIDBoundarySetOnce() {
 	ctx, ck, postHandler := s.ctx, s.keeper, s.postHandler
 	require := s.Require()
 
-	original := helper.GetV080HardforkHeight()
-	defer helper.SetV080HardforkHeight(original)
+	original := helper.GetZurichHardforkHeight()
+	defer helper.SetZurichHardforkHeight(original)
 
-	helper.SetV080HardforkHeight(1)
+	helper.SetZurichHardforkHeight(1)
 	ctx = ctx.WithBlockHeight(10)
 
 	// The first event sets the upgrade ID
@@ -499,10 +499,10 @@ func (s *KeeperTestSuite) TestUpgradeIDBoundaryTracksMin() {
 	ctx, ck, postHandler := s.ctx, s.keeper, s.postHandler
 	require := s.Require()
 
-	original := helper.GetV080HardforkHeight()
-	defer helper.SetV080HardforkHeight(original)
+	original := helper.GetZurichHardforkHeight()
+	defer helper.SetZurichHardforkHeight(original)
 
-	helper.SetV080HardforkHeight(1)
+	helper.SetZurichHardforkHeight(1)
 	ctx = ctx.WithBlockHeight(10)
 
 	// Activation block — proposer placed the larger-ID side-tx first.
@@ -696,9 +696,9 @@ func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	ctx, ck, queryClient, postHandler := s.ctx, s.keeper, s.queryClient, s.postHandler
 	require := s.Require()
 
-	original := helper.GetV080HardforkHeight()
-	defer helper.SetV080HardforkHeight(original)
-	helper.SetV080HardforkHeight(1)
+	original := helper.GetZurichHardforkHeight()
+	defer helper.SetZurichHardforkHeight(original)
+	helper.SetZurichHardforkHeight(1)
 
 	// Block H+1: PostHandler stores event and adds to pending
 	blockH1Time := time.Date(2026, 3, 15, 10, 0, 0, 0, time.UTC)
