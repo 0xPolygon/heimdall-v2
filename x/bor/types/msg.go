@@ -8,7 +8,6 @@ import (
 
 var (
 	_ sdk.Msg = &MsgProposeSpan{}
-	_ sdk.Msg = &MsgBackfillSpans{}
 )
 
 // NewMsgProposeSpan creates a new MsgProposeSpan instance
@@ -37,11 +36,6 @@ func (msg MsgProposeSpan) Type() string {
 	return EventTypeProposeSpan
 }
 
-// Type returns the type of the x/bor MsgBackfillSpans.
-func (msg MsgBackfillSpans) Type() string {
-	return EventTypeBackfillSpans
-}
-
 // NewMsgSetProducerDowntime creates a new MsgSetProducerDowntime instance
 func NewMsgSetProducerDowntime(
 	producer string,
@@ -61,10 +55,5 @@ func NewMsgSetProducerDowntime(
 
 // Route returns the message route for x/bor MsgProposeSpan.
 func (msg MsgProposeSpan) Route() string {
-	return RouterKey
-}
-
-// Route returns the message route for x/bor MsgBackfillSpans.
-func (msg MsgBackfillSpans) Route() string {
 	return RouterKey
 }

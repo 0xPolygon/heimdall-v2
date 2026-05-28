@@ -18,7 +18,6 @@ const (
 
 	ProposeSpanMethod      = "ProposeSpan"
 	BorUpdateParamsMethod  = "UpdateParams"
-	BackfillSpansMethod    = "BackfillSpans"
 	VoteProducersMethod    = "VoteProducers"
 	ProducerDowntimeMethod = "ProducerDowntime"
 
@@ -30,6 +29,5 @@ const (
 	// Post message handler methods.
 
 	PostHandleMsgSpanMethod                = "PostHandleMsgSpan"
-	PostHandleMsgBackfillSpansMethod       = "PostHandleMsgBackfillSpans"
 	PostHandleMsgSetProducerDowntimeMethod = "PostHandleMsgSetProducerDowntime"
 )

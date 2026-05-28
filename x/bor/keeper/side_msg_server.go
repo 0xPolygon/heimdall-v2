@@ -28,7 +28,6 @@ const (
 
 var (
 	SpanProposeMsgTypeURL         = sdk.MsgTypeURL(&types.MsgProposeSpan{})
-	FillMissingSpansMsgTypeURL    = sdk.MsgTypeURL(&types.MsgBackfillSpans{})
 	SetProducerDowntimeMsgTypeURL = sdk.MsgTypeURL(&types.MsgSetProducerDowntime{})
 )
 
@@ -50,8 +49,6 @@ func (srv sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler 
 	switch methodName {
 	case SpanProposeMsgTypeURL:
 		return srv.SideHandleMsgSpan
-	case FillMissingSpansMsgTypeURL:
-		return srv.SideHandleMsgBackfillSpans
 	case SetProducerDowntimeMsgTypeURL:
 		return srv.SideHandleSetProducerDowntime
 	default:
@@ -355,17 +352,11 @@ func (srv sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 	return sidetxs.Vote_VOTE_YES
 }
 
-func (srv sideMsgServer) SideHandleMsgBackfillSpans(_ sdk.Context, _ sdk.Msg) sidetxs.Vote {
-	return sidetxs.Vote_VOTE_NO
-}
-
 // PostTxHandler returns a side handler for span type messages.
 func (srv sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 	switch methodName {
 	case SpanProposeMsgTypeURL:
 		return srv.PostHandleMsgSpan
-	case FillMissingSpansMsgTypeURL:
-		return srv.PostHandleMsgBackfillSpans
 	case SetProducerDowntimeMsgTypeURL:
 		return srv.PostHandleSetProducerDowntime
 	default:
@@ -443,81 +434,6 @@ func (srv sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTx
 			sdk.NewAttribute(types.AttributeKeySpanID, strconv.FormatUint(msg.SpanId, 10)),
 			sdk.NewAttribute(types.AttributeKeySpanStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeySpanEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
-		),
-	})
-
-	return nil
-}
-
-func (srv sideMsgServer) PostHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
-	var err error
-	start := time.Now()
-	defer recordBorMetric(api.PostHandleMsgBackfillSpansMethod, api.PostType, start, &err)
-
-	logger := srv.k.Logger(ctx)
-
-	msg, ok := msgI.(*types.MsgBackfillSpans)
-	if !ok {
-		err = errors.New("MsgBackfillSpans type mismatch")
-		logger.Error(err.Error(), msgTypeReceivedLog, msg)
-		return err
-	}
-
-	if helper.IsRio(msg.LatestSpanId) {
-		logger.Debug("Skipping backfill spans msg since span id is greater than rio height", spanIdLog, msg.LatestSpanId, rioHeightStr, helper.GetRioHeight())
-		return nil
-	}
-
-	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		logger.Debug("Skipping new span since side-tx didn't get yes votes")
-		return errors.New(sidTxNoYesVotesLog)
-	}
-
-	latestMilestone, err := srv.k.mk.GetLastMilestone(ctx)
-	if err != nil {
-		logger.Error("Failed to get latest milestone", "error", err)
-		return fmt.Errorf("failed to get latest milestone: %w", err)
-	}
-
-	if latestMilestone == nil {
-		logger.Error("Latest milestone is nil")
-		return types.ErrLatestMilestoneNotFound
-	}
-
-	latestSpan, err := srv.k.GetSpan(ctx, msg.LatestSpanId)
-	if err != nil {
-		logger.Error("Failed to get latest span", "error", err)
-		return err
-	}
-
-	borSpans := types.GenerateBorCommittedSpans(latestMilestone.EndBlock, &latestSpan)
-	spansOverlap := 0
-	for i := range borSpans {
-		if _, err := srv.k.GetSpan(ctx, borSpans[i].Id); err == nil {
-			spansOverlap++
-		}
-		if spansOverlap > 1 {
-			logger.Error("More than one span overlap detected", spanIdLog, borSpans[i].Id)
-			return fmt.Errorf("more than one span overlap detected for span id: %d", borSpans[i].Id)
-		}
-		if err = srv.k.AddNewSpan(ctx, &borSpans[i]); err != nil {
-			logger.Error("Unable to store spans", "error", err)
-			return err
-		}
-	}
-
-	txBytes := ctx.TxBytes()
-	hash := cmttypes.Tx(txBytes).Hash()
-
-	ctx.EventManager().EmitEvents(sdk.Events{
-		sdk.NewEvent(
-			types.EventTypeProposeSpan,
-			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(heimdallTypes.AttributeKeyTxHash, common.BytesToHash(hash).Hex()),
-			sdk.NewAttribute(heimdallTypes.AttributeKeySideTxResult, sideTxResult.String()),
-			sdk.NewAttribute(types.AttributesKeyLatestSpanId, strconv.FormatUint(msg.LatestSpanId, 10)),
-			sdk.NewAttribute(types.AttributesKeyLatestBorSpanId, strconv.FormatUint(borSpans[0].Id, 10)),
 		),
 	})
 

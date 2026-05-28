@@ -17,9 +17,6 @@ service Msg {
   // UpdateParams defines a method to update the bor module parameters.
   // Only the governance authority can execute this.
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
-  // BackfillSpans defines a method to backfill missing spans.
-  // This is used during chain recovery or when spans need to be reconstructed.
-  rpc BackfillSpans(MsgBackfillSpans) returns (MsgBackfillSpansResponse);
   // VoteProducers defines a method for validators to submit their producer
   // votes.
   rpc VoteProducers(MsgVoteProducers) returns (MsgVoteProducersResponse);
@@ -66,23 +63,6 @@ message MsgUpdateParams {
 
 // MsgUpdateParamsResponse defines the response for MsgUpdateParams.
 message MsgUpdateParamsResponse {}
-
-// MsgBackfillSpans defines the message for backfilling missing spans.
-message MsgBackfillSpans {
-  option (amino.name) = "heimdallv2/bor/MsgBackfillSpans";
-  option (cosmos.msg.v1.signer) = "proposer";
-  // Address of the validator proposing the backfill.
-  string proposer = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-  // Chain ID of the Bor chain.
-  string chain_id = 2;
-  // Latest span ID known to Heimdall.
-  uint64 latest_span_id = 3;
-  // Latest span ID on the Bor chain.
-  uint64 latest_bor_span_id = 4;
-}
-
-// MsgBackfillSpansResponse defines the response for MsgBackfillSpans.
-message MsgBackfillSpansResponse {}
 
 // MsgVoteProducers defines the message for voting on producers.
 message MsgVoteProducers {

@@ -21,7 +21,6 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Msg_ProposeSpan_FullMethodName         = "/heimdallv2.bor.Msg/ProposeSpan"
 	Msg_UpdateParams_FullMethodName        = "/heimdallv2.bor.Msg/UpdateParams"
-	Msg_BackfillSpans_FullMethodName       = "/heimdallv2.bor.Msg/BackfillSpans"
 	Msg_VoteProducers_FullMethodName       = "/heimdallv2.bor.Msg/VoteProducers"
 	Msg_SetProducerDowntime_FullMethodName = "/heimdallv2.bor.Msg/SetProducerDowntime"
 )
@@ -35,9 +34,6 @@ type MsgClient interface {
 	// UpdateParams defines a method to update the bor module parameters.
 	// Only the governance authority can execute this.
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
-	// BackfillSpans defines a method to backfill missing spans.
-	// This is used during chain recovery or when spans need to be reconstructed.
-	BackfillSpans(ctx context.Context, in *MsgBackfillSpans, opts ...grpc.CallOption) (*MsgBackfillSpansResponse, error)
 	// VoteProducers defines a method for validators to submit their producer
 	// votes.
 	VoteProducers(ctx context.Context, in *MsgVoteProducers, opts ...grpc.CallOption) (*MsgVoteProducersResponse, error)
@@ -73,15 +69,6 @@ func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts 
 	return out, nil
 }
 
-func (c *msgClient) BackfillSpans(ctx context.Context, in *MsgBackfillSpans, opts ...grpc.CallOption) (*MsgBackfillSpansResponse, error) {
-	out := new(MsgBackfillSpansResponse)
-	err := c.cc.Invoke(ctx, Msg_BackfillSpans_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *msgClient) VoteProducers(ctx context.Context, in *MsgVoteProducers, opts ...grpc.CallOption) (*MsgVoteProducersResponse, error) {
 	out := new(MsgVoteProducersResponse)
 	err := c.cc.Invoke(ctx, Msg_VoteProducers_FullMethodName, in, out, opts...)
@@ -109,9 +96,6 @@ type MsgServer interface {
 	// UpdateParams defines a method to update the bor module parameters.
 	// Only the governance authority can execute this.
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
-	// BackfillSpans defines a method to backfill missing spans.
-	// This is used during chain recovery or when spans need to be reconstructed.
-	BackfillSpans(context.Context, *MsgBackfillSpans) (*MsgBackfillSpansResponse, error)
 	// VoteProducers defines a method for validators to submit their producer
 	// votes.
 	VoteProducers(context.Context, *MsgVoteProducers) (*MsgVoteProducersResponse, error)
@@ -131,9 +115,6 @@ func (UnimplementedMsgServer) ProposeSpan(context.Context, *MsgProposeSpan) (*Ms
 }
 func (UnimplementedMsgServer) UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateParams not implemented")
-}
-func (UnimplementedMsgServer) BackfillSpans(context.Context, *MsgBackfillSpans) (*MsgBackfillSpansResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BackfillSpans not implemented")
 }
 func (UnimplementedMsgServer) VoteProducers(context.Context, *MsgVoteProducers) (*MsgVoteProducersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VoteProducers not implemented")
@@ -190,24 +171,6 @@ func _Msg_UpdateParams_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Msg_BackfillSpans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgBackfillSpans)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MsgServer).BackfillSpans(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Msg_BackfillSpans_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).BackfillSpans(ctx, req.(*MsgBackfillSpans))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Msg_VoteProducers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MsgVoteProducers)
 	if err := dec(in); err != nil {
@@ -258,10 +221,6 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateParams",
 			Handler:    _Msg_UpdateParams_Handler,
-		},
-		{
-			MethodName: "BackfillSpans",
-			Handler:    _Msg_BackfillSpans_Handler,
 		},
 		{
 			MethodName: "VoteProducers",
