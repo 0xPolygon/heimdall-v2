@@ -19,11 +19,6 @@ func TestErrInvalidSpan(t *testing.T) {
 	require.Equal(t, "invalid span", types.ErrInvalidSpan.Error())
 }
 
-func TestErrInvalidLastBorSpanID(t *testing.T) {
-	require.NotNil(t, types.ErrInvalidLastBorSpanID)
-	require.Equal(t, "invalid last bor span id", types.ErrInvalidLastBorSpanID.Error())
-}
-
 func TestErrInvalidSeedLength(t *testing.T) {
 	require.NotNil(t, types.ErrInvalidSeedLength)
 	require.Equal(t, "invalid seed length", types.ErrInvalidSeedLength.Error())
@@ -49,9 +44,6 @@ func TestAllErrorsAreErrors(t *testing.T) {
 	err = types.ErrInvalidSpan
 	require.NotNil(t, err)
 
-	err = types.ErrInvalidLastBorSpanID
-	require.NotNil(t, err)
-
 	err = types.ErrInvalidSeedLength
 	require.NotNil(t, err)
 
@@ -67,7 +59,6 @@ func TestErrorUniqueness(t *testing.T) {
 	errorMessages := []string{
 		types.ErrInvalidChainID.Error(),
 		types.ErrInvalidSpan.Error(),
-		types.ErrInvalidLastBorSpanID.Error(),
 		types.ErrInvalidSeedLength.Error(),
 		types.ErrFailedToQueryBor.Error(),
 		types.ErrLatestMilestoneNotFound.Error(),
@@ -101,7 +92,6 @@ func TestErrorMessagesNotEmpty(t *testing.T) {
 	// Test that all error messages are not empty
 	require.NotEmpty(t, types.ErrInvalidChainID.Error())
 	require.NotEmpty(t, types.ErrInvalidSpan.Error())
-	require.NotEmpty(t, types.ErrInvalidLastBorSpanID.Error())
 	require.NotEmpty(t, types.ErrInvalidSeedLength.Error())
 	require.NotEmpty(t, types.ErrFailedToQueryBor.Error())
 	require.NotEmpty(t, types.ErrLatestMilestoneNotFound.Error())
@@ -112,7 +102,6 @@ func TestErrorsAreDescriptive(t *testing.T) {
 	errs := map[string]error{
 		"chain id":  types.ErrInvalidChainID,
 		"span":      types.ErrInvalidSpan,
-		"bor":       types.ErrInvalidLastBorSpanID,
 		"seed":      types.ErrInvalidSeedLength,
 		"query":     types.ErrFailedToQueryBor,
 		"milestone": types.ErrLatestMilestoneNotFound,
@@ -127,7 +116,6 @@ func TestErrorsAreDescriptive(t *testing.T) {
 func TestInvalidSpanErrors(t *testing.T) {
 	// Group test for span-related errors
 	require.Contains(t, types.ErrInvalidSpan.Error(), "span")
-	require.Contains(t, types.ErrInvalidLastBorSpanID.Error(), "span")
 }
 
 func TestQueryErrorContainsKeyword(t *testing.T) {
@@ -159,7 +147,6 @@ func TestErrorsAreLowercase(t *testing.T) {
 	errs := []error{
 		types.ErrInvalidChainID,
 		types.ErrInvalidSpan,
-		types.ErrInvalidLastBorSpanID,
 		types.ErrInvalidSeedLength,
 		types.ErrFailedToQueryBor,
 		types.ErrLatestMilestoneNotFound,

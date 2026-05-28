@@ -20,6 +20,10 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgProposeSpan{},
 		&MsgUpdateParams{},
+		// MsgBackfillSpans is decode-only: the rpc method and all handlers are
+		// gone, but the type stays registered so historical blocks containing
+		// this msg remain decodable during replay.
+		&MsgBackfillSpans{},
 	)
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }

@@ -194,7 +194,7 @@ func (srv sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetx
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	// If we are past the end of the last span, we need to backfill before proposing a new span
+	// Reject: the proposed span starts at or before the last committed block, so it is already in the past.
 	if msg.StartBlock <= maxBlockNumber {
 		logger.Error("Span is already in the past",
 			"currentBlock", currentBlock,
