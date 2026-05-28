@@ -30,6 +30,50 @@ func IsBlockCloseToSpanEnd(blockNumber, spanEnd uint64) bool {
 	return blockNumber <= spanEnd && blockNumber >= (spanEnd-100)
 }
 
+// CalcCurrentBorSpanId computes the Bor span ID corresponding to latestBorBlock,
+// using latestHeimdallSpan as the reference. It returns an error if inputs are invalid
+// (nil span, zero, or negative span length) or if arithmetic overflow is detected.
+func CalcCurrentBorSpanId(latestBorBlock uint64, latestHeimdallSpan *Span) (uint64, error) {
+	if latestHeimdallSpan == nil {
+		return 0, fmt.Errorf("nil Heimdall span provided")
+	}
+	if latestHeimdallSpan.EndBlock < latestHeimdallSpan.StartBlock {
+		return 0, fmt.Errorf(
+			"invalid Heimdall span: EndBlock (%d) must be >= StartBlock (%d)",
+			latestHeimdallSpan.EndBlock,
+			latestHeimdallSpan.StartBlock,
+		)
+	}
+
+	if latestBorBlock < latestHeimdallSpan.StartBlock {
+		return 0, fmt.Errorf(
+			"latestBorBlock (%d) must be >= Heimdall span StartBlock (%d)",
+			latestBorBlock,
+			latestHeimdallSpan.StartBlock,
+		)
+	}
+
+	if latestBorBlock <= latestHeimdallSpan.EndBlock {
+		return latestHeimdallSpan.Id, nil
+	}
+
+	spanLength := latestHeimdallSpan.EndBlock - latestHeimdallSpan.StartBlock + 1
+
+	offset := latestBorBlock - latestHeimdallSpan.StartBlock
+	quotient := offset / spanLength
+
+	spanId := latestHeimdallSpan.Id + quotient
+
+	if spanId < latestHeimdallSpan.Id {
+		return 0, fmt.Errorf(
+			"overflow detected computing span ID: reference ID=%d quotient=%d",
+			latestHeimdallSpan.Id, quotient,
+		)
+	}
+
+	return spanId, nil
+}
+
 const (
 	PlannedDowntimeMinimumTimeInFuture = 150
 	PlannedDowntimeMaximumTimeInFuture = 100 * DefaultSpanDuration // ~2 weeks

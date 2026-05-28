@@ -5089,7 +5089,7 @@ func TestABCI_StressTestWith100Blocks(t *testing.T) {
 				var msg sdk.Msg
 
 				// Alternate between different message types
-				switch (blockHeight + int64(i)) % 4 {
+				switch (blockHeight + int64(i)) % 5 {
 				case 0:
 					msg = &checkpointTypes.MsgCheckpoint{
 						Proposer:        priv.PubKey().Address().String(),
@@ -5127,6 +5127,13 @@ func TestABCI_StressTestWith100Blocks(t *testing.T) {
 						TxHash:      common.BigToHash(common.Big1).Bytes(),
 						LogIndex:    uint64(blockHeight*10 + int64(i)),
 						BlockNumber: uint64(blockHeight),
+					}
+				case 4:
+					msg = &borTypes.MsgBackfillSpans{
+						Proposer:        priv.PubKey().Address().String(),
+						ChainId:         "1",
+						LatestSpanId:    uint64(blockHeight),
+						LatestBorSpanId: uint64(blockHeight + 1),
 					}
 				}
 

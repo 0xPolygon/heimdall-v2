@@ -17,6 +17,13 @@ service Msg {
   // UpdateParams defines a method to update the bor module parameters.
   // Only the governance authority can execute this.
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+  // BackfillSpans defines a method to backfill missing spans.
+  // The side handler / post handler / dispatch are deliberately not registered
+  // (see x/bor/keeper/side_msg_server.go SideTxHandler / PostTxHandler) so
+  // this msg consumes no side-tx response slot. The msg-server handler is
+  // retained as input-validation only (no state writes) so historical blocks
+  // containing this msg replay with the same ExecTxResult shape.
+  rpc BackfillSpans(MsgBackfillSpans) returns (MsgBackfillSpansResponse);
   // VoteProducers defines a method for validators to submit their producer
   // votes.
   rpc VoteProducers(MsgVoteProducers) returns (MsgVoteProducersResponse);
@@ -64,12 +71,12 @@ message MsgUpdateParams {
 // MsgUpdateParamsResponse defines the response for MsgUpdateParams.
 message MsgUpdateParamsResponse {}
 
-// MsgBackfillSpans is retained as a decode-only type so any historical block
-// containing a MsgBackfillSpans tx remains decodable by the upgraded binary.
-// The rpc method, side handler, post handler, and msg-server handler were all
-// removed; this message is registered on the interface registry solely to keep
-// TxDecode from failing during replay. Do not reintroduce a handler for this
-// type — define a fresh message if backfill is ever needed.
+// MsgBackfillSpans defines the message for backfilling missing spans.
+// Kept so historical blocks containing a MsgBackfillSpans tx (2 known on
+// Amoy at heights 8790181 and 8790209) replay with matching ExecTxResult.
+// The side handler / post handler / dispatch were removed to close the
+// side-tx response-slot censorship vector; the msg-server handler is
+// validation-only (no state writes).
 message MsgBackfillSpans {
   option (amino.name) = "heimdallv2/bor/MsgBackfillSpans";
   option (cosmos.msg.v1.signer) = "proposer";

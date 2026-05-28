@@ -198,6 +198,161 @@ func TestIsBlockCloseToSpanEnd(t *testing.T) {
 	}
 }
 
+func TestCalcCurrentBorSpanId(t *testing.T) {
+	t.Parallel()
+
+	t.Run("returns span ID when bor block is within heimdall span", func(t *testing.T) {
+		t.Parallel()
+
+		heimdallSpan := &types.Span{
+			Id:         10,
+			StartBlock: 1000,
+			EndBlock:   2000,
+		}
+
+		latestBorBlock := uint64(1500)
+
+		spanID, err := types.CalcCurrentBorSpanId(latestBorBlock, heimdallSpan)
+
+		require.NoError(t, err)
+		require.Equal(t, uint64(10), spanID)
+	})
+
+	t.Run("returns span ID when bor block equals span end", func(t *testing.T) {
+		t.Parallel()
+
+		heimdallSpan := &types.Span{
+			Id:         10,
+			StartBlock: 1000,
+			EndBlock:   2000,
+		}
+
+		latestBorBlock := uint64(2000)
+
+		spanID, err := types.CalcCurrentBorSpanId(latestBorBlock, heimdallSpan)
+
+		require.NoError(t, err)
+		require.Equal(t, uint64(10), spanID)
+	})
+
+	t.Run("returns span ID when bor block equals span start", func(t *testing.T) {
+		t.Parallel()
+
+		heimdallSpan := &types.Span{
+			Id:         10,
+			StartBlock: 1000,
+			EndBlock:   2000,
+		}
+
+		latestBorBlock := uint64(1000)
+
+		spanID, err := types.CalcCurrentBorSpanId(latestBorBlock, heimdallSpan)
+
+		require.NoError(t, err)
+		require.Equal(t, uint64(10), spanID)
+	})
+
+	t.Run("calculates next span ID when bor block is beyond heimdall span", func(t *testing.T) {
+		t.Parallel()
+
+		heimdallSpan := &types.Span{
+			Id:         10,
+			StartBlock: 1000,
+			EndBlock:   2000, // span length = 1001
+		}
+
+		latestBorBlock := uint64(2500) // halfway into the next span
+
+		spanID, err := types.CalcCurrentBorSpanId(latestBorBlock, heimdallSpan)
+
+		require.NoError(t, err)
+		require.Equal(t, uint64(11), spanID)
+	})
+
+	t.Run("calculates span ID multiple spans ahead", func(t *testing.T) {
+		t.Parallel()
+
+		heimdallSpan := &types.Span{
+			Id:         1,
+			StartBlock: 0,
+			EndBlock:   999, // span length = 1000
+		}
+
+		latestBorBlock := uint64(3500) // 3+ spans ahead
+
+		spanID, err := types.CalcCurrentBorSpanId(latestBorBlock, heimdallSpan)
+
+		require.NoError(t, err)
+		require.Equal(t, uint64(4), spanID) // spans 1,2,3,4
+	})
+
+	t.Run("returns error when heimdall span is nil", func(t *testing.T) {
+		t.Parallel()
+
+		latestBorBlock := uint64(1000)
+
+		spanID, err := types.CalcCurrentBorSpanId(latestBorBlock, nil)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "nil Heimdall span")
+		require.Equal(t, uint64(0), spanID)
+	})
+
+	t.Run("returns error when heimdall span has invalid range", func(t *testing.T) {
+		t.Parallel()
+
+		heimdallSpan := &types.Span{
+			Id:         10,
+			StartBlock: 2000,
+			EndBlock:   1000, // end < start
+		}
+
+		latestBorBlock := uint64(1500)
+
+		spanID, err := types.CalcCurrentBorSpanId(latestBorBlock, heimdallSpan)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid Heimdall span")
+		require.Equal(t, uint64(0), spanID)
+	})
+
+	t.Run("returns error when bor block is before span start", func(t *testing.T) {
+		t.Parallel()
+
+		heimdallSpan := &types.Span{
+			Id:         10,
+			StartBlock: 1000,
+			EndBlock:   2000,
+		}
+
+		latestBorBlock := uint64(500) // before span start
+
+		spanID, err := types.CalcCurrentBorSpanId(latestBorBlock, heimdallSpan)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "latestBorBlock")
+		require.Contains(t, err.Error(), "must be >= Heimdall span StartBlock")
+		require.Equal(t, uint64(0), spanID)
+	})
+
+	t.Run("handles span starting at block zero", func(t *testing.T) {
+		t.Parallel()
+
+		heimdallSpan := &types.Span{
+			Id:         0,
+			StartBlock: 0,
+			EndBlock:   1000,
+		}
+
+		latestBorBlock := uint64(500)
+
+		spanID, err := types.CalcCurrentBorSpanId(latestBorBlock, heimdallSpan)
+
+		require.NoError(t, err)
+		require.Equal(t, uint64(0), spanID)
+	})
+}
+
 func TestLogSpan(t *testing.T) {
 	t.Parallel()
 

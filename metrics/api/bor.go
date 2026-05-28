@@ -18,6 +18,7 @@ const (
 
 	ProposeSpanMethod      = "ProposeSpan"
 	BorUpdateParamsMethod  = "UpdateParams"
+	BackfillSpansMethod    = "BackfillSpans"
 	VoteProducersMethod    = "VoteProducers"
 	ProducerDowntimeMethod = "ProducerDowntime"
 
