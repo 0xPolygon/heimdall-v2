@@ -96,6 +96,8 @@ const (
 
 	DefaultMilestonePollInterval = 30 * time.Second
 
+	DefaultHeimdallStatusStaleThreshold = 30 * time.Second
+
 	// LogTimestampFormat is the millisecond-precision timestamp layout used for
 	// all heimdall log output. Matches bor's log format for consistent
 	// cross-service log analysis.
@@ -212,6 +214,9 @@ type CustomConfig struct {
 
 	// WarnPeerThreshold is the minimum number of peers before heimdall health check warns.
 	WarnPeerThreshold int `mapstructure:"warn_peer_threshold"`
+
+	// HeimdallStatusStaleThreshold is the max latest-block age before status reports catching up.
+	HeimdallStatusStaleThreshold time.Duration `mapstructure:"heimdall_status_stale_threshold"`
 }
 
 type CustomAppConfig struct {
@@ -813,12 +818,21 @@ func GetDefaultHeimdallConfig() CustomConfig {
 		WarnGoRoutineThreshold: 0,
 		MinPeerThreshold:       0,
 		WarnPeerThreshold:      0,
+
+		HeimdallStatusStaleThreshold: DefaultHeimdallStatusStaleThreshold,
 	}
 }
 
 // GetConfig returns the cached configuration object
 func GetConfig() CustomConfig {
 	return conf.Custom
+}
+
+func GetHeimdallStatusStaleThreshold() time.Duration {
+	if conf.Custom.HeimdallStatusStaleThreshold <= 0 {
+		return DefaultHeimdallStatusStaleThreshold
+	}
+	return conf.Custom.HeimdallStatusStaleThreshold
 }
 
 //
@@ -1476,6 +1490,10 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 
 	if cc.NoACKWaitTime != 0 {
 		c.Custom.NoACKWaitTime = cc.NoACKWaitTime
+	}
+
+	if cc.HeimdallStatusStaleThreshold != 0 {
+		c.Custom.HeimdallStatusStaleThreshold = cc.HeimdallStatusStaleThreshold
 	}
 
 	if cc.Chain != "" {

@@ -291,5 +291,8 @@ main_chain_gas_tip_cap = "10000000000"
 ##### Timeout Config #####
 no_ack_wait_time = "30m0s"
 
+##### Health check configs #####
+heimdall_status_stale_threshold = "30s"
+
 ##### chain #####
 chain = "amoy"

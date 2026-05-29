@@ -21,6 +21,7 @@ import (
 	"cosmossdk.io/x/tx/signing"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -802,6 +803,7 @@ func getCometStatusHandler(cliCtx client.Context) func(w http.ResponseWriter, r 
 			http.Error(w, fmt.Sprintf("failed to get node status: %v", err), http.StatusInternalServerError)
 			return
 		}
+		resultStatus.SyncInfo = syncInfoForStatus(resultStatus.SyncInfo, time.Now(), helper.GetHeimdallStatusStaleThreshold())
 		resp, err := json.Marshal(resultStatus.SyncInfo)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to marshal node status: %v", err), http.StatusInternalServerError)
@@ -814,6 +816,20 @@ func getCometStatusHandler(cliCtx client.Context) func(w http.ResponseWriter, r 
 			return
 		}
 	}
+}
+
+func syncInfoForStatus(syncInfo ctypes.SyncInfo, now time.Time, staleThreshold time.Duration) ctypes.SyncInfo {
+	if syncInfo.CatchingUp || syncInfo.LatestBlockHeight == 0 {
+		return syncInfo
+	}
+	if latestBlockTimeIsStale(syncInfo.LatestBlockTime, now, staleThreshold) {
+		syncInfo.CatchingUp = true
+	}
+	return syncInfo
+}
+
+func latestBlockTimeIsStale(latestBlockTime time.Time, now time.Time, staleThreshold time.Duration) bool {
+	return now.Sub(latestBlockTime) > staleThreshold
 }
 
 func getHeimdallV2Version() func(w http.ResponseWriter, r *http.Request) {
@@ -1055,6 +1071,7 @@ func (app *HeimdallApp) getHeimdallInfo(ctx context.Context, clientCtx client.Co
 		err = fmt.Errorf("failed to get node status: %w", err)
 		return heimdallInfo, err
 	}
+	syncInfo := syncInfoForStatus(heimdallStatus.SyncInfo, time.Now(), helper.GetHeimdallStatusStaleThreshold())
 
 	comeBFTRPCUrl := helper.GetConfig().CometBFTRPCUrl
 	comeBFTRPC, err := client.NewClientFromNode(comeBFTRPCUrl)
@@ -1075,11 +1092,11 @@ func (app *HeimdallApp) getHeimdallInfo(ctx context.Context, clientCtx client.Co
 
 	heimdallInfo["chain_id"] = heimdallStatus.NodeInfo.Network
 
-	heimdallInfo["catching_up"] = heimdallStatus.SyncInfo.CatchingUp
+	heimdallInfo["catching_up"] = syncInfo.CatchingUp
 
-	heimdallInfo["latest_block_hash"] = heimdallStatus.SyncInfo.LatestBlockHash.String()
-	heimdallInfo["latest_block_number"] = heimdallStatus.SyncInfo.LatestBlockHeight
-	heimdallInfo["latest_block_timestamp"] = heimdallStatus.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano)
+	heimdallInfo["latest_block_hash"] = syncInfo.LatestBlockHash.String()
+	heimdallInfo["latest_block_number"] = syncInfo.LatestBlockHeight
+	heimdallInfo["latest_block_timestamp"] = syncInfo.LatestBlockTime.Format(time.RFC3339Nano)
 
 	heimdallInfo["peer_count"] = netInfo.NPeers
 

@@ -58,6 +58,22 @@ func TestHeimdallConfig(t *testing.T) {
 	fmt.Println("PublicKey", pubKey.String())
 }
 
+func TestHeimdallStatusStaleThresholdDefault(t *testing.T) {
+	original := conf
+	t.Cleanup(func() {
+		conf = original
+	})
+
+	require.Equal(t, 30*time.Second, DefaultHeimdallStatusStaleThreshold)
+	require.Equal(t, DefaultHeimdallStatusStaleThreshold, GetDefaultHeimdallConfig().HeimdallStatusStaleThreshold)
+
+	conf.Custom.HeimdallStatusStaleThreshold = 0
+	require.Equal(t, DefaultHeimdallStatusStaleThreshold, GetHeimdallStatusStaleThreshold())
+
+	conf.Custom.HeimdallStatusStaleThreshold = 45 * time.Second
+	require.Equal(t, 45*time.Second, GetHeimdallStatusStaleThreshold())
+}
+
 func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 	t.Parallel()
 

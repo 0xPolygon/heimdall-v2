@@ -74,6 +74,9 @@ min_peer_threshold = "{{ .Custom.MinPeerThreshold }}"
 
 # Minimum number of peers before heimdall health check warns (0 = disabled)
 warn_peer_threshold = "{{ .Custom.WarnPeerThreshold }}"
+
+# Latest Heimdall block age after which /status reports catching_up=true
+heimdall_status_stale_threshold = "{{ .Custom.HeimdallStatusStaleThreshold }}"
 `
 
 var _ *template.Template

@@ -3,10 +3,12 @@ package app
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	sdkmath "cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -18,6 +20,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
@@ -198,6 +201,50 @@ func TestGetMaccPerms(t *testing.T) {
 
 	dup := GetMaccPerms()
 	require.Equal(t, maccPerms, dup, "duplicated module account permissions differed from actual module account permissions")
+}
+
+func TestSyncInfoForStatus(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, time.May, 12, 21, 7, 0, 0, time.UTC)
+	staleThreshold := helper.DefaultHeimdallStatusStaleThreshold
+	require.Equal(t, 30*time.Second, staleThreshold)
+
+	recent := syncInfoForStatus(ctypes.SyncInfo{
+		LatestBlockHeight: 10,
+		LatestBlockTime:   now.Add(-staleThreshold),
+	}, now, staleThreshold)
+	require.False(t, recent.CatchingUp)
+
+	stale := syncInfoForStatus(ctypes.SyncInfo{
+		LatestBlockHeight: 10,
+		LatestBlockTime:   now.Add(-staleThreshold - time.Nanosecond),
+	}, now, staleThreshold)
+	require.True(t, stale.CatchingUp)
+
+	alreadyCatchingUp := syncInfoForStatus(ctypes.SyncInfo{
+		LatestBlockHeight: 10,
+		LatestBlockTime:   now,
+		CatchingUp:        true,
+	}, now, staleThreshold)
+	require.True(t, alreadyCatchingUp.CatchingUp)
+
+	noCommittedBlocks := syncInfoForStatus(ctypes.SyncInfo{
+		LatestBlockTime: now.Add(-time.Hour),
+	}, now, staleThreshold)
+	require.False(t, noCommittedBlocks.CatchingUp)
+
+	missingBlockTime := syncInfoForStatus(ctypes.SyncInfo{
+		LatestBlockHeight: 10,
+	}, now, staleThreshold)
+	require.True(t, missingBlockTime.CatchingUp)
+
+	customThreshold := 45 * time.Second
+	customRecent := syncInfoForStatus(ctypes.SyncInfo{
+		LatestBlockHeight: 10,
+		LatestBlockTime:   now.Add(-30 * time.Second),
+	}, now, customThreshold)
+	require.False(t, customRecent.CatchingUp)
 }
 
 func TestEndBlockerEmitsTransferEvent(t *testing.T) {

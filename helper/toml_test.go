@@ -44,6 +44,7 @@ func TestDefaultConfigTemplate_ContainsRequiredSections(t *testing.T) {
 		"warn_goroutine_threshold",
 		"min_peer_threshold",
 		"warn_peer_threshold",
+		"heimdall_status_stale_threshold",
 	}
 
 	for _, section := range requiredSections {
@@ -82,6 +83,7 @@ func TestDefaultConfigTemplate_ContainsTemplateVariables(t *testing.T) {
 		"{{ .Custom.WarnGoRoutineThreshold }}",
 		"{{ .Custom.MinPeerThreshold }}",
 		"{{ .Custom.WarnPeerThreshold }}",
+		"{{ .Custom.HeimdallStatusStaleThreshold }}",
 	}
 
 	for _, variable := range templateVariables {
@@ -126,6 +128,7 @@ func TestDefaultConfigTemplate_ContainsHealthCheckConfigs(t *testing.T) {
 	require.Contains(t, helper.DefaultConfigTemplate, "warn_goroutine_threshold")
 	require.Contains(t, helper.DefaultConfigTemplate, "min_peer_threshold")
 	require.Contains(t, helper.DefaultConfigTemplate, "warn_peer_threshold")
+	require.Contains(t, helper.DefaultConfigTemplate, "heimdall_status_stale_threshold")
 }
 
 func TestDefaultConfigTemplate_ContainsSelfHealConfigs(t *testing.T) {
