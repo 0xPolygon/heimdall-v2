@@ -60,5 +60,5 @@ grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.chainmanager.Query/GetChain
 ### REST endpoints
 
 ```bash
-curl localhost:1317/heimdallv2/chainmanager/params
+curl localhost:1317/chainmanager/params
 ```
