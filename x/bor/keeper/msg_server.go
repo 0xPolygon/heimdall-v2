@@ -162,6 +162,18 @@ func (srv msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProduc
 		seen[vote] = true
 	}
 
+	// Post-Zurich, a validator no longer in the active set cannot vote
+	// for producers
+	if helper.IsZurichHardfork(sdk.UnwrapSDKContext(ctx).BlockHeight()) {
+		active, err := srv.isValidatorInActiveSet(ctx, msg.VoterId)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to check active status for voter id %d", msg.VoterId)
+		}
+		if !active {
+			return nil, fmt.Errorf("voter id %d is not in the active validator set", msg.VoterId)
+		}
+	}
+
 	err = srv.SetProducerVotes(ctx, msg.VoterId, msg.Votes)
 	if err != nil {
 		return nil, err

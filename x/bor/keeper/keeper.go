@@ -596,6 +596,27 @@ func (k Keeper) CanVoteProducers(ctx context.Context) error {
 	return nil
 }
 
+// isValidatorInActiveSet reports whether valID is a member of the current
+// active validator set. A deactivated validator keeps its individual record but
+// is no longer in the set, so this gate keeps it from influencing producer
+// selection. Membership already implies positive power, not jailed and in-epoch
+// (the set is built from those checks), so this is a set lookup, not the
+// canonical IsCurrentValidator predicate.
+func (k Keeper) isValidatorInActiveSet(ctx context.Context, valID uint64) (bool, error) {
+	valSet, err := k.sk.GetValidatorSet(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	for _, v := range valSet.Validators {
+		if v != nil && v.ValId == valID {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 // CanSetProducerDowntime checks if the current height is after the setProducerDowntimeHeight.
 func (k Keeper) CanSetProducerDowntime(ctx sdk.Context) error {
 	if ctx.BlockHeight() < helper.GetSetProducerDowntimeHeight() {
