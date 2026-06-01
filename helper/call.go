@@ -144,6 +144,7 @@ type ContractCaller struct {
 	PolTokenABI      abi.ABI
 
 	ContractInstanceCache map[common.Address]interface{}
+	contractInstanceMu    *sync.RWMutex
 
 	// prefetchMu protects the round-scoped prefetch state used by ExtendVote.
 	prefetchMu *sync.RWMutex
@@ -181,6 +182,7 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 
 	// listeners and processors instance cache (address->ABI)
 	contractCallerObj.ContractInstanceCache = make(map[common.Address]interface{})
+	contractCallerObj.contractInstanceMu = &sync.RWMutex{}
 
 	contractCallerObj.prefetchMu = &sync.RWMutex{}
 	contractCallerObj.prefetchedReceipts = make(map[common.Hash]*ethTypes.Receipt)
@@ -194,164 +196,157 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 	return contractCallerObj, nil
 }
 
+// loadContractInstance returns the cached binding for address if present.
+func (c *ContractCaller) loadContractInstance(address common.Address) (interface{}, bool) {
+	c.contractInstanceMu.RLock()
+	defer c.contractInstanceMu.RUnlock()
+	v, ok := c.ContractInstanceCache[address]
+	return v, ok
+}
+
+// storeContractInstance caches a successfully-constructed binding. Failed
+// constructions must not be stored — a poisoned entry would type-assert to a
+// typed-nil pointer on the next read.
+func (c *ContractCaller) storeContractInstance(address common.Address, instance interface{}) {
+	c.contractInstanceMu.Lock()
+	defer c.contractInstanceMu.Unlock()
+	c.ContractInstanceCache[address] = instance
+}
+
 // GetRootChainInstance returns the RootChain contract instance for a selected chain
 func (c *ContractCaller) GetRootChainInstance(rootChainAddress string) (*rootchain.Rootchain, error) {
 	address := common.HexToAddress(rootChainAddress)
 
-	contractInstance, ok := c.ContractInstanceCache[address]
-	if !ok {
-		ci, err := rootchain.NewRootchain(address, mainChainClient)
-		c.ContractInstanceCache[address] = ci
-
-		if err != nil {
-			Logger.Error("Error in fetching the root chain instance from mainChain client", "error", err)
-			return nil, err
-		}
-
-		return ci, err
+	if cached, ok := c.loadContractInstance(address); ok {
+		return cached.(*rootchain.Rootchain), nil
 	}
 
-	return contractInstance.(*rootchain.Rootchain), nil
+	ci, err := rootchain.NewRootchain(address, mainChainClient)
+	if err != nil {
+		Logger.Error("Error in fetching the root chain instance from mainChain client", "error", err)
+		return nil, err
+	}
+	c.storeContractInstance(address, ci)
+	return ci, nil
 }
 
 // GetStakingInfoInstance returns stakingInfo contract instance for a selected chain
 func (c *ContractCaller) GetStakingInfoInstance(stakingInfoAddress string) (*stakinginfo.Stakinginfo, error) {
 	address := common.HexToAddress(stakingInfoAddress)
 
-	contractInstance, ok := c.ContractInstanceCache[address]
-	if !ok {
-		ci, err := stakinginfo.NewStakinginfo(address, mainChainClient)
-		c.ContractInstanceCache[address] = ci
-
-		if err != nil {
-			Logger.Error("Error in fetching the stakingInfo instance from mainChain client", "error", err)
-			return nil, err
-		}
-
-		return ci, err
+	if cached, ok := c.loadContractInstance(address); ok {
+		return cached.(*stakinginfo.Stakinginfo), nil
 	}
 
-	return contractInstance.(*stakinginfo.Stakinginfo), nil
+	ci, err := stakinginfo.NewStakinginfo(address, mainChainClient)
+	if err != nil {
+		Logger.Error("Error in fetching the stakingInfo instance from mainChain client", "error", err)
+		return nil, err
+	}
+	c.storeContractInstance(address, ci)
+	return ci, nil
 }
 
 // GetValidatorSetInstance returns stakingInfo contract instance for a selected chain
 func (c *ContractCaller) GetValidatorSetInstance(validatorSetAddress string) (*validatorset.Validatorset, error) {
 	address := common.HexToAddress(validatorSetAddress)
 
-	contractInstance, ok := c.ContractInstanceCache[address]
-	if !ok {
-		ci, err := validatorset.NewValidatorset(address, mainChainClient)
-		c.ContractInstanceCache[address] = ci
-
-		if err != nil {
-			Logger.Error("Error in fetching the validator set from mainChain client", "error", err)
-			return nil, err
-		}
-
-		return ci, err
+	if cached, ok := c.loadContractInstance(address); ok {
+		return cached.(*validatorset.Validatorset), nil
 	}
 
-	return contractInstance.(*validatorset.Validatorset), nil
+	ci, err := validatorset.NewValidatorset(address, mainChainClient)
+	if err != nil {
+		Logger.Error("Error in fetching the validator set from mainChain client", "error", err)
+		return nil, err
+	}
+	c.storeContractInstance(address, ci)
+	return ci, nil
 }
 
 // GetStakeManagerInstance returns stakingInfo contract instance for a selected base chain
 func (c *ContractCaller) GetStakeManagerInstance(stakingManagerAddress string) (*stakemanager.Stakemanager, error) {
 	address := common.HexToAddress(stakingManagerAddress)
 
-	contractInstance, ok := c.ContractInstanceCache[address]
-	if !ok {
-		ci, err := stakemanager.NewStakemanager(address, mainChainClient)
-		c.ContractInstanceCache[address] = ci
-
-		if err != nil {
-			Logger.Error("Error in fetching the stake manager from mainChain client", "error", err)
-			return nil, err
-		}
-
-		return ci, err
+	if cached, ok := c.loadContractInstance(address); ok {
+		return cached.(*stakemanager.Stakemanager), nil
 	}
 
-	return contractInstance.(*stakemanager.Stakemanager), nil
+	ci, err := stakemanager.NewStakemanager(address, mainChainClient)
+	if err != nil {
+		Logger.Error("Error in fetching the stake manager from mainChain client", "error", err)
+		return nil, err
+	}
+	c.storeContractInstance(address, ci)
+	return ci, nil
 }
 
 // GetSlashManagerInstance returns the slashManager contract instance for a selected base chain
 func (c *ContractCaller) GetSlashManagerInstance(slashManagerAddress string) (*slashmanager.Slashmanager, error) {
 	address := common.HexToAddress(slashManagerAddress)
 
-	contractInstance, ok := c.ContractInstanceCache[address]
-	if !ok {
-		ci, err := slashmanager.NewSlashmanager(address, mainChainClient)
-		c.ContractInstanceCache[address] = ci
-
-		if err != nil {
-			Logger.Error("Error in fetching the slash manager from mainChain client", "error", err)
-			return nil, err
-		}
-
-		return ci, err
+	if cached, ok := c.loadContractInstance(address); ok {
+		return cached.(*slashmanager.Slashmanager), nil
 	}
 
-	return contractInstance.(*slashmanager.Slashmanager), nil
+	ci, err := slashmanager.NewSlashmanager(address, mainChainClient)
+	if err != nil {
+		Logger.Error("Error in fetching the slash manager from mainChain client", "error", err)
+		return nil, err
+	}
+	c.storeContractInstance(address, ci)
+	return ci, nil
 }
 
 // GetStateSenderInstance returns stakingInfo contract instance for a selected base chain
 func (c *ContractCaller) GetStateSenderInstance(stateSenderAddress string) (*statesender.Statesender, error) {
 	address := common.HexToAddress(stateSenderAddress)
 
-	contractInstance, ok := c.ContractInstanceCache[address]
-	if !ok {
-		ci, err := statesender.NewStatesender(address, mainChainClient)
-		c.ContractInstanceCache[address] = ci
-
-		if err != nil {
-			Logger.Error("Error in fetching the stateSender from mainChain client", "error", err)
-			return nil, err
-		}
-
-		return ci, err
+	if cached, ok := c.loadContractInstance(address); ok {
+		return cached.(*statesender.Statesender), nil
 	}
 
-	return contractInstance.(*statesender.Statesender), nil
+	ci, err := statesender.NewStatesender(address, mainChainClient)
+	if err != nil {
+		Logger.Error("Error in fetching the stateSender from mainChain client", "error", err)
+		return nil, err
+	}
+	c.storeContractInstance(address, ci)
+	return ci, nil
 }
 
 // GetStateReceiverInstance returns stakingInfo contract instance for a selected base chain
 func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress string) (*statereceiver.Statereceiver, error) {
 	address := common.HexToAddress(stateReceiverAddress)
 
-	contractInstance, ok := c.ContractInstanceCache[address]
-	if !ok {
-		ci, err := statereceiver.NewStatereceiver(address, borClient)
-		c.ContractInstanceCache[address] = ci
-
-		if err != nil {
-			Logger.Error("Error in fetching the stateReceiver from mainChain client", "error", err)
-			return nil, err
-		}
-
-		return ci, err
+	if cached, ok := c.loadContractInstance(address); ok {
+		return cached.(*statereceiver.Statereceiver), nil
 	}
 
-	return contractInstance.(*statereceiver.Statereceiver), nil
+	ci, err := statereceiver.NewStatereceiver(address, borClient)
+	if err != nil {
+		Logger.Error("Error in fetching the stateReceiver from borChain client", "error", err)
+		return nil, err
+	}
+	c.storeContractInstance(address, ci)
+	return ci, nil
 }
 
 // GetTokenInstance returns the contract instance for a selected chain
 func (c *ContractCaller) GetTokenInstance(tokenAddress string) (*erc20.Erc20, error) {
 	address := common.HexToAddress(tokenAddress)
 
-	contractInstance, ok := c.ContractInstanceCache[address]
-	if !ok {
-		ci, err := erc20.NewErc20(address, mainChainClient)
-		c.ContractInstanceCache[address] = ci
-
-		if err != nil {
-			Logger.Error("Error in fetching the token address from client", "error", err)
-			return nil, err
-		}
-
-		return ci, err
+	if cached, ok := c.loadContractInstance(address); ok {
+		return cached.(*erc20.Erc20), nil
 	}
 
-	return contractInstance.(*erc20.Erc20), nil
+	ci, err := erc20.NewErc20(address, mainChainClient)
+	if err != nil {
+		Logger.Error("Error in fetching the token address from client", "error", err)
+		return nil, err
+	}
+	c.storeContractInstance(address, ci)
+	return ci, nil
 }
 
 // GetHeaderInfo get header info from the checkpoint number
@@ -1429,7 +1424,6 @@ func toBlockNumArg(number *big.Int) string {
 	// It's negative and large, which is invalid.
 	return fmt.Sprintf("<invalid %d>", number)
 }
-
 
 // BeginPrefetchRound starts a new round of prefetch lifecycle for ExtendVote.
 func (c *ContractCaller) BeginPrefetchRound() {
