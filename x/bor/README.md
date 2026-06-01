@@ -202,8 +202,8 @@ curl localhost:1317/bor/spans/seed/<SPAN_ID>
 
 ```bash
 # Strict: span_id must equal latest_span.id + 1, start_block must equal
-# latest_span.end_block + 1, and Bor must have already produced that block
-# (otherwise: "invalid span id" / "invalid start block" / "unknown block").
+# latest_span.end_block + 1, and bor_chain_id must match latest_span.bor_chain_id
+# (otherwise: "invalid span id" / "invalid start block while getting next span" / "invalid chain id").
 curl "localhost:1317/bor/spans/prepare?span_id=<SPAN_ID>&start_block=<BOR_START_BLOCK>&bor_chain_id=<BOR_CHAIN_ID>"
 ```
 
