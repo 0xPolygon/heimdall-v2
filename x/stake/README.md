@@ -51,7 +51,7 @@ This approach guarantees that Heimdall only processes each valid Ethereum signer
 
 ### Updating the Validator Set
 
-In the x/stake `EndBlocker`, Heimdall updates the validator set (through the `ApplyAndReturnValidatorSetUpdates`function), ensuring consensus reflects the latest validator changes.  
+In the x/stake `EndBlocker`, Heimdall updates the validator set (through the `ApplyAndReturnValidatorSetUpdates` function), ensuring consensus reflects the latest validator changes.  
 Before any updates, the current block’s validator set is stored as the previous block’s set. The system retrieves all existing validators, the current validator set, and the acknowledgment count from the x/checkpoint state.  
 Using `GetUpdatedValidators`, a list of validators that require updates (`setUpdates`) is identified and applied through `UpdateWithChangeSet`, storing the new set under `CurrentValidatorSetKey`.  
 To maintain fair block proposer selection, Heimdall implements a proposer priority system, ensuring all validators have a fair chance to propose new blocks.  
@@ -380,9 +380,8 @@ curl localhost:1317/stake/is-old-tx?tx_hash=<tx-hash>&log_index=<log-index>
 ```
 
 ```bash
-# Current CometBFT proposer (the validator scheduled to propose the next
-# Heimdall block — distinct from the Bor sprint proposer returned by
-# bor_getCurrentProposer on the EL).
+# Current "checkpoint proposer" from x/stake's proposer rotation (used by x/checkpoint).
+# Distinct from the Bor sprint proposer returned by bor_getCurrentProposer on the EL.
 curl localhost:1317/stake/proposers/current
 ```
 
