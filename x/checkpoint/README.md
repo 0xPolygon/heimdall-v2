@@ -148,12 +148,15 @@ heimdalld tx checkpoint send-checkpoint --proposer=<proposer-address> --start-bl
 ```
 
 #### Send checkpoint ack
+
 With autoconfiguration:  
+
 ```bash
 heimdalld tx checkpoint send-ack --auto-configure=true --home /var/lib/heimdall/
 ```
 
 Or without autoconfiguration (you need to provide the following parameters):
+
 ```bash
 heimdalld tx checkpoint send-ack --home /var/lib/heimdall/ --tx-hash=<checkpoint-tx-hash> --log-index=<log-index> --header=<header> --proposer=<proposer-address> --auto-configure=false
 ```
@@ -311,18 +314,15 @@ curl localhost:1317/checkpoints/prepare-next
 ```
 
 ```bash
-curl localhost:1317/checkpoint/proposers/current
+# /checkpoints/list requires Cosmos-style pagination — a bare call returns
+# HTTP 400 ("pagination request is empty"). Pass at least one of
+# pagination.limit, pagination.offset, or pagination.key.
+curl "localhost:1317/checkpoints/list?pagination.limit=10"
 ```
 
 ```bash
-curl localhost:1317/checkpoint/proposers/{times}
-```
-
-```bash
-curl localhost:1317/checkpoints/list
-```
-
-```bash
+# tx_hash is the L1 (Ethereum) tx hash of the checkpoint submission,
+# not a Heimdall tx hash. Returns 404 until the L1 submission is registered.
 curl localhost:1317/checkpoints/signatures/{tx_hash}
 ```
 

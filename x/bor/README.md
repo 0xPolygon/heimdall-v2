@@ -2,22 +2,20 @@
 
 ## Table of Contents
 
-* [Preliminary terminology](#preliminary-terminology)
-* [Overview](#overview)
-* [How it works](#how-does-it-work)
-	* [How to propose a span](#how-to-propose-a-span)
-* [Query commands](#query-commands)
-	* [CLI Commands](#cli-commands)
-	* [GRPC Endpoints](#grpc-endpoints)
-	* [REST Endpoints](#rest-endpoints)
-
-
+- [Preliminary terminology](#preliminary-terminology)
+- [Overview](#overview)
+- [How it works](#how-it-works)
+  - [How to propose a span](#how-to-propose-a-span)
+- [Query commands](#query-commands)
+  - [CLI Commands](#cli-commands)
+  - [GRPC Endpoints](#grpc-endpoints)
+  - [REST Endpoints](#rest-endpoints)
 
 ## Preliminary terminology
 
-* A `side-transaction` is a normal heimdall transaction but the data with which the message is composed needs to be voted on by the validators since the data is obscure to the consensus protocol itself, and it has no way of validating the data's correctness.
-* A `sprint` comprises of 16 bor blocks (configured in [bor](https://github.com/0xPolygon/launch/blob/fe86ba6cd16e5c36067a5ae49c0bad62ce8b1c3f/mainnet-v1/sentry/validator/bor/genesis.json#L26C18-L28)).
-* A `span` comprises 400 sprints in bor (check heimdall's bor [params](https://heimdall-api.polygon.technology/bor/params) endpoint).
+- A `side-transaction` is a normal heimdall transaction but the data with which the message is composed needs to be voted on by the validators since the data is obscure to the consensus protocol itself, and it has no way of validating the data's correctness.
+- A `sprint` comprises of 16 bor blocks (configured in [bor](https://github.com/0xPolygon/launch/blob/fe86ba6cd16e5c36067a5ae49c0bad62ce8b1c3f/mainnet-v1/sentry/validator/bor/genesis.json#L26C18-L28)).
+- A `span` comprises 400 sprints in bor (check heimdall's bor [params](https://heimdall-api.polygon.technology/bor/params) endpoint).
 
 ## Overview
 
@@ -39,14 +37,15 @@ message Span {
 	string bor_chain_id = 6 [ (amino.dont_omitempty) = true ];
 }
 ```
+
 where
 
-* `id` means the id of the span, calculated by monotonically incrementing the id of the previous span.
-* `start_block` corresponds to the block in bor from which the given span would begin.
-* `end_block` corresponds to the block in bor at which the given span would conclude.
-* `validator_set` defines the set of active validators.
-* `selected_producers` are the validators selected to produce blocks in bor from the validator set.
-* `bor_chain_id` corresponds to bor chain ID.
+- `id` means the id of the span, calculated by monotonically incrementing the id of the previous span.
+- `start_block` corresponds to the block in bor from which the given span would begin.
+- `end_block` corresponds to the block in bor at which the given span would conclude.
+- `validator_set` defines the set of active validators.
+- `selected_producers` are the validators selected to produce blocks in bor from the validator set.
+- `bor_chain_id` corresponds to bor chain ID.
 
 A validator on heimdall can construct a span proposal message:
 
@@ -64,8 +63,8 @@ message MsgProposeSpan {
 }
 ```
 
-The msg is generally constructed and broadcast by the validator's bridge process periodically, but the CLI can also be leveraged to do the same manually (see [below](#how-does-it-work)). Upon broadcasting the message, it is initially checked by `ProposeSpan` handler for basic sanity (verify whether the proposed span is in continuity, appropriate span duration, correct chain ID, etc.). Since this is a side-transaction, the validators then vote on the data present in `MsgProposeSpan` on the basis of its correctness. All these checks are done in `SideHandleMsgSpan` (verifying `seed`, span continuity, etc.) and if correct, the validator would vote `YES`.
-Finally, if there are 2/3+ `YES` votes, the `PostHandleMsgSpan` persists the proposed span in the state via the keeper :  
+The msg is generally constructed and broadcast by the validator's bridge process periodically, but the CLI can also be leveraged to do the same manually (see [below](#how-to-propose-a-span)). Upon broadcasting the message, it is initially checked by `ProposeSpan` handler for basic sanity (verify whether the proposed span is in continuity, appropriate span duration, correct chain ID, etc.). Since this is a side-transaction, the validators then vote on the data present in `MsgProposeSpan` on the basis of its correctness. All these checks are done in `SideHandleMsgSpan` (verifying `seed`, span continuity, etc.) and if correct, the validator would vote `YES`.
+Finally, if there are 2/3+ `YES` votes, the `PostHandleMsgSpan` persists the proposed span in the state via the keeper :
 
 ```go
 // freeze for new span
@@ -116,12 +115,16 @@ heimdalld tx bor propose-span --proposer <VALIDATOR_ADDRESS> --start-block <BOR_
 
 One can run the following query commands from the bor module:
 
-* `span` - Query the span corresponding to the given span id.
-* `span-list` - Fetch span list.
-* `latest-span` - Query the latest span.
-* `next-span-seed` - Query the seed for the next span.
-* `next-span` - Query the next span.
-* `params` - Fetch the parameters associated with the bor module.
+- `span` - Query the span corresponding to the given span id.
+- `span-list` - Fetch span list.
+- `latest-span` - Query the latest span.
+- `next-span-seed` - Query the seed for the next span.
+- `next-span` - Query the next span.
+- `params` - Fetch the parameters associated with the bor module.
+- `producer-votes` - Query producer votes from all validators.
+- `producer-votes-by-validator-id` - Query producer votes cast by a specific validator.
+- `producer-planned-downtime` - Query the planned downtime window for a producer.
+- `validator-performance-score` - Query the performance scores of all validators.
 
 ### CLI commands
 
@@ -178,13 +181,15 @@ grpcurl -plaintext -d '{"id": "<>"}' localhost:9090 heimdallv2.bor.Query/GetSpan
 grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.bor.Query/GetBorParams
 ```
 
-
 ### REST endpoints
 
 The endpoints and the params are defined in the [bor/query.proto](/proto/heimdallv2/bor/query.proto) file. Please refer to them for more information about the optional params.
 
 ```bash
-curl localhost:1317/bor/spans/list
+# /bor/spans/list requires Cosmos-style pagination — a bare call returns
+# HTTP 400 ("pagination request is empty"). Pass at least one of
+# pagination.limit, pagination.offset, or pagination.key.
+curl "localhost:1317/bor/spans/list?pagination.limit=10"
 ```
 
 ```bash
@@ -196,6 +201,9 @@ curl localhost:1317/bor/spans/seed/<SPAN_ID>
 ```
 
 ```bash
+# Strict: span_id must equal latest_span.id + 1, start_block must equal
+# latest_span.end_block + 1, and Bor must have already produced that block
+# (otherwise: "invalid span id" / "invalid start block" / "unknown block").
 curl "localhost:1317/bor/spans/prepare?span_id=<SPAN_ID>&start_block=<BOR_START_BLOCK>&bor_chain_id=<BOR_CHAIN_ID>"
 ```
 
@@ -207,4 +215,23 @@ curl localhost:1317/bor/spans/<SPAN_ID>
 curl localhost:1317/bor/params
 ```
 
+```bash
+# All validators' votes for the next-span producer set.
+curl localhost:1317/bor/producer-votes
+```
 
+```bash
+# Votes cast by a single validator.
+curl localhost:1317/bor/producer-votes/<VALIDATOR_ID>
+```
+
+```bash
+# Declared downtime window for a producer. Returns HTTP 404 with
+# "no planned downtime found for producer id N" if none declared (normal case).
+curl localhost:1317/bor/producers/planned-downtime/<PRODUCER_ID>
+```
+
+```bash
+# Per-validator block-production reliability scores.
+curl localhost:1317/bor/validator-performance-score
+```

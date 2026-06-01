@@ -22,7 +22,7 @@
 
 Clerk module manages generic event records from the Ethereum blockchain related to state-sync events.  
 These are specially designed events that are emitted by the StateSender contract on the L1 chain to notify the L2 nodes
-(Bor in case of PoS) about the state changes in the L1. 
+(Bor in case of PoS) about the state changes in the L1.
 Once the bridge processes the events,
 the clerk module listens to these events and stores them in the database for further processing.
 
@@ -187,8 +187,13 @@ grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.clerk.Query/GetRecordCount
 The endpoints and the params are defined in the [clerk/query.proto](/proto/heimdallv2/clerk/query.proto) file.
 Please refer to them for more information about the optional params.
 
+> **Pagination note**: Two different pagination styles live in this module.
+> `/clerk/event-records/list` uses **custom** `page` + `limit` (1-indexed, both required — a bare call returns HTTP 400 `"page cannot be 0"`).
+> `/clerk/time` uses standard **Cosmos** `pagination.{limit,offset,key,...}` like the rest of the gateway. Mixing them up returns `"pagination request is empty"`.
+
 ```bash
-curl localhost:1317/clerk/event-records/list?page=<page>&limit=<limit>
+# Custom page/limit pagination — both required, 1-indexed.
+curl "localhost:1317/clerk/event-records/list?page=1&limit=20"
 ```
 
 ```bash
@@ -200,7 +205,8 @@ curl localhost:1317/clerk/event-records/<event-id>
 ```
 
 ```bash
-curl localhost:1317/clerk/time?from_id=<from-id>&to_time=<to-time>&page=<page>&limit=<limit>
+# Cosmos pagination on this one (not page/limit).
+curl "localhost:1317/clerk/time?from_id=<from-id>&to_time=<rfc3339>&pagination.limit=20"
 ```
 
 ```bash
