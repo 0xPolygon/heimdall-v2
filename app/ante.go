@@ -8,6 +8,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	checkpointante "github.com/0xPolygon/heimdall-v2/x/checkpoint/ante"
 )
 
 // HandlerOptions are the options required for constructing a default SDK AnteHandler.
@@ -40,6 +41,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
 		ante.NewValidateBasicDecorator(),
 		ante.NewMsgMultiSendCapDecorator(maxMultiSendOutputs, helper.IsZurichHardfork),
+		checkpointante.NewAccountRootHashLenDecorator(helper.IsZurichHardfork),
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
