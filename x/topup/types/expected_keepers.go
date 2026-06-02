@@ -24,3 +24,8 @@ type BankKeeper interface {
 type ChainKeeper interface {
 	GetParams(ctx context.Context) (chainmanagertypes.Params, error)
 }
+
+// StakeKeeper defines the stake keeper contract used by x/topup module
+type StakeKeeper interface {
+	IsCurrentValidatorByAddress(ctx context.Context, address string) (bool, error)
+}

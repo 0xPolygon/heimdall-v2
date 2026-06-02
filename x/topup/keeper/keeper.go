@@ -25,6 +25,7 @@ type Keeper struct {
 
 	BankKeeper     types.BankKeeper
 	ChainKeeper    types.ChainKeeper
+	StakeKeeper    types.StakeKeeper
 	contractCaller helper.IContractCaller
 
 	sequences        collections.KeySet[string]
@@ -37,6 +38,7 @@ func NewKeeper(
 	storeService store.KVStoreService,
 	bankKeeper types.BankKeeper,
 	chainKeeper types.ChainKeeper,
+	stakeKeeper types.StakeKeeper,
 	contractCaller helper.IContractCaller,
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
@@ -46,6 +48,7 @@ func NewKeeper(
 		storeService:   storeService,
 		BankKeeper:     bankKeeper,
 		ChainKeeper:    chainKeeper,
+		StakeKeeper:    stakeKeeper,
 		contractCaller: contractCaller,
 
 		sequences:        collections.NewKeySet(sb, types.TopupSequencePrefixKey, "topup_sequence", collections.StringKey),

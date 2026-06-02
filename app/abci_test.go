@@ -705,6 +705,7 @@ func TestSideTxsHappyPath(t *testing.T) {
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
 		app.BankKeeper,
 		app.ChainManagerKeeper,
+		&app.StakeKeeper,
 		mockCaller,
 	)
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
@@ -875,6 +876,7 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
 		app.BankKeeper,
 		app.ChainManagerKeeper,
+		&app.StakeKeeper,
 		mockCaller,
 	)
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
@@ -1150,6 +1152,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
 		app.BankKeeper,
 		app.ChainManagerKeeper,
+		&app.StakeKeeper,
 		mockCaller,
 	)
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
@@ -1566,6 +1569,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
 		app.BankKeeper,
 		mockChainKeeper,
+		&app.StakeKeeper,
 		mockCaller,
 	)
 	mockTopupKeeper := app.TopupKeeper

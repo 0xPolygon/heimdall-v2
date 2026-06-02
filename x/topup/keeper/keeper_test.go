@@ -65,6 +65,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	defer ctrl.Finish()
 	bankKeeper := testutil.NewMockBankKeeper(ctrl)
 	chainKeeper := testutil.NewMockChainKeeper(ctrl)
+	stakeKeeper := testutil.NewMockStakeKeeper(ctrl)
 
 	s.contractCaller = mocks.IContractCaller{}
 
@@ -73,6 +74,7 @@ func (s *KeeperTestSuite) SetupTest() {
 		storeService,
 		bankKeeper,
 		chainKeeper,
+		stakeKeeper,
 		&s.contractCaller,
 	)
 
