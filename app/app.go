@@ -284,20 +284,21 @@ func NewHeimdallApp(
 		logger,
 	)
 
-	app.TopupKeeper = topupKeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
-		app.BankKeeper,
-		app.ChainManagerKeeper,
-		app.caller,
-	)
-
 	app.StakeKeeper = stakeKeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[staketypes.StoreKey]),
 		app.BankKeeper,
 		app.ChainManagerKeeper,
 		address.HexCodec{},
+		app.caller,
+	)
+
+	app.TopupKeeper = topupKeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
+		app.BankKeeper,
+		app.ChainManagerKeeper,
+		&app.StakeKeeper,
 		app.caller,
 	)
 
