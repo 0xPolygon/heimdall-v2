@@ -204,8 +204,6 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_HappyPath() {
 
 	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
 
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
-
 	for i := uint64(1); i <= 3; i++ {
 		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
 			baseTime.Add(time.Duration(i)*time.Second))
@@ -245,8 +243,6 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_UsesIndexedBlo
 	defer enableVisibilityTimeForTest(s, 1)()
 
 	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
-
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
 
 	for i := uint64(1); i <= 3; i++ {
 		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",

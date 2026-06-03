@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"cosmossdk.io/collections"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -220,33 +219,14 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 
 	// If visibility time is enabled, add the event to the pending list.
 	// Its visibility_height will be assigned in the next block's PreBlocker.
+	// The deterministic query distinguishes pre-HF events (no pending entry, no
+	// visibility_height) from post-HF events by this per-event state, so it
+	// stays correct even when events are processed out of order across the
+	// activation height.
 	if helper.IsZurichHardfork(ctx.BlockHeight()) {
-		err = srv.AddPendingVisibilityEvent(ctx, record.Id)
-		if err != nil {
+		if err = srv.AddPendingVisibilityEvent(ctx, record.Id); err != nil {
 			logger.Error("Unable to add pending visibility event", "id", record.Id, heimdallTypes.LogKeyError, err)
 			return err
-		}
-
-		// Track the minimum post-HF event ID as the upgrade boundary.
-		// Side-tx PostHandlers run in proposer-chosen order, and the clerk module
-		// does not enforce monotonic record.Id, so the first ID observed after the
-		// HF activates is not necessarily the smallest. Without min tracking, any
-		// later event whose ID is below the recorded boundary would fall through
-		// the legacy record_time branch in recordListVisibleAtHeight and bypass
-		// the visibility_height gate.
-		var currentUpgradeID uint64
-		currentUpgradeID, err = srv.GetVisibilityTimeUpgradeID(ctx)
-		hasUpgradeID := err == nil
-		if err != nil && !errors.Is(err, collections.ErrNotFound) {
-			logger.Error("Unable to check visibility time upgrade ID", heimdallTypes.LogKeyError, err)
-			return err
-		}
-		if !hasUpgradeID || record.Id < currentUpgradeID {
-			err = srv.SetVisibilityTimeUpgradeID(ctx, record.Id)
-			if err != nil {
-				logger.Error("Unable to set visibility time upgrade ID", "id", record.Id, heimdallTypes.LogKeyError, err)
-				return err
-			}
 		}
 	}
 
