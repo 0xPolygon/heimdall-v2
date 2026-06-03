@@ -189,6 +189,23 @@ jobs:
       - name: Confirming package built
         run: ls -ltr packaging/deb/ | grep heimdall
 
+      - name: Install cosign
+        uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a # v3.7.0
+
+      - name: Sign release artifacts with cosign
+        run: |
+          shopt -s nullglob
+          artifacts=(packaging/deb/heimdall-*.deb)
+          if [ ${#artifacts[@]} -eq 0 ]; then
+            echo "No artifacts found to sign"
+            exit 1
+          fi
+          for artifact in "${artifacts[@]}"; do
+            cosign sign-blob --yes --oidc-provider=github-actions "$artifact" \
+              --output-signature "${artifact}.sig" \
+              --output-certificate "${artifact}.pem"
+          done
+
       - name: Release heimdall Packages
         uses: softprops/action-gh-release@v2.2.2
         with:
@@ -197,3 +214,5 @@ jobs:
           files: |
             packaging/deb/heimdall-mainnet-**.deb
             packaging/deb/heimdall-mainnet-**.deb.checksum
+            packaging/deb/heimdall-**.deb.sig
+            packaging/deb/heimdall-**.deb.pem
