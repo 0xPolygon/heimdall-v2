@@ -262,6 +262,8 @@ var producerDowntimeHeight int64 = 0
 
 var phuketHardforkHeight int64 = 0
 
+var feeWithdrawValidatorGateHeight int64 = 0
+
 var v080HardforkHeight int64 = 0
 
 type ChainManagerAddressMigration struct {
@@ -515,6 +517,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 24404501
 		producerDowntimeHeight = 34966593
 		phuketHardforkHeight = 44070000
+		feeWithdrawValidatorGateHeight = 46361000
 		v080HardforkHeight = 0 // TODO marcello set block number when needed
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
@@ -526,6 +529,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 0
 		producerDowntimeHeight = 0
 		phuketHardforkHeight = 0
+		feeWithdrawValidatorGateHeight = 0
 		v080HardforkHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
@@ -537,6 +541,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 8788501
 		producerDowntimeHeight = 20457139
 		phuketHardforkHeight = 32276400
+		feeWithdrawValidatorGateHeight = 35914000
 		v080HardforkHeight = 0 // TODO marcello set block number when needed
 	default:
 		milestoneDeletionHeight = 0
@@ -548,6 +553,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		initialHeight = 0
 		producerDowntimeHeight = 0
 		phuketHardforkHeight = 0
+		feeWithdrawValidatorGateHeight = 0
 		v080HardforkHeight = 0
 	}
 }
@@ -926,6 +932,18 @@ func SetPhuketHardforkHeight(height int64) {
 
 func GetPhuketHardforkHeight() int64 {
 	return phuketHardforkHeight
+}
+
+func IsFeeWithdrawValidatorGate(height int64) bool {
+	return feeWithdrawValidatorGateHeight > 0 && height >= feeWithdrawValidatorGateHeight
+}
+
+func SetFeeWithdrawValidatorGateHeight(height int64) {
+	feeWithdrawValidatorGateHeight = height
+}
+
+func GetFeeWithdrawValidatorGateHeight() int64 {
+	return feeWithdrawValidatorGateHeight
 }
 
 func IsV080Hardfork(height int64) bool {

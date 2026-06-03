@@ -13,6 +13,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestIsFeeWithdrawValidatorGate(t *testing.T) {
+	prev := GetFeeWithdrawValidatorGateHeight()
+	defer SetFeeWithdrawValidatorGateHeight(prev)
+
+	t.Run("disabled when height is zero", func(t *testing.T) {
+		SetFeeWithdrawValidatorGateHeight(0)
+		require.False(t, IsFeeWithdrawValidatorGate(0))
+		require.False(t, IsFeeWithdrawValidatorGate(1))
+		require.False(t, IsFeeWithdrawValidatorGate(1_000_000))
+	})
+
+	t.Run("inactive strictly before activation height", func(t *testing.T) {
+		SetFeeWithdrawValidatorGateHeight(100)
+		require.False(t, IsFeeWithdrawValidatorGate(99))
+	})
+
+	t.Run("active at activation height", func(t *testing.T) {
+		SetFeeWithdrawValidatorGateHeight(100)
+		require.True(t, IsFeeWithdrawValidatorGate(100))
+	})
+
+	t.Run("active strictly after activation height", func(t *testing.T) {
+		SetFeeWithdrawValidatorGateHeight(100)
+		require.True(t, IsFeeWithdrawValidatorGate(101))
+		require.True(t, IsFeeWithdrawValidatorGate(1_000_000))
+	})
+}
+
 func TestIsV080Hardfork(t *testing.T) {
 	tests := []struct {
 		name           string
