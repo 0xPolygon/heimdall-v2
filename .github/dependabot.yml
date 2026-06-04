@@ -1,42 +1,39 @@
 version: 2
 updates:
-  - package-ecosystem: "gomod"
-    directory: "/"
+  - package-ecosystem: 'gomod'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'daily'
     open-pull-requests-limit: 10
     commit-message:
-      prefix: "build"
+      prefix: 'build'
     groups:
       go-deps:
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
     ignore:
       # 0xPolygon-maintained forks pinned via replace directives for
       # consensus determinism. Bump these by hand.
-      - dependency-name: "github.com/0xPolygon/cosmos-sdk*"
-      - dependency-name: "github.com/0xPolygon/cometbft*"
-      - dependency-name: "github.com/0xPolygon/bor*"
+      - dependency-name: 'github.com/0xPolygon/cosmos-sdk*'
+      - dependency-name: 'github.com/0xPolygon/cometbft*'
+      - dependency-name: 'github.com/0xPolygon/bor*'
 
-  - package-ecosystem: "docker"
-    directory: "/"
+  - package-ecosystem: 'docker'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'daily'
     commit-message:
-      prefix: "build"
+      prefix: 'build'
 
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: 'github-actions'
+    directory: '/'
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: 'daily'
     commit-message:
-      prefix: "ci"
+      prefix: 'ci'
     groups:
       actions:
         update-types:
-          - "minor"
-          - "patch"
+          - 'minor'
+          - 'patch'
