@@ -28,6 +28,27 @@ func (p *fakeChainIDProbe) Close() {
 	p.closed = true
 }
 
+func preserveBorClients(t *testing.T) {
+	t.Helper()
+
+	oldRPC := borRPCClient
+	oldBor := borClient
+	oldHTTP := borRPCFailoverTransport
+	oldGRPC := borGRPCClient
+	t.Cleanup(func() {
+		if borRPCClient != nil && borRPCClient != oldRPC {
+			borRPCClient.Close()
+		}
+		if borRPCFailoverTransport != nil && borRPCFailoverTransport != oldHTTP {
+			borRPCFailoverTransport.Close()
+		}
+		borRPCClient = oldRPC
+		borClient = oldBor
+		borRPCFailoverTransport = oldHTTP
+		borGRPCClient = oldGRPC
+	})
+}
+
 func TestParseURLs(t *testing.T) {
 	require.Nil(t, parseURLs(""))
 	require.Equal(t, []string{"http://a"}, parseURLs("http://a"))
@@ -90,22 +111,7 @@ func TestGetBorChainCallTimeout(t *testing.T) {
 }
 
 func TestInitBorRPCClient_SingleAndFailover(t *testing.T) {
-	oldRPC := borRPCClient
-	oldBor := borClient
-	oldHTTP := borRPCFailoverTransport
-	oldGRPC := borGRPCClient
-	t.Cleanup(func() {
-		if borRPCClient != nil && borRPCClient != oldRPC {
-			borRPCClient.Close()
-		}
-		if borRPCFailoverTransport != nil && borRPCFailoverTransport != oldHTTP {
-			borRPCFailoverTransport.Close()
-		}
-		borRPCClient = oldRPC
-		borClient = oldBor
-		borRPCFailoverTransport = oldHTTP
-		borGRPCClient = oldGRPC
-	})
+	preserveBorClients(t)
 	borGRPCClient = nil
 
 	s1 := fakeBorRPC(t, "0x1", new(int32))
@@ -142,6 +148,29 @@ func TestInitBorRPCClient_SingleAndFailover(t *testing.T) {
 	require.Equal(t, int64(1), id.Int64())
 }
 
+func TestInitBorRPCClient_UsesParsedSingleURL(t *testing.T) {
+	preserveBorClients(t)
+
+	s1 := fakeBorRPC(t, "0x1", new(int32))
+	defer s1.Close()
+
+	cfg := CustomAppConfig{Custom: GetDefaultHeimdallConfig()}
+	cfg.Custom.BorRPCTimeout = 100 * time.Millisecond
+	cfg.Custom.BorRPCUrl = s1.URL + ","
+	SetTestConfig(cfg)
+	borRPCClient = nil
+	borClient = nil
+	borRPCFailoverTransport = nil
+	initBorRPCClient()
+	require.NotNil(t, borRPCClient)
+	require.NotNil(t, borClient)
+	require.Nil(t, borRPCFailoverTransport)
+	id, err := borClient.ChainID(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, int64(1), id.Int64())
+	borRPCClient.Close()
+}
+
 func TestBuildBorGRPCClient(t *testing.T) {
 	primary, single, err := buildBorGRPCClient([]string{"localhost:3131"}, "", time.Second)
 	require.NoError(t, err)
@@ -157,6 +186,12 @@ func TestBuildBorGRPCClient(t *testing.T) {
 func TestBuildBorGRPCClient_DialError(t *testing.T) {
 	_, _, err := buildBorGRPCClient([]string{"1.2.3.4:3131"}, "", time.Second)
 	require.Error(t, err)
+}
+
+func TestBuildBorGRPCClient_RejectsInvalidPrimary(t *testing.T) {
+	_, _, err := buildBorGRPCClient([]string{"1.2.3.4:3131", "localhost:3131"}, "", time.Second)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid primary")
 }
 
 func TestBuildBorGRPCClient_SkipsInvalidAmongValid(t *testing.T) {

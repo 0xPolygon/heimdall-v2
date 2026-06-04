@@ -47,28 +47,34 @@ func TestStopBridge_StopsRunningServicesAndClients(t *testing.T) {
 	idle := &fakeService{running: false}
 	qc := &fakeWorkerStopper{}
 	hc := &fakeStoppable{}
+	cleaned := false
 
-	require.NoError(t, stopBridge([]common.Service{running, idle}, hc, qc))
+	require.NoError(t, stopBridge([]common.Service{running, idle}, hc, qc, func() { cleaned = true }))
 	require.True(t, qc.called)       // worker stopped
 	require.True(t, running.stopped) // running service stopped
 	require.False(t, idle.stopped)   // non-running service skipped
 	require.True(t, hc.called)       // comet client stopped
+	require.True(t, cleaned)         // shutdown cleanup runs on success
 }
 
 func TestStopBridge_ReturnsServiceStopError(t *testing.T) {
 	boom := errors.New("service stop failed")
 	bad := &fakeService{running: true, stopErr: boom}
 	hc := &fakeStoppable{}
+	cleaned := false
 
-	require.ErrorIs(t, stopBridge([]common.Service{bad}, hc, &fakeWorkerStopper{}), boom)
+	require.ErrorIs(t, stopBridge([]common.Service{bad}, hc, &fakeWorkerStopper{}, func() { cleaned = true }), boom)
 	require.False(t, hc.called) // returns before stopping the comet client
+	require.True(t, cleaned)    // Bor/DB cleanup still runs on the error path
 }
 
 func TestStopBridge_ReturnsHTTPClientStopError(t *testing.T) {
 	boom := errors.New("http client stop failed")
 	hc := &fakeStoppable{err: boom}
+	cleaned := false
 
-	require.ErrorIs(t, stopBridge(nil, hc, &fakeWorkerStopper{}), boom)
+	require.ErrorIs(t, stopBridge(nil, hc, &fakeWorkerStopper{}, func() { cleaned = true }), boom)
+	require.True(t, cleaned) // Bor/DB cleanup still runs on the error path
 }
 
 func TestRunServices_PropagatesShutdownError(t *testing.T) {

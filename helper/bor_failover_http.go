@@ -148,12 +148,22 @@ func (t *borHTTPFailoverTransport) send(req *http.Request, body []byte, i int) (
 	ep := *t.endpoints[i].url
 	clone.URL = &ep
 	clone.Host = ep.Host
+	setEndpointAuthorization(clone, ep.User)
 	if body != nil {
 		clone.Body = io.NopCloser(bytes.NewReader(body))
 		clone.ContentLength = int64(len(body))
 	}
 
 	return t.base.RoundTrip(clone)
+}
+
+func setEndpointAuthorization(req *http.Request, user *url.Userinfo) {
+	req.Header.Del("Authorization")
+	if user == nil {
+		return
+	}
+	password, _ := user.Password()
+	req.SetBasicAuth(user.Username(), password)
 }
 
 // cancelOnClose cancels the per-attempt context when the response body is
@@ -306,20 +316,17 @@ func (t *borHTTPFailoverTransport) captureExpectedChainID() {
 
 func dialHTTPEndpoints(rawURLs []string) ([]httpEndpoint, error) {
 	out := make([]httpEndpoint, 0, len(rawURLs))
-	for _, raw := range rawURLs {
-		u, err := url.Parse(raw)
-		if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
-			Logger.Warn("bor failover: skipping invalid or non-HTTP bor RPC URL", "url", redactURL(raw))
+	for i, raw := range rawURLs {
+		ep, err := dialHTTPEndpoint(raw)
+		if err != nil {
+			if i == primaryEndpoint {
+				return nil, fmt.Errorf("invalid primary bor RPC URL %s: %w", redactURL(raw), err)
+			}
+			Logger.Warn("bor failover: skipping invalid bor RPC URL", "url", redactURL(raw), "error", err)
 			continue
 		}
 
-		rc, derr := rpc.Dial(u.String())
-		if derr != nil {
-			Logger.Warn("bor failover: skipping undialable bor RPC URL", "url", redactURL(raw), "error", derr)
-			continue
-		}
-
-		out = append(out, httpEndpoint{url: u, probe: ethclient.NewClient(rc)})
+		out = append(out, ep)
 	}
 
 	if len(out) == 0 {
@@ -327,6 +334,23 @@ func dialHTTPEndpoints(rawURLs []string) ([]httpEndpoint, error) {
 	}
 
 	return out, nil
+}
+
+func dialHTTPEndpoint(raw string) (httpEndpoint, error) {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return httpEndpoint{}, err
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return httpEndpoint{}, fmt.Errorf("unsupported scheme %q", u.Scheme)
+	}
+
+	rc, err := rpc.Dial(u.String())
+	if err != nil {
+		return httpEndpoint{}, fmt.Errorf("dialing endpoint: %w", err)
+	}
+
+	return httpEndpoint{url: u, probe: ethclient.NewClient(rc)}, nil
 }
 
 func fetchChainID(c chainIDProbe, timeout time.Duration) (*big.Int, bool) {

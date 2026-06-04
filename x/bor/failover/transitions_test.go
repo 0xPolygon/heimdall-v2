@@ -190,6 +190,20 @@ func TestProber_ContinuesProbingOnTicker(t *testing.T) {
 	}
 }
 
+func TestStart_ProbesOnEveryInterval(t *testing.T) {
+	var probes atomic.Int64
+	h := newTestHealthWithProbe(t, 2, func(int) error {
+		probes.Add(1)
+		return nil
+	})
+	h.Start()
+	defer h.Stop()
+
+	require.Eventually(t, func() bool {
+		return probes.Load() >= int64(2*h.n)
+	}, time.Second, 5*time.Millisecond)
+}
+
 func TestReclaim_AdoptsPrimaryAndDemotesOthers(t *testing.T) {
 	h := New(3, nopProbe, Metrics{}, log.NewNopLogger())
 	h.SetTuning(time.Second, 1, 0, time.Second) // threshold 1, cooldown 0

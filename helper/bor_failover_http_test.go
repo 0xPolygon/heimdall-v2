@@ -398,14 +398,27 @@ func TestNewBorHTTPFailoverClient_ErrorWhenNoValidEndpoints(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestDialHTTPEndpoints_SkipsInvalidScheme(t *testing.T) {
+func TestDialHTTPEndpoints_SkipsInvalidFallbackScheme(t *testing.T) {
 	s1 := fakeBorRPC(t, "0x1", new(int32))
 	defer s1.Close()
 
 	// "://bad" fails url.Parse (nil URL); "ws://" parses but is the wrong scheme.
-	got, err := dialHTTPEndpoints([]string{"://bad", "ws://localhost:8546", s1.URL})
+	got, err := dialHTTPEndpoints([]string{s1.URL, "://bad", "ws://localhost:8546"})
 	require.NoError(t, err)
 	require.Len(t, got, 1)
+}
+
+func TestDialHTTPEndpoints_RejectsInvalidPrimary(t *testing.T) {
+	s1 := fakeBorRPC(t, "0x1", new(int32))
+	defer s1.Close()
+
+	_, err := dialHTTPEndpoints([]string{"ws://localhost:8546", s1.URL})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid primary")
+
+	_, err = dialHTTPEndpoints([]string{"://bad", s1.URL})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid primary")
 
 	_, err = dialHTTPEndpoints([]string{"ws://localhost:8546"})
 	require.Error(t, err)

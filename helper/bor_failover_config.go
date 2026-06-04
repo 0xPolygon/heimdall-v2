@@ -40,18 +40,22 @@ func initBorRPCClient() {
 	var err error
 
 	borRPCUrls := parseURLs(conf.Custom.BorRPCUrl)
+	borRPCLogURL := conf.Custom.BorRPCUrl
 	if len(borRPCUrls) >= 2 {
 		if borRPCClient, borClient, err = newBorHTTPFailoverClient(borRPCUrls, conf.Custom.BorRPCTimeout); err != nil {
 			log.Fatal("unable to set up bor RPC failover client", "URLs", redactURLs(conf.Custom.BorRPCUrl), "error", err)
 		}
-	} else {
-		if borRPCClient, err = rpc.Dial(conf.Custom.BorRPCUrl); err != nil {
-			log.Fatal("unable to dial bor chain RPC client", "URL", redactURL(conf.Custom.BorRPCUrl), "error", err)
+	} else if len(borRPCUrls) == 1 {
+		borRPCLogURL = borRPCUrls[0]
+		if borRPCClient, err = rpc.Dial(borRPCUrls[0]); err != nil {
+			log.Fatal("unable to dial bor chain RPC client", "URL", redactURL(borRPCUrls[0]), "error", err)
 		}
 		borClient = ethclient.NewClient(borRPCClient)
+	} else {
+		log.Fatal("bor_rpc_url is empty")
 	}
 
-	warnIfBorRPCInaccessible(borClient, conf.Custom.BorRPCTimeout, redactURLs(conf.Custom.BorRPCUrl))
+	warnIfBorRPCInaccessible(borClient, conf.Custom.BorRPCTimeout, redactURLs(borRPCLogURL))
 }
 
 // initBorGRPCClient sets the borGRPCClient global when bor gRPC is enabled,
@@ -82,14 +86,17 @@ func initBorGRPCClient() {
 // buildBorGRPCClient dials each priority-ordered gRPC URL and returns the
 // primary concrete client (for the startup reachability and hash-parity checks)
 // plus the client that serves traffic: the single client when one URL is
-// configured, or a failover wrapper when several are. An invalid/undialable URL
-// is skipped (mirroring the HTTP path) so a single bad fallback can't block
-// startup; it errors only when no endpoint survives.
+// configured, or a failover wrapper when several are. The configured primary
+// must stay at index 0 so identity anchoring remains authoritative; invalid
+// fallbacks are skipped so a single bad fallback can't block startup.
 func buildBorGRPCClient(urls []string, token string, attemptTimeout time.Duration) (*borgrpc.BorGRPCClient, borgrpc.Client, error) {
 	clients := make([]*borgrpc.BorGRPCClient, 0, len(urls))
-	for _, u := range urls {
+	for i, u := range urls {
 		c, err := borgrpc.NewBorGRPCClient(u, token, Logger)
 		if err != nil {
+			if i == primaryEndpoint {
+				return nil, nil, fmt.Errorf("invalid primary bor gRPC URL %s: %w", redactURL(u), err)
+			}
 			Logger.Warn("bor failover: skipping invalid bor gRPC URL", "url", redactURL(u), "error", err)
 			continue
 		}

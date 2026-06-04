@@ -244,7 +244,7 @@ func runServices(ctx context.Context, services []common.Service, httpClient stop
 		<-gCtx.Done()
 		// mutator-disable-next-line operator log, removing it changes no behavior
 		logger().Info("Bridge: received stop signal - stopping all heimdall bridge services")
-		return stopBridge(services, httpClient, qc)
+		return stopBridge(services, httpClient, qc, closeBridgeResources)
 	})
 
 	if err := g.Wait(); err != nil {
@@ -263,10 +263,21 @@ type (
 	workerStopper interface{ StopWorker() }
 )
 
+// closeBridgeResources runs cleanup that should happen even when an earlier
+// service stop returns an error.
+func closeBridgeResources() {
+	// mutator-disable-next-line statement-deletion shutdown cleanup
+	util.CloseBridgeDBInstance()
+	// mutator-disable-next-line statement-deletion shutdown cleanup
+	helper.CloseBorChainClients()
+}
+
 // stopBridge tears down the bridge services, the comet client, the DB, and the
 // Bor failover clients. Called by runServices's shutdown controller once the
 // group context is cancelled.
-func stopBridge(services []common.Service, httpClient stopper, qc workerStopper) error {
+func stopBridge(services []common.Service, httpClient stopper, qc workerStopper, cleanup func()) error {
+	defer cleanup()
+
 	qc.StopWorker()
 
 	for _, s := range services {
@@ -285,12 +296,5 @@ func stopBridge(services []common.Service, httpClient stopper, qc workerStopper)
 		return err
 	}
 
-	util.CloseBridgeDBInstance()
-
-	// stop the Bor failover background probers and close the Bor clients.
-	// Shutdown-only cleanup whose effect (goroutine teardown) is observable only
-	// at process exit, so deleting it is not unit-testable here.
-	// mutator-disable-next-line statement-deletion shutdown cleanup
-	helper.CloseBorChainClients()
 	return nil
 }
