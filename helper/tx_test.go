@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -114,7 +115,7 @@ func TestGenerateAuthObj_NormalEIP1559Flow(t *testing.T) {
 	address := common.HexToAddress("0x0000000000000000000000000000000000000000")
 	data := []byte("test data")
 
-	auth, err := generateAuthObjWithClient(mockClient, address, data)
+	auth, err := generateAuthObjWithClient(context.Background(), time.Second, mockClient, address, data)
 	require.NoError(t, err)
 	require.NotNil(t, auth)
 
@@ -157,7 +158,7 @@ func TestGenerateAuthObj_BaseFeeNil(t *testing.T) {
 	address := common.HexToAddress("0x0000000000000000000000000000000000000000")
 	data := []byte("test data")
 
-	auth, err := generateAuthObjWithClient(mockClient, address, data)
+	auth, err := generateAuthObjWithClient(context.Background(), time.Second, mockClient, address, data)
 
 	assert.Error(t, err, "Should return error when baseFee is nil")
 	assert.Nil(t, auth, "Auth should be nil when baseFee is nil")
@@ -186,7 +187,7 @@ func TestGenerateAuthObj_FeeCapExceedsConfiguredMaximum(t *testing.T) {
 	address := common.HexToAddress("0x0000000000000000000000000000000000000000")
 	data := []byte("test data")
 
-	auth, err := generateAuthObjWithClient(mockClient, address, data)
+	auth, err := generateAuthObjWithClient(context.Background(), time.Second, mockClient, address, data)
 	require.NoError(t, err)
 	require.NotNil(t, auth)
 
@@ -217,7 +218,7 @@ func TestGenerateAuthObj_TipCapExceedsConfiguredMaximum(t *testing.T) {
 	address := common.HexToAddress("0x0000000000000000000000000000000000000000")
 	data := []byte("test data")
 
-	auth, err := generateAuthObjWithClient(mockClient, address, data)
+	auth, err := generateAuthObjWithClient(context.Background(), time.Second, mockClient, address, data)
 	require.NoError(t, err)
 	require.NotNil(t, auth)
 
@@ -255,7 +256,7 @@ func TestGenerateAuthObj_TipCapExceedsFeeCap(t *testing.T) {
 	address := common.HexToAddress("0x0000000000000000000000000000000000000000")
 	data := []byte("test data")
 
-	auth, err := generateAuthObjWithClient(mockClient, address, data)
+	auth, err := generateAuthObjWithClient(context.Background(), time.Second, mockClient, address, data)
 	require.NoError(t, err)
 	require.NotNil(t, auth)
 
@@ -282,7 +283,7 @@ func TestGenerateAuthObj_BlockByNumberError(t *testing.T) {
 	address := common.HexToAddress("0x0000000000000000000000000000000000000000")
 	data := []byte("test data")
 
-	auth, err := generateAuthObjWithClient(mockClient, address, data)
+	auth, err := generateAuthObjWithClient(context.Background(), time.Second, mockClient, address, data)
 
 	assert.Error(t, err, "Should return error when BlockByNumber fails")
 	assert.Nil(t, auth, "Auth should be nil when BlockByNumber fails")
@@ -313,8 +314,43 @@ func TestGenerateAuthObj_SuggestGasTipCapError(t *testing.T) {
 	address := common.HexToAddress("0x0000000000000000000000000000000000000000")
 	data := []byte("test data")
 
-	auth, err := generateAuthObjWithClient(mockClient, address, data)
+	auth, err := generateAuthObjWithClient(context.Background(), time.Second, mockClient, address, data)
 
 	assert.Error(t, err, "Should return error when SuggestGasTipCap fails")
 	assert.Nil(t, auth, "Auth should be nil when SuggestGasTipCap fails")
+}
+
+func TestGenerateAuthObj_PropagatesCallerCancellation(t *testing.T) {
+	InitTestHeimdallConfig("")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	mockClient := &mockEthClient{
+		blockByNumberFn: func(ctx context.Context, number *big.Int) (*types.Block, error) {
+			<-ctx.Done()
+			return nil, ctx.Err()
+		},
+	}
+
+	auth, err := generateAuthObjWithClient(ctx, time.Hour, mockClient, common.Address{}, nil)
+	require.ErrorIs(t, err, context.Canceled)
+	require.Nil(t, auth)
+}
+
+func TestGenerateAuthObj_AppliesPerRPCTimeout(t *testing.T) {
+	InitTestHeimdallConfig("")
+
+	mockClient := &mockEthClient{
+		blockByNumberFn: func(ctx context.Context, number *big.Int) (*types.Block, error) {
+			<-ctx.Done()
+			return nil, ctx.Err()
+		},
+	}
+
+	start := time.Now()
+	auth, err := generateAuthObjWithClient(context.Background(), 10*time.Millisecond, mockClient, common.Address{}, nil)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.Nil(t, auth)
+	require.Less(t, time.Since(start), time.Second)
 }

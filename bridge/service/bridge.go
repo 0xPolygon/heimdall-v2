@@ -220,7 +220,7 @@ func waitUntilSynced(ctx context.Context, clientCtx client.Context, d time.Durat
 // runServices starts all the bridge services and handles graceful shutdown.
 // Uses errgroup.WithContext so that a service Start() failure cancels the
 // group context, which unblocks the shutdown controller and other goroutines.
-func runServices(ctx context.Context, services []common.Service, httpClient *rpchttp.HTTP, qc *queue.Connector) error {
+func runServices(ctx context.Context, services []common.Service, httpClient stoppable, qc workerStopper) error {
 	g, gCtx := errgroup.WithContext(ctx)
 
 	// start each service
@@ -242,34 +242,55 @@ func runServices(ctx context.Context, services []common.Service, httpClient *rpc
 	// shutdown controller: triggers on parent ctx cancellation OR first goroutine error
 	g.Go(func() error {
 		<-gCtx.Done()
+		// mutator-disable-next-line operator log, removing it changes no behavior
 		logger().Info("Bridge: received stop signal - stopping all heimdall bridge services")
-
-		qc.StopWorker()
-
-		// stop services
-		for _, s := range services {
-			if s.IsRunning() {
-				if err := s.Stop(); err != nil {
-					logger().Error("Bridge: service.Stop failed", "err", err)
-					return err
-				}
-			}
-		}
-
-		// stop comet client
-		if err := httpClient.Stop(); err != nil {
-			logger().Error("Bridge: httpClient.Stop failed", "err", err)
-			return err
-		}
-
-		// close DB
-		util.CloseBridgeDBInstance()
-		return nil
+		return stopBridge(services, httpClient, qc)
 	})
 
 	if err := g.Wait(); err != nil {
+		// mutator-disable-next-line operator log, err is returned below
 		logger().Error("Bridge: stopped", "err", err)
 		return err
 	}
+	return nil
+}
+
+// stoppable and workerStopper are the minimal behaviors stopBridge needs from
+// the comet RPC client and the queue connector, so the shutdown path is
+// unit-testable with fakes.
+type (
+	stoppable     interface{ Stop() error }
+	workerStopper interface{ StopWorker() }
+)
+
+// stopBridge tears down the bridge services, the comet client, the DB, and the
+// Bor failover clients. Called by runServices's shutdown controller once the
+// group context is cancelled.
+func stopBridge(services []common.Service, httpClient stoppable, qc workerStopper) error {
+	qc.StopWorker()
+
+	for _, s := range services {
+		if s.IsRunning() {
+			if err := s.Stop(); err != nil {
+				// mutator-disable-next-line operator log, err is returned below
+				logger().Error("Bridge: service.Stop failed", "err", err)
+				return err
+			}
+		}
+	}
+
+	if err := httpClient.Stop(); err != nil {
+		// mutator-disable-next-line operator log, err is returned below
+		logger().Error("Bridge: httpClient.Stop failed", "err", err)
+		return err
+	}
+
+	util.CloseBridgeDBInstance()
+
+	// stop the Bor failover background probers and close the Bor clients.
+	// Shutdown-only cleanup whose effect (goroutine teardown) is observable only
+	// at process exit, so deleting it is not unit-testable here.
+	// mutator-disable-next-line statement-deletion shutdown cleanup
+	helper.CloseBorChainClients()
 	return nil
 }

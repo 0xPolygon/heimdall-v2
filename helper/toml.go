@@ -17,13 +17,16 @@ const DefaultConfigTemplate = `
 # RPC endpoint for ethereum chain
 eth_rpc_url = "{{ .Custom.EthRPCUrl }}"
 
-# RPC endpoint for bor chain
+# RPC endpoint(s) for bor chain. Accepts a comma-separated, priority-ordered
+# list for failover (first = primary; heimdall reverts to it once it recovers).
+# A single URL keeps the previous single-endpoint behavior.
 bor_rpc_url = "{{ .Custom.BorRPCUrl }}"
 
 # GRPC flag for bor chain
 bor_grpc_flag = "{{ .Custom.BorGRPCFlag }}"
 
-# GRPC endpoint for bor chain
+# GRPC endpoint(s) for bor chain. Like bor_rpc_url, accepts a comma-separated,
+# priority-ordered list for failover.
 bor_grpc_url = "{{ .Custom.BorGRPCUrl }}"
 
 # Bearer token for bor gRPC authentication (empty disables auth)

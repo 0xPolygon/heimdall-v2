@@ -169,7 +169,7 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 	contractCallerObj.MainChainClient = GetMainClient()
 	contractCallerObj.MainChainTimeout = config.EthRPCTimeout
 	contractCallerObj.BorChainClient = GetBorClient()
-	contractCallerObj.BorChainTimeout = config.BorRPCTimeout
+	contractCallerObj.BorChainTimeout = GetBorChainCallTimeout()
 	contractCallerObj.MainChainRPCClient = GetMainChainRPCClient()
 	contractCallerObj.BorChainRPCClient = GetBorRPCClient()
 	contractCallerObj.BorChainGrpcFlag = config.BorGRPCFlag

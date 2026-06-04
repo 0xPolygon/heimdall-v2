@@ -231,7 +231,7 @@ var (
 var (
 	borClient     *ethclient.Client
 	borRPCClient  *rpc.Client
-	borGRPCClient *borgrpc.BorGRPCClient
+	borGRPCClient borgrpc.Client
 )
 
 // private key object
@@ -452,26 +452,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
 
-	if borRPCClient, err = rpc.Dial(conf.Custom.BorRPCUrl); err != nil {
-		log.Fatal("unable to dial bor chain RPC client", "URL", conf.Custom.BorRPCUrl, "error", err)
-	}
-
-	borClient = ethclient.NewClient(borRPCClient)
-	warnIfBorRPCInaccessible(borClient, conf.Custom.BorRPCTimeout, conf.Custom.BorRPCUrl)
-
-	if conf.Custom.BorGRPCFlag && conf.Custom.BorGRPCUrl != "" {
-		client, err := borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl, conf.Custom.BorGRPCToken, Logger)
-		if err != nil {
-			log.Fatal("unable to create bor gRPC client", "URL", conf.Custom.BorGRPCUrl, "error", err)
-		}
-		borGRPCClient = client
-		warnIfBorGRPCInaccessible(borGRPCClient, conf.Custom.BorRPCTimeout, conf.Custom.BorGRPCUrl)
-		// Fire-and-forget parity goroutine; removal is only observable in production init.
-		// mutator-disable-next-line statement-deletion in production init
-		verifyBorGRPCHashParity(borClient, borGRPCClient, conf.Custom.BorRPCTimeout)
-	} else if conf.Custom.BorGRPCFlag && conf.Custom.BorGRPCUrl == "" {
-		log.Fatal("bor gRPC is enabled but bor_grpc_url is empty")
-	}
+	initBorRPCClient()
+	initBorGRPCClient()
 
 	// Set default producers based on the chain if not already set by config or flags
 	if conf.Custom.ProducerVotes == "" {
@@ -1557,7 +1539,7 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 }
 
 // GetBorGRPCClient returns bor gRPC client
-func GetBorGRPCClient() *borgrpc.BorGRPCClient {
+func GetBorGRPCClient() borgrpc.Client {
 	return borGRPCClient
 }
 
