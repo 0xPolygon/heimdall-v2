@@ -100,6 +100,9 @@ type Health struct {
 // endpoint i. The primary (index 0) is trusted at boot; a fallback only becomes
 // healthy — and thus a failover candidate — after an identity-validating probe.
 func New(n int, probe func(i int) error, m Metrics, logger log.Logger) *Health {
+	if n < 1 {
+		panic("bor failover: endpoint count must be positive")
+	}
 	hs := make([]endpointHealth, n)
 	hs[0] = endpointHealth{healthy: true}
 	return &Health{

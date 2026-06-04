@@ -220,7 +220,7 @@ func waitUntilSynced(ctx context.Context, clientCtx client.Context, d time.Durat
 // runServices starts all the bridge services and handles graceful shutdown.
 // Uses errgroup.WithContext so that a service Start() failure cancels the
 // group context, which unblocks the shutdown controller and other goroutines.
-func runServices(ctx context.Context, services []common.Service, httpClient stoppable, qc workerStopper) error {
+func runServices(ctx context.Context, services []common.Service, httpClient stopper, qc workerStopper) error {
 	g, gCtx := errgroup.WithContext(ctx)
 
 	// start each service
@@ -255,18 +255,18 @@ func runServices(ctx context.Context, services []common.Service, httpClient stop
 	return nil
 }
 
-// stoppable and workerStopper are the minimal behaviors stopBridge needs from
+// stopper and workerStopper are the minimal behaviors stopBridge needs from
 // the comet RPC client and the queue connector, so the shutdown path is
 // unit-testable with fakes.
 type (
-	stoppable     interface{ Stop() error }
+	stopper       interface{ Stop() error }
 	workerStopper interface{ StopWorker() }
 )
 
 // stopBridge tears down the bridge services, the comet client, the DB, and the
 // Bor failover clients. Called by runServices's shutdown controller once the
 // group context is cancelled.
-func stopBridge(services []common.Service, httpClient stoppable, qc workerStopper) error {
+func stopBridge(services []common.Service, httpClient stopper, qc workerStopper) error {
 	qc.StopWorker()
 
 	for _, s := range services {

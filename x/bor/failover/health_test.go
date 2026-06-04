@@ -41,6 +41,12 @@ func TestNew_PrimaryValidatedFallbacksNot(t *testing.T) {
 	require.Empty(t, h.Candidates(0))
 }
 
+func TestNew_RejectsZeroEndpoints(t *testing.T) {
+	require.PanicsWithValue(t, "bor failover: endpoint count must be positive", func() {
+		New(0, nopProbe, Metrics{}, log.NewNopLogger())
+	})
+}
+
 func TestCall_PassthroughWhenActiveHealthy(t *testing.T) {
 	h := newTestHealth(t, 2)
 	var calls int

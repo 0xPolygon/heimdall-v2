@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"math/big"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	proto "github.com/0xPolygon/polyproto/bor"
+	protoutil "github.com/0xPolygon/polyproto/utils"
 
 	"github.com/0xPolygon/heimdall-v2/x/bor/failover"
 )
@@ -124,6 +126,148 @@ func TestMultiGRPC_BatchCascades(t *testing.T) {
 	require.Empty(t, tds)
 	require.Empty(t, authors)
 	require.Equal(t, 1, mc.health.Active())
+}
+
+func TestMultiGRPC_WrapperMethodsCascade(t *testing.T) {
+	t.Run("GetVoteOnHash", func(t *testing.T) {
+		m0 := new(MockBorApiClient)
+		m0.On("GetVoteOnHash", mock.Anything, mock.Anything).
+			Return((*proto.GetVoteOnHashResponse)(nil), status.Error(codes.Unavailable, "down"))
+		m1 := new(MockBorApiClient)
+		m1.On("GetVoteOnHash", mock.Anything, mock.Anything).
+			Return(&proto.GetVoteOnHashResponse{Response: true}, nil)
+
+		mc := newTestMulti(m0, m1)
+		mc.health.MarkSuccess(1)
+
+		got, err := mc.GetVoteOnHash(context.Background(), 1, 2, "0xabc", "mid")
+		require.NoError(t, err)
+		require.True(t, got)
+		require.Equal(t, 1, mc.health.Active())
+	})
+
+	t.Run("HeaderByNumber", func(t *testing.T) {
+		m0 := new(MockBorApiClient)
+		m0.On("HeaderByNumber", mock.Anything, mock.Anything).
+			Return((*proto.GetHeaderByNumberResponse)(nil), status.Error(codes.Unavailable, "down"))
+		m1 := new(MockBorApiClient)
+		m1.On("HeaderByNumber", mock.Anything, mock.Anything).
+			Return(&proto.GetHeaderByNumberResponse{Header: &proto.Header{Number: 11}}, nil)
+
+		mc := newTestMulti(m0, m1)
+		mc.health.MarkSuccess(1)
+
+		got, err := mc.HeaderByNumber(context.Background(), 11)
+		require.NoError(t, err)
+		require.Equal(t, int64(11), got.Number.Int64())
+		require.Equal(t, 1, mc.health.Active())
+	})
+
+	t.Run("BlockByNumber", func(t *testing.T) {
+		m0 := new(MockBorApiClient)
+		m0.On("BlockByNumber", mock.Anything, mock.Anything).
+			Return((*proto.GetBlockByNumberResponse)(nil), status.Error(codes.Unavailable, "down"))
+		m1 := new(MockBorApiClient)
+		m1.On("BlockByNumber", mock.Anything, mock.Anything).
+			Return(&proto.GetBlockByNumberResponse{Block: &proto.Block{Header: &proto.Header{Number: 12}}}, nil)
+
+		mc := newTestMulti(m0, m1)
+		mc.health.MarkSuccess(1)
+
+		got, err := mc.BlockByNumber(context.Background(), 12)
+		require.NoError(t, err)
+		require.Equal(t, uint64(12), got.NumberU64())
+		require.Equal(t, 1, mc.health.Active())
+	})
+
+	t.Run("TransactionReceipt", func(t *testing.T) {
+		txHash := common.HexToHash("0x1234")
+		m0 := new(MockBorApiClient)
+		m0.On("TransactionReceipt", mock.Anything, mock.Anything).
+			Return((*proto.ReceiptResponse)(nil), status.Error(codes.Unavailable, "down"))
+		m1 := new(MockBorApiClient)
+		m1.On("TransactionReceipt", mock.Anything, mock.Anything).
+			Return(&proto.ReceiptResponse{Receipt: &proto.Receipt{TxHash: protoutil.ConvertHashToH256(txHash)}}, nil)
+
+		mc := newTestMulti(m0, m1)
+		mc.health.MarkSuccess(1)
+
+		got, err := mc.TransactionReceipt(context.Background(), txHash)
+		require.NoError(t, err)
+		require.Equal(t, txHash, got.TxHash)
+		require.Equal(t, 1, mc.health.Active())
+	})
+
+	t.Run("BorBlockReceipt", func(t *testing.T) {
+		txHash := common.HexToHash("0x5678")
+		m0 := new(MockBorApiClient)
+		m0.On("BorBlockReceipt", mock.Anything, mock.Anything).
+			Return((*proto.ReceiptResponse)(nil), status.Error(codes.Unavailable, "down"))
+		m1 := new(MockBorApiClient)
+		m1.On("BorBlockReceipt", mock.Anything, mock.Anything).
+			Return(&proto.ReceiptResponse{Receipt: &proto.Receipt{TxHash: protoutil.ConvertHashToH256(txHash)}}, nil)
+
+		mc := newTestMulti(m0, m1)
+		mc.health.MarkSuccess(1)
+
+		got, err := mc.BorBlockReceipt(context.Background(), txHash)
+		require.NoError(t, err)
+		require.Equal(t, txHash, got.TxHash)
+		require.Equal(t, 1, mc.health.Active())
+	})
+
+	t.Run("GetAuthor", func(t *testing.T) {
+		author := common.HexToAddress("0x1111111111111111111111111111111111111111")
+		m0 := new(MockBorApiClient)
+		m0.On("GetAuthor", mock.Anything, mock.Anything).
+			Return((*proto.GetAuthorResponse)(nil), status.Error(codes.Unavailable, "down"))
+		m1 := new(MockBorApiClient)
+		m1.On("GetAuthor", mock.Anything, mock.Anything).
+			Return(&proto.GetAuthorResponse{Author: protoutil.ConvertAddressToH160(author)}, nil)
+
+		mc := newTestMulti(m0, m1)
+		mc.health.MarkSuccess(1)
+
+		got, err := mc.GetAuthor(context.Background(), big.NewInt(13))
+		require.NoError(t, err)
+		require.Equal(t, author, *got)
+		require.Equal(t, 1, mc.health.Active())
+	})
+
+	t.Run("GetTdByHash", func(t *testing.T) {
+		hash := common.HexToHash("0xabcd")
+		m0 := new(MockBorApiClient)
+		m0.On("GetTdByHash", mock.Anything, mock.Anything).
+			Return((*proto.GetTdResponse)(nil), status.Error(codes.Unavailable, "down"))
+		m1 := new(MockBorApiClient)
+		m1.On("GetTdByHash", mock.Anything, mock.Anything).
+			Return(&proto.GetTdResponse{TotalDifficulty: 33}, nil)
+
+		mc := newTestMulti(m0, m1)
+		mc.health.MarkSuccess(1)
+
+		got, err := mc.GetTdByHash(context.Background(), hash)
+		require.NoError(t, err)
+		require.Equal(t, uint64(33), got)
+		require.Equal(t, 1, mc.health.Active())
+	})
+
+	t.Run("GetTdByNumber", func(t *testing.T) {
+		m0 := new(MockBorApiClient)
+		m0.On("GetTdByNumber", mock.Anything, mock.Anything).
+			Return((*proto.GetTdResponse)(nil), status.Error(codes.Unavailable, "down"))
+		m1 := new(MockBorApiClient)
+		m1.On("GetTdByNumber", mock.Anything, mock.Anything).
+			Return(&proto.GetTdResponse{TotalDifficulty: 44}, nil)
+
+		mc := newTestMulti(m0, m1)
+		mc.health.MarkSuccess(1)
+
+		got, err := mc.GetTdByNumber(context.Background(), big.NewInt(14))
+		require.NoError(t, err)
+		require.Equal(t, uint64(44), got)
+		require.Equal(t, 1, mc.health.Active())
+	})
 }
 
 func TestMultiGRPC_ProbeValidatesGenesis(t *testing.T) {

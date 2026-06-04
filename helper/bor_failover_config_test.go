@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	"net/http"
@@ -13,6 +14,19 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/bor/failover"
 	borgrpc "github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 )
+
+type fakeChainIDProbe struct {
+	id     *big.Int
+	closed bool
+}
+
+func (p *fakeChainIDProbe) ChainID(context.Context) (*big.Int, error) {
+	return p.id, nil
+}
+
+func (p *fakeChainIDProbe) Close() {
+	p.closed = true
+}
 
 func TestParseURLs(t *testing.T) {
 	require.Nil(t, parseURLs(""))
@@ -35,9 +49,24 @@ func TestGetBorChainCallTimeout(t *testing.T) {
 	cfg := CustomAppConfig{Custom: GetDefaultHeimdallConfig()}
 	cfg.Custom.BorRPCTimeout = time.Second
 
+	// Empty config has a floor of one endpoint budget.
+	cfg.Custom.BorGRPCFlag = false
+	cfg.Custom.BorRPCUrl = ""
+	cfg.Custom.BorGRPCUrl = ""
+	SetTestConfig(cfg)
+	require.Equal(t, time.Second, GetBorChainCallTimeout())
+
+	// When gRPC is disabled, gRPC URLs do not affect the HTTP caller budget.
+	cfg.Custom.BorGRPCFlag = false
+	cfg.Custom.BorRPCUrl = "http://a"
+	cfg.Custom.BorGRPCUrl = "localhost:1,localhost:2,localhost:3"
+	SetTestConfig(cfg)
+	require.Equal(t, time.Second, GetBorChainCallTimeout())
+
 	// 3 HTTP endpoints, at the in-call cascade cap.
 	cfg.Custom.BorGRPCFlag = false
 	cfg.Custom.BorRPCUrl = "http://a,http://b,http://c"
+	cfg.Custom.BorGRPCUrl = ""
 	SetTestConfig(cfg)
 	require.Equal(t, 3*time.Second, GetBorChainCallTimeout())
 
@@ -58,6 +87,59 @@ func TestGetBorChainCallTimeout(t *testing.T) {
 	cfg.Custom.BorRPCUrl = "http://a"
 	SetTestConfig(cfg)
 	require.Equal(t, time.Second, GetBorChainCallTimeout())
+}
+
+func TestInitBorRPCClient_SingleAndFailover(t *testing.T) {
+	oldRPC := borRPCClient
+	oldBor := borClient
+	oldHTTP := borRPCFailoverTransport
+	oldGRPC := borGRPCClient
+	t.Cleanup(func() {
+		if borRPCClient != nil && borRPCClient != oldRPC {
+			borRPCClient.Close()
+		}
+		if borRPCFailoverTransport != nil && borRPCFailoverTransport != oldHTTP {
+			borRPCFailoverTransport.Close()
+		}
+		borRPCClient = oldRPC
+		borClient = oldBor
+		borRPCFailoverTransport = oldHTTP
+		borGRPCClient = oldGRPC
+	})
+	borGRPCClient = nil
+
+	s1 := fakeBorRPC(t, "0x1", new(int32))
+	defer s1.Close()
+	s2 := fakeBorRPC(t, "0x1", new(int32))
+	defer s2.Close()
+
+	cfg := CustomAppConfig{Custom: GetDefaultHeimdallConfig()}
+	cfg.Custom.BorRPCTimeout = 100 * time.Millisecond
+
+	cfg.Custom.BorRPCUrl = s1.URL
+	SetTestConfig(cfg)
+	borRPCClient = nil
+	borClient = nil
+	borRPCFailoverTransport = nil
+	initBorRPCClient()
+	require.NotNil(t, borRPCClient)
+	require.NotNil(t, borClient)
+	require.Nil(t, borRPCFailoverTransport)
+	borRPCClient.Close()
+
+	cfg.Custom.BorRPCUrl = s1.URL + "," + s2.URL
+	SetTestConfig(cfg)
+	borRPCClient = nil
+	borClient = nil
+	borRPCFailoverTransport = nil
+	initBorRPCClient()
+	require.NotNil(t, borRPCClient)
+	require.NotNil(t, borClient)
+	require.NotNil(t, borRPCFailoverTransport)
+
+	id, err := borClient.ChainID(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, int64(1), id.Int64())
 }
 
 func TestBuildBorGRPCClient(t *testing.T) {
@@ -156,17 +238,32 @@ func TestCheckChainID_PrimaryReclaimsProvisionalAnchor(t *testing.T) {
 }
 
 func TestCloseBorChainClients(t *testing.T) {
+	oldHTTP := borRPCFailoverTransport
+	oldGRPC := borGRPCClient
+	t.Cleanup(func() {
+		borRPCFailoverTransport = oldHTTP
+		borGRPCClient = oldGRPC
+	})
+
 	// safe to call when neither Bor failover is configured
-	borRPCFailoverHealth = nil
+	borRPCFailoverTransport = nil
 	borGRPCClient = nil
 	require.NotPanics(t, CloseBorChainClients)
 
-	// stops a running HTTP failover prober (CloseBorChainClients must return,
-	// i.e. join the prober goroutine, rather than hang)
+	// Stops a running HTTP failover prober and closes each endpoint's probe
+	// client (CloseBorChainClients must return, i.e. join the prober goroutine,
+	// rather than hang).
+	p0 := &fakeChainIDProbe{id: big.NewInt(1)}
+	p1 := &fakeChainIDProbe{id: big.NewInt(1)}
 	h := failover.New(2, func(int) error { return nil }, failover.Metrics{}, log.NewNopLogger())
 	h.SetTuning(5*time.Millisecond, 1, 0, 50*time.Millisecond)
 	h.Start()
-	borRPCFailoverHealth = h
+	borRPCFailoverTransport = &borHTTPFailoverTransport{
+		endpoints: []httpEndpoint{{probe: p0}, {probe: p1}},
+		health:    h,
+	}
 	CloseBorChainClients()
-	borRPCFailoverHealth = nil
+	require.True(t, p0.closed)
+	require.True(t, p1.closed)
+	require.Nil(t, borRPCFailoverTransport)
 }

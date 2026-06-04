@@ -39,17 +39,22 @@ const (
 	maxBudgetedEndpoints = 3
 )
 
-// borRPCFailoverHealth holds the running HTTP failover prober so
-// CloseBorChainClients can stop it on shutdown; nil when HTTP failover is not
-// configured.
-var borRPCFailoverHealth *failover.Health
+// borRPCFailoverTransport holds the running HTTP failover transport so
+// CloseBorChainClients can stop its prober and close its per-endpoint probe
+// clients on shutdown; nil when HTTP failover is not configured.
+var borRPCFailoverTransport *borHTTPFailoverTransport
+
+type chainIDProbe interface {
+	ChainID(context.Context) (*big.Int, error)
+	Close()
+}
 
 // httpEndpoint pairs a Bor HTTP JSON-RPC URL with a single-endpoint client used
 // only for health/identity probes (the actual traffic flows through the shared
 // rpc.Client whose transport is the failover one).
 type httpEndpoint struct {
 	url   *url.URL
-	probe *ethclient.Client
+	probe chainIDProbe
 }
 
 // borHTTPFailoverTransport is an http.RoundTripper that sends each Bor JSON-RPC
@@ -65,6 +70,20 @@ type borHTTPFailoverTransport struct {
 	expectedChainID      atomic.Pointer[big.Int]
 	expectedByPrimary    atomic.Bool
 	primaryProbeFailures atomic.Int32
+}
+
+func (t *borHTTPFailoverTransport) Close() {
+	if t == nil {
+		return
+	}
+	if t.health != nil {
+		t.health.Stop()
+	}
+	for _, ep := range t.endpoints {
+		if ep.probe != nil {
+			ep.probe.Close()
+		}
+	}
 }
 
 func (t *borHTTPFailoverTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -269,7 +288,7 @@ func newBorHTTPFailoverClient(rawURLs []string, attemptTimeout time.Duration) (*
 	}
 
 	tr.health.Start()
-	borRPCFailoverHealth = tr.health
+	borRPCFailoverTransport = tr
 
 	return rpcClient, ethclient.NewClient(rpcClient), nil
 }
@@ -310,7 +329,7 @@ func dialHTTPEndpoints(rawURLs []string) ([]httpEndpoint, error) {
 	return out, nil
 }
 
-func fetchChainID(c *ethclient.Client, timeout time.Duration) (*big.Int, bool) {
+func fetchChainID(c chainIDProbe, timeout time.Duration) (*big.Int, bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -381,13 +400,14 @@ func redactURLs(csv string) string {
 	return strings.Join(parts, ",")
 }
 
-// CloseBorChainClients stops the Bor failover background probers (the HTTP
-// transport prober and the gRPC client prober) and closes the gRPC connections.
-// It is the termination path for those goroutines; wire it into Heimdall's
-// shutdown. Safe to call when neither failover is configured.
+// CloseBorChainClients stops the Bor failover background probers, closes the
+// HTTP probe clients, and closes the gRPC connections. It is the termination
+// path for those goroutines; wire it into Heimdall's shutdown. Safe to call when
+// neither failover is configured.
 func CloseBorChainClients() {
-	if borRPCFailoverHealth != nil {
-		borRPCFailoverHealth.Stop()
+	if borRPCFailoverTransport != nil {
+		borRPCFailoverTransport.Close()
+		borRPCFailoverTransport = nil
 	}
 	if borGRPCClient != nil {
 		borGRPCClient.Close(Logger)
