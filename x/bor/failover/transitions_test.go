@@ -222,6 +222,22 @@ func TestReclaim_AdoptsPrimaryAndDemotesOthers(t *testing.T) {
 	require.Equal(t, int64(1), prosw.Load()) // no duplicate switch metric when already active
 }
 
+func TestPromote_RefusesDemotedCandidate(t *testing.T) {
+	var sw atomic.Int64
+	h := New(2, nopProbe, Metrics{Switch: func() { sw.Add(1) }}, log.NewNopLogger())
+	h.SetTuning(time.Second, 1, 0, time.Second)
+	h.applyProbe(1, nil)
+
+	require.True(t, h.Promote(0, 1))
+	require.Equal(t, 1, h.Active())
+	require.Equal(t, int64(1), sw.Load())
+
+	h.Reclaim(0)
+	require.False(t, h.Promote(0, 1))
+	require.Equal(t, 0, h.Active())
+	require.Equal(t, int64(1), sw.Load())
+}
+
 func TestStart_NoOpForSingleEndpoint(t *testing.T) {
 	var probed atomic.Int64
 	h := New(1, func(int) error { probed.Add(1); return nil }, Metrics{}, log.NewNopLogger())

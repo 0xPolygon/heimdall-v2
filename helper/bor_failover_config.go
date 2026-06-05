@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -71,7 +72,7 @@ func initBorGRPCClient() {
 		log.Fatal("bor gRPC is enabled but bor_grpc_url is empty")
 	}
 
-	primaryGRPC, grpcClient, err := buildBorGRPCClient(grpcURLs, conf.Custom.BorGRPCToken, conf.Custom.BorRPCTimeout)
+	primaryGRPC, grpcClient, err := buildBorGRPCClient(grpcURLs, conf.Custom.BorGRPCToken, conf.Custom.BorRPCTimeout, borClient)
 	if err != nil {
 		log.Fatal("unable to create bor gRPC client", "URL", redactURLs(conf.Custom.BorGRPCUrl), "error", err)
 	}
@@ -89,7 +90,7 @@ func initBorGRPCClient() {
 // configured, or a failover wrapper when several are. The configured primary
 // must stay at index 0 so identity anchoring remains authoritative; invalid
 // fallbacks are skipped so a single bad fallback can't block startup.
-func buildBorGRPCClient(urls []string, token string, attemptTimeout time.Duration) (*borgrpc.BorGRPCClient, borgrpc.Client, error) {
+func buildBorGRPCClient(urls []string, token string, attemptTimeout time.Duration, httpClient parityHTTPFetcher) (*borgrpc.BorGRPCClient, borgrpc.Client, error) {
 	clients := make([]*borgrpc.BorGRPCClient, 0, len(urls))
 	for i, u := range urls {
 		c, err := borgrpc.NewBorGRPCClient(u, token, Logger)
@@ -111,5 +112,28 @@ func buildBorGRPCClient(urls []string, token string, attemptTimeout time.Duratio
 		return clients[0], clients[0], nil
 	}
 
-	return clients[0], borgrpc.NewMultiBorGRPCClient(clients, Logger, metrics.BorFailover("grpc"), attemptTimeout), nil
+	return clients[0], borgrpc.NewMultiBorGRPCClient(
+		clients, Logger, metrics.BorFailover("grpc"), attemptTimeout,
+		borGRPCParityValidators(httpClient, attemptTimeout)...,
+	), nil
+}
+
+func borGRPCParityValidators(httpClient parityHTTPFetcher, timeout time.Duration) []borgrpc.EndpointValidator {
+	if httpClient == nil {
+		return nil
+	}
+	return []borgrpc.EndpointValidator{borGRPCParityValidator(httpClient, timeout)}
+}
+
+func borGRPCParityValidator(httpClient parityHTTPFetcher, timeout time.Duration) borgrpc.EndpointValidator {
+	return func(_ context.Context, i int, grpcClient borgrpc.EndpointHeaderFetcher) error {
+		ok, mismatch := checkBorGRPCHashParityOnceQuiet(httpClient, grpcClient, timeout)
+		if ok {
+			return nil
+		}
+		if mismatch {
+			return fmt.Errorf("bor gRPC endpoint %d hash mismatch with HTTP", i)
+		}
+		return fmt.Errorf("bor gRPC endpoint %d hash parity unavailable", i)
+	}
 }

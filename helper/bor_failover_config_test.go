@@ -172,24 +172,24 @@ func TestInitBorRPCClient_UsesParsedSingleURL(t *testing.T) {
 }
 
 func TestBuildBorGRPCClient(t *testing.T) {
-	primary, single, err := buildBorGRPCClient([]string{"localhost:3131"}, "", time.Second)
+	primary, single, err := buildBorGRPCClient([]string{"localhost:3131"}, "", time.Second, nil)
 	require.NoError(t, err)
 	require.NotNil(t, primary)
 	require.IsType(t, &borgrpc.BorGRPCClient{}, single)
 
-	_, multi, err := buildBorGRPCClient([]string{"localhost:3131", "localhost:3132"}, "", time.Second)
+	_, multi, err := buildBorGRPCClient([]string{"localhost:3131", "localhost:3132"}, "", time.Second, nil)
 	require.NoError(t, err)
 	require.IsType(t, &borgrpc.MultiBorGRPCClient{}, multi)
 	multi.Close(log.NewNopLogger())
 }
 
 func TestBuildBorGRPCClient_DialError(t *testing.T) {
-	_, _, err := buildBorGRPCClient([]string{"1.2.3.4:3131"}, "", time.Second)
+	_, _, err := buildBorGRPCClient([]string{"1.2.3.4:3131"}, "", time.Second, nil)
 	require.Error(t, err)
 }
 
 func TestBuildBorGRPCClient_RejectsInvalidPrimary(t *testing.T) {
-	_, _, err := buildBorGRPCClient([]string{"1.2.3.4:3131", "localhost:3131"}, "", time.Second)
+	_, _, err := buildBorGRPCClient([]string{"1.2.3.4:3131", "localhost:3131"}, "", time.Second, nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid primary")
 }
@@ -197,7 +197,7 @@ func TestBuildBorGRPCClient_RejectsInvalidPrimary(t *testing.T) {
 func TestBuildBorGRPCClient_SkipsInvalidAmongValid(t *testing.T) {
 	// "1.2.3.4:3131" is a non-localhost bare host:port (rejected by the dialer);
 	// the valid localhost endpoint survives, so startup proceeds with one client.
-	primary, client, err := buildBorGRPCClient([]string{"localhost:3131", "1.2.3.4:3131"}, "", time.Second)
+	primary, client, err := buildBorGRPCClient([]string{"localhost:3131", "1.2.3.4:3131"}, "", time.Second, nil)
 	require.NoError(t, err)
 	require.NotNil(t, primary)
 	require.IsType(t, &borgrpc.BorGRPCClient{}, client)

@@ -103,12 +103,20 @@ func (t *borHTTPFailoverTransport) RoundTrip(req *http.Request) (*http.Response,
 	}
 	t.markFailed(active, resp, err)
 
+	return t.cascade(req, body, active, resp, err)
+}
+
+func (t *borHTTPFailoverTransport) cascade(req *http.Request, body []byte, active int, resp *http.Response, err error) (*http.Response, error) {
 	for _, i := range t.health.Candidates(active) {
 		drainAndClose(resp)
 		resp, err = t.attempt(req, body, i)
 		if succeeded(resp, err) {
-			t.health.Promote(active, i)
-			return resp, err
+			if t.health.Promote(active, i) {
+				return resp, err
+			}
+			drainAndClose(resp)
+			resp, err = nil, fmt.Errorf("bor endpoint %d no longer healthy", i)
+			continue
 		}
 		if req.Context().Err() != nil {
 			return resp, err

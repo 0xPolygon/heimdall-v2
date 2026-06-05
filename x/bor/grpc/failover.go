@@ -44,6 +44,16 @@ type Client interface {
 	Close(logger log.Logger)
 }
 
+// EndpointHeaderFetcher is the per-endpoint header API used by validation
+// hooks. *BorGRPCClient satisfies it; tests can inject small stubs.
+type EndpointHeaderFetcher interface {
+	HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error)
+}
+
+// EndpointValidator is an optional probe-time validation hook. Returning an
+// error keeps the endpoint out of the healthy candidate set.
+type EndpointValidator func(context.Context, int, EndpointHeaderFetcher) error
+
 var (
 	_ Client = (*BorGRPCClient)(nil)
 	_ Client = (*MultiBorGRPCClient)(nil)
@@ -60,15 +70,16 @@ type MultiBorGRPCClient struct {
 	expectedGenesis      atomic.Pointer[common.Hash]
 	expectedByPrimary    atomic.Bool
 	primaryProbeFailures atomic.Int32
+	validators           []EndpointValidator
 }
 
 // NewMultiBorGRPCClient wraps already-dialed, priority-ordered clients with
 // failover and starts the background prober.
-func NewMultiBorGRPCClient(clients []*BorGRPCClient, logger log.Logger, m failover.Metrics, attemptTimeout time.Duration) *MultiBorGRPCClient {
+func NewMultiBorGRPCClient(clients []*BorGRPCClient, logger log.Logger, m failover.Metrics, attemptTimeout time.Duration, validators ...EndpointValidator) *MultiBorGRPCClient {
 	if len(clients) < 1 {
 		panic("bor failover: endpoint count must be positive")
 	}
-	mc := &MultiBorGRPCClient{clients: clients, attemptTimeout: attemptTimeout}
+	mc := &MultiBorGRPCClient{clients: clients, attemptTimeout: attemptTimeout, validators: validators}
 	mc.captureExpectedGenesis()
 	mc.health = failover.New(len(clients), mc.probe, m, logger)
 	mc.health.Start()
@@ -88,19 +99,19 @@ func (mc *MultiBorGRPCClient) probe(i int) error {
 		err = fmt.Errorf("bor gRPC endpoint %d returned nil genesis header", i)
 	}
 	if err != nil {
-		if i == primaryGRPCEndpoint {
-			mc.primaryProbeFailures.Add(1)
-		}
+		mc.recordProbeFailure(i)
 		return err
-	}
-	if i == primaryGRPCEndpoint {
-		mc.primaryProbeFailures.Store(0)
 	}
 
 	reclaiming := i == primaryGRPCEndpoint && !mc.expectedByPrimary.Load()
 	if err := mc.checkGenesis(i, h.Hash()); err != nil {
 		return err
 	}
+	if err := mc.validateEndpoint(ctx, i); err != nil {
+		mc.recordProbeFailure(i)
+		return err
+	}
+	mc.recordProbeSuccess(i)
 	if reclaiming {
 		// The authoritative primary just (re)established the identity; if a stale
 		// fallback was the active endpoint during the outage it may be serving
@@ -111,6 +122,30 @@ func (mc *MultiBorGRPCClient) probe(i int) error {
 		mc.health.Reclaim(primaryGRPCEndpoint)
 	}
 
+	return nil
+}
+
+func (mc *MultiBorGRPCClient) recordProbeFailure(i int) {
+	if i == primaryGRPCEndpoint {
+		mc.primaryProbeFailures.Add(1)
+	}
+}
+
+func (mc *MultiBorGRPCClient) recordProbeSuccess(i int) {
+	if i == primaryGRPCEndpoint {
+		mc.primaryProbeFailures.Store(0)
+	}
+}
+
+func (mc *MultiBorGRPCClient) validateEndpoint(ctx context.Context, i int) error {
+	for _, validate := range mc.validators {
+		if validate == nil {
+			continue
+		}
+		if err := validate(ctx, i, mc.clients[i]); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

@@ -673,6 +673,14 @@ func updateParityMismatchStreak(current int, mismatch bool, streakLimit int) (ne
 //   - Ok=false, mismatch=true: both transports returned headers but with different hashes → count toward
 //     mismatch streak; the caller logs fatal only after borGRPCParityMismatchStreak consecutive mismatches
 func checkBorGRPCHashParityOnceWith(httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration) (ok, mismatch bool) {
+	return checkBorGRPCHashParityOnce(httpClient, grpcClient, timeout, true)
+}
+
+func checkBorGRPCHashParityOnceQuiet(httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration) (ok, mismatch bool) {
+	return checkBorGRPCHashParityOnce(httpClient, grpcClient, timeout, false)
+}
+
+func checkBorGRPCHashParityOnce(httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration, emitLogs bool) (ok, mismatch bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -686,24 +694,28 @@ func checkBorGRPCHashParityOnceWith(httpClient parityHTTPFetcher, grpcClient par
 	}
 
 	if grpcHeader.Hash() != httpHeader.Hash() {
-		// Statement_deletion drops an advisory log; the (false, true) return below still signals a mismatch.
-		// mutator-disable-next-line operator-log line
-		Logger.Warn("Bor gRPC hash mismatch with HTTP for the same block — counting toward mismatch streak before fatal",
-			"block", httpHeader.Number.String(),
-			"httpHash", httpHeader.Hash().Hex(),
-			"grpcHash", grpcHeader.Hash().Hex(),
-		)
+		if emitLogs {
+			// Statement_deletion drops an advisory log; the (false, true) return below still signals a mismatch.
+			// mutator-disable-next-line operator-log line
+			Logger.Warn("Bor gRPC hash mismatch with HTTP for the same block — counting toward mismatch streak before fatal",
+				"block", httpHeader.Number.String(),
+				"httpHash", httpHeader.Hash().Hex(),
+				"grpcHash", grpcHeader.Hash().Hex(),
+			)
+		}
 		// Streak bookkeeping is covered directly via updateParityMismatchStreak tests.
 		// mutator-disable-next-line boolean_substitution on mismatch signal
 		return false, true
 	}
 
-	// Statement_deletion drops a success message; no branch logic affected.
-	// mutator-disable-next-line operator-log line
-	Logger.Info("Bor gRPC hash parity check passed",
-		"block", httpHeader.Number.String(),
-		"hash", httpHeader.Hash().Hex(),
-	)
+	if emitLogs {
+		// Statement_deletion drops a success message; no branch logic affected.
+		// mutator-disable-next-line operator-log line
+		Logger.Info("Bor gRPC hash parity check passed",
+			"block", httpHeader.Number.String(),
+			"hash", httpHeader.Hash().Hex(),
+		)
+	}
 	// Ok-signal flip is observable only via runBorGRPCHashParityCheckWith's caller-side early-return, which is tested directly.
 	// mutator-disable-next-line boolean_substitution on ok signal
 	return true, false

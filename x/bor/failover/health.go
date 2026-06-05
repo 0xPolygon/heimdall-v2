@@ -234,12 +234,22 @@ func (h *Health) Candidates(failed int) []int {
 }
 
 // Promote records a successful in-call failover switch from one endpoint to
-// another, updating active, health, the switch metric, and the log.
-func (h *Health) Promote(from, to int) {
-	h.SetActive(to)
-	h.MarkSuccess(to)
-	h.metric.onSwitch()
-	h.logger.Info("bor failover: switched active endpoint", "from", from, "to", to)
+// another, updating active, health, the switch metric, and the log. It refuses
+// stale candidates that a concurrent Reclaim demoted after Candidates returned.
+func (h *Health) Promote(from, to int) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if !h.health[to].healthy {
+		return false
+	}
+	prev := h.active
+	h.setActiveLocked(to)
+	h.markSuccessLocked(to)
+	if prev != to {
+		h.metric.onSwitch()
+		h.logger.Info("bor failover: switched active endpoint", "from", from, "to", to)
+	}
+	return true
 }
 
 // Call executes fn against the active endpoint. On a retriable error it marks
@@ -261,13 +271,26 @@ func Call[T any](h *Health, ctx context.Context, attemptTimeout time.Duration, f
 	}
 
 	h.MarkUnhealthy(active, err)
-	lastErr := err
+	return callCandidates(h, ctx, attemptTimeout, active, err, fn, retriable)
+}
+
+func callCandidates[T any](
+	h *Health,
+	ctx context.Context,
+	attemptTimeout time.Duration,
+	failed int,
+	lastErr error,
+	fn func(context.Context, int) (T, error),
+	retriable func(error) bool,
+) (T, error) {
 	var zero T
-	for _, i := range h.Candidates(active) {
+	for _, i := range h.Candidates(failed) {
 		res, err := callOnce(ctx, attemptTimeout, i, fn)
 		if err == nil {
-			h.Promote(active, i)
-			return res, nil
+			if h.Promote(failed, i) {
+				return res, nil
+			}
+			continue
 		}
 		if ctx.Err() != nil || !retriable(err) {
 			return zero, err

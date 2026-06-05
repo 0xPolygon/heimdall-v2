@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"math/big"
 	"sync/atomic"
 	"testing"
@@ -288,6 +289,28 @@ func TestMultiGRPC_ProbeValidatesGenesis(t *testing.T) {
 	require.NoError(t, mc.probe(0)) // primary establishes the expected genesis
 	require.NoError(t, mc.probe(1)) // same genesis → ok
 	require.Error(t, mc.probe(2))   // different genesis → rejected
+}
+
+func TestMultiGRPC_ProbeRunsEndpointValidators(t *testing.T) {
+	primary := new(MockBorApiClient)
+	primary.On("HeaderByNumber", mock.Anything, mock.Anything).Return(genesisResp("genesis-a"), nil)
+	fallback := new(MockBorApiClient)
+	fallback.On("HeaderByNumber", mock.Anything, mock.Anything).Return(genesisResp("genesis-a"), nil)
+
+	errParity := errors.New("parity mismatch")
+	mc := newTestMulti(primary, fallback)
+	mc.validators = []EndpointValidator{
+		func(_ context.Context, i int, _ EndpointHeaderFetcher) error {
+			if i == 1 {
+				return errParity
+			}
+			return nil
+		},
+	}
+
+	require.NoError(t, mc.probe(0))
+	require.ErrorIs(t, mc.probe(1), errParity)
+	require.Empty(t, mc.health.Candidates(0))
 }
 
 func TestCheckGenesis(t *testing.T) {

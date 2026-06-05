@@ -1,0 +1,46 @@
+package helper
+
+import (
+	"errors"
+	"io"
+	"net/http"
+	"strings"
+	"testing"
+	"time"
+
+	"cosmossdk.io/log"
+	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/x/bor/failover"
+)
+
+func TestBorHTTPFailover_SkipsCandidateDemotedBeforePromotion(t *testing.T) {
+	tr := &borHTTPFailoverTransport{
+		endpoints: []httpEndpoint{
+			mustEndpointURL(t, "https://primary.example"),
+			mustEndpointURL(t, "https://fallback.example"),
+		},
+		attemptTimeout: time.Second,
+	}
+	tr.base = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		if r.URL.Host == "fallback.example" {
+			tr.health.Reclaim(0) // prober reclaimed while the fallback attempt was in flight
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Header:     make(http.Header),
+				Body:       io.NopCloser(strings.NewReader(`{"jsonrpc":"2.0","id":1,"result":"0x1"}`)),
+				Request:    r,
+			}, nil
+		}
+		return nil, errors.New("primary down")
+	})
+	tr.health = failover.New(2, tr.probe, failover.Metrics{}, log.NewNopLogger())
+	tr.health.SetTuning(5*time.Millisecond, 1, 0, 50*time.Millisecond)
+	tr.health.MarkSuccess(1)
+
+	resp, err := tr.RoundTrip(jsonRPCPost(t, "https://primary.example", dummyReq))
+	require.Error(t, err)
+	require.Nil(t, resp)
+	require.Equal(t, 0, tr.health.Active())
+	require.Empty(t, tr.health.Candidates(0))
+}

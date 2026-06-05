@@ -44,7 +44,10 @@ A fallback is **never served traffic until a probe confirms its chain identity**
 matches the expected chain:
 
 - HTTP validates the **chain ID** (`eth_chainId`).
-- gRPC validates the **genesis block hash** (the gRPC API has no chain-id call).
+- gRPC validates the **genesis block hash** (the gRPC API has no chain-id call)
+  and, when HTTP Bor is available, a recent-block **HTTP/gRPC hash parity**
+  check. This keeps a same-chain but wrong-version gRPC fallback from becoming a
+  candidate when its recent header hashes diverge from HTTP.
 
 This is the guard against a misconfigured fallback that points at the wrong Bor
 network feeding bad data into consensus-critical reads.

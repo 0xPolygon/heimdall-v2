@@ -354,6 +354,56 @@ func TestCheckBorGRPCHashParityOnceWith(t *testing.T) {
 	})
 }
 
+func TestBorGRPCParityValidators(t *testing.T) {
+	t.Parallel()
+
+	require.Nil(t, borGRPCParityValidators(nil, time.Second))
+}
+
+func TestBorGRPCParityValidator(t *testing.T) {
+	t.Parallel()
+
+	timeout := time.Second
+
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
+		h := makeHeader(100)
+		http := &stubHTTPFetcher{calls: []*ethTypes.Header{h, h, h}}
+		validator := borGRPCParityValidator(http, timeout)
+
+		require.NoError(t, validator(context.Background(), 1, &stubGRPCFetcher{header: makeHeader(100)}))
+	})
+
+	t.Run("mismatch", func(t *testing.T) {
+		t.Parallel()
+
+		httpHdr := makeHeader(100)
+		grpcHdr := makeHeader(100)
+		grpcHdr.GasLimit = 123
+		http := &stubHTTPFetcher{calls: []*ethTypes.Header{httpHdr, httpHdr, httpHdr}}
+		validator := borGRPCParityValidator(http, timeout)
+
+		err := validator(context.Background(), 1, &stubGRPCFetcher{header: grpcHdr})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "hash mismatch")
+	})
+
+	t.Run("unavailable", func(t *testing.T) {
+		t.Parallel()
+
+		http := &stubHTTPFetcher{
+			calls: []*ethTypes.Header{nil},
+			errs:  []error{errors.New("transient")},
+		}
+		validator := borGRPCParityValidator(http, timeout)
+
+		err := validator(context.Background(), 1, &stubGRPCFetcher{header: makeHeader(100)})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "hash parity unavailable")
+	})
+}
+
 // TestFetchStableHeadersAtHeight covers all stability / error branches.
 func TestFetchStableHeadersAtHeight(t *testing.T) {
 	t.Parallel()

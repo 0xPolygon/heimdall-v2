@@ -86,6 +86,23 @@ func TestCall_CascadesToValidatedFallback(t *testing.T) {
 	require.Equal(t, 1, h.Active())
 }
 
+func TestCall_SkipsCandidateDemotedBeforePromotion(t *testing.T) {
+	h := newTestHealth(t, 2)
+	validate(h, 1)
+
+	_, err := Call(h, context.Background(), time.Second, func(_ context.Context, i int) (int, error) {
+		if i == 0 {
+			return 0, errBoom
+		}
+		h.Reclaim(0) // simulates the prober reclaiming while this attempt is in flight
+		return okFn(i)
+	}, always)
+
+	require.ErrorIs(t, err, errBoom)
+	require.Equal(t, 0, h.Active())
+	require.Empty(t, h.Candidates(0))
+}
+
 func TestCall_DoesNotCascadeToUnvalidatedFallback(t *testing.T) {
 	h := newTestHealth(t, 2) // secondary never validated (e.g., wrong network)
 	var tried []int
