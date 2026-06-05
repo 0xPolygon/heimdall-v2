@@ -94,7 +94,11 @@ func (t *borHTTPFailoverTransport) RoundTrip(req *http.Request) (*http.Response,
 
 	active := t.health.Active()
 	resp, err := t.attempt(req, body, active)
-	if succeeded(resp, err) || req.Context().Err() != nil {
+	if succeeded(resp, err) {
+		t.health.MarkSuccess(active)
+		return resp, err
+	}
+	if req.Context().Err() != nil {
 		return resp, err
 	}
 	t.markFailed(active, resp, err)

@@ -204,7 +204,11 @@ func (h *Health) Reclaim(i int) {
 	h.health[i].consecutiveSuccess = h.consecutiveThreshold
 	h.health[i].healthySince = time.Now()
 	h.health[i].lastErr = nil
+	prev := h.active
 	h.setActiveLocked(i)
+	if prev != i {
+		h.metric.onProactiveSwitch()
+	}
 }
 
 // Candidates returns the in-call failover targets to try after `failed` failed:
@@ -249,6 +253,7 @@ func Call[T any](h *Health, ctx context.Context, attemptTimeout time.Duration, f
 	active := h.Active()
 	res, err := callOnce(ctx, attemptTimeout, active, fn)
 	if err == nil {
+		h.MarkSuccess(active)
 		return res, nil
 	}
 	if ctx.Err() != nil || !retriable(err) {

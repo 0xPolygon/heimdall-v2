@@ -54,6 +54,12 @@ func TestMultiGRPC_CascadesOnUnavailable(t *testing.T) {
 	require.Equal(t, 1, mc.health.Active())
 }
 
+func TestNewMultiBorGRPCClient_RejectsZeroClients(t *testing.T) {
+	require.PanicsWithValue(t, "bor failover: endpoint count must be positive", func() {
+		NewMultiBorGRPCClient(nil, log.NewNopLogger(), failover.Metrics{}, time.Second)
+	})
+}
+
 func TestMultiGRPC_NoCascadeOnLogicalError(t *testing.T) {
 	m0 := new(MockBorApiClient)
 	m0.On("GetRootHash", mock.Anything, mock.Anything).

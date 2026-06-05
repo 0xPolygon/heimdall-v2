@@ -59,6 +59,19 @@ func TestCall_PassthroughWhenActiveHealthy(t *testing.T) {
 	require.Equal(t, 0, h.Active())
 }
 
+func TestCall_MarksActiveSuccess(t *testing.T) {
+	h := newTestHealth(t, 2)
+	h.MarkUnhealthy(0, errBoom)
+
+	res, err := Call(h, context.Background(), time.Second, func(_ context.Context, i int) (int, error) {
+		return okFn(i)
+	}, always)
+
+	require.NoError(t, err)
+	require.Equal(t, 0, res)
+	require.Equal(t, []int{0}, h.Candidates(1))
+}
+
 func TestCall_CascadesToValidatedFallback(t *testing.T) {
 	h := newTestHealth(t, 2)
 	validate(h, 1)

@@ -117,6 +117,20 @@ func TestBorHTTPFailover_CascadesOnTransportError(t *testing.T) {
 	require.Positive(t, atomic.LoadInt32(&h2))
 }
 
+func TestBorHTTPFailover_MarksActiveSuccess(t *testing.T) {
+	s := fakeBorRPC(t, "0x1", new(int32))
+	defer s.Close()
+
+	tr := newTestTransport(mustEndpoint(t, s.URL))
+	tr.health.MarkUnhealthy(0, errors.New("transient"))
+
+	resp, err := tr.RoundTrip(jsonRPCPost(t, s.URL, dummyReq))
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, []int{0}, tr.health.Candidates(1))
+}
+
 func TestBorHTTPFailover_CascadesOn5xx(t *testing.T) {
 	var bad, good int32
 	bad5xx := server5xx(t, &bad)

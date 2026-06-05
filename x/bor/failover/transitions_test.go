@@ -205,7 +205,8 @@ func TestStart_ProbesOnEveryInterval(t *testing.T) {
 }
 
 func TestReclaim_AdoptsPrimaryAndDemotesOthers(t *testing.T) {
-	h := New(3, nopProbe, Metrics{}, log.NewNopLogger())
+	var prosw atomic.Int64
+	h := New(3, nopProbe, Metrics{ProactiveSwitch: func() { prosw.Add(1) }}, log.NewNopLogger())
 	h.SetTuning(time.Second, 1, 0, time.Second) // threshold 1, cooldown 0
 	h.MarkUnhealthy(0, errBoom)                 // primary was down during the outage
 	h.applyProbe(1, nil)                        // a fallback validated (against a provisional identity) and is healthy
@@ -213,8 +214,12 @@ func TestReclaim_AdoptsPrimaryAndDemotesOthers(t *testing.T) {
 	require.Equal(t, []int{1}, h.Candidates(0)) // the stale fallback is an eligible in-call candidate
 
 	h.Reclaim(0)
-	require.Equal(t, 0, h.Active())   // primary adopted as active at once, without the threshold
+	require.Equal(t, 0, h.Active()) // primary adopted as active at once, without the threshold
+	require.Equal(t, int64(1), prosw.Load())
 	require.Empty(t, h.Candidates(0)) // every other endpoint demoted → must re-validate before reuse
+
+	h.Reclaim(0)
+	require.Equal(t, int64(1), prosw.Load()) // no duplicate switch metric when already active
 }
 
 func TestStart_NoOpForSingleEndpoint(t *testing.T) {

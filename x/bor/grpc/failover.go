@@ -65,6 +65,9 @@ type MultiBorGRPCClient struct {
 // NewMultiBorGRPCClient wraps already-dialed, priority-ordered clients with
 // failover and starts the background prober.
 func NewMultiBorGRPCClient(clients []*BorGRPCClient, logger log.Logger, m failover.Metrics, attemptTimeout time.Duration) *MultiBorGRPCClient {
+	if len(clients) < 1 {
+		panic("bor failover: endpoint count must be positive")
+	}
 	mc := &MultiBorGRPCClient{clients: clients, attemptTimeout: attemptTimeout}
 	mc.captureExpectedGenesis()
 	mc.health = failover.New(len(clients), mc.probe, m, logger)
