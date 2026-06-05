@@ -122,18 +122,31 @@ func borGRPCParityValidators(httpClient parityHTTPFetcher, timeout time.Duration
 	if httpClient == nil {
 		return nil
 	}
-	return []borgrpc.EndpointValidator{borGRPCParityValidator(httpClient, timeout)}
+	return []borgrpc.EndpointValidator{borGRPCParityValidator(httpClient, timeout, borGRPCParityFatalFunc)}
 }
 
-func borGRPCParityValidator(httpClient parityHTTPFetcher, timeout time.Duration) borgrpc.EndpointValidator {
-	return func(_ context.Context, i int, grpcClient borgrpc.EndpointHeaderFetcher) error {
-		ok, mismatch := checkBorGRPCHashParityOnceQuiet(httpClient, grpcClient, timeout)
-		if ok {
-			return nil
+// borGRPCParityValidator returns a probe-time validator comparing each gRPC
+// endpoint's recent header hash against HTTP. A confirmed mismatch keeps the
+// endpoint out of the healthy set; a transient HTTP-side read failure (parity
+// unavailable) is not the gRPC endpoint's fault and does not demote it, matching
+// the boot-time streak-reset behavior. To mirror the boot-time fatal contract at
+// runtime, a sustained mismatch streak on the primary calls fatalFunc — without
+// it, a fleet-wide downgrade to a wrong-version bor after startup would keep
+// feeding wrong Header hashes through the always-tried-first active endpoint.
+func borGRPCParityValidator(httpClient parityHTTPFetcher, timeout time.Duration, fatalFunc func(msg string, keysAndValues ...interface{})) borgrpc.EndpointValidator {
+	var primaryMismatches int
+	return func(ctx context.Context, i int, grpcClient borgrpc.EndpointHeaderFetcher) error {
+		_, mismatch := checkBorGRPCHashParityOnceQuiet(ctx, httpClient, grpcClient, timeout)
+		if i == primaryEndpoint {
+			next, fatal := updateParityMismatchStreak(primaryMismatches, mismatch, borGRPCParityMismatchStreak)
+			primaryMismatches = next
+			if fatal {
+				fatalFunc(borGRPCParityFatalMsg, "consecutiveMismatches", next)
+			}
 		}
 		if mismatch {
 			return fmt.Errorf("bor gRPC endpoint %d hash mismatch with HTTP", i)
 		}
-		return fmt.Errorf("bor gRPC endpoint %d hash parity unavailable", i)
+		return nil
 	}
 }

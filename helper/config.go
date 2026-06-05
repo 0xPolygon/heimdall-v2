@@ -152,6 +152,14 @@ const (
 	// HTTP and gRPC reads). Requiring N-in-a-row at the same height with
 	// stable HTTP re-reads virtually rules that out.
 	borGRPCParityMismatchStreak = 3
+
+	// borGRPCParityFatalMsg is shared by the boot-time parity check and the
+	// runtime per-probe validator so both report the same actionable reason.
+	borGRPCParityFatalMsg = "FATAL: bor gRPC hash mismatch with HTTP confirmed across " +
+		"multiple consecutive checks. The operator is likely running a new heimdall " +
+		"with BorGRPCFlag=true against a bor that doesn't populate the full proto Header. " +
+		"Continuing would corrupt milestone propositions on this node. " +
+		"Either upgrade bor to a matching version or disable BorGRPCFlag."
 )
 
 func init() {
@@ -597,11 +605,16 @@ func runBorGRPCHashParityCheck(httpClient *ethclient.Client, grpcClient *borgrpc
 	runBorGRPCHashParityCheckWith(
 		httpClient, grpcClient, timeout,
 		borGRPCParityMaxAttempts, borGRPCParityRetryInterval,
-		func(msg string, keysAndValues ...interface{}) {
-			Logger.Error(msg, keysAndValues...)
-			os.Exit(1)
-		},
+		borGRPCParityFatalFunc,
 	)
+}
+
+// borGRPCParityFatalFunc is the production fatal action for a confirmed parity
+// mismatch streak: log the reason and exit so the node stops voting rather than
+// feeding wrong-version Header hashes into side-handler reads.
+func borGRPCParityFatalFunc(msg string, keysAndValues ...interface{}) {
+	Logger.Error(msg, keysAndValues...)
+	os.Exit(1)
 }
 
 // runBorGRPCHashParityCheckWith is the core of runBorGRPCHashParityCheck.
@@ -623,13 +636,7 @@ func runBorGRPCHashParityCheckWith(
 		}
 		next, fatal := updateParityMismatchStreak(mismatches, mismatch, borGRPCParityMismatchStreak)
 		if fatal {
-			fatalFunc("FATAL: bor gRPC hash mismatch with HTTP confirmed across "+
-				"multiple consecutive checks. The operator is likely running a new heimdall "+
-				"with BorGRPCFlag=true against a bor that doesn't populate the full proto Header. "+
-				"Continuing would corrupt milestone propositions on this node. "+
-				"Either upgrade bor to a matching version or disable BorGRPCFlag.",
-				"consecutiveMismatches", next,
-			)
+			fatalFunc(borGRPCParityFatalMsg, "consecutiveMismatches", next)
 			// Return so control flow does not depend on fatalFunc exiting the
 			// process.
 			return
@@ -673,15 +680,15 @@ func updateParityMismatchStreak(current int, mismatch bool, streakLimit int) (ne
 //   - Ok=false, mismatch=true: both transports returned headers but with different hashes → count toward
 //     mismatch streak; the caller logs fatal only after borGRPCParityMismatchStreak consecutive mismatches
 func checkBorGRPCHashParityOnceWith(httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration) (ok, mismatch bool) {
-	return checkBorGRPCHashParityOnce(httpClient, grpcClient, timeout, true)
+	return checkBorGRPCHashParityOnce(context.Background(), httpClient, grpcClient, timeout, true)
 }
 
-func checkBorGRPCHashParityOnceQuiet(httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration) (ok, mismatch bool) {
-	return checkBorGRPCHashParityOnce(httpClient, grpcClient, timeout, false)
+func checkBorGRPCHashParityOnceQuiet(ctx context.Context, httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration) (ok, mismatch bool) {
+	return checkBorGRPCHashParityOnce(ctx, httpClient, grpcClient, timeout, false)
 }
 
-func checkBorGRPCHashParityOnce(httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration, emitLogs bool) (ok, mismatch bool) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+func checkBorGRPCHashParityOnce(parent context.Context, httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration, emitLogs bool) (ok, mismatch bool) {
+	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
 
 	targetNum, okDepth := resolveParityTargetHeight(ctx, httpClient)

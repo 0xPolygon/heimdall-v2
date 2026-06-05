@@ -364,13 +364,24 @@ func TestBorGRPCParityValidator(t *testing.T) {
 	t.Parallel()
 
 	timeout := time.Second
+	noFatal := func(string, ...interface{}) { panic("unexpected parity fatal") }
+
+	// repeatHeaders builds n parity-check worth of identical HTTP responses
+	// (each check consumes resolve + two stability reads).
+	repeatHeaders := func(h *ethTypes.Header, checks int) []*ethTypes.Header {
+		out := make([]*ethTypes.Header, 0, checks*3)
+		for i := 0; i < checks*3; i++ {
+			out = append(out, h)
+		}
+		return out
+	}
 
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
 		h := makeHeader(100)
 		http := &stubHTTPFetcher{calls: []*ethTypes.Header{h, h, h}}
-		validator := borGRPCParityValidator(http, timeout)
+		validator := borGRPCParityValidator(http, timeout, noFatal)
 
 		require.NoError(t, validator(context.Background(), 1, &stubGRPCFetcher{header: makeHeader(100)}))
 	})
@@ -382,25 +393,56 @@ func TestBorGRPCParityValidator(t *testing.T) {
 		grpcHdr := makeHeader(100)
 		grpcHdr.GasLimit = 123
 		http := &stubHTTPFetcher{calls: []*ethTypes.Header{httpHdr, httpHdr, httpHdr}}
-		validator := borGRPCParityValidator(http, timeout)
+		validator := borGRPCParityValidator(http, timeout, noFatal)
 
 		err := validator(context.Background(), 1, &stubGRPCFetcher{header: grpcHdr})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "hash mismatch")
 	})
 
-	t.Run("unavailable", func(t *testing.T) {
+	t.Run("transient does not demote", func(t *testing.T) {
 		t.Parallel()
 
 		http := &stubHTTPFetcher{
 			calls: []*ethTypes.Header{nil},
 			errs:  []error{errors.New("transient")},
 		}
-		validator := borGRPCParityValidator(http, timeout)
+		validator := borGRPCParityValidator(http, timeout, noFatal)
 
-		err := validator(context.Background(), 1, &stubGRPCFetcher{header: makeHeader(100)})
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "hash parity unavailable")
+		// A transient HTTP-side read failure is not the gRPC endpoint's fault.
+		require.NoError(t, validator(context.Background(), 1, &stubGRPCFetcher{header: makeHeader(100)}))
+	})
+
+	t.Run("primary mismatch streak fatals", func(t *testing.T) {
+		t.Parallel()
+
+		httpHdr := makeHeader(100)
+		grpcHdr := makeHeader(100)
+		grpcHdr.GasLimit = 123
+		http := &stubHTTPFetcher{calls: repeatHeaders(httpHdr, borGRPCParityMismatchStreak)}
+		var fatals int
+		validator := borGRPCParityValidator(http, timeout, func(string, ...interface{}) { fatals++ })
+
+		for n := 1; n <= borGRPCParityMismatchStreak; n++ {
+			require.Error(t, validator(context.Background(), primaryEndpoint, &stubGRPCFetcher{header: grpcHdr}))
+		}
+		require.Equal(t, 1, fatals) // fatal once the primary streak hits the threshold
+	})
+
+	t.Run("fallback mismatch never fatals", func(t *testing.T) {
+		t.Parallel()
+
+		httpHdr := makeHeader(100)
+		grpcHdr := makeHeader(100)
+		grpcHdr.GasLimit = 123
+		http := &stubHTTPFetcher{calls: repeatHeaders(httpHdr, borGRPCParityMismatchStreak+1)}
+		var fatals int
+		validator := borGRPCParityValidator(http, timeout, func(string, ...interface{}) { fatals++ })
+
+		for n := 0; n <= borGRPCParityMismatchStreak; n++ {
+			require.Error(t, validator(context.Background(), 1, &stubGRPCFetcher{header: grpcHdr}))
+		}
+		require.Zero(t, fatals) // a non-primary endpoint is only demoted, never fatal
 	})
 }
 
