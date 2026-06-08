@@ -39,7 +39,6 @@ func TestJoinGraphQLErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			require.Equal(t, tt.want, joinGraphQLErrors(tt.errs))
@@ -107,7 +106,6 @@ func TestMaxNonceFromResponse(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got, err := maxNonceFromResponse(tt.response)
@@ -140,7 +138,6 @@ func TestPickStakeEventHit(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := pickStakeEventHit(tt.response)

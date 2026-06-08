@@ -6404,7 +6404,6 @@ func TestExtractTxHashMsgEventRecordValidation(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			msg := &clerkTypes.MsgEventRecord{TxHash: tc.txHash}
 			hash, ok := extractTxHash(msg)
