@@ -111,6 +111,9 @@ func (rl *RootChainListener) Start() error {
 	// Start the self-healing process
 	go rl.startSelfHealing(ctx)
 
+	// Start the per-node checkpoint-lag backstop monitor
+	go rl.startCheckpointLagMonitor(ctx)
+
 	return nil
 }
 
