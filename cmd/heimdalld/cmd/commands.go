@@ -184,6 +184,10 @@ func initRootCmd(
 		},
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
 			helper.InitHeimdallConfig("")
+			bridgeEnabled := viper.GetBool(helper.BridgeFlag)
+			if !bridgeEnabled {
+				registerBorChainClientCleanup(ctx, g, helper.CloseBorChainClients)
+			}
 
 			// wait for the rest server to start.
 			resultChan := make(chan string, 1)
@@ -242,7 +246,7 @@ func initRootCmd(
 				WithChainID(chainParam.ChainParams.HeimdallChainId)
 
 			// start bridge
-			if viper.GetBool(helper.BridgeFlag) {
+			if bridgeEnabled {
 				bridge.AdjustDBValue(rootCmd)
 				g.Go(func() error {
 					return bridge.StartWithCtx(ctx, clientCtx)
@@ -372,6 +376,14 @@ func AddCommandsWithStartCmdOptions(
 		server.ExportCmd(appExport, defaultNodeHome),
 		server.NewRollbackCmd(appCreator, defaultNodeHome),
 	)
+}
+
+func registerBorChainClientCleanup(ctx context.Context, g *errgroup.Group, closeBorClients func()) {
+	g.Go(func() error {
+		<-ctx.Done()
+		closeBorClients()
+		return nil
+	})
 }
 
 func queryCommand() *cobra.Command {

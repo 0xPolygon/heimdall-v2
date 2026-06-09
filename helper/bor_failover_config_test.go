@@ -373,8 +373,12 @@ func TestCloseBorChainClients(t *testing.T) {
 		endpoints: []httpEndpoint{{probe: p0}, {probe: p1}},
 		health:    h,
 	}
+	grpcClient := &fakeBorGRPCClient{}
+	borGRPCClient = grpcClient
 	CloseBorChainClients()
 	require.True(t, p0.closed)
 	require.True(t, p1.closed)
+	require.True(t, grpcClient.closed)
 	require.Nil(t, borRPCFailoverTransport)
+	require.Nil(t, borGRPCClient)
 }

@@ -447,5 +447,6 @@ func CloseBorChainClients() {
 	}
 	if borGRPCClient != nil {
 		borGRPCClient.Close(Logger)
+		borGRPCClient = nil
 	}
 }

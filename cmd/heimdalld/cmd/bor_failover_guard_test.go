@@ -2,11 +2,14 @@ package heimdalld
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"sync/atomic"
 	"testing"
 
 	"cosmossdk.io/log"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
 )
 
 type fakeGuardedApp struct {
@@ -71,4 +74,19 @@ func TestMustApplyBorFailoverBPGuard(t *testing.T) {
 		})
 		require.False(t, fake.closeCalled)
 	})
+}
+
+func TestRegisterBorChainClientCleanup(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	var g errgroup.Group
+	var closed atomic.Bool
+
+	registerBorChainClientCleanup(ctx, &g, func() {
+		closed.Store(true)
+	})
+
+	require.False(t, closed.Load())
+	cancel()
+	require.NoError(t, g.Wait())
+	require.True(t, closed.Load())
 }
