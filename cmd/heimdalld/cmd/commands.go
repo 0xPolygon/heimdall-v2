@@ -185,9 +185,7 @@ func initRootCmd(
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
 			helper.InitHeimdallConfig("")
 			bridgeEnabled := viper.GetBool(helper.BridgeFlag)
-			if !bridgeEnabled {
-				registerBorChainClientCleanup(ctx, g, helper.CloseBorChainClients)
-			}
+			registerBorChainClientCleanup(ctx, g, helper.CloseBorChainClients)
 
 			// wait for the rest server to start.
 			resultChan := make(chan string, 1)
@@ -462,13 +460,15 @@ type borFailoverGuardedApp interface {
 }
 
 // applyBorFailoverBPGuard runs the Bor failover BP guard and, on failure, closes
-// the app and returns the guard error so the start path fails closed. The guard
-// error is always the one returned; a Close failure is only logged.
-func applyBorFailoverBPGuard(logger log.Logger, hApp borFailoverGuardedApp) error {
+// the app and Bor chain clients before returning the guard error so the start
+// path fails closed. The guard error is always the one returned; a Close failure
+// is only logged.
+func applyBorFailoverBPGuard(logger log.Logger, hApp borFailoverGuardedApp, closeBorClients func()) error {
 	if err := hApp.EnforceBorFailoverBPGuard(); err != nil {
 		if closeErr := hApp.Close(); closeErr != nil {
 			logger.Error("failed to close app after Bor failover BP guard failure", "error", closeErr)
 		}
+		closeBorClients()
 		return err
 	}
 
@@ -478,8 +478,8 @@ func applyBorFailoverBPGuard(logger log.Logger, hApp borFailoverGuardedApp) erro
 // mustApplyBorFailoverBPGuard panics when the Bor failover BP guard fails, so the
 // start path fails closed: a protected block producer with failover configured
 // never proceeds to serve.
-func mustApplyBorFailoverBPGuard(logger log.Logger, hApp borFailoverGuardedApp) {
-	if err := applyBorFailoverBPGuard(logger, hApp); err != nil {
+func mustApplyBorFailoverBPGuard(logger log.Logger, hApp borFailoverGuardedApp, closeBorClients func()) {
+	if err := applyBorFailoverBPGuard(logger, hApp, closeBorClients); err != nil {
 		panic(err)
 	}
 }
@@ -491,7 +491,7 @@ func newStartApp(
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
 	hApp := newApp(logger, db, traceStore, appOpts).(*app.HeimdallApp)
-	mustApplyBorFailoverBPGuard(logger, hApp)
+	mustApplyBorFailoverBPGuard(logger, hApp, helper.CloseBorChainClients)
 
 	return hApp
 }
