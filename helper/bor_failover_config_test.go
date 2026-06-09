@@ -57,6 +57,82 @@ func TestParseURLs(t *testing.T) {
 	require.Empty(t, parseURLs(" , , "))
 }
 
+func TestBorFailoverConfigured(t *testing.T) {
+	base := GetDefaultHeimdallConfig()
+
+	testCases := []struct {
+		name string
+		mut  func(*CustomConfig)
+		want bool
+	}{
+		{
+			name: "single HTTP endpoint",
+			mut: func(cfg *CustomConfig) {
+				cfg.BorRPCUrl = "http://a"
+			},
+			want: false,
+		},
+		{
+			name: "multi HTTP endpoint",
+			mut: func(cfg *CustomConfig) {
+				cfg.BorRPCUrl = "http://a,http://b"
+			},
+			want: true,
+		},
+		{
+			name: "trailing comma remains single HTTP endpoint",
+			mut: func(cfg *CustomConfig) {
+				cfg.BorRPCUrl = "http://a,"
+			},
+			want: false,
+		},
+		{
+			name: "multi gRPC ignored when disabled",
+			mut: func(cfg *CustomConfig) {
+				cfg.BorRPCUrl = "http://a"
+				cfg.BorGRPCFlag = false
+				cfg.BorGRPCUrl = "localhost:3131,localhost:3132"
+			},
+			want: false,
+		},
+		{
+			name: "single gRPC endpoint when enabled",
+			mut: func(cfg *CustomConfig) {
+				cfg.BorRPCUrl = "http://a"
+				cfg.BorGRPCFlag = true
+				cfg.BorGRPCUrl = "localhost:3131"
+			},
+			want: false,
+		},
+		{
+			name: "multi gRPC endpoint when enabled",
+			mut: func(cfg *CustomConfig) {
+				cfg.BorRPCUrl = "http://a"
+				cfg.BorGRPCFlag = true
+				cfg.BorGRPCUrl = "localhost:3131, localhost:3132"
+			},
+			want: true,
+		},
+		{
+			name: "empty endpoints",
+			mut: func(cfg *CustomConfig) {
+				cfg.BorRPCUrl = " , "
+				cfg.BorGRPCFlag = true
+				cfg.BorGRPCUrl = " , "
+			},
+			want: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := base
+			tc.mut(&cfg)
+			require.Equal(t, tc.want, BorFailoverConfigured(cfg))
+		})
+	}
+}
+
 func TestRedactURLs(t *testing.T) {
 	require.Equal(t, "http://user:xxxxx@host:8545", redactURL("http://user:pass@host:8545"))
 	require.Equal(t, "https://host/rpc?apikey=xxxxx&token=xxxxx", redactURL("https://host/rpc?token=abc&apikey=secret"))

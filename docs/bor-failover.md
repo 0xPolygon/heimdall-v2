@@ -32,6 +32,20 @@ bor_rpc_timeout = "1s"
 A **single endpoint keeps the previous behavior exactly**: a plain dial, no
 background prober, no failover machinery.
 
+## Block producer restriction
+
+Bor endpoint failover is rejected at startup for Heimdall nodes whose local
+signer maps to a validator ID in the protected block-producer set. The
+protected set is built from the configured producer list (`producer_votes`,
+defaulting by network, e.g. mainnet `91,92,93,94`), the current span's selected
+producer(s), and the current VEBLOP producer candidate set.
+
+This restriction is intentionally narrower than "all validators": active
+validators outside the protected producer set may use Bor failover. Block
+producers must use a single local/self Bor endpoint so their milestone votes do
+not mask local Bor downtime and keep them eligible for span rotation when they
+cannot actually produce blocks.
+
 HTTP endpoint URLs may carry credentials (userinfo or `?apikey=...`); these are
 masked in the HTTP failover logs — userinfo password and query values, though a
 path-embedded token cannot be detected generically. gRPC authentication uses the

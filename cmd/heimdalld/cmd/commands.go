@@ -175,7 +175,7 @@ func initRootCmd(
 		MigrateCommand(),
 	)
 
-	AddCommandsWithStartCmdOptions(rootCmd, app.DefaultNodeHome, newApp, appExport, server.StartCmdOptions{
+	AddCommandsWithStartCmdOptions(rootCmd, app.DefaultNodeHome, newApp, newStartApp, appExport, server.StartCmdOptions{
 		AddFlags: func(startCmd *cobra.Command) {
 			startCmd.Flags().Bool(helper.RestServerFlag, true, "Enable the REST server")
 			startCmd.Flags().Bool(helper.BridgeFlag, false, "Enable the bridge server")
@@ -339,7 +339,14 @@ func checkServerStatus(ctx context.Context, url string, resultChan chan<- string
 }
 
 // AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
-func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome string, appCreator servertypes.AppCreator, appExport servertypes.AppExporter, opts server.StartCmdOptions) {
+func AddCommandsWithStartCmdOptions(
+	rootCmd *cobra.Command,
+	defaultNodeHome string,
+	appCreator servertypes.AppCreator,
+	startAppCreator servertypes.AppCreator,
+	appExport servertypes.AppExporter,
+	opts server.StartCmdOptions,
+) {
 	cometCmd := &cobra.Command{
 		Use:     "comet",
 		Aliases: []string{"cometbft", "tendermint"},
@@ -357,7 +364,7 @@ func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome stri
 		server.BootstrapStateCmd(appCreator),
 	)
 
-	startCmd := server.StartCmdWithOptions(appCreator, defaultNodeHome, opts)
+	startCmd := server.StartCmdWithOptions(startAppCreator, defaultNodeHome, opts)
 
 	rootCmd.AddCommand(
 		startCmd,
@@ -433,6 +440,48 @@ func newApp(
 		appOpts,
 		baseappOptions...,
 	)
+}
+
+// borFailoverGuardedApp is the minimal surface applyBorFailoverBPGuard needs, so
+// the guard-and-close decision is unit-testable without building a full app.
+type borFailoverGuardedApp interface {
+	EnforceBorFailoverBPGuard() error
+	Close() error
+}
+
+// applyBorFailoverBPGuard runs the Bor failover BP guard and, on failure, closes
+// the app and returns the guard error so the start path fails closed. The guard
+// error is always the one returned; a Close failure is only logged.
+func applyBorFailoverBPGuard(logger log.Logger, hApp borFailoverGuardedApp) error {
+	if err := hApp.EnforceBorFailoverBPGuard(); err != nil {
+		if closeErr := hApp.Close(); closeErr != nil {
+			logger.Error("failed to close app after Bor failover BP guard failure", "error", closeErr)
+		}
+		return err
+	}
+
+	return nil
+}
+
+// mustApplyBorFailoverBPGuard panics when the Bor failover BP guard fails, so the
+// start path fails closed: a protected block producer with failover configured
+// never proceeds to serve.
+func mustApplyBorFailoverBPGuard(logger log.Logger, hApp borFailoverGuardedApp) {
+	if err := applyBorFailoverBPGuard(logger, hApp); err != nil {
+		panic(err)
+	}
+}
+
+func newStartApp(
+	logger log.Logger,
+	db dbm.DB,
+	traceStore io.Writer,
+	appOpts servertypes.AppOptions,
+) servertypes.Application {
+	hApp := newApp(logger, db, traceStore, appOpts).(*app.HeimdallApp)
+	mustApplyBorFailoverBPGuard(logger, hApp)
+
+	return hApp
 }
 
 // appExport creates a new heimdall app (optionally at a given height) and exports state.

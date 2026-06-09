@@ -33,6 +33,15 @@ func parseURLs(s string) []string {
 	return out
 }
 
+// BorFailoverConfigured reports whether the Bor client config enables
+// multi-endpoint failover on either transport.
+func BorFailoverConfigured(cfg CustomConfig) bool {
+	httpFailover := len(parseURLs(cfg.BorRPCUrl)) >= 2
+	grpcFailover := cfg.BorGRPCFlag && len(parseURLs(cfg.BorGRPCUrl)) >= 2
+
+	return httpFailover || grpcFailover
+}
+
 // initBorRPCClient sets the borRPCClient/borClient globals. A comma-separated
 // bor_rpc_url enables HTTP failover across the priority-ordered endpoints
 // (index 0 = primary); a single URL keeps the plain dial path unchanged. It

@@ -250,14 +250,16 @@ eth_rpc_url = "http://localhost:9545"
 
 # RPC endpoint(s) for bor chain. Accepts a comma-separated, priority-ordered
 # list for failover (first = primary; heimdall reverts to it once it recovers).
-# A single URL keeps the previous single-endpoint behavior.
+# Multi-endpoint failover is rejected at startup for protected BP validator IDs;
+# BP nodes must use a single local/self Bor endpoint. A single URL keeps the
+# previous single-endpoint behavior.
 bor_rpc_url = "http://localhost:8545"
 
 # GRPC flag for bor chain
 bor_grpc_flag = "false"
 
 # GRPC endpoint(s) for bor chain. Like bor_rpc_url, accepts a comma-separated,
-# priority-ordered list for failover.
+# priority-ordered list for failover and is rejected on protected BP nodes.
 bor_grpc_url = "http://localhost:3131"
 
 # Bearer token for bor gRPC authentication (empty disables auth)
