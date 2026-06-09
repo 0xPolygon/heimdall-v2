@@ -148,6 +148,10 @@ func (t *borHTTPFailoverTransport) attempt(req *http.Request, body []byte, i int
 	ctx, cancel := failover.WithAttemptTimeout(req.Context(), t.attemptTimeout)
 	resp, err := t.send(req.WithContext(ctx), body, i)
 	if err != nil {
+		// http.DefaultTransport returns a nil response on error, but base is a
+		// pluggable RoundTripper; drain any response a custom one returns
+		// alongside the error so its body/connection isn't leaked.
+		drainAndClose(resp)
 		cancel()
 		return nil, err
 	}
