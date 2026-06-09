@@ -185,3 +185,41 @@ func (mr *MockChainKeeperMockRecorder) GetParams(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetParams", reflect.TypeOf((*MockChainKeeper)(nil).GetParams), ctx)
 }
+
+// MockStakeKeeper is a mock of StakeKeeper interface.
+type MockStakeKeeper struct {
+	ctrl     *gomock.Controller
+	recorder *MockStakeKeeperMockRecorder
+}
+
+// MockStakeKeeperMockRecorder is the mock recorder for MockStakeKeeper.
+type MockStakeKeeperMockRecorder struct {
+	mock *MockStakeKeeper
+}
+
+// NewMockStakeKeeper creates a new mock instance.
+func NewMockStakeKeeper(ctrl *gomock.Controller) *MockStakeKeeper {
+	mock := &MockStakeKeeper{ctrl: ctrl}
+	mock.recorder = &MockStakeKeeperMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockStakeKeeper) EXPECT() *MockStakeKeeperMockRecorder {
+	return m.recorder
+}
+
+// IsCurrentValidatorByAddress mocks base method.
+func (m *MockStakeKeeper) IsCurrentValidatorByAddress(ctx context.Context, address string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsCurrentValidatorByAddress", ctx, address)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsCurrentValidatorByAddress indicates an expected call of IsCurrentValidatorByAddress.
+func (mr *MockStakeKeeperMockRecorder) IsCurrentValidatorByAddress(ctx, address interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsCurrentValidatorByAddress", reflect.TypeOf((*MockStakeKeeper)(nil).IsCurrentValidatorByAddress), ctx, address)
+}

@@ -2,8 +2,10 @@ package keeper
 
 import (
 	"context"
+	stderrors "errors"
 	"time"
 
+	"cosmossdk.io/collections"
 	"cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -123,6 +125,10 @@ func (srv msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFe
 			"proposer address %s is invalid: %v", msg.Proposer, err)
 	}
 
+	if err = srv.requireValidatorAfterGate(ctx, msg.Proposer); err != nil {
+		return nil, err
+	}
+
 	// partial withdrawal
 	amount := msg.Amount
 
@@ -163,8 +169,6 @@ func (srv msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFe
 		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
 	// add Fee to dividendAccount
 	feeAmount := amount.BigInt()
 	if err := srv.k.AddFeeToDividendAccount(ctx, msg.Proposer, feeAmount); err != nil {
@@ -175,6 +179,7 @@ func (srv msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFe
 		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
 
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeFeeWithdraw,
@@ -192,4 +197,25 @@ func (srv msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFe
 func recordTopupTransactionMetric(method string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.TopupSubsystem, method, api.TxType, success, start)
+}
+
+// requireValidatorAfterGate restricts fee withdrawal to current validators once
+// the height gate activates. The stake keeper surfaces "address not in validators
+// store" as a wrapped collections.ErrNotFound; treat that as the dominant
+// non-validator case and only surface ErrLogic for genuine store failures.
+func (srv msgServer) requireValidatorAfterGate(ctx context.Context, proposer string) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if !helper.IsFeeWithdrawValidatorGate(sdkCtx.BlockHeight()) {
+		return nil
+	}
+	isValidator, err := srv.k.StakeKeeper.IsCurrentValidatorByAddress(ctx, proposer)
+	if err != nil && !stderrors.Is(err, collections.ErrNotFound) {
+		srv.k.Logger(ctx).Error("Validator lookup failed", "proposer", proposer, "err", err)
+		return errors.Wrapf(sdkerrors.ErrLogic, "validator lookup failed: %v", err)
+	}
+	if err != nil || !isValidator {
+		srv.k.Logger(ctx).Error("Fee withdrawal rejected for non-validator proposer", "proposer", proposer)
+		return errors.Wrapf(sdkerrors.ErrUnauthorized, "fee withdrawal restricted to current validators")
+	}
+	return nil
 }

@@ -1055,6 +1055,7 @@ func TestSideTxsHappyPath(t *testing.T) {
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
 		app.BankKeeper,
 		app.ChainManagerKeeper,
+		&app.StakeKeeper,
 		mockCaller,
 	)
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
@@ -1220,6 +1221,7 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
 		app.BankKeeper,
 		app.ChainManagerKeeper,
+		&app.StakeKeeper,
 		mockCaller,
 	)
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
@@ -1494,6 +1496,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
 		app.BankKeeper,
 		app.ChainManagerKeeper,
+		&app.StakeKeeper,
 		mockCaller,
 	)
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
@@ -1898,6 +1901,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
 		app.BankKeeper,
 		mockChainKeeper,
+		&app.StakeKeeper,
 		mockCaller,
 	)
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
@@ -6838,7 +6842,6 @@ func TestExtractTxHashMsgEventRecordValidation(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			msg := &clerkTypes.MsgEventRecord{TxHash: tc.txHash}
 			hash, ok := extractTxHash(msg)
