@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -12,7 +14,40 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/x/bor/failover"
+	borgrpc "github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 )
+
+// closeCountingGRPCClient embeds borgrpc.Client so it satisfies the interface
+// without implementing every method; only Close is exercised here.
+type closeCountingGRPCClient struct {
+	borgrpc.Client
+	closes atomic.Int32
+}
+
+func (c *closeCountingGRPCClient) Close(log.Logger) { c.closes.Add(1) }
+
+// TestCloseBorChainClients_ConcurrentIsRaceFree drives the two shutdown paths
+// (bridge teardown and the start-command cleanup goroutine) that reach
+// CloseBorChainClients on the same SIGTERM. The package-level client pointers
+// are read and written there, so without synchronization this trips -race.
+func TestCloseBorChainClients_ConcurrentIsRaceFree(t *testing.T) {
+	fake := &closeCountingGRPCClient{}
+	borGRPCClient = fake
+	t.Cleanup(func() { borGRPCClient = nil })
+
+	var wg sync.WaitGroup
+	for range 2 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			CloseBorChainClients()
+		}()
+	}
+	wg.Wait()
+
+	require.Nil(t, borGRPCClient)
+	require.Equal(t, int32(1), fake.closes.Load(), "set-to-nil under the lock must make the second call a no-op")
+}
 
 func TestBorHTTPFailover_SkipsCandidateDemotedBeforePromotion(t *testing.T) {
 	tr := &borHTTPFailoverTransport{

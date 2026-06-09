@@ -609,6 +609,10 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	// record yet; re-check now that InitGenesis has written validator and span
 	// state. Node-local: only the misconfigured producer aborts InitChain.
 	if err := app.enforceBorFailoverBPGuard(ctx); err != nil {
+		// This abort path returns the InitChain error before the start command's
+		// PostSetup registers the shutdown cleanup, so the prober and probe clients
+		// started by newApp would leak. Close them here, mirroring newStartApp.
+		helper.CloseBorChainClients()
 		return &abci.ResponseInitChain{}, err
 	}
 

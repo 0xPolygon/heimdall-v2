@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -43,6 +44,12 @@ const (
 // CloseBorChainClients can stop its prober and close its per-endpoint probe
 // clients on shutdown; nil when HTTP failover is not configured.
 var borRPCFailoverTransport *borHTTPFailoverTransport
+
+// borChainClientsMu serializes CloseBorChainClients. On a --bridge=true SIGTERM
+// both the bridge shutdown path and the start-command cleanup goroutine reach
+// it on the same cancellation, so the read/write of the package-level client
+// pointers must be synchronized.
+var borChainClientsMu sync.Mutex
 
 type chainIDProbe interface {
 	ChainID(context.Context) (*big.Int, error)
@@ -445,6 +452,8 @@ func redactURLs(csv string) string {
 // path for those goroutines; wire it into Heimdall's shutdown. Safe to call when
 // neither failover is configured.
 func CloseBorChainClients() {
+	borChainClientsMu.Lock()
+	defer borChainClientsMu.Unlock()
 	if borRPCFailoverTransport != nil {
 		borRPCFailoverTransport.Close()
 		borRPCFailoverTransport = nil
