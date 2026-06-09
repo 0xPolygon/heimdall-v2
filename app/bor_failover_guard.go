@@ -16,6 +16,16 @@ import (
 // EnforceBorFailoverBPGuard rejects Bor endpoint failover for protected block
 // producer validators.
 func (app *HeimdallApp) EnforceBorFailoverBPGuard() error {
+	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
+	return app.enforceBorFailoverBPGuard(ctx)
+}
+
+// enforceBorFailoverBPGuard runs the guard against the given context's state. It
+// is shared by the startup check (loaded state) and InitChainer (after genesis
+// state is written): on a fresh DB the startup check runs before InitGenesis
+// populates the validator set, so a genesis block producer is only caught by
+// the InitChainer call.
+func (app *HeimdallApp) enforceBorFailoverBPGuard(ctx sdk.Context) error {
 	if !helper.BorFailoverConfigured(helper.GetConfig()) {
 		return nil
 	}
@@ -25,7 +35,6 @@ func (app *HeimdallApp) EnforceBorFailoverBPGuard() error {
 		return fmt.Errorf("failed to resolve local signer for Bor failover BP guard: %w", err)
 	}
 
-	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
 	return app.validateBorFailoverBPGuard(ctx, signer)
 }
 

@@ -603,6 +603,15 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		return &abci.ResponseInitChain{}, err
 	}
 
+	// Fail closed if this node is a protected block producer with Bor endpoint
+	// failover configured. The startup check in newStartApp runs before genesis
+	// state exists, so on a fresh DB a genesis producer's signer has no validator
+	// record yet; re-check now that InitGenesis has written validator and span
+	// state. Node-local: only the misconfigured producer aborts InitChain.
+	if err := app.enforceBorFailoverBPGuard(ctx); err != nil {
+		return &abci.ResponseInitChain{}, err
+	}
+
 	moduleAccTopUp := app.AccountKeeper.GetModuleAccount(ctx, topupTypes.ModuleName)
 	if moduleAccTopUp == nil {
 		panic(fmt.Sprintf("%s module account has not been set", topupTypes.ModuleName))

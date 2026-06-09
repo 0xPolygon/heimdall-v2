@@ -1,9 +1,16 @@
 package app
 
 import (
+	"encoding/json"
 	"testing"
 
+	"cosmossdk.io/log"
+	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -72,6 +79,55 @@ func TestValidateBorFailoverBPGuard(t *testing.T) {
 	jailedProducer.Jailed = true
 	require.NoError(t, app.StakeKeeper.AddValidator(ctx, jailedProducer))
 	require.Error(t, app.validateBorFailoverBPGuard(ctx, jailedProducer.Signer))
+}
+
+// TestInitChainFailsClosedForGenesisBorFailoverProducer covers the fresh-DB /
+// pre-InitChain path: the startup guard in newStartApp runs before genesis state
+// exists, so a genesis producer's signer has no validator record yet. The
+// InitChainer re-check must catch it once InitGenesis has written validator and
+// span state. The sole genesis validator is necessarily the span-0 producer.
+func TestInitChainFailsClosedForGenesisBorFailoverProducer(t *testing.T) {
+	validatorPrivKeys, validators, accounts, balances := generateValidators(t, 1)
+
+	appCfg := helper.CustomAppConfig{
+		Config: *serverconfig.DefaultConfig(),
+		Custom: helper.GetDefaultHeimdallConfig(),
+	}
+	appCfg.Custom.BorRPCUrl = "http://primary:8545,http://fallback:8545"
+	helper.SetTestConfig(appCfg)
+	helper.SetTestPrivPubKey(validatorPrivKeys[0])
+	t.Cleanup(func() {
+		helper.SetTestConfig(helper.CustomAppConfig{
+			Config: *serverconfig.DefaultConfig(),
+			Custom: helper.GetDefaultHeimdallConfig(),
+		})
+	})
+
+	db := dbm.NewMemDB()
+	appOptions := make(simtestutil.AppOptionsMap)
+	appOptions[flags.FlagHome] = DefaultNodeHome
+	hApp := NewHeimdallApp(log.NewTestLogger(t), db, nil, true, appOptions)
+
+	genesisState := hApp.DefaultGenesis()
+	valSet := stakeTypes.NewValidatorSet(validators)
+	genesisState, err := GenesisStateWithValSet(hApp.AppCodec(), genesisState, valSet, accounts, balances...)
+	require.NoError(t, err)
+	// Build span 0 from the validator set (genFirstSpan), as a real genesis does;
+	// the sole validator becomes the span producer and thus a protected producer.
+	genesisState, err = borTypes.SetGenesisStateToAppState(hApp.AppCodec(), genesisState, *valSet)
+	require.NoError(t, err)
+	stateBytes, err := json.Marshal(genesisState)
+	require.NoError(t, err)
+
+	helper.SetTestInitialHeight(VoteExtBlockHeight)
+	_, err = hApp.InitChain(&abci.RequestInitChain{
+		Validators:      []abci.ValidatorUpdate{},
+		ConsensusParams: simtestutil.DefaultConsensusParams,
+		AppStateBytes:   stateBytes,
+		InitialHeight:   VoteExtBlockHeight,
+	})
+	require.Error(t, err)
+	require.ErrorContains(t, err, "block producer")
 }
 
 func requireValidatorByID(t *testing.T, validators []stakeTypes.Validator, id uint64) stakeTypes.Validator {
