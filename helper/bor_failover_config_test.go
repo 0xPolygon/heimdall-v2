@@ -184,6 +184,35 @@ func TestGetBorChainCallTimeout(t *testing.T) {
 	cfg.Custom.BorRPCUrl = "http://a"
 	SetTestConfig(cfg)
 	require.Equal(t, time.Second, GetBorChainCallTimeout())
+
+	// An over-max bor_rpc_timeout is clamped at the consumer so the budget stays
+	// bounded even if the value bypassed InitHeimdallConfigWith.
+	cfg.Custom.BorRPCTimeout = 5 * time.Second
+	cfg.Custom.BorRPCUrl = "http://a,http://b,http://c"
+	SetTestConfig(cfg)
+	require.Equal(t, maxBorChainCallBudget, GetBorChainCallTimeout()) // clamp(5s)=3s × 3
+}
+
+func TestClampBorRPCTimeout(t *testing.T) {
+	// The worst-case failover budget must stay within the ABCI window.
+	require.Equal(t, maxBorChainCallBudget, MaxBorRPCTimeout*maxBudgetedEndpoints)
+
+	tests := []struct {
+		name  string
+		given time.Duration
+		want  time.Duration
+	}{
+		{"zero falls back to default", 0, DefaultBorRPCTimeout},
+		{"negative falls back to default", -time.Second, DefaultBorRPCTimeout},
+		{"below max is unchanged", 2 * time.Second, 2 * time.Second},
+		{"at max is unchanged", MaxBorRPCTimeout, MaxBorRPCTimeout},
+		{"above max is clamped", 5 * time.Second, MaxBorRPCTimeout},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, clampBorRPCTimeout(tt.given))
+		})
+	}
 }
 
 func TestInitBorRPCClient_SingleAndFailover(t *testing.T) {

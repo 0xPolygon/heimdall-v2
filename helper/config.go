@@ -416,10 +416,16 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		conf.Custom.EthRPCTimeout = DefaultEthRPCTimeout
 	}
 
-	if conf.Custom.BorRPCTimeout == 0 {
-		// fallback to default
-		Logger.Debug("Missing BOR RPC timeout or invalid value provided, falling back to default", "timeout", DefaultBorRPCTimeout)
-		conf.Custom.BorRPCTimeout = DefaultBorRPCTimeout
+	if clamped := clampBorRPCTimeout(conf.Custom.BorRPCTimeout); clamped != conf.Custom.BorRPCTimeout {
+		if conf.Custom.BorRPCTimeout <= 0 {
+			Logger.Debug("Missing BOR RPC timeout or invalid value provided, falling back to default", "timeout", DefaultBorRPCTimeout)
+		} else {
+			// GetBorChainCallTimeout multiplies this by up to maxBudgetedEndpoints for
+			// the failover cascade; cap it so one Bor call in a milestone/checkpoint
+			// vote extension can't run past CometBFT's ~10s ABCI budget and miss votes.
+			Logger.Warn("bor_rpc_timeout exceeds maximum; clamping", "configured", conf.Custom.BorRPCTimeout, "max", MaxBorRPCTimeout)
+		}
+		conf.Custom.BorRPCTimeout = clamped
 	}
 
 	if conf.Custom.SHStateSyncedInterval == 0 {

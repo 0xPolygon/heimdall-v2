@@ -26,6 +26,8 @@ bor_grpc_url   = "localhost:3131,https://bor-b.internal:3131"
 bor_grpc_token = "" # Bearer token for gRPC auth; put gRPC credentials here, not in the URL.
 
 # Per-attempt timeout (also the unit the in-call budget is built from).
+# Clamped to MaxBorRPCTimeout (3s) at config load so the in-call budget stays
+# under CometBFT's ~10s ABCI window.
 bor_rpc_timeout = "1s"
 ```
 
@@ -121,7 +123,8 @@ Candidate selection:
 
 ### Time budget
 
-- Per-attempt timeout is `bor_rpc_timeout`.
+- Per-attempt timeout is `bor_rpc_timeout`, clamped at config load to
+  `MaxBorRPCTimeout` (`3s`).
 - The caller-side budget for one Bor call is:
 
   ```
@@ -133,7 +136,11 @@ Candidate selection:
   cap may still be tried within the budget, while slow ones beyond it are reached
   on later calls (by then the prober has typically switched active away from a
   dead endpoint). The cap keeps one call's worst case under CometBFT's ~10s ABCI
-  budget. When `bor_grpc_flag = true` the budget is sized by the larger of the
+  budget; because `bor_rpc_timeout` is itself clamped to `MaxBorRPCTimeout`
+  (`maxBorChainCallBudget / maxBudgetedEndpoints` = `3s`), the worst-case budget
+  is bounded at `9s` regardless of the configured value, so a slow Bor can't
+  stall a milestone/checkpoint vote extension into a missed vote. When
+  `bor_grpc_flag = true` the budget is sized by the larger of the
   HTTP and gRPC counts (the HTTP client used by the broadcaster and the gRPC
   client used by side handlers share it); when gRPC is disabled it is the HTTP
   count alone.
@@ -174,12 +181,17 @@ possibly-wrong-network fallback.
 
 ## Timing constants
 
-Hardcoded defaults in [`x/bor/failover/health.go`](../x/bor/failover/health.go)
-(not operator-tunable; `SetTuning` exists for tests only).
+Sources vary: `bor_rpc_timeout` is operator config (clamped to `MaxBorRPCTimeout`
+at load); `MaxBorRPCTimeout` and `maxBudgetedEndpoints` are constants in
+[`helper/bor_failover_http.go`](../helper/bor_failover_http.go); the remaining
+prober defaults are hardcoded in
+[`x/bor/failover/health.go`](../x/bor/failover/health.go) and are not
+operator-tunable (`SetTuning` exists for tests only).
 
 | Constant | Default | Meaning |
 | --- | --- | --- |
-| `bor_rpc_timeout` (config) | `1s` | Per-attempt timeout; unit of the in-call budget |
+| `bor_rpc_timeout` (config) | `1s` | Per-attempt timeout (clamped to `MaxBorRPCTimeout`); unit of the in-call budget |
+| `MaxBorRPCTimeout` | `3s` | Upper bound enforced on `bor_rpc_timeout` (`maxBorChainCallBudget / maxBudgetedEndpoints`) |
 | `maxBudgetedEndpoints` | `3` | Cap on the in-call time budget multiplier |
 | `DefaultCheckInterval` | `10s` | Background prober cycle period |
 | `DefaultConsecutiveThreshold` | `3` | Consecutive good probes for a fallback to become healthy |

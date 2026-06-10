@@ -38,6 +38,14 @@ const (
 	// fit the budget; it is just never granted time for more than this many slow
 	// attempts. The deadline, not a counter, stops the cascade.
 	maxBudgetedEndpoints = 3
+
+	// maxBorChainCallBudget bounds the worst-case time a single Bor call may
+	// consume across a failover cascade, kept under CometBFT's ~10s ABCI budget so
+	// a slow Bor can't stall milestone/checkpoint vote extensions and miss votes.
+	maxBorChainCallBudget = 9 * time.Second
+	// MaxBorRPCTimeout caps bor_rpc_timeout so BorRPCTimeout × maxBudgetedEndpoints
+	// (the GetBorChainCallTimeout budget) stays within maxBorChainCallBudget.
+	MaxBorRPCTimeout = maxBorChainCallBudget / maxBudgetedEndpoints
 )
 
 // borRPCFailoverTransport holds the running HTTP failover transport so
@@ -389,12 +397,12 @@ func fetchChainID(c chainIDProbe, timeout time.Duration) (*big.Int, bool) {
 }
 
 // GetBorChainCallTimeout returns the time budget a caller should allow for a
-// single Bor call. With failover it is the per-endpoint timeout (BorRPCTimeout)
-// times the budgeted endpoint count, so a cascade can reach a fallback within one
-// caller-scoped context — go-ethereum's rpc.Client re-checks that context after
-// the request returns, so a budget of only one attempt would race a successful
-// fallback against the expired deadline. A single endpoint yields BorRPCTimeout
-// unchanged.
+// single Bor call. With failover it is the clamped per-endpoint timeout
+// (min(BorRPCTimeout, MaxBorRPCTimeout)) times the budgeted endpoint count, so a
+// cascade can reach a fallback within one caller-scoped context — go-ethereum's
+// rpc.Client re-checks that context after the request returns, so a budget of
+// only one attempt would race a successful fallback against the expired deadline.
+// A single endpoint yields the clamped BorRPCTimeout unchanged.
 //
 // The endpoint count is the larger of the HTTP and gRPC lists because both the
 // HTTP client (used by the broadcaster) and the gRPC client (used by side
@@ -417,7 +425,22 @@ func GetBorChainCallTimeout() time.Duration {
 		n = maxBudgetedEndpoints
 	}
 
-	return conf.Custom.BorRPCTimeout * time.Duration(n)
+	// Clamp defensively so the budget is bounded by maxBorChainCallBudget even if
+	// conf.Custom.BorRPCTimeout was set without going through InitHeimdallConfigWith.
+	return clampBorRPCTimeout(conf.Custom.BorRPCTimeout) * time.Duration(n)
+}
+
+// clampBorRPCTimeout normalizes the per-endpoint Bor RPC timeout: a non-positive
+// value falls back to the default, and a value above MaxBorRPCTimeout is clamped
+// so the GetBorChainCallTimeout budget stays under the ABCI window.
+func clampBorRPCTimeout(timeout time.Duration) time.Duration {
+	if timeout <= 0 {
+		return DefaultBorRPCTimeout
+	}
+	if timeout > MaxBorRPCTimeout {
+		return MaxBorRPCTimeout
+	}
+	return timeout
 }
 
 // redactURL masks secrets in raw for safe logging: query-parameter values
