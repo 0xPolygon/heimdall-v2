@@ -336,6 +336,19 @@ func TestBorHTTPTransport_ProbeValidatesChainID(t *testing.T) {
 	require.Error(t, tr.probe(2))   // mismatched chain id → rejected
 }
 
+func TestBorHTTPTransport_ProbeRejectsNilChainID(t *testing.T) {
+	primary := fakeBorRPC(t, "0x5", new(int32))
+	defer primary.Close()
+
+	tr := newTestTransport(mustEndpoint(t, primary.URL), mustEndpoint(t, primary.URL))
+	require.NoError(t, tr.probe(0)) // primary establishes the expected chain id
+
+	// A fallback answering with a nil chain id (no error) must be rejected, not
+	// fed into checkChainID's Cmp (which would panic against the non-nil expected).
+	tr.endpoints[1].probe = &fakeChainIDProbe{id: nil}
+	require.Error(t, tr.probe(1))
+}
+
 func TestBorHTTPTransport_PrimaryReclaimAdoptsActive(t *testing.T) {
 	primary := fakeBorRPC(t, "0x1", new(int32))
 	defer primary.Close()

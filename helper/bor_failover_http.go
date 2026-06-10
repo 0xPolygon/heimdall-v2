@@ -237,6 +237,11 @@ func (t *borHTTPFailoverTransport) probe(i int) error {
 	defer cancel()
 
 	id, err := t.endpoints[i].probe.ChainID(ctx)
+	if err == nil && id == nil {
+		// A nil chain id with no error would poison the expected id (primary) or
+		// panic in checkChainID's Cmp; treat it as a probe failure.
+		err = fmt.Errorf("bor endpoint %d returned nil chain id", i)
+	}
 	if err != nil {
 		if i == primaryEndpoint {
 			t.primaryProbeFailures.Add(1)
@@ -471,15 +476,21 @@ func redactURLs(csv string) string {
 }
 
 // CloseBorChainClients stops the Bor failover background probers, closes the
-// HTTP probe clients, and closes the gRPC connections. It is the termination
-// path for those goroutines; wire it into Heimdall's shutdown. Safe to call when
-// neither failover is configured.
+// HTTP probe clients and the HTTP JSON-RPC client, and closes the gRPC
+// connections. It is the termination path for those goroutines; wire it into
+// Heimdall's shutdown. Safe to call when neither failover is configured.
 func CloseBorChainClients() {
 	borChainClientsMu.Lock()
 	defer borChainClientsMu.Unlock()
 	if borRPCFailoverTransport != nil {
 		borRPCFailoverTransport.Close()
 		borRPCFailoverTransport = nil
+	}
+	if borRPCClient != nil {
+		// borClient wraps the same underlying rpc.Client, so this closes both.
+		borRPCClient.Close()
+		borRPCClient = nil
+		borClient = nil
 	}
 	if borGRPCClient != nil {
 		borGRPCClient.Close(Logger)

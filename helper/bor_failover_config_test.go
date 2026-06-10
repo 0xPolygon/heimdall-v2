@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"cosmossdk.io/log"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/x/bor/failover"
@@ -378,21 +380,19 @@ func TestCheckChainID_PrimaryReclaimsProvisionalAnchor(t *testing.T) {
 }
 
 func TestCloseBorChainClients(t *testing.T) {
-	oldHTTP := borRPCFailoverTransport
-	oldGRPC := borGRPCClient
-	t.Cleanup(func() {
-		borRPCFailoverTransport = oldHTTP
-		borGRPCClient = oldGRPC
-	})
+	preserveBorClients(t)
 
-	// safe to call when neither Bor failover is configured
+	// safe to call when nothing is configured
 	borRPCFailoverTransport = nil
+	borRPCClient = nil
+	borClient = nil
 	borGRPCClient = nil
 	require.NotPanics(t, CloseBorChainClients)
 
 	// Stops a running HTTP failover prober and closes each endpoint's probe
 	// client (CloseBorChainClients must return, i.e. join the prober goroutine,
-	// rather than hang).
+	// rather than hang), closes the HTTP JSON-RPC and gRPC clients, and clears
+	// every global.
 	p0 := &fakeChainIDProbe{id: big.NewInt(1)}
 	p1 := &fakeChainIDProbe{id: big.NewInt(1)}
 	h := failover.New(2, func(int) error { return nil }, failover.Metrics{}, log.NewNopLogger())
@@ -402,12 +402,22 @@ func TestCloseBorChainClients(t *testing.T) {
 		endpoints: []httpEndpoint{{probe: p0}, {probe: p1}},
 		health:    h,
 	}
+	srv := fakeBorRPC(t, "0x1", new(int32))
+	defer srv.Close()
+	rc, err := rpc.Dial(srv.URL)
+	require.NoError(t, err)
+	borRPCClient = rc
+	borClient = ethclient.NewClient(rc)
 	grpcClient := &fakeBorGRPCClient{}
 	borGRPCClient = grpcClient
+
 	CloseBorChainClients()
+
 	require.True(t, p0.closed)
 	require.True(t, p1.closed)
 	require.True(t, grpcClient.closed)
 	require.Nil(t, borRPCFailoverTransport)
+	require.Nil(t, borRPCClient)
+	require.Nil(t, borClient)
 	require.Nil(t, borGRPCClient)
 }
