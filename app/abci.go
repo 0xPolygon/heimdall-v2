@@ -63,13 +63,16 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		}
 		txs = append(txs, bz)
 
-		// init totalTxBytes with the actual size of the marshaled vote info in bytes
-		totalTxBytes := len(bz)
+		// Size the proposal as CometBFT validates it (types.Txs.Validate ->
+		// ComputeProtoSizeForTxs): the proto-encoded size of Data.Txs, not raw len.
+		totalTxBytes := cmtTypes.ComputeProtoSizeForTxs([]cmtTypes.Tx{bz})
 
 		for _, proposedTx := range req.Txs {
 
+			proposedTxBytes := cmtTypes.ComputeProtoSizeForTxs([]cmtTypes.Tx{proposedTx})
+
 			// check if the total tx bytes exceed the max tx bytes of the request
-			if totalTxBytes+len(proposedTx) > int(req.MaxTxBytes) {
+			if totalTxBytes+proposedTxBytes > req.MaxTxBytes {
 				continue
 			}
 
@@ -115,7 +118,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				continue
 			}
 
-			totalTxBytes += len(proposedTx)
+			totalTxBytes += proposedTxBytes
 			txs = append(txs, proposedTx)
 		}
 
