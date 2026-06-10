@@ -571,6 +571,18 @@ func (app *HeimdallApp) Name() string { return app.BaseApp.Name() }
 
 // InitChainer application update at chain initialization
 func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+	// newApp started the Bor failover prober and per-endpoint probe clients via
+	// InitHeimdallConfig, but the start command only registers their shutdown
+	// cleanup in PostSetup, which runs after InitChain. Any abort here (error
+	// return or panic) exits before that, so close them on every non-success
+	// exit. CloseBorChainClients is idempotent and mutex-guarded.
+	succeeded := false
+	defer func() {
+		if !succeeded {
+			helper.CloseBorChainClients()
+		}
+	}()
+
 	var genesisState GenesisState
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
@@ -609,10 +621,6 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	// record yet; re-check now that InitGenesis has written validator and span
 	// state. Node-local: only the misconfigured producer aborts InitChain.
 	if err := app.enforceBorFailoverBPGuard(ctx); err != nil {
-		// This abort path returns the InitChain error before the start command's
-		// PostSetup registers the shutdown cleanup, so the prober and probe clients
-		// started by newApp would leak. Close them here, mirroring newStartApp.
-		helper.CloseBorChainClients()
 		return &abci.ResponseInitChain{}, err
 	}
 
@@ -645,6 +653,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	}
 
 	// update validators
+	succeeded = true
 	return &abci.ResponseInitChain{
 		Validators: valUpdates,
 	}, nil

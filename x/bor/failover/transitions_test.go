@@ -63,6 +63,19 @@ func TestMarkSuccess_ThresholdBoundary(t *testing.T) {
 	require.Equal(t, []int{1, 2}, h.Candidates(0))
 }
 
+func TestMarkSuccess_SaturatesAtThreshold(t *testing.T) {
+	h := New(2, nopProbe, Metrics{}, log.NewNopLogger())
+	h.SetTuning(time.Second, 2, 0, time.Second) // threshold 2
+
+	for range 5 {
+		h.MarkSuccess(1)
+	}
+
+	require.True(t, h.health[1].healthy)
+	require.Equal(t, h.consecutiveThreshold, h.health[1].consecutiveSuccess,
+		"counter must saturate at the threshold rather than grow unbounded")
+}
+
 func TestMaybePromote_RevertsToHigherPriority(t *testing.T) {
 	h := New(3, nopProbe, Metrics{}, log.NewNopLogger())
 	h.SetTuning(time.Second, 1, 0, time.Second)

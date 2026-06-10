@@ -174,8 +174,12 @@ func (h *Health) MarkSuccess(i int) {
 }
 
 func (h *Health) markSuccessLocked(i int) {
-	h.health[i].consecutiveSuccess++
 	h.health[i].lastErr = nil
+	// Saturate at the threshold: only the crossing matters, and an unbounded
+	// counter would eventually overflow on a long-lived hot endpoint.
+	if h.health[i].consecutiveSuccess < h.consecutiveThreshold {
+		h.health[i].consecutiveSuccess++
+	}
 	if !h.health[i].healthy && h.health[i].consecutiveSuccess >= h.consecutiveThreshold {
 		h.health[i].healthy = true
 		h.health[i].healthySince = time.Now()
