@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
@@ -20,6 +21,7 @@ type fakeBorGRPCClient struct {
 	authorAddr *common.Address
 	authorErr  error
 	calls      int
+	closed     bool
 }
 
 func (f *fakeBorGRPCClient) GetAuthor(_ context.Context, _ *big.Int) (*common.Address, error) {
@@ -53,6 +55,9 @@ func (f *fakeBorGRPCClient) TransactionReceipt(_ context.Context, _ common.Hash)
 }
 func (f *fakeBorGRPCClient) BorBlockReceipt(_ context.Context, _ common.Hash) (*ethTypes.Receipt, error) {
 	panic("fakeBorGRPCClient.BorBlockReceipt: unexpected call")
+}
+func (f *fakeBorGRPCClient) Close(log.Logger) {
+	f.closed = true
 }
 
 // TestGetBorChainBlockAuthor_GRPC_HappyPath ensures that when the gRPC client

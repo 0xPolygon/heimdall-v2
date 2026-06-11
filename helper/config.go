@@ -152,6 +152,14 @@ const (
 	// HTTP and gRPC reads). Requiring N-in-a-row at the same height with
 	// stable HTTP re-reads virtually rules that out.
 	borGRPCParityMismatchStreak = 3
+
+	// borGRPCParityFatalMsg is shared by the boot-time parity check and the
+	// runtime per-probe validator so both report the same actionable reason.
+	borGRPCParityFatalMsg = "FATAL: bor gRPC hash mismatch with HTTP confirmed across " +
+		"multiple consecutive checks. The operator is likely running a new heimdall " +
+		"with BorGRPCFlag=true against a bor that doesn't populate the full proto Header. " +
+		"Continuing would corrupt milestone propositions on this node. " +
+		"Either upgrade bor to a matching version or disable BorGRPCFlag."
 )
 
 func init() {
@@ -231,7 +239,7 @@ var (
 var (
 	borClient     *ethclient.Client
 	borRPCClient  *rpc.Client
-	borGRPCClient *borgrpc.BorGRPCClient
+	borGRPCClient borgrpc.Client
 )
 
 // private key object
@@ -408,10 +416,16 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		conf.Custom.EthRPCTimeout = DefaultEthRPCTimeout
 	}
 
-	if conf.Custom.BorRPCTimeout == 0 {
-		// fallback to default
-		Logger.Debug("Missing BOR RPC timeout or invalid value provided, falling back to default", "timeout", DefaultBorRPCTimeout)
-		conf.Custom.BorRPCTimeout = DefaultBorRPCTimeout
+	if clamped := clampBorRPCTimeout(conf.Custom.BorRPCTimeout); clamped != conf.Custom.BorRPCTimeout {
+		if conf.Custom.BorRPCTimeout <= 0 {
+			Logger.Debug("Missing BOR RPC timeout or invalid value provided, falling back to default", "timeout", DefaultBorRPCTimeout)
+		} else {
+			// GetBorChainCallTimeout multiplies this by up to maxBudgetedEndpoints for
+			// the failover cascade; cap it so one Bor call in a milestone/checkpoint
+			// vote extension can't run past CometBFT's ~10s ABCI budget and miss votes.
+			Logger.Warn("bor_rpc_timeout exceeds maximum; clamping", "configured", conf.Custom.BorRPCTimeout, "max", MaxBorRPCTimeout)
+		}
+		conf.Custom.BorRPCTimeout = clamped
 	}
 
 	if conf.Custom.SHStateSyncedInterval == 0 {
@@ -452,26 +466,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
 
-	if borRPCClient, err = rpc.Dial(conf.Custom.BorRPCUrl); err != nil {
-		log.Fatal("unable to dial bor chain RPC client", "URL", conf.Custom.BorRPCUrl, "error", err)
-	}
-
-	borClient = ethclient.NewClient(borRPCClient)
-	warnIfBorRPCInaccessible(borClient, conf.Custom.BorRPCTimeout, conf.Custom.BorRPCUrl)
-
-	if conf.Custom.BorGRPCFlag && conf.Custom.BorGRPCUrl != "" {
-		client, err := borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl, conf.Custom.BorGRPCToken, Logger)
-		if err != nil {
-			log.Fatal("unable to create bor gRPC client", "URL", conf.Custom.BorGRPCUrl, "error", err)
-		}
-		borGRPCClient = client
-		warnIfBorGRPCInaccessible(borGRPCClient, conf.Custom.BorRPCTimeout, conf.Custom.BorGRPCUrl)
-		// Fire-and-forget parity goroutine; removal is only observable in production init.
-		// mutator-disable-next-line statement-deletion in production init
-		verifyBorGRPCHashParity(borClient, borGRPCClient, conf.Custom.BorRPCTimeout)
-	} else if conf.Custom.BorGRPCFlag && conf.Custom.BorGRPCUrl == "" {
-		log.Fatal("bor gRPC is enabled but bor_grpc_url is empty")
-	}
+	initBorRPCClient()
+	initBorGRPCClient()
 
 	// Set default producers based on the chain if not already set by config or flags
 	if conf.Custom.ProducerVotes == "" {
@@ -615,11 +611,16 @@ func runBorGRPCHashParityCheck(httpClient *ethclient.Client, grpcClient *borgrpc
 	runBorGRPCHashParityCheckWith(
 		httpClient, grpcClient, timeout,
 		borGRPCParityMaxAttempts, borGRPCParityRetryInterval,
-		func(msg string, keysAndValues ...interface{}) {
-			Logger.Error(msg, keysAndValues...)
-			os.Exit(1)
-		},
+		borGRPCParityFatalFunc,
 	)
+}
+
+// borGRPCParityFatalFunc is the production fatal action for a confirmed parity
+// mismatch streak: log the reason and exit so the node stops voting rather than
+// feeding wrong-version Header hashes into side-handler reads.
+func borGRPCParityFatalFunc(msg string, keysAndValues ...interface{}) {
+	Logger.Error(msg, keysAndValues...)
+	os.Exit(1)
 }
 
 // runBorGRPCHashParityCheckWith is the core of runBorGRPCHashParityCheck.
@@ -641,13 +642,7 @@ func runBorGRPCHashParityCheckWith(
 		}
 		next, fatal := updateParityMismatchStreak(mismatches, mismatch, borGRPCParityMismatchStreak)
 		if fatal {
-			fatalFunc("FATAL: bor gRPC hash mismatch with HTTP confirmed across "+
-				"multiple consecutive checks. The operator is likely running a new heimdall "+
-				"with BorGRPCFlag=true against a bor that doesn't populate the full proto Header. "+
-				"Continuing would corrupt milestone propositions on this node. "+
-				"Either upgrade bor to a matching version or disable BorGRPCFlag.",
-				"consecutiveMismatches", next,
-			)
+			fatalFunc(borGRPCParityFatalMsg, "consecutiveMismatches", next)
 			// Return so control flow does not depend on fatalFunc exiting the
 			// process.
 			return
@@ -691,7 +686,15 @@ func updateParityMismatchStreak(current int, mismatch bool, streakLimit int) (ne
 //   - Ok=false, mismatch=true: both transports returned headers but with different hashes → count toward
 //     mismatch streak; the caller logs fatal only after borGRPCParityMismatchStreak consecutive mismatches
 func checkBorGRPCHashParityOnceWith(httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration) (ok, mismatch bool) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	return checkBorGRPCHashParityOnce(context.Background(), httpClient, grpcClient, timeout, true)
+}
+
+func checkBorGRPCHashParityOnceQuiet(ctx context.Context, httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration) (ok, mismatch bool) {
+	return checkBorGRPCHashParityOnce(ctx, httpClient, grpcClient, timeout, false)
+}
+
+func checkBorGRPCHashParityOnce(parent context.Context, httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration, emitLogs bool) (ok, mismatch bool) {
+	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
 
 	targetNum, okDepth := resolveParityTargetHeight(ctx, httpClient)
@@ -704,24 +707,28 @@ func checkBorGRPCHashParityOnceWith(httpClient parityHTTPFetcher, grpcClient par
 	}
 
 	if grpcHeader.Hash() != httpHeader.Hash() {
-		// Statement_deletion drops an advisory log; the (false, true) return below still signals a mismatch.
-		// mutator-disable-next-line operator-log line
-		Logger.Warn("Bor gRPC hash mismatch with HTTP for the same block — counting toward mismatch streak before fatal",
-			"block", httpHeader.Number.String(),
-			"httpHash", httpHeader.Hash().Hex(),
-			"grpcHash", grpcHeader.Hash().Hex(),
-		)
+		if emitLogs {
+			// Statement_deletion drops an advisory log; the (false, true) return below still signals a mismatch.
+			// mutator-disable-next-line operator-log line
+			Logger.Warn("Bor gRPC hash mismatch with HTTP for the same block — counting toward mismatch streak before fatal",
+				"block", httpHeader.Number.String(),
+				"httpHash", httpHeader.Hash().Hex(),
+				"grpcHash", grpcHeader.Hash().Hex(),
+			)
+		}
 		// Streak bookkeeping is covered directly via updateParityMismatchStreak tests.
 		// mutator-disable-next-line boolean_substitution on mismatch signal
 		return false, true
 	}
 
-	// Statement_deletion drops a success message; no branch logic affected.
-	// mutator-disable-next-line operator-log line
-	Logger.Info("Bor gRPC hash parity check passed",
-		"block", httpHeader.Number.String(),
-		"hash", httpHeader.Hash().Hex(),
-	)
+	if emitLogs {
+		// Statement_deletion drops a success message; no branch logic affected.
+		// mutator-disable-next-line operator-log line
+		Logger.Info("Bor gRPC hash parity check passed",
+			"block", httpHeader.Number.String(),
+			"hash", httpHeader.Hash().Hex(),
+		)
+	}
 	// Ok-signal flip is observable only via runBorGRPCHashParityCheckWith's caller-side early-return, which is tested directly.
 	// mutator-disable-next-line boolean_substitution on ok signal
 	return true, false
@@ -1557,7 +1564,7 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 }
 
 // GetBorGRPCClient returns bor gRPC client
-func GetBorGRPCClient() *borgrpc.BorGRPCClient {
+func GetBorGRPCClient() borgrpc.Client {
 	return borGRPCClient
 }
 

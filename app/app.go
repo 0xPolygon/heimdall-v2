@@ -571,6 +571,18 @@ func (app *HeimdallApp) Name() string { return app.BaseApp.Name() }
 
 // InitChainer application update at chain initialization
 func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+	// newApp started the Bor failover prober and per-endpoint probe clients via
+	// InitHeimdallConfig, but the start command only registers their shutdown
+	// cleanup in PostSetup, which runs after InitChain. Any abort here (error
+	// return or panic) exits before that, so close them on every non-success
+	// exit. CloseBorChainClients is idempotent and mutex-guarded.
+	succeeded := false
+	defer func() {
+		if !succeeded {
+			helper.CloseBorChainClients()
+		}
+	}()
+
 	var genesisState GenesisState
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
@@ -603,6 +615,15 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		return &abci.ResponseInitChain{}, err
 	}
 
+	// Fail closed if this node is a protected block producer with Bor endpoint
+	// failover configured. The startup check in newStartApp runs before genesis
+	// state exists, so on a fresh DB a genesis producer's signer has no validator
+	// record yet; re-check now that InitGenesis has written validator and span
+	// state. Node-local: only the misconfigured producer aborts InitChain.
+	if err := app.enforceBorFailoverBPGuard(ctx); err != nil {
+		return &abci.ResponseInitChain{}, err
+	}
+
 	moduleAccTopUp := app.AccountKeeper.GetModuleAccount(ctx, topupTypes.ModuleName)
 	if moduleAccTopUp == nil {
 		panic(fmt.Sprintf("%s module account has not been set", topupTypes.ModuleName))
@@ -632,6 +653,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	}
 
 	// update validators
+	succeeded = true
 	return &abci.ResponseInitChain{
 		Validators: valUpdates,
 	}, nil
