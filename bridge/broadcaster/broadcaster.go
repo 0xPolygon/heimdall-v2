@@ -206,16 +206,15 @@ func updateAccountSequence(ctx context.Context, tb *TxBroadcaster) error {
 	return nil
 }
 
-// BroadcastToBorChain broadcasts a msg to the bor chain
-func (tb *TxBroadcaster) BroadcastToBorChain(msg ethereum.CallMsg) error {
+// BroadcastToBorChain broadcasts a msg to the bor chain.
+func (tb *TxBroadcaster) BroadcastToBorChain(ctx context.Context, msg ethereum.CallMsg) error {
 	tb.borMutex.Lock()
 	defer tb.borMutex.Unlock()
 
-	// get bor client
 	borClient := helper.GetBorClient()
+	borCallTimeout := helper.GetBorChainCallTimeout()
 
-	// get auth
-	auth, err := helper.GenerateAuthObj(borClient, *msg.To, msg.Data)
+	auth, err := helper.GenerateAuthObjWithContext(ctx, borCallTimeout, borClient, *msg.To, msg.Data)
 	if err != nil {
 		tb.logger.Error("Error generating auth object", "error", err)
 		return err
@@ -240,12 +239,10 @@ func (tb *TxBroadcaster) BroadcastToBorChain(msg ethereum.CallMsg) error {
 
 	tb.logger.Info("Sending transaction to bor", "txHash", signedTx.Hash())
 
-	// create a context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), helper.GetConfig().BorRPCTimeout)
+	sendCtx, cancel := context.WithTimeout(ctx, borCallTimeout)
 	defer cancel()
 
-	// broadcast transaction
-	if err = borClient.SendTransaction(ctx, signedTx); err != nil {
+	if err = borClient.SendTransaction(sendCtx, signedTx); err != nil {
 		tb.logger.Error("Error while broadcasting the transaction to bor chain", "error", err)
 		return err
 	}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -34,14 +35,26 @@ type EthClient interface {
 
 // GenerateAuthObj creates a transaction auth object with EIP-1559 gas pricing.
 func GenerateAuthObj(client *ethclient.Client, address common.Address, data []byte) (auth *bind.TransactOpts, err error) {
-	return generateAuthObjWithClient(client, address, data)
+	return GenerateAuthObjWithContext(context.Background(), GetConfig().EthRPCTimeout, client, address, data)
+}
+
+// GenerateAuthObjWithContext creates a transaction auth object using ctx as the
+// parent cancellation signal and timeout as the budget for each RPC call.
+func GenerateAuthObjWithContext(ctx context.Context, timeout time.Duration, client *ethclient.Client, address common.Address, data []byte) (auth *bind.TransactOpts, err error) {
+	return generateAuthObjWithClient(ctx, timeout, client, address, data)
+}
+
+type authRPCData struct {
+	latestBlock     *types.Block
+	suggestedTipCap *big.Int
+	nonce           uint64
+	gasLimit        uint64
+	chainID         *big.Int
 }
 
 // generateAuthObjWithClient creates a transaction auth object using the EthClient interface.
 // This function is used internally and allows for easier testing with mock clients.
-func generateAuthObjWithClient(client EthClient, address common.Address, data []byte) (auth *bind.TransactOpts, err error) {
-	ctx := context.Background()
-
+func generateAuthObjWithClient(ctx context.Context, timeout time.Duration, client EthClient, address common.Address, data []byte) (auth *bind.TransactOpts, err error) {
 	callMsg := ethereum.CallMsg{
 		To:   &address,
 		Data: data,
@@ -55,41 +68,55 @@ func generateAuthObjWithClient(client EthClient, address common.Address, data []
 
 	// Get the from address.
 	fromAddress := common.BytesToAddress(pkObject.PubKey().Address().Bytes())
+	callMsg.From = fromAddress
 
-	// Get the configured gas fee cap and tip cap.
-	configGasFeeCap := GetConfig().MainChainGasFeeCap
-	if configGasFeeCap <= 0 {
-		configGasFeeCap = DefaultMainChainGasFeeCap
-	}
-
-	configGasTipCap := GetConfig().MainChainGasTipCap
-	if configGasTipCap <= 0 {
-		configGasTipCap = DefaultMainChainGasTipCap
-	}
-
-	// Get the latest block to retrieve baseFee.
-	latestBlock, err := client.BlockByNumber(ctx, nil)
+	rpcData, err := fetchAuthRPCData(ctx, timeout, client, fromAddress, callMsg)
 	if err != nil {
-		Logger.Error("unable to fetch latest block", "error", err)
 		return
 	}
 
-	baseFee := latestBlock.BaseFee()
+	baseFee := rpcData.latestBlock.BaseFee()
+	gasFeeCap, gasTipCap, err := calculateEIP1559Caps(baseFee, rpcData.suggestedTipCap)
+	if err != nil {
+		return
+	}
+
+	auth, err = bind.NewKeyedTransactorWithChainID(ecdsaPrivateKey, rpcData.chainID)
+	if err != nil {
+		Logger.Error(errUnableToCreateAuthObj, "error", err)
+		return
+	}
+
+	auth.Nonce = big.NewInt(int64(rpcData.nonce))
+	auth.GasLimit = rpcData.gasLimit
+	auth.GasFeeCap = gasFeeCap
+	auth.GasTipCap = gasTipCap
+
+	Logger.Debug("created EIP-1559 transaction auth",
+		"nonce", rpcData.nonce,
+		"gasLimit", rpcData.gasLimit,
+		"gasFeeCap", gasFeeCap,
+		"gasTipCap", gasTipCap,
+		"baseFee", baseFee,
+	)
+
+	return
+}
+
+func calculateEIP1559Caps(baseFee, suggestedTipCap *big.Int) (*big.Int, *big.Int, error) {
 	if baseFee == nil {
-		err = errors.New("baseFee is nil, EIP-1559 not supported")
+		err := errors.New("baseFee is nil, EIP-1559 not supported")
 		Logger.Error("EIP-1559 not supported on this chain", "error", err)
-		return
+		return nil, nil, err
 	}
-
-	// Get suggested tip cap from the network.
-	suggestedTipCap, err := client.SuggestGasTipCap(ctx)
-	if err != nil {
+	if suggestedTipCap == nil {
+		err := errors.New("suggested gas tip cap is nil")
 		Logger.Error("unable to fetch suggested gas tip cap", "error", err)
-		return
+		return nil, nil, err
 	}
 
-	// Use the lower of suggested tip or configured tip cap to prioritize lower fees.
-	// The configured tip cap acts as a maximum we're willing to pay.
+	configGasFeeCap, configGasTipCap := configuredGasCaps()
+
 	gasTipCap := suggestedTipCap
 	if gasTipCap.Cmp(big.NewInt(configGasTipCap)) > 0 {
 		Logger.Warn(
@@ -118,45 +145,93 @@ func generateAuthObjWithClient(client EthClient, address common.Address, data []
 		gasTipCap = gasFeeCap
 	}
 
-	// Use PendingNonceAt to account for pending transactions in the mempool.
-	nonce, err := client.PendingNonceAt(ctx, fromAddress)
+	return gasFeeCap, gasTipCap, nil
+}
+
+func configuredGasCaps() (int64, int64) {
+	configGasFeeCap := GetConfig().MainChainGasFeeCap
+	if configGasFeeCap <= 0 {
+		configGasFeeCap = DefaultMainChainGasFeeCap
+	}
+	configGasTipCap := GetConfig().MainChainGasTipCap
+	if configGasTipCap <= 0 {
+		configGasTipCap = DefaultMainChainGasTipCap
+	}
+	return configGasFeeCap, configGasTipCap
+}
+
+func fetchAuthRPCData(ctx context.Context, timeout time.Duration, client EthClient, fromAddress common.Address, callMsg ethereum.CallMsg) (authRPCData, error) {
+	var out authRPCData
+	var err error
+
+	out.latestBlock, err = fetchAuthLatestBlock(ctx, timeout, client)
 	if err != nil {
-		return
+		return out, err
 	}
 
-	callMsg.From = fromAddress
-	gasLimit, err := client.EstimateGas(ctx, callMsg)
+	out.suggestedTipCap, err = callWithTimeout(ctx, timeout, client.SuggestGasTipCap)
+	if err != nil {
+		Logger.Error("unable to fetch suggested gas tip cap", "error", err)
+		return out, err
+	}
+
+	out.nonce, err = callWithTimeout(ctx, timeout, func(callCtx context.Context) (uint64, error) {
+		return client.PendingNonceAt(callCtx, fromAddress)
+	})
+	if err != nil {
+		return out, err
+	}
+
+	out.gasLimit, err = callWithTimeout(ctx, timeout, func(callCtx context.Context) (uint64, error) {
+		return client.EstimateGas(callCtx, callMsg)
+	})
 	if err != nil {
 		Logger.Error("Unable to estimate gas", "error", err)
-		return
+		return out, err
 	}
 
-	chainId, err := client.ChainID(ctx)
+	out.chainID, err = callWithTimeout(ctx, timeout, client.ChainID)
 	if err != nil {
 		Logger.Error("Unable to fetch ChainID", "error", err)
-		return
+		return out, err
+	}
+	if out.chainID == nil {
+		return out, errors.New("chain ID is nil")
 	}
 
-	auth, err = bind.NewKeyedTransactorWithChainID(ecdsaPrivateKey, chainId)
+	return out, nil
+}
+
+func fetchAuthLatestBlock(ctx context.Context, timeout time.Duration, client EthClient) (*types.Block, error) {
+	latestBlock, err := callWithTimeout(ctx, timeout, func(callCtx context.Context) (*types.Block, error) {
+		return client.BlockByNumber(callCtx, nil)
+	})
 	if err != nil {
-		Logger.Error(errUnableToCreateAuthObj, "error", err)
-		return
+		Logger.Error("unable to fetch latest block", "error", err)
+		return nil, err
 	}
+	if latestBlock == nil {
+		return nil, errors.New("latest block is nil")
+	}
+	if latestBlock.BaseFee() == nil {
+		err := errors.New("baseFee is nil, EIP-1559 not supported")
+		Logger.Error("EIP-1559 not supported on this chain", "error", err)
+		return nil, err
+	}
+	return latestBlock, nil
+}
 
-	auth.Nonce = big.NewInt(int64(nonce))
-	auth.GasLimit = gasLimit
-	auth.GasFeeCap = gasFeeCap
-	auth.GasTipCap = gasTipCap
+func rpcCallContext(parent context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	if timeout <= 0 {
+		timeout = DefaultEthRPCTimeout
+	}
+	return context.WithTimeout(parent, timeout)
+}
 
-	Logger.Debug("created EIP-1559 transaction auth",
-		"nonce", nonce,
-		"gasLimit", gasLimit,
-		"gasFeeCap", gasFeeCap,
-		"gasTipCap", gasTipCap,
-		"baseFee", baseFee,
-	)
-
-	return
+func callWithTimeout[T any](parent context.Context, timeout time.Duration, fn func(context.Context) (T, error)) (T, error) {
+	callCtx, cancel := rpcCallContext(parent, timeout)
+	defer cancel()
+	return fn(callCtx)
 }
 
 // SendCheckpoint sends checkpoint to rootChain contract.
