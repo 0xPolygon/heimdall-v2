@@ -5549,6 +5549,131 @@ func TestPrepareProposal_AllTxsIncluded_WithinMaxTxBytes(t *testing.T) {
 	})
 }
 
+// TestPrepareProposal_ProtoSizeAccounting_NoOversizedProposal ensures that PrepareProposal
+// sizes the returned txs in the unit CometBFT uses to validate them — the protobuf-encoded
+// size of Data.Txs (types.Txs.Validate -> ComputeProtoSizeForTxs) — not raw
+// len(tx).
+func TestPrepareProposal_ProtoSizeAccounting_NoOversizedProposal(t *testing.T) {
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	ctx = ctx.WithBlockHeight(3)
+
+	const numTxs = 80
+	propAddr := sdk.AccAddress(priv.PubKey().Address())
+	propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
+	sequence := propAcc.GetSequence()
+
+	var proposedTxs [][]byte
+	var rawTxsTotal int64
+	for i := 0; i < numTxs; i++ {
+		msg := &checkpointTypes.MsgCheckpoint{
+			Proposer:        priv.PubKey().Address().String(),
+			StartBlock:      uint64(100 + i*100),
+			EndBlock:        uint64(200 + i*100),
+			RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+			AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+			BorChainId:      "1",
+		}
+		txBytes, err := buildSignedTxWithSequence(msg, ctx, priv, app, sequence)
+		require.NoError(t, err)
+		proposedTxs = append(proposedTxs, txBytes)
+		rawTxsTotal += int64(len(txBytes))
+		sequence++
+	}
+
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+	require.NoError(t, err)
+
+	maxTxBytes := int64(len(extCommitBytes)) + rawTxsTotal
+
+	req := &abci.RequestPrepareProposal{
+		Txs:             proposedTxs,
+		MaxTxBytes:      maxTxBytes,
+		Height:          3,
+		LocalLastCommit: *extCommit,
+		ProposerAddress: common.FromHex(validators[0].Signer),
+	}
+
+	res, err := app.PrepareProposal(req)
+	require.NoError(t, err)
+	require.NotNil(t, res)
+
+	// Proto sizing is tighter than raw, so most txs are kept but at least one is dropped.
+	require.Greater(t, len(res.Txs), 1, "expected most of the batch to be included")
+	require.Less(t, len(res.Txs), 1+numTxs, "proto sizing must drop the overflowing tx")
+
+	// The returned proposal must satisfy the size check CometBFT applies to it.
+	require.NoError(t, cmtTypes.ToTxs(res.Txs).Validate(maxTxBytes))
+}
+
+// TestPrepareProposal_SizeBoundary_IncludesTxThatExactlyFits checks that a tx
+// filling the proposal to exactly MaxTxBytes is kept (CometBFT rejects only size
+// strictly greater than the limit).
+func TestPrepareProposal_SizeBoundary_IncludesTxThatExactlyFits(t *testing.T) {
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	ctx = ctx.WithBlockHeight(3)
+
+	// Enough txs that the resulting budget stays well above the vote-extension
+	// filtering threshold, so the commit-info tx is identical across both passes.
+	const numTxs = 130
+	propAddr := sdk.AccAddress(priv.PubKey().Address())
+	propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
+	sequence := propAcc.GetSequence()
+
+	var proposedTxs [][]byte
+	for i := 0; i < numTxs; i++ {
+		msg := &checkpointTypes.MsgCheckpoint{
+			Proposer:        priv.PubKey().Address().String(),
+			StartBlock:      uint64(100 + i*100),
+			EndBlock:        uint64(200 + i*100),
+			RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+			AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+			BorChainId:      "1",
+		}
+		txBytes, err := buildSignedTxWithSequence(msg, ctx, priv, app, sequence)
+		require.NoError(t, err)
+		proposedTxs = append(proposedTxs, txBytes)
+		sequence++
+	}
+
+	_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+	require.NoError(t, err)
+
+	newReq := func(maxTxBytes int64) *abci.RequestPrepareProposal {
+		localCommit := *extCommit
+		return &abci.RequestPrepareProposal{
+			Txs:             proposedTxs,
+			MaxTxBytes:      maxTxBytes,
+			Height:          3,
+			LocalLastCommit: localCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+		}
+	}
+
+	// First pass: unbounded budget, to capture the exact proposal and its proto size.
+	full, err := app.PrepareProposal(newReq(1 << 30))
+	require.NoError(t, err)
+	require.Equal(t, 1+numTxs, len(full.Txs))
+
+	// Sum per-tx proto sizes, mirroring how the handler accounts for txs and how
+	// CometBFT's Txs.Validate measures them (both sum ComputeProtoSizeForTxs per tx).
+	var boundary int64
+	for _, tx := range full.Txs {
+		boundary += cmtTypes.ComputeProtoSizeForTxs([]cmtTypes.Tx{tx})
+	}
+
+	// MaxTxBytes set to exactly that total: the last tx fills the budget to the
+	// byte and must still be included.
+	bounded, err := app.PrepareProposal(newReq(boundary))
+	require.NoError(t, err)
+	require.Equal(t, full.Txs[0], bounded.Txs[0], "commit must be identical across passes (no VE-filtering skew)")
+	require.Equal(t, 1+numTxs, len(bounded.Txs), "tx that fills MaxTxBytes exactly must be kept")
+	require.NoError(t, cmtTypes.ToTxs(bounded.Txs).Validate(boundary))
+}
+
 func TestVerifyVoteExtension_RejectInvalidNonRpVoteExtension(t *testing.T) {
 	t.Run("reject vote extension with NonRpVoteExtension too small", func(t *testing.T) {
 		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
