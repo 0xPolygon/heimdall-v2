@@ -430,6 +430,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			},
 			activeValidatorIDs:  map[uint64]struct{}{},
 			excludedProducerIDs: map[uint64]struct{}{2: {}},
+			expectedProducer:    3, // fallback [1,2,3], current 1 → next is 2 but excluded → 3
 			expectedError:       false,
 		},
 	}

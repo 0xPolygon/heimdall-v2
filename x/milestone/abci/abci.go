@@ -135,11 +135,8 @@ func MilestonePropositionHeadID(prop *types.MilestoneProposition) []byte {
 		return nil
 	}
 
-	var buf bytes.Buffer
-	if err := binary.Write(&buf, binary.LittleEndian, prop.BlockTds[i]); err != nil {
-		return nil
-	}
-	tdBytes := [8]byte(buf.Bytes()) // enforce 8 bytes
+	var tdBytes [8]byte
+	binary.LittleEndian.PutUint64(tdBytes[:], prop.BlockTds[i])
 
 	id := make([]byte, 0, len(prop.BlockHashes[i])+len(tdBytes))
 	id = append(id, prop.BlockHashes[i]...)

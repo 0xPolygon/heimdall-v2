@@ -85,6 +85,20 @@ func (app *HeimdallApp) rotateSpanFromPendingHead(ctx sdk.Context, pendingHead u
 		return err
 	}
 
+	// pendingHead comes from an aggregated, unfinalized milestone proposition whose StartBlockNumber is
+	// not bounded against chain state, so a >=1/3 byzantine slice could push it arbitrarily far past
+	// lastSpan.EndBlock. An honest producer can never advance beyond its span's end, so a head past it
+	// is not a real stall to rotate on. Bail before the runway loop (which would otherwise spin for huge
+	// values, or overflow into an infinite loop near MaxUint64) and the producer lookup (which would
+	// error for an out-of-range block and halt the PreBlocker).
+	if pendingHead > lastSpan.EndBlock {
+		logger.Info("Pending bor head is beyond the last span end, skipping rotation",
+			"pendingHead", pendingHead,
+			"lastSpanEndBlock", lastSpan.EndBlock,
+		)
+		return nil
+	}
+
 	params, err := app.BorKeeper.GetParams(ctx)
 	if err != nil {
 		logger.Error("Error occurred while getting bor params", "error", err)

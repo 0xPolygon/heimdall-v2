@@ -1,6 +1,7 @@
 package app
 
 import (
+	"math"
 	"testing"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -274,6 +275,38 @@ func TestCheckAndRotateOnPendingStallSpanExhaustionBoundary(t *testing.T) {
 	require.NoError(t, err)
 	_, isFailed := failed[currentProducer]
 	require.True(t, isFailed, "boundary stalled producer added to failed set")
+}
+
+// TestRotateSpanFromPendingHeadBeyondSpanEnd guards against an unbounded pendingHead. The aggregated
+// pending proposition's StartBlockNumber is not bounded against chain state, so a >=1/3 byzantine slice
+// could push pendingHead far past lastSpan.EndBlock. An honest producer never advances past its span
+// end, so such a head is not a real stall: the rotation must bail (no new span, no error → no PreBlocker
+// halt) rather than spin the runway loop or error the producer lookup. The MaxUint64 case also pins the
+// loop-overflow guard — without the clamp that loop never terminates.
+func TestRotateSpanFromPendingHeadBeyondSpanEnd(t *testing.T) {
+	cases := []struct {
+		name        string
+		pendingHead uint64
+	}{
+		{"modest overshoot", psSpanEnd + 5},
+		{"max uint64 (loop-overflow guard)", math.MaxUint64},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 5)
+			validators, supporters := seedSpan(t, app, ctx)
+			seedProducerSelection(t, app, ctx, validators)
+			ctx = ctx.WithBlockHeight(2000)
+			prop := singleBlockPendingProp(tc.pendingHead, 0x33)
+
+			require.NoError(t, app.rotateSpanFromPendingHead(ctx, tc.pendingHead, milestoneAbci.MilestonePropositionHeadID(prop), supporters),
+				"a head beyond the span end must not error/halt")
+
+			last, err := app.BorKeeper.GetLastSpan(ctx)
+			require.NoError(t, err)
+			require.Equal(t, uint64(1), last.Id, "no rotation when pendingHead is beyond the span end")
+		})
+	}
 }
 
 // TestPreBlockerPendingStallRotatesWhenForkEnabled drives the full PreBlocker dispatch with the
