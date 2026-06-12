@@ -242,6 +242,40 @@ func TestCheckAndRotateOnPendingStallReRotatesAwayFromInstalledProducer(t *testi
 	require.True(t, installedFailed, "the just-installed producer is added to the failed set on re-rotation")
 }
 
+// TestCheckAndRotateOnPendingStallSpanExhaustionBoundary covers report-002 span exhaustion: the
+// pending head sits at the very last block of the current span (pendingHead == lastSpan.EndBlock) with
+// no successor span minted yet. The next-block lookup (pendingHead+1) lies beyond every span, so the
+// rotation must fall back to pendingHead's producer rather than erroring — an erroring producer lookup
+// would return up to PreBlocker and halt the chain. Rotation must still succeed from pendingHead+1.
+func TestCheckAndRotateOnPendingStallSpanExhaustionBoundary(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 5)
+	validators, supporters := seedSpan(t, app, ctx)
+	seedProducerSelection(t, app, ctx, validators)
+
+	// Head at the span's final block, single span only (no lookahead).
+	exhaustedHead := psSpanEnd
+	prop := singleBlockPendingProp(exhaustedHead, 0x22)
+	trackedHeight := uint64(1000)
+	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, exhaustedHead, milestoneAbci.MilestonePropositionHeadID(prop), trackedHeight))
+	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
+	ctx = ctx.WithBlockHeight(int64(trackedHeight) + threshold + 1)
+
+	currentProducer := validators[0].ValId
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop, supporters), "boundary must not error/halt")
+
+	last, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(2), last.Id, "a new span must be minted at the span-exhaustion boundary")
+	require.Equal(t, exhaustedHead+1, last.StartBlock, "new span starts at N+1")
+	require.Greater(t, last.EndBlock, psSpanEnd, "new span must extend past the exhausted runway")
+	require.NotEqual(t, currentProducer, last.SelectedProducers[0].ValId, "stalled producer excluded")
+
+	failed, err := app.BorKeeper.GetLatestFailedProducer(ctx)
+	require.NoError(t, err)
+	_, isFailed := failed[currentProducer]
+	require.True(t, isFailed, "boundary stalled producer added to failed set")
+}
+
 // TestPreBlockerPendingStallRotatesWhenForkEnabled drives the full PreBlocker dispatch with the
 // hardfork ON: a 40%-band pending milestone whose head has already been static beyond the stall
 // threshold must rotate. The companion TestPreBlockerSpanRotationWithMinorityMilestone covers the
