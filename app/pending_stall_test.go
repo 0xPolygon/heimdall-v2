@@ -280,3 +280,41 @@ func TestPreBlockerPendingStallRotatesWhenForkEnabled(t *testing.T) {
 	_, proposerSet := app.AccountKeeper.GetBlockProposer(ctx)
 	require.True(t, proposerSet, "PreBlocker must complete, not early-return after the pending-stall dispatch")
 }
+
+// TestCheckAndRotateOnPendingStallEmptyProposition pins the early return for an empty pending
+// proposition: it must be a no-op (no rotation, stall clock untouched).
+func TestCheckAndRotateOnPendingStallEmptyProposition(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	_, supporters := seedSpan(t, app, ctx)
+	ctx = ctx.WithBlockHeight(1000)
+
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx, &milestoneTypes.MilestoneProposition{}, supporters))
+
+	last, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), last.Id, "empty proposition must not rotate")
+
+	_, _, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
+	require.NoError(t, err)
+	require.Zero(t, height, "empty proposition must not touch the stall clock")
+}
+
+// TestRotateSpanFromPendingHeadNoSelectableProducer covers the path where every candidate is
+// excluded (the stalled producer plus a full failed set): selection fails, so the rotation logs
+// and returns nil rather than erroring (consensus must not halt), and no new span is minted.
+func TestRotateSpanFromPendingHeadNoSelectableProducer(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	validators, supporters := seedSpan(t, app, ctx)
+	seedProducerSelection(t, app, ctx, validators)
+	for _, v := range validators {
+		require.NoError(t, app.BorKeeper.AddLatestFailedProducer(ctx, v.ValId))
+	}
+	ctx = ctx.WithBlockHeight(2000)
+	prop := singleBlockPendingProp(psPendingHead, 0x11)
+
+	require.NoError(t, app.rotateSpanFromPendingHead(ctx, psPendingHead, milestoneAbci.MilestonePropositionHeadID(prop), supporters))
+
+	last, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), last.Id, "no new span when no producer is selectable")
+}

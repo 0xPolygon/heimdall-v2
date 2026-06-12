@@ -444,7 +444,6 @@ func (k *Keeper) CalculateProducerSet(ctx context.Context, producerSetLimit uint
 	return finalCandidates, nil
 }
 
-// FilterByActiveProducerSet filters candidates based on whether each candidate has voted for the last X milestones.
 // filterExcludedProducers drops any candidate present in excluded, preserving order. A nil/empty
 // exclusion set returns the candidates unchanged (POS-3629; no-op for non-stall callers).
 func filterExcludedProducers(candidates []uint64, excluded map[uint64]struct{}) []uint64 {
@@ -460,6 +459,7 @@ func filterExcludedProducers(candidates []uint64, excluded map[uint64]struct{}) 
 	return filtered
 }
 
+// FilterByActiveProducerSet filters candidates based on whether each candidate has voted for the last X milestones.
 func (k *Keeper) FilterByActiveProducerSet(_ context.Context, candidates []uint64, activeValidatorIDs map[uint64]struct{}) []uint64 {
 	activeCandidates := make([]uint64, 0, len(candidates))
 

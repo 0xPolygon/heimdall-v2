@@ -23,7 +23,7 @@ func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone
 	app.Logger().Info("1/3rd voting power found on milestone proposition, skipping span rotation",
 		"startBlock", pendingMilestone.StartBlockNumber,
 		"endBlock", pendingMilestone.StartBlockNumber+uint64(len(pendingMilestone.BlockHashes)-1),
-		strutil.HashesToString(pendingMilestone.BlockHashes),
+		"blockHashes", strutil.HashesToString(pendingMilestone.BlockHashes),
 	)
 	return nil
 }
