@@ -98,7 +98,12 @@ func (app *HeimdallApp) rotateSpanFromPendingHead(ctx sdk.Context, pendingHead u
 		endBlock += params.SpanDuration
 	}
 
-	currentProducer, err := app.BorKeeper.FindCurrentProducerID(ctx, pendingHead)
+	// Resolve the producer responsible for the block that should come next (pendingHead+1), not the
+	// last produced block. On the first rotation both resolve to the same span. On a re-rotation under
+	// a persistent stall the prior rotation already installed a span starting at pendingHead+1, so
+	// looking up pendingHead would fall back (newest span first) to the old, already-rotated-out
+	// producer and never mark the actually-stalled one failed.
+	currentProducer, err := app.BorKeeper.FindCurrentProducerID(ctx, pendingHead+1)
 	if err != nil {
 		logger.Error("Error occurred while finding current producer", "error", err)
 		return err

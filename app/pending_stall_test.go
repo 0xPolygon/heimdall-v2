@@ -196,6 +196,52 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 	})
 }
 
+// TestCheckAndRotateOnPendingStallReRotatesAwayFromInstalledProducer pins the re-rotation path: when
+// the head stays stalled across two rotations, the producer installed by the first rotation (not the
+// original one) must be the one excluded on the second. This guards the next-block-to-produce
+// (pendingHead+1) lookup — keying off pendingHead would resolve the overlapping older span and keep
+// re-selecting the just-installed producer, so the failed set would never grow past the first.
+func TestCheckAndRotateOnPendingStallReRotatesAwayFromInstalledProducer(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 5)
+	validators, supporters := seedSpan(t, app, ctx)
+	seedProducerSelection(t, app, ctx, validators)
+	prop := singleBlockPendingProp(psPendingHead, 0xEE)
+	propID := milestoneAbci.MilestonePropositionHeadID(prop)
+
+	origProducer := validators[0].ValId
+
+	// First rotation: head stalled beyond threshold under the seeded span.
+	trackedHeight := uint64(1000)
+	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propID, trackedHeight))
+	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
+	firstHeight := int64(trackedHeight) + threshold + 1
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(firstHeight), prop, supporters))
+
+	firstSpan, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(2), firstSpan.Id, "first rotation mints span 2")
+	installedProducer := firstSpan.SelectedProducers[0].ValId
+	require.NotEqual(t, origProducer, installedProducer, "first rotation excludes the original producer")
+
+	// The same head stays stalled. The clock was debounced to firstHeight+buffer; age past it again.
+	buffer := helper.GetSpanRotationBuffer(ctx)
+	secondHeight := firstHeight + int64(buffer) + threshold + 1
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(secondHeight), prop, supporters))
+
+	secondSpan, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(3), secondSpan.Id, "second rotation mints span 3")
+	require.NotEqual(t, installedProducer, secondSpan.SelectedProducers[0].ValId,
+		"second rotation must exclude the producer the first rotation installed")
+
+	failed, err := app.BorKeeper.GetLatestFailedProducer(ctx)
+	require.NoError(t, err)
+	_, origFailed := failed[origProducer]
+	_, installedFailed := failed[installedProducer]
+	require.True(t, origFailed, "original stalled producer stays in the failed set")
+	require.True(t, installedFailed, "the just-installed producer is added to the failed set on re-rotation")
+}
+
 // TestPreBlockerPendingStallRotatesWhenForkEnabled drives the full PreBlocker dispatch with the
 // hardfork ON: a 40%-band pending milestone whose head has already been static beyond the stall
 // threshold must rotate. The companion TestPreBlockerSpanRotationWithMinorityMilestone covers the
