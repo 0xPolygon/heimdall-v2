@@ -731,7 +731,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		// If we can't reach the 2/3 majority, we need to check if there is at least 1/3 of the voting power supporting a new milestone
 		minMajorityVP := totalVotingPower/3 + 1
 
-		pendingMilestone, _, _, _, err := milestoneAbci.GetMajorityMilestoneProposition(
+		pendingMilestone, _, _, pendingSupportingValidatorIDs, err := milestoneAbci.GetMajorityMilestoneProposition(
 			ctx,
 			validatorSet,
 			extVoteInfo,
@@ -750,12 +750,8 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
 				return nil, err
 			}
-		} else {
-			logger.Info("1/3rd voting power found on milestone proposition, skipping span rotation",
-				"startBlock", pendingMilestone.StartBlockNumber,
-				"endBlock", pendingMilestone.StartBlockNumber+uint64(len(pendingMilestone.BlockHashes)-1),
-				strutil.HashesToString(pendingMilestone.BlockHashes),
-			)
+		} else if err := app.handlePendingMilestone(ctx, pendingMilestone, pendingSupportingValidatorIDs); err != nil {
+			return nil, err
 		}
 	}
 
@@ -911,7 +907,7 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 			return err
 		}
 
-		err = app.BorKeeper.AddNewVeBlopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault)
+		err = app.BorKeeper.AddNewVeBlopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, nil)
 		if err != nil {
 			logger.Error("Error occurred while adding new veblop span", "error", err)
 			return err
@@ -1019,7 +1015,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 
 		delete(latestActiveProducer, currentProducer)
 
-		err = app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault)
+		err = app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, nil)
 		if err != nil {
 			logger.Warn("Error occurred while adding new veblop span", "error", err)
 		} else {

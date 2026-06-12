@@ -122,6 +122,31 @@ func getFastForwardMilestoneStartBlock(latestMilestoneEndBlock, ffMilestoneBlock
 	return latestMilestoneEndBlock + ffMilestoneBlockInterval
 }
 
+// MilestonePropositionHeadID returns the hash+td identity of a proposition's head block,
+// using the same encoding as the per-block tally key below. It lets a caller detect when the
+// >1/3-agreed pending tip changes content at a constant height (POS-3629). Returns nil for an
+// empty or malformed proposition.
+func MilestonePropositionHeadID(prop *types.MilestoneProposition) []byte {
+	if prop == nil {
+		return nil
+	}
+	i := len(prop.BlockHashes) - 1
+	if i < 0 || i >= len(prop.BlockTds) {
+		return nil
+	}
+
+	var buf bytes.Buffer
+	if err := binary.Write(&buf, binary.LittleEndian, prop.BlockTds[i]); err != nil {
+		return nil
+	}
+	tdBytes := [8]byte(buf.Bytes()) // enforce 8 bytes
+
+	id := make([]byte, 0, len(prop.BlockHashes[i])+len(tdBytes))
+	id = append(id, prop.BlockHashes[i]...)
+	id = append(id, tdBytes[:]...)
+	return id
+}
+
 func GetMajorityMilestoneProposition(
 	ctx sdk.Context,
 	validatorSet *stakeTypes.ValidatorSet,

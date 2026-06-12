@@ -15,11 +15,11 @@ import (
 )
 
 // AddNewVeBlopSpan adds a new veBlop (Validator-elected block producer) span
-func (k *Keeper) AddNewVeBlopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}, heimdallBlock uint64, targetProducerID uint64) error {
+func (k *Keeper) AddNewVeBlopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}, heimdallBlock uint64, targetProducerID uint64, excludedProducerIDs map[uint64]struct{}) error {
 	logger := k.Logger(ctx)
 
 	// select next producers
-	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, helper.GetProducerSetLimit(ctx), startBlock, endBlock, targetProducerID)
+	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, helper.GetProducerSetLimit(ctx), startBlock, endBlock, targetProducerID, excludedProducerIDs)
 	if err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func (k *Keeper) ClearLatestFailedProducer(ctx context.Context) error {
 
 // SelectNextSpanProducer selects the next producer for a new span.
 // It calculates the candidate set, filters by active producers, and selects one.
-func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit, startBlock, endBlock uint64, targetProducerID uint64) (uint64, error) {
+func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit, startBlock, endBlock uint64, targetProducerID uint64, excludedProducerIDs map[uint64]struct{}) (uint64, error) {
 	candidates, err := k.CalculateProducerSet(ctx, producerSetLimit)
 	if err != nil {
 		return 0, fmt.Errorf("failed to calculate producer set: %w", err)
@@ -263,6 +263,9 @@ func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64,
 		}
 		activeCandidates = newCandidates
 	}
+
+	// Honor an explicit exclusion set in both the active and fallback paths (POS-3629).
+	activeCandidates = filterExcludedProducers(activeCandidates, excludedProducerIDs)
 
 	// If the declaring producer requested a specific replacement, try to honor it.
 	// The target must still be an active candidate and not down for the range.
@@ -442,6 +445,21 @@ func (k *Keeper) CalculateProducerSet(ctx context.Context, producerSetLimit uint
 }
 
 // FilterByActiveProducerSet filters candidates based on whether each candidate has voted for the last X milestones.
+// filterExcludedProducers drops any candidate present in excluded, preserving order. A nil/empty
+// exclusion set returns the candidates unchanged (POS-3629; no-op for non-stall callers).
+func filterExcludedProducers(candidates []uint64, excluded map[uint64]struct{}) []uint64 {
+	if len(excluded) == 0 {
+		return candidates
+	}
+	filtered := make([]uint64, 0, len(candidates))
+	for _, candidate := range candidates {
+		if _, isExcluded := excluded[candidate]; !isExcluded {
+			filtered = append(filtered, candidate)
+		}
+	}
+	return filtered
+}
+
 func (k *Keeper) FilterByActiveProducerSet(_ context.Context, candidates []uint64, activeValidatorIDs map[uint64]struct{}) []uint64 {
 	activeCandidates := make([]uint64, 0, len(candidates))
 

@@ -274,6 +274,11 @@ var feeWithdrawValidatorGateHeight int64 = 0
 
 var v080HardforkHeight int64 = 0
 
+// spanRotationOnStallHeight gates POS-3629: forcing a span rotation when bor's
+// pending head stalls under a 1/3<=PM<2/3 milestone. Zero disables it (no network
+// height assigned yet); rename to the release codename when one is chosen.
+var spanRotationOnStallHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -514,7 +519,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		producerDowntimeHeight = 34966593
 		phuketHardforkHeight = 44070000
 		feeWithdrawValidatorGateHeight = 46361000
-		v080HardforkHeight = 0 // TODO marcello set block number when needed
+		v080HardforkHeight = 0        // TODO marcello set block number when needed
+		spanRotationOnStallHeight = 0 // TODO set block number when the hardfork is scheduled
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -527,6 +533,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		phuketHardforkHeight = 0
 		feeWithdrawValidatorGateHeight = 0
 		v080HardforkHeight = 0
+		spanRotationOnStallHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -538,7 +545,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		producerDowntimeHeight = 20457139
 		phuketHardforkHeight = 32276400
 		feeWithdrawValidatorGateHeight = 35914000
-		v080HardforkHeight = 0 // TODO marcello set block number when needed
+		v080HardforkHeight = 0        // TODO marcello set block number when needed
+		spanRotationOnStallHeight = 0 // TODO set block number when the hardfork is scheduled
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -551,6 +559,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		phuketHardforkHeight = 0
 		feeWithdrawValidatorGateHeight = 0
 		v080HardforkHeight = 0
+		spanRotationOnStallHeight = 0
 	}
 }
 
@@ -965,6 +974,18 @@ func GetV080HardforkHeight() int64 {
 	return v080HardforkHeight
 }
 
+func IsSpanRotationOnStall(height int64) bool {
+	return spanRotationOnStallHeight > 0 && height >= spanRotationOnStallHeight
+}
+
+func SetSpanRotationOnStallHeight(height int64) {
+	spanRotationOnStallHeight = height
+}
+
+func GetSpanRotationOnStallHeight() int64 {
+	return spanRotationOnStallHeight
+}
+
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
 	chainMigration := chainManagerAddressMigrations[conf.Custom.Chain]
 	if chainMigration == nil {
@@ -1024,6 +1045,14 @@ func GetSpanRotationBuffer(ctx sdk.Context) uint64 {
 		return newSpanRotationBuffer
 	}
 	return spanRotationBuffer
+}
+
+// GetBorStallThreshold is the number of Heimdall heights the >1/3-agreed pending
+// bor head may stay static before a span rotation is forced (POS-3629). It reuses
+// the change-producer threshold ("same number as regular forced rotation") but is a
+// distinct getter so it can be tuned independently later.
+func GetBorStallThreshold(ctx sdk.Context) int64 {
+	return GetChangeProducerThreshold(ctx)
 }
 
 // DecorateWithHeimdallFlags adds persistent flags for app configs and bind flags with command

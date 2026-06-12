@@ -1,0 +1,30 @@
+package keeper_test
+
+// TestPendingBorBlockTracking covers the POS-3629 pending-bor-head tracking accessors:
+// absent reads as zero/nil, and set/get round-trips the head, its identity, and the height.
+func (s *KeeperTestSuite) TestPendingBorBlockTracking() {
+	ctx, keeper, require := s.ctx, s.milestoneKeeper, s.Require()
+
+	block, id, height, err := keeper.GetPendingBorBlockTracking(ctx)
+	require.NoError(err)
+	require.Zero(block)
+	require.Nil(id)
+	require.Zero(height)
+
+	wantID := []byte{0x01, 0x02, 0x03}
+	require.NoError(keeper.SetPendingBorBlockTracking(ctx, 4242, wantID, 777))
+
+	block, id, height, err = keeper.GetPendingBorBlockTracking(ctx)
+	require.NoError(err)
+	require.Equal(uint64(4242), block)
+	require.Equal(wantID, id)
+	require.Equal(uint64(777), height)
+
+	require.NoError(keeper.SetPendingBorBlockTracking(ctx, 5000, []byte{0x09}, 800))
+
+	block, id, height, err = keeper.GetPendingBorBlockTracking(ctx)
+	require.NoError(err)
+	require.Equal(uint64(5000), block)
+	require.Equal([]byte{0x09}, id)
+	require.Equal(uint64(800), height)
+}

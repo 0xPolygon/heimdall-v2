@@ -34,6 +34,13 @@ type Keeper struct {
 	params             collections.Item[types.Params]
 	count              collections.Item[uint64]
 	lastMilestoneBlock collections.Item[uint64]
+
+	// POS-3629: the >1/3-agreed pending bor head, its hash+td identity, and the
+	// Heimdall height at which either last changed. Written only past the
+	// span-rotation-on-stall hardfork; absent reads as zero.
+	lastPendingBorBlock       collections.Item[uint64]
+	lastPendingBorBlockId     collections.Item[[]byte]
+	lastPendingBorBlockHeight collections.Item[uint64]
 }
 
 // NewKeeper creates a new milestone Keeper instance
@@ -65,6 +72,10 @@ func NewKeeper(
 		params:             collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
 		count:              collections.NewItem(sb, types.CountPrefixKey, "count", collections.Uint64Value),
 		lastMilestoneBlock: collections.NewItem(sb, types.LastMilestoneBlockPrefixKey, "lastMilestoneBlock", collections.Uint64Value),
+
+		lastPendingBorBlock:       collections.NewItem(sb, types.PendingBorBlockPrefixKey, "lastPendingBorBlock", collections.Uint64Value),
+		lastPendingBorBlockId:     collections.NewItem(sb, types.PendingBorBlockIdPrefixKey, "lastPendingBorBlockId", collections.BytesValue),
+		lastPendingBorBlockHeight: collections.NewItem(sb, types.PendingBorBlockHeightPrefixKey, "lastPendingBorBlockHeight", collections.Uint64Value),
 	}
 
 	// build the schema and set it in the keeper
@@ -109,6 +120,48 @@ func (k Keeper) GetLastMilestoneBlock(ctx context.Context) (uint64, error) {
 	}
 
 	return block, nil
+}
+
+// GetPendingBorBlockTracking returns the tracked >1/3-agreed pending bor head (POS-3629),
+// its hash+td identity, and the Heimdall height at which the head or its identity last
+// changed. Absent entries read as zero/nil (pre-fork, or before any pending head is seen).
+func (k Keeper) GetPendingBorBlockTracking(ctx context.Context) (uint64, []byte, uint64, error) {
+	block, err := itemOrDefault(ctx, k.lastPendingBorBlock)
+	if err != nil {
+		return 0, nil, 0, err
+	}
+	id, err := itemOrDefault(ctx, k.lastPendingBorBlockId)
+	if err != nil {
+		return 0, nil, 0, err
+	}
+	height, err := itemOrDefault(ctx, k.lastPendingBorBlockHeight)
+	if err != nil {
+		return 0, nil, 0, err
+	}
+	return block, id, height, nil
+}
+
+// itemOrDefault returns the stored value of a collections.Item, or the type's zero value when the
+// item has never been set (absent reads as zero/nil rather than an error).
+func itemOrDefault[T any](ctx context.Context, item collections.Item[T]) (T, error) {
+	var zero T
+	has, err := item.Has(ctx)
+	if err != nil || !has {
+		return zero, err
+	}
+	return item.Get(ctx)
+}
+
+// SetPendingBorBlockTracking records the >1/3-agreed pending bor head, its hash+td
+// identity, and the Heimdall height to measure the stall from (POS-3629).
+func (k Keeper) SetPendingBorBlockTracking(ctx context.Context, block uint64, id []byte, height uint64) error {
+	if err := k.lastPendingBorBlock.Set(ctx, block); err != nil {
+		return err
+	}
+	if err := k.lastPendingBorBlockId.Set(ctx, id); err != nil {
+		return err
+	}
+	return k.lastPendingBorBlockHeight.Set(ctx, height)
 }
 
 // Logger returns a module-specific logger.
