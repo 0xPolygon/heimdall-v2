@@ -514,7 +514,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		producerDowntimeHeight = 34966593
 		phuketHardforkHeight = 44070000
 		feeWithdrawValidatorGateHeight = 46361000
-		zurichHardforkHeight = 0 // TODO marcello set HF height
+		zurichHardforkHeight = 47880000
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -538,7 +538,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		producerDowntimeHeight = 20457139
 		phuketHardforkHeight = 32276400
 		feeWithdrawValidatorGateHeight = 35914000
-		zurichHardforkHeight = 0 // TODO marcello set HF height
+		zurichHardforkHeight = 37750000
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
