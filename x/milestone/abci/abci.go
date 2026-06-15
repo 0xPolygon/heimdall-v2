@@ -279,12 +279,26 @@ func GetMajorityMilestoneProposition(
 	var majorityParentHash string
 	isParentHashMajority := false
 
+	// Deterministic parent selection. Go map iteration order is random, so iterate a sorted slice of the
+	// candidate parents (the consensus rules require sorted iteration here, mirroring the block selection
+	// above). Under the 1/3 pending threshold more than one parent hash can clear majority at once, so
+	// pick the highest-voting-power parent, breaking ties on the lexicographically smaller hash — a
+	// first-match break would let validators diverge on the parent and split the app hash.
+	sortedParentHashes := make([]string, 0, len(parentHashes))
 	for parentHash := range parentHashes {
+		sortedParentHashes = append(sortedParentHashes, parentHash)
+	}
+	sort.Strings(sortedParentHashes)
+
+	majorityParentPower := int64(0)
+	for _, parentHash := range sortedParentHashes {
 		key := getParentChildKey(parentHash, common.Bytes2Hex(blockToHashAndTd[majorityBlocks[0]]))
-		if parentHashToVotingPower[key] >= majorityVP {
+		power := parentHashToVotingPower[key]
+		if power >= majorityVP &&
+			(power > majorityParentPower || (power == majorityParentPower && parentHash < majorityParentHash)) {
 			isParentHashMajority = true
 			majorityParentHash = parentHash
-			break
+			majorityParentPower = power
 		}
 	}
 

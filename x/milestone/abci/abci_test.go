@@ -180,6 +180,72 @@ func TestGetMajorityMilestoneProposition_MajorityWins(t *testing.T) {
 	assert.Equal(t, propMajor.BlockTds, resultProp.BlockTds, "majority validator's proposition should win")
 }
 
+// TestGetMajorityMilestoneProposition_TwoParentsClearThreshold pins deterministic parent selection
+// when more than one parent hash clears the 1/3 pending threshold. Two disjoint groups vote the same
+// block with different parents: the honest parent (matching lastEndBlockHash) with higher voting power
+// and a bogus one with lower power, both above majorityVP. The aggregator must pick the higher-power
+// parent regardless of Go's randomized map order — a first-match break could pick the bogus parent
+// (which fails the lastEndBlockHash check and returns nil) on some validators, diverging the app hash.
+func TestGetMajorityMilestoneProposition_TwoParentsClearThreshold(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(100)
+
+	// Total voting power 100, so majorityVP = 34 is 1/3+1; both 40 and 35 clear it.
+	vHonest := &stakeTypes.Validator{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 40}
+	vBogus := &stakeTypes.Validator{Signer: "0x2222222222222222222222222222222222222222", VotingPower: 35}
+	vIdle := &stakeTypes.Validator{Signer: "0x3333333333333333333333333333333333333333", VotingPower: 25}
+	validatorSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{vHonest, vBogus, vIdle}}
+
+	startBlock := uint64(1)
+	blockHash := []byte("same-block-hash")
+	blockTd := uint64(1)
+	honestParent := []byte("honest-parent-hash")
+	bogusParent := []byte("bogus-parent-hash") // distinct content; iteration order must not decide the winner
+
+	// Both groups vote the identical block (hash+td); only the parent differs.
+	propHonest := &types.MilestoneProposition{
+		BlockHashes:      [][]byte{blockHash},
+		StartBlockNumber: startBlock,
+		ParentHash:       honestParent,
+		BlockTds:         []uint64{blockTd},
+	}
+	propBogus := &types.MilestoneProposition{
+		BlockHashes:      [][]byte{blockHash},
+		StartBlockNumber: startBlock,
+		ParentHash:       bogusParent,
+		BlockTds:         []uint64{blockTd},
+	}
+
+	veHonest := &sidetxs.VoteExtension{MilestoneProposition: propHonest}
+	veBogus := &sidetxs.VoteExtension{MilestoneProposition: propBogus}
+	dataHonest, err := veHonest.Marshal()
+	assert.NoError(t, err)
+	dataBogus, err := veBogus.Marshal()
+	assert.NoError(t, err)
+
+	extVotes := []abciTypes.ExtendedVoteInfo{
+		{BlockIdFlag: cmtTypes.BlockIDFlagCommit, VoteExtension: dataHonest, Validator: abciTypes.Validator{Address: common.HexToAddress(vHonest.Signer).Bytes()}},
+		{BlockIdFlag: cmtTypes.BlockIDFlagCommit, VoteExtension: dataBogus, Validator: abciTypes.Validator{Address: common.HexToAddress(vBogus.Signer).Bytes()}},
+	}
+	logger := log.NewTestLogger(t)
+
+	lastEndBlock := startBlock - 1
+	lastEndHash := honestParent // the honest parent matches the chain's last end block hash
+
+	resultProp, _, _, _, err := GetMajorityMilestoneProposition(
+		ctx,
+		validatorSet,
+		extVotes,
+		34, // 1/3+1 of the 100-VP set; both parents clear it
+		logger,
+		&lastEndBlock,
+		lastEndHash,
+	)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, resultProp, "higher-power honest parent must win deterministically; a first-match break could pick the bogus parent and return nil")
+	assert.Equal(t, propHonest.BlockHashes, resultProp.BlockHashes)
+}
+
 func TestValidateMilestonePropositionFork(t *testing.T) {
 	t.Parallel()
 
