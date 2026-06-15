@@ -349,8 +349,9 @@ func TestPreBlockerPendingStallRotatesWhenForkEnabled(t *testing.T) {
 	seedProducerSelection(t, app, ctx, validators)
 
 	mockCaller := new(helpermocks.IContractCaller)
+	producerAddr := common.HexToAddress(validators[0].Signer)
 	mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).
-		Return(new(common.HexToAddress(validators[0].Signer)), nil)
+		Return(&producerAddr, nil)
 	app.BorKeeper.SetContractCaller(mockCaller)
 
 	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(milestone.EndBlock)))

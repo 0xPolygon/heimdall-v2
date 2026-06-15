@@ -669,7 +669,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			logger.Info("2/3rd majority reached on milestone proposition",
 				"startBlock", majorityMilestone.StartBlockNumber,
 				"endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1),
-				strutil.HashesToString(majorityMilestone.BlockHashes),
+				"blockHashes", strutil.HashesToString(majorityMilestone.BlockHashes),
 			)
 			isValidMilestone = true
 		}
