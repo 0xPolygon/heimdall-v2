@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -40,8 +41,17 @@ func (app *HeimdallApp) checkAndRotateOnPendingStall(ctx sdk.Context, pendingMil
 	}
 
 	// Pending propositions are always computed for blocks after the last finalized milestone,
-	// so the head is necessarily beyond finality (the backlog is non-empty).
-	pendingHead := pendingMilestone.StartBlockNumber + uint64(len(pendingMilestone.BlockHashes)-1)
+	// so the head is necessarily beyond finality (the backlog is non-empty). Treat arithmetic
+	// overflow as invalid input: a wrapped head could bypass the later last-span-end guard.
+	pendingHeadOffset := uint64(len(pendingMilestone.BlockHashes) - 1)
+	if pendingMilestone.StartBlockNumber > math.MaxUint64-pendingHeadOffset {
+		logger.Info("Pending bor head overflow, skipping rotation",
+			"startBlock", pendingMilestone.StartBlockNumber,
+			"offset", pendingHeadOffset,
+		)
+		return nil
+	}
+	pendingHead := pendingMilestone.StartBlockNumber + pendingHeadOffset
 	pendingHeadID := milestoneAbci.MilestonePropositionHeadID(pendingMilestone)
 
 	trackedBlock, trackedID, trackedHeight, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)

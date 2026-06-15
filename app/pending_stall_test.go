@@ -469,6 +469,34 @@ func TestCheckAndRotateOnPendingStallEmptyProposition(t *testing.T) {
 	require.Zero(t, height, "empty proposition must not touch the stall clock")
 }
 
+// TestCheckAndRotateOnPendingStallHeadOverflow guards the pendingHead arithmetic. A malicious
+// proposition can pair a near-MaxUint64 StartBlockNumber with multiple hashes; if the addition wraps,
+// the head can fall back below lastSpan.EndBlock and bypass the span-end sanity guard.
+func TestCheckAndRotateOnPendingStallHeadOverflow(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	_, supporters := seedSpan(t, app, ctx)
+	ctx = ctx.WithBlockHeight(1000)
+
+	prop := &milestoneTypes.MilestoneProposition{
+		StartBlockNumber: math.MaxUint64,
+		BlockHashes: [][]byte{
+			common.HexToHash("0x01").Bytes(),
+			common.HexToHash("0x02").Bytes(),
+		},
+		BlockTds: []uint64{1, 2},
+	}
+
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop, supporters))
+
+	last, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), last.Id, "overflowing pending head must not rotate")
+
+	_, _, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
+	require.NoError(t, err)
+	require.Zero(t, height, "overflowing pending head must not touch the stall clock")
+}
+
 // TestRotateSpanFromPendingHeadNoSelectableProducer covers the path where every candidate is
 // excluded (the stalled producer plus a full failed set): selection fails, so the rotation logs
 // and returns nil rather than erroring (consensus must not halt), and no new span is minted.
