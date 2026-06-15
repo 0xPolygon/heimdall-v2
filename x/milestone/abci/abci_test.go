@@ -317,6 +317,72 @@ func TestGetMajorityMilestoneProposition_ByzantineEqualPowerBogusParent(t *testi
 	assert.Equal(t, propHonest.BlockHashes, resultProp.BlockHashes)
 }
 
+// TestGetMajorityMilestoneProposition_ParentCheckUsesReturnedStartBlock covers the case where an
+// earlier overlapping block has majority support, but the returned pending range must start at
+// lastEndBlock+1. The parent-child majority check must use that returned start block; keying it by the
+// first majority block would incorrectly drop the valid pending range.
+func TestGetMajorityMilestoneProposition_ParentCheckUsesReturnedStartBlock(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(100)
+
+	// Total voting power 100, majorityVP = 34. Both the earlier overlapping block and the returned
+	// start block independently clear the threshold.
+	vOld := &stakeTypes.Validator{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 40}
+	vNew := &stakeTypes.Validator{Signer: "0x2222222222222222222222222222222222222222", VotingPower: 40}
+	vIdle := &stakeTypes.Validator{Signer: "0x3333333333333333333333333333333333333333", VotingPower: 20}
+	validatorSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{vOld, vNew, vIdle}}
+
+	lastEndBlock := uint64(100)
+	returnedStartBlock := lastEndBlock + 1
+	oldMajorityBlock := uint64(99)
+
+	oldParent := common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000009").Bytes()
+	lastEndHash := common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000000aa").Bytes()
+	oldHash := common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000000bb").Bytes()
+	returnedHash := common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000000cc").Bytes()
+
+	propOld := &types.MilestoneProposition{
+		BlockHashes:      [][]byte{oldHash},
+		StartBlockNumber: oldMajorityBlock,
+		ParentHash:       oldParent,
+		BlockTds:         []uint64{1},
+	}
+	propReturned := &types.MilestoneProposition{
+		BlockHashes:      [][]byte{returnedHash},
+		StartBlockNumber: returnedStartBlock,
+		ParentHash:       lastEndHash,
+		BlockTds:         []uint64{2},
+	}
+
+	veOld := &sidetxs.VoteExtension{MilestoneProposition: propOld}
+	veReturned := &sidetxs.VoteExtension{MilestoneProposition: propReturned}
+	dataOld, err := veOld.Marshal()
+	assert.NoError(t, err)
+	dataReturned, err := veReturned.Marshal()
+	assert.NoError(t, err)
+
+	extVotes := []abciTypes.ExtendedVoteInfo{
+		{BlockIdFlag: cmtTypes.BlockIDFlagCommit, VoteExtension: dataOld, Validator: abciTypes.Validator{Address: common.HexToAddress(vOld.Signer).Bytes()}},
+		{BlockIdFlag: cmtTypes.BlockIDFlagCommit, VoteExtension: dataReturned, Validator: abciTypes.Validator{Address: common.HexToAddress(vNew.Signer).Bytes()}},
+	}
+	logger := log.NewTestLogger(t)
+
+	resultProp, _, _, _, err := GetMajorityMilestoneProposition(
+		ctx,
+		validatorSet,
+		extVotes,
+		34,
+		logger,
+		&lastEndBlock,
+		lastEndHash,
+	)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, resultProp, "canonical parent clears threshold for lastEndBlock+1; earlier majority blocks must not decide the parent check")
+	assert.Equal(t, returnedStartBlock, resultProp.StartBlockNumber)
+	assert.Equal(t, propReturned.BlockHashes, resultProp.BlockHashes)
+	assert.Equal(t, propReturned.BlockTds, resultProp.BlockTds)
+}
+
 func TestValidateMilestonePropositionFork(t *testing.T) {
 	t.Parallel()
 

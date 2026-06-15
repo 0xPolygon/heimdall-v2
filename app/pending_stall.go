@@ -122,22 +122,27 @@ func (app *HeimdallApp) rotateSpanFromPendingHead(ctx sdk.Context, pendingHead u
 		endBlock += params.SpanDuration
 	}
 
-	// Resolve the producer of the next block to produce (pendingHead+1), not the last produced block,
-	// so a re-rotation under a persistent stall excludes the producer the prior rotation installed
-	// (its span starts at pendingHead+1) rather than the already-rotated-out one a pendingHead lookup
-	// would return (newest span first). Guard both boundaries: at span exhaustion (pendingHead ==
-	// lastSpan.EndBlock), pendingHead+1 lies beyond every span, so fall back to pendingHead; if the
-	// pending head drops below the overlapping span's start, anchor to lastSpan.StartBlock so the lookup
-	// still resolves the just-installed producer.
+	// Resolve the producer of the next block to produce (pendingHead+1), not the last produced block.
+	// FindCurrentProducerID scans newest span first, then older spans, so this also handles a future
+	// scheduled lastSpan whose StartBlock is beyond pendingHead+1: the lookup falls through to the span
+	// that actually owns the next block. At span exhaustion (pendingHead == lastSpan.EndBlock),
+	// pendingHead+1 lies beyond every span, so fall back to pendingHead.
 	producerLookupBlock := pendingHead
-	nextBlock := pendingHead + 1
-	if nextBlock >= lastSpan.StartBlock && nextBlock <= lastSpan.EndBlock {
-		producerLookupBlock = nextBlock
-	} else if nextBlock < lastSpan.StartBlock {
-		producerLookupBlock = lastSpan.StartBlock
+	if pendingHead < math.MaxUint64 {
+		nextBlock := pendingHead + 1
+		if nextBlock <= lastSpan.EndBlock {
+			producerLookupBlock = nextBlock
+		}
 	}
 
 	currentProducer, err := app.BorKeeper.FindCurrentProducerID(ctx, producerLookupBlock)
+	if err != nil && producerLookupBlock < lastSpan.StartBlock {
+		// Defensive fallback for non-contiguous/corrupt span state. Normal future-scheduled spans are
+		// contiguous, so the next-block lookup above resolves through an older span; only fall back to
+		// the last span's anchor if lookup cannot resolve any owner for pendingHead+1.
+		producerLookupBlock = lastSpan.StartBlock
+		currentProducer, err = app.BorKeeper.FindCurrentProducerID(ctx, producerLookupBlock)
+	}
 	if err != nil {
 		logger.Error("Error occurred while finding current producer", "error", err)
 		return err

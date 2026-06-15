@@ -244,8 +244,8 @@ func TestCheckAndRotateOnPendingStallReRotatesAwayFromInstalledProducer(t *testi
 }
 
 // TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops pins the lower-boundary re-rotation path:
-// if the pending head drops below the span installed by the prior rotation, the producer lookup must
-// still resolve that just-installed span rather than the older overlapping span.
+// if the pending head drops below the span installed by the prior rotation, the stalled producer is
+// the owner of droppedHead+1 in the older span, not the future producer installed for the old head.
 func TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 5)
 	validators, supporters := seedSpan(t, app, ctx)
@@ -288,15 +288,59 @@ func TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint64(3), secondSpan.Id, "second rotation mints span 3")
 	require.Equal(t, droppedHead+1, secondSpan.StartBlock, "second rotation starts at the dropped head's N+1")
-	require.NotEqual(t, installedProducer, secondSpan.SelectedProducers[0].ValId,
-		"second rotation must exclude the producer installed by the first rotation")
+	require.NotEqual(t, origProducer, secondSpan.SelectedProducers[0].ValId,
+		"second rotation must exclude the producer owning droppedHead+1")
 
 	failed, err := app.BorKeeper.GetLatestFailedProducer(ctx)
 	require.NoError(t, err)
 	_, origFailed := failed[origProducer]
 	_, installedFailed := failed[installedProducer]
-	require.True(t, origFailed, "original stalled producer stays in the failed set")
-	require.True(t, installedFailed, "the just-installed producer is added to the failed set when the head drops")
+	require.True(t, origFailed, "producer owning droppedHead+1 stays in the failed set")
+	require.False(t, installedFailed, "future producer is not failed for an older-span next block")
+}
+
+// TestCheckAndRotateOnPendingStallUsesNextBlockOwnerBeforeFutureLastSpan guards the case where
+// checkAndAddFutureSpan has already scheduled a non-overlapping future span, but the pending bor head
+// is still inside the current span. The pending-stall rotation must exclude the producer that owns
+// pendingHead+1, not the producer of the already-scheduled future span.
+func TestCheckAndRotateOnPendingStallUsesNextBlockOwnerBeforeFutureLastSpan(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 5)
+	validators, supporters := seedSpan(t, app, ctx)
+	seedProducerSelection(t, app, ctx, validators)
+
+	baseSpan, err := app.BorKeeper.GetSpan(ctx, 1)
+	require.NoError(t, err)
+	origProducer := validators[0].ValId
+	futureProducer := validators[1].ValId
+	futureSpan := borTypes.Span{
+		Id:                2,
+		StartBlock:        psSpanEnd + 1,
+		EndBlock:          psSpanEnd + 100,
+		BorChainId:        baseSpan.BorChainId,
+		ValidatorSet:      baseSpan.ValidatorSet,
+		SelectedProducers: []stakeTypes.Validator{*validators[1]},
+	}
+	require.NoError(t, app.BorKeeper.AddNewSpan(ctx, &futureSpan))
+
+	prop := singleBlockPendingProp(psPendingHead, 0x77)
+	trackedHeight := uint64(1000)
+	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, milestoneAbci.MilestonePropositionHeadID(prop), trackedHeight))
+	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(int64(trackedHeight)+threshold+1), prop, supporters))
+
+	last, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(3), last.Id, "pending-stall rotation mints a span after the future span")
+	require.Equal(t, psPendingHead+1, last.StartBlock, "new span starts after the stalled pending head")
+	require.Equal(t, futureSpan.EndBlock, last.EndBlock, "new span covers the scheduled runway")
+	require.NotEqual(t, origProducer, last.SelectedProducers[0].ValId, "stalled current-range producer excluded")
+
+	failed, err := app.BorKeeper.GetLatestFailedProducer(ctx)
+	require.NoError(t, err)
+	_, origFailed := failed[origProducer]
+	_, futureFailed := failed[futureProducer]
+	require.True(t, origFailed, "current-range producer is recorded as failed")
+	require.False(t, futureFailed, "future scheduled producer is not recorded as failed")
 }
 
 // TestCheckAndRotateOnPendingStallSpanExhaustionBoundary covers report-002 span exhaustion: the

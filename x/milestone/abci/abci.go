@@ -276,28 +276,6 @@ func GetMajorityMilestoneProposition(
 		return nil, nil, "", nil, nil
 	}
 
-	// The only legitimate parent is the last milestone's end block hash; nothing else can produce a
-	// valid pending milestone. Look it up directly instead of running a tournament over every proposed
-	// parent: parent hashes are not bound by ValidateMilestoneProposition, so a byzantine slice can vote
-	// the real blocks under a fabricated parent, and under the 1/3 pending threshold that bogus parent
-	// can clear majority alongside the honest one. A direct lookup is deterministic by construction and
-	// gives the canonical parent the win whenever it clears the threshold, regardless of byzantine
-	// weight on any other parent.
-	lastEndBlockHashHex := common.Bytes2Hex(lastEndBlockHash)
-	isParentHashMajority := false
-	if _, ok := parentHashes[lastEndBlockHashHex]; ok {
-		key := getParentChildKey(lastEndBlockHashHex, common.Bytes2Hex(blockToHashAndTd[majorityBlocks[0]]))
-		if parentHashToVotingPower[key] >= majorityVP {
-			isParentHashMajority = true
-		}
-	}
-
-	if !isParentHashMajority {
-		logger.Debug("No parent hash with majority support matching the last end block hash",
-			"lastEndBlockHash", lastEndBlockHashHex)
-		return nil, nil, "", nil, nil
-	}
-
 	startBlock := uint64(0)
 
 	// Check if we have a block that starts exactly from the (last end block + 1)
@@ -321,6 +299,27 @@ func GetMajorityMilestoneProposition(
 	if !startBlockFound {
 		logger.Debug("No blocks with majority support starting at requested block",
 			"requestedStartBlock", startBlock)
+		return nil, nil, "", nil, nil
+	}
+
+	// The only legitimate parent is the last milestone's end block hash; nothing else can produce a
+	// valid pending milestone. Look it up directly instead of running a tournament over every proposed
+	// parent: parent hashes are not bound by ValidateMilestoneProposition, so a byzantine slice can vote
+	// the real blocks under a fabricated parent, and under the 1/3 pending threshold that bogus parent
+	// can clear majority alongside the honest one. Key the check by the first block we will return,
+	// not the first majority block, because earlier overlapping blocks may also have majority support.
+	lastEndBlockHashHex := common.Bytes2Hex(lastEndBlockHash)
+	isParentHashMajority := false
+	if _, ok := parentHashes[lastEndBlockHashHex]; ok {
+		key := getParentChildKey(lastEndBlockHashHex, common.Bytes2Hex(blockToHashAndTd[startBlock]))
+		if parentHashToVotingPower[key] >= majorityVP {
+			isParentHashMajority = true
+		}
+	}
+
+	if !isParentHashMajority {
+		logger.Debug("No parent hash with majority support matching the last end block hash",
+			"lastEndBlockHash", lastEndBlockHashHex)
 		return nil, nil, "", nil, nil
 	}
 
