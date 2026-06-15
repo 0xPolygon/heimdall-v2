@@ -189,7 +189,10 @@ func (q queryServer) recordListWithTimeDeterministic(ctx context.Context, reques
 	latestIndexedTime, err := q.k.GetLatestIndexedBlockTime(ctx)
 	if err != nil {
 		if errors.Is(err, ErrNoBlockFound) {
-			return &types.RecordListWithTimeResponse{EventRecords: []types.EventRecord{}}, nil
+			// Block-time index is empty (no committed block past the HF height has
+			// been indexed yet): the cutoff can only be pre-HF, so answer with
+			// legacy record_time semantics rather than dropping events.
+			return q.recordListWithTimeLegacy(ctx, request)
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -200,7 +203,11 @@ func (q queryServer) recordListWithTimeDeterministic(ctx context.Context, reques
 	height, err := q.k.GetBlockHeightByTime(ctx, cutoffUnix)
 	if err != nil {
 		if errors.Is(err, ErrNoBlockFound) {
-			return &types.RecordListWithTimeResponse{EventRecords: []types.EventRecord{}}, nil
+			// Cutoff falls before the first indexed (post-HF) block: this is a pre-HF
+			// window with no height to pin. Fall back to the legacy record_time query
+			// so a node replaying pre-HF blocks derives the same state-sync set
+			// producers committed.
+			return q.recordListWithTimeLegacy(ctx, request)
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}

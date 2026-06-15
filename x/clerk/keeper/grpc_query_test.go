@@ -335,8 +335,10 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_NoEvents() {
 
 // TestGetRecordListWithTime_Deterministic_HeightResolutionFails verifies that
 // when only blocks AFTER the cutoff exist (stability gate passes, but
-// GetBlockHeightByTime returns ErrNoBlockFound) the handler returns empty
-// rather than erroring.
+// GetBlockHeightByTime returns ErrNoBlockFound) the handler falls back to the
+// legacy record_time path without erroring. With no events in the store the
+// legacy result is also empty; the with-events case is covered by
+// TestGetRecordListWithTime_Deterministic_PreHFCutoffFallsBackToLegacy.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_HeightResolutionFails() {
 	ctx, ck := s.ctx, s.keeper
 	require := s.Require()
@@ -361,9 +363,49 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_HeightResoluti
 		ToTime:     cutoff,
 		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
 	})
-	require.NoError(err, "height resolution failure should return empty, not error")
+	require.NoError(err, "height resolution failure should fall back to legacy, not error")
 	require.NotNil(resp)
-	require.Empty(resp.EventRecords)
+	require.Empty(resp.EventRecords, "no events in store: legacy fallback is also empty")
+}
+
+func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_PreHFCutoffFallsBackToLegacy() {
+	ctx, ck := s.ctx, s.keeper
+	require := s.Require()
+	defer enableVisibilityTimeForTest(s, 1)()
+
+	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+	cutoff := baseTime
+
+	// Pre-HF events (no visibility_height, not pending): record_time before the cutoff.
+	for i := uint64(1); i <= 3; i++ {
+		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
+			baseTime.Add(-time.Duration(i)*time.Minute))
+		rec.RecordTime = rec.RecordTime.UTC()
+		require.NoError(ck.SetEventRecord(ctx, rec))
+	}
+
+	// Index only covers a post-cutoff block, mirroring a node whose block-time
+	// index starts at the visibility-height activation height.
+	ctx = ctx.WithBlockHeight(300).WithBlockHeader(cmtproto.Header{
+		Time:   baseTime.Add(2 * time.Minute),
+		Height: 300,
+	})
+	require.NoError(ck.StoreBlockTime(ctx))
+
+	// Query from a height well past activation: takes the deterministic branch.
+	ctx = ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{
+		Time:   cutoff.Add(3 * time.Minute),
+		Height: 10000,
+	})
+
+	resp, err := clerkKeeper.NewQueryServer(&ck).GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
+		FromId:     1,
+		ToTime:     cutoff,
+		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
+	})
+	require.NoError(err)
+	require.NotNil(resp)
+	require.Len(resp.EventRecords, 3, "pre-HF cutoff must fall back to legacy and return the producer's set, not empty")
 }
 
 // TestGetRecordListWithTime_OffsetExceedsMax verifies the offset upper bound
