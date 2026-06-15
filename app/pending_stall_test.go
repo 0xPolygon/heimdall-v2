@@ -488,3 +488,69 @@ func TestRotateSpanFromPendingHeadNoSelectableProducer(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint64(1), last.Id, "no new span when no producer is selectable")
 }
+
+// TestCheckAndRotateCurrentSpanDebouncesPendingStallClock pins the cross-path debounce: after the
+// sibling rotation path (checkAndRotateCurrentSpan) installs a fresh producer, a pending milestone
+// reappearing at the same head must not immediately re-rotate it. Without advancing the pending-stall
+// clock here, the stale pre-rotation baseline would trip rotateSpanFromPendingHead one block later,
+// rotating out a producer that has had no chance to extend the head.
+func TestCheckAndRotateCurrentSpanDebouncesPendingStallClock(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+
+	origFork := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() {
+		helper.SetSpanRotationOnStallHeight(origFork)
+		helper.SetRioHeight(0)
+	})
+	helper.SetSpanRotationOnStallHeight(1) // enable the fork
+
+	validators, supporters := seedSpan(t, app, ctx)
+	seedProducerSelection(t, app, ctx, validators)
+
+	lastMilestone := milestoneTypes.Milestone{EndBlock: 100, BorChainId: "1"}
+	require.NoError(t, app.MilestoneKeeper.AddMilestone(ctx, lastMilestone))
+	lastMilestoneBlock := uint64(50)
+	require.NoError(t, app.MilestoneKeeper.SetLastMilestoneBlock(ctx, lastMilestoneBlock))
+
+	active := make(map[uint64]struct{}, len(validators))
+	for _, v := range validators {
+		active[v.ValId] = struct{}{}
+	}
+	require.NoError(t, app.BorKeeper.UpdateLatestActiveProducer(ctx, active))
+
+	mockCaller := new(helpermocks.IContractCaller)
+	producerAddr := common.HexToAddress(validators[0].Signer)
+	mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&producerAddr, nil)
+	app.BorKeeper.SetContractCaller(mockCaller)
+
+	helper.SetRioHeight(int64(lastMilestone.EndBlock + 1)) // IsRio(101) == true
+
+	// diff > ChangeProducerThreshold so the sibling path rotates.
+	ctx = ctx.WithBlockHeight(int64(lastMilestoneBlock) + helper.GetChangeProducerThreshold(ctx) + 1)
+	currentHeight := uint64(ctx.BlockHeight())
+
+	// Seed a pending-stall clock aged well past the threshold against a head inside the rotated span.
+	pendingHead := uint64(150)
+	prop := singleBlockPendingProp(pendingHead, 0x07)
+	pendingHeadID := milestoneAbci.MilestonePropositionHeadID(prop)
+	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, pendingHead, pendingHeadID, 1))
+
+	require.NoError(t, app.checkAndRotateCurrentSpan(ctx))
+
+	rotated, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(2), rotated.Id, "sibling path must rotate (diff > threshold, IsRio)")
+
+	// The pending-stall clock must have been debounced to the post-buffer height, head/id preserved.
+	block, id, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
+	require.NoError(t, err)
+	require.Equal(t, pendingHead, block, "tracked head preserved")
+	require.Equal(t, pendingHeadID, id, "tracked identity preserved")
+	require.Equal(t, currentHeight+helper.GetSpanRotationBuffer(ctx), height, "pending-stall clock debounced past the buffer")
+
+	// A pending milestone reappearing at the same head in the same block must not re-rotate.
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop, supporters))
+	afterPending, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, rotated.Id, afterPending.Id, "just-installed producer must keep the buffer window; no premature pending-stall re-rotation")
+}

@@ -1032,6 +1032,14 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 				return err
 			}
 
+			// Debounce the pending-stall clock too (fork-gated), so a pending milestone reappearing
+			// at the same head doesn't immediately re-rotate the producer we just installed.
+			err = app.debouncePendingStallClock(addSpanCtx, uint64(ctx.BlockHeight())+helper.GetSpanRotationBuffer(ctx))
+			if err != nil {
+				logger.Error("Error occurred while debouncing pending stall clock", "error", err)
+				return err
+			}
+
 			logger.Info("Span rotated due to the current producer's ineffectiveness", "currentProducerID", currentProducer)
 		}
 

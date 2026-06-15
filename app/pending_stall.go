@@ -195,3 +195,35 @@ func (app *HeimdallApp) recordPendingStallRotation(ctx sdk.Context, pendingHead 
 	)
 	return nil
 }
+
+// debouncePendingStallClock advances the pending-stall clock to debounceHeight (preserving the tracked
+// head and identity) after checkAndRotateCurrentSpan rotates the producer for the stalled current
+// range. Without it, a pending milestone reappearing at the same head — before the new producer has
+// extended it — would measure the stall from the pre-rotation baseline and immediately re-rotate the
+// producer just installed for that range.
+//
+// The sibling checkAndAddFutureSpan path is deliberately not debounced here: it only schedules a span
+// beyond lastSpan.EndBlock, so any still-pending head it leaves behind belongs to the current range,
+// and pending-stall must stay free to rotate the producer responsible for that head. An unconditional
+// debounce there would instead hand an already-stalled producer a fresh buffer window — a liveness
+// regression. No-op before the fork or when no stall clock is running, so it adds no pre-fork state write.
+func (app *HeimdallApp) debouncePendingStallClock(ctx sdk.Context, debounceHeight uint64) error {
+	if !helper.IsSpanRotationOnStall(ctx.BlockHeight()) {
+		return nil
+	}
+
+	trackedBlock, trackedID, trackedHeight, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
+	if err != nil {
+		app.Logger().Error("Error occurred while getting pending bor block tracking", "error", err)
+		return err
+	}
+	if trackedHeight == 0 {
+		return nil
+	}
+
+	if err := app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, trackedBlock, trackedID, debounceHeight); err != nil {
+		app.Logger().Error("Error occurred while debouncing pending bor block tracking", "error", err)
+		return err
+	}
+	return nil
+}
