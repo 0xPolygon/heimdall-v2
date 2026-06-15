@@ -433,6 +433,43 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			expectedProducer:    3, // fallback [1,2,3], current 1 → next is 2 but excluded → 3
 			expectedError:       false,
 		},
+		{
+			// POS-3629: an exclusion that empties a non-empty active set must re-trigger the
+			// fallback, not hand an empty slice to SelectProducer. Here the active filter keeps a
+			// single candidate (2) that the exclusion set then removes; the fallback must rebuild
+			// from the full candidate list ([2,3] minus current 1) and, after exclusion, select 3.
+			// Before the fix the exclusion ran after the empty-gate, so this returned a
+			// "no candidates found" error instead.
+			name: "Exclusion empties a non-empty active set - falls back",
+			setupSpan: func() {
+				span := types.Span{
+					Id:         1,
+					StartBlock: 1,
+					EndBlock:   100,
+					SelectedProducers: []staketypes.Validator{
+						{ValId: 1, VotingPower: 100},
+					},
+				}
+				require.NoError(borKeeper.AddNewSpan(ctx, &span))
+			},
+			setupProducerVotes: func() {},
+			producerSetLimit:   3,
+			setupValidatorSet: func() {
+				// No producer votes, so CalculateProducerSet is empty and the candidate list comes
+				// from GetFallbackProducerVotes ([1,2,3]).
+				valSet := staketypes.ValidatorSet{
+					Validators: []*staketypes.Validator{
+						{ValId: 100, VotingPower: 10},
+					},
+				}
+				stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).AnyTimes()
+				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(100)).Return(staketypes.Validator{ValId: 100, VotingPower: 10}, nil).AnyTimes()
+			},
+			activeValidatorIDs:  map[uint64]struct{}{2: {}}, // active filter keeps only candidate 2
+			excludedProducerIDs: map[uint64]struct{}{2: {}}, // ...which the exclusion then removes
+			expectedProducer:    3,                          // fallback [2,3] (=[1,2,3] minus current 1) minus excluded 2 → 3
+			expectedError:       false,
+		},
 	}
 
 	for _, tc := range testCases {

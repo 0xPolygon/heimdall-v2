@@ -252,6 +252,11 @@ func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64,
 
 	activeCandidates := k.FilterByActiveProducerSet(ctx, candidates, activeValidatorIDs)
 
+	// Honor an explicit exclusion set before the empty check, so an exclusion that fully empties the
+	// active set still triggers the fallback below instead of handing an empty slice to SelectProducer
+	// (POS-3629).
+	activeCandidates = filterExcludedProducers(activeCandidates, excludedProducerIDs)
+
 	// If no candidate is available after threshold filtering,
 	// rotate the original candidate list to the next producer EVEN IF the producer is not active.
 	if len(activeCandidates) == 0 {
@@ -261,11 +266,8 @@ func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64,
 				newCandidates = append(newCandidates, validatorID)
 			}
 		}
-		activeCandidates = newCandidates
+		activeCandidates = filterExcludedProducers(newCandidates, excludedProducerIDs)
 	}
-
-	// Honor an explicit exclusion set in both the active and fallback paths (POS-3629).
-	activeCandidates = filterExcludedProducers(activeCandidates, excludedProducerIDs)
 
 	// If the declaring producer requested a specific replacement, try to honor it.
 	// The target must still be an active candidate and not down for the range.

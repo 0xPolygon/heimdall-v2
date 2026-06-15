@@ -180,12 +180,11 @@ func TestGetMajorityMilestoneProposition_MajorityWins(t *testing.T) {
 	assert.Equal(t, propMajor.BlockTds, resultProp.BlockTds, "majority validator's proposition should win")
 }
 
-// TestGetMajorityMilestoneProposition_TwoParentsClearThreshold pins deterministic parent selection
-// when more than one parent hash clears the 1/3 pending threshold. Two disjoint groups vote the same
-// block with different parents: the honest parent (matching lastEndBlockHash) with higher voting power
-// and a bogus one with lower power, both above majorityVP. The aggregator must pick the higher-power
-// parent regardless of Go's randomized map order — a first-match break could pick the bogus parent
-// (which fails the lastEndBlockHash check and returns nil) on some validators, diverging the app hash.
+// TestGetMajorityMilestoneProposition_TwoParentsClearThreshold pins parent selection when more than
+// one parent hash clears the 1/3 pending threshold. Two disjoint groups vote the same block with
+// different parents, both above majorityVP: the honest parent matches lastEndBlockHash, the bogus one
+// does not. The canonical parent (lastEndBlockHash) must be selected whenever it clears the threshold,
+// regardless of any other parent's voting power, so the honest milestone is returned.
 func TestGetMajorityMilestoneProposition_TwoParentsClearThreshold(t *testing.T) {
 	ctx := sdk.Context{}.WithBlockHeight(100)
 
@@ -199,7 +198,7 @@ func TestGetMajorityMilestoneProposition_TwoParentsClearThreshold(t *testing.T) 
 	blockHash := []byte("same-block-hash")
 	blockTd := uint64(1)
 	honestParent := []byte("honest-parent-hash")
-	bogusParent := []byte("bogus-parent-hash") // distinct content; iteration order must not decide the winner
+	bogusParent := []byte("bogus-parent-hash") // does not match lastEndBlockHash, so it is never a valid winner
 
 	// Both groups vote the identical block (hash+td); only the parent differs.
 	propHonest := &types.MilestoneProposition{
@@ -242,7 +241,79 @@ func TestGetMajorityMilestoneProposition_TwoParentsClearThreshold(t *testing.T) 
 	)
 
 	assert.NoError(t, err)
-	assert.NotNil(t, resultProp, "higher-power honest parent must win deterministically; a first-match break could pick the bogus parent and return nil")
+	assert.NotNil(t, resultProp, "canonical parent (lastEndBlockHash) clears the threshold and must be selected even though another parent also clears it")
+	assert.Equal(t, propHonest.BlockHashes, resultProp.BlockHashes)
+}
+
+// TestGetMajorityMilestoneProposition_ByzantineEqualPowerBogusParent covers the byzantine case the
+// previous highest-power-with-lex-tie-break tournament lost: a colluding 1/3+1 slice votes the real
+// block under a fabricated parent hash that sorts lexicographically before the honest parent, with
+// voting power equal to the honest supporters. ParentHash is not bound by ValidateMilestoneProposition,
+// so this proposition is structurally valid. Both parents clear the 1/3 pending threshold; the
+// aggregator must still return the honest milestone (its parent equals lastEndBlockHash) rather than
+// nil. A tournament with an ascending lex tie-break would hand the equal-power case to the bogus
+// parent and return nil, silently dropping the pending-stall path.
+func TestGetMajorityMilestoneProposition_ByzantineEqualPowerBogusParent(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(100)
+
+	// Total voting power 100, majorityVP = 34. Honest and byzantine groups have equal power; both clear.
+	vHonest := &stakeTypes.Validator{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 34}
+	vByzantine := &stakeTypes.Validator{Signer: "0x2222222222222222222222222222222222222222", VotingPower: 34}
+	vIdle := &stakeTypes.Validator{Signer: "0x3333333333333333333333333333333333333333", VotingPower: 32}
+	validatorSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{vHonest, vByzantine, vIdle}}
+
+	startBlock := uint64(1)
+	blockTd := uint64(1)
+	// Full 32-byte hashes: a byzantine proposition passes ValidateMilestoneProposition's structural
+	// checks, so the attack is on real, well-formed input. The honest parent sorts lexicographically
+	// after the bogus one, so an ascending-lex tournament at equal power would pick the bogus parent.
+	blockHash := common.HexToHash("0x00000000000000000000000000000000000000000000000000000000000000aa").Bytes()
+	honestParent := common.HexToHash("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").Bytes()
+	bogusParent := common.HexToHash("0x0000000000000000000000000000000000000000000000000000000000000001").Bytes()
+	require.Less(t, common.Bytes2Hex(bogusParent), common.Bytes2Hex(honestParent), "test setup: bogus parent must sort first")
+
+	// Both groups vote the identical real block; only the parent differs.
+	propHonest := &types.MilestoneProposition{
+		BlockHashes:      [][]byte{blockHash},
+		StartBlockNumber: startBlock,
+		ParentHash:       honestParent,
+		BlockTds:         []uint64{blockTd},
+	}
+	propByzantine := &types.MilestoneProposition{
+		BlockHashes:      [][]byte{blockHash},
+		StartBlockNumber: startBlock,
+		ParentHash:       bogusParent,
+		BlockTds:         []uint64{blockTd},
+	}
+
+	veHonest := &sidetxs.VoteExtension{MilestoneProposition: propHonest}
+	veByzantine := &sidetxs.VoteExtension{MilestoneProposition: propByzantine}
+	dataHonest, err := veHonest.Marshal()
+	assert.NoError(t, err)
+	dataByzantine, err := veByzantine.Marshal()
+	assert.NoError(t, err)
+
+	extVotes := []abciTypes.ExtendedVoteInfo{
+		{BlockIdFlag: cmtTypes.BlockIDFlagCommit, VoteExtension: dataHonest, Validator: abciTypes.Validator{Address: common.HexToAddress(vHonest.Signer).Bytes()}},
+		{BlockIdFlag: cmtTypes.BlockIDFlagCommit, VoteExtension: dataByzantine, Validator: abciTypes.Validator{Address: common.HexToAddress(vByzantine.Signer).Bytes()}},
+	}
+	logger := log.NewTestLogger(t)
+
+	lastEndBlock := startBlock - 1
+	lastEndHash := honestParent // the canonical parent is the honest one
+
+	resultProp, _, _, _, err := GetMajorityMilestoneProposition(
+		ctx,
+		validatorSet,
+		extVotes,
+		34,
+		logger,
+		&lastEndBlock,
+		lastEndHash,
+	)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, resultProp, "honest parent equals lastEndBlockHash and clears the threshold; a byzantine equal-power bogus parent must not suppress it")
 	assert.Equal(t, propHonest.BlockHashes, resultProp.BlockHashes)
 }
 

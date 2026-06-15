@@ -276,41 +276,25 @@ func GetMajorityMilestoneProposition(
 		return nil, nil, "", nil, nil
 	}
 
-	var majorityParentHash string
+	// The only legitimate parent is the last milestone's end block hash; nothing else can produce a
+	// valid pending milestone. Look it up directly instead of running a tournament over every proposed
+	// parent: parent hashes are not bound by ValidateMilestoneProposition, so a byzantine slice can vote
+	// the real blocks under a fabricated parent, and under the 1/3 pending threshold that bogus parent
+	// can clear majority alongside the honest one. A direct lookup is deterministic by construction and
+	// gives the canonical parent the win whenever it clears the threshold, regardless of byzantine
+	// weight on any other parent.
+	lastEndBlockHashHex := common.Bytes2Hex(lastEndBlockHash)
 	isParentHashMajority := false
-
-	// Deterministic parent selection. Go map iteration order is random, so iterate a sorted slice of the
-	// candidate parents (the consensus rules require sorted iteration here, mirroring the block selection
-	// above). Under the 1/3 pending threshold more than one parent hash can clear majority at once, so
-	// pick the highest-voting-power parent, breaking ties on the lexicographically smaller hash — a
-	// first-match break would let validators diverge on the parent and split the app hash.
-	sortedParentHashes := make([]string, 0, len(parentHashes))
-	for parentHash := range parentHashes {
-		sortedParentHashes = append(sortedParentHashes, parentHash)
-	}
-	sort.Strings(sortedParentHashes)
-
-	majorityParentPower := int64(0)
-	for _, parentHash := range sortedParentHashes {
-		key := getParentChildKey(parentHash, common.Bytes2Hex(blockToHashAndTd[majorityBlocks[0]]))
-		power := parentHashToVotingPower[key]
-		if power >= majorityVP &&
-			(power > majorityParentPower || (power == majorityParentPower && parentHash < majorityParentHash)) {
+	if _, ok := parentHashes[lastEndBlockHashHex]; ok {
+		key := getParentChildKey(lastEndBlockHashHex, common.Bytes2Hex(blockToHashAndTd[majorityBlocks[0]]))
+		if parentHashToVotingPower[key] >= majorityVP {
 			isParentHashMajority = true
-			majorityParentHash = parentHash
-			majorityParentPower = power
 		}
 	}
 
 	if !isParentHashMajority {
-		logger.Debug("No parent hash found with majority support")
-		return nil, nil, "", nil, nil
-	}
-
-	if majorityParentHash != common.Bytes2Hex(lastEndBlockHash) {
-		logger.Debug("Parent hash does not match last end block hash",
-			"majorityParentHash", majorityParentHash,
-			"lastEndBlockHash", common.Bytes2Hex(lastEndBlockHash))
+		logger.Debug("No parent hash with majority support matching the last end block hash",
+			"lastEndBlockHash", lastEndBlockHashHex)
 		return nil, nil, "", nil, nil
 	}
 
