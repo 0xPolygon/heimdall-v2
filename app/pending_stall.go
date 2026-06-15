@@ -115,13 +115,16 @@ func (app *HeimdallApp) rotateSpanFromPendingHead(ctx sdk.Context, pendingHead u
 	// Resolve the producer of the next block to produce (pendingHead+1), not the last produced block,
 	// so a re-rotation under a persistent stall excludes the producer the prior rotation installed
 	// (its span starts at pendingHead+1) rather than the already-rotated-out one a pendingHead lookup
-	// would return (newest span first). Guard the boundary: at span exhaustion (pendingHead ==
-	// lastSpan.EndBlock, no successor span minted yet) pendingHead+1 lies beyond every span, so fall
-	// back to pendingHead — its producer is the one stalling at the boundary — rather than letting the
-	// lookup error and halt the PreBlocker.
+	// would return (newest span first). Guard both boundaries: at span exhaustion (pendingHead ==
+	// lastSpan.EndBlock), pendingHead+1 lies beyond every span, so fall back to pendingHead; if the
+	// pending head drops below the overlapping span's start, anchor to lastSpan.StartBlock so the lookup
+	// still resolves the just-installed producer.
 	producerLookupBlock := pendingHead
-	if pendingHead+1 >= lastSpan.StartBlock && pendingHead+1 <= lastSpan.EndBlock {
-		producerLookupBlock = pendingHead + 1
+	nextBlock := pendingHead + 1
+	if nextBlock >= lastSpan.StartBlock && nextBlock <= lastSpan.EndBlock {
+		producerLookupBlock = nextBlock
+	} else if nextBlock < lastSpan.StartBlock {
+		producerLookupBlock = lastSpan.StartBlock
 	}
 
 	currentProducer, err := app.BorKeeper.FindCurrentProducerID(ctx, producerLookupBlock)

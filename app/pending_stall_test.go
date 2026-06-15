@@ -243,6 +243,62 @@ func TestCheckAndRotateOnPendingStallReRotatesAwayFromInstalledProducer(t *testi
 	require.True(t, installedFailed, "the just-installed producer is added to the failed set on re-rotation")
 }
 
+// TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops pins the lower-boundary re-rotation path:
+// if the pending head drops below the span installed by the prior rotation, the producer lookup must
+// still resolve that just-installed span rather than the older overlapping span.
+func TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 5)
+	validators, supporters := seedSpan(t, app, ctx)
+	seedProducerSelection(t, app, ctx, validators)
+	prop := singleBlockPendingProp(psPendingHead, 0xEE)
+	propID := milestoneAbci.MilestonePropositionHeadID(prop)
+
+	origProducer := validators[0].ValId
+
+	trackedHeight := uint64(1000)
+	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propID, trackedHeight))
+	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
+	firstHeight := int64(trackedHeight) + threshold + 1
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(firstHeight), prop, supporters))
+
+	firstSpan, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(2), firstSpan.Id, "first rotation mints span 2")
+	require.Equal(t, psPendingHead+1, firstSpan.StartBlock)
+	installedProducer := firstSpan.SelectedProducers[0].ValId
+	require.NotEqual(t, origProducer, installedProducer, "first rotation excludes the original producer")
+
+	// The pending tally drops by one block after the first rotation. The first observation of the
+	// dropped head resets the clock, then the same dropped head ages past the threshold and rotates.
+	droppedHead := psPendingHead - 1
+	droppedProp := singleBlockPendingProp(droppedHead, 0xEF)
+	buffer := helper.GetSpanRotationBuffer(ctx)
+	resetHeight := firstHeight + int64(buffer) + 1
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(resetHeight), droppedProp, supporters))
+
+	afterResetSpan, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(2), afterResetSpan.Id, "head drop only resets the clock")
+
+	secondThreshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(resetHeight))
+	secondHeight := resetHeight + secondThreshold + 1
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(secondHeight), droppedProp, supporters))
+
+	secondSpan, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(3), secondSpan.Id, "second rotation mints span 3")
+	require.Equal(t, droppedHead+1, secondSpan.StartBlock, "second rotation starts at the dropped head's N+1")
+	require.NotEqual(t, installedProducer, secondSpan.SelectedProducers[0].ValId,
+		"second rotation must exclude the producer installed by the first rotation")
+
+	failed, err := app.BorKeeper.GetLatestFailedProducer(ctx)
+	require.NoError(t, err)
+	_, origFailed := failed[origProducer]
+	_, installedFailed := failed[installedProducer]
+	require.True(t, origFailed, "original stalled producer stays in the failed set")
+	require.True(t, installedFailed, "the just-installed producer is added to the failed set when the head drops")
+}
+
 // TestCheckAndRotateOnPendingStallSpanExhaustionBoundary covers report-002 span exhaustion: the
 // pending head sits at the very last block of the current span (pendingHead == lastSpan.EndBlock) with
 // no successor span minted yet. The next-block lookup (pendingHead+1) lies beyond every span, so the
