@@ -79,7 +79,7 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 
 		res := sideHandler(ctx, &msg)
@@ -107,7 +107,7 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 			logIndex,
 			blockNumber,
 		)
-		contractCaller.On("GetConfirmedTxReceipt", hash, chainmanagertypes.DefaultParams().MainChainTxConfirmations).Return(nil, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, hash, chainmanagertypes.DefaultParams().MainChainTxConfirmations).Return(nil, nil)
 		contractCaller.On("DecodeValidatorTopupFeesEvent", chainmanagertypes.DefaultParams().ChainParams.StateSenderAddress, nil, logIndex).Return(nil, nil)
 
 		res := sideHandler(ctx, &msg)
@@ -133,7 +133,7 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 			logIndex,
 			blockNumber,
 		)
-		contractCaller.On("GetConfirmedTxReceipt", hash, chainmanagertypes.DefaultParams().MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, hash, chainmanagertypes.DefaultParams().MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorTopupFeesEvent", chainmanagertypes.DefaultParams().ChainParams.StateSenderAddress, txReceipt, logIndex).Return(nil, nil)
 
 		res := sideHandler(ctx, &msg)
@@ -165,7 +165,7 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", hash, chainmanagertypes.DefaultParams().MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, hash, chainmanagertypes.DefaultParams().MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorTopupFeesEvent", chainmanagertypes.DefaultParams().ChainParams.StateSenderAddress, txReceipt, logIndex).Return(event, nil)
 
 		res := sideHandler(ctx, &msg)
@@ -197,7 +197,7 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", hash, chainmanagertypes.DefaultParams().MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, hash, chainmanagertypes.DefaultParams().MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorTopupFeesEvent", chainmanagertypes.DefaultParams().ChainParams.StateSenderAddress, txReceipt, logIndex).Return(event, nil)
 
 		res := sideHandler(ctx, &msg)
@@ -230,7 +230,7 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 			Fee:  new(big.Int).SetUint64(1),
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", hash, chainmanagertypes.DefaultParams().MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, hash, chainmanagertypes.DefaultParams().MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorTopupFeesEvent", chainmanagertypes.DefaultParams().ChainParams.StateSenderAddress, txReceipt, logIndex).Return(event, nil)
 
 		res := sideHandler(ctx, &msg)

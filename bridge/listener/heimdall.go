@@ -61,9 +61,8 @@ func (hl *HeimdallListener) Stop() {
 	hl.Logger.Info("HeimdallListener: stopped")
 }
 
-// ProcessHeader -
-func (hl *HeimdallListener) ProcessHeader(_ *blockHeader) {
-}
+// ProcessHeader - no-op function for HeimdallListener
+func (hl *HeimdallListener) ProcessHeader(_ *blockHeader) {}
 
 // StartPolling - starts polling for heimdall events
 func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.Duration, _ *big.Int) {
@@ -158,6 +157,14 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 			hl.Logger.Debug("HeimdallListener: overriding fromBlock using last processed block from storage", "oldFromBlock", fromBlock, "lastProcessedBlock", result, "newFromBlock", result+1)
 			fromBlock = result + 1
 		}
+	}
+
+	// Clamp fromBlock to the node's earliest available block (this handles pruned snapshots)
+	earliestBlock := uint64(nodeStatus.SyncInfo.EarliestBlockHeight)
+	if earliestBlock > 0 && fromBlock < earliestBlock {
+		hl.Logger.Info("HeimdallListener: fromBlock is before the node's earliest available block, skipping ahead",
+			"fromBlock", fromBlock, "earliestBlock", earliestBlock)
+		fromBlock = earliestBlock
 	}
 
 	// toBlock - get the latest block height from heimdall node

@@ -101,7 +101,7 @@ func NewValidatorJoinCmd(ac address.Codec) *cobra.Command {
 			}
 
 			// get main tx receipt
-			receipt, err := contractCaller.GetConfirmedTxReceipt(common.HexToHash(txHash), cmParams.Params.MainChainTxConfirmations)
+			receipt, err := contractCaller.GetConfirmedTxReceipt(cmd.Context(), common.HexToHash(txHash), cmParams.Params.MainChainTxConfirmations)
 			if err != nil || receipt == nil {
 				return fmt.Errorf("transaction %s is not confirmed yet, please wait for some time and try again", txHash)
 			}

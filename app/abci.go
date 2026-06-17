@@ -2,11 +2,13 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"runtime"
 	"time"
 
+	"cosmossdk.io/log"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -15,6 +17,7 @@ import (
 	"github.com/cosmos/gogoproto/jsonpb"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/0xPolygon/heimdall-v2/common/strutil"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -23,10 +26,24 @@ import (
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
+
+// prepareProposalBudget caps total handler wall-clock measured from handler
+// entry so PrepareProposal returns inside the 1s timeout_propose. The 500ms
+// ceiling leaves slack for network latency before the round closes.
+// var (not const) so tests can shorten it; tests that override it must not
+// use t.Parallel().
+var prepareProposalBudget = 500 * time.Millisecond
+
+// extendVoteBudget caps total handler wall-clock so ExtendVote returns inside
+// the 1s timeout_precommit. var (not const) so tests can shorten it; tests
+// that override it must not use t.Parallel().
+var extendVoteBudget = 800 * time.Millisecond
 
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
@@ -66,8 +83,16 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		// Size the proposal as CometBFT validates it (types.Txs.Validate ->
 		// ComputeProtoSizeForTxs): the proto-encoded size of Data.Txs, not raw len.
 		totalTxBytes := cmtTypes.ComputeProtoSizeForTxs([]cmtTypes.Tx{bz})
+		sideTxsCount := 0
 
-		for _, proposedTx := range req.Txs {
+		deadline := startTime.Add(prepareProposalBudget)
+		for i, proposedTx := range req.Txs {
+			if !time.Now().Before(deadline) {
+				logger.Warn("prepare proposal budget exhausted, returning early",
+					"remaining_txs", len(req.Txs)-i,
+					"elapsed", time.Since(startTime))
+				break
+			}
 
 			proposedTxBytes := cmtTypes.ComputeProtoSizeForTxs([]cmtTypes.Tx{proposedTx})
 
@@ -82,7 +107,13 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			}
 
 			// ensure we allow transactions with only one side msg inside
-			if sidetxs.CountSideHandlers(app.sideTxCfg, tx) > 1 {
+			sideHandlersCount := sidetxs.CountSideHandlers(app.sideTxCfg, tx)
+			if sideHandlersCount > 1 {
+				continue
+			}
+			if helper.IsZurichHardfork(req.Height) && sideHandlersCount == 1 && sideTxsCount >= maxSideTxResponsesCount {
+				logger.Debug("Skipping side tx because max side tx responses count reached",
+					"maxSideTxResponsesCount", maxSideTxResponsesCount)
 				continue
 			}
 
@@ -97,11 +128,18 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 						break
 					}
 				}
-				if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+				if downtimeMsg, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
 					if err := app.BorKeeper.CanSetProducerDowntime(sdk.UnwrapSDKContext(ctx)); err != nil {
 						logger.Info("Skipping MsgSetProducerDowntime in PrepareProposal", "error", err)
 						shouldSkip = true
 						break
+					}
+					if downtimeMsg.TargetProducerId != borTypes.RoundRobinDefault {
+						if err := app.BorKeeper.CanUseTargetProducer(sdk.UnwrapSDKContext(ctx)); err != nil {
+							logger.Info("Skipping MsgSetProducerDowntime with TargetProducerId in PrepareProposal", "error", err)
+							shouldSkip = true
+							break
+						}
 					}
 				}
 			}
@@ -110,7 +148,6 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				continue
 			}
 
-			// run the tx by executing the msg_server handler on the tx msgs and the ante handler
 			app.Logger().Info("Prepare proposal verify tx", "tx", tx.GetMsgs())
 			_, err = app.PrepareProposalVerifyTx(tx)
 			if err != nil {
@@ -118,6 +155,9 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				continue
 			}
 
+			if sideHandlersCount == 1 {
+				sideTxsCount++
+			}
 			totalTxBytes += proposedTxBytes
 			txs = append(txs, proposedTx)
 		}
@@ -202,7 +242,10 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 				}
 			}
 
-			if helper.IsPhuketHardfork(req.Height) && hasCheckpointTx {
+			tolerateBorErr := helper.IsZurichHardfork(req.Height) &&
+				(errors.Is(err, borTypes.ErrFailedToQueryBor) ||
+					errors.Is(err, borTypes.ErrBorBlockNotFound))
+			if helper.IsPhuketHardfork(req.Height) && hasCheckpointTx && !tolerateBorErr {
 				logger.Error("Invalid non-rp vote extension proposal for checkpoint tx, rejecting proposal", "error", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
@@ -210,6 +253,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			logger.Warn("Invalid non-rp vote extension proposal", "error", err)
 		}
 
+		sideTxsCount := 0
 		for _, tx := range req.Txs[1:] {
 			txn, err := app.TxDecode(tx)
 			if err != nil {
@@ -218,7 +262,16 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			}
 
 			// ensure we allow transactions with only one side msg inside
-			if sidetxs.CountSideHandlers(app.sideTxCfg, txn) > 1 {
+			sideHandlersCount := sidetxs.CountSideHandlers(app.sideTxCfg, txn)
+			if sideHandlersCount > 1 {
+				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			}
+			if sideHandlersCount == 1 {
+				sideTxsCount++
+			}
+			if helper.IsZurichHardfork(req.Height) && sideTxsCount > maxSideTxResponsesCount {
+				logger.Error("Rejecting proposal because side tx count exceeds max side tx responses count",
+					"sideTxsCount", sideTxsCount, "maxSideTxResponsesCount", maxSideTxResponsesCount)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 
@@ -231,15 +284,20 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 						return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 					}
 				}
-				if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+				if downtimeMsg, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
 					if err := app.BorKeeper.CanSetProducerDowntime(sdk.UnwrapSDKContext(ctx)); err != nil {
 						logger.Error("Rejecting proposal with invalid MsgSetProducerDowntime", "error", err)
 						return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 					}
+					if downtimeMsg.TargetProducerId != borTypes.RoundRobinDefault {
+						if err := app.BorKeeper.CanUseTargetProducer(sdk.UnwrapSDKContext(ctx)); err != nil {
+							logger.Error("Rejecting proposal with MsgSetProducerDowntime containing TargetProducerId before fork height", "error", err)
+							return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+						}
+					}
 				}
 			}
 
-			// run the tx by executing the msg_server handler on the tx msgs and the ante handler
 			if _, err := app.ProcessProposalVerifyTx(tx); err != nil {
 				// this should never happen, as the txs have already been checked in PrepareProposal
 				logger.Error("RunTx returned an error in ProcessProposal", "error", err)
@@ -256,12 +314,27 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 	return func(ctx sdk.Context, req *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 		startTime := time.Now()
-		defer metrics.RecordABCIHandlerDuration(metrics.ExtendVoteDuration, startTime)
 
 		logger := app.Logger()
 		logger.Debug("Extending Vote", "height", ctx.BlockHeight())
+
+		budgetActive := helper.IsZurichHardfork(req.Height)
+		deadline := startTime.Add(extendVoteBudget)
+
+		// Clamp ctx so every RPC reachable from this handler returns inside timeout_precommit.
+		if budgetActive {
+			dCtx, dCancel := context.WithDeadline(ctx.Context(), deadline)
+			defer dCancel()
+			ctx = ctx.WithContext(dCtx)
+		}
+
+		var extendVoteCaller *helper.ContractCaller
+		if caller, ok := app.caller.(*helper.ContractCaller); ok {
+			extendVoteCaller = caller
+			extendVoteCaller.BeginPrefetchRound()
+		}
+
 		defer func() {
-			// better debugging with this panic recover routine printing runtime.Stack
 			if r := recover(); r != nil {
 				buf := make([]byte, 1<<16)
 				n := runtime.Stack(buf, false)
@@ -272,6 +345,13 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				)
 				panic(r)
 			}
+		}()
+
+		defer func() {
+			if extendVoteCaller != nil {
+				extendVoteCaller.EndPrefetchRound()
+			}
+			metrics.RecordABCIHandlerDuration(metrics.ExtendVoteDuration, startTime)
 		}()
 
 		// check if VEs are enabled
@@ -303,8 +383,18 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		txs := req.Txs[1:]
 
+		// Prefetch L1 receipts in a single batch RPC call to warm the cache.
+		app.prefetchReceipts(ctx, txs, logger)
+
 		// decode txs and execute side txs
 		for _, rawTx := range txs {
+			if budgetActive && !time.Now().Before(deadline) {
+				metrics.RecordExtendVoteBudgetExhausted("side_tx_loop")
+				logger.Warn("extend vote budget exhausted, returning partial response",
+					"processed_side_handlers", len(sideTxRes),
+					"elapsed", time.Since(startTime))
+				break
+			}
 			// create a cache wrapped context for stateless execution
 			ctx, _ = app.cacheTxContext(ctx)
 			tx, err := app.TxDecode(rawTx)
@@ -367,7 +457,14 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return app.BorKeeper.GetProducersByBlockNumber(ctx, blockNumber)
 		}
 
-		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
+		var milestoneProp *milestoneTypes.MilestoneProposition
+		if budgetActive && !time.Now().Before(deadline) {
+			metrics.RecordExtendVoteBudgetExhausted("pre_milestone")
+			logger.Warn("extend vote budget exhausted before milestone proposition, skipping",
+				"elapsed", time.Since(startTime))
+		} else {
+			milestoneProp, err = milestoneAbci.GenMilestoneProposition(ctx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
+		}
 		if err != nil {
 			if errors.Is(err, milestoneAbci.ErrNoNewHeadersFound) {
 				logger.Debug("No new headers found for generating milestone proposition, continuing without it")
@@ -459,7 +556,10 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		}
 
 		if err := validateNonRpVoteExtensionData(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller); err != nil {
-			if helper.IsPhuketHardfork(req.Height) && !errors.Is(err, borTypes.ErrFailedToQueryBor) {
+			// VerifyVoteExtension preserves the pre-Zurich ErrFailedToQueryBor tolerance to keep per-validator VE acceptance live during Bor outages.
+			tolerateBorErr := errors.Is(err, borTypes.ErrFailedToQueryBor) ||
+				(helper.IsZurichHardfork(req.Height) && errors.Is(err, borTypes.ErrBorBlockNotFound))
+			if helper.IsPhuketHardfork(req.Height) && !tolerateBorErr {
 				logger.Error(heimdallTypes.ErrAlertNonRpVoteExtensionRejected, "validator", valAddr, "error", err)
 				return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 			}
@@ -503,6 +603,25 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			}
 		}
 		logger.Info("Deleted milestone matching target condition", "milestone", milestoneNumber)
+	}
+
+	// Process pending visibility events from the previous block before new side txs are processed.
+	// This assigns visibility_height = currentBlockHeight to events stored in the prior block.
+	// This runs before PostHandlers add new events to the pending list, ensuring a clean
+	// one-block delay: events stored in block H get visibility_height = H+1.
+	// The visibility_height only becomes part of the committed state when this block commits.
+	// Errors are propagated: ProcessPendingVisibilityEvents performs multiple keeper
+	// writes per event, and a mid-loop failure would commit partial state, permanently
+	// breaking the one-block-delay invariant for the affected events.
+	if helper.IsZurichHardfork(req.Height) {
+		if err := app.ClerkKeeper.ProcessPendingVisibilityEvents(ctx); err != nil {
+			logger.Error("Error processing pending visibility events", "error", err, "height", req.Height)
+			return nil, err
+		}
+		if err := app.ClerkKeeper.StoreBlockTime(ctx); err != nil {
+			logger.Error("Error storing block time", "error", err, "height", req.Height)
+			return nil, err
+		}
 	}
 
 	// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
@@ -728,7 +847,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			// majority VE doesn't match any checkpoint tx in the block, or we're using a dummy VE
 			logger.Debug("Majority non-rp vote extension does not match any checkpoint tx in block, skipping signature storage")
 		} else if approvedTxsMap[checkpointTxHash] {
-			signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
+			signatures := getCheckpointSignatures(req.Height, majorityExt, extVoteInfo)
 			if err := app.CheckpointKeeper.SetCheckpointSignaturesTxHash(ctx, checkpointTxHash); err != nil {
 				logger.Error("Error occurred while setting checkpoint signatures tx hash", "error", err)
 				return nil, err
@@ -749,12 +868,10 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 
 		var txBytes cmtTypes.Tx = rawTx
-
 		txHash := common.Bytes2Hex(txBytes.Hash())
 
 		if approvedTxsMap[txHash] {
-
-			// execute post-handler for the approved side tx
+			// execute post-handlers for the approved side txs
 			msgs := decodedTx.GetMsgs()
 			executedPostHandlers := 0
 			for _, msg := range msgs {
@@ -848,7 +965,7 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 			return err
 		}
 
-		err = app.BorKeeper.AddNewVeBlopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()))
+		err = app.BorKeeper.AddNewVeBlopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault)
 		if err != nil {
 			logger.Error("Error occurred while adding new veblop span", "error", err)
 			return err
@@ -956,7 +1073,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 
 		delete(latestActiveProducer, currentProducer)
 
-		err = app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()))
+		err = app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault)
 		if err != nil {
 			logger.Warn("Error occurred while adding new veblop span", "error", err)
 		} else {
@@ -1018,4 +1135,108 @@ func rejectUnknownVoteExtFields(bz []byte) error {
 	}
 
 	return nil
+}
+
+// prefetchReceiptsTimeout is half of timeout_precommit (1s).
+const prefetchReceiptsTimeout = 500 * time.Millisecond
+
+// prefetchReceipts decodes txs, extracts L1 tx hashes from side-tx messages,
+// and batch-fetches their receipts into the cache.
+func (app *HeimdallApp) prefetchReceipts(ctx sdk.Context, txs [][]byte, logger log.Logger) {
+	seen := make(map[common.Hash]struct{})
+	var hashes []common.Hash
+	sideTxCount := 0
+
+	for _, rawTx := range txs {
+		tx, err := app.TxDecode(rawTx)
+		if err != nil {
+			continue
+		}
+
+		for _, msg := range tx.GetMsgs() {
+			if app.sideTxCfg.GetSideHandler(msg) == nil {
+				continue
+			}
+
+			sideTxCount++
+
+			h, ok := extractTxHash(msg)
+			if !ok {
+				continue
+			}
+
+			if _, dup := seen[h]; !dup {
+				seen[h] = struct{}{}
+				hashes = append(hashes, h)
+			}
+
+			if sideTxCount >= maxSideTxResponsesCount {
+				break
+			}
+		}
+
+		if sideTxCount >= maxSideTxResponsesCount {
+			break
+		}
+	}
+
+	if len(hashes) == 0 {
+		logger.Debug("No L1 tx hashes to prefetch")
+		return
+	}
+
+	prefetchCtx, cancel := context.WithTimeout(ctx.Context(), prefetchReceiptsTimeout)
+	defer cancel()
+
+	helper.PrefetchReceipts(prefetchCtx, app.caller, hashes, logger)
+
+	if prefetchCtx.Err() == context.DeadlineExceeded {
+		logger.Error("Receipt prefetch timed out")
+	}
+}
+
+func extractTxHash(msg sdk.Msg) (common.Hash, bool) {
+	switch m := msg.(type) {
+	case *clerkTypes.MsgEventRecord:
+		if !verifyHexTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.HexToHash(m.TxHash), true
+	case *stakeTypes.MsgValidatorJoin:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	case *stakeTypes.MsgStakeUpdate:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	case *stakeTypes.MsgSignerUpdate:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	case *stakeTypes.MsgValidatorExit:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	case *topupTypes.MsgTopupTx:
+		if !verifyTxHash(m.TxHash) {
+			return common.Hash{}, false
+		}
+		return common.BytesToHash(m.TxHash), true
+	default:
+		return common.Hash{}, false
+	}
+}
+
+func verifyTxHash(txHash []byte) bool {
+	return len(txHash) == common.HashLength
+}
+
+func verifyHexTxHash(hexTxHash string) bool {
+	decodedHash, err := hexutil.Decode(hexTxHash)
+	return err == nil && len(decodedHash) == common.HashLength
 }

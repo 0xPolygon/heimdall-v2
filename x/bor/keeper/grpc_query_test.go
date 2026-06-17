@@ -47,18 +47,17 @@ func (s *KeeperTestSuite) TestGetNextSpan() {
 	require.NoError(err)
 
 	for _, v := range vals {
-		add := common.HexToAddress(v.GetOperator())
-		err = keeper.StoreSeedProducer(ctx, v.ValId, &add)
+		err = keeper.StoreSeedProducer(ctx, v.ValId, new(common.HexToAddress(v.GetOperator())))
+		require.NoError(err)
 	}
 
 	firstSpan := s.genTestSpans(1)
 	err = keeper.AddNewSpan(ctx, firstSpan[0])
 	require.NoError(err)
-	valAddr := common.HexToAddress(vals[1].GetOperator())
-
 	lastBorBlockHeader := &ethTypes.Header{Number: big.NewInt(0)}
 	contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(0)).Return(lastBorBlockHeader, nil).Times(1)
-	contractCaller.On("GetBorChainBlockAuthor", big.NewInt(0)).Return(&valAddr, nil).Times(1)
+	contractCaller.On("GetBorChainBlockAuthor", mock.Anything, big.NewInt(0)).
+		Return(new(common.HexToAddress(vals[1].GetOperator())), nil).Times(1)
 	stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(1)
 	stakeKeeper.EXPECT().GetSpanEligibleValidators(ctx).Return(vals).Times(1)
 
@@ -100,7 +99,7 @@ func (s *KeeperTestSuite) TestGetNextSpanSeed() {
 
 	lastBorBlockHeader := &ethTypes.Header{Number: big.NewInt(1)}
 	contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(1)).Return(lastBorBlockHeader, nil).Times(1)
-	contractCaller.On("GetBorChainBlockAuthor", big.NewInt(1)).Return(&valAddr, nil).Times(1)
+	contractCaller.On("GetBorChainBlockAuthor", mock.Anything, big.NewInt(1)).Return(&valAddr, nil).Times(1)
 
 	res, err := queryClient.GetNextSpanSeed(ctx, &types.QueryNextSpanSeedRequest{Id: 1})
 	require.NoError(err)

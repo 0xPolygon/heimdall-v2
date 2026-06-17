@@ -65,6 +65,11 @@ func NewKeeper(
 	return k
 }
 
+// SetContractCaller sets the contract caller in the topup keeper
+func (k *Keeper) SetContractCaller(contractCaller helper.IContractCaller) {
+	k.contractCaller = contractCaller
+}
+
 // Logger returns a module-specific logger.
 func (k Keeper) Logger(ctx context.Context) log.Logger {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

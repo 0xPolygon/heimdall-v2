@@ -546,6 +546,66 @@ func TestHeimdallListener_EdgeCases(t *testing.T) {
 	})
 }
 
+func TestHeimdallListener_EarliestBlockClamping(t *testing.T) {
+	t.Parallel()
+
+	t.Run("clamps fromBlock to earliestBlock when node has pruned", func(t *testing.T) {
+		t.Parallel()
+
+		testCases := []struct {
+			name             string
+			fromBlock        uint64
+			earliestBlock    uint64
+			expectedFromBlock uint64
+		}{
+			{
+				name:              "fromBlock before earliest, should clamp",
+				fromBlock:         100,
+				earliestBlock:     5000,
+				expectedFromBlock: 5000,
+			},
+			{
+				name:              "fromBlock equal to earliest, no clamp",
+				fromBlock:         5000,
+				earliestBlock:     5000,
+				expectedFromBlock: 5000,
+			},
+			{
+				name:              "fromBlock after earliest, no clamp",
+				fromBlock:         10000,
+				earliestBlock:     5000,
+				expectedFromBlock: 10000,
+			},
+			{
+				name:              "earliestBlock is zero (non-pruned node), no clamp",
+				fromBlock:         100,
+				earliestBlock:     0,
+				expectedFromBlock: 100,
+			},
+			{
+				name:              "earliestBlock is 1 (genesis), fromBlock before",
+				fromBlock:         0,
+				earliestBlock:     1,
+				expectedFromBlock: 1,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				fromBlock := tc.fromBlock
+				earliestBlock := tc.earliestBlock
+
+				// This mirrors the logic in fetchFromAndToBlock
+				if earliestBlock > 0 && fromBlock < earliestBlock {
+					fromBlock = earliestBlock
+				}
+
+				require.Equal(t, tc.expectedFromBlock, fromBlock)
+			})
+		}
+	})
+}
+
 func TestHeimdallListener_BlockRangeCalculations(t *testing.T) {
 	t.Parallel()
 

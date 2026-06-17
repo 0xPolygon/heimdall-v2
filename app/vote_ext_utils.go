@@ -871,13 +871,15 @@ func ValidateNonRpVoteExtensions(
 	// NonRpVoteExtension is not a protobuf-encoded sidetxs.VoteExtension and
 	// it would incorrectly reject valid non-rp VEs.
 
-	if err := validateNonRpVoteExtensionData(ctx, height-1, majorityExt, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
-		return fmt.Errorf("failed to validate majority non rp vote extension: %w", err)
-	}
-
-	// Check the signatures
+	// Signatures first: NonRpExtensionSignature must be verified before any
+	// Bor-dependent payload validation, so the Zurich gated tolerateBorErr carve-out
+	// in callers cannot suppress a signature failure when Bor is unreachable.
 	if err := checkNonRpVoteExtensionsSignatures(ctx, extVoteInfo, validatorSet); err != nil {
 		return fmt.Errorf("failed to check non rp vote extensions signatures: %w", err)
+	}
+
+	if err := validateNonRpVoteExtensionData(ctx, height-1, majorityExt, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
+		return fmt.Errorf("failed to validate majority non rp vote extension: %w", err)
 	}
 
 	return nil
@@ -1061,6 +1063,7 @@ func validateCheckpointMsgData(ctx sdk.Context, extension []byte, chainManagerKe
 	}
 
 	isValid, err := checkpointTypes.IsValidCheckpoint(
+		ctx,
 		checkpointMsg.StartBlock,
 		checkpointMsg.EndBlock,
 		checkpointMsg.RootHash,
@@ -1151,12 +1154,17 @@ func findCheckpointTx(txs [][]byte, extension []byte, txDecoder txDecoder, logge
 	return ""
 }
 
-// getCheckpointSignatures returns the checkpoint signatures from the given extVoteInfo
-func getCheckpointSignatures(extension []byte, extVoteInfo []abciTypes.ExtendedVoteInfo) checkpointTypes.CheckpointSignatures {
+// getCheckpointSignatures returns the checkpoint signatures from the given extVoteInfo.
+// From the Zurich hardfork onward, non-commit entries are skipped.
+func getCheckpointSignatures(height int64, extension []byte, extVoteInfo []abciTypes.ExtendedVoteInfo) checkpointTypes.CheckpointSignatures {
 	result := checkpointTypes.CheckpointSignatures{
 		Signatures: make([]checkpointTypes.CheckpointSignature, 0),
 	}
+	commitOnly := helper.IsZurichHardfork(height)
 	for _, vote := range extVoteInfo {
+		if commitOnly && vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
+			continue
+		}
 		if bytes.Equal(vote.NonRpVoteExtension, extension) {
 			result.Signatures = append(result.Signatures, checkpointTypes.CheckpointSignature{
 				ValidatorAddress: vote.Validator.Address,

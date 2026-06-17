@@ -74,7 +74,10 @@ const (
 var tempDir = func() string {
 	dir, err := os.MkdirTemp("", "heimdall")
 	if err != nil {
-		dir = app.DefaultNodeHome
+		fmt.Printf("Failed to create temporary directory, falling back to the default node home: %v\n", err)
+		// Fallback to the default node home if the tmp directory cannot be created,
+		// we do NOT schedule this for deletion
+		return app.DefaultNodeHome
 	}
 	defer func() {
 		err := os.RemoveAll(dir)
@@ -120,6 +123,14 @@ func initCometBFTConfig() *cmtcfg.Config {
 	customCMTConfig.Consensus.PeerGossipSleepDuration = 25 * time.Millisecond
 	customCMTConfig.Consensus.PeerQueryMaj23SleepDuration = 200 * time.Millisecond
 
+	// Default to no tx indexing. Heimdall's bridge fetches checkpoint tx bytes
+	// from the block store directly (see helper.QueryTxBytesFromBlock), and no
+	// other internal consumer depends on tx_index. Disabling it avoids ~30 GB/
+	// month of writes and removes the bulk of the periodic ABCI-prune cycle
+	// compaction cost. Operators who need the /tx or /tx_search RPC endpoints
+	// can re-enable by setting `indexer = "kv"` in config.toml.
+	customCMTConfig.TxIndex.Indexer = "null"
+
 	return customCMTConfig
 }
 
@@ -164,7 +175,7 @@ func initRootCmd(
 		MigrateCommand(),
 	)
 
-	AddCommandsWithStartCmdOptions(rootCmd, app.DefaultNodeHome, newApp, appExport, server.StartCmdOptions{
+	AddCommandsWithStartCmdOptions(rootCmd, app.DefaultNodeHome, newApp, newStartApp, appExport, server.StartCmdOptions{
 		AddFlags: func(startCmd *cobra.Command) {
 			startCmd.Flags().Bool(helper.RestServerFlag, true, "Enable the REST server")
 			startCmd.Flags().Bool(helper.BridgeFlag, false, "Enable the bridge server")
@@ -173,6 +184,8 @@ func initRootCmd(
 		},
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
 			helper.InitHeimdallConfig("")
+			bridgeEnabled := viper.GetBool(helper.BridgeFlag)
+			registerBorChainClientCleanup(ctx, g, helper.CloseBorChainClients)
 
 			// wait for the rest server to start.
 			resultChan := make(chan string, 1)
@@ -231,7 +244,7 @@ func initRootCmd(
 				WithChainID(chainParam.ChainParams.HeimdallChainId)
 
 			// start bridge
-			if viper.GetBool(helper.BridgeFlag) {
+			if bridgeEnabled {
 				bridge.AdjustDBValue(rootCmd)
 				g.Go(func() error {
 					return bridge.StartWithCtx(ctx, clientCtx)
@@ -328,7 +341,14 @@ func checkServerStatus(ctx context.Context, url string, resultChan chan<- string
 }
 
 // AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
-func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome string, appCreator servertypes.AppCreator, appExport servertypes.AppExporter, opts server.StartCmdOptions) {
+func AddCommandsWithStartCmdOptions(
+	rootCmd *cobra.Command,
+	defaultNodeHome string,
+	appCreator servertypes.AppCreator,
+	startAppCreator servertypes.AppCreator,
+	appExport servertypes.AppExporter,
+	opts server.StartCmdOptions,
+) {
 	cometCmd := &cobra.Command{
 		Use:     "comet",
 		Aliases: []string{"cometbft", "tendermint"},
@@ -346,7 +366,7 @@ func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome stri
 		server.BootstrapStateCmd(appCreator),
 	)
 
-	startCmd := server.StartCmdWithOptions(appCreator, defaultNodeHome, opts)
+	startCmd := server.StartCmdWithOptions(startAppCreator, defaultNodeHome, opts)
 
 	rootCmd.AddCommand(
 		startCmd,
@@ -354,6 +374,14 @@ func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome stri
 		server.ExportCmd(appExport, defaultNodeHome),
 		server.NewRollbackCmd(appCreator, defaultNodeHome),
 	)
+}
+
+func registerBorChainClientCleanup(ctx context.Context, g *errgroup.Group, closeBorClients func()) {
+	g.Go(func() error {
+		<-ctx.Done()
+		closeBorClients()
+		return nil
+	})
 }
 
 func queryCommand() *cobra.Command {
@@ -422,6 +450,50 @@ func newApp(
 		appOpts,
 		baseappOptions...,
 	)
+}
+
+// borFailoverGuardedApp is the minimal surface applyBorFailoverBPGuard needs, so
+// the guard-and-close decision is unit-testable without building a full app.
+type borFailoverGuardedApp interface {
+	EnforceBorFailoverBPGuard() error
+	Close() error
+}
+
+// applyBorFailoverBPGuard runs the Bor failover BP guard and, on failure, closes
+// the app and Bor chain clients before returning the guard error so the start
+// path fails closed. The guard error is always the one returned; a Close failure
+// is only logged.
+func applyBorFailoverBPGuard(logger log.Logger, hApp borFailoverGuardedApp, closeBorClients func()) error {
+	if err := hApp.EnforceBorFailoverBPGuard(); err != nil {
+		if closeErr := hApp.Close(); closeErr != nil {
+			logger.Error("failed to close app after Bor failover BP guard failure", "error", closeErr)
+		}
+		closeBorClients()
+		return err
+	}
+
+	return nil
+}
+
+// mustApplyBorFailoverBPGuard panics when the Bor failover BP guard fails, so the
+// start path fails closed: a protected block producer with failover configured
+// never proceeds to serve.
+func mustApplyBorFailoverBPGuard(logger log.Logger, hApp borFailoverGuardedApp, closeBorClients func()) {
+	if err := applyBorFailoverBPGuard(logger, hApp, closeBorClients); err != nil {
+		panic(err)
+	}
+}
+
+func newStartApp(
+	logger log.Logger,
+	db dbm.DB,
+	traceStore io.Writer,
+	appOpts servertypes.AppOptions,
+) servertypes.Application {
+	hApp := newApp(logger, db, traceStore, appOpts).(*app.HeimdallApp)
+	mustApplyBorFailoverBPGuard(logger, hApp, helper.CloseBorChainClients)
+
+	return hApp
 }
 
 // appExport creates a new heimdall app (optionally at a given height) and exports state.

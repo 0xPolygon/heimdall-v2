@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -24,7 +25,7 @@ const (
 	errMsgSpanFetchingNextSpanDetails            = "SpanProcessor: unable to fetch next span details"
 	errMsgSpanRecoveredPanic                     = "SpanProcessor: recovered panic in propose goroutine"
 	errMsgSpanPropose                            = "SpanProcessor: error in propose"
-	errMsgSpanFetchingLastSpanForVotes           = "SpanProcessor: uable to fetch last span"
+	errMsgSpanFetchingLastSpanForVotes           = "SpanProcessor: unable to fetch last span"
 	errMsgSpanValidatorNotFound                  = "SpanProcessor: validator not found in last span"
 	errMsgSpanFetchingProducerVotes              = "SpanProcessor: unable to fetch producer votes"
 	errMsgSpanSendingProducerVotes               = "SpanProcessor: error while sending producer votes"
@@ -72,6 +73,9 @@ type SpanProcessor struct {
 
 	// header listener subscription
 	cancelSpanService context.CancelFunc
+
+	// proposeSpanInProgress prevents overlapping propose goroutines
+	proposeSpanInProgress atomic.Bool
 }
 
 // Start starts new block subscription
@@ -166,7 +170,13 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 		return
 	}
 
+	if !sp.proposeSpanInProgress.CompareAndSwap(false, true) {
+		sp.Logger.Debug("SpanProcessor: skipping span proposal, previous propose still in progress")
+		return
+	}
+
 	go func() {
+		defer sp.proposeSpanInProgress.Store(false)
 		defer func() {
 			if r := recover(); r != nil {
 				sp.Logger.Error(errMsgSpanRecoveredPanic, "panic", r)

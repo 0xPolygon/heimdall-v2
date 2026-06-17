@@ -356,13 +356,13 @@ func NewHeimdallApp(
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
-		stake.NewAppModule(app.StakeKeeper, app.caller),
-		clerk.NewAppModule(app.ClerkKeeper),
+		stake.NewAppModule(&app.StakeKeeper),
+		clerk.NewAppModule(&app.ClerkKeeper),
 		chainmanager.NewAppModule(app.ChainManagerKeeper),
-		topup.NewAppModule(app.TopupKeeper, app.caller),
+		topup.NewAppModule(&app.TopupKeeper),
 		checkpoint.NewAppModule(&app.CheckpointKeeper),
 		milestone.NewAppModule(&app.MilestoneKeeper),
-		bor.NewAppModule(app.BorKeeper, app.caller),
+		bor.NewAppModule(&app.BorKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 	)
@@ -510,7 +510,7 @@ func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx
 						Log:  err.Error(),
 					}, nil
 				}
-			} else if _, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
+			} else if downtimeMsg, ok := msg.(*borTypes.MsgSetProducerDowntime); ok {
 				// Create a context for validation
 				ctx := app.NewUncachedContext(true, cmtproto.Header{Height: app.LastBlockHeight() + 1})
 				if err := app.BorKeeper.CanSetProducerDowntime(ctx); err != nil {
@@ -519,6 +519,15 @@ func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx
 						Code: sdkerrors.ErrInvalidRequest.ABCICode(),
 						Log:  err.Error(),
 					}, nil
+				}
+				if downtimeMsg.TargetProducerId != borTypes.RoundRobinDefault {
+					if err := app.BorKeeper.CanUseTargetProducer(ctx); err != nil {
+						app.Logger().Debug("Rejecting MsgSetProducerDowntime with TargetProducerId in CheckTx", "error", err)
+						return &abci.ResponseCheckTx{
+							Code: sdkerrors.ErrInvalidRequest.ABCICode(),
+							Log:  err.Error(),
+						}, nil
+					}
 				}
 			}
 		}
@@ -562,6 +571,18 @@ func (app *HeimdallApp) Name() string { return app.BaseApp.Name() }
 
 // InitChainer application update at chain initialization
 func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+	// newApp started the Bor failover prober and per-endpoint probe clients via
+	// InitHeimdallConfig, but the start command only registers their shutdown
+	// cleanup in PostSetup, which runs after InitChain. Any abort here (error
+	// return or panic) exits before that, so close them on every non-success
+	// exit. CloseBorChainClients is idempotent and mutex-guarded.
+	succeeded := false
+	defer func() {
+		if !succeeded {
+			helper.CloseBorChainClients()
+		}
+	}()
+
 	var genesisState GenesisState
 	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
@@ -594,6 +615,15 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		return &abci.ResponseInitChain{}, err
 	}
 
+	// Fail closed if this node is a protected block producer with Bor endpoint
+	// failover configured. The startup check in newStartApp runs before genesis
+	// state exists, so on a fresh DB a genesis producer's signer has no validator
+	// record yet; re-check now that InitGenesis has written validator and span
+	// state. Node-local: only the misconfigured producer aborts InitChain.
+	if err := app.enforceBorFailoverBPGuard(ctx); err != nil {
+		return &abci.ResponseInitChain{}, err
+	}
+
 	moduleAccTopUp := app.AccountKeeper.GetModuleAccount(ctx, topupTypes.ModuleName)
 	if moduleAccTopUp == nil {
 		panic(fmt.Sprintf("%s module account has not been set", topupTypes.ModuleName))
@@ -602,8 +632,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	stakingState := staketypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
 	checkpointState := checkpointTypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
 
-	// check if validator is current validator
-	// add to val updates else skip
+	// check if the validator is the current one and add to valUpdates else skip
 	var valUpdates []abci.ValidatorUpdate
 
 	for _, validator := range stakingState.Validators {
@@ -624,6 +653,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	}
 
 	// update validators
+	succeeded = true
 	return &abci.ResponseInitChain{
 		Validators: valUpdates,
 	}, nil

@@ -3,12 +3,14 @@ package listener
 import (
 	"math/big"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/mock"
@@ -35,7 +37,7 @@ func (r *rootChainListenerForTest) SendTaskWithDelay(taskName string, eventName 
 			},
 		},
 	}
-	signature.RetryCount = 3
+	signature.RetryCount = 5
 
 	eta := time.Now().Add(delay)
 	signature.ETA = &eta
@@ -78,7 +80,7 @@ func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
 			if sig.Args[1].Type != "string" || sig.Args[1].Value != string(logBytes) {
 				return false
 			}
-			if sig.RetryCount != 3 {
+			if sig.RetryCount != 5 {
 				return false
 			}
 			if sig.ETA == nil {
@@ -148,6 +150,170 @@ func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
 
 		mockConnector.AssertExpectations(t)
 	})
+}
+
+func TestRootChainListener_MaxBlockRange(t *testing.T) {
+	t.Parallel()
+
+	t.Run("validates maxRootChainBlockRange constant", func(t *testing.T) {
+		t.Parallel()
+
+		require.Equal(t, int64(5000), int64(maxRootChainBlockRange))
+		require.Greater(t, maxRootChainBlockRange, 0)
+	})
+
+	t.Run("chunking produces correct ranges within maxRootChainBlockRange", func(t *testing.T) {
+		t.Parallel()
+
+		testCases := []struct {
+			name           string
+			from           int64
+			to             int64
+			expectedChunks [][2]int64 // [from, to] pairs
+		}{
+			{
+				name: "range smaller than max",
+				from: 100,
+				to:   200,
+				expectedChunks: [][2]int64{
+					{100, 200},
+				},
+			},
+			{
+				name: "range equal to max",
+				from: 1000,
+				to:   5999,
+				expectedChunks: [][2]int64{
+					{1000, 5999},
+				},
+			},
+			{
+				name: "range exceeds max by one",
+				from: 1000,
+				to:   6000,
+				expectedChunks: [][2]int64{
+					{1000, 5999},
+					{6000, 6000},
+				},
+			},
+			{
+				name: "range exactly double max",
+				from: 0,
+				to:   9999,
+				expectedChunks: [][2]int64{
+					{0, 4999},
+					{5000, 9999},
+				},
+			},
+			{
+				name: "single block range",
+				from: 500,
+				to:   500,
+				expectedChunks: [][2]int64{
+					{500, 500},
+				},
+			},
+			{
+				name: "large range produces multiple chunks",
+				from: 0,
+				to:   12499,
+				expectedChunks: [][2]int64{
+					{0, 4999},
+					{5000, 9999},
+					{10000, 12499},
+				},
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				from := big.NewInt(tc.from)
+				to := big.NewInt(tc.to)
+
+				var chunks [][2]int64
+				for chunkFrom := new(big.Int).Set(from); chunkFrom.Cmp(to) <= 0; {
+					chunkTo := new(big.Int).Add(chunkFrom, big.NewInt(maxRootChainBlockRange-1))
+					if chunkTo.Cmp(to) > 0 {
+						chunkTo = to
+					}
+					chunks = append(chunks, [2]int64{chunkFrom.Int64(), chunkTo.Int64()})
+					chunkFrom = new(big.Int).Add(chunkTo, big.NewInt(1))
+				}
+
+				require.Equal(t, tc.expectedChunks, chunks)
+			})
+		}
+	})
+}
+
+func TestRootChainListener_SplitBlockRange(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name     string
+		from     int64
+		to       int64
+		expected int64
+	}{
+		{
+			name:     "single block",
+			from:     100,
+			to:       100,
+			expected: 100,
+		},
+		{
+			name:     "two blocks returns left block",
+			from:     100,
+			to:       101,
+			expected: 100,
+		},
+		{
+			name:     "odd range",
+			from:     100,
+			to:       200,
+			expected: 150,
+		},
+		{
+			name:     "large range",
+			from:     0,
+			to:       4999,
+			expected: 2499,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			require.Equal(t, big.NewInt(tc.expected), splitBlockRange(big.NewInt(tc.from), big.NewInt(tc.to)))
+		})
+	}
+}
+
+func TestRootChainListener_RootChainEventTopics(t *testing.T) {
+	t.Parallel()
+
+	abiObject, err := abi.JSON(strings.NewReader(`[
+		{"anonymous":false,"inputs":[],"name":"StateSynced","type":"event"},
+		{"anonymous":false,"inputs":[],"name":"StakeUpdate","type":"event"},
+		{"anonymous":false,"inputs":[],"name":"IgnoredEvent","type":"event"}
+	]`))
+	require.NoError(t, err)
+
+	eventMap := make(map[common.Hash]*abi.Event)
+	for _, event := range abiObject.Events {
+		e := event
+		eventMap[e.ID] = &e
+	}
+	eventMap[common.HexToHash("0x1")] = nil
+
+	topics := rootChainEventTopics(eventMap)
+
+	require.Len(t, topics, 2)
+	require.Contains(t, topics, abiObject.Events["StateSynced"].ID)
+	require.Contains(t, topics, abiObject.Events["StakeUpdate"].ID)
+	require.NotContains(t, topics, abiObject.Events["IgnoredEvent"].ID)
+	require.Empty(t, rootChainEventTopics(nil))
 }
 
 func TestRootChainListener_StorageKeys(t *testing.T) {
@@ -503,7 +669,7 @@ func TestRootChainListener_TaskSignatureStructure(t *testing.T) {
 				},
 			},
 		}
-		signature.RetryCount = 3
+		signature.RetryCount = 5
 		eta := time.Now()
 		signature.ETA = &eta
 
@@ -514,7 +680,7 @@ func TestRootChainListener_TaskSignatureStructure(t *testing.T) {
 		require.Equal(t, eventName, signature.Args[0].Value)
 		require.Equal(t, "string", signature.Args[1].Type)
 		require.Equal(t, string(logBytes), signature.Args[1].Value)
-		require.Equal(t, 3, signature.RetryCount)
+		require.Equal(t, 5, signature.RetryCount)
 		require.NotNil(t, signature.ETA)
 	})
 }

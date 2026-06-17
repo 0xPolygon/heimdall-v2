@@ -11,9 +11,11 @@ import (
 	"math/big"
 	"sort"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -112,8 +114,19 @@ type CheckpointProcessor struct {
 	// header listener subscription
 	cancelNoACKPolling context.CancelFunc
 
+	// noAckInProgress prevents overlapping handleCheckpointNoAck goroutines
+	noAckInProgress atomic.Bool
+
+	// noAckSkipCount tracks how many times a tick was skipped because noAckInProgress was true (used in tests)
+	noAckSkipCount atomic.Uint64
+
 	// RootChain abi
 	rootChainAbi *abi.ABI
+
+	// queryTxBytesFromBlock returns the raw bytes of the tx with the given hash
+	// from the block at the given height. Defaults to helper.QueryTxBytesFromBlock;
+	// overridden in tests to assert the height computed for the checkpoint flow.
+	queryTxBytesFromBlock func(cliCtx client.Context, hash []byte, height int64) ([]byte, error)
 }
 
 // CheckpointContext represents checkpoint context
@@ -125,7 +138,8 @@ type CheckpointContext struct {
 // NewCheckpointProcessor - add rootChain abi to the checkpoint processor
 func NewCheckpointProcessor(rootChainAbi *abi.ABI) *CheckpointProcessor {
 	return &CheckpointProcessor{
-		rootChainAbi: rootChainAbi,
+		rootChainAbi:          rootChainAbi,
+		queryTxBytesFromBlock: helper.QueryTxBytesFromBlock,
 	}
 }
 
@@ -166,7 +180,16 @@ func (cp *CheckpointProcessor) startPollingForNoAck(ctx context.Context, interva
 	for {
 		select {
 		case <-ticker.C:
-			go cp.handleCheckpointNoAck(ctx)
+			if !cp.noAckInProgress.CompareAndSwap(false, true) {
+				cp.Logger.Debug("CheckpointProcessor: skipping no-ack check, previous run still in progress")
+				cp.noAckSkipCount.Add(1)
+				continue
+			}
+
+			go func() {
+				defer cp.noAckInProgress.Store(false)
+				cp.handleCheckpointNoAck(ctx)
+			}()
 		case <-ctx.Done():
 			cp.Logger.Info(infoMsgCpNoAckPollingStopped)
 			ticker.Stop()
@@ -441,7 +464,7 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 	currentHeaderBlockNumber := big.NewInt(0).SetUint64(currentHeaderBlock)
 
 	// get header info
-	_, currentStart, currentEnd, _, _, err := cp.contractCaller.GetHeaderInfo(currentHeaderBlockNumber.Uint64(), rootChainInstance, checkpointParams.ChildChainBlockInterval)
+	_, currentStart, currentEnd, _, _, err := cp.contractCaller.GetHeaderInfo(context.Background(), currentHeaderBlockNumber.Uint64(), rootChainInstance, checkpointParams.ChildChainBlockInterval)
 	if err != nil {
 		cp.Logger.Error(errMsgCpFetchingHeaderBlockObject, "error", err)
 		return nil, err
@@ -496,7 +519,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 	checkpointParams := checkpointContext.CheckpointParams
 
 	// Get root hash
-	root, err := cp.contractCaller.GetRootHash(start, end, checkpointParams.MaxCheckpointLength)
+	root, err := cp.contractCaller.GetRootHash(context.Background(), start, end, checkpointParams.MaxCheckpointLength)
 	if err != nil {
 		return err
 	}
@@ -554,19 +577,18 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 // and sends a transaction to rootChain
 func (cp *CheckpointProcessor) createAndSendCheckpointToRootChain(checkpointContext *CheckpointContext, start uint64, end uint64, height int64, txHash []byte) error {
 	cp.Logger.Info(infoMsgCpPreparingCheckpointForRootChain, "height", height, "txHash", common.Bytes2Hex(txHash), "start", start, "end", end)
-	// proof
-	tx, err := helper.QueryTxWithProof(cp.cliCtx, txHash)
+	txBytes, err := cp.fetchCheckpointTxBytesForEvent(txHash, height)
 	if err != nil {
-		cp.Logger.Error(errMsgCpQueryingCheckpointTxProof, "txHash", txHash)
+		cp.Logger.Error(errMsgCpQueryingCheckpointTxProof, "txHash", txHash, "eventHeight", height, "error", err)
 		return err
 	}
 
 	// fetch side txs sigs
 	decoder := authlegacytx.DefaultTxDecoder(cp.cliCtx.Codec)
 
-	stdTx, err := decoder(tx.Tx)
+	stdTx, err := decoder(txBytes)
 	if err != nil {
-		cp.Logger.Error(errMsgCpDecodingCheckpointTx, "txHash", tx.Tx.Hash(), "error", err)
+		cp.Logger.Error(errMsgCpDecodingCheckpointTx, "txHash", txHash, "error", err)
 		return err
 	}
 
@@ -574,7 +596,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootChain(checkpointCont
 
 	sideMsg, ok := msg.(*checkpointtypes.MsgCheckpoint)
 	if !ok {
-		cp.Logger.Error(errMsgCpInvalidSideTxMsg, "txHash", tx.Tx.Hash())
+		cp.Logger.Error(errMsgCpInvalidSideTxMsg, "txHash", txHash)
 		return err
 	}
 
@@ -607,6 +629,18 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootChain(checkpointCont
 	}
 
 	return nil
+}
+
+// fetchCheckpointTxBytesForEvent returns the raw bytes of the MsgCheckpointBlock
+// tx whose post-handler emitted the EventTypeCheckpoint event at eventHeight.
+//
+// The side-tx post-handler runs in PreBlocker at height H against the txs of
+// block H-1 (see StakeKeeper.SetLastBlockTxs / GetLastBlockTxs and
+// app/abci.go), so the tx that produced the event lives in block
+// eventHeight-1, not eventHeight. Routing this through a single named helper
+// keeps the off-by-one invariant grep-able and unit-testable.
+func (cp *CheckpointProcessor) fetchCheckpointTxBytesForEvent(txHash []byte, eventHeight int64) ([]byte, error) {
+	return cp.queryTxBytesFromBlock(cp.cliCtx, txHash, eventHeight-1)
 }
 
 // parseCheckpointSignatures parse checkpoint signatures for the L1 checkpoint contract
@@ -696,7 +730,7 @@ func (cp *CheckpointProcessor) getLatestCheckpointTime(checkpointContext *Checkp
 	}
 
 	// header block
-	_, _, _, createdAt, _, err := cp.contractCaller.GetHeaderInfo(lastHeaderNumber, rootChainInstance, checkpointParams.ChildChainBlockInterval)
+	_, _, _, createdAt, _, err := cp.contractCaller.GetHeaderInfo(context.Background(), lastHeaderNumber, rootChainInstance, checkpointParams.ChildChainBlockInterval)
 	if err != nil {
 		cp.Logger.Error(errMsgCpFetchingHeaderBlock, "error", err)
 		return 0, err

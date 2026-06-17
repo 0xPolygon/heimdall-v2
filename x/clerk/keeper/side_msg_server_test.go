@@ -19,6 +19,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
@@ -64,7 +65,7 @@ func (s *KeeperTestSuite) TestSideHandler() {
 		BlockNumber: new(big.Int).SetUint64(blockNumber),
 	}
 
-	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil)
 	event := &statesender.StatesenderStateSynced{
 		Id:              new(big.Int).SetUint64(msg.Id),
 		ContractAddress: common.HexToAddress(msg.ContractAddress),
@@ -106,7 +107,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// mock external calls
-		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil)
 		event := &statesender.StatesenderStateSynced{
 			Id:              new(big.Int).SetUint64(msg.Id),
 			ContractAddress: common.HexToAddress(msg.ContractAddress),
@@ -141,7 +142,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// mock external calls -- no receipt
-		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 		contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 
 		// execute handler
@@ -169,7 +170,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// mock external calls -- no receipt
-		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil)
 		contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
@@ -205,7 +206,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// mock external calls
-		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil)
 		event := &statesender.StatesenderStateSynced{
 			Id:              new(big.Int).SetUint64(msg.Id),
 			ContractAddress: common.BytesToAddress([]byte(msg.ContractAddress)),
@@ -251,7 +252,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			Data:            msg.Data,
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 		contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil).Once()
 
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
@@ -365,4 +366,54 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 		// post-handler should prevent replay attack
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 	})
+}
+
+func (s *KeeperTestSuite) TestPostHandleMsgEventRecord_InvalidMsgTypeReturnsError() {
+	ctx := s.ctx
+	require := s.Require()
+
+	postHandler := clerkKeeper.NewSideMsgServerImpl(&s.keeper).(interface {
+		PostHandleMsgEventRecord(sdk.Context, sdk.Msg, sidetxs.Vote) error
+	})
+
+	require.NotPanics(func() {
+		err := postHandler.PostHandleMsgEventRecord(ctx, nil, sidetxs.Vote_VOTE_YES)
+		require.Error(err)
+		require.Contains(err.Error(), "MsgEventRecord")
+	})
+}
+
+func (s *KeeperTestSuite) TestPostHandleMsgEventRecord_ReplayReturnsError() {
+	ctx, ck, chainId := s.ctx, s.keeper, s.chainId
+	require := s.Require()
+
+	postHandler := clerkKeeper.NewSideMsgServerImpl(&s.keeper).(interface {
+		PostHandleMsgEventRecord(sdk.Context, sdk.Msg, sidetxs.Vote) error
+	})
+
+	ac := address.NewHexCodec()
+	addrBz2, err := ac.StringToBytes(Address2)
+	require.NoError(err)
+
+	msg := types.NewMsgEventRecord(
+		util.FormatAddress(Address1),
+		TxHash1,
+		1,
+		1,
+		1,
+		addrBz2,
+		make([]byte, 0),
+		chainId,
+	)
+
+	err = postHandler.PostHandleMsgEventRecord(ctx, &msg, sidetxs.Vote_VOTE_YES)
+	require.NoError(err)
+
+	err = postHandler.PostHandleMsgEventRecord(ctx, &msg, sidetxs.Vote_VOTE_YES)
+	require.Error(err)
+	require.Contains(err.Error(), "already processed")
+
+	storedEventRecord, getErr := ck.GetEventRecord(ctx, msg.Id)
+	require.NoError(getErr)
+	require.NotNil(storedEventRecord)
 }

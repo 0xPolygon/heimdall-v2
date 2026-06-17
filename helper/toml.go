@@ -17,14 +17,20 @@ const DefaultConfigTemplate = `
 # RPC endpoint for ethereum chain
 eth_rpc_url = "{{ .Custom.EthRPCUrl }}"
 
-# RPC endpoint for bor chain
+# RPC endpoint(s) for bor chain. Accepts a comma-separated, priority-ordered
+# list for failover (first = primary; heimdall reverts to it once it recovers).
+# A single URL keeps the previous single-endpoint behavior.
 bor_rpc_url = "{{ .Custom.BorRPCUrl }}"
 
 # GRPC flag for bor chain
 bor_grpc_flag = "{{ .Custom.BorGRPCFlag }}"
 
-# GRPC endpoint for bor chain
+# GRPC endpoint(s) for bor chain. Like bor_rpc_url, accepts a comma-separated,
+# priority-ordered list for failover.
 bor_grpc_url = "{{ .Custom.BorGRPCUrl }}"
+
+# Bearer token for bor gRPC authentication (empty disables auth)
+bor_grpc_token = "{{ .Custom.BorGRPCToken }}"
 
 # RPC endpoint for cometBFT
 comet_bft_rpc_url = "{{ .Custom.CometBFTRPCUrl }}"
@@ -50,11 +56,9 @@ sh_stake_update_interval = "{{ .Custom.SHStakeUpdateInterval }}"
 sh_checkpoint_ack_interval = "{{ .Custom.SHCheckpointAckInterval }}"
 sh_max_depth_duration = "{{ .Custom.SHMaxDepthDuration }}"
 
-#### gas limits ####
-main_chain_gas_limit = "{{ .Custom.MainChainGasLimit }}"
-
-#### gas price ####
-main_chain_max_gas_price = "{{ .Custom.MainChainMaxGasPrice }}"
+#### gas price configs (EIP-1559) ####
+main_chain_gas_fee_cap = "{{ .Custom.MainChainGasFeeCap }}"
+main_chain_gas_tip_cap = "{{ .Custom.MainChainGasTipCap }}"
 
 ##### Timeout Config #####
 no_ack_wait_time = "{{ .Custom.NoACKWaitTime }}"

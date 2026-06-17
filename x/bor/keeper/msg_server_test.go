@@ -423,6 +423,63 @@ func (s *KeeperTestSuite) TestVoteProducers() {
 	}
 }
 
+func (s *KeeperTestSuite) TestVoteProducers_ActiveValidatorGate() {
+	require, borKeeper, skMock, msgServer := s.Require(), s.borKeeper, s.stakeKeeper, s.msgServer
+
+	voterPrivKey := secp256k1.GenPrivKey()
+	voterPubKey := voterPrivKey.PubKey()
+	voterAccAddress := sdk.AccAddress(voterPubKey.Address())
+	voterAccAddressHex := hex.EncodeToString(voterAccAddress.Bytes())
+
+	require.NoError(borKeeper.AddNewSpan(s.ctx, &types.Span{Id: 1, StartBlock: 1, EndBlock: 1000, BorChainId: "1"}))
+	helper.SetRioHeight(1000)
+
+	matchingVal := staketypes.Validator{ValId: 1, Signer: voterAccAddress.String(), PubKey: voterPubKey.Bytes()}
+
+	const zurichHeight = 100
+	helper.SetZurichHardforkHeight(zurichHeight)
+	defer helper.SetZurichHardforkHeight(0)
+
+	msg := types.MsgVoteProducers{Voter: voterAccAddressHex, VoterId: matchingVal.ValId, Votes: types.ProducerVotes{Votes: []uint64{10, 20}}}
+
+	s.Run("at-zurich: vote from validator outside the active set is rejected", func() {
+		require.NoError(borKeeper.SetProducerVotes(s.ctx, msg.VoterId, types.ProducerVotes{}))
+		skMock.EXPECT().GetValidatorFromValID(gomock.Any(), matchingVal.ValId).Return(matchingVal, nil).Times(1)
+		skMock.EXPECT().GetValidatorSet(gomock.Any()).Return(staketypes.ValidatorSet{Validators: []*staketypes.Validator{{ValId: 999}}}, nil).Times(1)
+
+		ctx := s.ctx.WithBlockHeight(zurichHeight)
+		res, err := msgServer.VoteProducers(ctx, &msg)
+		require.Error(err)
+		require.Contains(err.Error(), "not in the active validator set")
+		require.Nil(res)
+	})
+
+	s.Run("at-zurich: vote from active validator is accepted", func() {
+		require.NoError(borKeeper.SetProducerVotes(s.ctx, msg.VoterId, types.ProducerVotes{}))
+		skMock.EXPECT().GetValidatorFromValID(gomock.Any(), matchingVal.ValId).Return(matchingVal, nil).Times(1)
+		skMock.EXPECT().GetValidatorSet(gomock.Any()).Return(staketypes.ValidatorSet{Validators: []*staketypes.Validator{{ValId: matchingVal.ValId}}}, nil).Times(1)
+
+		ctx := s.ctx.WithBlockHeight(zurichHeight)
+		res, err := msgServer.VoteProducers(ctx, &msg)
+		require.NoError(err)
+		require.NotNil(res)
+		stored, err := borKeeper.GetProducerVotes(s.ctx, msg.VoterId)
+		require.NoError(err)
+		require.Equal(msg.Votes, stored)
+	})
+
+	s.Run("pre-zurich: gate inactive, validator outside active set still accepted", func() {
+		require.NoError(borKeeper.SetProducerVotes(s.ctx, msg.VoterId, types.ProducerVotes{}))
+		skMock.EXPECT().GetValidatorFromValID(gomock.Any(), matchingVal.ValId).Return(matchingVal, nil).Times(1)
+		// GetValidatorSet must not be consulted before the fork height.
+
+		ctx := s.ctx.WithBlockHeight(zurichHeight - 1)
+		res, err := msgServer.VoteProducers(ctx, &msg)
+		require.NoError(err)
+		require.NotNil(res)
+	})
+}
+
 func (s *KeeperTestSuite) TestBackfillSpans() {
 	require, ctx, borKeeper, milestoneKeeper, cmKeeper, msgServer := s.Require(), s.ctx, s.borKeeper, s.milestoneKeeper, s.chainManagerKeeper, s.msgServer
 
@@ -483,7 +540,6 @@ func (s *KeeperTestSuite) TestBackfillSpans() {
 		{
 			name: "mismatch between calculated and provided last span id",
 			backfillSpans: types.MsgBackfillSpans{
-
 				Proposer:        common.HexToAddress("someProposer").String(),
 				ChainId:         testChainParams.ChainParams.BorChainId,
 				LatestSpanId:    1,
@@ -699,7 +755,87 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 			seedVotes:  []uint64{id1, id2},
 			msg:        newMsg(val1.hexAddr, 600, 600+maxRange),
 		},
+		{
+			name:       "success - target zero accepted (round-robin default)",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: types.RoundRobinDefault,
+			},
+		},
+		{
+			name:       "success - valid target in producer set",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}, {ValId: val3.id, Signer: val3.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: id2,
+			},
+		},
+		{
+			name:       "error - target is the current producer",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: id1,
+			},
+			expectErrSubstr: "target producer cannot be the same as the current producer",
+		},
+		{
+			name:       "error - target not in producer set",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}, {ValId: val3.id, Signer: val3.hexAddr}},
+			seedVotes:  []uint64{id1, id2}, // only id1 and id2 qualify; id3 does not
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: id3,
+			},
+			expectErrSubstr: "target producer id 3 is not in the current producer set",
+		},
+		{
+			name:       "error - target is non-existent validator",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: 999,
+			},
+			expectErrSubstr: "target producer id 999 is not in the current producer set",
+		},
 	}
+
+	// Pre-fork rejection: when targetProducerOverrideHeight is set high,
+	// non-zero target should be rejected.
+	preForkTests := []testCase{
+		{
+			name:       "error - target rejected before fork height",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}, {ValId: val3.id, Signer: val3.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: id2,
+			},
+			expectErrSubstr: "target producer override is not enabled until height",
+		},
+		{
+			name:       "success - round-robin default accepted before fork height",
+			validators: []staketypes.Validator{{ValId: val1.id, Signer: val1.hexAddr}, {ValId: val2.id, Signer: val2.hexAddr}},
+			seedVotes:  []uint64{id1, id2, id3},
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         val1.hexAddr,
+				DowntimeRange:    types.BlockRange{StartBlock: 100, EndBlock: 100 + minRange},
+				TargetProducerId: types.RoundRobinDefault,
+			},
+		},
+	}
+	tests = append(tests, preForkTests...)
 
 	for _, tc := range tests {
 		s.T().Run(tc.name, func(t *testing.T) {
@@ -707,6 +843,19 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 			s.SetupTest()
 			ctx := s.ctx
 			msgServer := s.msgServer
+
+			// Set fork height high for pre-fork tests, restore after.
+			isPreFork := false
+			for _, pf := range preForkTests {
+				if pf.name == tc.name {
+					isPreFork = true
+					break
+				}
+			}
+			if isPreFork {
+				helper.SetZurichHardforkHeight(999999)
+				defer helper.SetZurichHardforkHeight(0)
+			}
 
 			// Prime mocks and seed producer votes controlling the producer set
 			primeStakeMocks(tc.validators)

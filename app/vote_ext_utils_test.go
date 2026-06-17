@@ -642,6 +642,166 @@ func TestGetMajorityNonRpVoteExtension(t *testing.T) {
 	}
 }
 
+func TestGetCheckpointSignatures(t *testing.T) {
+	helper.SetZurichHardforkHeight(10)
+	t.Cleanup(func() {
+		helper.SetZurichHardforkHeight(0)
+	})
+
+	val1, err := address.NewHexCodec().StringToBytes(ValAddr1)
+	require.NoError(t, err)
+	val2, err := address.NewHexCodec().StringToBytes(ValAddr2)
+	require.NoError(t, err)
+	val3, err := address.NewHexCodec().StringToBytes(ValAddr3)
+	require.NoError(t, err)
+	injectedAddr := bytes.Repeat([]byte{0xAB}, common.AddressLength)
+
+	majorityExt := []byte("majority_extension")
+	otherExt := []byte("other_extension")
+	sig1 := []byte("sig-1")
+	sig2 := []byte("sig-2")
+	sig3 := []byte("sig-3")
+	poisonedSig := []byte{0x01, 0x02, 0x03}
+
+	twoCommitsAndInjectedNonCommit := []abci.ExtendedVoteInfo{
+		{
+			Validator:               abci.Validator{Address: val1},
+			NonRpVoteExtension:      majorityExt,
+			NonRpExtensionSignature: sig1,
+			BlockIdFlag:             cmtTypes.BlockIDFlagCommit,
+		},
+		{
+			Validator:               abci.Validator{Address: val2},
+			NonRpVoteExtension:      majorityExt,
+			NonRpExtensionSignature: sig2,
+			BlockIdFlag:             cmtTypes.BlockIDFlagCommit,
+		},
+		{
+			Validator:               abci.Validator{Address: injectedAddr},
+			NonRpVoteExtension:      majorityExt,
+			NonRpExtensionSignature: poisonedSig,
+			BlockIdFlag:             cmtTypes.BlockIDFlagAbsent,
+		},
+	}
+
+	const preHardforkHeight = int64(1)
+	const postHardforkHeight = int64(11)
+
+	tests := []struct {
+		name              string
+		height            int64
+		extVoteInfo       []abci.ExtendedVoteInfo
+		expectedAddrToSig map[string][]byte
+		mustExcludeAddrs  [][]byte
+	}{
+		{
+			name:   "post-hardfork: all commit votes matching extension are included",
+			height: postHardforkHeight,
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				{
+					Validator:               abci.Validator{Address: val1},
+					NonRpVoteExtension:      majorityExt,
+					NonRpExtensionSignature: sig1,
+					BlockIdFlag:             cmtTypes.BlockIDFlagCommit,
+				},
+				{
+					Validator:               abci.Validator{Address: val2},
+					NonRpVoteExtension:      majorityExt,
+					NonRpExtensionSignature: sig2,
+					BlockIdFlag:             cmtTypes.BlockIDFlagCommit,
+				},
+			},
+			expectedAddrToSig: map[string][]byte{
+				string(val1): sig1,
+				string(val2): sig2,
+			},
+		},
+		{
+			name:   "post-hardfork: commit votes with non-matching extension are skipped",
+			height: postHardforkHeight,
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				{
+					Validator:               abci.Validator{Address: val1},
+					NonRpVoteExtension:      majorityExt,
+					NonRpExtensionSignature: sig1,
+					BlockIdFlag:             cmtTypes.BlockIDFlagCommit,
+				},
+				{
+					Validator:               abci.Validator{Address: val3},
+					NonRpVoteExtension:      otherExt,
+					NonRpExtensionSignature: sig3,
+					BlockIdFlag:             cmtTypes.BlockIDFlagCommit,
+				},
+			},
+			expectedAddrToSig: map[string][]byte{
+				string(val1): sig1,
+			},
+			mustExcludeAddrs: [][]byte{val3},
+		},
+		{
+			name:        "post-hardfork: injected non-commit vote with matching extension is excluded",
+			height:      postHardforkHeight,
+			extVoteInfo: twoCommitsAndInjectedNonCommit,
+			expectedAddrToSig: map[string][]byte{
+				string(val1): sig1,
+				string(val2): sig2,
+			},
+			mustExcludeAddrs: [][]byte{injectedAddr},
+		},
+		{
+			name:   "post-hardfork: BlockIDFlagNil with matching extension is excluded",
+			height: postHardforkHeight,
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				{
+					Validator:               abci.Validator{Address: val1},
+					NonRpVoteExtension:      majorityExt,
+					NonRpExtensionSignature: sig1,
+					BlockIdFlag:             cmtTypes.BlockIDFlagCommit,
+				},
+				{
+					Validator:               abci.Validator{Address: injectedAddr},
+					NonRpVoteExtension:      majorityExt,
+					NonRpExtensionSignature: poisonedSig,
+					BlockIdFlag:             cmtTypes.BlockIDFlagNil,
+				},
+			},
+			expectedAddrToSig: map[string][]byte{
+				string(val1): sig1,
+			},
+			mustExcludeAddrs: [][]byte{injectedAddr},
+		},
+		{
+			name:        "pre-hardfork: legacy behavior preserved, injected non-commit still included",
+			height:      preHardforkHeight,
+			extVoteInfo: twoCommitsAndInjectedNonCommit,
+			expectedAddrToSig: map[string][]byte{
+				string(val1):         sig1,
+				string(val2):         sig2,
+				string(injectedAddr): poisonedSig,
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := getCheckpointSignatures(tc.height, majorityExt, tc.extVoteInfo)
+
+			require.Len(t, got.Signatures, len(tc.expectedAddrToSig))
+			gotByAddr := make(map[string][]byte, len(got.Signatures))
+			for _, sig := range got.Signatures {
+				gotByAddr[string(sig.ValidatorAddress)] = sig.Signature
+			}
+			for addr, expectedSig := range tc.expectedAddrToSig {
+				require.Equal(t, expectedSig, gotByAddr[addr], "signature mismatch for %x", addr)
+			}
+			for _, addr := range tc.mustExcludeAddrs {
+				_, present := gotByAddr[string(addr)]
+				require.False(t, present, "address %x must not appear in result", addr)
+			}
+		})
+	}
+}
+
 func TestValidateSideTxResponses(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -2150,4 +2310,78 @@ func TestFilterVoteExtensions_PlaceholderPassesCompleteness(t *testing.T) {
 	// Step 4: ValidateVoteExtensions should also pass (placeholder is skipped, 3/4 VP > 2/3)
 	err = ValidateVoteExtensions(ctx, reqHeight, filtered, round, &valSet, hApp.MilestoneKeeper)
 	require.NoError(t, err, "VE validation must pass with placeholder when remaining VP > 2/3")
+}
+
+func setupEmptyExtendedVoteInfo(
+	t *testing.T,
+	flag cmtTypes.BlockIDFlag,
+	blockHashBytes []byte,
+	validator abci.Validator,
+	privKey cmtcrypto.PrivKey,
+	height int64,
+	app *HeimdallApp,
+) abci.ExtendedVoteInfo {
+	t.Helper()
+
+	nonRpDummyVoteExt, err := GetDummyNonRpVoteExtension(height, app.ChainID())
+	require.NoErrorf(t, err, "failed to get dummy nonRpVoteExtension: %v", err)
+
+	// create a protobuf msg for ConsolidatedSideTxResponse
+	voteExtensionProto := sidetxs.VoteExtension{
+		BlockHash: blockHashBytes,
+		Height:    VoteExtBlockHeight,
+	}
+
+	// marshal it into Protobuf bytes
+	voteExtensionBytes, err := voteExtensionProto.Marshal()
+	require.NoErrorf(t, err, "failed to marshal voteExtensionProto: %v", err)
+
+	voteInfo := abci.ExtendedVoteInfo{
+		BlockIdFlag:        flag,
+		VoteExtension:      voteExtensionBytes,
+		Validator:          validator,
+		NonRpVoteExtension: nonRpDummyVoteExt,
+	}
+
+	createSignatureForVoteExtension(t, height, privKey, voteExtensionBytes, nonRpDummyVoteExt, &voteInfo)
+
+	return voteInfo
+}
+
+func createSignatureForVoteExtension(
+	t *testing.T,
+	height int64,
+	privKey cmtcrypto.PrivKey,
+	voteExtensionBytes,
+	nonRpVoteExtensionBytes []byte,
+	voteInfo *abci.ExtendedVoteInfo,
+) {
+	cve := cmtTypes.CanonicalVoteExtension{
+		Extension: voteExtensionBytes,
+		Height:    height,
+		Round:     int64(0),
+		ChainId:   "",
+	}
+
+	marshalDelimitedFn := func(msg proto.Message) ([]byte, error) {
+		var buf bytes.Buffer
+		if _, err := protoio.NewDelimitedWriter(&buf).WriteMsg(msg); err != nil {
+			return nil, err
+		}
+
+		return buf.Bytes(), nil
+	}
+	extSignBytes, err := marshalDelimitedFn(&cve)
+	require.NoErrorf(t, err, "failed to encode CanonicalVoteExtension: %v", err)
+
+	// Sign the vote extension
+	signature, err := privKey.Sign(extSignBytes)
+	require.NoErrorf(t, err, "failed to sign extSignBytes: %v", err)
+
+	// Sign nonRpVE
+	signatureNonRpVE, err := privKey.Sign(nonRpVoteExtensionBytes)
+	require.NoErrorf(t, err, "failed to sign nonRpVoteExtensionBytes: %v", err)
+
+	voteInfo.ExtensionSignature = signature
+	voteInfo.NonRpExtensionSignature = signatureNonRpVE
 }

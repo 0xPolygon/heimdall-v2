@@ -32,7 +32,7 @@ var (
 
 // AppModule implements an application module for the clerk module.
 type AppModule struct {
-	keeper keeper.Keeper
+	keeper *keeper.Keeper
 }
 
 // Name returns the clerk module's name.
@@ -77,8 +77,8 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg, keeper.NewMsgServerImpl(am.keeper))
-	types.RegisterQueryServer(cfg, keeper.NewQueryServer(&am.keeper))
+	types.RegisterMsgServer(cfg, keeper.NewMsgServerImpl(*am.keeper))
+	types.RegisterQueryServer(cfg, keeper.NewQueryServer(am.keeper))
 }
 
 // RegisterSideMsgServices registers side handler module services.
@@ -87,7 +87,7 @@ func (am AppModule) RegisterSideMsgServices(sideCfg sidetxs.SideTxConfigurator) 
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(keeper keeper.Keeper) AppModule {
+func NewAppModule(keeper *keeper.Keeper) AppModule {
 	return AppModule{
 		keeper: keeper,
 	}

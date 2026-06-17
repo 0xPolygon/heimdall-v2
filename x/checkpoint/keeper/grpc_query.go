@@ -180,7 +180,7 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 
 	contractCaller := q.k.IContractCaller
 
-	rootHash, err := contractCaller.GetRootHash(start, endBlockNumber, params.MaxCheckpointLength)
+	rootHash, err := contractCaller.GetRootHash(ctx, start, endBlockNumber, params.MaxCheckpointLength)
 	if err != nil {
 		q.k.Logger(ctx).Error("Could not fetch rootHash", "start", start, "end", endBlockNumber, "error", err)
 		return nil, status.Error(codes.Internal, err.Error())

@@ -24,30 +24,34 @@ this module saves the validator information on Heimdall state.
 The x/stake module manages validator-related transactions and validator set management for Heimdall v2.  
 Validators stake their tokens on the Ethereum chain to participate in consensus.  
 To synchronize these changes with Heimdall, the bridge processor broadcasts the corresponding transaction for an Ethereum-emitted event, choosing from one of the following messages each with the necessary parameters:  
-- `MsgValidatorJoin`: This message is triggered when a new validator joins the system by interacting with `StakingManager.sol` on Ethereum. The action emits a `Staked` event to recognize and process the validator’s participation.  
-- `MsgStakeUpdate`: Used to handle stake modifications, this message is sent when a validator re-stakes or receives additional delegation. Both scenarios trigger a `StakeUpdate` event on Ethereum, ensuring Heimdall accurately updates the validator’s stake information.  
-- `MsgValidatorExit`: When a validator decides to exit, they initiate the process on Ethereum, leading to the emission of a `UnstakeInit` event. This message ensures that Heimdall records the validator’s departure accordingly.  
-- `MsgSignerUpdate`: This message is responsible for processing changes to a validator’s signer key. When a validator updates their signer key on Ethereum, it emits a `SignerUpdate` event, prompting Heimdall to reflect the new signer key in its records.  
+
+* `MsgValidatorJoin`: This message is triggered when a new validator joins the system by interacting with `StakingManager.sol` on Ethereum. The action emits a `Staked` event to recognize and process the validator’s participation.  
+* `MsgStakeUpdate`: Used to handle stake modifications, this message is sent when a validator re-stakes or receives additional delegation. Both scenarios trigger a `StakeUpdate` event on Ethereum, ensuring Heimdall accurately updates the validator’s stake information.  
+* `MsgValidatorExit`: When a validator decides to exit, they initiate the process on Ethereum, leading to the emission of a `UnstakeInit` event. This message ensures that Heimdall records the validator’s departure accordingly.  
+* `MsgSignerUpdate`: This message is responsible for processing changes to a validator’s signer key. When a validator updates their signer key on Ethereum, it emits a `SignerUpdate` event, prompting Heimdall to reflect the new signer key in its records.  
 Each of these transactions in Heimdall v2 follows the same processing mechanisms, leveraging ABCI++ phases.  
 During the `PreCommit` phase, side transaction handlers are triggered, and a vote is injected after validating the Ethereum-emitted event and ensuring its alignment with the data in the processed message.  
 Once a majority of validators confirm that the action described in the message has occurred on Ethereum, the x/stake module updates the validator’s state in Heimdall during the `FinalizeBlock`’s `PreBlocker` execution.  
 
 ### Replay Prevention Mechanism
+
 Heimdall v2 employs a replay prevention mechanism in the post-tx handler functions to ensure that validator update messages derived from Ethereum events are not processed multiple times.  
 This mechanism prevents replay attacks by assigning a unique sequence number to each transaction and verifying whether it has already been processed.  
 The sequence number is constructed using the Ethereum block number and log index, following the formula:  
-- `sequence = (block number × DefaultLogIndexUnit) + log index`
+
+* `sequence = (block number × DefaultLogIndexUnit) + log index`
 where:  
-- `msg.BlockNumber` represents the Ethereum block where the event was emitted.  
-- `msg.LogIndex` is the position of the log entry within that block.  
-- `DefaultLogIndexUnit` ensures uniqueness when combining block numbers and log indexes.  
+* `msg.BlockNumber` represents the Ethereum block where the event was emitted.  
+* `msg.LogIndex` is the position of the log entry within that block.  
+* `DefaultLogIndexUnit` ensures uniqueness when combining block numbers and log indexes.  
 Before processing a transaction, Heimdall checks its stake keeper to determine if the sequence number has been recorded.
 If the sequence is found, the transaction is rejected as a duplicate.  
 Once the post-tx handler completes successfully, the sequence is stored, ensuring that any future message with the same sequence is recognized and ignored.  
 This approach guarantees that Heimdall only processes each valid Ethereum signer update once, preventing unintended state changes due to replayed messages.  
 
 ### Updating the Validator Set
-In the x/stake `EndBlocker`, Heimdall updates the validator set (through the `ApplyAndReturnValidatorSetUpdates`function), ensuring consensus reflects the latest validator changes.  
+
+In the x/stake `EndBlocker`, Heimdall updates the validator set (through the `ApplyAndReturnValidatorSetUpdates` function), ensuring consensus reflects the latest validator changes.  
 Before any updates, the current block’s validator set is stored as the previous block’s set. The system retrieves all existing validators, the current validator set, and the acknowledgment count from the x/checkpoint state.  
 Using `GetUpdatedValidators`, a list of validators that require updates (`setUpdates`) is identified and applied through `UpdateWithChangeSet`, storing the new set under `CurrentValidatorSetKey`.  
 To maintain fair block proposer selection, Heimdall implements a proposer priority system, ensuring all validators have a fair chance to propose new blocks.  
@@ -170,23 +174,112 @@ message MsgValidatorExit {
 ### Tx Commands
 
 #### Validator Join
+
 ```bash
 heimdalld tx stake validator-join --proposer {proposer address} --signer-pubkey {signer pubkey with 04 prefix} --tx-hash {tx hash} --block-number {L1 block number} --staked-amount {total stake amount} --activation-epoch {activation epoch} --home="{path to home}"
 ```
 
 #### Signer Update
+
 ```bash
 heimdalld tx stake signer-update --proposer {proposer address} --id {val id} --new-pubkey {new pubkey with 04 prefix} --tx-hash {tx hash}  --log-index {log index} --block-number {L1 block number} --nonce {nonce} --home="{path to home}"
 ```
 
 #### Stake Update
+
 ```bash
 heimdalld tx stake stake-update [valAddress] [valId] [amount] [txHash] [logIndex] [blockNumber] [nonce]
 ```
 
 #### Validator Exit
+
 ```bash
 heimdalld tx stake validator-exit [valAddress] [valId] [deactivationEpoch] [txHash] [logIndex] [blockNumber] [nonce]
+```
+
+### Recovering Missed L1 Events
+
+Under normal operation the bridge listener picks up L1 staking events and broadcasts the corresponding messages to Heimdall automatically. In rare cases the listener can miss an event, leaving Heimdall with no record of it. Typical causes:
+
+* L1 RPC outage or rate limit during the relevant block range
+* Bridge listener restart with a stale block cursor that skipped past the event
+* Exhausted RabbitMQ task retries
+
+#### Detection
+
+A missed event leaves no Heimdall transaction. Confirm with:
+
+```bash
+heimdalld query stake is-old-tx <L1_TX_HASH> <LOG_INDEX>
+```
+
+If the L1 event exists on chain but the query returns `is_old=false`, the bridge missed it.
+
+#### Auto-recovery (when self-heal is enabled)
+
+With `enable_self_heal = "true"` and `sub_graph_url` set in `app.toml`, missed `StakeUpdate`, `SignerChange`, and `UnstakeInit` L1 events are replayed automatically by the self-heal loop. (These map to the Heimdall messages `MsgStakeUpdate`, `MsgSignerUpdate`, and `MsgValidatorExit` respectively.) Wait at least one `sh_stake_update_interval` cycle (default `3h`) before falling back to manual recovery. `ValidatorJoin` is not covered by self-heal; recovery for missed joins is always manual.
+
+#### Manual recovery
+
+Use the tx commands documented above. Only `validator-join` decodes the L1 receipt internally — for the other three commands the operator must extract the per-field values from the L1 event before invoking the CLI.
+
+The `--proposer` (or first positional arg) is just the Cosmos tx signer; any funded Heimdall account works. Side handlers authenticate the underlying L1 event via `tx_hash` + `log_index`, not the wrapper account, so the recovery tx does not need to come from the affected validator's own account.
+
+##### `validator-join` — receipt-decoding shortcut
+
+Operator only needs the L1 transaction hash, the validator's signer pubkey (with `04` prefix), the staked amount, and the activation epoch. The CLI fetches the receipt, finds the `Staked` event log, and reads `validatorId`, `nonce`, and `logIndex` from it.
+
+```bash
+heimdalld tx stake validator-join \
+  --proposer <SIGNER> \
+  --signer-pubkey <PUBKEY_WITH_04_PREFIX> \
+  --tx-hash <L1_HASH> \
+  --staked-amount <AMOUNT> \
+  --activation-epoch <EPOCH> \
+  --block-number <L1_BLOCK_NUMBER> \
+  --home "<HEIMDALL_HOME>"
+```
+
+##### `signer-update` — full field set required
+
+Operator must extract every field from the L1 `SignerChange` event: `validatorId`, the new signer pubkey (with `04` prefix), `txHash`, `logIndex`, `blockNumber`, and `nonce`. The CLI does not decode the receipt for this command.
+
+```bash
+heimdalld tx stake signer-update \
+  --proposer <SIGNER> \
+  --id <VAL_ID> \
+  --new-pubkey <NEW_PUBKEY_WITH_04_PREFIX> \
+  --tx-hash <L1_HASH> \
+  --log-index <LOG_INDEX> \
+  --block-number <L1_BLOCK_NUMBER> \
+  --nonce <NONCE> \
+  --home "<HEIMDALL_HOME>"
+```
+
+##### `stake-update` — full field set required (positional args)
+
+Operator must extract `valId`, `amount`, `txHash`, `logIndex`, `blockNumber`, and `nonce` from the L1 `StakeUpdate` event.
+
+```bash
+heimdalld tx stake stake-update <PROPOSER> <VAL_ID> <AMOUNT> <L1_HASH> <LOG_INDEX> <L1_BLOCK_NUMBER> <NONCE>
+```
+
+##### `validator-exit` — full field set required (positional args)
+
+Operator must extract `valId`, `deactivationEpoch`, `txHash`, `logIndex`, `blockNumber`, and `nonce` from the L1 `UnstakeInit` event.
+
+```bash
+heimdalld tx stake validator-exit <PROPOSER> <VAL_ID> <DEACTIVATION_EPOCH> <L1_HASH> <LOG_INDEX> <L1_BLOCK_NUMBER> <NONCE>
+```
+
+##### Extracting fields from an L1 event
+
+Use any L1 RPC client (cast, ethers, web3) to fetch the receipt and decode the relevant log via the StakingInfo ABI. Example with `cast`:
+
+```bash
+cast receipt <L1_HASH> --json | jq '.logs[]'
+# match the log by topic[0] (event signature) and topic[1] (validatorId, padded)
+# decode `data` per the event's non-indexed field layout
 ```
 
 ### CLI Query Commands
@@ -274,7 +367,6 @@ curl localhost:1317/stake/signer/{val_address}
 curl localhost:1317/stake/validator/{id}
 ```
 
-
 ```bash
 curl localhost:1317/stake/validator-status/{val_address}
 ```
@@ -288,5 +380,12 @@ curl localhost:1317/stake/is-old-tx?tx_hash=<tx-hash>&log_index=<log-index>
 ```
 
 ```bash
+# Current "checkpoint proposer" from x/stake's proposer rotation (used by x/checkpoint).
+# Distinct from the Bor sprint proposer returned by bor_getCurrentProposer on the EL.
+curl localhost:1317/stake/proposers/current
+```
+
+```bash
+# Next N proposers in the rotation sequence.
 curl localhost:1317/stake/proposers/{times}
 ```

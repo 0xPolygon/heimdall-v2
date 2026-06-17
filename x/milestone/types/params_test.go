@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	borgrpc "github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
@@ -163,5 +164,32 @@ func TestParams_ValidateBasic(t *testing.T) {
 
 		err := params.ValidateBasic()
 		require.NoError(t, err)
+	})
+
+	t.Run("accepts MaxMilestonePropositionLength at bor batch cap", func(t *testing.T) {
+		t.Parallel()
+
+		params := types.Params{
+			MaxMilestonePropositionLength: uint64(borgrpc.MaxBlockInfoBatchSize),
+			FfMilestoneThreshold:          1000,
+			FfMilestoneBlockInterval:      100,
+		}
+
+		err := params.ValidateBasic()
+		require.NoError(t, err)
+	})
+
+	t.Run("rejects MaxMilestonePropositionLength above bor batch cap", func(t *testing.T) {
+		t.Parallel()
+
+		params := types.Params{
+			MaxMilestonePropositionLength: uint64(borgrpc.MaxBlockInfoBatchSize) + 1,
+			FfMilestoneThreshold:          1000,
+			FfMilestoneBlockInterval:      100,
+		}
+
+		err := params.ValidateBasic()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "exceeds bor batch size cap")
 	})
 }

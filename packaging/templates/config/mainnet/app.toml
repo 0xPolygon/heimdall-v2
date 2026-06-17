@@ -51,7 +51,7 @@ halt-time = 0
 # with the unbonding (safety threshold) period, state pruning, state sync
 # snapshot parameters and evidence max age to determine the correct minimum value of
 # ResponseCommit.RetainHeight.
-# Minimum expected value of 2500000 (enforced by sanitization)
+# Minimum expected value of 2000000 (enforced by sanitization)
 min-retain-blocks = 0
 
 # InterBlockCache enables inter-block caching.
@@ -248,14 +248,22 @@ bor_rpc_timeout = "1s"
 # RPC endpoint for ethereum chain
 eth_rpc_url = "http://localhost:9545"
 
-# RPC endpoint for bor chain
+# RPC endpoint(s) for bor chain. Accepts a comma-separated, priority-ordered
+# list for failover (first = primary; heimdall reverts to it once it recovers).
+# Multi-endpoint failover is rejected at startup for protected BP validator IDs;
+# BP nodes must use a single local/self Bor endpoint. A single URL keeps the
+# previous single-endpoint behavior.
 bor_rpc_url = "http://localhost:8545"
 
 # GRPC flag for bor chain
 bor_grpc_flag = "false"
 
-# GRPC endpoint for bor chain
+# GRPC endpoint(s) for bor chain. Like bor_rpc_url, accepts a comma-separated,
+# priority-ordered list for failover and is rejected on protected BP nodes.
 bor_grpc_url = "http://localhost:3131"
+
+# Bearer token for bor gRPC authentication (empty disables auth)
+bor_grpc_token = ""
 
 # RPC endpoint for cometBFT
 comet_bft_rpc_url = "http://0.0.0.0:26657"
@@ -281,11 +289,9 @@ sh_stake_update_interval = "3h0m0s"
 sh_checkpoint_ack_interval = "30m0s"
 sh_max_depth_duration = "24h0m0s"
 
-#### gas limits ####
-main_chain_gas_limit = "5000000"
-
-#### gas price ####
-main_chain_max_gas_price = "400000000000"
+#### gas price configs (EIP-1559) ####
+main_chain_gas_fee_cap = "500000000000"
+main_chain_gas_tip_cap = "10000000000"
 
 ##### Timeout Config #####
 no_ack_wait_time = "30m0s"

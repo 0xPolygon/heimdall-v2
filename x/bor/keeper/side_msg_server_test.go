@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -107,7 +108,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			expSeed:          blockHash1,
 			expVote:          sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
-				contractCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
+				contractCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&val1Addr, nil)
 				contractCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader1, nil)
 			},
 		},
@@ -143,7 +144,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			expSeed:          blockHash1,
 			expVote:          sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
-				contractCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
+				contractCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&val1Addr, nil)
 				contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(16656)).Return(&blockHeader1, nil).Times(1)
 			},
 		},
@@ -163,7 +164,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			expSeed:          blockHash2,
 			expVote:          sidetxs.Vote_VOTE_YES,
 			mockFn: func() {
-				contractCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
+				contractCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&val1Addr, nil)
 				contractCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader2, nil)
 			},
 		},
@@ -213,8 +214,8 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 
 	lastBorBlockHeader := &ethTypes.Header{Number: big.NewInt(0)}
 	contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(0)).Return(lastBorBlockHeader, nil).Times(1)
-	contractCaller.On("GetBorChainBlockAuthor", big.NewInt(0)).Return(&producer1, nil).Times(1)
-	contractCaller.On("GetBorChainBlockAuthor", big.NewInt(100)).Return(&producer2, nil).Times(1)
+	contractCaller.On("GetBorChainBlockAuthor", mock.Anything, big.NewInt(0)).Return(&producer1, nil).Times(1)
+	contractCaller.On("GetBorChainBlockAuthor", mock.Anything, big.NewInt(100)).Return(&producer2, nil).Times(1)
 
 	testChainParams := chainmanagertypes.DefaultParams()
 	spans := s.genTestSpans(1)
@@ -285,21 +286,24 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 
 	minFuture := uint64(types.PlannedDowntimeMinimumTimeInFuture)
 	maxFuture := types.PlannedDowntimeMaximumTimeInFuture
+	producerAddr := common.HexToAddress("0x0000000000000000000000000000000000000001").Hex()
+	otherProducerAddr := common.HexToAddress("0x0000000000000000000000000000000000000002").Hex()
 
-	newMsg := func(start, end uint64) *types.MsgSetProducerDowntime {
+	newMsg := func(producer string, start, end uint64) *types.MsgSetProducerDowntime {
 		return &types.MsgSetProducerDowntime{
-			Producer:      common.HexToAddress("0x0000000000000000000000000000000000000001").Hex(),
+			Producer:      producer,
 			DowntimeRange: types.BlockRange{StartBlock: start, EndBlock: end},
 		}
 	}
 
 	type testCase struct {
-		name         string
-		typeMismatch bool
-		current      uint64
-		msg          *types.MsgSetProducerDowntime
-		getBlockErr  error
-		expectVote   sidetxs.Vote
+		name                string
+		typeMismatch        bool
+		current             uint64
+		msg                 *types.MsgSetProducerDowntime
+		getBlockErr         error
+		activeProducerAddrs []string
+		expectVote          sidetxs.Vote
 	}
 
 	tests := []testCase{
@@ -311,50 +315,73 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 		{
 			name:        "GetBorChainBlock error returns NO",
 			current:     1_000_000,
-			msg:         newMsg(1_000_100, 1_000_200),
+			msg:         newMsg(producerAddr, 1_000_100, 1_000_200),
 			getBlockErr: fmt.Errorf("rpc error"),
 			expectVote:  sidetxs.Vote_VOTE_NO,
 		},
 		{
+			name:                "producer not in active producers set returns NO",
+			current:             1_000_000,
+			msg:                 newMsg(producerAddr, 1_000_200, 1_000_400),
+			activeProducerAddrs: []string{otherProducerAddr},
+			expectVote:          sidetxs.Vote_VOTE_NO,
+		},
+		{
 			name:       "start too soon - boundary (start == current+min-1) returns NO",
 			current:    5_000_000,
-			msg:        newMsg((5_000_000+minFuture)-1, (5_000_000+minFuture)+10),
+			msg:        newMsg(producerAddr, (5_000_000+minFuture)-1, (5_000_000+minFuture)+10),
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
 			name:       "start too soon - strict (start < current+min-1) returns NO",
 			current:    5_000_000,
-			msg:        newMsg((5_000_000+minFuture)-2, (5_000_000+minFuture)+10),
+			msg:        newMsg(producerAddr, (5_000_000+minFuture)-2, (5_000_000+minFuture)+10),
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
 			// handler rejects only if the end > current+maxFuture; equality is allowed
 			name:       "end boundary (end == current+max) returns YES",
 			current:    2_000_000,
-			msg:        newMsg(2_000_000+minFuture, 2_000_000+maxFuture),
+			msg:        newMsg(producerAddr, 2_000_000+minFuture, 2_000_000+maxFuture),
 			expectVote: sidetxs.Vote_VOTE_YES,
 		},
 		{
 			name:       "end too far - strict (end > current+max) returns NO",
 			current:    2_000_000,
-			msg:        newMsg(2_000_000+minFuture, 2_000_000+maxFuture+1),
+			msg:        newMsg(producerAddr, 2_000_000+minFuture, 2_000_000+maxFuture+1),
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
 			name:    "passes both checks - boundary just passing returns YES",
 			current: 3_000_000,
 			// start == current+min, end == current+max-1
-			msg:        newMsg(3_000_000+minFuture, (3_000_000+maxFuture)-1),
+			msg:        newMsg(producerAddr, 3_000_000+minFuture, (3_000_000+maxFuture)-1),
 			expectVote: sidetxs.Vote_VOTE_YES,
 		},
 		{
 			name:    "passes both checks - start well in future, end well within max returns YES",
 			current: 4_000_000,
 			// start >= current+min, end < current+max
-			msg:        newMsg(4_000_000+minFuture+100, 4_000_000+maxFuture-100),
+			msg:        newMsg(producerAddr, 4_000_000+minFuture+100, 4_000_000+maxFuture-100),
 			expectVote: sidetxs.Vote_VOTE_YES,
 		},
 	}
+
+	// range too small (end - start < PlannedDowntimeMinRange) -> VOTE_NO
+	tests = append(tests, testCase{
+		name:       "range too small returns NO",
+		current:    1_000_000,
+		msg:        newMsg(producerAddr, 1_000_000+minFuture, 1_000_000+minFuture+10),
+		expectVote: sidetxs.Vote_VOTE_NO,
+	})
+
+	// start exactly at minFuture with valid range -> YES
+	tests = append(tests, testCase{
+		name:       "start at exact minFuture boundary with valid range returns YES",
+		current:    6_000_000,
+		msg:        newMsg(producerAddr, 6_000_000+minFuture, 6_000_000+minFuture+uint64(types.PlannedDowntimeMinRange)),
+		expectVote: sidetxs.Vote_VOTE_YES,
+	})
 
 	for _, tc := range tests {
 		s.T().Run(tc.name, func(t *testing.T) {
@@ -372,6 +399,27 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 					s.contractCaller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).
 						Return((*ethTypes.Header)(nil), tc.getBlockErr).Once()
 				} else {
+					producers := tc.activeProducerAddrs
+					if len(producers) == 0 {
+						producers = []string{producerAddr}
+					}
+
+					selectedProducers := make([]stakeTypes.Validator, 0, len(producers))
+					for i, producer := range producers {
+						selectedProducers = append(selectedProducers, stakeTypes.Validator{
+							ValId:  uint64(i + 1),
+							Signer: producer,
+						})
+					}
+
+					require.NoError(s.borKeeper.AddNewSpan(ctx, &types.Span{
+						Id:                1,
+						StartBlock:        1,
+						EndBlock:          tc.current + maxFuture + 10_000,
+						SelectedProducers: selectedProducers,
+						BorChainId:        "bor",
+					}))
+
 					s.contractCaller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).
 						Return(&ethTypes.Header{Number: big.NewInt(int64(tc.current))}, nil).Once()
 				}
@@ -383,6 +431,422 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 
 			// verify expectations for contract caller when applicable
 			s.contractCaller.AssertExpectations(s.T())
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestSideHandleSetProducerDowntimeStartGteEnd() {
+	s.SetupTest()
+	msg := &types.MsgSetProducerDowntime{
+		Producer:      common.HexToAddress("0x0000000000000000000000000000000000000001").Hex(),
+		DowntimeRange: types.BlockRange{StartBlock: 500, EndBlock: 500},
+	}
+	sideHandler := s.sideMsgServer.SideTxHandler(sdk.MsgTypeURL(&types.MsgSetProducerDowntime{}))
+	s.Require().Equal(sidetxs.Vote_VOTE_NO, sideHandler(s.ctx, msg))
+
+	msg.DowntimeRange.StartBlock = 600
+	s.Require().Equal(sidetxs.Vote_VOTE_NO, sideHandler(s.ctx, msg))
+}
+
+func (s *KeeperTestSuite) TestSideHandleSetProducerDowntimeTargetProducer() {
+	require := s.Require()
+
+	minFuture := uint64(types.PlannedDowntimeMinimumTimeInFuture)
+	addr1 := common.HexToAddress("0x0000000000000000000000000000000000000001").Hex()
+	addr2 := common.HexToAddress("0x0000000000000000000000000000000000000002").Hex()
+	addr3 := common.HexToAddress("0x0000000000000000000000000000000000000003").Hex()
+	id1, id2, id3 := uint64(1), uint64(2), uint64(3)
+
+	current := uint64(3_000_000)
+	start := current + minFuture
+	end := start + uint64(types.PlannedDowntimeMinRange)
+
+	type testCase struct {
+		name       string
+		msg        *types.MsgSetProducerDowntime
+		expectVote sidetxs.Vote
+	}
+
+	tests := []testCase{
+		{
+			// target=0 -> skip target validation entirely -> YES
+			name: "target zero accepted",
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         addr1,
+				DowntimeRange:    types.BlockRange{StartBlock: start, EndBlock: end},
+				TargetProducerId: types.RoundRobinDefault,
+			},
+			expectVote: sidetxs.Vote_VOTE_YES,
+		},
+		{
+			// valid target: exists, not self, in producer set -> YES
+			name: "valid target in producer set accepted",
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         addr1,
+				DowntimeRange:    types.BlockRange{StartBlock: start, EndBlock: end},
+				TargetProducerId: id2,
+			},
+			expectVote: sidetxs.Vote_VOTE_YES,
+		},
+		{
+			// target is the declaring producer -> NO
+			name: "target is self rejected",
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         addr1,
+				DowntimeRange:    types.BlockRange{StartBlock: start, EndBlock: end},
+				TargetProducerId: id1,
+			},
+			expectVote: sidetxs.Vote_VOTE_NO,
+		},
+		{
+			// target is a valid validator but not in the computed producer set -> NO
+			name: "target not in producer set rejected",
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         addr1,
+				DowntimeRange:    types.BlockRange{StartBlock: start, EndBlock: end},
+				TargetProducerId: 999,
+			},
+			expectVote: sidetxs.Vote_VOTE_NO,
+		},
+	}
+
+	// Pre-fork tests: target != 0 before fork height -> NO
+	preForkTests := []testCase{
+		{
+			name: "target rejected before fork height",
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         addr1,
+				DowntimeRange:    types.BlockRange{StartBlock: start, EndBlock: end},
+				TargetProducerId: id2,
+			},
+			expectVote: sidetxs.Vote_VOTE_NO,
+		},
+		{
+			name: "round-robin default accepted before fork height",
+			msg: &types.MsgSetProducerDowntime{
+				Producer:         addr1,
+				DowntimeRange:    types.BlockRange{StartBlock: start, EndBlock: end},
+				TargetProducerId: types.RoundRobinDefault,
+			},
+			expectVote: sidetxs.Vote_VOTE_YES,
+		},
+	}
+	tests = append(tests, preForkTests...)
+
+	for _, tc := range tests {
+		s.T().Run(tc.name, func(t *testing.T) {
+			s.SetupTest()
+			ctx := s.ctx
+
+			// Stake mocks: 3 validators, all vote for [id1, id2, id3] so producer set = [id1, id2, id3]
+			s.stakeKeeper.EXPECT().
+				GetValidatorSet(gomock.Any()).
+				Return(stakeTypes.ValidatorSet{
+					Validators: []*stakeTypes.Validator{
+						{ValId: id1, Signer: addr1, VotingPower: 100},
+						{ValId: id2, Signer: addr2, VotingPower: 100},
+						{ValId: id3, Signer: addr3, VotingPower: 100},
+					},
+				}, nil).
+				AnyTimes()
+
+			s.stakeKeeper.EXPECT().
+				GetValidatorFromValID(gomock.Any(), gomock.Any()).
+				DoAndReturn(func(_ sdk.Context, vid uint64) (stakeTypes.Validator, error) {
+					switch vid {
+					case id1:
+						return stakeTypes.Validator{ValId: id1, Signer: addr1, VotingPower: 100}, nil
+					case id2:
+						return stakeTypes.Validator{ValId: id2, Signer: addr2, VotingPower: 100}, nil
+					case id3:
+						return stakeTypes.Validator{ValId: id3, Signer: addr3, VotingPower: 100}, nil
+					default:
+						return stakeTypes.Validator{}, fmt.Errorf("unknown validator id %d", vid)
+					}
+				}).
+				AnyTimes()
+
+			// GetValIdFromAddress mock for ID-based self-targeting check
+			s.stakeKeeper.EXPECT().
+				GetValIdFromAddress(gomock.Any(), gomock.Any()).
+				DoAndReturn(func(_ sdk.Context, addr string) (uint64, error) {
+					switch addr {
+					case addr1:
+						return id1, nil
+					case addr2:
+						return id2, nil
+					case addr3:
+						return id3, nil
+					default:
+						return 0, fmt.Errorf("unknown address %s", addr)
+					}
+				}).
+				AnyTimes()
+
+			// All vote for [id1, id2, id3] -> CalculateProducerSet returns [id1, id2, id3]
+			require.NoError(s.borKeeper.ClearProducerVotes(ctx))
+			for _, voter := range []uint64{id1, id2, id3} {
+				require.NoError(s.borKeeper.SetProducerVotes(ctx, voter, types.ProducerVotes{Votes: []uint64{id1, id2, id3}}))
+			}
+
+			// Span covering the downtime range with addr1 as active producer
+			maxFuture := types.PlannedDowntimeMaximumTimeInFuture
+			require.NoError(s.borKeeper.AddNewSpan(ctx, &types.Span{
+				Id:         1,
+				StartBlock: 1,
+				EndBlock:   current + maxFuture + 10_000,
+				SelectedProducers: []stakeTypes.Validator{
+					{ValId: id1, Signer: addr1},
+					{ValId: id2, Signer: addr2},
+					{ValId: id3, Signer: addr3},
+				},
+				BorChainId: "bor",
+			}))
+
+			// Set fork height high for pre-fork tests, restore after.
+			isPreFork := false
+			for _, pf := range preForkTests {
+				if pf.name == tc.name {
+					isPreFork = true
+					break
+				}
+			}
+			if isPreFork {
+				helper.SetZurichHardforkHeight(999999)
+				defer helper.SetZurichHardforkHeight(0)
+			}
+
+			s.contractCaller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).
+				Return(&ethTypes.Header{Number: big.NewInt(int64(current))}, nil).Once()
+
+			sideHandler := s.sideMsgServer.SideTxHandler(sdk.MsgTypeURL(&types.MsgSetProducerDowntime{}))
+			v := sideHandler(ctx, tc.msg)
+			require.Equal(tc.expectVote, v)
+
+			s.contractCaller.AssertExpectations(s.T())
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestSideHandleSetProducerDowntimeGetValIdError() {
+	require := s.Require()
+
+	minFuture := uint64(types.PlannedDowntimeMinimumTimeInFuture)
+	addr1 := common.HexToAddress("0x0000000000000000000000000000000000000001").Hex()
+	addr2 := common.HexToAddress("0x0000000000000000000000000000000000000002").Hex()
+	addr3 := common.HexToAddress("0x0000000000000000000000000000000000000003").Hex()
+	id1, id2, id3 := uint64(1), uint64(2), uint64(3)
+
+	current := uint64(3_000_000)
+	start := current + minFuture
+	end := start + uint64(types.PlannedDowntimeMinRange)
+
+	s.SetupTest()
+	ctx := s.ctx
+
+	s.stakeKeeper.EXPECT().
+		GetValidatorSet(gomock.Any()).
+		Return(stakeTypes.ValidatorSet{
+			Validators: []*stakeTypes.Validator{
+				{ValId: id1, Signer: addr1, VotingPower: 100},
+				{ValId: id2, Signer: addr2, VotingPower: 100},
+				{ValId: id3, Signer: addr3, VotingPower: 100},
+			},
+		}, nil).
+		AnyTimes()
+
+	s.stakeKeeper.EXPECT().
+		GetValidatorFromValID(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ sdk.Context, vid uint64) (stakeTypes.Validator, error) {
+			switch vid {
+			case id1:
+				return stakeTypes.Validator{ValId: id1, Signer: addr1, VotingPower: 100}, nil
+			case id2:
+				return stakeTypes.Validator{ValId: id2, Signer: addr2, VotingPower: 100}, nil
+			case id3:
+				return stakeTypes.Validator{ValId: id3, Signer: addr3, VotingPower: 100}, nil
+			default:
+				return stakeTypes.Validator{}, fmt.Errorf("unknown validator id %d", vid)
+			}
+		}).
+		AnyTimes()
+
+	// GetValIdFromAddress returns an error -> should vote NO
+	s.stakeKeeper.EXPECT().
+		GetValIdFromAddress(gomock.Any(), addr1).
+		Return(uint64(0), fmt.Errorf("address lookup failed")).
+		Times(1)
+
+	require.NoError(s.borKeeper.ClearProducerVotes(ctx))
+	for _, voter := range []uint64{id1, id2, id3} {
+		require.NoError(s.borKeeper.SetProducerVotes(ctx, voter, types.ProducerVotes{Votes: []uint64{id1, id2, id3}}))
+	}
+
+	maxFuture := types.PlannedDowntimeMaximumTimeInFuture
+	require.NoError(s.borKeeper.AddNewSpan(ctx, &types.Span{
+		Id:         1,
+		StartBlock: 1,
+		EndBlock:   current + maxFuture + 10_000,
+		SelectedProducers: []stakeTypes.Validator{
+			{ValId: id1, Signer: addr1},
+			{ValId: id2, Signer: addr2},
+			{ValId: id3, Signer: addr3},
+		},
+		BorChainId: "bor",
+	}))
+
+	s.contractCaller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).
+		Return(&ethTypes.Header{Number: big.NewInt(int64(current))}, nil).Once()
+
+	msg := &types.MsgSetProducerDowntime{
+		Producer:         addr1,
+		DowntimeRange:    types.BlockRange{StartBlock: start, EndBlock: end},
+		TargetProducerId: id2,
+	}
+	sideHandler := s.sideMsgServer.SideTxHandler(sdk.MsgTypeURL(&types.MsgSetProducerDowntime{}))
+	v := sideHandler(ctx, msg)
+	require.Equal(sidetxs.Vote_VOTE_NO, v)
+}
+
+func (s *KeeperTestSuite) TestPostHandleSetProducerDowntimeTargetProducer() {
+	require := s.Require()
+
+	addr1 := common.HexToAddress("0x0000000000000000000000000000000000000001").Hex()
+	addr2 := common.HexToAddress("0x0000000000000000000000000000000000000002").Hex()
+	addr3 := common.HexToAddress("0x0000000000000000000000000000000000000003").Hex()
+	id1, id2, id3 := uint64(1), uint64(2), uint64(3)
+
+	primeStakeMocks := func() {
+		s.stakeKeeper.EXPECT().
+			GetValidatorSet(gomock.Any()).
+			Return(stakeTypes.ValidatorSet{
+				Validators: []*stakeTypes.Validator{
+					{ValId: id1, Signer: addr1, VotingPower: 100},
+					{ValId: id2, Signer: addr2, VotingPower: 100},
+					{ValId: id3, Signer: addr3, VotingPower: 100},
+				},
+			}, nil).
+			AnyTimes()
+
+		s.stakeKeeper.EXPECT().
+			GetSpanEligibleValidators(gomock.Any()).
+			Return([]stakeTypes.Validator{
+				{ValId: id1, Signer: addr1, VotingPower: 100},
+				{ValId: id2, Signer: addr2, VotingPower: 100},
+				{ValId: id3, Signer: addr3, VotingPower: 100},
+			}).
+			AnyTimes()
+
+		s.stakeKeeper.EXPECT().
+			GetValidatorFromValID(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ sdk.Context, vid uint64) (stakeTypes.Validator, error) {
+				switch vid {
+				case id1:
+					return stakeTypes.Validator{ValId: id1, Signer: addr1, VotingPower: 100}, nil
+				case id2:
+					return stakeTypes.Validator{ValId: id2, Signer: addr2, VotingPower: 100}, nil
+				case id3:
+					return stakeTypes.Validator{ValId: id3, Signer: addr3, VotingPower: 100}, nil
+				default:
+					return stakeTypes.Validator{}, fmt.Errorf("unknown validator id %d", vid)
+				}
+			}).
+			AnyTimes()
+	}
+
+	setVotesForAll := func(voteList []uint64) {
+		require.NoError(s.borKeeper.ClearProducerVotes(s.ctx))
+		for _, voter := range []uint64{id1, id2, id3} {
+			require.NoError(s.borKeeper.SetProducerVotes(s.ctx, voter, types.ProducerVotes{Votes: voteList}))
+		}
+	}
+
+	type testCase struct {
+		name                string
+		targetProducerID    uint64
+		targetDown          bool // set planned downtime for target
+		expectSelectedValId uint64
+	}
+
+	tests := []testCase{
+		{
+			// Valid target, active, not down -> span gets the target as producer
+			name:                "valid target selected as producer",
+			targetProducerID:    id3,
+			expectSelectedValId: id3,
+		},
+		{
+			// Target has overlapping downtime -> falls through to round-robin
+			name:                "target down falls through to round-robin",
+			targetProducerID:    id3,
+			targetDown:          true,
+			expectSelectedValId: id2, // round-robin from current=id1
+		},
+		{
+			// target=0 -> standard round-robin
+			name:                "target zero uses round-robin",
+			targetProducerID:    0,
+			expectSelectedValId: id2,
+		},
+	}
+
+	for _, tc := range tests {
+		s.T().Run(tc.name, func(t *testing.T) {
+			s.SetupTest()
+			require.NoError(s.borKeeper.SetParams(s.ctx, types.DefaultParams()))
+			primeStakeMocks()
+
+			// Producer set = [id1, id2, id3]
+			setVotesForAll([]uint64{id1, id2, id3})
+
+			// Seed spans and active producers
+			require.NoError(s.borKeeper.UpdateLatestActiveProducer(s.ctx, map[uint64]struct{}{id2: {}, id3: {}}))
+
+			valSet, vals := s.genTestValidators()
+			require.NotEmpty(vals)
+
+			sp0Prods := make([]stakeTypes.Validator, len(vals))
+			copy(sp0Prods, vals)
+			sp0Prods[0].ValId = id1
+
+			spans := []types.Span{
+				{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+				{Id: 1, StartBlock: 200, EndBlock: 299, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+				{Id: 2, StartBlock: 300, EndBlock: 399, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+			}
+			for i := range spans {
+				require.NoError(s.borKeeper.AddNewSpan(s.ctx, &spans[i]))
+			}
+
+			if tc.targetDown {
+				require.NoError(s.borKeeper.ProducerPlannedDowntime.Set(s.ctx, tc.targetProducerID,
+					types.BlockRange{StartBlock: 100, EndBlock: 500}))
+			}
+
+			s.stakeKeeper.EXPECT().
+				GetValIdFromAddress(gomock.Any(), addr1).
+				Return(id1, nil).
+				Times(1)
+
+			msg := &types.MsgSetProducerDowntime{
+				Producer:         addr1,
+				DowntimeRange:    types.BlockRange{StartBlock: 150, EndBlock: 350},
+				TargetProducerId: tc.targetProducerID,
+			}
+
+			initialLast, err := s.borKeeper.GetLastSpan(s.ctx)
+			require.NoError(err)
+
+			handler := s.sideMsgServer.PostTxHandler(sdk.MsgTypeURL(&types.MsgSetProducerDowntime{}))
+			err = handler(s.ctx, msg, sidetxs.Vote_VOTE_YES)
+			require.NoError(err)
+
+			// A new span should have been created
+			newLast, err := s.borKeeper.GetLastSpan(s.ctx)
+			require.NoError(err)
+			require.Equal(initialLast.Id+1, newLast.Id)
+			require.Len(newLast.SelectedProducers, 1)
+			require.Equal(tc.expectSelectedValId, newLast.SelectedProducers[0].ValId)
 		})
 	}
 }
@@ -635,6 +1099,171 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 		},
 
 		{
+			// Downtime range is far beyond all spans -> hasOverlappingSpan returns false -> no new span
+			name:     "success: downtime far beyond all spans -> PD persisted, no replacement span",
+			sideVote: sidetxs.Vote_VOTE_YES,
+			msg:      newMsg(addr1, 50000, 51000),
+			setup: func() {
+				s.stakeKeeper.EXPECT().
+					GetValIdFromAddress(gomock.Any(), addr1).
+					Return(id1, nil).
+					Times(1)
+				setVotesForAll([]uint64{id1, id2, id3})
+			},
+			expectErr:       false,
+			expectPDSet:     true,
+			expectPDRange:   &types.BlockRange{StartBlock: 50000, EndBlock: 51000},
+			expectSpanDelta: 0, // no overlap -> no new span
+		},
+
+		{
+			// Backward scan traverses multiple spans before finding overlap in an earlier one
+			name:     "success: backward scan finds overlap in earlier span",
+			sideVote: sidetxs.Vote_VOTE_YES,
+			msg:      newMsg(addr1, 120, 250), // overlaps span 0 [100-199] and span 1 [200-299]
+			setup: func() {
+				s.stakeKeeper.EXPECT().
+					GetValIdFromAddress(gomock.Any(), addr1).
+					Return(id1, nil).
+					Times(1)
+				setVotesForAll([]uint64{id1, id2, id3})
+
+				require.NoError(s.borKeeper.SetParams(s.ctx, types.DefaultParams()))
+				require.NoError(s.borKeeper.UpdateLatestActiveProducer(s.ctx, map[uint64]struct{}{id2: {}, id3: {}}))
+
+				valSet, vals := s.genTestValidators()
+				require.NotEmpty(vals)
+
+				sp0Prods := make([]stakeTypes.Validator, len(vals))
+				copy(sp0Prods, vals)
+				sp0Prods[0].ValId = id1
+
+				// 4 spans so backward scan must traverse 3->2->1->0
+				spans := []types.Span{
+					{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+					{Id: 1, StartBlock: 200, EndBlock: 299, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+					{Id: 2, StartBlock: 300, EndBlock: 399, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+					{Id: 3, StartBlock: 400, EndBlock: 499, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+				}
+				for i := range spans {
+					require.NoError(s.borKeeper.AddNewSpan(s.ctx, &spans[i]))
+				}
+			},
+			expectErr:       false,
+			expectPDSet:     true,
+			expectPDRange:   &types.BlockRange{StartBlock: 120, EndBlock: 250},
+			expectSpanDelta: 1,
+		},
+
+		{
+			// Producer is selected in a span but has no downtime -> scan finds no overlap
+			name:     "success: producer selected but no downtime overlap -> no replacement",
+			sideVote: sidetxs.Vote_VOTE_YES,
+			msg:      newMsg(addr1, 5000, 6000),
+			setup: func() {
+				s.stakeKeeper.EXPECT().
+					GetValIdFromAddress(gomock.Any(), addr1).
+					Return(id1, nil).
+					Times(1)
+				setVotesForAll([]uint64{id1, id2, id3})
+
+				require.NoError(s.borKeeper.SetParams(s.ctx, types.DefaultParams()))
+				valSet, vals := s.genTestValidators()
+				require.NotEmpty(vals)
+
+				sp0Prods := make([]stakeTypes.Validator, len(vals))
+				copy(sp0Prods, vals)
+				sp0Prods[0].ValId = id1
+
+				spans := []types.Span{
+					{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+					{Id: 1, StartBlock: 200, EndBlock: 299, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+				}
+				for i := range spans {
+					require.NoError(s.borKeeper.AddNewSpan(s.ctx, &spans[i]))
+				}
+			},
+			expectErr:       false,
+			expectPDSet:     true,
+			expectPDRange:   &types.BlockRange{StartBlock: 5000, EndBlock: 6000},
+			expectSpanDelta: 0,
+		},
+
+		{
+			// latestFailedProducer is non-empty, exercises the delete loop at line 631
+			name:     "success: failed producer excluded from active set during replacement",
+			sideVote: sidetxs.Vote_VOTE_YES,
+			msg:      newMsg(addr1, 150, 350),
+			setup: func() {
+				s.stakeKeeper.EXPECT().
+					GetValIdFromAddress(gomock.Any(), addr1).
+					Return(id1, nil).
+					Times(1)
+				setVotesForAll([]uint64{id1, id2, id3})
+
+				require.NoError(s.borKeeper.SetParams(s.ctx, types.DefaultParams()))
+				require.NoError(s.borKeeper.UpdateLatestActiveProducer(s.ctx, map[uint64]struct{}{id2: {}, id3: {}}))
+				// Mark id3 as a failed producer — exercises the for loop at line 631
+				require.NoError(s.borKeeper.AddLatestFailedProducer(s.ctx, id3))
+
+				valSet, vals := s.genTestValidators()
+				require.NotEmpty(vals)
+				sp0Prods := make([]stakeTypes.Validator, len(vals))
+				copy(sp0Prods, vals)
+				sp0Prods[0].ValId = id1
+
+				spans := []types.Span{
+					{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+					{Id: 1, StartBlock: 200, EndBlock: 299, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+					{Id: 2, StartBlock: 300, EndBlock: 399, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+				}
+				for i := range spans {
+					require.NoError(s.borKeeper.AddNewSpan(s.ctx, &spans[i]))
+				}
+			},
+			expectErr:       false,
+			expectPDSet:     true,
+			expectPDRange:   &types.BlockRange{StartBlock: 150, EndBlock: 350},
+			expectSpanDelta: 1,
+		},
+
+		{
+			// Span gap: lastSpan is id=3 but id=2 doesn't exist. Backward scan hits GetSpan error -> breaks.
+			// Downtime [500, 600] doesn't overlap span 3 [300-399], so scan must try to go backward.
+			name:     "success: backward scan stops at span gap",
+			sideVote: sidetxs.Vote_VOTE_YES,
+			msg:      newMsg(addr1, 500, 600),
+			setup: func() {
+				s.stakeKeeper.EXPECT().
+					GetValIdFromAddress(gomock.Any(), addr1).
+					Return(id1, nil).
+					Times(1)
+				setVotesForAll([]uint64{id1, id2, id3})
+
+				require.NoError(s.borKeeper.SetParams(s.ctx, types.DefaultParams()))
+
+				valSet, vals := s.genTestValidators()
+				require.NotEmpty(vals)
+				sp0Prods := make([]stakeTypes.Validator, len(vals))
+				copy(sp0Prods, vals)
+				sp0Prods[0].ValId = id2 // not id1, so no overlap trigger
+
+				// Add span 0 and span 3 (skip 1 and 2 to create a gap)
+				spans := []types.Span{
+					{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+					{Id: 3, StartBlock: 300, EndBlock: 399, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+				}
+				for i := range spans {
+					require.NoError(s.borKeeper.AddNewSpan(s.ctx, &spans[i]))
+				}
+			},
+			expectErr:       false,
+			expectPDSet:     true,
+			expectPDRange:   &types.BlockRange{StartBlock: 500, EndBlock: 600},
+			expectSpanDelta: 0, // scan stops at gap, no overlap found
+		},
+
+		{
 			name:     "success: replacement spans generated when requester is selected and overlaps",
 			sideVote: sidetxs.Vote_VOTE_YES,
 			msg:      newMsg(addr1, 150, 350), // overlaps spans [0],[1],[2]
@@ -746,6 +1375,133 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 				require.NoError(err)
 				require.Equal(initialLastID+uint64(tc.expectSpanDelta), last.Id)
 			}
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime_VeBlopSpanDuration() {
+	helper.SetZurichHardforkHeight(100)
+	defer helper.SetZurichHardforkHeight(0)
+
+	fixHeight := helper.GetZurichHardforkHeight()
+
+	tests := []struct {
+		name             string
+		blockHeight      int64
+		expectedEndBlock func(start, spanDuration uint64) uint64
+		expectedDuration func(spanDuration uint64) uint64
+	}{
+		{
+			name:             "pre-fork: span is one block longer than SpanDuration",
+			blockHeight:      fixHeight - 1,
+			expectedEndBlock: func(start, dur uint64) uint64 { return start + dur },
+			expectedDuration: func(dur uint64) uint64 { return dur + 1 },
+		},
+		{
+			name:             "at fork height: span has exactly SpanDuration blocks",
+			blockHeight:      fixHeight,
+			expectedEndBlock: func(start, dur uint64) uint64 { return start + dur - 1 },
+			expectedDuration: func(dur uint64) uint64 { return dur },
+		},
+		{
+			name:             "post-fork: span has exactly SpanDuration blocks",
+			blockHeight:      fixHeight + 1,
+			expectedEndBlock: func(start, dur uint64) uint64 { return start + dur - 1 },
+			expectedDuration: func(dur uint64) uint64 { return dur },
+		},
+	}
+
+	for _, tc := range tests {
+		s.T().Run(tc.name, func(t *testing.T) {
+			s.SetupTest()
+			require := s.Require()
+
+			id1, id2, id3 := uint64(1), uint64(2), uint64(3)
+			addr1 := common.HexToAddress("0x0000000000000000000000000000000000000001").Hex()
+			addr2 := common.HexToAddress("0x0000000000000000000000000000000000000002").Hex()
+			addr3 := common.HexToAddress("0x0000000000000000000000000000000000000003").Hex()
+
+			s.stakeKeeper.EXPECT().
+				GetValidatorSet(gomock.Any()).
+				Return(stakeTypes.ValidatorSet{
+					Validators: []*stakeTypes.Validator{
+						{ValId: id1, Signer: addr1, VotingPower: 100},
+						{ValId: id2, Signer: addr2, VotingPower: 100},
+						{ValId: id3, Signer: addr3, VotingPower: 100},
+					},
+				}, nil).
+				AnyTimes()
+
+			s.stakeKeeper.EXPECT().
+				GetSpanEligibleValidators(gomock.Any()).
+				Return([]stakeTypes.Validator{
+					{ValId: id1, Signer: addr1, VotingPower: 100},
+					{ValId: id2, Signer: addr2, VotingPower: 100},
+					{ValId: id3, Signer: addr3, VotingPower: 100},
+				}).
+				AnyTimes()
+
+			s.stakeKeeper.EXPECT().
+				GetValidatorFromValID(gomock.Any(), gomock.Any()).
+				DoAndReturn(func(_ sdk.Context, vid uint64) (stakeTypes.Validator, error) {
+					switch vid {
+					case id1:
+						return stakeTypes.Validator{ValId: id1, Signer: addr1, VotingPower: 100}, nil
+					case id2:
+						return stakeTypes.Validator{ValId: id2, Signer: addr2, VotingPower: 100}, nil
+					case id3:
+						return stakeTypes.Validator{ValId: id3, Signer: addr3, VotingPower: 100}, nil
+					default:
+						return stakeTypes.Validator{}, fmt.Errorf("unknown validator id %d", vid)
+					}
+				}).
+				AnyTimes()
+
+			s.stakeKeeper.EXPECT().
+				GetValIdFromAddress(gomock.Any(), addr1).
+				Return(id1, nil).
+				AnyTimes()
+
+			require.NoError(s.borKeeper.ClearProducerVotes(s.ctx))
+			for _, voter := range []uint64{id1, id2, id3} {
+				require.NoError(s.borKeeper.SetProducerVotes(s.ctx, voter, types.ProducerVotes{Votes: []uint64{id1, id2, id3}}))
+			}
+
+			params := types.DefaultParams()
+			require.NoError(s.borKeeper.SetParams(s.ctx, params))
+			require.NoError(s.borKeeper.UpdateLatestActiveProducer(s.ctx, map[uint64]struct{}{id2: {}, id3: {}}))
+
+			valSet, vals := s.genTestValidators()
+			require.NotEmpty(vals)
+
+			sp0Prods := make([]stakeTypes.Validator, len(vals))
+			copy(sp0Prods, vals)
+			sp0Prods[0].ValId = id1
+
+			for i, sp := range []types.Span{
+				{Id: 0, StartBlock: 100, EndBlock: 199, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+				{Id: 1, StartBlock: 200, EndBlock: 299, ValidatorSet: valSet, SelectedProducers: sp0Prods, BorChainId: "bor"},
+			} {
+				require.NoError(s.borKeeper.AddNewSpan(s.ctx, &[]types.Span{sp}[0]), "failed to add span %d", i)
+			}
+
+			downtimeStart := uint64(150)
+			msg := &types.MsgSetProducerDowntime{
+				Producer:      addr1,
+				DowntimeRange: types.BlockRange{StartBlock: downtimeStart, EndBlock: 350},
+			}
+
+			ctx := s.ctx.WithBlockHeight(tc.blockHeight)
+			handler := s.sideMsgServer.PostTxHandler(sdk.MsgTypeURL(&types.MsgSetProducerDowntime{}))
+			err := handler(ctx, msg, sidetxs.Vote_VOTE_YES)
+			require.NoError(err)
+
+			lastSpan, err := s.borKeeper.GetLastSpan(s.ctx)
+			require.NoError(err)
+			require.Equal(uint64(2), lastSpan.Id)
+			require.Equal(downtimeStart, lastSpan.StartBlock)
+			require.Equal(tc.expectedEndBlock(downtimeStart, params.SpanDuration), lastSpan.EndBlock)
+			require.Equal(tc.expectedDuration(params.SpanDuration), lastSpan.EndBlock-lastSpan.StartBlock+1)
 		})
 	}
 }

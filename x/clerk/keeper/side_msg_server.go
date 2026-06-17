@@ -19,14 +19,14 @@ import (
 )
 
 type sideMsgServer struct {
-	Keeper
+	*Keeper
 }
 
 var msgEventRecord = sdk.MsgTypeURL(&types.MsgEventRecord{})
 
 // NewSideMsgServerImpl returns an implementation of the clerk SideMsgServer interface
 // for the provided Keeper.
-func NewSideMsgServerImpl(keeper Keeper) sidetxs.SideMsgServer {
+func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 	return &sideMsgServer{Keeper: keeper}
 }
 
@@ -98,6 +98,7 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg) (
 
 	// get and validate confirmed tx receipt
 	receipt := helper.FetchAndValidateReceipt(
+		ctx,
 		srv.contractCaller,
 		helper.ReceiptValidationParams{
 			TxHash:         common.HexToHash(msg.TxHash).Bytes(),
@@ -178,6 +179,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 	if !ok {
 		err := errors.New(helper.ErrTypeMismatch("MsgEventRecord"))
 		logger.Error(err.Error())
+		return err
 	}
 
 	// Skip handler if clerk is not approved
@@ -188,8 +190,9 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 
 	// check for replay
 	if srv.HasEventRecord(ctx, msg.Id) {
+		err = errors.New("clerk record already processed")
 		logger.Debug("Skipping new clerk record as it's already processed")
-		return errors.New("clerk record already processed")
+		return err
 	}
 
 	logger.Debug("Persisting clerk state", "sideTxResult", sideTxResult)
@@ -212,6 +215,19 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 	if err := srv.SetEventRecord(ctx, record); err != nil {
 		logger.Error("Unable to update event record", "id", msg.Id, heimdallTypes.LogKeyError, err)
 		return err
+	}
+
+	// If visibility time is enabled, add the event to the pending list.
+	// Its visibility_height will be assigned in the next block's PreBlocker.
+	// The deterministic query distinguishes pre-HF events (no pending entry, no
+	// visibility_height) from post-HF events by this per-event state, so it
+	// stays correct even when events are processed out of order across the
+	// activation height.
+	if helper.IsZurichHardfork(ctx.BlockHeight()) {
+		if err = srv.AddPendingVisibilityEvent(ctx, record.Id); err != nil {
+			logger.Error("Unable to add pending visibility event", "id", record.Id, heimdallTypes.LogKeyError, err)
+			return err
+		}
 	}
 
 	// save the record sequence

@@ -475,7 +475,7 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 
 	if proposedSpanID == 1 {
 		borBlock = 1
-		author, err = k.contractCaller.GetBorChainBlockAuthor(big.NewInt(int64(borBlock)))
+		author, err = k.contractCaller.GetBorChainBlockAuthor(ctx, big.NewInt(int64(borBlock)))
 		if err != nil {
 			logger.Error("Error fetching first block for span seed", "error", err, "block", borBlock)
 			return 0, nil, err
@@ -528,7 +528,7 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 	}
 
 	for borBlock = seedSpan.EndBlock; borBlock >= seedSpan.StartBlock; borBlock -= borParams.SprintDuration {
-		author, err = k.contractCaller.GetBorChainBlockAuthor(big.NewInt(int64(borBlock)))
+		author, err = k.contractCaller.GetBorChainBlockAuthor(ctx, big.NewInt(int64(borBlock)))
 		if err != nil {
 			logger.Error("Error fetching block author from bor chain while calculating next span seed", "error", err, "block", borBlock)
 			return 0, nil, err
@@ -550,7 +550,7 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 		borBlock = seedSpan.EndBlock
 	}
 
-	author, err = k.contractCaller.GetBorChainBlockAuthor(big.NewInt(int64(borBlock)))
+	author, err = k.contractCaller.GetBorChainBlockAuthor(ctx, big.NewInt(int64(borBlock)))
 	if err != nil {
 		logger.Error("Error fetching end block author from bor chain while calculating next span seed", "error", err, "block", borBlock)
 		return 0, nil, err
@@ -596,14 +596,47 @@ func (k Keeper) CanVoteProducers(ctx context.Context) error {
 	return nil
 }
 
-// CanSetProducerDowntime checks if the current height is after the setProducerDowntimeHeight
-func (k Keeper) CanSetProducerDowntime(ctx sdk.Context) error {
-	if uint64(ctx.BlockHeight()) < uint64(helper.GetSetProducerDowntimeHeight()) {
-		return fmt.Errorf("MsgSetProducerDowntime not allowed: block %d is before the setProducerDowntimeHeight %d",
-			ctx.BlockHeight(),
-			helper.GetSetProducerDowntimeHeight())
+// isValidatorInActiveSet reports whether valID is a member of the current
+// active validator set. A deactivated validator keeps its individual record but
+// is no longer in the set, so this gate keeps it from influencing producer
+// selection. Membership already implies positive power, not jailed and in-epoch
+// (the set is built from those checks), so this is a set lookup, not the
+// canonical IsCurrentValidator predicate.
+func (k Keeper) isValidatorInActiveSet(ctx context.Context, valID uint64) (bool, error) {
+	valSet, err := k.sk.GetValidatorSet(ctx)
+	if err != nil {
+		return false, err
 	}
 
+	for _, v := range valSet.Validators {
+		if v != nil && v.ValId == valID {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// CanSetProducerDowntime checks if the current height is after the setProducerDowntimeHeight.
+func (k Keeper) CanSetProducerDowntime(ctx sdk.Context) error {
+	if ctx.BlockHeight() < helper.GetSetProducerDowntimeHeight() {
+		return fmt.Errorf("MsgSetProducerDowntime not allowed: block %d is before the setProducerDowntimeHeight %d",
+			ctx.BlockHeight(),
+			helper.GetSetProducerDowntimeHeight(),
+		)
+	}
+	return nil
+}
+
+// CanUseTargetProducer checks if the current height is after the targetProducerOverrideHeight,
+// which gates the use of a non-default TargetProducerId in MsgSetProducerDowntime.
+func (k Keeper) CanUseTargetProducer(ctx sdk.Context) error {
+	if ctx.BlockHeight() < helper.GetZurichHardforkHeight() {
+		return fmt.Errorf("MsgSetProducerDowntime with TargetProducerId not allowed: block %d is before the targetProducerOverrideHeight %d",
+			ctx.BlockHeight(),
+			helper.GetZurichHardforkHeight(),
+		)
+	}
 	return nil
 }
 

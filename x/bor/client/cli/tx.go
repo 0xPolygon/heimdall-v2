@@ -207,7 +207,8 @@ func NewProducerDowntimeCmd() *cobra.Command {
 				return nil
 			}
 
-			msg := types.NewMsgSetProducerDowntime(producerAddress, startBlock, endBlock)
+			targetProducerID := viper.GetUint64(FlagTargetProducerID)
+			msg := types.NewMsgSetProducerDowntime(producerAddress, startBlock, endBlock, targetProducerID)
 
 			return cli.BroadcastMsg(clientCtx, producerAddress, msg, logger)
 		},
@@ -217,6 +218,7 @@ func NewProducerDowntimeCmd() *cobra.Command {
 	cmd.Flags().Int(FlagStartTimestampUTC, 0, "--start-timestamp-utc=<start-timestamp-utc>")
 	cmd.Flags().Int(FlagEndTimestampUTC, 0, "--end-timestamp-utc=<end-timestamp-utc>")
 	cmd.Flags().Bool(FlagCalcOnly, false, "--calc-only=<true|false>")
+	cmd.Flags().Uint64(FlagTargetProducerID, 0, "--target-producer-id=<target-producer-id>")
 
 	if err := cmd.MarkFlagRequired(FlagProducerAddress); err != nil {
 		fmt.Printf("NewProducerDowntimeCmd | MarkFlagRequired | FlagProducerAddress Error: %v", err)
@@ -231,12 +233,26 @@ func calculateAverageBlocktime(clientCtx client.Context) (uint64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("failed to get latest bor block number: %w", err)
 	}
+	if currentBlock == 0 {
+		return 0, fmt.Errorf("chain has no blocks to calculate average block time")
+	}
 
 	blockTimesToGet := uint64(100)
 	blocksInBetween := uint64(100)
 
-	if blockTimesToGet*blocksInBetween >= currentBlock {
+	if currentBlock <= blocksInBetween {
+		// For chains with <=100 blocks, sample adjacent blocks to ensure
+		// we can calculate an average without exceeding chain height.
+		blocksInBetween = 1
+		fmt.Printf("using adjacent block sampling for low-height chain where currentBlock is %d", currentBlock)
+	}
+
+	if blockTimesToGet*blocksInBetween > currentBlock {
 		blockTimesToGet = currentBlock / blocksInBetween
+	}
+
+	if blockTimesToGet == 0 {
+		return 0, fmt.Errorf("insufficient blocks on chain (height: %d) to calculate average block time", currentBlock)
 	}
 
 	var averageBlockTime uint64

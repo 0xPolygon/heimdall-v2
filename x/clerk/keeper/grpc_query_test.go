@@ -3,8 +3,13 @@ package keeper_test
 import (
 	"time"
 
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
+	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
@@ -36,6 +41,19 @@ func (s *KeeperTestSuite) TestGetGRPCRecord_NotFound() {
 	res, err := queryClient.GetRecordById(ctx, req)
 	require.Error(err)
 	require.Nil(res)
+}
+
+func (s *KeeperTestSuite) TestGetRecordListWithTime_RejectsUnixEpochTimestamp() {
+	ctx, queryClient, require := s.ctx, s.queryClient, s.Require()
+
+	res, err := queryClient.GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
+		FromId:     1,
+		ToTime:     time.Unix(0, 0).UTC(),
+		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
+	})
+	require.Error(err)
+	require.Nil(res)
+	require.Equal(codes.InvalidArgument, status.Code(err))
 }
 
 func (s *KeeperTestSuite) TestGetRecordListWithTime_Success() {
@@ -168,4 +186,244 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Pagination() {
 			}
 		})
 	}
+}
+
+func enableVisibilityTimeForTest(_ *KeeperTestSuite, height int64) func() {
+	original := helper.GetZurichHardforkHeight()
+	helper.SetZurichHardforkHeight(height)
+	return func() { helper.SetZurichHardforkHeight(original) }
+}
+
+// TestGetRecordListWithTime_Deterministic_HappyPath verifies the post-HF path
+// returns events when the stability gate passes (blockTime > cutoff) and a
+// valid height resolves.
+func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_HappyPath() {
+	ctx, ck := s.ctx, s.keeper
+	require := s.Require()
+	defer enableVisibilityTimeForTest(s, 1)()
+
+	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+
+	for i := uint64(1); i <= 3; i++ {
+		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
+			baseTime.Add(time.Duration(i)*time.Second))
+		require.NoError(ck.SetEventRecord(ctx, rec))
+		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, 100+i))
+	}
+
+	for i := int64(0); i < 5; i++ {
+		h := 100 + i
+		bt := baseTime.Add(time.Duration(i*3) * time.Second)
+		ctx = ctx.WithBlockHeight(h).WithBlockHeader(cmtproto.Header{Time: bt, Height: h})
+		require.NoError(ck.StoreBlockTime(ctx))
+	}
+
+	cutoffTime := baseTime.Add(10 * time.Second)
+	ctx = ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{
+		Time:   cutoffTime.Add(time.Minute),
+		Height: 10000,
+	})
+
+	resp, err := clerkKeeper.NewQueryServer(&ck).GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
+		FromId:     1,
+		ToTime:     cutoffTime,
+		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
+	})
+	require.NoError(err)
+	require.NotNil(resp)
+	require.NotEmpty(resp.EventRecords, "should return events when stability gate passes")
+}
+
+// TestGetRecordListWithTime_Deterministic_UsesIndexedBlockTime verifies the
+// stability gate uses the indexed block time, not sdkCtx.BlockTime (which is
+// often zero on REST query paths).
+func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_UsesIndexedBlockTime() {
+	ctx, ck := s.ctx, s.keeper
+	require := s.Require()
+	defer enableVisibilityTimeForTest(s, 1)()
+
+	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+
+	for i := uint64(1); i <= 3; i++ {
+		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
+			baseTime.Add(time.Duration(i)*time.Second))
+		require.NoError(ck.SetEventRecord(ctx, rec))
+		require.NoError(ck.VisibilityHeightByID.Set(ctx, i, 100+i))
+	}
+
+	for i := int64(0); i < 5; i++ {
+		h := 100 + i
+		bt := baseTime.Add(time.Duration(i*3) * time.Second)
+		ctx = ctx.WithBlockHeight(h).WithBlockHeader(cmtproto.Header{Time: bt, Height: h})
+		require.NoError(ck.StoreBlockTime(ctx))
+	}
+
+	queryCtx := ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{Height: 10000})
+	cutoffTime := baseTime.Add(10 * time.Second)
+
+	resp, err := clerkKeeper.NewQueryServer(&ck).GetRecordListWithTime(queryCtx, &types.RecordListWithTimeRequest{
+		FromId:     1,
+		ToTime:     cutoffTime,
+		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
+	})
+	require.NoError(err)
+	require.NotNil(resp)
+	require.NotEmpty(resp.EventRecords, "should resolve via indexed block time even with zero query block time")
+}
+
+// TestGetRecordListWithTime_Deterministic_StabilityGate verifies that when the
+// latest indexed block time <= cutoff, the post-HF path returns an empty
+// response (height not yet frozen).
+func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_StabilityGate() {
+	ctx, ck := s.ctx, s.keeper
+	require := s.Require()
+	defer enableVisibilityTimeForTest(s, 1)()
+
+	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+
+	ctx = ctx.WithBlockHeight(100).WithBlockHeader(cmtproto.Header{
+		Time:   baseTime.Add(10 * time.Minute),
+		Height: 100,
+	})
+	require.NoError(ck.StoreBlockTime(ctx))
+
+	cutoff := baseTime.Add(10 * time.Minute)
+	ctx = ctx.WithBlockHeight(200).WithBlockHeader(cmtproto.Header{
+		Time:   cutoff,
+		Height: 200,
+	})
+
+	resp, err := clerkKeeper.NewQueryServer(&ck).GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
+		FromId:     1,
+		ToTime:     cutoff,
+		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
+	})
+	require.NoError(err)
+	require.NotNil(resp)
+	require.Empty(resp.EventRecords, "stability gate: empty when latestIndexedTime <= cutoff")
+}
+
+// TestGetRecordListWithTime_Deterministic_NoEvents verifies empty response when
+// no events exist at the resolved height.
+func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_NoEvents() {
+	ctx, ck := s.ctx, s.keeper
+	require := s.Require()
+	defer enableVisibilityTimeForTest(s, 1)()
+
+	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+
+	ctx = ctx.WithBlockHeight(100).WithBlockHeader(cmtproto.Header{Time: baseTime, Height: 100})
+	require.NoError(ck.StoreBlockTime(ctx))
+	ctx = ctx.WithBlockHeight(101).WithBlockHeader(cmtproto.Header{Time: baseTime.Add(2 * time.Minute), Height: 101})
+	require.NoError(ck.StoreBlockTime(ctx))
+
+	cutoff := baseTime.Add(time.Minute)
+	ctx = ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{
+		Time:   cutoff.Add(2 * time.Minute),
+		Height: 10000,
+	})
+
+	resp, err := clerkKeeper.NewQueryServer(&ck).GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
+		FromId:     1,
+		ToTime:     cutoff,
+		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
+	})
+	require.NoError(err)
+	require.NotNil(resp)
+	require.Empty(resp.EventRecords, "no events in store means empty response")
+}
+
+// TestGetRecordListWithTime_Deterministic_HeightResolutionFails verifies that
+// when only blocks AFTER the cutoff exist (stability gate passes, but
+// GetBlockHeightByTime returns ErrNoBlockFound) the handler falls back to the
+// legacy record_time path without erroring. With no events in the store the
+// legacy result is also empty; the with-events case is covered by
+// TestGetRecordListWithTime_Deterministic_PreHFCutoffFallsBackToLegacy.
+func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_HeightResolutionFails() {
+	ctx, ck := s.ctx, s.keeper
+	require := s.Require()
+	defer enableVisibilityTimeForTest(s, 1)()
+
+	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+
+	ctx = ctx.WithBlockHeight(300).WithBlockHeader(cmtproto.Header{
+		Time:   baseTime.Add(2 * time.Minute),
+		Height: 300,
+	})
+	require.NoError(ck.StoreBlockTime(ctx))
+
+	cutoff := baseTime.Add(time.Minute)
+	ctx = ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{
+		Time:   cutoff.Add(3 * time.Minute),
+		Height: 10000,
+	})
+
+	resp, err := clerkKeeper.NewQueryServer(&ck).GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
+		FromId:     1,
+		ToTime:     cutoff,
+		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
+	})
+	require.NoError(err, "height resolution failure should fall back to legacy, not error")
+	require.NotNil(resp)
+	require.Empty(resp.EventRecords, "no events in store: legacy fallback is also empty")
+}
+
+func (s *KeeperTestSuite) TestGetRecordListWithTime_Deterministic_PreHFCutoffFallsBackToLegacy() {
+	ctx, ck := s.ctx, s.keeper
+	require := s.Require()
+	defer enableVisibilityTimeForTest(s, 1)()
+
+	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+	cutoff := baseTime
+
+	// Pre-HF events (no visibility_height, not pending): record_time before the cutoff.
+	for i := uint64(1); i <= 3; i++ {
+		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
+			baseTime.Add(-time.Duration(i)*time.Minute))
+		rec.RecordTime = rec.RecordTime.UTC()
+		require.NoError(ck.SetEventRecord(ctx, rec))
+	}
+
+	// Index only covers a post-cutoff block, mirroring a node whose block-time
+	// index starts at the visibility-height activation height.
+	ctx = ctx.WithBlockHeight(300).WithBlockHeader(cmtproto.Header{
+		Time:   baseTime.Add(2 * time.Minute),
+		Height: 300,
+	})
+	require.NoError(ck.StoreBlockTime(ctx))
+
+	// Query from a height well past activation: takes the deterministic branch.
+	ctx = ctx.WithBlockHeight(10000).WithBlockHeader(cmtproto.Header{
+		Time:   cutoff.Add(3 * time.Minute),
+		Height: 10000,
+	})
+
+	resp, err := clerkKeeper.NewQueryServer(&ck).GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
+		FromId:     1,
+		ToTime:     cutoff,
+		Pagination: query.PageRequest{Limit: 10, Key: []byte{0x00}},
+	})
+	require.NoError(err)
+	require.NotNil(resp)
+	require.Len(resp.EventRecords, 3, "pre-HF cutoff must fall back to legacy and return the producer's set, not empty")
+}
+
+// TestGetRecordListWithTime_OffsetExceedsMax verifies the offset upper bound
+// validation (added to bound scans in the post-HF visibility path where
+// non-monotonic ordering prevents early termination).
+func (s *KeeperTestSuite) TestGetRecordListWithTime_OffsetExceedsMax() {
+	ctx, require := s.ctx, s.Require()
+
+	resp, err := s.queryClient.GetRecordListWithTime(ctx, &types.RecordListWithTimeRequest{
+		FromId: 1,
+		ToTime: time.Now().UTC(),
+		Pagination: query.PageRequest{
+			Limit:  10,
+			Offset: clerkKeeper.MaxRecordListOffset + 1,
+			Key:    []byte{0x00},
+		},
+	})
+	require.Error(err)
+	require.Nil(resp)
+	require.Equal(codes.InvalidArgument, status.Code(err))
 }

@@ -112,10 +112,31 @@ var (
 			},
 		},
 	)
+
+	// ExtendVoteBudgetExhaustedTotal counts ExtendVote handler turns where the
+	// Zurich budget was exhausted before completion. Labels: phase = "side_tx_loop"
+	// (truncated mid-side-tx iteration) or "pre_milestone" (skipped milestone
+	// proposition entirely). This can be used to tune extendVoteBudget
+	// against real Bor RPC tail latency.
+	ExtendVoteBudgetExhaustedTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: Namespace,
+			Subsystem: "abci",
+			Name:      "extend_vote_budget_exhausted_total",
+			Help:      "Number of ExtendVote turns where the Zurich budget was exhausted before completion, labeled by phase",
+		},
+		[]string{"phase"},
+	)
 )
 
 // RecordABCIHandlerDuration records the time taken for any ABCI handler.
 func RecordABCIHandlerDuration(metric prometheus.Summary, start time.Time) {
 	duration := time.Since(start)
 	metric.Observe(duration.Seconds())
+}
+
+// RecordExtendVoteBudgetExhausted increments the budget-exhaustion counter
+// for the given phase.
+func RecordExtendVoteBudgetExhausted(phase string) {
+	ExtendVoteBudgetExhaustedTotal.WithLabelValues(phase).Inc()
 }
