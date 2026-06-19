@@ -1,0 +1,79 @@
+name: diffguard
+
+on:
+  pull_request:
+    branches:
+      - '**'
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: diffguard-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  diffguard:
+    name: Quality metrics
+    if: (github.event.action != 'closed' || github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # diffguard needs full history for merge-base and file history checks.
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-diffguard-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-diffguard-
+
+      - name: Install diffguard
+        run: go install github.com/0xPolygon/diffguard/cmd/diffguard@latest
+
+      - name: Run diffguard
+        id: diffguard
+        shell: bash
+        run: |
+          # Keep diffguard's exit code when tee writes the step summary.
+          set -o pipefail
+          diffguard \
+            --base origin/${{ github.base_ref }} \
+            --complexity-threshold 15 \
+            --complexity-delta-tolerance 5 \
+            --function-size-threshold 80 \
+            --function-size-delta-tolerance 15 \
+            --file-size-threshold 800 \
+            --file-size-delta-tolerance-pct 10 \
+            --file-size-delta-tolerance-floor 20 \
+            --tier1-threshold 80 \
+            --tier2-threshold 60 \
+            --mutation-sample-rate 20 \
+            --test-timeout 5m \
+            --output text \
+            --fail-on error \
+            . | tee "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload JSON report
+        # The text report above contains mutation results; this second run is
+        # only for a cheap machine-readable shape report.
+        if: always()
+        run: |
+          diffguard \
+            --base origin/${{ github.base_ref }} \
+            --skip-mutation \
+            --output json \
+            --fail-on none \
+            . > diffguard-report.json
+
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: diffguard-report
+          path: diffguard-report.json
+          retention-days: 14
