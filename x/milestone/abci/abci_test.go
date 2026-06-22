@@ -668,7 +668,7 @@ func TestGetMajorityActualHead(t *testing.T) {
 			actualHeadVote(t, s2, 200, 0xBB),
 			actualHeadVote(t, s3, 200, 0xBB),
 		}
-		head, hash, found, err := GetMajorityActualHead(ctx, valSet, votes, 34)
+		head, hash, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, math.MaxUint64)
 		require.NoError(t, err)
 		require.True(t, found)
 		require.Equal(t, uint64(300), head)
@@ -684,7 +684,7 @@ func TestGetMajorityActualHead(t *testing.T) {
 			actualHeadVote(t, s2, 150, 0xAA),
 			actualHeadVote(t, s3, 99999, 0xEE), // byzantine far head, only 25 < 34
 		}
-		head, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34)
+		head, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, math.MaxUint64)
 		require.NoError(t, err)
 		require.True(t, found)
 		require.Equal(t, uint64(150), head, "the lone far head must not be selected")
@@ -699,7 +699,7 @@ func TestGetMajorityActualHead(t *testing.T) {
 			actualHeadVote(t, s2, 200, 0xB2),
 			actualHeadVote(t, s3, 300, 0xC3),
 		}
-		_, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34)
+		_, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, math.MaxUint64)
 		require.NoError(t, err)
 		require.False(t, found, "no distinct head reaches 1/3")
 	})
@@ -714,7 +714,7 @@ func TestGetMajorityActualHead(t *testing.T) {
 			actualHeadVote(t, s2, 100, 0xBB),
 			actualHeadVote(t, s3, 100, 0xBB),
 		}
-		head, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34)
+		head, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, math.MaxUint64)
 		require.NoError(t, err)
 		require.True(t, found)
 		require.Equal(t, uint64(200), head, "VP exactly equal to the threshold must count (>= comparison)")
@@ -730,7 +730,7 @@ func TestGetMajorityActualHead(t *testing.T) {
 			actualHeadVote(t, s2, 200, 0xBB),
 			actualHeadVote(t, s3, 200, 0xAA),
 		}
-		head, hash, found, err := GetMajorityActualHead(ctx, valSet, votes, 34)
+		head, hash, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, math.MaxUint64)
 		require.NoError(t, err)
 		require.True(t, found)
 		require.Equal(t, uint64(200), head)
@@ -748,7 +748,7 @@ func TestGetMajorityActualHead(t *testing.T) {
 			actualHeadVote(t, s1, 200, 0xAA),
 			actualHeadVote(t, s2, 100, 0xBB),
 		}
-		_, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 68)
+		_, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 68, math.MaxUint64)
 		require.NoError(t, err)
 		require.False(t, found, "a duplicate vote must not double-count the validator's power")
 	})
@@ -767,10 +767,45 @@ func TestGetMajorityActualHead(t *testing.T) {
 				return b
 			}()},
 		}
-		head, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34)
+		head, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, math.MaxUint64)
 		require.NoError(t, err)
 		require.True(t, found)
 		require.Equal(t, uint64(200), head)
+	})
+
+	t.Run("out-of-range head is dropped; the in-range majority wins instead of being masked", func(t *testing.T) {
+		// s1's head 99999 is beyond maxBlock (500) and clears 34 on its own; without the bound it would
+		// win as the highest. Honest s2+s3 agree on the real in-range head 200 (60 VP). The fabricated
+		// far head must be filtered so the legitimate in-range head is selected.
+		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+			{Signer: s1, VotingPower: 40}, {Signer: s2, VotingPower: 35}, {Signer: s3, VotingPower: 25},
+		}}
+		votes := []abciTypes.ExtendedVoteInfo{
+			actualHeadVote(t, s1, 99999, 0xAA),
+			actualHeadVote(t, s2, 200, 0xBB),
+			actualHeadVote(t, s3, 200, 0xBB),
+		}
+		head, hash, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, 500)
+		require.NoError(t, err)
+		require.True(t, found)
+		require.Equal(t, uint64(200), head, "a head beyond maxBlock must not mask the in-range majority")
+		require.Equal(t, fill32(0xBB), hash)
+	})
+
+	t.Run("a lone out-of-range head clearing the threshold is dropped, not tracked", func(t *testing.T) {
+		// s1 alone clears 34 on a fabricated far head (99999 > maxBlock 500); honest s2/s3 split below
+		// the threshold. The far head must be filtered so nothing is found, never poisoning tracking.
+		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+			{Signer: s1, VotingPower: 40}, {Signer: s2, VotingPower: 30}, {Signer: s3, VotingPower: 30},
+		}}
+		votes := []abciTypes.ExtendedVoteInfo{
+			actualHeadVote(t, s1, 99999, 0xEE),
+			actualHeadVote(t, s2, 100, 0xA1),
+			actualHeadVote(t, s3, 200, 0xB2),
+		}
+		_, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, 500)
+		require.NoError(t, err)
+		require.False(t, found, "an out-of-range head must be dropped even when it alone clears the threshold")
 	})
 }
 
@@ -797,7 +832,9 @@ func TestValidateLatestHead(t *testing.T) {
 	}{
 		{"both absent is ok", mk(10, 1, 0, nil), true},
 		{"number without hash rejected", mk(10, 1, 12, nil), false},
-		{"present, head == proposition end", mk(10, 1, 10, fill32(0x9)), true},
+		{"present, head == proposition end, hash matches tail", mk(10, 1, 10, fill32(1)), true},
+		{"present, head == proposition end, hash mismatches tail rejected", mk(10, 1, 10, fill32(0x9)), false},
+		{"present, multi-block head == proposition end, hash matches tail", mk(10, 5, 14, fill32(5)), true}, // propEnd 14, tail hash fill32(5)
 		{"present, head beyond proposition end", mk(10, 5, 99, fill32(0x9)), true},
 		{"bad hash length rejected", mk(10, 1, 10, make([]byte, 16)), false},
 		{"head behind proposition end rejected", mk(10, 5, 12, fill32(0x9)), false}, // propEnd 14

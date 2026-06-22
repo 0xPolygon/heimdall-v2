@@ -145,28 +145,6 @@ func getFastForwardMilestoneStartBlock(latestMilestoneEndBlock, ffMilestoneBlock
 	return latestMilestoneEndBlock + ffMilestoneBlockInterval
 }
 
-// MilestonePropositionHeadID returns the hash+td identity of a proposition's head block,
-// using the same encoding as the per-block tally key below. It lets a caller detect when the
-// >1/3-agreed pending tip changes content at a constant height (POS-3629). Returns nil for an
-// empty or malformed proposition.
-func MilestonePropositionHeadID(prop *types.MilestoneProposition) []byte {
-	if prop == nil {
-		return nil
-	}
-	i := len(prop.BlockHashes) - 1
-	if i < 0 || i >= len(prop.BlockTds) {
-		return nil
-	}
-
-	var tdBytes [8]byte
-	binary.LittleEndian.PutUint64(tdBytes[:], prop.BlockTds[i])
-
-	id := make([]byte, 0, len(prop.BlockHashes[i])+len(tdBytes))
-	id = append(id, prop.BlockHashes[i]...)
-	id = append(id, tdBytes[:]...)
-	return id
-}
-
 func GetMajorityMilestoneProposition(
 	ctx sdk.Context,
 	validatorSet *stakeTypes.ValidatorSet,
@@ -459,13 +437,19 @@ func GetMajorityMilestoneProposition(
 // then skips rotation rather than falling back to the truncated proposition tail. Deterministic:
 // uses canonical voting power from the validator set, dedupes per validator, and breaks ties on the
 // lexicographically smaller key, mirroring GetMajorityMilestoneProposition.
+//
+// Heads beyond maxBlock (the last span's end — an honest producer cannot advance past its span) are
+// dropped before the tally, so a colluding >1/3 slice cannot push the agreed head past chain state.
+// That both prevents poisoning the downstream stall tracking with an out-of-range head and stops a
+// fabricated far head from masking a legitimate in-range majority that would otherwise win.
 func GetMajorityActualHead(
 	ctx sdk.Context,
 	validatorSet *stakeTypes.ValidatorSet,
 	extVoteInfo []abciTypes.ExtendedVoteInfo,
 	minMajorityVP int64,
+	maxBlock uint64,
 ) (uint64, []byte, bool, error) {
-	tally, err := tallyActualHeads(ctx, validatorSet, extVoteInfo)
+	tally, err := tallyActualHeads(ctx, validatorSet, extVoteInfo, maxBlock)
 	if err != nil {
 		return 0, nil, false, err
 	}
@@ -517,8 +501,9 @@ func (t *actualHeadTally) majority(minMajorityVP int64) (uint64, []byte, bool) {
 }
 
 // tallyActualHeads sums canonical voting power per reported actual head across the vote extensions,
-// deduping repeated votes per validator.
-func tallyActualHeads(ctx sdk.Context, validatorSet *stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo) (*actualHeadTally, error) {
+// deduping repeated votes per validator. Heads beyond maxBlock are dropped: an honest producer
+// cannot advance past its span end, so such a head is fabricated and must not enter the tally.
+func tallyActualHeads(ctx sdk.Context, validatorSet *stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, maxBlock uint64) (*actualHeadTally, error) {
 	ac := address.HexCodec{}
 	tally := &actualHeadTally{power: map[string]int64{}, number: map[string]uint64{}, hash: map[string][]byte{}}
 	processed := make(map[string]bool)
@@ -528,7 +513,7 @@ func tallyActualHeads(ctx sdk.Context, validatorSet *stakeTypes.ValidatorSet, ex
 		if err != nil {
 			return nil, err
 		}
-		if !ok {
+		if !ok || number > maxBlock {
 			continue
 		}
 		vp, ok, err := resolveVoterPower(ctx, validatorSet, ac, vote, processed)
@@ -716,8 +701,17 @@ func validateLatestHead(milestoneProp *types.MilestoneProposition) error {
 	if milestoneProp.StartBlockNumber > math.MaxUint64-offset {
 		return fmt.Errorf("proposition start block overflow")
 	}
-	if propEnd := milestoneProp.StartBlockNumber + offset; milestoneProp.LatestBlockNumber < propEnd {
+	propEnd := milestoneProp.StartBlockNumber + offset
+	if milestoneProp.LatestBlockNumber < propEnd {
 		return fmt.Errorf("latest block number %d behind proposition end %d", milestoneProp.LatestBlockNumber, propEnd)
+	}
+	// When the head is the proposition's own last block, both reference the same block, so their
+	// hashes must match. Beyond propEnd the head is legitimately outside the proposition window and
+	// the cross-check doesn't apply. Closes a vote-power split where a validator feeds the milestone
+	// and actual-head tallies different hashes at the same height (POS-3629).
+	if milestoneProp.LatestBlockNumber == propEnd &&
+		!bytes.Equal(milestoneProp.LatestBlockHash, milestoneProp.BlockHashes[len(milestoneProp.BlockHashes)-1]) {
+		return fmt.Errorf("latest block hash does not match proposition tail at height %d", propEnd)
 	}
 	return nil
 }

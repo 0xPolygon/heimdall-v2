@@ -14,7 +14,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	helpermocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
-	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -36,6 +35,12 @@ func singleBlockPendingProp(n uint64, hashSeed byte) *milestoneTypes.MilestonePr
 		BlockHashes:      [][]byte{h},
 		BlockTds:         []uint64{1000 + n},
 	}
+}
+
+// propHeadID is the 32-byte actual-head identity the pending-stall path tracks in production (the
+// agreed LatestBlockHash). Tests use the proposition's last block hash as that identity.
+func propHeadID(prop *milestoneTypes.MilestoneProposition) []byte {
+	return prop.BlockHashes[len(prop.BlockHashes)-1]
 }
 
 // seedSpan installs the committed span [psSpanStart, psSpanEnd] with producer validators[0]
@@ -93,7 +98,7 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 		ctx = ctx.WithBlockHeight(1000)
 		prop := singleBlockPendingProp(psPendingHead, 0xAA)
 
-		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, milestoneAbci.MilestonePropositionHeadID(prop), supporters))
+		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters))
 
 		last, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
@@ -102,7 +107,7 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 		block, id, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
 		require.NoError(t, err)
 		require.Equal(t, psPendingHead, block)
-		require.Equal(t, milestoneAbci.MilestonePropositionHeadID(prop), id)
+		require.Equal(t, propHeadID(prop), id)
 		require.Equal(t, uint64(1000), height)
 	})
 
@@ -113,7 +118,7 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 		ctx = ctx.WithBlockHeight(1000) // well past any threshold
 		prop := singleBlockPendingProp(psPendingHead, 0xBB)
 
-		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, milestoneAbci.MilestonePropositionHeadID(prop), supporters))
+		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters))
 
 		last, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
@@ -121,7 +126,7 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 
 		_, id, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
 		require.NoError(t, err)
-		require.Equal(t, milestoneAbci.MilestonePropositionHeadID(prop), id, "clock re-baselined to the new identity")
+		require.Equal(t, propHeadID(prop), id, "clock re-baselined to the new identity")
 		require.Equal(t, uint64(1000), height)
 	})
 
@@ -132,7 +137,7 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 		ctx = ctx.WithBlockHeight(1000)
 		prop := singleBlockPendingProp(psPendingHead, 0xCC)
 
-		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, milestoneAbci.MilestonePropositionHeadID(prop), supporters))
+		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters))
 
 		last, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
@@ -149,11 +154,11 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 		_, supporters := seedSpan(t, app, ctx)
 		prop := singleBlockPendingProp(psPendingHead, 0xDD)
 		trackedHeight := uint64(1000)
-		require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, milestoneAbci.MilestonePropositionHeadID(prop), trackedHeight))
+		require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propHeadID(prop), trackedHeight))
 		threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
 		ctx = ctx.WithBlockHeight(int64(trackedHeight) + threshold) // borStallDiff == threshold
 
-		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, milestoneAbci.MilestonePropositionHeadID(prop), supporters))
+		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters))
 
 		last, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
@@ -167,13 +172,13 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 
 		prop := singleBlockPendingProp(psPendingHead, 0xEE)
 		trackedHeight := uint64(1000)
-		require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, milestoneAbci.MilestonePropositionHeadID(prop), trackedHeight))
+		require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propHeadID(prop), trackedHeight))
 		threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
 		blockHeight := int64(trackedHeight) + threshold + 1 // borStallDiff == threshold+1
 		ctx = ctx.WithBlockHeight(blockHeight)
 
 		currentProducer := validators[0].ValId
-		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, milestoneAbci.MilestonePropositionHeadID(prop), supporters))
+		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters))
 
 		last, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
@@ -207,7 +212,7 @@ func TestCheckAndRotateOnPendingStallReRotatesAwayFromInstalledProducer(t *testi
 	validators, supporters := seedSpan(t, app, ctx)
 	seedProducerSelection(t, app, ctx, validators)
 	prop := singleBlockPendingProp(psPendingHead, 0xEE)
-	propID := milestoneAbci.MilestonePropositionHeadID(prop)
+	propID := propHeadID(prop)
 
 	origProducer := validators[0].ValId
 
@@ -216,7 +221,7 @@ func TestCheckAndRotateOnPendingStallReRotatesAwayFromInstalledProducer(t *testi
 	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propID, trackedHeight))
 	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
 	firstHeight := int64(trackedHeight) + threshold + 1
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(firstHeight), prop.StartBlockNumber, milestoneAbci.MilestonePropositionHeadID(prop), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(firstHeight), prop.StartBlockNumber, propHeadID(prop), supporters))
 
 	firstSpan, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -227,7 +232,7 @@ func TestCheckAndRotateOnPendingStallReRotatesAwayFromInstalledProducer(t *testi
 	// The same head stays stalled. The clock was debounced to firstHeight+buffer; age past it again.
 	buffer := helper.GetSpanRotationBuffer(ctx)
 	secondHeight := firstHeight + int64(buffer) + threshold + 1
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(secondHeight), prop.StartBlockNumber, milestoneAbci.MilestonePropositionHeadID(prop), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(secondHeight), prop.StartBlockNumber, propHeadID(prop), supporters))
 
 	secondSpan, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -251,7 +256,7 @@ func TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops(t *testing.T) {
 	validators, supporters := seedSpan(t, app, ctx)
 	seedProducerSelection(t, app, ctx, validators)
 	prop := singleBlockPendingProp(psPendingHead, 0xEE)
-	propID := milestoneAbci.MilestonePropositionHeadID(prop)
+	propID := propHeadID(prop)
 
 	origProducer := validators[0].ValId
 
@@ -259,7 +264,7 @@ func TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops(t *testing.T) {
 	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propID, trackedHeight))
 	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
 	firstHeight := int64(trackedHeight) + threshold + 1
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(firstHeight), prop.StartBlockNumber, milestoneAbci.MilestonePropositionHeadID(prop), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(firstHeight), prop.StartBlockNumber, propHeadID(prop), supporters))
 
 	firstSpan, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -274,7 +279,7 @@ func TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops(t *testing.T) {
 	droppedProp := singleBlockPendingProp(droppedHead, 0xEF)
 	buffer := helper.GetSpanRotationBuffer(ctx)
 	resetHeight := firstHeight + int64(buffer) + 1
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(resetHeight), droppedProp.StartBlockNumber, milestoneAbci.MilestonePropositionHeadID(droppedProp), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(resetHeight), droppedProp.StartBlockNumber, propHeadID(droppedProp), supporters))
 
 	afterResetSpan, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -282,7 +287,7 @@ func TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops(t *testing.T) {
 
 	secondThreshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(resetHeight))
 	secondHeight := resetHeight + secondThreshold + 1
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(secondHeight), droppedProp.StartBlockNumber, milestoneAbci.MilestonePropositionHeadID(droppedProp), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(secondHeight), droppedProp.StartBlockNumber, propHeadID(droppedProp), supporters))
 
 	secondSpan, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -324,9 +329,9 @@ func TestCheckAndRotateOnPendingStallUsesNextBlockOwnerBeforeFutureLastSpan(t *t
 
 	prop := singleBlockPendingProp(psPendingHead, 0x77)
 	trackedHeight := uint64(1000)
-	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, milestoneAbci.MilestonePropositionHeadID(prop), trackedHeight))
+	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propHeadID(prop), trackedHeight))
 	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(int64(trackedHeight)+threshold+1), prop.StartBlockNumber, milestoneAbci.MilestonePropositionHeadID(prop), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(int64(trackedHeight)+threshold+1), prop.StartBlockNumber, propHeadID(prop), supporters))
 
 	last, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -357,12 +362,12 @@ func TestCheckAndRotateOnPendingStallSpanExhaustionBoundary(t *testing.T) {
 	exhaustedHead := psSpanEnd
 	prop := singleBlockPendingProp(exhaustedHead, 0x22)
 	trackedHeight := uint64(1000)
-	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, exhaustedHead, milestoneAbci.MilestonePropositionHeadID(prop), trackedHeight))
+	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, exhaustedHead, propHeadID(prop), trackedHeight))
 	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
 	ctx = ctx.WithBlockHeight(int64(trackedHeight) + threshold + 1)
 
 	currentProducer := validators[0].ValId
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, milestoneAbci.MilestonePropositionHeadID(prop), supporters), "boundary must not error/halt")
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters), "boundary must not error/halt")
 
 	last, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -399,7 +404,7 @@ func TestRotateSpanFromPendingHeadBeyondSpanEnd(t *testing.T) {
 			ctx = ctx.WithBlockHeight(2000)
 			prop := singleBlockPendingProp(tc.pendingHead, 0x33)
 
-			require.NoError(t, app.rotateSpanFromPendingHead(ctx, tc.pendingHead, milestoneAbci.MilestonePropositionHeadID(prop), supporters),
+			require.NoError(t, app.rotateSpanFromPendingHead(ctx, tc.pendingHead, propHeadID(prop), supporters),
 				"a head beyond the span end must not error/halt")
 
 			last, err := app.BorKeeper.GetLastSpan(ctx)
@@ -504,7 +509,7 @@ func TestRotateSpanFromPendingHeadNoSelectableProducer(t *testing.T) {
 	ctx = ctx.WithBlockHeight(2000)
 	prop := singleBlockPendingProp(psPendingHead, 0x11)
 
-	require.NoError(t, app.rotateSpanFromPendingHead(ctx, psPendingHead, milestoneAbci.MilestonePropositionHeadID(prop), supporters))
+	require.NoError(t, app.rotateSpanFromPendingHead(ctx, psPendingHead, propHeadID(prop), supporters))
 
 	last, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -554,7 +559,7 @@ func TestCheckAndRotateCurrentSpanDebouncesPendingStallClock(t *testing.T) {
 	// Seed a pending-stall clock aged well past the threshold against a head inside the rotated span.
 	pendingHead := uint64(150)
 	prop := singleBlockPendingProp(pendingHead, 0x07)
-	pendingHeadID := milestoneAbci.MilestonePropositionHeadID(prop)
+	pendingHeadID := propHeadID(prop)
 	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, pendingHead, pendingHeadID, 1))
 
 	require.NoError(t, app.checkAndRotateCurrentSpan(ctx))
@@ -571,7 +576,7 @@ func TestCheckAndRotateCurrentSpanDebouncesPendingStallClock(t *testing.T) {
 	require.Equal(t, currentHeight+helper.GetSpanRotationBuffer(ctx), height, "pending-stall clock debounced past the buffer")
 
 	// A pending milestone reappearing at the same head in the same block must not re-rotate.
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, milestoneAbci.MilestonePropositionHeadID(prop), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters))
 	afterPending, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
 	require.Equal(t, rotated.Id, afterPending.Id, "just-installed producer must keep the buffer window; no premature pending-stall re-rotation")
@@ -652,4 +657,39 @@ func TestHandlePendingMilestoneSkipsWithoutActualHeadAgreement(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, psPendingHead, block, "tracking head left untouched")
 	require.Equal(t, uint64(1), height, "stall clock not reset on a no-agreement block")
+}
+
+// TestHandlePendingMilestoneDropsOutOfRangeActualHead pins the byzantine-poison guard (POS-3629): a
+// >1/3 slice agreeing on a head beyond the last span's end (which an honest producer can never reach)
+// must be filtered by the maxBlock bound, so it is never written into the stall tracking and never
+// triggers a rotation. Without the bound the fabricated head would be tracked on first observation.
+func TestHandlePendingMilestoneDropsOutOfRangeActualHead(t *testing.T) {
+	_, app, ctx, privKeys := SetupAppWithABCICtxAndValidators(t, 5)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+	_, supporters := seedSpan(t, app, ctx) // span [psSpanStart, psSpanEnd]
+	seedProducerSelection(t, app, ctx, validators)
+
+	origFork := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
+	helper.SetSpanRotationOnStallHeight(1)
+
+	valSet := stakeTypes.NewValidatorSet(validators)
+	minVP := valSet.GetTotalVotingPower()/3 + 1
+
+	// All validators agree on a head far beyond the span end — fabricated, since no honest producer
+	// can advance past its span. The bound (lastSpan.EndBlock) must drop it from the tally.
+	outOfRange := psSpanEnd + 10_000
+	extVotes := actualHeadExtVotes(t, validators, privKeys, outOfRange, fill32(0x5A), len(validators))
+
+	ctx = ctx.WithBlockHeight(5000)
+	require.NoError(t, app.handlePendingMilestone(ctx, singleBlockPendingProp(psPendingHead, 0x01), supporters, valSet, extVotes, minVP))
+
+	last, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), last.Id, "an out-of-range agreed head must not trigger a rotation")
+
+	block, _, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
+	require.NoError(t, err)
+	require.Zero(t, height, "an out-of-range head must never be written into the stall tracking")
+	require.Zero(t, block, "tracking head must stay unset")
 }

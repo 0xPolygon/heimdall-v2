@@ -25,7 +25,18 @@ func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone
 		// Key the stall/rotation on the >1/3-agreed actual bor head, not the capped milestone
 		// proposition tail, so blocks the producer made beyond the proposition window are preserved
 		// rather than reorged (POS-3629).
-		agreedHead, agreedHash, found, err := milestoneAbci.GetMajorityActualHead(ctx, validatorSet, extVoteInfo, minMajorityVP)
+		lastSpan, err := app.BorKeeper.GetLastSpan(ctx)
+		if err != nil {
+			logger.Error("Error occurred while getting last span", "error", err)
+			return err
+		}
+		// Bound the agreed head by the last span's end: an honest producer cannot advance past it, so
+		// a head beyond it is fabricated. This stops a colluding >1/3 slice from poisoning the stall
+		// tracking with an out-of-range head (which would deny the very recovery this path provides).
+		// An in-range fabricated head (number == lastSpan.EndBlock with a wrong hash while the real bor
+		// head lags) still requires >1/3 collusion and can't be ruled out deterministically here; it is
+		// accepted residual under the 1/3-trust model of the pending band.
+		agreedHead, agreedHash, found, err := milestoneAbci.GetMajorityActualHead(ctx, validatorSet, extVoteInfo, minMajorityVP, lastSpan.EndBlock)
 		if err != nil {
 			logger.Error("Error occurred while tallying actual bor head", "error", err)
 			return err
