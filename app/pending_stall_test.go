@@ -43,6 +43,14 @@ func propHeadID(prop *milestoneTypes.MilestoneProposition) []byte {
 	return prop.BlockHashes[len(prop.BlockHashes)-1]
 }
 
+// seedActiveMilestone finalizes a milestone whose next block (EndBlock+1) lands inside the seeded
+// span [psSpanStart, psSpanEnd], so pendingStallMaxBlock resolves that span as the active one and
+// bounds the actual-head tally by its end.
+func seedActiveMilestone(t *testing.T, app *HeimdallApp, ctx sdk.Context) {
+	t.Helper()
+	require.NoError(t, app.MilestoneKeeper.AddMilestone(ctx, milestoneTypes.Milestone{EndBlock: psSpanStart + 10, BorChainId: "1"}))
+}
+
 // seedSpan installs the committed span [psSpanStart, psSpanEnd] with producer validators[0]
 // and returns the validators and the all-supporters set.
 func seedSpan(t *testing.T, app *HeimdallApp, ctx sdk.Context) ([]*stakeTypes.Validator, map[uint64]struct{}) {
@@ -601,6 +609,7 @@ func TestHandlePendingMilestoneRotatesFromActualHead(t *testing.T) {
 	validators := app.StakeKeeper.GetAllValidators(ctx)
 	_, supporters := seedSpan(t, app, ctx)
 	seedProducerSelection(t, app, ctx, validators)
+	seedActiveMilestone(t, app, ctx)
 
 	origFork := helper.GetSpanRotationOnStallHeight()
 	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
@@ -635,6 +644,7 @@ func TestHandlePendingMilestoneSkipsWithoutActualHeadAgreement(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
 	_, supporters := seedSpan(t, app, ctx)
+	seedActiveMilestone(t, app, ctx)
 
 	origFork := helper.GetSpanRotationOnStallHeight()
 	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
@@ -660,14 +670,15 @@ func TestHandlePendingMilestoneSkipsWithoutActualHeadAgreement(t *testing.T) {
 }
 
 // TestHandlePendingMilestoneDropsOutOfRangeActualHead pins the byzantine-poison guard (POS-3629): a
-// >1/3 slice agreeing on a head beyond the last span's end (which an honest producer can never reach)
-// must be filtered by the maxBlock bound, so it is never written into the stall tracking and never
-// triggers a rotation. Without the bound the fabricated head would be tracked on first observation.
+// >1/3 slice agreeing on a head beyond the active span's end (which an honest producer can never
+// reach) must be filtered by the maxBlock bound, so it is never written into the stall tracking and
+// never triggers a rotation. Without the bound the fabricated head would be tracked on first observation.
 func TestHandlePendingMilestoneDropsOutOfRangeActualHead(t *testing.T) {
 	_, app, ctx, privKeys := SetupAppWithABCICtxAndValidators(t, 5)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
 	_, supporters := seedSpan(t, app, ctx) // span [psSpanStart, psSpanEnd]
 	seedProducerSelection(t, app, ctx, validators)
+	seedActiveMilestone(t, app, ctx)
 
 	origFork := helper.GetSpanRotationOnStallHeight()
 	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
@@ -677,7 +688,7 @@ func TestHandlePendingMilestoneDropsOutOfRangeActualHead(t *testing.T) {
 	minVP := valSet.GetTotalVotingPower()/3 + 1
 
 	// All validators agree on a head far beyond the span end — fabricated, since no honest producer
-	// can advance past its span. The bound (lastSpan.EndBlock) must drop it from the tally.
+	// can advance past its span. The active-span bound must drop it from the tally.
 	outOfRange := psSpanEnd + 10_000
 	extVotes := actualHeadExtVotes(t, validators, privKeys, outOfRange, fill32(0x5A), len(validators))
 
@@ -691,5 +702,53 @@ func TestHandlePendingMilestoneDropsOutOfRangeActualHead(t *testing.T) {
 	block, _, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
 	require.NoError(t, err)
 	require.Zero(t, height, "an out-of-range head must never be written into the stall tracking")
+	require.Zero(t, block, "tracking head must stay unset")
+}
+
+// TestHandlePendingMilestoneBoundsByActiveSpanNotFutureSpan pins that the actual-head bound is the
+// active span's end, not GetLastSpan's — which is routinely a future-scheduled span minted ahead by
+// checkAndAddFutureSpan. A >1/3 slice voting a head inside the future span's range must be dropped, so
+// it can't poison tracking or steer rotation into the future producer (POS-3629). Without the
+// active-span bound the head would sit under GetLastSpan's end and be tracked on first observation.
+func TestHandlePendingMilestoneBoundsByActiveSpanNotFutureSpan(t *testing.T) {
+	_, app, ctx, privKeys := SetupAppWithABCICtxAndValidators(t, 5)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+	valSlice, supporters := seedSpan(t, app, ctx) // active span 1 [psSpanStart, psSpanEnd]
+	seedProducerSelection(t, app, ctx, validators)
+	seedActiveMilestone(t, app, ctx) // anchors span 1 as active (EndBlock+1 inside it)
+
+	// A future-scheduled span 2 becomes the highest-ID span, so GetLastSpan returns it; the active span
+	// owning the stall region is still span 1.
+	require.NoError(t, app.BorKeeper.AddNewSpan(ctx, &borTypes.Span{
+		Id:                2,
+		StartBlock:        psSpanEnd + 1,
+		EndBlock:          psSpanEnd + 6310,
+		BorChainId:        "1",
+		ValidatorSet:      stakeTypes.ValidatorSet{Validators: valSlice},
+		SelectedProducers: []stakeTypes.Validator{*valSlice[1]},
+	}))
+
+	origFork := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
+	helper.SetSpanRotationOnStallHeight(1)
+
+	valSet := stakeTypes.NewValidatorSet(validators)
+	minVP := valSet.GetTotalVotingPower()/3 + 1
+
+	// All validators agree on a head inside the FUTURE span's range — past the active span's end but
+	// within GetLastSpan's end. The active-span bound must drop it.
+	insideFutureSpan := psSpanEnd + 100
+	extVotes := actualHeadExtVotes(t, validators, privKeys, insideFutureSpan, fill32(0x5A), len(validators))
+
+	ctx = ctx.WithBlockHeight(5000)
+	require.NoError(t, app.handlePendingMilestone(ctx, singleBlockPendingProp(psPendingHead, 0x01), supporters, valSet, extVotes, minVP))
+
+	last, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(2), last.Id, "no rotation: the future-span head must be dropped, leaving span 2 as the latest")
+
+	block, _, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
+	require.NoError(t, err)
+	require.Zero(t, height, "a head inside the future span must never be written into the stall tracking")
 	require.Zero(t, block, "tracking head must stay unset")
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"errors"
 	"math"
 
 	abciTypes "github.com/cometbft/cometbft/abci/types"
@@ -25,18 +26,24 @@ func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone
 		// Key the stall/rotation on the >1/3-agreed actual bor head, not the capped milestone
 		// proposition tail, so blocks the producer made beyond the proposition window are preserved
 		// rather than reorged (POS-3629).
-		lastSpan, err := app.BorKeeper.GetLastSpan(ctx)
+		//
+		// Bound the agreed head by the active span's end: an honest producer cannot advance past its
+		// span, so a head beyond it is fabricated. This stops a colluding >1/3 slice from poisoning the
+		// stall tracking with an out-of-range head (which would deny the recovery this path provides) or
+		// steering rotation into a future-scheduled span's producer. An in-range fabricated head (number
+		// == the active span end with a wrong hash while the real bor head lags) still needs >1/3
+		// collusion and can't be ruled out deterministically here; it is accepted residual under the
+		// 1/3-trust model of the pending band.
+		maxBlock, ok, err := app.pendingStallMaxBlock(ctx)
 		if err != nil {
-			logger.Error("Error occurred while getting last span", "error", err)
+			logger.Error("Error occurred while resolving the active span bound", "error", err)
 			return err
 		}
-		// Bound the agreed head by the last span's end: an honest producer cannot advance past it, so
-		// a head beyond it is fabricated. This stops a colluding >1/3 slice from poisoning the stall
-		// tracking with an out-of-range head (which would deny the very recovery this path provides).
-		// An in-range fabricated head (number == lastSpan.EndBlock with a wrong hash while the real bor
-		// head lags) still requires >1/3 collusion and can't be ruled out deterministically here; it is
-		// accepted residual under the 1/3-trust model of the pending band.
-		agreedHead, agreedHash, found, err := milestoneAbci.GetMajorityActualHead(ctx, validatorSet, extVoteInfo, minMajorityVP, lastSpan.EndBlock)
+		if !ok {
+			logger.Debug("Pending stall: no finalized milestone to anchor the actual-head bound, skipping rotation")
+			return nil
+		}
+		agreedHead, agreedHash, found, err := milestoneAbci.GetMajorityActualHead(ctx, validatorSet, extVoteInfo, minMajorityVP, maxBlock)
 		if err != nil {
 			logger.Error("Error occurred while tallying actual bor head", "error", err)
 			return err
@@ -57,6 +64,29 @@ func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone
 		"blockHashes", strutil.HashesToString(pendingMilestone.BlockHashes),
 	)
 	return nil
+}
+
+// pendingStallMaxBlock returns the end block of the span that currently owns the stall region — the
+// block just past the last finalized milestone. That span's producer is the one a genuine stall is
+// about, so its end is the furthest a real actual head can have reached. GetLastSpan must not be used
+// here: it returns the highest-ID span, which is routinely a future-scheduled span minted ahead by
+// checkAndAddFutureSpan, leaving the bound far past any honest head and letting a >1/3 slice steer
+// rotation into the future producer (POS-3629). ok is false when no milestone is finalized yet — no
+// stall point to anchor on, so the caller skips rotation.
+func (app *HeimdallApp) pendingStallMaxBlock(ctx sdk.Context) (uint64, bool, error) {
+	lastMilestone, err := app.MilestoneKeeper.GetLastMilestone(ctx)
+	if err != nil {
+		if errors.Is(err, milestoneTypes.ErrNoMilestoneFound) {
+			return 0, false, nil
+		}
+		return 0, false, err
+	}
+
+	activeSpan, err := app.BorKeeper.SpanByBlockNumber(ctx, lastMilestone.EndBlock+1)
+	if err != nil {
+		return 0, false, err
+	}
+	return activeSpan.EndBlock, true, nil
 }
 
 // checkAndRotateOnPendingStall forces a span rotation when the >1/3-agreed actual bor head
