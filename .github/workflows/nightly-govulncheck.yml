@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: nightly-govulncheck-${{ github.ref }}
+  group: nightly-govulncheck-develop
   cancel-in-progress: true
 
 jobs:
