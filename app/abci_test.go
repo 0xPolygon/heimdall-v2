@@ -5894,7 +5894,7 @@ func TestPrepareProposal_ProtoSizeAccounting_NoOversizedProposal(t *testing.T) {
 		sequence++
 	}
 
-	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
 	require.NoError(t, err)
 
 	maxTxBytes := int64(len(extCommitBytes)) + rawTxsTotal
@@ -5951,7 +5951,7 @@ func TestPrepareProposal_SizeBoundary_IncludesTxThatExactlyFits(t *testing.T) {
 		sequence++
 	}
 
-	_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+	_, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
 	require.NoError(t, err)
 
 	newReq := func(maxTxBytes int64) *abci.RequestPrepareProposal {
