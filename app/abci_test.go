@@ -6441,12 +6441,15 @@ func createVoteExtensionsWithPartialSupport(t *testing.T, validators []*stakeTyp
 
 	targetSupportingPower := (totalVotingPower * int64(supportPercentage)) / 100
 
-	// Create milestone proposition
+	// Create milestone proposition. The actual-head fields (POS-3629) mirror the single-block head
+	// here, so the >1/3 actual-head tally resolves to StartBlockNumber.
 	newMilestone := &milestoneTypes.MilestoneProposition{
-		StartBlockNumber: lastMilestone.EndBlock + 1,
-		BlockHashes:      [][]byte{common.HexToHash("0x5678").Bytes()},
-		ParentHash:       lastMilestone.Hash,
-		BlockTds:         []uint64{1},
+		StartBlockNumber:  lastMilestone.EndBlock + 1,
+		BlockHashes:       [][]byte{common.HexToHash("0x5678").Bytes()},
+		ParentHash:        lastMilestone.Hash,
+		BlockTds:          []uint64{1},
+		LatestBlockNumber: lastMilestone.EndBlock + 1,
+		LatestBlockHash:   common.HexToHash("0x5678").Bytes(),
 	}
 
 	// Create dummy non-rp vote extension
@@ -6497,6 +6500,35 @@ func createVoteExtensionsWithPartialSupport(t *testing.T, validators []*stakeTyp
 	}
 
 	return voteExtensions
+}
+
+// actualHeadExtVotes builds committed vote extensions in which the first `supporters` validators
+// report (number, hash) as their actual latest bor head (POS-3629), decoupled from any proposition
+// window — for driving the >1/3 actual-head tally in handlePendingMilestone.
+func actualHeadExtVotes(t *testing.T, validators []*stakeTypes.Validator, validatorPrivKeys []secp256k1.PrivKey, number uint64, hash []byte, supporters int) []abci.ExtendedVoteInfo {
+	t.Helper()
+	votes := make([]abci.ExtendedVoteInfo, 0, len(validators))
+	for i, v := range validators {
+		var prop *milestoneTypes.MilestoneProposition
+		if i < supporters {
+			prop = &milestoneTypes.MilestoneProposition{
+				StartBlockNumber:  number,
+				BlockHashes:       [][]byte{hash},
+				BlockTds:          []uint64{1},
+				LatestBlockNumber: number,
+				LatestBlockHash:   hash,
+			}
+		}
+		ve := &sidetxs.VoteExtension{Height: 1, MilestoneProposition: prop}
+		enc, err := gogoproto.Marshal(ve)
+		require.NoError(t, err)
+		votes = append(votes, abci.ExtendedVoteInfo{
+			Validator:     abci.Validator{Address: validatorPrivKeys[i].PubKey().Address(), Power: v.VotingPower},
+			VoteExtension: enc,
+			BlockIdFlag:   cmtproto.BlockIDFlagCommit,
+		})
+	}
+	return votes
 }
 
 func TestExtractTxHashMsgEventRecordValidation(t *testing.T) {

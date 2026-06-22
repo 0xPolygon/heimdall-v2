@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"slices"
 	"sort"
@@ -68,7 +69,7 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 		return nil, err
 	}
 
-	parentHash, blockHashes, tds, authors, err := getBlockInfo(ctx, contractCaller, propStartBlock, params.MaxMilestonePropositionLength, latestHeader, lastMilestoneHash, lastMilestoneBlockNumber)
+	parentHash, blockHashes, tds, authors, effectiveLatestHeader, err := getBlockInfo(ctx, contractCaller, propStartBlock, params.MaxMilestonePropositionLength, latestHeader, lastMilestoneHash, lastMilestoneBlockNumber)
 	if err != nil {
 		// Propagate ErrNoNewHeadersFound so the caller can handle it gracefully.
 		// Other errors are also propagated.
@@ -78,6 +79,11 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 	if err := validateMilestonePropositionFork(parentHash, lastMilestoneHash); err != nil {
 		return nil, err
 	}
+
+	// Use the header getBlockInfo actually built the proposition from (it refreshes a stale cached
+	// header internally), not the caller's possibly-stale latestHeader — otherwise the reported actual
+	// head can fall behind the proposition's own end and fail validateLatestHead (POS-3629).
+	latestBlockNumber, latestBlockHash := actualHeadFields(ctx, effectiveLatestHeader)
 
 	if err := borKeeper.CanVoteProducers(ctx); err == nil {
 		validIndex := 0
@@ -99,19 +105,36 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 		}
 
 		return &types.MilestoneProposition{
-			BlockHashes:      blockHashes[:validIndex],
-			StartBlockNumber: propStartBlock,
-			ParentHash:       parentHash,
-			BlockTds:         tds[:validIndex],
+			BlockHashes:       blockHashes[:validIndex],
+			StartBlockNumber:  propStartBlock,
+			ParentHash:        parentHash,
+			BlockTds:          tds[:validIndex],
+			LatestBlockNumber: latestBlockNumber,
+			LatestBlockHash:   latestBlockHash,
 		}, nil
 	}
 
 	return &types.MilestoneProposition{
-		BlockHashes:      blockHashes,
-		StartBlockNumber: propStartBlock,
-		ParentHash:       parentHash,
-		BlockTds:         tds,
+		BlockHashes:       blockHashes,
+		StartBlockNumber:  propStartBlock,
+		ParentHash:        parentHash,
+		BlockTds:          tds,
+		LatestBlockNumber: latestBlockNumber,
+		LatestBlockHash:   latestBlockHash,
 	}, nil
+}
+
+// actualHeadFields returns the actual latest bor head (number, hash) to embed in a proposition for
+// the pending-stall rotation to key on instead of the capped proposition tail (POS-3629). Emission
+// is fork-gated on the vote extension's own height: VEs reject unknown proto fields, so these must
+// not appear before the SpanRotationOnStall height, by which point the network has done the
+// coordinated upgrade the fork requires. Returns zero/nil when the fork is off or no latest header
+// is available (e.g. no prior milestone).
+func actualHeadFields(ctx sdk.Context, latestHeader *ethTypes.Header) (uint64, []byte) {
+	if !helper.IsSpanRotationOnStall(ctx.BlockHeight()) || latestHeader == nil {
+		return 0, nil
+	}
+	return latestHeader.Number.Uint64(), latestHeader.Hash().Bytes()
 }
 
 func isFastForwardMilestone(latestHeaderNumber, latestMilestoneEndBlock, ffMilestoneThreshold uint64) bool {
@@ -428,15 +451,145 @@ func GetMajorityMilestoneProposition(
 	return proposition, aggregatedProposersHash, supportingValidatorList[0], supportingValidatorIDs, nil
 }
 
+// GetMajorityActualHead tallies the actual latest bor head reported in vote extensions (POS-3629)
+// and returns the highest (number, hash) whose summed voting power reaches minMajorityVP, with
+// found=true. Each validator reports a single latest head; during a stall honest validators
+// converge on the same head, so a >1/3-agreed head is the real tip, while a lone fabricated far
+// head cannot reach the threshold. found is false when no head clears minMajorityVP — the caller
+// then skips rotation rather than falling back to the truncated proposition tail. Deterministic:
+// uses canonical voting power from the validator set, dedupes per validator, and breaks ties on the
+// lexicographically smaller key, mirroring GetMajorityMilestoneProposition.
+func GetMajorityActualHead(
+	ctx sdk.Context,
+	validatorSet *stakeTypes.ValidatorSet,
+	extVoteInfo []abciTypes.ExtendedVoteInfo,
+	minMajorityVP int64,
+) (uint64, []byte, bool, error) {
+	tally, err := tallyActualHeads(ctx, validatorSet, extVoteInfo)
+	if err != nil {
+		return 0, nil, false, err
+	}
+	num, hash, found := tally.majority(minMajorityVP)
+	return num, hash, found, nil
+}
+
+// actualHeadTally accumulates voting power per reported (number, hash) actual bor head, keyed on
+// number ++ hash so distinct heads (including same-height forks) tally separately.
+type actualHeadTally struct {
+	power  map[string]int64
+	number map[string]uint64
+	hash   map[string][]byte
+}
+
+func (t *actualHeadTally) add(number uint64, hash []byte, vp int64) {
+	var numBuf [8]byte
+	binary.LittleEndian.PutUint64(numBuf[:], number)
+	key := common.Bytes2Hex(append(numBuf[:], hash...))
+	t.power[key] += vp
+	t.number[key] = number
+	t.hash[key] = hash
+}
+
+// majority returns the highest block number whose summed voting power reaches minMajorityVP, with
+// found=true. Equal numbers break on the lexicographically smaller key (its hash suffix, since the
+// LE number prefix is identical), keeping the choice deterministic across validators.
+func (t *actualHeadTally) majority(minMajorityVP int64) (uint64, []byte, bool) {
+	keys := make([]string, 0, len(t.power))
+	for k := range t.power {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	found := false
+	var bestNum uint64
+	var bestHash []byte
+	for _, k := range keys {
+		if t.power[k] < minMajorityVP {
+			continue
+		}
+		if !found || t.number[k] > bestNum {
+			found = true
+			bestNum = t.number[k]
+			bestHash = t.hash[k]
+		}
+	}
+	return bestNum, bestHash, found
+}
+
+// tallyActualHeads sums canonical voting power per reported actual head across the vote extensions,
+// deduping repeated votes per validator.
+func tallyActualHeads(ctx sdk.Context, validatorSet *stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo) (*actualHeadTally, error) {
+	ac := address.HexCodec{}
+	tally := &actualHeadTally{power: map[string]int64{}, number: map[string]uint64{}, hash: map[string][]byte{}}
+	processed := make(map[string]bool)
+
+	for _, vote := range extVoteInfo {
+		number, hash, ok, err := decodeActualHeadVote(vote)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			continue
+		}
+		vp, ok, err := resolveVoterPower(ctx, validatorSet, ac, vote, processed)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			continue
+		}
+		tally.add(number, hash, vp)
+	}
+	return tally, nil
+}
+
+// decodeActualHeadVote extracts the actual latest-head fields from a committed vote extension. ok is
+// false for non-committed votes or propositions without the latest-head fields (skip them).
+func decodeActualHeadVote(vote abciTypes.ExtendedVoteInfo) (uint64, []byte, bool, error) {
+	if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
+		return 0, nil, false, nil
+	}
+	ve := new(sidetxs.VoteExtension)
+	if err := ve.Unmarshal(vote.VoteExtension); err != nil {
+		return 0, nil, false, fmt.Errorf("error while unmarshalling vote extension: %w", err)
+	}
+	if ve.MilestoneProposition == nil || len(ve.MilestoneProposition.LatestBlockHash) == 0 {
+		return 0, nil, false, nil
+	}
+	return ve.MilestoneProposition.LatestBlockNumber, ve.MilestoneProposition.LatestBlockHash, true, nil
+}
+
+// resolveVoterPower returns the canonical voting power of a vote's validator, deduping repeats. ok is
+// false when the vote should be skipped (duplicate validator, or absent validator when non-fatal).
+func resolveVoterPower(ctx sdk.Context, validatorSet *stakeTypes.ValidatorSet, ac address.HexCodec, vote abciTypes.ExtendedVoteInfo, processed map[string]bool) (int64, bool, error) {
+	valAddr, err := ac.BytesToString(vote.Validator.Address)
+	if err != nil {
+		return 0, false, err
+	}
+	if processed[valAddr] {
+		return 0, false, nil
+	}
+	processed[valAddr] = true
+
+	_, validator := validatorSet.GetByAddress(valAddr)
+	if validator == nil {
+		if ShouldErrorOnValidatorNotFound(ctx.BlockHeight()) {
+			return 0, false, errors.New(helper.ErrFailedToGetValidator(valAddr))
+		}
+		return 0, false, nil
+	}
+	return validator.VotingPower, true, nil
+}
+
 var ErrNoNewHeadersFound = errors.New("no new headers found for milestone proposition")
 
-func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startBlockNum, maxBlocksInProposition uint64, latestHeader *ethTypes.Header, lastMilestoneHash []byte, lastMilestoneBlock uint64) ([]byte, [][]byte, []uint64, []common.Address, error) {
+func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startBlockNum, maxBlocksInProposition uint64, latestHeader *ethTypes.Header, lastMilestoneHash []byte, lastMilestoneBlock uint64) ([]byte, [][]byte, []uint64, []common.Address, *ethTypes.Header, error) {
 	// Reuse the provided latestHeader if available, otherwise fetch it.
 	var err error
 	if latestHeader == nil {
 		latestHeader, err = contractCaller.GetBorChainBlock(ctx, nil)
 		if err != nil || latestHeader == nil {
-			return nil, nil, nil, nil, fmt.Errorf("failed to get the latest header: %w", err)
+			return nil, nil, nil, nil, nil, fmt.Errorf("failed to get the latest header: %w", err)
 		}
 	}
 
@@ -448,13 +601,13 @@ func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startB
 	if latestBlockNum < startBlockNum {
 		latestHeader, err = contractCaller.GetBorChainBlock(ctx, nil)
 		if err != nil || latestHeader == nil {
-			return nil, nil, nil, nil, fmt.Errorf("failed to refresh the latest header: %w", err)
+			return nil, nil, nil, nil, nil, fmt.Errorf("failed to refresh the latest header: %w", err)
 		}
 		latestBlockNum = latestHeader.Number.Uint64()
 		// If still not available, return ErrNoNewHeadersFound since Bor hasn't produced the block yet.
 		// GenMilestoneProposition will propagate this, and app/abci.go will handle it gracefully.
 		if latestBlockNum < startBlockNum {
-			return nil, nil, nil, nil, ErrNoNewHeadersFound
+			return nil, nil, nil, nil, nil, ErrNoNewHeadersFound
 		}
 	}
 
@@ -469,11 +622,11 @@ func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startB
 
 	headers, tds, authors, err := contractCaller.GetBorChainBlockInfoInBatch(ctx, int64(startBlockNum), int64(milestoneEnd))
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("failed to get block batch info: %w", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("failed to get block batch info: %w", err)
 	}
 
 	if len(headers) == 0 {
-		return nil, nil, nil, nil, ErrNoNewHeadersFound
+		return nil, nil, nil, nil, nil, ErrNoNewHeadersFound
 	}
 
 	result := make([][]byte, 0, len(headers))
@@ -484,7 +637,7 @@ func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startB
 		if startBlockNum-lastMilestoneBlock > 1 {
 			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock+1)))
 			if err != nil {
-				return nil, nil, nil, nil, fmt.Errorf("failed to get header for parent hash: %w", err)
+				return nil, nil, nil, nil, nil, fmt.Errorf("failed to get header for parent hash: %w", err)
 			}
 
 			parentHash = header.ParentHash.Bytes()
@@ -495,7 +648,7 @@ func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startB
 		result = append(result, h.Hash().Bytes())
 	}
 
-	return parentHash, result, tds, authors, nil
+	return parentHash, result, tds, authors, latestHeader, nil
 }
 
 func validateMilestonePropositionFork(parentHash []byte, lastMilestoneHash []byte) error {
@@ -541,6 +694,31 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keepe
 		return fmt.Errorf("duplicate block hashes found")
 	}
 
+	return validateLatestHead(milestoneProp)
+}
+
+// validateLatestHead checks the optional actual-head fields (POS-3629). They are emitted together
+// post-fork or both absent pre-fork, so a partially-populated pair is rejected. When present, the
+// head cannot be behind the proposition's own last block. Assumes BlockHashes is non-empty (the
+// caller checks that).
+func validateLatestHead(milestoneProp *types.MilestoneProposition) error {
+	if len(milestoneProp.LatestBlockHash) == 0 {
+		if milestoneProp.LatestBlockNumber != 0 {
+			return fmt.Errorf("latest block number set without latest block hash")
+		}
+		return nil
+	}
+	if len(milestoneProp.LatestBlockHash) != common.HashLength {
+		return fmt.Errorf("invalid latest block hash length")
+	}
+	// StartBlockNumber is attacker-influenced; compute the proposition end overflow-safe before comparing.
+	offset := uint64(len(milestoneProp.BlockHashes) - 1)
+	if milestoneProp.StartBlockNumber > math.MaxUint64-offset {
+		return fmt.Errorf("proposition start block overflow")
+	}
+	if propEnd := milestoneProp.StartBlockNumber + offset; milestoneProp.LatestBlockNumber < propEnd {
+		return fmt.Errorf("latest block number %d behind proposition end %d", milestoneProp.LatestBlockNumber, propEnd)
+	}
 	return nil
 }
 

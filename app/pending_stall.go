@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"math"
 
+	abciTypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/0xPolygon/heimdall-v2/common/strutil"
@@ -11,17 +12,35 @@ import (
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // handlePendingMilestone is the PreBlocker action for a pending (1/3<=PM<2/3) milestone. Before the
 // span-rotation-on-stall hardfork it simply logs and lets the pending gate suppress rotation; after
 // it, a stalled pending head can force a rotation (POS-3629).
-func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone *milestoneTypes.MilestoneProposition, supportingValidatorIDs map[uint64]struct{}) error {
+func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone *milestoneTypes.MilestoneProposition, supportingValidatorIDs map[uint64]struct{}, validatorSet *stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, minMajorityVP int64) error {
+	logger := app.Logger()
+
 	if helper.IsSpanRotationOnStall(ctx.BlockHeight()) {
-		return app.checkAndRotateOnPendingStall(ctx, pendingMilestone, supportingValidatorIDs)
+		// Key the stall/rotation on the >1/3-agreed actual bor head, not the capped milestone
+		// proposition tail, so blocks the producer made beyond the proposition window are preserved
+		// rather than reorged (POS-3629).
+		agreedHead, agreedHash, found, err := milestoneAbci.GetMajorityActualHead(ctx, validatorSet, extVoteInfo, minMajorityVP)
+		if err != nil {
+			logger.Error("Error occurred while tallying actual bor head", "error", err)
+			return err
+		}
+		if !found {
+			// No >1/3-agreed actual bor head this block (heads not yet converged, or pre-fork VEs at the
+			// activation boundary). Skip rotation without resetting any running stall clock; never rotate
+			// from the truncated proposition tail.
+			logger.Debug("Pending stall: no >1/3-agreed actual bor head this block, skipping rotation")
+			return nil
+		}
+		return app.checkAndRotateOnPendingStall(ctx, agreedHead, agreedHash, supportingValidatorIDs)
 	}
 
-	app.Logger().Info("1/3rd voting power found on milestone proposition, skipping span rotation",
+	logger.Info("1/3rd voting power found on milestone proposition, skipping span rotation",
 		"startBlock", pendingMilestone.StartBlockNumber,
 		"endBlock", pendingMilestone.StartBlockNumber+uint64(len(pendingMilestone.BlockHashes)-1),
 		"blockHashes", strutil.HashesToString(pendingMilestone.BlockHashes),
@@ -29,30 +48,15 @@ func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone
 	return nil
 }
 
-// checkAndRotateOnPendingStall forces a span rotation when the >1/3-agreed pending bor head
+// checkAndRotateOnPendingStall forces a span rotation when the >1/3-agreed actual bor head
 // (POS-3629) stops advancing for longer than the stall threshold, even under a pending milestone.
-// It tracks the head and its hash+td identity across blocks; the stall clock restarts whenever
-// either changes, so a flapping or contested tip never ages it.
-func (app *HeimdallApp) checkAndRotateOnPendingStall(ctx sdk.Context, pendingMilestone *milestoneTypes.MilestoneProposition, supportingValidatorIDs map[uint64]struct{}) error {
+// The head is the validators' agreed actual latest block (resolved by the caller via
+// GetMajorityActualHead), not the capped milestone proposition tail, so blocks the producer made
+// beyond the proposition window are preserved rather than reorged. It tracks the head and its hash
+// identity across blocks; the stall clock restarts whenever either changes, so continued healthy
+// production (an advancing head) never ages it.
+func (app *HeimdallApp) checkAndRotateOnPendingStall(ctx sdk.Context, agreedHead uint64, agreedHash []byte, supportingValidatorIDs map[uint64]struct{}) error {
 	logger := app.Logger()
-
-	if len(pendingMilestone.BlockHashes) == 0 {
-		return nil
-	}
-
-	// Pending propositions are always computed for blocks after the last finalized milestone,
-	// so the head is necessarily beyond finality (the backlog is non-empty). Treat arithmetic
-	// overflow as invalid input: a wrapped head could bypass the later last-span-end guard.
-	pendingHeadOffset := uint64(len(pendingMilestone.BlockHashes) - 1)
-	if pendingMilestone.StartBlockNumber > math.MaxUint64-pendingHeadOffset {
-		logger.Info("Pending bor head overflow, skipping rotation",
-			"startBlock", pendingMilestone.StartBlockNumber,
-			"offset", pendingHeadOffset,
-		)
-		return nil
-	}
-	pendingHead := pendingMilestone.StartBlockNumber + pendingHeadOffset
-	pendingHeadID := milestoneAbci.MilestonePropositionHeadID(pendingMilestone)
 
 	trackedBlock, trackedID, trackedHeight, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
 	if err != nil {
@@ -61,9 +65,10 @@ func (app *HeimdallApp) checkAndRotateOnPendingStall(ctx sdk.Context, pendingMil
 	}
 
 	// (Re)start the stall clock on first observation or whenever the agreed head or its identity
-	// changes. A fresh observation is not yet a stall, so we never rotate on it.
-	if trackedHeight == 0 || pendingHead != trackedBlock || !bytes.Equal(pendingHeadID, trackedID) {
-		if err := app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, pendingHead, pendingHeadID, uint64(ctx.BlockHeight())); err != nil {
+	// changes — so continued healthy bor production, which advances the head, never ages the clock.
+	// A fresh observation is not yet a stall, so we never rotate on it.
+	if trackedHeight == 0 || agreedHead != trackedBlock || !bytes.Equal(agreedHash, trackedID) {
+		if err := app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, agreedHead, agreedHash, uint64(ctx.BlockHeight())); err != nil {
 			logger.Error("Error occurred while setting pending bor block tracking", "error", err)
 			return err
 		}
@@ -77,13 +82,14 @@ func (app *HeimdallApp) checkAndRotateOnPendingStall(ctx sdk.Context, pendingMil
 		return nil
 	}
 
-	return app.rotateSpanFromPendingHead(ctx, pendingHead, pendingHeadID, supportingValidatorIDs)
+	return app.rotateSpanFromPendingHead(ctx, agreedHead, agreedHash, supportingValidatorIDs)
 }
 
-// rotateSpanFromPendingHead mints a new veblop span starting at pendingHead+1, preserving the
-// pending blocks (no reorg — >1/3 agreement vouches for them). It anchors the new span's end to
-// lastSpan.EndBlock so it fully supersedes the old span's runway, and excludes the stalled and
-// previously-failed producers from selection.
+// rotateSpanFromPendingHead mints a new veblop span starting at pendingHead+1, where pendingHead is
+// the >1/3-agreed actual bor head (not the capped proposition tail), so every block up to that head
+// is preserved — no reorg of the blocks the producer made beyond the proposition window. It anchors
+// the new span's end to lastSpan.EndBlock so it fully supersedes the old span's runway, and excludes
+// the stalled and previously-failed producers from selection.
 func (app *HeimdallApp) rotateSpanFromPendingHead(ctx sdk.Context, pendingHead uint64, pendingHeadID []byte, supportingValidatorIDs map[uint64]struct{}) error {
 	logger := app.Logger()
 
@@ -102,7 +108,9 @@ func (app *HeimdallApp) rotateSpanFromPendingHead(ctx sdk.Context, pendingHead u
 	// values, or overflow into an infinite loop near MaxUint64) and the producer lookup (which would
 	// error for an out-of-range block and halt the PreBlocker).
 	if pendingHead > lastSpan.EndBlock {
-		logger.Info("Pending bor head is beyond the last span end, skipping rotation",
+		// An honest producer cannot advance beyond its span end, so a >1/3-agreed head past it is
+		// invalid/unexpected vote data rather than a real stall — warn, don't silently info-log.
+		logger.Warn("Pending bor head is beyond the last span end, skipping rotation",
 			"pendingHead", pendingHead,
 			"lastSpanEndBlock", lastSpan.EndBlock,
 		)

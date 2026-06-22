@@ -1,6 +1,8 @@
 package abci
 
 import (
+	"math"
+	"math/big"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -8,10 +10,13 @@ import (
 	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
@@ -595,6 +600,293 @@ func TestValidateMilestoneProposition(t *testing.T) {
 
 		// Empty hashes should be detected
 		require.Empty(t, prop.BlockHashes)
+	})
+}
+
+// fill32 returns a 32-byte hash filled with seed.
+func fill32(seed byte) []byte {
+	h := make([]byte, common.HashLength)
+	for i := range h {
+		h[i] = seed
+	}
+	return h
+}
+
+// actualHeadVote builds a committed vote extension whose milestone proposition reports
+// (number, fill32(hashSeed)) as its actual latest bor head.
+func actualHeadVote(t *testing.T, signer string, number uint64, hashSeed byte) abciTypes.ExtendedVoteInfo {
+	t.Helper()
+	hash := fill32(hashSeed)
+	ve := &sidetxs.VoteExtension{MilestoneProposition: &types.MilestoneProposition{
+		StartBlockNumber:  number,
+		BlockHashes:       [][]byte{hash},
+		BlockTds:          []uint64{1},
+		LatestBlockNumber: number,
+		LatestBlockHash:   hash,
+	}}
+	data, err := ve.Marshal()
+	require.NoError(t, err)
+	return abciTypes.ExtendedVoteInfo{
+		BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
+		VoteExtension: data,
+		Validator:     abciTypes.Validator{Address: common.HexToAddress(signer).Bytes()},
+	}
+}
+
+// voteNoLatestHead builds a committed vote whose proposition omits the actual-head fields.
+func voteNoLatestHead(t *testing.T, signer string) abciTypes.ExtendedVoteInfo {
+	t.Helper()
+	ve := &sidetxs.VoteExtension{MilestoneProposition: &types.MilestoneProposition{
+		StartBlockNumber: 1,
+		BlockHashes:      [][]byte{fill32(0x01)},
+		BlockTds:         []uint64{1},
+	}}
+	data, err := ve.Marshal()
+	require.NoError(t, err)
+	return abciTypes.ExtendedVoteInfo{
+		BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
+		VoteExtension: data,
+		Validator:     abciTypes.Validator{Address: common.HexToAddress(signer).Bytes()},
+	}
+}
+
+func TestGetMajorityActualHead(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(100)
+	const (
+		s1 = "0x1111111111111111111111111111111111111111"
+		s2 = "0x2222222222222222222222222222222222222222"
+		s3 = "0x3333333333333333333333333333333333333333"
+	)
+
+	t.Run("highest >1/3-agreed head wins, not the highest-power lower head", func(t *testing.T) {
+		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+			{Signer: s1, VotingPower: 40}, {Signer: s2, VotingPower: 35}, {Signer: s3, VotingPower: 25},
+		}}
+		// 300 has 40 (clears 34); 200 has 60 (clears 34). The higher number must win regardless of power.
+		votes := []abciTypes.ExtendedVoteInfo{
+			actualHeadVote(t, s1, 300, 0xAA),
+			actualHeadVote(t, s2, 200, 0xBB),
+			actualHeadVote(t, s3, 200, 0xBB),
+		}
+		head, hash, found, err := GetMajorityActualHead(ctx, valSet, votes, 34)
+		require.NoError(t, err)
+		require.True(t, found)
+		require.Equal(t, uint64(300), head)
+		require.Equal(t, fill32(0xAA), hash)
+	})
+
+	t.Run("lone far head below 1/3 is ignored; real agreed head wins", func(t *testing.T) {
+		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+			{Signer: s1, VotingPower: 40}, {Signer: s2, VotingPower: 35}, {Signer: s3, VotingPower: 25},
+		}}
+		votes := []abciTypes.ExtendedVoteInfo{
+			actualHeadVote(t, s1, 150, 0xAA),
+			actualHeadVote(t, s2, 150, 0xAA),
+			actualHeadVote(t, s3, 99999, 0xEE), // byzantine far head, only 25 < 34
+		}
+		head, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34)
+		require.NoError(t, err)
+		require.True(t, found)
+		require.Equal(t, uint64(150), head, "the lone far head must not be selected")
+	})
+
+	t.Run("no head clears the threshold", func(t *testing.T) {
+		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+			{Signer: s1, VotingPower: 33}, {Signer: s2, VotingPower: 33}, {Signer: s3, VotingPower: 33},
+		}}
+		votes := []abciTypes.ExtendedVoteInfo{
+			actualHeadVote(t, s1, 100, 0xA1),
+			actualHeadVote(t, s2, 200, 0xB2),
+			actualHeadVote(t, s3, 300, 0xC3),
+		}
+		_, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34)
+		require.NoError(t, err)
+		require.False(t, found, "no distinct head reaches 1/3")
+	})
+
+	t.Run("head with exactly the threshold voting power is included", func(t *testing.T) {
+		// v1 alone has exactly minMajorityVP (34) on head 200; head 100 has more power but is lower.
+		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+			{Signer: s1, VotingPower: 34}, {Signer: s2, VotingPower: 33}, {Signer: s3, VotingPower: 33},
+		}}
+		votes := []abciTypes.ExtendedVoteInfo{
+			actualHeadVote(t, s1, 200, 0xAA),
+			actualHeadVote(t, s2, 100, 0xBB),
+			actualHeadVote(t, s3, 100, 0xBB),
+		}
+		head, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34)
+		require.NoError(t, err)
+		require.True(t, found)
+		require.Equal(t, uint64(200), head, "VP exactly equal to the threshold must count (>= comparison)")
+	})
+
+	t.Run("same-height fork breaks deterministically on the smaller hash", func(t *testing.T) {
+		// Two heads at the same number 200 both clear 34; the lexicographically smaller hash wins.
+		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+			{Signer: s1, VotingPower: 40}, {Signer: s2, VotingPower: 35}, {Signer: s3, VotingPower: 25},
+		}}
+		votes := []abciTypes.ExtendedVoteInfo{
+			actualHeadVote(t, s1, 200, 0xAA),
+			actualHeadVote(t, s2, 200, 0xBB),
+			actualHeadVote(t, s3, 200, 0xAA),
+		}
+		head, hash, found, err := GetMajorityActualHead(ctx, valSet, votes, 34)
+		require.NoError(t, err)
+		require.True(t, found)
+		require.Equal(t, uint64(200), head)
+		require.Equal(t, fill32(0xAA), hash, "equal numbers must resolve to the lexicographically smaller hash, not the last seen")
+	})
+
+	t.Run("a validator voting twice is counted once", func(t *testing.T) {
+		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+			{Signer: s1, VotingPower: 34}, {Signer: s2, VotingPower: 33}, {Signer: s3, VotingPower: 33},
+		}}
+		// s1 votes head 200 twice. With minVP=68, dedup keeps 200 at 34 (<68) → not found; if the
+		// duplicate were counted, 200 would reach 68 and wrongly clear.
+		votes := []abciTypes.ExtendedVoteInfo{
+			actualHeadVote(t, s1, 200, 0xAA),
+			actualHeadVote(t, s1, 200, 0xAA),
+			actualHeadVote(t, s2, 100, 0xBB),
+		}
+		_, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 68)
+		require.NoError(t, err)
+		require.False(t, found, "a duplicate vote must not double-count the validator's power")
+	})
+
+	t.Run("votes without latest-head fields are skipped", func(t *testing.T) {
+		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+			{Signer: s1, VotingPower: 40}, {Signer: s2, VotingPower: 35}, {Signer: s3, VotingPower: 25},
+		}}
+		votes := []abciTypes.ExtendedVoteInfo{
+			actualHeadVote(t, s1, 200, 0xAA),
+			voteNoLatestHead(t, s2),
+			{BlockIdFlag: cmtTypes.BlockIDFlagCommit, Validator: abciTypes.Validator{Address: common.HexToAddress(s3).Bytes()}, VoteExtension: func() []byte {
+				ve := &sidetxs.VoteExtension{MilestoneProposition: nil}
+				b, err := ve.Marshal()
+				require.NoError(t, err)
+				return b
+			}()},
+		}
+		head, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34)
+		require.NoError(t, err)
+		require.True(t, found)
+		require.Equal(t, uint64(200), head)
+	})
+}
+
+func TestValidateLatestHead(t *testing.T) {
+	t.Parallel()
+
+	mk := func(start uint64, nBlocks int, latestNum uint64, latestHash []byte) *types.MilestoneProposition {
+		hashes := make([][]byte, nBlocks)
+		for i := range hashes {
+			hashes[i] = fill32(byte(i + 1))
+		}
+		return &types.MilestoneProposition{
+			StartBlockNumber:  start,
+			BlockHashes:       hashes,
+			LatestBlockNumber: latestNum,
+			LatestBlockHash:   latestHash,
+		}
+	}
+
+	cases := []struct {
+		name string
+		prop *types.MilestoneProposition
+		ok   bool
+	}{
+		{"both absent is ok", mk(10, 1, 0, nil), true},
+		{"number without hash rejected", mk(10, 1, 12, nil), false},
+		{"present, head == proposition end", mk(10, 1, 10, fill32(0x9)), true},
+		{"present, head beyond proposition end", mk(10, 5, 99, fill32(0x9)), true},
+		{"bad hash length rejected", mk(10, 1, 10, make([]byte, 16)), false},
+		{"head behind proposition end rejected", mk(10, 5, 12, fill32(0x9)), false}, // propEnd 14
+		{"start-block overflow rejected", mk(math.MaxUint64, 2, math.MaxUint64, fill32(0x9)), false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateLatestHead(tc.prop)
+			if tc.ok {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}
+
+func TestActualHeadFields(t *testing.T) {
+	orig := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(orig) })
+
+	ctx := sdk.Context{}.WithBlockHeight(100)
+	header := &ethTypes.Header{Number: big.NewInt(4242)}
+
+	// Fork OFF: never emit the fields, even with a header (pre-fork VEs must stay free of the new fields).
+	helper.SetSpanRotationOnStallHeight(0)
+	num, hash := actualHeadFields(ctx, header)
+	require.Zero(t, num)
+	require.Nil(t, hash)
+
+	// Fork ON but no latest header (e.g. no prior milestone / no reachable Bor): empty.
+	helper.SetSpanRotationOnStallHeight(1)
+	num, hash = actualHeadFields(ctx, nil)
+	require.Zero(t, num)
+	require.Nil(t, hash)
+
+	// Fork ON with a header: populated from the header.
+	num, hash = actualHeadFields(ctx, header)
+	require.Equal(t, uint64(4242), num)
+	require.Equal(t, header.Hash().Bytes(), hash)
+}
+
+// TestGetBlockInfoReturnsRefreshedHeader pins that getBlockInfo returns the header it actually built
+// the proposition from — including the one it refreshes internally when the caller's cached header is
+// behind propStartBlock ("Heimdall faster than Bor"). Returning the stale input instead would let the
+// actual-head fields fall behind the proposition end and fail validateLatestHead (POS-3629).
+func TestGetBlockInfoReturnsRefreshedHeader(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(100)
+	const startBlock = uint64(100)
+
+	batch := func(from, to int64) ([]*ethTypes.Header, []uint64, []common.Address) {
+		var hdrs []*ethTypes.Header
+		var tds []uint64
+		var authors []common.Address
+		for i := from; i <= to; i++ {
+			hdrs = append(hdrs, &ethTypes.Header{Number: big.NewInt(i)})
+			tds = append(tds, uint64(i))
+			authors = append(authors, common.Address{})
+		}
+		return hdrs, tds, authors
+	}
+
+	t.Run("stale cached header is refreshed and the fresh one is returned", func(t *testing.T) {
+		mc := &mocks.IContractCaller{}
+		fresh := &ethTypes.Header{Number: big.NewInt(105)}
+		mc.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(fresh, nil)
+		h, td, a := batch(100, 105) // milestoneEnd = 100 + min(6,10) - 1 = 105
+		mc.On("GetBorChainBlockInfoInBatch", mock.Anything, int64(100), int64(105)).Return(h, td, a, nil)
+
+		stale := &ethTypes.Header{Number: big.NewInt(90)} // behind startBlock → triggers refresh
+		_, blockHashes, _, _, eff, err := getBlockInfo(ctx, mc, startBlock, 10, stale, nil, 0)
+		require.NoError(t, err)
+		require.NotNil(t, eff)
+		require.Equal(t, uint64(105), eff.Number.Uint64(), "must return the refreshed header, not the stale input (90)")
+		require.GreaterOrEqual(t, eff.Number.Uint64(), startBlock+uint64(len(blockHashes))-1,
+			"effective head must be >= the proposition's last block so validateLatestHead passes")
+	})
+
+	t.Run("fresh cached header is returned unchanged", func(t *testing.T) {
+		mc := &mocks.IContractCaller{}
+		h, td, a := batch(100, 105)
+		mc.On("GetBorChainBlockInfoInBatch", mock.Anything, int64(100), int64(105)).Return(h, td, a, nil)
+
+		cached := &ethTypes.Header{Number: big.NewInt(105)} // already >= startBlock → no refresh
+		_, _, _, _, eff, err := getBlockInfo(ctx, mc, startBlock, 10, cached, nil, 0)
+		require.NoError(t, err)
+		require.Same(t, cached, eff, "no refresh path must return the caller's header")
+		mc.AssertNotCalled(t, "GetBorChainBlock", mock.Anything, mock.Anything)
 	})
 }
 

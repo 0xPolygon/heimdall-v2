@@ -750,7 +750,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
 				return nil, err
 			}
-		} else if err := app.handlePendingMilestone(ctx, pendingMilestone, pendingSupportingValidatorIDs); err != nil {
+		} else if err := app.handlePendingMilestone(ctx, pendingMilestone, pendingSupportingValidatorIDs, validatorSet, extVoteInfo, minMajorityVP); err != nil {
 			return nil, err
 		}
 	}
