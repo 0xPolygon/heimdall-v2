@@ -126,8 +126,8 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 
 // actualHeadFields returns the actual latest bor head (number, hash) to embed in a proposition for
 // the pending-stall rotation to key on instead of the capped proposition tail (POS-3629). Emission
-// is fork-gated on the vote extension's own height: VEs reject unknown proto fields, so these must
-// not appear before the SpanRotationOnStall height, by which point the network has done the
+// is fork-gated on the vote extension's own height: VE validation rejects unknown fields, so these
+// must not appear before the SpanRotationOnStall height, by which point the network has done the
 // coordinated upgrade the fork requires. Returns zero/nil when the fork is off or no latest header
 // is available (e.g. no prior milestone).
 func actualHeadFields(ctx sdk.Context, latestHeader *ethTypes.Header) (uint64, []byte) {
@@ -430,18 +430,18 @@ func GetMajorityMilestoneProposition(
 }
 
 // GetMajorityActualHead tallies the actual latest bor head reported in vote extensions (POS-3629)
-// and returns the highest (number, hash) whose summed voting power reaches minMajorityVP, with
-// found=true. Each validator reports a single latest head; during a stall honest validators
-// converge on the same head, so a >1/3-agreed head is the real tip, while a lone fabricated far
-// head cannot reach the threshold. found is false when no head clears minMajorityVP — the caller
-// then skips rotation rather than falling back to the truncated proposition tail. Deterministic:
-// uses canonical voting power from the validator set, dedupes per validator, and breaks ties on the
-// lexicographically smaller key, mirroring GetMajorityMilestoneProposition.
+// and returns the (number, hash) with the greatest summed voting power that reaches minMajorityVP,
+// with found=true. Each validator reports a single latest head; during a stall honest validators
+// converge on the same head, so the most-voted head is the real tip, and a >1/3 byzantine minority
+// reporting a fabricated head cannot outvote that stronger honest agreement. found is false when no
+// head clears minMajorityVP — the caller then skips rotation rather than falling back to the
+// truncated proposition tail. Deterministic: uses canonical voting power from the validator set,
+// dedupes per validator, and breaks equal-power ties on the lexicographically smaller key, mirroring
+// GetMajorityMilestoneProposition.
 //
-// Heads beyond maxBlock (the last span's end — an honest producer cannot advance past its span) are
-// dropped before the tally, so a colluding >1/3 slice cannot push the agreed head past chain state.
-// That both prevents poisoning the downstream stall tracking with an out-of-range head and stops a
-// fabricated far head from masking a legitimate in-range majority that would otherwise win.
+// Heads beyond maxBlock (the last span's end — an honest producer cannot advance past the scheduled
+// runway) are dropped before the tally, so a colluding minority cannot push the agreed head past
+// chain state, keeping the downstream stall tracking from being poisoned with an out-of-range head.
 func GetMajorityActualHead(
 	ctx sdk.Context,
 	validatorSet *stakeTypes.ValidatorSet,
@@ -474,9 +474,13 @@ func (t *actualHeadTally) add(number uint64, hash []byte, vp int64) {
 	t.hash[key] = hash
 }
 
-// majority returns the highest block number whose summed voting power reaches minMajorityVP, with
-// found=true. Equal numbers break on the lexicographically smaller key (its hash suffix, since the
-// LE number prefix is identical), keeping the choice deterministic across validators.
+// majority returns the actual head with the greatest summed voting power that reaches minMajorityVP,
+// with found=true. Greatest voting power wins, not the highest block number: during a genuine stall
+// honest validators converge on the same head, so the most-voted head is the real tip, and a >1/3
+// byzantine minority reporting a fabricated higher head cannot outvote the honest agreement (which
+// also stops it from resetting the stall clock by rotating a fake head's hash). Ties on equal summed
+// power break on the lexicographically smaller tally key, keeping the choice deterministic across
+// validators.
 func (t *actualHeadTally) majority(minMajorityVP int64) (uint64, []byte, bool) {
 	keys := make([]string, 0, len(t.power))
 	for k := range t.power {
@@ -485,14 +489,16 @@ func (t *actualHeadTally) majority(minMajorityVP int64) (uint64, []byte, bool) {
 	sort.Strings(keys)
 
 	found := false
+	var bestPower int64
 	var bestNum uint64
 	var bestHash []byte
 	for _, k := range keys {
 		if t.power[k] < minMajorityVP {
 			continue
 		}
-		if !found || t.number[k] > bestNum {
+		if !found || t.power[k] > bestPower {
 			found = true
+			bestPower = t.power[k]
 			bestNum = t.number[k]
 			bestHash = t.hash[k]
 		}

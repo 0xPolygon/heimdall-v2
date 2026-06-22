@@ -731,7 +731,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		// If we can't reach the 2/3 majority, we need to check if there is at least 1/3 of the voting power supporting a new milestone
 		minMajorityVP := totalVotingPower/3 + 1
 
-		pendingMilestone, _, _, pendingSupportingValidatorIDs, err := milestoneAbci.GetMajorityMilestoneProposition(
+		pendingMilestone, _, _, _, err := milestoneAbci.GetMajorityMilestoneProposition(
 			ctx,
 			validatorSet,
 			extVoteInfo,
@@ -750,7 +750,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
 				return nil, err
 			}
-		} else if err := app.handlePendingMilestone(ctx, pendingMilestone, pendingSupportingValidatorIDs, validatorSet, extVoteInfo, minMajorityVP); err != nil {
+		} else if err := app.handlePendingMilestone(ctx, pendingMilestone, validatorSet, extVoteInfo, minMajorityVP); err != nil {
 			return nil, err
 		}
 	}

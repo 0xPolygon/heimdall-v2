@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"errors"
 	"math"
 
 	abciTypes "github.com/cometbft/cometbft/abci/types"
@@ -19,7 +18,7 @@ import (
 // handlePendingMilestone is the PreBlocker action for a pending (1/3<=PM<2/3) milestone. Before the
 // span-rotation-on-stall hardfork it simply logs and lets the pending gate suppress rotation; after
 // it, a stalled pending head can force a rotation (POS-3629).
-func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone *milestoneTypes.MilestoneProposition, supportingValidatorIDs map[uint64]struct{}, validatorSet *stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, minMajorityVP int64) error {
+func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone *milestoneTypes.MilestoneProposition, validatorSet *stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, minMajorityVP int64) error {
 	logger := app.Logger()
 
 	if helper.IsSpanRotationOnStall(ctx.BlockHeight()) {
@@ -27,23 +26,25 @@ func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone
 		// proposition tail, so blocks the producer made beyond the proposition window are preserved
 		// rather than reorged (POS-3629).
 		//
-		// Bound the agreed head by the active span's end: an honest producer cannot advance past its
-		// span, so a head beyond it is fabricated. This stops a colluding >1/3 slice from poisoning the
-		// stall tracking with an out-of-range head (which would deny the recovery this path provides) or
-		// steering rotation into a future-scheduled span's producer. An in-range fabricated head (number
-		// == the active span end with a wrong hash while the real bor head lags) still needs >1/3
-		// collusion and can't be ruled out deterministically here; it is accepted residual under the
-		// 1/3-trust model of the pending band.
-		maxBlock, ok, err := app.pendingStallMaxBlock(ctx)
+		// Bound the agreed head by the last span's end — the furthest scheduled runway. An honest
+		// producer cannot advance past the scheduled spans, so a head beyond it is fabricated. Bounding
+		// by the scheduled runway (not the active span alone) keeps recovery working when bor honestly
+		// crosses into an already-scheduled future span while milestones lag behind. GetMajorityActualHead
+		// then selects the head with the greatest voting power, so a >1/3 byzantine minority cannot
+		// outvote the converged honest majority to install a fabricated head.
+		//
+		// Residual (accepted, >1/3-trust model of the pending band): a byzantine slice holding strictly
+		// more voting power than any honest agreement could still steer the agreed head within the
+		// scheduled runway. That is only reachable while honest votes are fragmented across heads, which
+		// a genuine stall removes by converging them on the real tip. Even then it cannot point past the
+		// runway, reorg finalized blocks, or choose the new producer — selection uses the 2/3-fed active
+		// producer set (rotateSpanFromPendingHead), not the pending milestone's supporters.
+		lastSpan, err := app.BorKeeper.GetLastSpan(ctx)
 		if err != nil {
-			logger.Error("Error occurred while resolving the active span bound", "error", err)
+			logger.Error("Error occurred while getting last span", "error", err)
 			return err
 		}
-		if !ok {
-			logger.Debug("Pending stall: no finalized milestone to anchor the actual-head bound, skipping rotation")
-			return nil
-		}
-		agreedHead, agreedHash, found, err := milestoneAbci.GetMajorityActualHead(ctx, validatorSet, extVoteInfo, minMajorityVP, maxBlock)
+		agreedHead, agreedHash, found, err := milestoneAbci.GetMajorityActualHead(ctx, validatorSet, extVoteInfo, minMajorityVP, lastSpan.EndBlock)
 		if err != nil {
 			logger.Error("Error occurred while tallying actual bor head", "error", err)
 			return err
@@ -55,7 +56,7 @@ func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone
 			logger.Debug("Pending stall: no >1/3-agreed actual bor head this block, skipping rotation")
 			return nil
 		}
-		return app.checkAndRotateOnPendingStall(ctx, agreedHead, agreedHash, supportingValidatorIDs)
+		return app.checkAndRotateOnPendingStall(ctx, agreedHead, agreedHash)
 	}
 
 	logger.Info("1/3rd voting power found on milestone proposition, skipping span rotation",
@@ -66,29 +67,6 @@ func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone
 	return nil
 }
 
-// pendingStallMaxBlock returns the end block of the span that currently owns the stall region — the
-// block just past the last finalized milestone. That span's producer is the one a genuine stall is
-// about, so its end is the furthest a real actual head can have reached. GetLastSpan must not be used
-// here: it returns the highest-ID span, which is routinely a future-scheduled span minted ahead by
-// checkAndAddFutureSpan, leaving the bound far past any honest head and letting a >1/3 slice steer
-// rotation into the future producer (POS-3629). ok is false when no milestone is finalized yet — no
-// stall point to anchor on, so the caller skips rotation.
-func (app *HeimdallApp) pendingStallMaxBlock(ctx sdk.Context) (uint64, bool, error) {
-	lastMilestone, err := app.MilestoneKeeper.GetLastMilestone(ctx)
-	if err != nil {
-		if errors.Is(err, milestoneTypes.ErrNoMilestoneFound) {
-			return 0, false, nil
-		}
-		return 0, false, err
-	}
-
-	activeSpan, err := app.BorKeeper.SpanByBlockNumber(ctx, lastMilestone.EndBlock+1)
-	if err != nil {
-		return 0, false, err
-	}
-	return activeSpan.EndBlock, true, nil
-}
-
 // checkAndRotateOnPendingStall forces a span rotation when the >1/3-agreed actual bor head
 // (POS-3629) stops advancing for longer than the stall threshold, even under a pending milestone.
 // The head is the validators' agreed actual latest block (resolved by the caller via
@@ -96,7 +74,7 @@ func (app *HeimdallApp) pendingStallMaxBlock(ctx sdk.Context) (uint64, bool, err
 // beyond the proposition window are preserved rather than reorged. It tracks the head and its hash
 // identity across blocks; the stall clock restarts whenever either changes, so continued healthy
 // production (an advancing head) never ages it.
-func (app *HeimdallApp) checkAndRotateOnPendingStall(ctx sdk.Context, agreedHead uint64, agreedHash []byte, supportingValidatorIDs map[uint64]struct{}) error {
+func (app *HeimdallApp) checkAndRotateOnPendingStall(ctx sdk.Context, agreedHead uint64, agreedHash []byte) error {
 	logger := app.Logger()
 
 	trackedBlock, trackedID, trackedHeight, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
@@ -123,15 +101,16 @@ func (app *HeimdallApp) checkAndRotateOnPendingStall(ctx sdk.Context, agreedHead
 		return nil
 	}
 
-	return app.rotateSpanFromPendingHead(ctx, agreedHead, agreedHash, supportingValidatorIDs)
+	return app.rotateSpanFromPendingHead(ctx, agreedHead, agreedHash)
 }
 
 // rotateSpanFromPendingHead mints a new veblop span starting at pendingHead+1, where pendingHead is
 // the >1/3-agreed actual bor head (not the capped proposition tail), so every block up to that head
 // is preserved — no reorg of the blocks the producer made beyond the proposition window. It anchors
-// the new span's end to lastSpan.EndBlock so it fully supersedes the old span's runway, and excludes
-// the stalled and previously-failed producers from selection.
-func (app *HeimdallApp) rotateSpanFromPendingHead(ctx sdk.Context, pendingHead uint64, pendingHeadID []byte, supportingValidatorIDs map[uint64]struct{}) error {
+// the new span's end to lastSpan.EndBlock so it fully supersedes the old span's runway, draws the
+// candidate set from the 2/3-fed latest active producers (not the pending milestone's 1/3 supporters,
+// which a byzantine slice can control), and excludes the stalled and previously-failed producers.
+func (app *HeimdallApp) rotateSpanFromPendingHead(ctx sdk.Context, pendingHead uint64, pendingHeadID []byte) error {
 	logger := app.Logger()
 
 	addSpanCtx, spanCache := app.cacheTxContext(ctx)
@@ -202,7 +181,16 @@ func (app *HeimdallApp) rotateSpanFromPendingHead(ctx sdk.Context, pendingHead u
 		return err
 	}
 
-	if err := app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, pendingHead+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, excludedProducers); err != nil {
+	// Draw candidates from the 2/3-fed active producer set, mirroring checkAndRotateCurrentSpan. The
+	// pending milestone's supporters are only a 1/3 set and a byzantine slice can make them
+	// byzantine-only via the per-block hash tie-break, so they must not gate producer selection.
+	latestActiveProducer, err := app.BorKeeper.GetLatestActiveProducer(ctx)
+	if err != nil {
+		logger.Error("Error occurred while getting latest active producer", "error", err)
+		return err
+	}
+
+	if err := app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, pendingHead+1, endBlock, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, excludedProducers); err != nil {
 		// Don't halt consensus if no producer can be selected this block; retry next block.
 		logger.Warn("Error occurred while adding new veblop span on pending stall", "error", err)
 		return nil

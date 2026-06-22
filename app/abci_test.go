@@ -6531,6 +6531,35 @@ func actualHeadExtVotes(t *testing.T, validators []*stakeTypes.Validator, valida
 	return votes
 }
 
+// actualHeadExtVotesSplit builds committed vote extensions where validators[:splitIdx] report
+// (numA, hashA) as their actual head and validators[splitIdx:] report (numB, hashB) — for driving a
+// byzantine-minority-vs-honest-majority actual-head tally in handlePendingMilestone (POS-3629).
+func actualHeadExtVotesSplit(t *testing.T, validators []*stakeTypes.Validator, validatorPrivKeys []secp256k1.PrivKey, splitIdx int, numA uint64, hashA []byte, numB uint64, hashB []byte) []abci.ExtendedVoteInfo {
+	t.Helper()
+	votes := make([]abci.ExtendedVoteInfo, 0, len(validators))
+	for i, v := range validators {
+		number, hash := numA, hashA
+		if i >= splitIdx {
+			number, hash = numB, hashB
+		}
+		ve := &sidetxs.VoteExtension{Height: 1, MilestoneProposition: &milestoneTypes.MilestoneProposition{
+			StartBlockNumber:  number,
+			BlockHashes:       [][]byte{hash},
+			BlockTds:          []uint64{1},
+			LatestBlockNumber: number,
+			LatestBlockHash:   hash,
+		}}
+		enc, err := gogoproto.Marshal(ve)
+		require.NoError(t, err)
+		votes = append(votes, abci.ExtendedVoteInfo{
+			Validator:     abci.Validator{Address: validatorPrivKeys[i].PubKey().Address(), Power: v.VotingPower},
+			VoteExtension: enc,
+			BlockIdFlag:   cmtproto.BlockIDFlagCommit,
+		})
+	}
+	return votes
+}
+
 func TestExtractTxHashMsgEventRecordValidation(t *testing.T) {
 	validHash := common.BigToHash(common.Big1)
 

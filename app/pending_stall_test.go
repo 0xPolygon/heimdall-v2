@@ -43,14 +43,6 @@ func propHeadID(prop *milestoneTypes.MilestoneProposition) []byte {
 	return prop.BlockHashes[len(prop.BlockHashes)-1]
 }
 
-// seedActiveMilestone finalizes a milestone whose next block (EndBlock+1) lands inside the seeded
-// span [psSpanStart, psSpanEnd], so pendingStallMaxBlock resolves that span as the active one and
-// bounds the actual-head tally by its end.
-func seedActiveMilestone(t *testing.T, app *HeimdallApp, ctx sdk.Context) {
-	t.Helper()
-	require.NoError(t, app.MilestoneKeeper.AddMilestone(ctx, milestoneTypes.Milestone{EndBlock: psSpanStart + 10, BorChainId: "1"}))
-}
-
 // seedSpan installs the committed span [psSpanStart, psSpanEnd] with producer validators[0]
 // and returns the validators and the all-supporters set.
 func seedSpan(t *testing.T, app *HeimdallApp, ctx sdk.Context) ([]*stakeTypes.Validator, map[uint64]struct{}) {
@@ -97,16 +89,24 @@ func seedProducerSelection(t *testing.T, app *HeimdallApp, ctx sdk.Context, vali
 	params.ProducerCount = 3
 	params.SpanDuration = 100
 	require.NoError(t, app.BorKeeper.SetParams(ctx, params))
+
+	// The pending-stall rotation draws its candidate set from the latest active producers (the
+	// 2/3-fed set), so seed it with all validators for selection to succeed.
+	active := make(map[uint64]struct{}, len(validators))
+	for _, v := range validators {
+		active[v.ValId] = struct{}{}
+	}
+	require.NoError(t, app.BorKeeper.UpdateLatestActiveProducer(ctx, active))
 }
 
 func TestCheckAndRotateOnPendingStall(t *testing.T) {
 	t.Run("first observation sets tracking and does not rotate", func(t *testing.T) {
 		_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
-		_, supporters := seedSpan(t, app, ctx)
+		seedSpan(t, app, ctx)
 		ctx = ctx.WithBlockHeight(1000)
 		prop := singleBlockPendingProp(psPendingHead, 0xAA)
 
-		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters))
+		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop)))
 
 		last, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
@@ -121,12 +121,12 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 
 	t.Run("identity flap at same head resets clock, no rotation", func(t *testing.T) {
 		_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
-		_, supporters := seedSpan(t, app, ctx)
+		seedSpan(t, app, ctx)
 		require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, []byte("stale-identity"), 1))
 		ctx = ctx.WithBlockHeight(1000) // well past any threshold
 		prop := singleBlockPendingProp(psPendingHead, 0xBB)
 
-		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters))
+		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop)))
 
 		last, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
@@ -140,12 +140,12 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 
 	t.Run("head advance resets clock, no rotation", func(t *testing.T) {
 		_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
-		_, supporters := seedSpan(t, app, ctx)
+		seedSpan(t, app, ctx)
 		require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead-5, []byte("old"), 1))
 		ctx = ctx.WithBlockHeight(1000)
 		prop := singleBlockPendingProp(psPendingHead, 0xCC)
 
-		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters))
+		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop)))
 
 		last, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
@@ -159,14 +159,14 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 
 	t.Run("stall exactly at threshold does not rotate", func(t *testing.T) {
 		_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
-		_, supporters := seedSpan(t, app, ctx)
+		seedSpan(t, app, ctx)
 		prop := singleBlockPendingProp(psPendingHead, 0xDD)
 		trackedHeight := uint64(1000)
 		require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propHeadID(prop), trackedHeight))
 		threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
 		ctx = ctx.WithBlockHeight(int64(trackedHeight) + threshold) // borStallDiff == threshold
 
-		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters))
+		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop)))
 
 		last, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
@@ -175,7 +175,7 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 
 	t.Run("stall beyond threshold rotates from N+1 and debounces", func(t *testing.T) {
 		_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
-		validators, supporters := seedSpan(t, app, ctx)
+		validators, _ := seedSpan(t, app, ctx)
 		seedProducerSelection(t, app, ctx, validators)
 
 		prop := singleBlockPendingProp(psPendingHead, 0xEE)
@@ -186,7 +186,7 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 		ctx = ctx.WithBlockHeight(blockHeight)
 
 		currentProducer := validators[0].ValId
-		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters))
+		require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop)))
 
 		last, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
@@ -217,7 +217,7 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 // re-selecting the just-installed producer, so the failed set would never grow past the first.
 func TestCheckAndRotateOnPendingStallReRotatesAwayFromInstalledProducer(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 5)
-	validators, supporters := seedSpan(t, app, ctx)
+	validators, _ := seedSpan(t, app, ctx)
 	seedProducerSelection(t, app, ctx, validators)
 	prop := singleBlockPendingProp(psPendingHead, 0xEE)
 	propID := propHeadID(prop)
@@ -229,7 +229,7 @@ func TestCheckAndRotateOnPendingStallReRotatesAwayFromInstalledProducer(t *testi
 	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propID, trackedHeight))
 	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
 	firstHeight := int64(trackedHeight) + threshold + 1
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(firstHeight), prop.StartBlockNumber, propHeadID(prop), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(firstHeight), prop.StartBlockNumber, propHeadID(prop)))
 
 	firstSpan, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -240,7 +240,7 @@ func TestCheckAndRotateOnPendingStallReRotatesAwayFromInstalledProducer(t *testi
 	// The same head stays stalled. The clock was debounced to firstHeight+buffer; age past it again.
 	buffer := helper.GetSpanRotationBuffer(ctx)
 	secondHeight := firstHeight + int64(buffer) + threshold + 1
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(secondHeight), prop.StartBlockNumber, propHeadID(prop), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(secondHeight), prop.StartBlockNumber, propHeadID(prop)))
 
 	secondSpan, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -261,7 +261,7 @@ func TestCheckAndRotateOnPendingStallReRotatesAwayFromInstalledProducer(t *testi
 // the owner of droppedHead+1 in the older span, not the future producer installed for the old head.
 func TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 5)
-	validators, supporters := seedSpan(t, app, ctx)
+	validators, _ := seedSpan(t, app, ctx)
 	seedProducerSelection(t, app, ctx, validators)
 	prop := singleBlockPendingProp(psPendingHead, 0xEE)
 	propID := propHeadID(prop)
@@ -272,7 +272,7 @@ func TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops(t *testing.T) {
 	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propID, trackedHeight))
 	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
 	firstHeight := int64(trackedHeight) + threshold + 1
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(firstHeight), prop.StartBlockNumber, propHeadID(prop), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(firstHeight), prop.StartBlockNumber, propHeadID(prop)))
 
 	firstSpan, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -287,7 +287,7 @@ func TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops(t *testing.T) {
 	droppedProp := singleBlockPendingProp(droppedHead, 0xEF)
 	buffer := helper.GetSpanRotationBuffer(ctx)
 	resetHeight := firstHeight + int64(buffer) + 1
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(resetHeight), droppedProp.StartBlockNumber, propHeadID(droppedProp), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(resetHeight), droppedProp.StartBlockNumber, propHeadID(droppedProp)))
 
 	afterResetSpan, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -295,7 +295,7 @@ func TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops(t *testing.T) {
 
 	secondThreshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(resetHeight))
 	secondHeight := resetHeight + secondThreshold + 1
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(secondHeight), droppedProp.StartBlockNumber, propHeadID(droppedProp), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(secondHeight), droppedProp.StartBlockNumber, propHeadID(droppedProp)))
 
 	secondSpan, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -318,7 +318,7 @@ func TestCheckAndRotateOnPendingStallReRotatesWhenHeadDrops(t *testing.T) {
 // pendingHead+1, not the producer of the already-scheduled future span.
 func TestCheckAndRotateOnPendingStallUsesNextBlockOwnerBeforeFutureLastSpan(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 5)
-	validators, supporters := seedSpan(t, app, ctx)
+	validators, _ := seedSpan(t, app, ctx)
 	seedProducerSelection(t, app, ctx, validators)
 
 	baseSpan, err := app.BorKeeper.GetSpan(ctx, 1)
@@ -339,7 +339,7 @@ func TestCheckAndRotateOnPendingStallUsesNextBlockOwnerBeforeFutureLastSpan(t *t
 	trackedHeight := uint64(1000)
 	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propHeadID(prop), trackedHeight))
 	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(int64(trackedHeight)+threshold+1), prop.StartBlockNumber, propHeadID(prop), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(int64(trackedHeight)+threshold+1), prop.StartBlockNumber, propHeadID(prop)))
 
 	last, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -363,7 +363,7 @@ func TestCheckAndRotateOnPendingStallUsesNextBlockOwnerBeforeFutureLastSpan(t *t
 // would return up to PreBlocker and halt the chain. Rotation must still succeed from pendingHead+1.
 func TestCheckAndRotateOnPendingStallSpanExhaustionBoundary(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 5)
-	validators, supporters := seedSpan(t, app, ctx)
+	validators, _ := seedSpan(t, app, ctx)
 	seedProducerSelection(t, app, ctx, validators)
 
 	// Head at the span's final block, single span only (no lookahead).
@@ -375,7 +375,7 @@ func TestCheckAndRotateOnPendingStallSpanExhaustionBoundary(t *testing.T) {
 	ctx = ctx.WithBlockHeight(int64(trackedHeight) + threshold + 1)
 
 	currentProducer := validators[0].ValId
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters), "boundary must not error/halt")
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop)), "boundary must not error/halt")
 
 	last, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -407,12 +407,12 @@ func TestRotateSpanFromPendingHeadBeyondSpanEnd(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 5)
-			validators, supporters := seedSpan(t, app, ctx)
+			validators, _ := seedSpan(t, app, ctx)
 			seedProducerSelection(t, app, ctx, validators)
 			ctx = ctx.WithBlockHeight(2000)
 			prop := singleBlockPendingProp(tc.pendingHead, 0x33)
 
-			require.NoError(t, app.rotateSpanFromPendingHead(ctx, tc.pendingHead, propHeadID(prop), supporters),
+			require.NoError(t, app.rotateSpanFromPendingHead(ctx, tc.pendingHead, propHeadID(prop)),
 				"a head beyond the span end must not error/halt")
 
 			last, err := app.BorKeeper.GetLastSpan(ctx)
@@ -509,7 +509,7 @@ func TestPreBlockerPendingStallRotatesWhenForkEnabled(t *testing.T) {
 // and returns nil rather than erroring (consensus must not halt), and no new span is minted.
 func TestRotateSpanFromPendingHeadNoSelectableProducer(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
-	validators, supporters := seedSpan(t, app, ctx)
+	validators, _ := seedSpan(t, app, ctx)
 	seedProducerSelection(t, app, ctx, validators)
 	for _, v := range validators {
 		require.NoError(t, app.BorKeeper.AddLatestFailedProducer(ctx, v.ValId))
@@ -517,7 +517,7 @@ func TestRotateSpanFromPendingHeadNoSelectableProducer(t *testing.T) {
 	ctx = ctx.WithBlockHeight(2000)
 	prop := singleBlockPendingProp(psPendingHead, 0x11)
 
-	require.NoError(t, app.rotateSpanFromPendingHead(ctx, psPendingHead, propHeadID(prop), supporters))
+	require.NoError(t, app.rotateSpanFromPendingHead(ctx, psPendingHead, propHeadID(prop)))
 
 	last, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -539,7 +539,7 @@ func TestCheckAndRotateCurrentSpanDebouncesPendingStallClock(t *testing.T) {
 	})
 	helper.SetSpanRotationOnStallHeight(1) // enable the fork
 
-	validators, supporters := seedSpan(t, app, ctx)
+	validators, _ := seedSpan(t, app, ctx)
 	seedProducerSelection(t, app, ctx, validators)
 
 	lastMilestone := milestoneTypes.Milestone{EndBlock: 100, BorChainId: "1"}
@@ -584,7 +584,7 @@ func TestCheckAndRotateCurrentSpanDebouncesPendingStallClock(t *testing.T) {
 	require.Equal(t, currentHeight+helper.GetSpanRotationBuffer(ctx), height, "pending-stall clock debounced past the buffer")
 
 	// A pending milestone reappearing at the same head in the same block must not re-rotate.
-	require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop), supporters))
+	require.NoError(t, app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop)))
 	afterPending, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
 	require.Equal(t, rotated.Id, afterPending.Id, "just-installed producer must keep the buffer window; no premature pending-stall re-rotation")
@@ -607,9 +607,8 @@ func fill32(seed byte) []byte {
 func TestHandlePendingMilestoneRotatesFromActualHead(t *testing.T) {
 	_, app, ctx, privKeys := SetupAppWithABCICtxAndValidators(t, 5)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
-	_, supporters := seedSpan(t, app, ctx)
+	seedSpan(t, app, ctx)
 	seedProducerSelection(t, app, ctx, validators)
-	seedActiveMilestone(t, app, ctx)
 
 	origFork := helper.GetSpanRotationOnStallHeight()
 	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
@@ -628,7 +627,7 @@ func TestHandlePendingMilestoneRotatesFromActualHead(t *testing.T) {
 	ctx = ctx.WithBlockHeight(int64(trackedHeight) + threshold + 1)
 
 	shortProp := singleBlockPendingProp(psSpanStart, 0x01) // proposition tail far below the actual head
-	require.NoError(t, app.handlePendingMilestone(ctx, shortProp, supporters, valSet, extVotes, minVP))
+	require.NoError(t, app.handlePendingMilestone(ctx, shortProp, valSet, extVotes, minVP))
 
 	last, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -643,8 +642,7 @@ func TestHandlePendingMilestoneRotatesFromActualHead(t *testing.T) {
 func TestHandlePendingMilestoneSkipsWithoutActualHeadAgreement(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
-	_, supporters := seedSpan(t, app, ctx)
-	seedActiveMilestone(t, app, ctx)
+	seedSpan(t, app, ctx)
 
 	origFork := helper.GetSpanRotationOnStallHeight()
 	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
@@ -657,7 +655,7 @@ func TestHandlePendingMilestoneSkipsWithoutActualHeadAgreement(t *testing.T) {
 	prop := singleBlockPendingProp(psPendingHead, 0x07)
 
 	// No vote extensions carry an actual head → tally finds nothing → skip.
-	require.NoError(t, app.handlePendingMilestone(ctx, prop, supporters, valSet, nil, 1))
+	require.NoError(t, app.handlePendingMilestone(ctx, prop, valSet, nil, 1))
 
 	last, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -670,15 +668,15 @@ func TestHandlePendingMilestoneSkipsWithoutActualHeadAgreement(t *testing.T) {
 }
 
 // TestHandlePendingMilestoneDropsOutOfRangeActualHead pins the byzantine-poison guard (POS-3629): a
-// >1/3 slice agreeing on a head beyond the active span's end (which an honest producer can never
-// reach) must be filtered by the maxBlock bound, so it is never written into the stall tracking and
-// never triggers a rotation. Without the bound the fabricated head would be tracked on first observation.
+// >1/3 slice agreeing on a head beyond the last span's end (the scheduled runway — no honest producer
+// can advance past it) must be filtered by the maxBlock bound, so it is never written into the stall
+// tracking and never triggers a rotation. Without the bound the fabricated head would be tracked on
+// first observation.
 func TestHandlePendingMilestoneDropsOutOfRangeActualHead(t *testing.T) {
 	_, app, ctx, privKeys := SetupAppWithABCICtxAndValidators(t, 5)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
-	_, supporters := seedSpan(t, app, ctx) // span [psSpanStart, psSpanEnd]
+	seedSpan(t, app, ctx) // span [psSpanStart, psSpanEnd]
 	seedProducerSelection(t, app, ctx, validators)
-	seedActiveMilestone(t, app, ctx)
 
 	origFork := helper.GetSpanRotationOnStallHeight()
 	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
@@ -687,13 +685,13 @@ func TestHandlePendingMilestoneDropsOutOfRangeActualHead(t *testing.T) {
 	valSet := stakeTypes.NewValidatorSet(validators)
 	minVP := valSet.GetTotalVotingPower()/3 + 1
 
-	// All validators agree on a head far beyond the span end — fabricated, since no honest producer
-	// can advance past its span. The active-span bound must drop it from the tally.
+	// All validators agree on a head far beyond the last span's end — fabricated, since no honest
+	// producer can advance past the scheduled runway. The bound must drop it from the tally.
 	outOfRange := psSpanEnd + 10_000
 	extVotes := actualHeadExtVotes(t, validators, privKeys, outOfRange, fill32(0x5A), len(validators))
 
 	ctx = ctx.WithBlockHeight(5000)
-	require.NoError(t, app.handlePendingMilestone(ctx, singleBlockPendingProp(psPendingHead, 0x01), supporters, valSet, extVotes, minVP))
+	require.NoError(t, app.handlePendingMilestone(ctx, singleBlockPendingProp(psPendingHead, 0x01), valSet, extVotes, minVP))
 
 	last, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
@@ -705,20 +703,10 @@ func TestHandlePendingMilestoneDropsOutOfRangeActualHead(t *testing.T) {
 	require.Zero(t, block, "tracking head must stay unset")
 }
 
-// TestHandlePendingMilestoneBoundsByActiveSpanNotFutureSpan pins that the actual-head bound is the
-// active span's end, not GetLastSpan's — which is routinely a future-scheduled span minted ahead by
-// checkAndAddFutureSpan. A >1/3 slice voting a head inside the future span's range must be dropped, so
-// it can't poison tracking or steer rotation into the future producer (POS-3629). Without the
-// active-span bound the head would sit under GetLastSpan's end and be tracked on first observation.
-func TestHandlePendingMilestoneBoundsByActiveSpanNotFutureSpan(t *testing.T) {
-	_, app, ctx, privKeys := SetupAppWithABCICtxAndValidators(t, 5)
-	validators := app.StakeKeeper.GetAllValidators(ctx)
-	valSlice, supporters := seedSpan(t, app, ctx) // active span 1 [psSpanStart, psSpanEnd]
-	seedProducerSelection(t, app, ctx, validators)
-	seedActiveMilestone(t, app, ctx) // anchors span 1 as active (EndBlock+1 inside it)
-
-	// A future-scheduled span 2 becomes the highest-ID span, so GetLastSpan returns it; the active span
-	// owning the stall region is still span 1.
+// seedFutureSpan adds a future-scheduled span 2 [psSpanEnd+1, psSpanEnd+6310] (producer valSlice[1]),
+// making it the highest-ID span so GetLastSpan returns it while span 1 stays the active range.
+func seedFutureSpan(t *testing.T, app *HeimdallApp, ctx sdk.Context, valSlice []*stakeTypes.Validator) {
+	t.Helper()
 	require.NoError(t, app.BorKeeper.AddNewSpan(ctx, &borTypes.Span{
 		Id:                2,
 		StartBlock:        psSpanEnd + 1,
@@ -727,6 +715,18 @@ func TestHandlePendingMilestoneBoundsByActiveSpanNotFutureSpan(t *testing.T) {
 		ValidatorSet:      stakeTypes.ValidatorSet{Validators: valSlice},
 		SelectedProducers: []stakeTypes.Validator{*valSlice[1]},
 	}))
+}
+
+// TestHandlePendingMilestoneRecoversAcrossSpanBoundary pins that recovery still works when bor
+// honestly crosses into an already-scheduled future span while milestones lag (POS-3629). The bound
+// is the last span's end (the scheduled runway), so an honest head inside the future span is kept,
+// not dropped — an earlier active-span-only bound would have denied this legitimate recovery.
+func TestHandlePendingMilestoneRecoversAcrossSpanBoundary(t *testing.T) {
+	_, app, ctx, privKeys := SetupAppWithABCICtxAndValidators(t, 5)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+	valSlice, _ := seedSpan(t, app, ctx) // active span 1 [psSpanStart, psSpanEnd]
+	seedProducerSelection(t, app, ctx, validators)
+	seedFutureSpan(t, app, ctx, valSlice)
 
 	origFork := helper.GetSpanRotationOnStallHeight()
 	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
@@ -735,20 +735,57 @@ func TestHandlePendingMilestoneBoundsByActiveSpanNotFutureSpan(t *testing.T) {
 	valSet := stakeTypes.NewValidatorSet(validators)
 	minVP := valSet.GetTotalVotingPower()/3 + 1
 
-	// All validators agree on a head inside the FUTURE span's range — past the active span's end but
-	// within GetLastSpan's end. The active-span bound must drop it.
-	insideFutureSpan := psSpanEnd + 100
-	extVotes := actualHeadExtVotes(t, validators, privKeys, insideFutureSpan, fill32(0x5A), len(validators))
+	// All validators honestly report a head inside the future span — bor crossed the boundary and the
+	// new producer stalled there. The head is within the scheduled runway, so it must be honored.
+	crossedHead := psSpanEnd + 60
+	actualHash := fill32(0x5A)
+	extVotes := actualHeadExtVotes(t, validators, privKeys, crossedHead, actualHash, len(validators))
 
-	ctx = ctx.WithBlockHeight(5000)
-	require.NoError(t, app.handlePendingMilestone(ctx, singleBlockPendingProp(psPendingHead, 0x01), supporters, valSet, extVotes, minVP))
+	// Pre-age the clock against that head so this block trips the rotation.
+	trackedHeight := uint64(1000)
+	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, crossedHead, actualHash, trackedHeight))
+	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
+	ctx = ctx.WithBlockHeight(int64(trackedHeight) + threshold + 1)
+
+	require.NoError(t, app.handlePendingMilestone(ctx, singleBlockPendingProp(psPendingHead, 0x01), valSet, extVotes, minVP))
 
 	last, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
-	require.Equal(t, uint64(2), last.Id, "no rotation: the future-span head must be dropped, leaving span 2 as the latest")
+	require.Equal(t, uint64(3), last.Id, "a stalled head across the span boundary must still rotate")
+	require.Equal(t, crossedHead+1, last.StartBlock, "rotation starts at the agreed cross-boundary head + 1")
+}
 
-	block, _, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
+// TestHandlePendingMilestoneByzantineMinorityCannotSteerHead pins the highest-voting-power tally
+// (POS-3629): a >1/3 byzantine minority reporting a higher fabricated head (here inside a future span)
+// cannot outvote the converged honest majority on the real head. The agreed head — and therefore the
+// stall tracking — follows the honest majority, so the minority can neither steer rotation into the
+// future producer nor reset the clock by rotating a fake head's hash. Highest-block-number selection
+// would instead pick the minority's higher head.
+func TestHandlePendingMilestoneByzantineMinorityCannotSteerHead(t *testing.T) {
+	_, app, ctx, privKeys := SetupAppWithABCICtxAndValidators(t, 5)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+	valSlice, _ := seedSpan(t, app, ctx) // active span 1 [psSpanStart, psSpanEnd]
+	seedProducerSelection(t, app, ctx, validators)
+	seedFutureSpan(t, app, ctx, valSlice)
+
+	origFork := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
+	helper.SetSpanRotationOnStallHeight(1)
+
+	valSet := stakeTypes.NewValidatorSet(validators)
+	minVP := valSet.GetTotalVotingPower()/3 + 1
+
+	// 2 byzantine validators (200 VP, clears 1/3+1) report a higher fabricated head in the future span;
+	// 3 honest validators (300 VP) report the real head in the active span. Greatest VP must win.
+	byzantineHead := psSpanEnd + 100
+	honestHead := psPendingHead
+	extVotes := actualHeadExtVotesSplit(t, validators, privKeys, 2, byzantineHead, fill32(0xBB), honestHead, fill32(0x5A))
+
+	ctx = ctx.WithBlockHeight(5000)
+	require.NoError(t, app.handlePendingMilestone(ctx, singleBlockPendingProp(psPendingHead, 0x01), valSet, extVotes, minVP))
+
+	block, id, _, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
 	require.NoError(t, err)
-	require.Zero(t, height, "a head inside the future span must never be written into the stall tracking")
-	require.Zero(t, block, "tracking head must stay unset")
+	require.Equal(t, honestHead, block, "the tracked head must be the honest majority's, not the byzantine minority's higher head")
+	require.Equal(t, fill32(0x5A), id, "the tracked identity must be the honest majority's head hash")
 }

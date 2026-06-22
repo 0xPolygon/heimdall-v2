@@ -658,11 +658,13 @@ func TestGetMajorityActualHead(t *testing.T) {
 		s3 = "0x3333333333333333333333333333333333333333"
 	)
 
-	t.Run("highest >1/3-agreed head wins, not the highest-power lower head", func(t *testing.T) {
+	t.Run("greatest voting power wins, not the highest block number", func(t *testing.T) {
 		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
 			{Signer: s1, VotingPower: 40}, {Signer: s2, VotingPower: 35}, {Signer: s3, VotingPower: 25},
 		}}
-		// 300 has 40 (clears 34); 200 has 60 (clears 34). The higher number must win regardless of power.
+		// 300 has 40 VP (a fabricated higher head from a 1/3+1 minority); 200 has 60 VP (the converged
+		// honest majority). Both clear 34, but the most-voted head must win — a byzantine minority cannot
+		// install a higher fabricated head by number.
 		votes := []abciTypes.ExtendedVoteInfo{
 			actualHeadVote(t, s1, 300, 0xAA),
 			actualHeadVote(t, s2, 200, 0xBB),
@@ -671,8 +673,8 @@ func TestGetMajorityActualHead(t *testing.T) {
 		head, hash, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, math.MaxUint64)
 		require.NoError(t, err)
 		require.True(t, found)
-		require.Equal(t, uint64(300), head)
-		require.Equal(t, fill32(0xAA), hash)
+		require.Equal(t, uint64(200), head, "the most-voted head wins, not the highest-numbered minority head")
+		require.Equal(t, fill32(0xBB), hash)
 	})
 
 	t.Run("lone far head below 1/3 is ignored; real agreed head wins", func(t *testing.T) {
@@ -705,14 +707,15 @@ func TestGetMajorityActualHead(t *testing.T) {
 	})
 
 	t.Run("head with exactly the threshold voting power is included", func(t *testing.T) {
-		// v1 alone has exactly minMajorityVP (34) on head 200; head 100 has more power but is lower.
+		// head 200 has exactly minMajorityVP (34) and is the only head clearing it; 100 and 300 each have
+		// 33 (<34) so neither qualifies.
 		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
 			{Signer: s1, VotingPower: 34}, {Signer: s2, VotingPower: 33}, {Signer: s3, VotingPower: 33},
 		}}
 		votes := []abciTypes.ExtendedVoteInfo{
 			actualHeadVote(t, s1, 200, 0xAA),
 			actualHeadVote(t, s2, 100, 0xBB),
-			actualHeadVote(t, s3, 100, 0xBB),
+			actualHeadVote(t, s3, 300, 0xCC),
 		}
 		head, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, math.MaxUint64)
 		require.NoError(t, err)
@@ -720,8 +723,8 @@ func TestGetMajorityActualHead(t *testing.T) {
 		require.Equal(t, uint64(200), head, "VP exactly equal to the threshold must count (>= comparison)")
 	})
 
-	t.Run("same-height fork breaks deterministically on the smaller hash", func(t *testing.T) {
-		// Two heads at the same number 200 both clear 34; the lexicographically smaller hash wins.
+	t.Run("same-height fork resolves to the greater voting power", func(t *testing.T) {
+		// Two hashes at the same number 200: 0xAA has 40+25=65 VP, 0xBB has 35. The greater-VP hash wins.
 		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
 			{Signer: s1, VotingPower: 40}, {Signer: s2, VotingPower: 35}, {Signer: s3, VotingPower: 25},
 		}}
@@ -734,7 +737,24 @@ func TestGetMajorityActualHead(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, found)
 		require.Equal(t, uint64(200), head)
-		require.Equal(t, fill32(0xAA), hash, "equal numbers must resolve to the lexicographically smaller hash, not the last seen")
+		require.Equal(t, fill32(0xAA), hash, "the hash with greater voting power wins")
+	})
+
+	t.Run("equal voting power ties break deterministically", func(t *testing.T) {
+		// 100 and 200 each clear the threshold at exactly equal power (34); 300 has 32 (<34). The choice
+		// must be deterministic (lexicographically smaller tally key).
+		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+			{Signer: s1, VotingPower: 34}, {Signer: s2, VotingPower: 34}, {Signer: s3, VotingPower: 32},
+		}}
+		votes := []abciTypes.ExtendedVoteInfo{
+			actualHeadVote(t, s1, 100, 0xAA),
+			actualHeadVote(t, s2, 200, 0xBB),
+			actualHeadVote(t, s3, 300, 0xCC),
+		}
+		head, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, math.MaxUint64)
+		require.NoError(t, err)
+		require.True(t, found)
+		require.Equal(t, uint64(100), head, "equal power resolves to the lexicographically smaller key, deterministically")
 	})
 
 	t.Run("a validator voting twice is counted once", func(t *testing.T) {
@@ -773,12 +793,13 @@ func TestGetMajorityActualHead(t *testing.T) {
 		require.Equal(t, uint64(200), head)
 	})
 
-	t.Run("out-of-range head is dropped; the in-range majority wins instead of being masked", func(t *testing.T) {
-		// s1's head 99999 is beyond maxBlock (500) and clears 34 on its own; without the bound it would
-		// win as the highest. Honest s2+s3 agree on the real in-range head 200 (60 VP). The fabricated
-		// far head must be filtered so the legitimate in-range head is selected.
+	t.Run("out-of-range head is dropped even when it has the greater voting power", func(t *testing.T) {
+		// s1's head 99999 is beyond maxBlock (500) and holds 51 VP — more than the in-range head 200 (s2+s3
+		// = 49 VP). Both clear 34, so without the bound greatest-VP selection would pick the out-of-range
+		// head. The bound must drop it so the legitimate in-range head is selected; this is what makes the
+		// maxBlock filter, not VP, decide the outcome here.
 		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
-			{Signer: s1, VotingPower: 40}, {Signer: s2, VotingPower: 35}, {Signer: s3, VotingPower: 25},
+			{Signer: s1, VotingPower: 51}, {Signer: s2, VotingPower: 34}, {Signer: s3, VotingPower: 15},
 		}}
 		votes := []abciTypes.ExtendedVoteInfo{
 			actualHeadVote(t, s1, 99999, 0xAA),
@@ -788,7 +809,7 @@ func TestGetMajorityActualHead(t *testing.T) {
 		head, hash, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, 500)
 		require.NoError(t, err)
 		require.True(t, found)
-		require.Equal(t, uint64(200), head, "a head beyond maxBlock must not mask the in-range majority")
+		require.Equal(t, uint64(200), head, "a head beyond maxBlock must be dropped even with greater VP")
 		require.Equal(t, fill32(0xBB), hash)
 	})
 
