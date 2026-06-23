@@ -274,10 +274,10 @@ var feeWithdrawValidatorGateHeight int64 = 0
 
 var v080HardforkHeight int64 = 0
 
-// spanRotationOnStallHeight gates POS-3629: forcing a span rotation when bor's
+// ithacaHeight gates POS-3629: forcing a span rotation when bor's
 // pending head stalls under a 1/3<=PM<2/3 milestone. Zero disables it (no network
-// height assigned yet); rename to the release codename when one is chosen.
-var spanRotationOnStallHeight int64 = 0
+// height assigned yet).
+var ithacaHeight int64 = 0
 
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
@@ -519,8 +519,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		producerDowntimeHeight = 34966593
 		phuketHardforkHeight = 44070000
 		feeWithdrawValidatorGateHeight = 46361000
-		v080HardforkHeight = 0        // TODO marcello set block number when needed
-		spanRotationOnStallHeight = 0 // TODO set block number when the hardfork is scheduled
+		v080HardforkHeight = 0 // TODO marcello set block number when needed
+		ithacaHeight = 0       // TODO set block number when the hardfork is scheduled
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -533,7 +533,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		phuketHardforkHeight = 0
 		feeWithdrawValidatorGateHeight = 0
 		v080HardforkHeight = 0
-		spanRotationOnStallHeight = 0
+		ithacaHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -545,8 +545,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		producerDowntimeHeight = 20457139
 		phuketHardforkHeight = 32276400
 		feeWithdrawValidatorGateHeight = 35914000
-		v080HardforkHeight = 0        // TODO marcello set block number when needed
-		spanRotationOnStallHeight = 0 // TODO set block number when the hardfork is scheduled
+		v080HardforkHeight = 0 // TODO marcello set block number when needed
+		ithacaHeight = 0       // TODO set block number when the hardfork is scheduled
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -559,7 +559,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		phuketHardforkHeight = 0
 		feeWithdrawValidatorGateHeight = 0
 		v080HardforkHeight = 0
-		spanRotationOnStallHeight = 0
+		ithacaHeight = 0
 	}
 }
 
@@ -974,16 +974,16 @@ func GetV080HardforkHeight() int64 {
 	return v080HardforkHeight
 }
 
-func IsSpanRotationOnStall(height int64) bool {
-	return spanRotationOnStallHeight > 0 && height >= spanRotationOnStallHeight
+func IsIthaca(height int64) bool {
+	return ithacaHeight > 0 && height >= ithacaHeight
 }
 
-func SetSpanRotationOnStallHeight(height int64) {
-	spanRotationOnStallHeight = height
+func SetIthacaHeight(height int64) {
+	ithacaHeight = height
 }
 
-func GetSpanRotationOnStallHeight() int64 {
-	return spanRotationOnStallHeight
+func GetIthacaHeight() int64 {
+	return ithacaHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {

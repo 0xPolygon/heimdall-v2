@@ -1020,20 +1020,20 @@ func TestValidateLatestHead(t *testing.T) {
 }
 
 func TestActualHeadFields(t *testing.T) {
-	orig := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(orig) })
+	orig := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(orig) })
 
 	ctx := sdk.Context{}.WithBlockHeight(100)
 	header := &ethTypes.Header{Number: big.NewInt(4242)}
 
 	// Fork OFF: never emit the fields, even with a header (pre-fork VEs must stay free of the new fields).
-	helper.SetSpanRotationOnStallHeight(0)
+	helper.SetIthacaHeight(0)
 	num, hash := actualHeadFields(ctx, header)
 	require.Zero(t, num)
 	require.Nil(t, hash)
 
 	// Fork ON but no latest header (e.g. no prior milestone / no reachable Bor): empty.
-	helper.SetSpanRotationOnStallHeight(1)
+	helper.SetIthacaHeight(1)
 	num, hash = actualHeadFields(ctx, nil)
 	require.Zero(t, num)
 	require.Nil(t, hash)
@@ -1204,12 +1204,12 @@ func TestGenMilestoneProposition(t *testing.T) {
 	}))
 
 	origRio := helper.GetRioHeight()
-	origSpan := helper.GetSpanRotationOnStallHeight()
+	origSpan := helper.GetIthacaHeight()
 	t.Cleanup(func() {
 		helper.SetRioHeight(origRio)
-		helper.SetSpanRotationOnStallHeight(origSpan)
+		helper.SetIthacaHeight(origSpan)
 	})
-	helper.SetSpanRotationOnStallHeight(1)
+	helper.SetIthacaHeight(1)
 
 	batchHeaders := func(from, to int64) ([]*ethTypes.Header, []uint64, []common.Address) {
 		var hdrs []*ethTypes.Header

@@ -12,12 +12,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestInitHeimdallConfigWithSetsSpanRotationOnStallHeightPerChain drives the
+// TestInitHeimdallConfigWithSetsIthacaHeightPerChain drives the
 // real init path through each chain branch so the POS-3629 assignment lines in
 // InitHeimdallConfigWith stay covered. A tiny JSON-RPC stub and a real
 // priv_validator_key.json keep the init code on the happy path without touching
 // production services.
-func TestInitHeimdallConfigWithSetsSpanRotationOnStallHeightPerChain(t *testing.T) {
+func TestInitHeimdallConfigWithSetsIthacaHeightPerChain(t *testing.T) {
 	origConf := conf
 	origMainRPCClient := mainRPCClient
 	origBorRPCClient := borRPCClient
@@ -35,7 +35,7 @@ func TestInitHeimdallConfigWithSetsSpanRotationOnStallHeightPerChain(t *testing.
 	origPhuket := phuketHardforkHeight
 	origFeeGate := feeWithdrawValidatorGateHeight
 	origV080 := v080HardforkHeight
-	origSpan := spanRotationOnStallHeight
+	origSpan := ithacaHeight
 	t.Cleanup(func() {
 		conf = origConf
 		mainRPCClient = origMainRPCClient
@@ -54,7 +54,7 @@ func TestInitHeimdallConfigWithSetsSpanRotationOnStallHeightPerChain(t *testing.
 		phuketHardforkHeight = origPhuket
 		feeWithdrawValidatorGateHeight = origFeeGate
 		v080HardforkHeight = origV080
-		spanRotationOnStallHeight = origSpan
+		ithacaHeight = origSpan
 	})
 
 	rpcStub := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -108,7 +108,7 @@ producer_votes = ""
 			home := mkHome(t, tc.chain)
 			InitHeimdallConfigWith(home, "")
 
-			require.Equal(t, int64(0), GetSpanRotationOnStallHeight(), "POS-3629 gate stays disabled until a scheduled height is set")
+			require.Equal(t, int64(0), GetIthacaHeight(), "POS-3629 gate stays disabled until a scheduled height is set")
 			require.Equal(t, tc.wantRioHeight, GetRioHeight())
 			require.Equal(t, tc.wantInitHeight, GetInitialHeight())
 		})

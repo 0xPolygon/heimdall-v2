@@ -685,9 +685,9 @@ func TestDebouncePendingStallClockErrorsOnTrackingWrite(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
 	seedSpan(t, app, ctx)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(1)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(1)
 
 	milestoneStore := newScriptedKVStore()
 	app = newPendingStallTestApp(t, app, milestoneStore, newScriptedKVStore())
@@ -760,9 +760,9 @@ func TestDebouncePendingStallClockErrorsOnCorruptTracking(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
 	seedSpan(t, app, ctx)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(1)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(1)
 
 	store := ctx.KVStore(app.keys[milestoneTypes.StoreKey])
 	store.Set(milestoneTypes.PendingBorBlockPrefixKey.Bytes(), []byte{0x80})
@@ -779,12 +779,12 @@ func TestPreBlockerPendingStallRotatesWhenForkEnabled(t *testing.T) {
 	_, app, ctx, validatorPrivKeys := SetupAppWithABCICtxAndValidators(t, 10)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
+	origFork := helper.GetIthacaHeight()
 	t.Cleanup(func() {
-		helper.SetSpanRotationOnStallHeight(origFork)
+		helper.SetIthacaHeight(origFork)
 		helper.SetRioHeight(0)
 	})
-	helper.SetSpanRotationOnStallHeight(1) // enable the fork
+	helper.SetIthacaHeight(1) // enable the fork
 
 	ctx = ctx.WithConsensusParams(cmtproto.ConsensusParams{
 		Abci: &cmtproto.ABCIParams{VoteExtensionsEnableHeight: 1},
@@ -881,12 +881,12 @@ func TestRotateSpanFromPendingHeadNoSelectableProducer(t *testing.T) {
 func TestCheckAndRotateCurrentSpanDebouncesPendingStallClock(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
+	origFork := helper.GetIthacaHeight()
 	t.Cleanup(func() {
-		helper.SetSpanRotationOnStallHeight(origFork)
+		helper.SetIthacaHeight(origFork)
 		helper.SetRioHeight(0)
 	})
-	helper.SetSpanRotationOnStallHeight(1) // enable the fork
+	helper.SetIthacaHeight(1) // enable the fork
 
 	validators, _ := seedSpan(t, app, ctx)
 	seedProducerSelection(t, app, ctx, validators)
@@ -959,9 +959,9 @@ func TestHandlePendingMilestoneRotatesFromActualHead(t *testing.T) {
 	seedSpan(t, app, ctx)
 	seedProducerSelection(t, app, ctx, validators)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(1)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(1)
 
 	valSet := stakeTypes.NewValidatorSet(validators)
 	minVP := valSet.GetTotalVotingPower()/3 + 1
@@ -993,9 +993,9 @@ func TestHandlePendingMilestoneSkipsWithoutActualHeadAgreement(t *testing.T) {
 	validators := app.StakeKeeper.GetAllValidators(ctx)
 	seedSpan(t, app, ctx)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(1)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(1)
 
 	ctx = ctx.WithBlockHeight(5000) // well past any threshold, were a head agreed
 	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, fill32(0x07), 1))
@@ -1025,9 +1025,9 @@ func TestHandlePendingMilestonePreForkSkipsRotation(t *testing.T) {
 	seedSpan(t, app, ctx)
 	seedProducerSelection(t, app, ctx, validators)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(0)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(0)
 
 	valSet := stakeTypes.NewValidatorSet(validators)
 	minVP := valSet.GetTotalVotingPower()/3 + 1
@@ -1053,9 +1053,9 @@ func TestDebouncePendingStallClockPreForkNoop(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
 	seedSpan(t, app, ctx)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(0)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(0)
 
 	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, fill32(0x7A), 777))
 	require.NoError(t, app.debouncePendingStallClock(ctx.WithBlockHeight(9000), 9999))
@@ -1074,9 +1074,9 @@ func TestDebouncePendingStallClockNoTrackingNoop(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
 	seedSpan(t, app, ctx)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(1)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(1)
 
 	require.NoError(t, app.debouncePendingStallClock(ctx.WithBlockHeight(9000), 9999))
 
@@ -1093,9 +1093,9 @@ func TestDebouncePendingStallClockForkActiveUpdatesTracking(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
 	seedSpan(t, app, ctx)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(1)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(1)
 
 	prop := singleBlockPendingProp(psPendingHead, 0x7B)
 	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propHeadID(prop), 777))
@@ -1115,9 +1115,9 @@ func TestHandlePendingMilestoneMissingLastSpanErrors(t *testing.T) {
 	_, app, ctx, privKeys := SetupAppWithABCICtxAndValidators(t, 3)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(1)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(1)
 
 	valSet := stakeTypes.NewValidatorSet(validators)
 	minVP := valSet.GetTotalVotingPower()/3 + 1
@@ -1136,9 +1136,9 @@ func TestHandlePendingMilestoneErrorsOnMalformedActualHeadVote(t *testing.T) {
 	validators := app.StakeKeeper.GetAllValidators(ctx)
 	seedSpan(t, app, ctx)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(1)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(1)
 
 	valSet := stakeTypes.NewValidatorSet(validators)
 	minVP := valSet.GetTotalVotingPower()/3 + 1
@@ -1164,9 +1164,9 @@ func TestHandlePendingMilestoneDropsOutOfRangeActualHead(t *testing.T) {
 	seedSpan(t, app, ctx) // span [psSpanStart, psSpanEnd]
 	seedProducerSelection(t, app, ctx, validators)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(1)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(1)
 
 	valSet := stakeTypes.NewValidatorSet(validators)
 	minVP := valSet.GetTotalVotingPower()/3 + 1
@@ -1209,9 +1209,9 @@ func TestRotateSpanFromPendingHeadFallsBackToLastSpanStart(t *testing.T) {
 	require.NoError(t, app.BorKeeper.AddNewSpan(ctx, &futureSpan))
 	seedProducerSelection(t, app, ctx, validators)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(1)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(1)
 
 	prop := singleBlockPendingProp(150, 0x66)
 	require.NoError(t, app.rotateSpanFromPendingHead(ctx.WithBlockHeight(5000), prop.StartBlockNumber, propHeadID(prop)))
@@ -1247,9 +1247,9 @@ func TestHandlePendingMilestoneRecoversAcrossSpanBoundary(t *testing.T) {
 	seedProducerSelection(t, app, ctx, validators)
 	seedFutureSpan(t, app, ctx, valSlice)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(1)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(1)
 
 	valSet := stakeTypes.NewValidatorSet(validators)
 	minVP := valSet.GetTotalVotingPower()/3 + 1
@@ -1287,9 +1287,9 @@ func TestHandlePendingMilestoneByzantineMinorityCannotSteerHead(t *testing.T) {
 	seedProducerSelection(t, app, ctx, validators)
 	seedFutureSpan(t, app, ctx, valSlice)
 
-	origFork := helper.GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
-	helper.SetSpanRotationOnStallHeight(1)
+	origFork := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origFork) })
+	helper.SetIthacaHeight(1)
 
 	valSet := stakeTypes.NewValidatorSet(validators)
 	minVP := valSet.GetTotalVotingPower()/3 + 1

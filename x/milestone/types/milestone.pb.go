@@ -198,7 +198,7 @@ type MilestoneProposition struct {
 	BlockTds []uint64 `protobuf:"varint,4,rep,packed,name=block_tds,json=blockTds,proto3" json:"block_tds,omitempty"`
 	// Actual latest bor block number observed by the proposing validator, which
 	// may be beyond the (capped) proposition window. Populated only after the
-	// SpanRotationOnStall fork; lets the pending-stall rotation key on the real
+	// Ithaca fork; lets the pending-stall rotation key on the real
 	// head instead of the truncated proposition tail (POS-3629).
 	LatestBlockNumber uint64 `protobuf:"varint,5,opt,name=latest_block_number,json=latestBlockNumber,proto3" json:"latest_block_number,omitempty"`
 	// Hash of the block at latest_block_number. Empty pre-fork. The two

@@ -7,24 +7,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestIsSpanRotationOnStall verifies the POS-3629 hardfork gate: disabled when the height is
+// TestIsIthaca verifies the POS-3629 hardfork gate: disabled when the height is
 // zero (the default on every network), and active only at/after a configured height.
-func TestIsSpanRotationOnStall(t *testing.T) {
-	orig := GetSpanRotationOnStallHeight()
-	t.Cleanup(func() { SetSpanRotationOnStallHeight(orig) })
+func TestIsIthaca(t *testing.T) {
+	orig := GetIthacaHeight()
+	t.Cleanup(func() { SetIthacaHeight(orig) })
 
 	// Disabled by default: never active, regardless of height.
-	SetSpanRotationOnStallHeight(0)
-	require.False(t, IsSpanRotationOnStall(0))
-	require.False(t, IsSpanRotationOnStall(1))
-	require.False(t, IsSpanRotationOnStall(1_000_000))
+	SetIthacaHeight(0)
+	require.False(t, IsIthaca(0))
+	require.False(t, IsIthaca(1))
+	require.False(t, IsIthaca(1_000_000))
 
 	// Once set, active at and after the height, inactive before it.
-	SetSpanRotationOnStallHeight(100)
-	require.Equal(t, int64(100), GetSpanRotationOnStallHeight())
-	require.False(t, IsSpanRotationOnStall(99))
-	require.True(t, IsSpanRotationOnStall(100))
-	require.True(t, IsSpanRotationOnStall(101))
+	SetIthacaHeight(100)
+	require.Equal(t, int64(100), GetIthacaHeight())
+	require.False(t, IsIthaca(99))
+	require.True(t, IsIthaca(100))
+	require.True(t, IsIthaca(101))
 }
 
 // TestGetBorStallThreshold keeps the POS-3629 threshold alias honest: the stall
@@ -40,11 +40,11 @@ func TestGetBorStallThreshold(t *testing.T) {
 func TestConfigAccessorsAndSetters(t *testing.T) {
 	origRio := GetRioHeight()
 	origPhuket := GetPhuketHardforkHeight()
-	origSpan := GetSpanRotationOnStallHeight()
+	origSpan := GetIthacaHeight()
 	t.Cleanup(func() {
 		SetRioHeight(origRio)
 		SetPhuketHardforkHeight(origPhuket)
-		SetSpanRotationOnStallHeight(origSpan)
+		SetIthacaHeight(origSpan)
 	})
 
 	_ = GetTallyFixHeight()

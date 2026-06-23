@@ -21,7 +21,7 @@ import (
 func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone *milestoneTypes.MilestoneProposition, validatorSet *stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, minMajorityVP int64) error {
 	logger := app.Logger()
 
-	if helper.IsSpanRotationOnStall(ctx.BlockHeight()) {
+	if helper.IsIthaca(ctx.BlockHeight()) {
 		// Key the stall/rotation on the >1/3-agreed actual bor head, not the capped milestone
 		// proposition tail, so blocks the producer made beyond the proposition window are preserved
 		// rather than reorged (POS-3629).
@@ -260,7 +260,7 @@ func (app *HeimdallApp) recordPendingStallRotation(ctx sdk.Context, pendingHead 
 // debounce there would instead hand an already-stalled producer a fresh buffer window — a liveness
 // regression. No-op before the fork or when no stall clock is running, so it adds no pre-fork state write.
 func (app *HeimdallApp) debouncePendingStallClock(ctx sdk.Context, debounceHeight uint64) error {
-	if !helper.IsSpanRotationOnStall(ctx.BlockHeight()) {
+	if !helper.IsIthaca(ctx.BlockHeight()) {
 		return nil
 	}
 

@@ -127,11 +127,11 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 // actualHeadFields returns the actual latest bor head (number, hash) to embed in a proposition for
 // the pending-stall rotation to key on instead of the capped proposition tail (POS-3629). Emission
 // is fork-gated on the vote extension's own height: VE validation rejects unknown fields, so these
-// must not appear before the SpanRotationOnStall height, by which point the network has done the
+// must not appear before the Ithaca height, by which point the network has done the
 // coordinated upgrade the fork requires. Returns zero/nil when the fork is off or no latest header
 // is available (e.g. no prior milestone).
 func actualHeadFields(ctx sdk.Context, latestHeader *ethTypes.Header) (uint64, []byte) {
-	if !helper.IsSpanRotationOnStall(ctx.BlockHeight()) || latestHeader == nil {
+	if !helper.IsIthaca(ctx.BlockHeight()) || latestHeader == nil {
 		return 0, nil
 	}
 	return latestHeader.Number.Uint64(), latestHeader.Hash().Bytes()
