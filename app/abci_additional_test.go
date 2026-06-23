@@ -49,9 +49,9 @@ func TestPrepareProposalHandler_SkipsBorSideMessages(t *testing.T) {
 	})
 
 	t.Run("skips MsgSetProducerDowntime with target before fork", func(t *testing.T) {
-		origV080 := helper.GetV080HardforkHeight()
-		t.Cleanup(func() { helper.SetV080HardforkHeight(origV080) })
-		helper.SetV080HardforkHeight(1_000_000)
+		origZurich := helper.GetZurichHardforkHeight()
+		t.Cleanup(func() { helper.SetZurichHardforkHeight(origZurich) })
+		helper.SetZurichHardforkHeight(1_000_000)
 
 		msg := &borTypes.MsgSetProducerDowntime{
 			Producer: validators[0].Signer,
@@ -110,9 +110,9 @@ func TestProcessProposalHandler_RejectsBorSideMessages(t *testing.T) {
 	})
 
 	t.Run("rejects MsgSetProducerDowntime with target before fork", func(t *testing.T) {
-		origV080 := helper.GetV080HardforkHeight()
-		t.Cleanup(func() { helper.SetV080HardforkHeight(origV080) })
-		helper.SetV080HardforkHeight(1_000_000)
+		origZurich := helper.GetZurichHardforkHeight()
+		t.Cleanup(func() { helper.SetZurichHardforkHeight(origZurich) })
+		helper.SetZurichHardforkHeight(1_000_000)
 
 		msg := &borTypes.MsgSetProducerDowntime{
 			Producer: validators[0].Signer,

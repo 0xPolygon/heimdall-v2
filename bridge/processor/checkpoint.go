@@ -464,7 +464,7 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 	currentHeaderBlockNumber := big.NewInt(0).SetUint64(currentHeaderBlock)
 
 	// get header info
-	_, currentStart, currentEnd, _, _, err := cp.contractCaller.GetHeaderInfo(currentHeaderBlockNumber.Uint64(), rootChainInstance, checkpointParams.ChildChainBlockInterval)
+	_, currentStart, currentEnd, _, _, err := cp.contractCaller.GetHeaderInfo(context.Background(), currentHeaderBlockNumber.Uint64(), rootChainInstance, checkpointParams.ChildChainBlockInterval)
 	if err != nil {
 		cp.Logger.Error(errMsgCpFetchingHeaderBlockObject, "error", err)
 		return nil, err
@@ -519,7 +519,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 	checkpointParams := checkpointContext.CheckpointParams
 
 	// Get root hash
-	root, err := cp.contractCaller.GetRootHash(start, end, checkpointParams.MaxCheckpointLength)
+	root, err := cp.contractCaller.GetRootHash(context.Background(), start, end, checkpointParams.MaxCheckpointLength)
 	if err != nil {
 		return err
 	}
@@ -730,7 +730,7 @@ func (cp *CheckpointProcessor) getLatestCheckpointTime(checkpointContext *Checkp
 	}
 
 	// header block
-	_, _, _, createdAt, _, err := cp.contractCaller.GetHeaderInfo(lastHeaderNumber, rootChainInstance, checkpointParams.ChildChainBlockInterval)
+	_, _, _, createdAt, _, err := cp.contractCaller.GetHeaderInfo(context.Background(), lastHeaderNumber, rootChainInstance, checkpointParams.ChildChainBlockInterval)
 	if err != nil {
 		cp.Logger.Error(errMsgCpFetchingHeaderBlock, "error", err)
 		return 0, err

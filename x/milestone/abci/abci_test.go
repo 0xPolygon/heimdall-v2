@@ -234,6 +234,13 @@ func TestGetMajorityMilestoneProposition_MajorityWins(t *testing.T) {
 // does not. The canonical parent (lastEndBlockHash) must be selected whenever it clears the threshold,
 // regardless of any other parent's voting power, so the honest milestone is returned.
 func TestGetMajorityMilestoneProposition_TwoParentsClearThreshold(t *testing.T) {
+	// POS-3629 canonical-parent behavior is gated by Ithaca (which activates after Zurich).
+	helper.SetZurichHardforkHeight(1)
+	helper.SetIthacaHeight(1)
+	t.Cleanup(func() {
+		helper.SetZurichHardforkHeight(0)
+		helper.SetIthacaHeight(0)
+	})
 	ctx := sdk.Context{}.WithBlockHeight(100)
 
 	// Total voting power 100, so majorityVP = 34 is 1/3+1; both 40 and 35 clear it.
@@ -302,6 +309,13 @@ func TestGetMajorityMilestoneProposition_TwoParentsClearThreshold(t *testing.T) 
 // nil. A tournament with an ascending lex tie-break would hand the equal-power case to the bogus
 // parent and return nil, silently dropping the pending-stall path.
 func TestGetMajorityMilestoneProposition_ByzantineEqualPowerBogusParent(t *testing.T) {
+	// POS-3629 canonical-parent behavior is gated by Ithaca (which activates after Zurich).
+	helper.SetZurichHardforkHeight(1)
+	helper.SetIthacaHeight(1)
+	t.Cleanup(func() {
+		helper.SetZurichHardforkHeight(0)
+		helper.SetIthacaHeight(0)
+	})
 	ctx := sdk.Context{}.WithBlockHeight(100)
 
 	// Total voting power 100, majorityVP = 34. Honest and byzantine groups have equal power; both clear.
@@ -370,6 +384,13 @@ func TestGetMajorityMilestoneProposition_ByzantineEqualPowerBogusParent(t *testi
 // lastEndBlock+1. The parent-child majority check must use that returned start block; keying it by the
 // first majority block would incorrectly drop the valid pending range.
 func TestGetMajorityMilestoneProposition_ParentCheckUsesReturnedStartBlock(t *testing.T) {
+	// The startBlock-keyed parent check is the POS-3629 fix, gated by Ithaca (after Zurich).
+	helper.SetZurichHardforkHeight(1)
+	helper.SetIthacaHeight(1)
+	t.Cleanup(func() {
+		helper.SetZurichHardforkHeight(0)
+		helper.SetIthacaHeight(0)
+	})
 	ctx := sdk.Context{}.WithBlockHeight(100)
 
 	// Total voting power 100, majorityVP = 34. Both the earlier overlapping block and the returned
@@ -429,6 +450,197 @@ func TestGetMajorityMilestoneProposition_ParentCheckUsesReturnedStartBlock(t *te
 	assert.Equal(t, returnedStartBlock, resultProp.StartBlockNumber)
 	assert.Equal(t, propReturned.BlockHashes, resultProp.BlockHashes)
 	assert.Equal(t, propReturned.BlockTds, resultProp.BlockTds)
+}
+
+func TestGetMajorityMilestoneProposition_MultipleMajorityParentsAlwaysUsesLastEndHash(t *testing.T) {
+	helper.SetZurichHardforkHeight(1)
+	helper.SetIthacaHeight(0) // exercise the Zurich (pre-Ithaca) parent check
+	t.Cleanup(func() {
+		helper.SetZurichHardforkHeight(0)
+		helper.SetIthacaHeight(0)
+	})
+	ctx := sdk.Context{}.WithBlockHeight(100)
+
+	validators := []*stakeTypes.Validator{
+		{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 25},
+		{Signer: "0x2222222222222222222222222222222222222222", VotingPower: 25},
+		{Signer: "0x3333333333333333333333333333333333333333", VotingPower: 25},
+		{Signer: "0x4444444444444444444444444444444444444444", VotingPower: 25},
+	}
+	validatorSet := &stakeTypes.ValidatorSet{Validators: validators}
+
+	lastEndHash := []byte("parentA")
+	altParentHash := []byte("parentB")
+	startBlock := uint64(1)
+	blockHash := []byte("same-block-hash")
+	blockTd := uint64(1)
+
+	mkVote := func(val *stakeTypes.Validator, parentHash []byte) abciTypes.ExtendedVoteInfo {
+		prop := &types.MilestoneProposition{
+			BlockHashes:      [][]byte{blockHash},
+			StartBlockNumber: startBlock,
+			ParentHash:       parentHash,
+			BlockTds:         []uint64{blockTd},
+		}
+		ve := &sidetxs.VoteExtension{MilestoneProposition: prop}
+		data, err := ve.Marshal()
+		require.NoError(t, err)
+		return abciTypes.ExtendedVoteInfo{
+			BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
+			VoteExtension: data,
+			Validator:     abciTypes.Validator{Address: common.HexToAddress(val.Signer).Bytes()},
+		}
+	}
+
+	extVotes := []abciTypes.ExtendedVoteInfo{
+		mkVote(validators[0], lastEndHash),
+		mkVote(validators[1], lastEndHash),
+		mkVote(validators[2], altParentHash),
+		mkVote(validators[3], altParentHash),
+	}
+	logger := log.NewTestLogger(t)
+	lastEndBlock := startBlock - 1
+
+	for i := 0; i < 200; i++ {
+		// Rotate ordering to ensure outcome is independent from extVotes order.
+		orderedVotes := make([]abciTypes.ExtendedVoteInfo, 0, len(extVotes))
+		for j := 0; j < len(extVotes); j++ {
+			orderedVotes = append(orderedVotes, extVotes[(i+j)%len(extVotes)])
+		}
+
+		resultProp, _, _, _, err := GetMajorityMilestoneProposition(
+			ctx,
+			validatorSet,
+			orderedVotes,
+			34, // both parents independently satisfy this threshold
+			logger,
+			&lastEndBlock,
+			lastEndHash,
+		)
+		require.NoError(t, err)
+		require.NotNil(t, resultProp, "iteration %d returned nil despite lastEndHash having majority support", i)
+	}
+}
+
+func TestGetMajorityMilestoneProposition_TwoThirdsThresholdWithLastEndParent(t *testing.T) {
+	helper.SetZurichHardforkHeight(1)
+	helper.SetIthacaHeight(0) // exercise the Zurich (pre-Ithaca) parent check
+	t.Cleanup(func() {
+		helper.SetZurichHardforkHeight(0)
+		helper.SetIthacaHeight(0)
+	})
+	ctx := sdk.Context{}.WithBlockHeight(100)
+
+	validators := []*stakeTypes.Validator{
+		{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 40},
+		{Signer: "0x2222222222222222222222222222222222222222", VotingPower: 30},
+		{Signer: "0x3333333333333333333333333333333333333333", VotingPower: 30},
+	}
+	validatorSet := &stakeTypes.ValidatorSet{Validators: validators}
+
+	startBlock := uint64(1)
+	lastEndHash := []byte("parentA")
+	blockHash := []byte("same-block-hash")
+	blockTd := uint64(1)
+
+	mkVote := func(val *stakeTypes.Validator) abciTypes.ExtendedVoteInfo {
+		prop := &types.MilestoneProposition{
+			BlockHashes:      [][]byte{blockHash},
+			StartBlockNumber: startBlock,
+			ParentHash:       lastEndHash,
+			BlockTds:         []uint64{blockTd},
+		}
+		ve := &sidetxs.VoteExtension{MilestoneProposition: prop}
+		data, err := ve.Marshal()
+		require.NoError(t, err)
+		return abciTypes.ExtendedVoteInfo{
+			BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
+			VoteExtension: data,
+			Validator:     abciTypes.Validator{Address: common.HexToAddress(val.Signer).Bytes()},
+		}
+	}
+
+	extVotes := []abciTypes.ExtendedVoteInfo{
+		mkVote(validators[0]),
+		mkVote(validators[1]),
+		mkVote(validators[2]),
+	}
+
+	logger := log.NewTestLogger(t)
+	lastEndBlock := startBlock - 1
+
+	resultProp, _, _, _, err := GetMajorityMilestoneProposition(
+		ctx,
+		validatorSet,
+		extVotes,
+		67, // 2/3+1 of total voting power 100
+		logger,
+		&lastEndBlock,
+		lastEndHash,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, resultProp, "expected milestone proposition for 2/3+1 threshold")
+}
+
+func TestGetMajorityMilestoneProposition_ReturnsNilWhenLastEndParentBelowThreshold(t *testing.T) {
+	helper.SetZurichHardforkHeight(1)
+	helper.SetIthacaHeight(0) // exercise the Zurich (pre-Ithaca) parent check
+	t.Cleanup(func() {
+		helper.SetZurichHardforkHeight(0)
+		helper.SetIthacaHeight(0)
+	})
+	ctx := sdk.Context{}.WithBlockHeight(100)
+
+	validators := []*stakeTypes.Validator{
+		{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 40},
+		{Signer: "0x2222222222222222222222222222222222222222", VotingPower: 30},
+		{Signer: "0x3333333333333333333333333333333333333333", VotingPower: 30},
+	}
+	validatorSet := &stakeTypes.ValidatorSet{Validators: validators}
+
+	startBlock := uint64(1)
+	lastEndHash := []byte("parentA")
+	altParentHash := []byte("parentB")
+	blockHash := []byte("same-block-hash")
+	blockTd := uint64(1)
+
+	mkVote := func(val *stakeTypes.Validator, parentHash []byte) abciTypes.ExtendedVoteInfo {
+		prop := &types.MilestoneProposition{
+			BlockHashes:      [][]byte{blockHash},
+			StartBlockNumber: startBlock,
+			ParentHash:       parentHash,
+			BlockTds:         []uint64{blockTd},
+		}
+		ve := &sidetxs.VoteExtension{MilestoneProposition: prop}
+		data, err := ve.Marshal()
+		require.NoError(t, err)
+		return abciTypes.ExtendedVoteInfo{
+			BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
+			VoteExtension: data,
+			Validator:     abciTypes.Validator{Address: common.HexToAddress(val.Signer).Bytes()},
+		}
+	}
+
+	extVotes := []abciTypes.ExtendedVoteInfo{
+		mkVote(validators[0], altParentHash), // 40
+		mkVote(validators[1], altParentHash), // +30 => 70 (meets threshold)
+		mkVote(validators[2], lastEndHash),   // 30 (below threshold)
+	}
+
+	logger := log.NewTestLogger(t)
+	lastEndBlock := startBlock - 1
+
+	resultProp, _, _, _, err := GetMajorityMilestoneProposition(
+		ctx,
+		validatorSet,
+		extVotes,
+		67, // 2/3+1 of total voting power 100
+		logger,
+		&lastEndBlock,
+		lastEndHash,
+	)
+	require.NoError(t, err)
+	require.Nil(t, resultProp, "expected nil when lastEndBlockHash parent does not have threshold support")
 }
 
 func TestValidateMilestonePropositionFork(t *testing.T) {

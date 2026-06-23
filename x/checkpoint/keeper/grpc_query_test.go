@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/mock"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
@@ -152,7 +153,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 		timestamp,
 	)
 
-	contractCaller.On("GetRootHash", checkpointBlock.StartBlock, checkpointBlock.EndBlock, uint64(1024)).Return(checkpointBlock.RootHash, nil)
+	contractCaller.On("GetRootHash", mock.Anything, checkpointBlock.StartBlock, checkpointBlock.EndBlock, uint64(1024)).Return(checkpointBlock.RootHash, nil)
 	err := keeper.AddCheckpoint(ctx, checkpointBlock)
 	require.NoError(err)
 

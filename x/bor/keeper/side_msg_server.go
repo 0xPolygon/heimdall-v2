@@ -279,13 +279,13 @@ func (srv sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 	}
 
 	// Reject non-default target before the fork height.
-	if msg.TargetProducerId != types.RoundRobinDefault && ctx.BlockHeight() < helper.GetV080HardforkHeight() {
+	if msg.TargetProducerId != types.RoundRobinDefault && ctx.BlockHeight() < helper.GetZurichHardforkHeight() {
 		logger.Error("Target producer override is not yet enabled",
-			"targetProducerId", msg.TargetProducerId, "forkHeight", helper.GetV080HardforkHeight())
+			"targetProducerId", msg.TargetProducerId, "forkHeight", helper.GetZurichHardforkHeight())
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	if msg.TargetProducerId != types.RoundRobinDefault && ctx.BlockHeight() >= helper.GetV080HardforkHeight() {
+	if msg.TargetProducerId != types.RoundRobinDefault && ctx.BlockHeight() >= helper.GetZurichHardforkHeight() {
 		// Target producer must be a validator.
 		_, err := srv.k.sk.GetValidatorFromValID(ctx, msg.TargetProducerId)
 		if err != nil {
@@ -694,7 +694,7 @@ func (srv sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 
 	// Span duration is inclusive: endBlock = startBlock + spanDuration - 1.
 	var spanEndBlock uint64
-	if ctx.BlockHeight() >= helper.GetV080HardforkHeight() {
+	if ctx.BlockHeight() >= helper.GetZurichHardforkHeight() {
 		spanEndBlock = msg.DowntimeRange.StartBlock + params.SpanDuration - 1
 	} else {
 		spanEndBlock = msg.DowntimeRange.StartBlock + params.SpanDuration

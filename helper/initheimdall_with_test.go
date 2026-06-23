@@ -34,7 +34,7 @@ func TestInitHeimdallConfigWithSetsIthacaHeightPerChain(t *testing.T) {
 	origProducerDown := producerDowntimeHeight
 	origPhuket := phuketHardforkHeight
 	origFeeGate := feeWithdrawValidatorGateHeight
-	origV080 := v080HardforkHeight
+	origZurich := zurichHardforkHeight
 	origSpan := ithacaHeight
 	t.Cleanup(func() {
 		conf = origConf
@@ -53,7 +53,7 @@ func TestInitHeimdallConfigWithSetsIthacaHeightPerChain(t *testing.T) {
 		producerDowntimeHeight = origProducerDown
 		phuketHardforkHeight = origPhuket
 		feeWithdrawValidatorGateHeight = origFeeGate
-		v080HardforkHeight = origV080
+		zurichHardforkHeight = origZurich
 		ithacaHeight = origSpan
 	})
 

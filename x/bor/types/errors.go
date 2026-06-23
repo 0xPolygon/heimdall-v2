@@ -8,5 +8,6 @@ var (
 	ErrInvalidLastBorSpanID    = errors.New("invalid last bor span id")
 	ErrInvalidSeedLength       = errors.New("invalid seed length")
 	ErrFailedToQueryBor        = errors.New("failed to query bor")
+	ErrBorBlockNotFound        = errors.New("bor block not found locally")
 	ErrLatestMilestoneNotFound = errors.New("latest milestone not found")
 )

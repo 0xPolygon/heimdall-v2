@@ -56,7 +56,7 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 	}
 	// get main tx receipt
 	txHash := common.FromHex(req.TxHash)
-	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.MainChainTxConfirmations)
+	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(ctx, common.BytesToHash(txHash), chainParams.MainChainTxConfirmations)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -102,7 +102,7 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 	}
 	// get main tx receipt
 	txHash := common.FromHex(req.TxHash)
-	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.MainChainTxConfirmations)
+	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(ctx, common.BytesToHash(txHash), chainParams.MainChainTxConfirmations)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

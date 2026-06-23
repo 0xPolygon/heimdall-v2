@@ -95,8 +95,8 @@ func getTests(t *testing.T, priv cryptotypes.PrivKey, app *HeimdallApp, ctx sdk.
 			),
 			mockCaller: func() *helpermocks.IContractCaller {
 				m := baseMockCaller()
-				m.On("CheckIfBlocksExist", mock.Anything).Return(true, nil)
-				m.On("GetRootHash", uint64(0), uint64(200), mock.Anything).
+				m.On("CheckIfBlocksExist", mock.Anything, mock.Anything).Return(true, nil)
+				m.On("GetRootHash", mock.Anything, uint64(0), uint64(200), mock.Anything).
 					Return(common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"), nil)
 				return m
 			}(),
@@ -125,7 +125,7 @@ func getTests(t *testing.T, priv cryptotypes.PrivKey, app *HeimdallApp, ctx sdk.
 			),
 			mockCaller: func() *helpermocks.IContractCaller {
 				m := baseMockCaller()
-				m.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).
+				m.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).
 					Return(validReceipt(100), nil)
 				m.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).
 					Return(&statesender.StatesenderStateSynced{
@@ -156,7 +156,7 @@ func getTests(t *testing.T, priv cryptotypes.PrivKey, app *HeimdallApp, ctx sdk.
 			),
 			mockCaller: func() *helpermocks.IContractCaller {
 				m := baseMockCaller()
-				m.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).
+				m.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).
 					Return(validReceipt(50), nil)
 				feeAmt := big.NewInt(0).Mul(big.NewInt(10), big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil))
 				m.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).
@@ -205,7 +205,7 @@ func getTests(t *testing.T, priv cryptotypes.PrivKey, app *HeimdallApp, ctx sdk.
 			}(),
 			mockCaller: func() *helpermocks.IContractCaller {
 				m := baseMockCaller()
-				m.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).
+				m.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).
 					Return(validReceipt(200), nil)
 				m.On("DecodeValidatorJoinEvent", mock.Anything, mock.Anything, mock.Anything).
 					Return((*stakinginfo.StakinginfoStaked)(nil), nil)
@@ -289,7 +289,7 @@ func getTests(t *testing.T, priv cryptotypes.PrivKey, app *HeimdallApp, ctx sdk.
 			mockCaller: func() *helpermocks.IContractCaller {
 				m := baseMockCaller()
 				// Clerk mocks
-				m.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).
+				m.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).
 					Return(validReceipt(100), nil)
 				m.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).
 					Return(&statesender.StatesenderStateSynced{
@@ -340,7 +340,7 @@ func getTests(t *testing.T, priv cryptotypes.PrivKey, app *HeimdallApp, ctx sdk.
 			),
 			mockCaller: func() *helpermocks.IContractCaller {
 				m := baseMockCaller()
-				m.On("CheckIfBlocksExist", mock.Anything).Return(true, nil)
+				m.On("CheckIfBlocksExist", mock.Anything, mock.Anything).Return(true, nil)
 				m.On("GetRootHash", mock.Anything, mock.Anything, mock.Anything).
 					Return(common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"), nil)
 				return m
@@ -372,7 +372,7 @@ func getTests(t *testing.T, priv cryptotypes.PrivKey, app *HeimdallApp, ctx sdk.
 			mockCaller: func() *helpermocks.IContractCaller {
 				m := baseMockCaller()
 				// Checkpoint validation will fail because the blocks don't exist, hence VOTE_NO
-				m.On("CheckIfBlocksExist", mock.Anything).Return(false, nil)
+				m.On("CheckIfBlocksExist", mock.Anything, mock.Anything).Return(false, nil)
 				m.On("GetRootHash", mock.Anything, mock.Anything, mock.Anything).
 					Return([]byte{}, nil)
 				return m

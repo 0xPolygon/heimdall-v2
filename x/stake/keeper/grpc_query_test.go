@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -135,7 +136,7 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 	err = keeper.SetStakingSequence(ctx, sequence.String())
 	require.NoError(err)
 
-	contractCaller.On("GetConfirmedTxReceipt", common.BytesToHash(common.FromHex(TxHash1)), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, common.BytesToHash(common.FromHex(TxHash1)), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 	res, err := queryClient.IsStakeTxOld(ctx, req)
 

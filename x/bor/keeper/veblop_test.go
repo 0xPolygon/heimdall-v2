@@ -174,6 +174,49 @@ func (s *KeeperTestSuite) TestCalculateProducerSet() {
 	}
 }
 
+func (s *KeeperTestSuite) TestCalculateProducerSet_ExcludesDeactivatedVoter() {
+	require := s.Require()
+	borKeeper := s.borKeeper
+	stakeKeeper := s.stakeKeeper
+
+	const zurichHeight = 100
+	helper.SetZurichHardforkHeight(zurichHeight)
+	defer helper.SetZurichHardforkHeight(0)
+
+	// Active set holds only val1 and val2; val3 has exited and is absent from
+	// the set but still has a stored ballot and a non-zero individual record
+	val1 := staketypes.Validator{ValId: 1, VotingPower: 100}
+	val2 := staketypes.Validator{ValId: 2, VotingPower: 100}
+	deactivatedVal3 := staketypes.Validator{ValId: 3, VotingPower: 150}
+
+	valSet := staketypes.ValidatorSet{Validators: []*staketypes.Validator{&val1, &val2}}
+	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).Return(valSet, nil).AnyTimes()
+	stakeKeeper.EXPECT().GetValidatorFromValID(gomock.Any(), val1.ValId).Return(val1, nil).AnyTimes()
+	stakeKeeper.EXPECT().GetValidatorFromValID(gomock.Any(), val2.ValId).Return(val2, nil).AnyTimes()
+	stakeKeeper.EXPECT().GetValidatorFromValID(gomock.Any(), deactivatedVal3.ValId).Return(deactivatedVal3, nil).AnyTimes()
+
+	prodA, prodB := uint64(101), uint64(102)
+
+	require.NoError(borKeeper.ClearProducerVotes(s.ctx))
+	require.NoError(borKeeper.SetProducerVotes(s.ctx, val1.ValId, types.ProducerVotes{Votes: []uint64{prodB, prodA}}))
+	require.NoError(borKeeper.SetProducerVotes(s.ctx, val2.ValId, types.ProducerVotes{Votes: []uint64{prodB, prodA}}))
+	require.NoError(borKeeper.SetProducerVotes(s.ctx, deactivatedVal3.ValId, types.ProducerVotes{Votes: []uint64{prodA}}))
+
+	s.Run("pre-zurich: stale power flips the winner to prodA", func() {
+		ctx := s.ctx.WithBlockHeight(zurichHeight - 1)
+		candidates, err := borKeeper.CalculateProducerSet(ctx, 1)
+		require.NoError(err)
+		require.Equal([]uint64{prodA}, candidates)
+	})
+
+	s.Run("at-zurich: deactivated voter excluded, prodB wins", func() {
+		ctx := s.ctx.WithBlockHeight(zurichHeight)
+		candidates, err := borKeeper.CalculateProducerSet(ctx, 1)
+		require.NoError(err)
+		require.Equal([]uint64{prodB}, candidates)
+	})
+}
+
 func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 	require := s.Require()
 	ctx := s.ctx
@@ -608,7 +651,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducerWithTarget() {
 
 	// Ensure the target-producer override is enabled regardless of any future
 	// activation height configured in the binary.
-	helper.SetV080HardforkHeight(0)
+	helper.SetZurichHardforkHeight(0)
 
 	s.milestoneKeeper.EXPECT().GetLastMilestone(ctx).Return(&milestoneTypes.Milestone{
 		EndBlock: 1000,

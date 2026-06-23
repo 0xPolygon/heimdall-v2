@@ -162,6 +162,18 @@ func (srv msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProduc
 		seen[vote] = true
 	}
 
+	// Post-Zurich, a validator no longer in the active set cannot vote
+	// for producers
+	if helper.IsZurichHardfork(sdk.UnwrapSDKContext(ctx).BlockHeight()) {
+		active, err := srv.isValidatorInActiveSet(ctx, msg.VoterId)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to check active status for voter id %d", msg.VoterId)
+		}
+		if !active {
+			return nil, fmt.Errorf("voter id %d is not in the active validator set", msg.VoterId)
+		}
+	}
+
 	err = srv.SetProducerVotes(ctx, msg.VoterId, msg.Votes)
 	if err != nil {
 		return nil, err
@@ -326,12 +338,12 @@ func (srv msgServer) SetProducerDowntime(ctx context.Context, msg *types.MsgSetP
 	}
 
 	// Reject non-default target before the fork height.
-	if msg.TargetProducerId != types.RoundRobinDefault && sdkCtx.BlockHeight() < helper.GetV080HardforkHeight() {
-		return nil, fmt.Errorf("target producer override is not enabled until height %d", helper.GetV080HardforkHeight())
+	if msg.TargetProducerId != types.RoundRobinDefault && sdkCtx.BlockHeight() < helper.GetZurichHardforkHeight() {
+		return nil, fmt.Errorf("target producer override is not enabled until height %d", helper.GetZurichHardforkHeight())
 	}
 
 	// Validate target producer if it is not the round-robin default and the block height is greater than the target producer override height.
-	if msg.TargetProducerId != types.RoundRobinDefault && sdkCtx.BlockHeight() >= helper.GetV080HardforkHeight() {
+	if msg.TargetProducerId != types.RoundRobinDefault && sdkCtx.BlockHeight() >= helper.GetZurichHardforkHeight() {
 		if msg.TargetProducerId == producerId {
 			return nil, fmt.Errorf("target producer cannot be the same as the current producer")
 		}

@@ -303,25 +303,48 @@ func GetMajorityMilestoneProposition(
 		return nil, nil, "", nil, nil
 	}
 
-	// The only legitimate parent is the last milestone's end block hash; nothing else can produce a
-	// valid pending milestone. Look it up directly instead of running a tournament over every proposed
-	// parent: parent hashes are not bound by ValidateMilestoneProposition, so a byzantine slice can vote
-	// the real blocks under a fabricated parent, and under the 1/3 pending threshold that bogus parent
-	// can clear majority alongside the honest one. Key the check by the first block we will return,
-	// not the first majority block, because earlier overlapping blocks may also have majority support.
+	// Validate the proposition's parent against the last milestone's end block hash — the only
+	// legitimate parent. Parent hashes are not bound by ValidateMilestoneProposition, so a byzantine
+	// slice can vote real blocks under a fabricated parent; under the 1/3 pending threshold that bogus
+	// parent can clear majority alongside the honest one. The check is hardfork-gated so already-live
+	// behavior is preserved and only the gate boundary ever changes behavior, never a finalized height:
+	//   - Ithaca: key by the block we will actually return (startBlock), because earlier overlapping
+	//     blocks may also have majority support and must not decide the parent (POS-3629);
+	//   - Zurich (already live): the deployed direct lookup keyed on majorityBlocks[0];
+	//   - pre-Zurich: the legacy tournament over proposed parents.
+	// Ithaca is checked first since it activates after Zurich.
 	lastEndBlockHashHex := common.Bytes2Hex(lastEndBlockHash)
-	isParentHashMajority := false
-	if _, ok := parentHashes[lastEndBlockHashHex]; ok {
+	if helper.IsIthaca(ctx.BlockHeight()) {
 		key := getParentChildKey(lastEndBlockHashHex, common.Bytes2Hex(blockToHashAndTd[startBlock]))
-		if parentHashToVotingPower[key] >= majorityVP {
-			isParentHashMajority = true
+		if parentHashToVotingPower[key] < majorityVP {
+			logger.Debug("No parent hash with majority support matching the last end block hash",
+				"lastEndBlockHash", lastEndBlockHashHex)
+			return nil, nil, "", nil, nil
 		}
-	}
-
-	if !isParentHashMajority {
-		logger.Debug("No parent hash with majority support matching the last end block hash",
-			"lastEndBlockHash", lastEndBlockHashHex)
-		return nil, nil, "", nil, nil
+	} else if helper.IsZurichHardfork(ctx.BlockHeight()) {
+		key := getParentChildKey(lastEndBlockHashHex, common.Bytes2Hex(blockToHashAndTd[majorityBlocks[0]]))
+		if parentHashToVotingPower[key] < majorityVP {
+			logger.Debug("Parent hash does not match last end block hash",
+				"lastEndBlockHash", lastEndBlockHashHex)
+			return nil, nil, "", nil, nil
+		}
+	} else {
+		var majorityParentHash string
+		isParentHashMajority := false
+		for parentHash := range parentHashes {
+			key := getParentChildKey(parentHash, common.Bytes2Hex(blockToHashAndTd[majorityBlocks[0]]))
+			if parentHashToVotingPower[key] >= majorityVP {
+				isParentHashMajority = true
+				majorityParentHash = parentHash
+				break
+			}
+		}
+		if !isParentHashMajority || majorityParentHash != lastEndBlockHashHex {
+			logger.Debug("Parent hash does not match last end block hash",
+				"majorityParentHash", majorityParentHash,
+				"lastEndBlockHash", lastEndBlockHashHex)
+			return nil, nil, "", nil, nil
+		}
 	}
 
 	// Find the first continuous range starting from startBlock
