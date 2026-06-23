@@ -423,6 +423,63 @@ func (s *KeeperTestSuite) TestVoteProducers() {
 	}
 }
 
+func (s *KeeperTestSuite) TestVoteProducers_ActiveValidatorGate() {
+	require, borKeeper, skMock, msgServer := s.Require(), s.borKeeper, s.stakeKeeper, s.msgServer
+
+	voterPrivKey := secp256k1.GenPrivKey()
+	voterPubKey := voterPrivKey.PubKey()
+	voterAccAddress := sdk.AccAddress(voterPubKey.Address())
+	voterAccAddressHex := hex.EncodeToString(voterAccAddress.Bytes())
+
+	require.NoError(borKeeper.AddNewSpan(s.ctx, &types.Span{Id: 1, StartBlock: 1, EndBlock: 1000, BorChainId: "1"}))
+	helper.SetRioHeight(1000)
+
+	matchingVal := staketypes.Validator{ValId: 1, Signer: voterAccAddress.String(), PubKey: voterPubKey.Bytes()}
+
+	const zurichHeight = 100
+	helper.SetZurichHardforkHeight(zurichHeight)
+	defer helper.SetZurichHardforkHeight(0)
+
+	msg := types.MsgVoteProducers{Voter: voterAccAddressHex, VoterId: matchingVal.ValId, Votes: types.ProducerVotes{Votes: []uint64{10, 20}}}
+
+	s.Run("at-zurich: vote from validator outside the active set is rejected", func() {
+		require.NoError(borKeeper.SetProducerVotes(s.ctx, msg.VoterId, types.ProducerVotes{}))
+		skMock.EXPECT().GetValidatorFromValID(gomock.Any(), matchingVal.ValId).Return(matchingVal, nil).Times(1)
+		skMock.EXPECT().GetValidatorSet(gomock.Any()).Return(staketypes.ValidatorSet{Validators: []*staketypes.Validator{{ValId: 999}}}, nil).Times(1)
+
+		ctx := s.ctx.WithBlockHeight(zurichHeight)
+		res, err := msgServer.VoteProducers(ctx, &msg)
+		require.Error(err)
+		require.Contains(err.Error(), "not in the active validator set")
+		require.Nil(res)
+	})
+
+	s.Run("at-zurich: vote from active validator is accepted", func() {
+		require.NoError(borKeeper.SetProducerVotes(s.ctx, msg.VoterId, types.ProducerVotes{}))
+		skMock.EXPECT().GetValidatorFromValID(gomock.Any(), matchingVal.ValId).Return(matchingVal, nil).Times(1)
+		skMock.EXPECT().GetValidatorSet(gomock.Any()).Return(staketypes.ValidatorSet{Validators: []*staketypes.Validator{{ValId: matchingVal.ValId}}}, nil).Times(1)
+
+		ctx := s.ctx.WithBlockHeight(zurichHeight)
+		res, err := msgServer.VoteProducers(ctx, &msg)
+		require.NoError(err)
+		require.NotNil(res)
+		stored, err := borKeeper.GetProducerVotes(s.ctx, msg.VoterId)
+		require.NoError(err)
+		require.Equal(msg.Votes, stored)
+	})
+
+	s.Run("pre-zurich: gate inactive, validator outside active set still accepted", func() {
+		require.NoError(borKeeper.SetProducerVotes(s.ctx, msg.VoterId, types.ProducerVotes{}))
+		skMock.EXPECT().GetValidatorFromValID(gomock.Any(), matchingVal.ValId).Return(matchingVal, nil).Times(1)
+		// GetValidatorSet must not be consulted before the fork height.
+
+		ctx := s.ctx.WithBlockHeight(zurichHeight - 1)
+		res, err := msgServer.VoteProducers(ctx, &msg)
+		require.NoError(err)
+		require.NotNil(res)
+	})
+}
+
 func (s *KeeperTestSuite) TestBackfillSpans() {
 	require, ctx, borKeeper, milestoneKeeper, cmKeeper, msgServer := s.Require(), s.ctx, s.borKeeper, s.milestoneKeeper, s.chainManagerKeeper, s.msgServer
 
@@ -796,8 +853,8 @@ func (s *KeeperTestSuite) TestSetProducerDowntime() {
 				}
 			}
 			if isPreFork {
-				helper.SetV080HardforkHeight(999999)
-				defer helper.SetV080HardforkHeight(0)
+				helper.SetZurichHardforkHeight(999999)
+				defer helper.SetZurichHardforkHeight(0)
 			}
 
 			// Prime mocks and seed producer votes controlling the producer set

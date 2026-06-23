@@ -643,9 +643,9 @@ func TestGetMajorityNonRpVoteExtension(t *testing.T) {
 }
 
 func TestGetCheckpointSignatures(t *testing.T) {
-	helper.SetV080HardforkHeight(10)
+	helper.SetZurichHardforkHeight(10)
 	t.Cleanup(func() {
-		helper.SetV080HardforkHeight(0)
+		helper.SetZurichHardforkHeight(0)
 	})
 
 	val1, err := address.NewHexCodec().StringToBytes(ValAddr1)

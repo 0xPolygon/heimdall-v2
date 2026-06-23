@@ -98,8 +98,8 @@ github.com/0xPolygon/cometbft v0.3.8-polygon h1:0VAu6he3OA6ilaPD+MJIq21EZ6SXjzrd
 github.com/0xPolygon/cometbft v0.3.8-polygon/go.mod h1:u1LC4f7ZoB5nVGLzGVCn90c6G9eZCQ0uY03Bi2sA3NE=
 github.com/0xPolygon/cometbft-db v0.14.1-polygon h1:sMlEPISgW0Wm9bC3bnLVPiPnyZ9EOuWJxoAV8ujrN3o=
 github.com/0xPolygon/cometbft-db v0.14.1-polygon/go.mod h1:KHP1YghilyGV/xjD5DP3+2hyigWx0WTp9X+0Gnx0RxQ=
-github.com/0xPolygon/cosmos-sdk v0.2.10-polygon h1:ZhRGP3UxcMDrfEMgloirjBvXtUCiF4a1Y503Ab7smH0=
-github.com/0xPolygon/cosmos-sdk v0.2.10-polygon/go.mod h1:1tgoVNFA+UZi3S89Xk/xxxWGOI33Eo7d3GUuvXN7ufc=
+github.com/0xPolygon/cosmos-sdk v0.2.11-polygon h1:qyOeEdQqE6QZbtrGh7nyLFozSu5h0OT9dXUSaUitrqU=
+github.com/0xPolygon/cosmos-sdk v0.2.11-polygon/go.mod h1:dGygjwe974ILDo45+nEn62r5TJ5F+rDi628ci6o5ZC0=
 github.com/0xPolygon/cosmos-sdk/api v0.7.6-0.20250429154832-7177ebac408e h1:RLUwoGYtf4IahtrMHTJdesTXM+ggz+2iikaxmViCNGo=
 github.com/0xPolygon/cosmos-sdk/api v0.7.6-0.20250429154832-7177ebac408e/go.mod h1:IcxpYS5fMemZGqyYtErK7OqvdM0C8kdW3dq8Q/XIG38=
 github.com/0xPolygon/cosmos-sdk/client/v2 v2.0.0-beta.6 h1:+6AxZcMTWHaRHV0HILf/rADWexzB4FJckdO/DnUlk+s=

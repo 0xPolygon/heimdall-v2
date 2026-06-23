@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -914,7 +915,7 @@ func TestVerifyVoteExtensionHandler_AcceptsOnBorQueryError(t *testing.T) {
 	// Now swap in a broken mock caller that simulates bor_getRootHash failure (e.g., not available like in erigon)
 	brokenMockCaller := new(helpermocks.IContractCaller)
 	brokenMockCaller.
-		On("CheckIfBlocksExist", mock.Anything).
+		On("CheckIfBlocksExist", mock.Anything, mock.Anything).
 		Return(false, fmt.Errorf("the method bor_getRootHash does not exist/is not available"))
 	brokenMockCaller.
 		On("GetRootHash", mock.Anything, mock.Anything, mock.Anything).
@@ -1047,7 +1048,7 @@ func TestSideTxsHappyPath(t *testing.T) {
 		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
-	mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.AnythingOfType("int64")).Return(txReceipt, nil)
+	mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.AnythingOfType("int64")).Return(txReceipt, nil)
 	mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 	app.TopupKeeper = topupKeeper.NewKeeper(
 		app.AppCodec(),
@@ -1139,7 +1140,7 @@ func TestSideTxsHappyPath(t *testing.T) {
 		},
 	}
 
-	mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+	mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil)
 	mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(stateSyncEvent, nil)
 
 	for _, tc := range testCases {
@@ -1566,7 +1567,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		Address2 := "0xb316fa9fa91700d7084d377bfdc81eb9f232f5ff"
 
 		addrBz2, err := ac.StringToBytes(Address2)
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.
 			On("GetBorChainBlock", mock.Anything, mock.Anything).
 			Return(&ethTypes.Header{
@@ -1642,7 +1643,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 
 		addrBz2, err := ac.StringToBytes(Address2)
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
@@ -1732,7 +1733,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 			"0",
 		)
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 		event := &statesender.StatesenderStateSynced{
 			Id:              new(big.Int).SetUint64(msg.Id),
 			ContractAddress: common.BytesToAddress([]byte(msg.ContractAddress)),
@@ -1808,7 +1809,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 
 		addrBz2, err := ac.StringToBytes(Address2)
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
@@ -1968,7 +1969,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.
 			On("GetBorChainBlock", mock.Anything, mock.Anything).
@@ -2042,7 +2043,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 		mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
@@ -2115,7 +2116,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
 		}
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
 		mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil).Once()
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
@@ -2189,7 +2190,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		}
 		fmt.Println("txReceipt: ", txReceipt)
 
-		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(txReceipt, nil)
 		mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 		mockCaller.
 			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
@@ -4243,6 +4244,108 @@ func TestPrepareProposal_AccountSequenceMismatch(t *testing.T) {
 	})
 }
 
+func TestPrepareProposal_SideTxCap(t *testing.T) {
+	t.Run("includes at most maxSideTxResponsesCount side txs", func(t *testing.T) {
+		// PrepareProposal cap is Zurich-gated to match ProcessProposal.
+		helper.SetZurichHardforkHeight(1)
+		t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
+
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+		ctx = ctx.WithBlockHeight(3)
+
+		var proposedTxs [][]byte
+		propAddr := sdk.AccAddress(priv.PubKey().Address())
+		propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
+		sequence := propAcc.GetSequence()
+
+		for i := 0; i < maxSideTxResponsesCount+1; i++ {
+			msg := &checkpointTypes.MsgCheckpoint{
+				Proposer:        priv.PubKey().Address().String(),
+				StartBlock:      uint64(100 + i*100),
+				EndBlock:        uint64(200 + i*100),
+				RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+				BorChainId:      "1",
+			}
+
+			txBytes, err := buildSignedTxWithSequence(msg, ctx, priv, app, sequence)
+			require.NoError(t, err)
+			proposedTxs = append(proposedTxs, txBytes)
+			sequence++
+		}
+
+		_, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
+
+		req := &abci.RequestPrepareProposal{
+			Txs:             proposedTxs,
+			MaxTxBytes:      10000000,
+			Height:          3,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+		}
+
+		res, err := app.PrepareProposal(req)
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, maxSideTxResponsesCount+1, len(res.Txs), "expected 1 commit tx + max side txs")
+	})
+
+	t.Run("pre-Zurich: cap is dormant, all side txs included", func(t *testing.T) {
+		// Zurich inactive (height = 0): the gate function returns false and the
+		// cap branch is dead code, so all side-tx-bearing txs are included.
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+		ctx = ctx.WithBlockHeight(3)
+
+		var proposedTxs [][]byte
+		propAddr := sdk.AccAddress(priv.PubKey().Address())
+		propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
+		sequence := propAcc.GetSequence()
+
+		for i := 0; i < maxSideTxResponsesCount+2; i++ {
+			msg := &checkpointTypes.MsgCheckpoint{
+				Proposer:        priv.PubKey().Address().String(),
+				StartBlock:      uint64(100 + i*100),
+				EndBlock:        uint64(200 + i*100),
+				RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+				BorChainId:      "1",
+			}
+
+			txBytes, err := buildSignedTxWithSequence(msg, ctx, priv, app, sequence)
+			require.NoError(t, err)
+			proposedTxs = append(proposedTxs, txBytes)
+			sequence++
+		}
+
+		_, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
+		require.NoError(t, err)
+
+		req := &abci.RequestPrepareProposal{
+			Txs:             proposedTxs,
+			MaxTxBytes:      10000000,
+			Height:          3,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+		}
+
+		res, err := app.PrepareProposal(req)
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, maxSideTxResponsesCount+2+1, len(res.Txs), "pre-Zurich cap is dormant: expected 1 commit tx + all side txs")
+	})
+}
+
 // TestProcessProposal_ValidProposalMultipleTxs tests the ProcessProposal handler's ability to process a valid proposal containing multiple transactions by including an ExtendedCommitInfo and several valid transactions in the proposal request, ensuring that the handler correctly processes all transactions, validates the ExtendedCommitInfo, and returns an acceptance response, thus validating the proper processing of valid proposals with multiple transactions during proposal evaluation.
 func TestProcessProposal_ValidProposalMultipleTxs(t *testing.T) {
 	t.Run("process proposal with 10 valid transactions", func(t *testing.T) {
@@ -4286,6 +4389,65 @@ func TestProcessProposal_ValidProposalMultipleTxs(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.Equal(t, abci.ResponseProcessProposal_ACCEPT, res.Status)
+	})
+}
+
+func TestProcessProposal_RejectsOverCapSideTxs(t *testing.T) {
+	t.Run("reject proposal with more than maxSideTxResponsesCount side txs", func(t *testing.T) {
+		// ProcessProposal cap is Zurich-gated.
+		helper.SetZurichHardforkHeight(1)
+		t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
+
+		priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+		validators := app.StakeKeeper.GetAllValidators(ctx)
+		ctx = ctx.WithBlockHeight(3)
+
+		var txsToProcess [][]byte
+		propAddr := sdk.AccAddress(priv.PubKey().Address())
+		propAcc := app.AccountKeeper.GetAccount(ctx, propAddr)
+		sequence := propAcc.GetSequence()
+
+		for i := 0; i < maxSideTxResponsesCount+1; i++ {
+			msg := &checkpointTypes.MsgCheckpoint{
+				Proposer:        priv.PubKey().Address().String(),
+				StartBlock:      uint64(100 + i*100),
+				EndBlock:        uint64(200 + i*100),
+				RootHash:        common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"),
+				AccountRootHash: common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"),
+				BorChainId:      "1",
+			}
+
+			txBytes, err := buildSignedTxWithSequence(msg, ctx, priv, app, sequence)
+			require.NoError(t, err)
+			txsToProcess = append(txsToProcess, txBytes)
+			sequence++
+		}
+
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(
+			t,
+			app,
+			common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+			validators,
+			validatorPrivKeys,
+			2,
+			nil,
+		)
+		require.NoError(t, err)
+
+		allTxs := append([][]byte{extCommitBytes}, txsToProcess...)
+		req := &abci.RequestProcessProposal{
+			Txs:    allTxs,
+			Height: 3,
+			ProposedLastCommit: abci.CommitInfo{
+				Round: extCommit.Round,
+				Votes: []abci.VoteInfo{},
+			},
+		}
+
+		res, err := app.ProcessProposal(req)
+		require.NoError(t, err)
+		require.NotNil(t, res)
+		require.Equal(t, abci.ResponseProcessProposal_REJECT, res.Status)
 	})
 }
 
@@ -4911,6 +5073,282 @@ func TestProcessProposal_RejectsCheckpointTxWhenNonRpVoteExtensionsInvalidPostPh
 	require.NoError(t, err)
 	require.NotNil(t, res)
 	require.Equal(t, abci.ResponseProcessProposal_REJECT, res.Status)
+}
+
+func setupBorBlockNotFoundCaller() *helpermocks.IContractCaller {
+	c := new(helpermocks.IContractCaller)
+	c.On("CheckIfBlocksExist", mock.Anything, mock.Anything).Return(false, nil)
+	c.On("GetRootHash", mock.Anything, mock.Anything, mock.Anything).
+		Return([]byte(nil), fmt.Errorf("bor unreachable"))
+	return c
+}
+
+// buildCheckpointNonRpVoteExt packs a real (non-dummy) checkpoint as a
+// NonRpVoteExtension so validateNonRpVoteExtensionData reaches IsValidCheckpoint.
+// Use a unique endBlock per call to avoid the package-level existsCache.
+func buildCheckpointNonRpVoteExt(t *testing.T, app *HeimdallApp, ctx sdk.Context, proposer string, endBlock uint64) ([]byte, *checkpointTypes.MsgCheckpoint) {
+	t.Helper()
+	chainParams, err := app.ChainManagerKeeper.GetParams(ctx)
+	require.NoError(t, err)
+	msg := &checkpointTypes.MsgCheckpoint{
+		Proposer:        proposer,
+		StartBlock:      endBlock - 100,
+		EndBlock:        endBlock,
+		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		BorChainId:      chainParams.ChainParams.BorChainId,
+	}
+	return packExtensionWithVote(msg.GetSideSignBytes()), msg
+}
+
+func TestVerifyVoteExtensionHandler_BorBlockNotFoundHardforkGated(t *testing.T) {
+	const runHeight = int64(3)
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() { helper.SetPhuketHardforkHeight(0) })
+
+	cases := []struct {
+		name       string
+		activation int64
+		endBlock   uint64 // unique per row to dodge the package-level existsCache
+		wantStatus abci.ResponseVerifyVoteExtension_VerifyStatus
+	}{
+		{name: "below activation: rejects", activation: runHeight + 1, endBlock: 1_000_001, wantStatus: abci.ResponseVerifyVoteExtension_REJECT},
+		{name: "at activation: accepts", activation: runHeight, endBlock: 1_000_002, wantStatus: abci.ResponseVerifyVoteExtension_ACCEPT},
+		{name: "above activation: accepts", activation: runHeight - 1, endBlock: 1_000_003, wantStatus: abci.ResponseVerifyVoteExtension_ACCEPT},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			helper.SetZurichHardforkHeight(tc.activation)
+			t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
+
+			_, app, ctx, _ := SetupAppWithABCICtx(t)
+			validators := app.StakeKeeper.GetAllValidators(ctx)
+
+			packedVE, _ := buildCheckpointNonRpVoteExt(t, app, ctx, validators[0].Signer, tc.endBlock)
+
+			vt := sidetxs.VoteExtension{Height: runHeight, BlockHash: []byte("test-hash")}
+			veBytes, err := vt.Marshal()
+			require.NoError(t, err)
+
+			app.caller = setupBorBlockNotFoundCaller()
+
+			res, err := app.VerifyVoteExtensionHandler()(ctx, &abci.RequestVerifyVoteExtension{
+				VoteExtension:      veBytes,
+				NonRpVoteExtension: packedVE,
+				ValidatorAddress:   common.FromHex(validators[0].Signer),
+				Height:             runHeight,
+				Hash:               []byte("test-hash"),
+			})
+			require.NoError(t, err)
+			require.Equal(t, tc.wantStatus, res.Status)
+		})
+	}
+}
+
+func TestProcessProposal_NonRpVoteExtensionBorErrorHardforkGated(t *testing.T) {
+	const runHeight = int64(3)
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() { helper.SetPhuketHardforkHeight(0) })
+
+	cases := []struct {
+		name       string
+		activation int64
+		endBlock   uint64
+		wantStatus abci.ResponseProcessProposal_ProposalStatus
+	}{
+		{name: "below activation: rejects", activation: runHeight + 1, endBlock: 2_000_001, wantStatus: abci.ResponseProcessProposal_REJECT},
+		{name: "at activation: accepts", activation: runHeight, endBlock: 2_000_002, wantStatus: abci.ResponseProcessProposal_ACCEPT},
+		{name: "above activation: accepts", activation: runHeight - 1, endBlock: 2_000_003, wantStatus: abci.ResponseProcessProposal_ACCEPT},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			helper.SetZurichHardforkHeight(tc.activation)
+			t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
+
+			priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+			validators := app.StakeKeeper.GetAllValidators(ctx)
+
+			// Proposer must equal the tx signer or the ante chain rejects.
+			packedVE, checkpointMsg := buildCheckpointNonRpVoteExt(t, app, ctx, priv.PubKey().Address().String(), tc.endBlock)
+			txBytes, err := buildSignedTx(checkpointMsg, ctx, priv, app)
+			require.NoError(t, err)
+
+			extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
+			require.NoError(t, err)
+			extCommit.Votes[0].NonRpVoteExtension = packedVE
+			// Re-sign so checkNonRpVoteExtensionsSignatures sees
+			// a signature that matches the swapped-in NonRpVoteExtension.
+			nonRpSig, err := validatorPrivKeys[0].Sign(packedVE)
+			require.NoError(t, err)
+			extCommit.Votes[0].NonRpExtensionSignature = nonRpSig
+			extCommitBytes, err = extCommit.Marshal()
+			require.NoError(t, err)
+
+			app.caller = setupBorBlockNotFoundCaller()
+
+			// BaseApp.ProcessProposal sets up processProposalState that
+			// NewProcessProposalHandler's tx verification call requires.
+			res, err := app.ProcessProposal(&abci.RequestProcessProposal{
+				Txs:    [][]byte{extCommitBytes, txBytes},
+				Height: runHeight,
+				ProposedLastCommit: abci.CommitInfo{
+					Round: extCommit.Round,
+					Votes: []abci.VoteInfo{{Validator: extCommit.Votes[0].Validator, BlockIdFlag: cmtproto.BlockIDFlagCommit}},
+				},
+			})
+			require.NoError(t, err)
+			require.NotNil(t, res)
+			require.Equal(t, tc.wantStatus, res.Status)
+		})
+	}
+}
+
+// TestProcessProposal_NonRpVoteExtensionTamperedSignatureAlwaysRejected
+// verifies that the proposal must be rejected even when Zurich HF would
+// otherwise tolerate Bor errors. The signature check runs before any
+// Bor-dependent payload validation, so the tolerateBorErr carve-out
+// cannot suppress a signature failure.
+func TestProcessProposal_NonRpVoteExtensionTamperedSignatureAlwaysRejected(t *testing.T) {
+	const runHeight = int64(3)
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() { helper.SetPhuketHardforkHeight(0) })
+	helper.SetZurichHardforkHeight(1) // Zurich active — tolerateBorErr would fire if reached
+	t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
+
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	packedVE, checkpointMsg := buildCheckpointNonRpVoteExt(t, app, ctx, priv.PubKey().Address().String(), 4_000_001)
+	txBytes, err := buildSignedTx(checkpointMsg, ctx, priv, app)
+	require.NoError(t, err)
+
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
+	require.NoError(t, err)
+	extCommit.Votes[0].NonRpVoteExtension = packedVE
+	// leave the original NonRpExtensionSignature (which signs the
+	// dummy VE that buildExtensionCommits inserted), do not re-sign packedVE.
+	// The signature check fires first and rejects.
+	extCommitBytes, err = extCommit.Marshal()
+	require.NoError(t, err)
+
+	app.caller = setupBorBlockNotFoundCaller()
+
+	res, err := app.ProcessProposal(&abci.RequestProcessProposal{
+		Txs:    [][]byte{extCommitBytes, txBytes},
+		Height: runHeight,
+		ProposedLastCommit: abci.CommitInfo{
+			Round: extCommit.Round,
+			Votes: []abci.VoteInfo{{Validator: extCommit.Votes[0].Validator, BlockIdFlag: cmtproto.BlockIDFlagCommit}},
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	require.Equal(t, abci.ResponseProcessProposal_REJECT, res.Status,
+		"tampered NonRpExtensionSignature must reject regardless of Zurich tolerateBorErr")
+}
+
+// TestValidateNonRpVoteExtensionData_ErrBorBlockNotFoundWrapChain asserts the
+// errors.Is stays intact end-to-end from IsValidCheckpoint through
+// validateCheckpointMsgData and validateNonRpVoteExtensionData.
+func TestValidateNonRpVoteExtensionData_ErrBorBlockNotFoundWrapChain(t *testing.T) {
+	const height = int64(3)
+
+	_, app, ctx, _ := SetupAppWithABCICtx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	packedVE, _ := buildCheckpointNonRpVoteExt(t, app, ctx, validators[0].Signer, 3_000_001)
+	caller := setupBorBlockNotFoundCaller()
+
+	err := validateNonRpVoteExtensionData(ctx, height, packedVE, app.ChainManagerKeeper, app.CheckpointKeeper, caller)
+	require.Error(t, err)
+	require.True(t,
+		errors.Is(err, borTypes.ErrBorBlockNotFound),
+		"errors.Is must traverse the full wrap chain (merkle.go → validateCheckpointMsgData → validateNonRpVoteExtensionData); got %v", err,
+	)
+}
+
+// With the budget zeroed, the loop short-circuits when active and runs to
+// completion otherwise.
+func TestExtendVoteHandler_BudgetHardforkGated(t *testing.T) {
+	const runHeight = int64(3)
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() { helper.SetPhuketHardforkHeight(0) })
+
+	originalBudget := extendVoteBudget
+	extendVoteBudget = 0
+	t.Cleanup(func() { extendVoteBudget = originalBudget })
+
+	cases := []struct {
+		name          string
+		activation    int64
+		wantSideTxRes string // "empty" or "nonempty"
+	}{
+		{name: "below activation: full responses", activation: runHeight + 1, wantSideTxRes: "nonempty"},
+		{name: "at activation: empty", activation: runHeight, wantSideTxRes: "empty"},
+		{name: "above activation: empty", activation: runHeight - 1, wantSideTxRes: "empty"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			helper.SetZurichHardforkHeight(tc.activation)
+			t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
+
+			priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+			validators := app.StakeKeeper.GetAllValidators(ctx)
+
+			msg := &types.MsgCheckpoint{
+				Proposer:        validators[0].Signer,
+				StartBlock:      100,
+				EndBlock:        200,
+				RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+				AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+				BorChainId:      "test",
+			}
+			txBytes, err := buildSignedTx(msg, ctx, priv, app)
+			require.NoError(t, err)
+
+			extCommitBytes, _, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
+			require.NoError(t, err)
+
+			working := new(helpermocks.IContractCaller)
+			working.On("GetBorChainBlock", mock.Anything, mock.Anything).
+				Return(&ethTypes.Header{Number: big.NewInt(10)}, nil)
+			working.On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+				Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
+			working.On("CheckIfBlocksExist", mock.Anything, mock.Anything).Return(true, nil)
+			working.On("GetRootHash", mock.Anything, mock.Anything, mock.Anything).
+				Return(common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"), nil)
+
+			app.MilestoneKeeper = milestoneKeeper.NewKeeper(app.AppCodec(), authTypes.NewModuleAddress(govtypes.ModuleName).String(), runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)), working)
+			app.CheckpointKeeper = checkpointKeeper.NewKeeper(app.AppCodec(), runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)), authTypes.NewModuleAddress(govtypes.ModuleName).String(), &app.StakeKeeper, app.ChainManagerKeeper, &app.TopupKeeper, working)
+			app.BorKeeper = borKeeper.NewKeeper(app.AppCodec(), runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)), authTypes.NewModuleAddress(govtypes.ModuleName).String(), app.ChainManagerKeeper, &app.StakeKeeper, nil, nil)
+			app.BorKeeper.SetContractCaller(working)
+			app.MilestoneKeeper.IContractCaller = working
+			app.caller = working
+
+			respExtend, err := app.ExtendVoteHandler()(ctx, &abci.RequestExtendVote{
+				Txs:    [][]byte{extCommitBytes, txBytes},
+				Hash:   []byte("test-hash"),
+				Height: runHeight,
+			})
+			require.NoError(t, err)
+			require.NotNil(t, respExtend.VoteExtension)
+
+			var ve sidetxs.VoteExtension
+			require.NoError(t, gogoproto.Unmarshal(respExtend.VoteExtension, &ve))
+
+			switch tc.wantSideTxRes {
+			case "empty":
+				require.Empty(t, ve.SideTxResponses,
+					"with budget active and zeroed, the side-tx loop must short-circuit")
+			case "nonempty":
+				require.NotEmpty(t, ve.SideTxResponses,
+					"with budget inactive, a zero budget must be a no-op")
+			}
+		})
+	}
 }
 
 func TestABCI_FullBlockLifecycle_NoPreBlocker(t *testing.T) {
@@ -5894,7 +6332,7 @@ func TestPrepareProposal_ProtoSizeAccounting_NoOversizedProposal(t *testing.T) {
 		sequence++
 	}
 
-	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
 	require.NoError(t, err)
 
 	maxTxBytes := int64(len(extCommitBytes)) + rawTxsTotal
@@ -5951,7 +6389,7 @@ func TestPrepareProposal_SizeBoundary_IncludesTxThatExactlyFits(t *testing.T) {
 		sequence++
 	}
 
-	_, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2)
+	_, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
 	require.NoError(t, err)
 
 	newReq := func(maxTxBytes int64) *abci.RequestPrepareProposal {

@@ -612,8 +612,8 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntimeTargetProducer() {
 				}
 			}
 			if isPreFork {
-				helper.SetV080HardforkHeight(999999)
-				defer helper.SetV080HardforkHeight(0)
+				helper.SetZurichHardforkHeight(999999)
+				defer helper.SetZurichHardforkHeight(0)
 			}
 
 			s.contractCaller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).
@@ -1380,10 +1380,10 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime() {
 }
 
 func (s *KeeperTestSuite) TestPostHandleSetProducerDowntime_VeBlopSpanDuration() {
-	helper.SetV080HardforkHeight(100)
-	defer helper.SetV080HardforkHeight(0)
+	helper.SetZurichHardforkHeight(100)
+	defer helper.SetZurichHardforkHeight(0)
 
-	fixHeight := helper.GetV080HardforkHeight()
+	fixHeight := helper.GetZurichHardforkHeight()
 
 	tests := []struct {
 		name             string

@@ -5,12 +5,17 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/0xPolygon/heimdall-v2/app"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 )
 
@@ -270,6 +275,70 @@ func TestNewAnteHandler_DecoratorChainNotEmpty(t *testing.T) {
 	require.NotPanics(t, func() {
 		_ = handler
 	})
+}
+
+// msgTx is a minimal sdk.Tx for exercising the MsgMultiSendCap wiring.
+type msgTx struct {
+	msgs []sdk.Msg
+}
+
+func (t *msgTx) GetMsgs() []sdk.Msg { return t.msgs }
+
+func (t *msgTx) GetMsgsV2() ([]proto.Message, error) {
+	out := make([]proto.Message, 0, len(t.msgs))
+	for _, m := range t.msgs {
+		if pm, ok := m.(proto.Message); ok {
+			out = append(out, pm)
+		}
+	}
+	return out, nil
+}
+
+func makeMultiSendOverCap() sdk.Msg {
+	const overCap = 17
+	outputs := make([]banktypes.Output, overCap)
+	for i := range outputs {
+		outputs[i] = banktypes.Output{Address: "cosmos1xyz", Coins: sdk.NewCoins(sdk.NewInt64Coin("stake", 1))}
+	}
+	return &banktypes.MsgMultiSend{
+		Inputs:  []banktypes.Input{{Address: "cosmos1abc", Coins: sdk.NewCoins(sdk.NewInt64Coin("stake", int64(overCap)))}},
+		Outputs: outputs,
+	}
+}
+
+// Heimdall wires NewMsgMultiSendCapDecorator(maxMultiSendOutputs, helper.IsZurichHardfork).
+// Pin both the activation predicate and the cap value at the wiring boundary.
+func TestAnteWiring_MsgMultiSendCapHardforkGated(t *testing.T) {
+	const activation = int64(100)
+	helper.SetZurichHardforkHeight(activation)
+	t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
+
+	cases := []struct {
+		name       string
+		height     int64
+		wantReject bool
+	}{
+		{name: "below activation: over cap accepts", height: activation - 1, wantReject: false},
+		{name: "at activation: over cap rejects", height: activation, wantReject: true},
+		{name: "above activation: over cap rejects", height: activation + 1, wantReject: true},
+	}
+
+	// Construct the same decorator instance the production ante chain wires.
+	dec := ante.NewMsgMultiSendCapDecorator(16, helper.IsZurichHardfork)
+	terminal := func(ctx sdk.Context, _ sdk.Tx, _ bool) (sdk.Context, error) { return ctx, nil }
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := sdk.Context{}.WithBlockHeight(tc.height)
+			_, err := dec.AnteHandle(ctx, &msgTx{msgs: []sdk.Msg{makeMultiSendOverCap()}}, false, terminal)
+			if tc.wantReject {
+				require.Error(t, err)
+				require.ErrorIs(t, err, sdkerrors.ErrInvalidRequest)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestNewAnteHandler_ValidatesInOrder(t *testing.T) {

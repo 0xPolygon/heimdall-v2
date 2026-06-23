@@ -255,7 +255,6 @@ func (s *KeeperTestSuite) TestInitExportGenesis_RoundTripDeterministicStateSyncF
 	genesisState := types.GenesisState{
 		EventRecords:              []types.EventRecord{eventRecord},
 		RecordSequences:           []string{"seq-1", "seq-2"},
-		VisibilityTimeUpgradeId:   42,
 		PendingVisibilityEventIds: []uint64{11, 12},
 		VisibilityHeightsById: []types.Uint64Pair{
 			{Key: 11, Value: 111},

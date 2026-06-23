@@ -31,7 +31,6 @@ type Keeper struct {
 	RecordsWithID           collections.Map[uint64, types.EventRecord]
 	RecordsWithTime         collections.Map[collections.Pair[time.Time, uint64], uint64]
 	RecordSequences         collections.Map[string, []byte]
-	VisibilityTimeUpgradeID collections.Item[uint64]
 	PendingVisibilityEvents collections.Map[uint64, []byte]
 	BlockTimeReverseIndex   collections.Map[collections.Pair[uint64, uint64], uint64] // (blockTime, height) → height for O(log N) cutoff lookup
 	VisibilityHeightByID    collections.Map[uint64, uint64]                           // event_id → heimdall block height where visibility was assigned
@@ -53,7 +52,6 @@ func NewKeeper(
 		RecordsWithID:           collections.NewMap(sb, types.RecordsWithIDKeyPrefix, "recordsWithID", collections.Uint64Key, codec.CollValue[types.EventRecord](cdc)),
 		RecordsWithTime:         collections.NewMap(sb, types.RecordsWithTimeKeyPrefix, "recordsWithTime", collections.PairKeyCodec(sdk.TimeKey, collections.Uint64Key), collections.Uint64Value),
 		RecordSequences:         collections.NewMap(sb, types.RecordSequencesKeyPrefix, "recordSequences", collections.StringKey, collections.BytesValue),
-		VisibilityTimeUpgradeID: collections.NewItem(sb, types.VisibilityTimeUpgradeIDKeyPrefix, "visibilityTimeUpgradeID", collections.Uint64Value),
 		PendingVisibilityEvents: collections.NewMap(sb, types.PendingVisibilityEventsKeyPrefix, "pendingVisibilityEvents", collections.Uint64Key, collections.BytesValue),
 		BlockTimeReverseIndex:   collections.NewMap(sb, types.BlockTimeReverseIndexKeyPrefix, "blockTimeReverseIndex", collections.PairKeyCodec(collections.Uint64Key, collections.Uint64Key), collections.Uint64Value),
 		VisibilityHeightByID:    collections.NewMap(sb, types.VisibilityHeightByIDKeyPrefix, "visibilityHeightByID", collections.Uint64Key, collections.Uint64Value),
@@ -311,6 +309,14 @@ func (k *Keeper) AddPendingVisibilityEvent(ctx context.Context, eventID uint64) 
 	return k.PendingVisibilityEvents.Set(ctx, eventID, types.DefaultValue)
 }
 
+// HasPendingVisibilityEvent reports whether the event ID is awaiting a
+// visibility_height assignment. Only events processed after the hardfork are
+// ever added to this set, so it distinguishes a genuinely pending post-HF event
+// from a pre-HF (legacy) event that has no visibility_height and never will.
+func (k *Keeper) HasPendingVisibilityEvent(ctx context.Context, eventID uint64) (bool, error) {
+	return k.PendingVisibilityEvents.Has(ctx, eventID)
+}
+
 // ProcessPendingVisibilityEvents assigns visibility_height to events
 // from the previous block, then clears the pending list.
 // Pending events remain excluded from the height-pinned / visibility_height-based
@@ -351,21 +357,6 @@ func (k *Keeper) ProcessPendingVisibilityEvents(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// GetVisibilityTimeUpgradeID returns the smallest event ID observed after the hardfork
-// the boundary below which events fall through the legacy
-// record_time path in recordListVisibleAtHeight.
-func (k *Keeper) GetVisibilityTimeUpgradeID(ctx context.Context) (uint64, error) {
-	return k.VisibilityTimeUpgradeID.Get(ctx)
-}
-
-// SetVisibilityTimeUpgradeID stores the upgrade boundary. The caller must
-// preserve the min(seen) invariant — never overwrite an existing value with a
-// larger one — so that every post-HF event satisfies id >= upgradeID and
-// stays on the visibility_height-gated query path.
-func (k *Keeper) SetVisibilityTimeUpgradeID(ctx context.Context, id uint64) error {
-	return k.VisibilityTimeUpgradeID.Set(ctx, id)
 }
 
 // StoreBlockTime stores the current block's (blockTime, height) → height mapping in the

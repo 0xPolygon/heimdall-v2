@@ -3,6 +3,7 @@ package helper
 import (
 	"encoding/hex"
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -189,4 +190,64 @@ func TestPopulateABIs(t *testing.T) {
 		"values for %s not equals", slashmanager.SlashmanagerMetaData.ABI)
 	assert.Equalf(t, ContractsABIsMap[erc20.Erc20MetaData.ABI], &contractCallerObjSecond.PolTokenABI,
 		"values for %s not equals", erc20.Erc20MetaData.ABI)
+}
+
+// TestContractInstanceCacheConcurrent guards against data races on
+// ContractCaller.ContractInstanceCache.
+// Run with the race detector to assert no race:
+//
+//	go test -race -run TestContractInstanceCacheConcurrent ./helper/...
+func TestContractInstanceCacheConcurrent(t *testing.T) {
+	caller, err := NewContractCaller()
+	if err != nil {
+		t.Fatalf("NewContractCaller: %v", err)
+	}
+
+	addresses := []string{
+		"0x0000000000000000000000000000000000000001",
+		"0x0000000000000000000000000000000000000002",
+		"0x0000000000000000000000000000000000000003",
+		"0x0000000000000000000000000000000000000004",
+		"0x0000000000000000000000000000000000000005",
+		"0x0000000000000000000000000000000000000006",
+		"0x0000000000000000000000000000000000000007",
+		"0x0000000000000000000000000000000000000008",
+	}
+
+	const goroutines = 64
+	const itersPerGoroutine = 250
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	start := make(chan struct{})
+	for g := 0; g < goroutines; g++ {
+		gID := g
+		go func() {
+			defer wg.Done()
+			<-start
+			for i := 0; i < itersPerGoroutine; i++ {
+				addr := addresses[(gID+i)%len(addresses)]
+				switch (gID + i) % 8 {
+				case 0:
+					_, _ = caller.GetStakingInfoInstance(addr)
+				case 1:
+					_, _ = caller.GetStateSenderInstance(addr)
+				case 2:
+					_, _ = caller.GetStateReceiverInstance(addr)
+				case 3:
+					_, _ = caller.GetRootChainInstance(addr)
+				case 4:
+					_, _ = caller.GetStakeManagerInstance(addr)
+				case 5:
+					_, _ = caller.GetSlashManagerInstance(addr)
+				case 6:
+					_, _ = caller.GetTokenInstance(addr)
+				case 7:
+					_, _ = caller.GetValidatorSetInstance(addr)
+				}
+			}
+		}()
+	}
+	close(start)
+	wg.Wait()
 }

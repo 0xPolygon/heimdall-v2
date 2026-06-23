@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	"cosmossdk.io/log"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
@@ -83,10 +85,10 @@ func TestFetchAndValidateReceipt(t *testing.T) {
 
 			// Set up the mock expectation for GetConfirmedTxReceipt
 			txHash := common.BytesToHash(tt.params.TxHash)
-			mockCaller.On("GetConfirmedTxReceipt", txHash, tt.params.Confirmations).
+			mockCaller.On("GetConfirmedTxReceipt", mock.Anything, txHash, tt.params.Confirmations).
 				Return(tt.receipt, tt.err)
 
-			result := FetchAndValidateReceipt(mockCaller, tt.params, logger)
+			result := FetchAndValidateReceipt(context.Background(), mockCaller, tt.params, logger)
 
 			if tt.expectedResult {
 				require.NotNil(t, result, "expected receipt to be returned")
