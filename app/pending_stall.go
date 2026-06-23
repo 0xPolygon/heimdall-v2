@@ -136,6 +136,10 @@ func (app *HeimdallApp) rotateSpanFromPendingHead(ctx sdk.Context, pendingHead u
 		)
 		return nil
 	}
+	if pendingHead == math.MaxUint64 {
+		logger.Warn("Pending bor head is MaxUint64, skipping rotation")
+		return nil
+	}
 
 	params, err := app.BorKeeper.GetParams(ctx)
 	if err != nil {
@@ -147,6 +151,14 @@ func (app *HeimdallApp) rotateSpanFromPendingHead(ctx sdk.Context, pendingHead u
 	// never fall back to the stalled producer for blocks the old span still owns.
 	endBlock := lastSpan.EndBlock
 	for endBlock <= pendingHead {
+		if params.SpanDuration == 0 || endBlock > math.MaxUint64-params.SpanDuration {
+			logger.Warn("Pending-stall span end would overflow, skipping rotation",
+				"endBlock", endBlock,
+				"spanDuration", params.SpanDuration,
+				"pendingHead", pendingHead,
+			)
+			return nil
+		}
 		endBlock += params.SpanDuration
 	}
 

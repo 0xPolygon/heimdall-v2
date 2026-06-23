@@ -603,6 +603,52 @@ func TestRotateSpanFromPendingHeadBeyondSpanEnd(t *testing.T) {
 	}
 }
 
+func TestRotateSpanFromPendingHeadSkipsArithmeticOverflow(t *testing.T) {
+	cases := []struct {
+		name        string
+		spanEnd     uint64
+		pendingHead uint64
+	}{
+		{
+			name:        "pending head max uint64 would overflow new span start",
+			spanEnd:     math.MaxUint64,
+			pendingHead: math.MaxUint64,
+		},
+		{
+			name:        "runway extension would overflow end block",
+			spanEnd:     math.MaxUint64 - 50,
+			pendingHead: math.MaxUint64 - 50,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 5)
+			validators, _ := seedSpan(t, app, ctx)
+			seedProducerSelection(t, app, ctx, validators) // sets SpanDuration to 100
+
+			baseSpan, err := app.BorKeeper.GetSpan(ctx, 1)
+			require.NoError(t, err)
+			edgeSpan := borTypes.Span{
+				Id:                2,
+				StartBlock:        tc.spanEnd - 10,
+				EndBlock:          tc.spanEnd,
+				BorChainId:        baseSpan.BorChainId,
+				ValidatorSet:      baseSpan.ValidatorSet,
+				SelectedProducers: baseSpan.SelectedProducers,
+			}
+			require.NoError(t, app.BorKeeper.AddNewSpan(ctx, &edgeSpan))
+
+			require.NoError(t, app.rotateSpanFromPendingHead(ctx.WithBlockHeight(2000), tc.pendingHead, fill32(0xAB)),
+				"arithmetic edge must skip without wrapping or halting")
+
+			last, err := app.BorKeeper.GetLastSpan(ctx)
+			require.NoError(t, err)
+			require.Equal(t, edgeSpan.Id, last.Id, "no new span should be minted on arithmetic overflow risk")
+		})
+	}
+}
+
 // TestCheckAndRotateOnPendingStallErrorsWhenLastSpanPointerIsInvalid covers the error branch inside
 // rotateSpanFromPendingHead: if the latest-span pointer is corrupted, the pending-stall rotation must
 // fail immediately instead of minting a new span from incomplete state.
