@@ -929,6 +929,52 @@ func TestGetMajorityActualHeadSkipsNonCommitAndMissingValidatorWhenChecksDisable
 	require.Equal(t, uint64(100), head)
 }
 
+func TestGetMajorityMilestonePropositionErrorsOnInvalidVoteExtension(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(100)
+	valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+		{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 40},
+	}}
+	votes := []abciTypes.ExtendedVoteInfo{
+		{
+			BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
+			VoteExtension: []byte{0xFF, 0x00, 0x01},
+			Validator:     abciTypes.Validator{Address: common.HexToAddress("0x1111111111111111111111111111111111111111").Bytes()},
+		},
+	}
+	logger := log.NewTestLogger(t)
+
+	_, _, _, _, err := GetMajorityMilestoneProposition(ctx, valSet, votes, 34, logger, nil, nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error while unmarshalling vote extension")
+}
+
+func TestGetMajorityMilestonePropositionErrorsOnMissingValidatorWhenChecksEnabled(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(helper.GetTallyFixHeight())
+	valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+		{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 40},
+	}}
+	prop := &types.MilestoneProposition{
+		BlockHashes:      [][]byte{fill32(0xAA)},
+		StartBlockNumber: 1,
+		ParentHash:       fill32(0xBB),
+		BlockTds:         []uint64{1},
+	}
+	data, err := (&sidetxs.VoteExtension{MilestoneProposition: prop}).Marshal()
+	require.NoError(t, err)
+	votes := []abciTypes.ExtendedVoteInfo{
+		{
+			BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
+			VoteExtension: data,
+			Validator:     abciTypes.Validator{Address: common.HexToAddress("0x2222222222222222222222222222222222222222").Bytes()},
+		},
+	}
+	logger := log.NewTestLogger(t)
+
+	_, _, _, _, err = GetMajorityMilestoneProposition(ctx, valSet, votes, 34, logger, nil, nil)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "Failed to get validator")
+}
+
 func TestValidateLatestHead(t *testing.T) {
 	t.Parallel()
 

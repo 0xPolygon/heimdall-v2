@@ -422,6 +422,116 @@ func TestRotateSpanFromPendingHeadBeyondSpanEnd(t *testing.T) {
 	}
 }
 
+// TestCheckAndRotateOnPendingStallErrorsWhenLastSpanPointerIsInvalid covers the error branch inside
+// rotateSpanFromPendingHead: if the latest-span pointer is corrupted, the pending-stall rotation must
+// fail immediately instead of minting a new span from incomplete state.
+func TestCheckAndRotateOnPendingStallErrorsWhenLastSpanPointerIsInvalid(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	validators, _ := seedSpan(t, app, ctx)
+	seedProducerSelection(t, app, ctx, validators)
+
+	prop := singleBlockPendingProp(psPendingHead, 0x44)
+	trackedHeight := uint64(1000)
+	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propHeadID(prop), trackedHeight))
+	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
+	ctx = ctx.WithBlockHeight(int64(trackedHeight) + threshold + 1)
+
+	// Zeroing the latest-span pointer makes GetLastSpan fail inside rotateSpanFromPendingHead.
+	require.NoError(t, app.BorKeeper.UpdateLastSpan(ctx, 0))
+
+	err := app.checkAndRotateOnPendingStall(ctx, prop.StartBlockNumber, propHeadID(prop))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "span not found")
+}
+
+// TestRotateSpanFromPendingHeadErrorsOnMissingParams covers the GetParams failure path inside the
+// pending-stall rotation helper by removing the raw params entry after seeding the span state.
+func TestRotateSpanFromPendingHeadErrorsOnMissingParams(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	validators, _ := seedSpan(t, app, ctx)
+	seedProducerSelection(t, app, ctx, validators)
+
+	store := ctx.KVStore(app.keys[borTypes.StoreKey])
+	store.Delete(borTypes.ParamsKey.Bytes())
+
+	prop := singleBlockPendingProp(psPendingHead, 0x45)
+	err := app.rotateSpanFromPendingHead(ctx.WithBlockHeight(5000), prop.StartBlockNumber, propHeadID(prop))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "not found")
+}
+
+// TestRotateSpanFromPendingHeadErrorsOnCorruptSpanLookup covers the defensive fallback branch where
+// the last span is present but corrupt, so the producer lookup on both the pending head and the
+// fallback start block fails.
+func TestRotateSpanFromPendingHeadErrorsOnCorruptSpanLookup(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+	seedProducerSelection(t, app, ctx, validators)
+
+	corruptSpan := borTypes.Span{
+		Id:                2,
+		StartBlock:        1000,
+		EndBlock:          900,
+		BorChainId:        "1",
+		ValidatorSet:      stakeTypes.ValidatorSet{Validators: validators},
+		SelectedProducers: []stakeTypes.Validator{*validators[0]},
+	}
+	require.NoError(t, app.BorKeeper.AddNewRawSpan(ctx, &corruptSpan))
+	require.NoError(t, app.BorKeeper.UpdateLastSpan(ctx, corruptSpan.Id))
+
+	prop := singleBlockPendingProp(psPendingHead, 0x46)
+	err := app.rotateSpanFromPendingHead(ctx.WithBlockHeight(5000), prop.StartBlockNumber, propHeadID(prop))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "span not found")
+}
+
+// TestRotateSpanFromPendingHeadErrorsOnCorruptActiveProducerSet covers the active-producer iterator
+// error branch by writing a malformed raw key into the producer-set collection.
+func TestRotateSpanFromPendingHeadErrorsOnCorruptActiveProducerSet(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	validators, _ := seedSpan(t, app, ctx)
+	seedProducerSelection(t, app, ctx, validators)
+
+	store := ctx.KVStore(app.keys[borTypes.StoreKey])
+	store.Set(append(borTypes.LatestActiveProducerKey.Bytes(), 0x80), []byte{0x01})
+
+	prop := singleBlockPendingProp(psPendingHead, 0x47)
+	err := app.rotateSpanFromPendingHead(ctx.WithBlockHeight(5000), prop.StartBlockNumber, propHeadID(prop))
+	require.Error(t, err)
+}
+
+// TestPendingStallExcludedProducersErrorsOnCorruptFailedProducerSet covers the failed-producer
+// iterator error branch by corrupting the raw collection entry the helper reads.
+func TestPendingStallExcludedProducersErrorsOnCorruptFailedProducerSet(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	validators, _ := seedSpan(t, app, ctx)
+	seedProducerSelection(t, app, ctx, validators)
+
+	store := ctx.KVStore(app.keys[borTypes.StoreKey])
+	store.Set(append(borTypes.LatestFailedProducerKey.Bytes(), 0x80), []byte{0x01})
+
+	prop := singleBlockPendingProp(psPendingHead, 0x48)
+	err := app.rotateSpanFromPendingHead(ctx.WithBlockHeight(5000), prop.StartBlockNumber, propHeadID(prop))
+	require.Error(t, err)
+}
+
+// TestDebouncePendingStallClockErrorsOnCorruptTracking covers the pending-tracking decode error path
+// by planting an invalid raw value under the tracking prefix before invoking the debounce helper.
+func TestDebouncePendingStallClockErrorsOnCorruptTracking(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	seedSpan(t, app, ctx)
+
+	origFork := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
+	helper.SetSpanRotationOnStallHeight(1)
+
+	store := ctx.KVStore(app.keys[milestoneTypes.StoreKey])
+	store.Set(milestoneTypes.PendingBorBlockPrefixKey.Bytes(), []byte{0x80})
+
+	err := app.debouncePendingStallClock(ctx.WithBlockHeight(9000), 9999)
+	require.Error(t, err)
+}
+
 // TestPreBlockerPendingStallRotatesWhenForkEnabled drives the full PreBlocker dispatch with the
 // hardfork ON: a 40%-band pending milestone whose head has already been static beyond the stall
 // threshold must rotate. The companion TestPreBlockerSpanRotationWithMinorityMilestone covers the
@@ -737,6 +847,28 @@ func TestDebouncePendingStallClockNoTrackingNoop(t *testing.T) {
 	require.Zero(t, height)
 }
 
+// TestDebouncePendingStallClockForkActiveUpdatesTracking covers the active fork path of the
+// debounce helper: when the pending-stall clock is already running, the helper must preserve the
+// tracked head and identity while advancing only the height baseline.
+func TestDebouncePendingStallClockForkActiveUpdatesTracking(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	seedSpan(t, app, ctx)
+
+	origFork := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
+	helper.SetSpanRotationOnStallHeight(1)
+
+	prop := singleBlockPendingProp(psPendingHead, 0x7B)
+	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, propHeadID(prop), 777))
+	require.NoError(t, app.debouncePendingStallClock(ctx.WithBlockHeight(9000), 9999))
+
+	block, id, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
+	require.NoError(t, err)
+	require.Equal(t, psPendingHead, block)
+	require.Equal(t, propHeadID(prop), id)
+	require.Equal(t, uint64(9999), height)
+}
+
 // TestHandlePendingMilestoneMissingLastSpanErrors pins the error-return branch:
 // when the keeper cannot resolve the last span, the pending milestone path must
 // fail fast instead of trying to rotate from a nonexistent runway.
@@ -755,6 +887,31 @@ func TestHandlePendingMilestoneMissingLastSpanErrors(t *testing.T) {
 	ctx = ctx.WithBlockHeight(5000)
 	err := app.handlePendingMilestone(ctx, singleBlockPendingProp(psPendingHead, 0x01), valSet, extVotes, minVP)
 	require.Error(t, err)
+}
+
+// TestHandlePendingMilestoneErrorsOnMalformedActualHeadVote covers the error path from the actual-head
+// tally helper: malformed vote-extension bytes must fail fast instead of being treated as an empty
+// pending-stall signal.
+func TestHandlePendingMilestoneErrorsOnMalformedActualHeadVote(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+	seedSpan(t, app, ctx)
+
+	origFork := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
+	helper.SetSpanRotationOnStallHeight(1)
+
+	valSet := stakeTypes.NewValidatorSet(validators)
+	minVP := valSet.GetTotalVotingPower()/3 + 1
+	badVote := abci.ExtendedVoteInfo{
+		BlockIdFlag:   cmtproto.BlockIDFlagCommit,
+		VoteExtension: []byte{0xFF, 0x00, 0x01},
+		Validator:     abci.Validator{Address: common.HexToAddress(validators[0].Signer).Bytes()},
+	}
+
+	err := app.handlePendingMilestone(ctx.WithBlockHeight(5000), singleBlockPendingProp(psPendingHead, 0x01), valSet, []abci.ExtendedVoteInfo{badVote}, minVP)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error while unmarshalling vote extension")
 }
 
 // TestHandlePendingMilestoneDropsOutOfRangeActualHead pins the byzantine-poison guard (POS-3629): a
