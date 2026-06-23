@@ -1,14 +1,22 @@
 package abci
 
 import (
+	"context"
+	"errors"
 	"math"
 	"math/big"
 	"testing"
 
 	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	abciTypes "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
+	cosmosTestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
@@ -18,10 +26,45 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
+	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
+
+type testChainKeeper struct{}
+
+func (testChainKeeper) GetParams(context.Context) (chainmanagertypes.Params, error) {
+	return chainmanagertypes.Params{}, nil
+}
+
+type testStakeKeeper struct{}
+
+func (testStakeKeeper) GetSpanEligibleValidators(context.Context) []stakeTypes.Validator {
+	return nil
+}
+
+func (testStakeKeeper) GetValidatorSet(context.Context) (stakeTypes.ValidatorSet, error) {
+	return stakeTypes.ValidatorSet{}, nil
+}
+
+func (testStakeKeeper) GetValidatorFromValID(context.Context, uint64) (stakeTypes.Validator, error) {
+	return stakeTypes.Validator{}, nil
+}
+
+func (testStakeKeeper) GetValIdFromAddress(context.Context, string) (uint64, error) {
+	return 0, nil
+}
+
+type testMilestoneKeeper struct {
+	last *types.Milestone
+}
+
+func (k testMilestoneKeeper) GetLastMilestone(context.Context) (*types.Milestone, error) {
+	return k.last, nil
+}
 
 func TestIsFastForwardMilestone(t *testing.T) {
 	tests := []struct {
@@ -485,122 +528,122 @@ func TestValidateMilestonePropositionFork(t *testing.T) {
 }
 
 func TestValidateMilestoneProposition(t *testing.T) {
-	t.Parallel()
+	ctx, milestoneKeeper := newTestMilestoneKeeper(t)
 
-	// Create a mock keeper with params
-	setupKeeper := func() (*keeper.Keeper, sdk.Context) {
-		// This is a simplified setup - in real tests you'd use the full testutil
-		// For coverage purposes, we'll focus on the validation logic itself
-		return nil, sdk.Context{}
+	makeProp := func(blockHashes [][]byte, blockTds []uint64, start uint64, latestNum uint64, latestHash []byte) *types.MilestoneProposition {
+		return &types.MilestoneProposition{
+			BlockHashes:       blockHashes,
+			BlockTds:          blockTds,
+			StartBlockNumber:  start,
+			LatestBlockNumber: latestNum,
+			LatestBlockHash:   latestHash,
+		}
 	}
 
 	t.Run("accepts nil proposition", func(t *testing.T) {
-		t.Parallel()
+		require.NoError(t, ValidateMilestoneProposition(ctx, milestoneKeeper, nil))
+	})
 
-		k, ctx := setupKeeper()
-		err := ValidateMilestoneProposition(ctx, k, nil)
+	t.Run("accepts a valid proposition with matching latest head", func(t *testing.T) {
+		prop := makeProp([][]byte{fill32(0x01)}, []uint64{100}, 10, 10, fill32(0x01))
+		require.NoError(t, ValidateMilestoneProposition(ctx, milestoneKeeper, prop))
+	})
+
+	t.Run("rejects too many blocks", func(t *testing.T) {
+		prop := makeProp([][]byte{fill32(0x01), fill32(0x02), fill32(0x03)}, []uint64{1, 2, 3}, 10, 10, fill32(0x03))
+		params, err := milestoneKeeper.GetParams(ctx)
 		require.NoError(t, err)
+		params.MaxMilestonePropositionLength = 2
+		require.NoError(t, milestoneKeeper.SetParams(ctx, params))
+
+		err = ValidateMilestoneProposition(ctx, milestoneKeeper, prop)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "too many blocks in proposition")
 	})
 
-	t.Run("validates valid proposition structure", func(t *testing.T) {
-		t.Parallel()
-
-		// Test just the validation logic without requiring full keeper setup
-		prop := &types.MilestoneProposition{
-			BlockHashes:      [][]byte{make([]byte, common.HashLength)},
-			StartBlockNumber: 1,
-			ParentHash:       make([]byte, common.HashLength),
-			BlockTds:         []uint64{100},
-		}
-
-		// Validate the structure directly
-		require.Len(t, prop.BlockHashes, 1)
-		require.Len(t, prop.BlockTds, 1)
-		require.Equal(t, len(prop.BlockHashes), len(prop.BlockTds))
+	t.Run("rejects empty block list", func(t *testing.T) {
+		prop := makeProp(nil, nil, 10, 0, nil)
+		err := ValidateMilestoneProposition(ctx, milestoneKeeper, prop)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "no blocks in proposition")
 	})
 
-	t.Run("detects length mismatch between hashes and tds", func(t *testing.T) {
-		t.Parallel()
-
-		prop := &types.MilestoneProposition{
-			BlockHashes:      [][]byte{make([]byte, common.HashLength)},
-			BlockTds:         []uint64{100, 200}, // Mismatch
-			StartBlockNumber: 1,
-		}
-
-		// Verify the mismatch would be detected
-		require.NotEqual(t, len(prop.BlockHashes), len(prop.BlockTds))
+	t.Run("rejects length mismatch", func(t *testing.T) {
+		prop := makeProp([][]byte{fill32(0x01)}, []uint64{1, 2}, 10, 10, fill32(0x01))
+		err := ValidateMilestoneProposition(ctx, milestoneKeeper, prop)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "len mismatch between hashes and tds")
 	})
 
-	t.Run("detects invalid hash length", func(t *testing.T) {
-		t.Parallel()
-
-		prop := &types.MilestoneProposition{
-			BlockHashes:      [][]byte{make([]byte, 16)}, // Too short
-			BlockTds:         []uint64{100},
-			StartBlockNumber: 1,
-		}
-
-		// Verify invalid length would be detected
-		require.NotEqual(t, len(prop.BlockHashes[0]), common.HashLength)
+	t.Run("rejects invalid block hash length", func(t *testing.T) {
+		prop := makeProp([][]byte{make([]byte, 16)}, []uint64{1}, 10, 10, make([]byte, 16))
+		err := ValidateMilestoneProposition(ctx, milestoneKeeper, prop)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid block hash length")
 	})
 
-	t.Run("validates duplicate hash detection", func(t *testing.T) {
-		t.Parallel()
-
-		duplicateHash := make([]byte, common.HashLength)
-		for i := range duplicateHash {
-			duplicateHash[i] = 0xAA
-		}
-
-		prop := &types.MilestoneProposition{
-			BlockHashes:      [][]byte{duplicateHash, duplicateHash}, // Duplicates
-			BlockTds:         []uint64{100, 200},
-			StartBlockNumber: 1,
-		}
-
-		// Test that duplicate detection works
-		seen := make(map[string]struct{})
-		for _, hash := range prop.BlockHashes {
-			seen[string(hash)] = struct{}{}
-		}
-		require.NotEqual(t, len(seen), len(prop.BlockHashes), "should detect duplicates")
+	t.Run("rejects duplicate block hashes", func(t *testing.T) {
+		hash := fill32(0xAA)
+		prop := makeProp([][]byte{hash, hash}, []uint64{1, 2}, 10, 11, fill32(0xAA))
+		err := ValidateMilestoneProposition(ctx, milestoneKeeper, prop)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "duplicate block hashes found")
 	})
 
-	t.Run("validates unique hashes are accepted", func(t *testing.T) {
-		t.Parallel()
-
-		hash1 := make([]byte, common.HashLength)
-		hash2 := make([]byte, common.HashLength)
-		hash1[0] = 0xAA
-		hash2[0] = 0xBB
-
-		prop := &types.MilestoneProposition{
-			BlockHashes:      [][]byte{hash1, hash2},
-			BlockTds:         []uint64{100, 200},
-			StartBlockNumber: 1,
-		}
-
-		// Test that unique hashes are detected
-		seen := make(map[string]struct{})
-		for _, hash := range prop.BlockHashes {
-			seen[string(hash)] = struct{}{}
-		}
-		require.Equal(t, len(seen), len(prop.BlockHashes), "unique hashes should be accepted")
+	t.Run("rejects latest block number without hash", func(t *testing.T) {
+		prop := makeProp([][]byte{fill32(0x01)}, []uint64{1}, 10, 10, nil)
+		prop.LatestBlockNumber = 12
+		err := ValidateMilestoneProposition(ctx, milestoneKeeper, prop)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "latest block number set without latest block hash")
 	})
 
-	t.Run("validates empty block hashes", func(t *testing.T) {
-		t.Parallel()
-
-		prop := &types.MilestoneProposition{
-			BlockHashes:      [][]byte{},
-			BlockTds:         []uint64{},
-			StartBlockNumber: 1,
-		}
-
-		// Empty hashes should be detected
-		require.Empty(t, prop.BlockHashes)
+	t.Run("rejects latest block hash length", func(t *testing.T) {
+		prop := makeProp([][]byte{fill32(0x01)}, []uint64{1}, 10, 10, make([]byte, 16))
+		err := ValidateMilestoneProposition(ctx, milestoneKeeper, prop)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid latest block hash length")
 	})
+
+	t.Run("rejects latest head behind proposition tail", func(t *testing.T) {
+		prop := makeProp([][]byte{fill32(0x01), fill32(0x02)}, []uint64{1, 2}, 10, 10, fill32(0x02))
+		prop.LatestBlockNumber = 10
+		err := ValidateMilestoneProposition(ctx, milestoneKeeper, prop)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "latest block number 10 behind proposition end 11")
+	})
+
+	t.Run("rejects latest tail hash mismatch", func(t *testing.T) {
+		prop := makeProp([][]byte{fill32(0x01), fill32(0x02)}, []uint64{1, 2}, 10, 11, fill32(0x03))
+		err := ValidateMilestoneProposition(ctx, milestoneKeeper, prop)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "latest block hash does not match proposition tail")
+	})
+
+	t.Run("accepts latest head beyond proposition tail", func(t *testing.T) {
+		prop := makeProp([][]byte{fill32(0x01), fill32(0x02)}, []uint64{1, 2}, 10, 99, fill32(0xFF))
+		require.NoError(t, ValidateMilestoneProposition(ctx, milestoneKeeper, prop))
+	})
+}
+
+func newTestMilestoneKeeper(t *testing.T) (sdk.Context, *keeper.Keeper) {
+	t.Helper()
+
+	key := storetypes.NewKVStoreKey(types.StoreKey)
+	storeService := runtime.NewKVStoreService(key)
+	testCtx := cosmosTestutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
+	ctx := testCtx.Ctx.WithBlockHeight(1)
+	encCfg := moduletestutil.MakeTestEncodingConfig()
+	caller := &mocks.IContractCaller{}
+
+	k := keeper.NewKeeper(
+		encCfg.Codec,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		storeService,
+		caller,
+	)
+	k.InitGenesis(ctx, types.DefaultGenesisState())
+	return ctx, &k
 }
 
 // fill32 returns a 32-byte hash filled with seed.
@@ -830,6 +873,62 @@ func TestGetMajorityActualHead(t *testing.T) {
 	})
 }
 
+func TestGetMajorityActualHeadErrorsOnInvalidVoteExtension(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(100)
+	valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+		{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 40},
+	}}
+	votes := []abciTypes.ExtendedVoteInfo{
+		{
+			BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
+			VoteExtension: []byte{0xFF, 0x00, 0x01},
+			Validator:     abciTypes.Validator{Address: common.HexToAddress("0x1111111111111111111111111111111111111111").Bytes()},
+		},
+	}
+
+	_, _, _, err := GetMajorityActualHead(ctx, valSet, votes, 34, math.MaxUint64)
+	require.Error(t, err)
+}
+
+func TestGetMajorityActualHeadErrorsOnMissingValidatorWhenChecksEnabled(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(helper.GetTallyFixHeight())
+	valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+		{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 40},
+	}}
+	votes := []abciTypes.ExtendedVoteInfo{
+		actualHeadVote(t, "0x2222222222222222222222222222222222222222", 100, 0xAA),
+	}
+
+	_, _, _, err := GetMajorityActualHead(ctx, valSet, votes, 34, math.MaxUint64)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "Failed to get validator")
+}
+
+func TestGetMajorityActualHeadSkipsNonCommitAndMissingValidatorWhenChecksDisabled(t *testing.T) {
+	height := helper.GetDisableValSetCheckHeight() + 1
+	if helper.GetDisableValSetCheckHeight() >= helper.GetTallyFixHeight() {
+		height = helper.GetTallyFixHeight() - 1
+	}
+	ctx := sdk.Context{}.WithBlockHeight(height)
+	valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+		{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 40},
+		{Signer: "0x2222222222222222222222222222222222222222", VotingPower: 40},
+	}}
+	votes := []abciTypes.ExtendedVoteInfo{
+		{
+			BlockIdFlag:   cmtTypes.BlockIDFlagNil,
+			VoteExtension: []byte{0x01, 0x02, 0x03},
+			Validator:     abciTypes.Validator{Address: common.HexToAddress("0x2222222222222222222222222222222222222222").Bytes()},
+		},
+		actualHeadVote(t, "0x1111111111111111111111111111111111111111", 100, 0xAA),
+	}
+
+	head, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, math.MaxUint64)
+	require.NoError(t, err)
+	require.True(t, found)
+	require.Equal(t, uint64(100), head)
+}
+
 func TestValidateLatestHead(t *testing.T) {
 	t.Parallel()
 
@@ -945,6 +1044,171 @@ func TestGetBlockInfoReturnsRefreshedHeader(t *testing.T) {
 		require.NoError(t, err)
 		require.Same(t, cached, eff, "no refresh path must return the caller's header")
 		mc.AssertNotCalled(t, "GetBorChainBlock", mock.Anything, mock.Anything)
+	})
+}
+
+// TestGetBlockInfoErrorPaths covers the branches that return early when Bor data
+// is missing or malformed, so the coverage for the changed return signature stays
+// high on failure paths too.
+func TestGetBlockInfoErrorPaths(t *testing.T) {
+	ctx := sdk.Context{}.WithBlockHeight(100)
+
+	t.Run("fails when the latest header cannot be fetched", func(t *testing.T) {
+		mc := &mocks.IContractCaller{}
+		fetchErr := errors.New("fetch failed")
+		mc.On("GetBorChainBlock", mock.Anything, mock.Anything).Return((*ethTypes.Header)(nil), fetchErr)
+
+		_, _, _, _, eff, err := getBlockInfo(ctx, mc, 100, 10, nil, nil, 0)
+		require.Error(t, err)
+		require.Nil(t, eff)
+		require.Contains(t, err.Error(), "failed to get the latest header")
+	})
+
+	t.Run("fails when batch retrieval returns no headers", func(t *testing.T) {
+		mc := &mocks.IContractCaller{}
+		mc.On("GetBorChainBlockInfoInBatch", mock.Anything, int64(100), int64(105)).Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
+
+		latest := &ethTypes.Header{Number: big.NewInt(105)}
+		_, _, _, _, eff, err := getBlockInfo(ctx, mc, 100, 10, latest, nil, 0)
+		require.ErrorIs(t, err, ErrNoNewHeadersFound)
+		require.Nil(t, eff)
+	})
+
+	t.Run("fails when parent hash lookup fails", func(t *testing.T) {
+		mc := &mocks.IContractCaller{}
+		latest := &ethTypes.Header{Number: big.NewInt(105)}
+		hdrs := []*ethTypes.Header{{Number: big.NewInt(101)}}
+		tds := []uint64{101}
+		authors := []common.Address{{}}
+		mc.On("GetBorChainBlockInfoInBatch", mock.Anything, int64(101), int64(105)).Return(hdrs, tds, authors, nil)
+		parentErr := errors.New("parent failed")
+		mc.On("GetBorChainBlock", mock.Anything, mock.Anything).Return((*ethTypes.Header)(nil), parentErr)
+
+		_, _, _, _, eff, err := getBlockInfo(ctx, mc, 101, 10, latest, []byte{0x01}, 99)
+		require.Error(t, err)
+		require.Nil(t, eff)
+		require.Contains(t, err.Error(), "failed to get header for parent hash")
+	})
+}
+
+func TestGenMilestoneProposition(t *testing.T) {
+	milestoneKey := storetypes.NewKVStoreKey(types.StoreKey)
+	borKey := storetypes.NewKVStoreKey(borTypes.StoreKey)
+	transientKey := storetypes.NewTransientStoreKey("milestone_test_transient")
+	milestoneCtx := cosmosTestutil.DefaultContextWithKeys(
+		map[string]*storetypes.KVStoreKey{
+			"milestone": milestoneKey,
+			"bor":       borKey,
+		},
+		map[string]*storetypes.TransientStoreKey{
+			"transient": transientKey,
+		},
+		nil,
+	).WithBlockHeight(1)
+	encCfg := moduletestutil.MakeTestEncodingConfig()
+	milestoneKeeper := keeper.NewKeeper(
+		encCfg.Codec,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(milestoneKey),
+		&mocks.IContractCaller{},
+	)
+	milestoneKeeper.InitGenesis(milestoneCtx, types.DefaultGenesisState())
+	params, err := milestoneKeeper.GetParams(milestoneCtx)
+	require.NoError(t, err)
+	params.MaxMilestonePropositionLength = 5
+	params.FfMilestoneThreshold = 10
+	params.FfMilestoneBlockInterval = 5
+	require.NoError(t, milestoneKeeper.SetParams(milestoneCtx, params))
+
+	latestHeader := &ethTypes.Header{Number: big.NewInt(111)}
+	latestHash := latestHeader.Hash().Bytes()
+	lastMilestone := &types.Milestone{
+		EndBlock:   100,
+		Hash:       fill32(0x0A),
+		BorChainId: "1",
+	}
+	require.NoError(t, milestoneKeeper.AddMilestone(milestoneCtx, *lastMilestone))
+	parentHeader := &ethTypes.Header{
+		Number:     big.NewInt(101),
+		ParentHash: common.BytesToHash(lastMilestone.Hash),
+	}
+
+	// Build a minimal Bor keeper that can answer CanVoteProducers and keep spans
+	// in-memory. The stake/chain keepers are stubs because this test only needs the
+	// span state and the milestone proposition path.
+	storeService := runtime.NewKVStoreService(borKey)
+	bk := borKeeper.NewKeeper(
+		encCfg.Codec,
+		storeService,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		testChainKeeper{},
+		testStakeKeeper{},
+		testMilestoneKeeper{last: lastMilestone},
+		&mocks.IContractCaller{},
+	)
+	require.NoError(t, bk.AddNewSpan(milestoneCtx, &borTypes.Span{
+		Id:         1,
+		StartBlock: 1,
+		EndBlock:   100,
+		BorChainId: "1",
+		ValidatorSet: stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+			{ValId: 1, VotingPower: 100, Signer: "0x0000000000000000000000000000000000000001"},
+		}},
+		SelectedProducers: []stakeTypes.Validator{{ValId: 1, VotingPower: 100, Signer: "0x0000000000000000000000000000000000000001"}},
+	}))
+
+	origRio := helper.GetRioHeight()
+	origSpan := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() {
+		helper.SetRioHeight(origRio)
+		helper.SetSpanRotationOnStallHeight(origSpan)
+	})
+	helper.SetSpanRotationOnStallHeight(1)
+
+	batchHeaders := func(from, to int64) ([]*ethTypes.Header, []uint64, []common.Address) {
+		var hdrs []*ethTypes.Header
+		var tds []uint64
+		var authors []common.Address
+		for i := from; i <= to; i++ {
+			hdrs = append(hdrs, &ethTypes.Header{Number: big.NewInt(i)})
+			tds = append(tds, uint64(i))
+			authors = append(authors, common.Address{})
+		}
+		return hdrs, tds, authors
+	}
+
+	t.Run("returns the full proposition when veBlop voting is disabled", func(t *testing.T) {
+		helper.SetRioHeight(999999)
+		mc := &mocks.IContractCaller{}
+		mc.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).Return(latestHeader, nil)
+		mc.On("GetBorChainBlock", mock.Anything, mock.MatchedBy(func(n *big.Int) bool { return n != nil && n.Uint64() == 101 })).Return(parentHeader, nil)
+		h, td, a := batchHeaders(105, 109)
+		mc.On("GetBorChainBlockInfoInBatch", mock.Anything, int64(105), int64(109)).Return(h, td, a, nil)
+		prop, err := GenMilestoneProposition(milestoneCtx, &bk, &milestoneKeeper, mc, func(sdk.Context, uint64) ([]common.Address, error) {
+			return nil, nil
+		})
+		require.NoError(t, err)
+		require.NotNil(t, prop)
+		require.Equal(t, uint64(105), prop.StartBlockNumber)
+		require.Equal(t, latestHeader.Number.Uint64(), prop.LatestBlockNumber)
+		require.Equal(t, latestHash, prop.LatestBlockHash)
+		require.Len(t, prop.BlockHashes, 5)
+	})
+
+	t.Run("filters by block author when veBlop voting is enabled", func(t *testing.T) {
+		helper.SetRioHeight(101)
+		mc := &mocks.IContractCaller{}
+		mc.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).Return(latestHeader, nil)
+		mc.On("GetBorChainBlock", mock.Anything, mock.MatchedBy(func(n *big.Int) bool { return n != nil && n.Uint64() == 101 })).Return(parentHeader, nil)
+		h, td, a := batchHeaders(105, 109)
+		mc.On("GetBorChainBlockInfoInBatch", mock.Anything, int64(105), int64(109)).Return(h, td, a, nil)
+		prop, err := GenMilestoneProposition(milestoneCtx, &bk, &milestoneKeeper, mc, func(sdk.Context, uint64) ([]common.Address, error) {
+			return []common.Address{{}}, nil
+		})
+		require.NoError(t, err)
+		require.NotNil(t, prop)
+		require.Len(t, prop.BlockHashes, 5)
+		require.Equal(t, latestHash, prop.LatestBlockHash)
 	})
 }
 

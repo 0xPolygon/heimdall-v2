@@ -28,3 +28,24 @@ func (s *KeeperTestSuite) TestPendingBorBlockTracking() {
 	require.Equal([]byte{0x09}, id)
 	require.Equal(uint64(800), height)
 }
+
+// TestKeeperAccessorHelpers covers the small keeper methods that only read or
+// mutate a single field so the accessors introduced for POS-3629 stay covered.
+func (s *KeeperTestSuite) TestKeeperAccessorHelpers() {
+	ctx, keeper, require := s.ctx, s.milestoneKeeper, s.Require()
+
+	keeper.SetContractCaller(nil)
+
+	block, err := keeper.GetLastMilestoneBlock(ctx)
+	require.NoError(err)
+	require.Zero(block)
+
+	has, err := keeper.HasMilestone(ctx)
+	require.NoError(err)
+	require.False(has)
+
+	require.NoError(keeper.SetLastMilestoneBlock(ctx, 1234))
+	block, err = keeper.GetLastMilestoneBlock(ctx)
+	require.NoError(err)
+	require.Equal(uint64(1234), block)
+}

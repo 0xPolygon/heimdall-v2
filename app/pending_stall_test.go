@@ -667,6 +667,96 @@ func TestHandlePendingMilestoneSkipsWithoutActualHeadAgreement(t *testing.T) {
 	require.Equal(t, uint64(1), height, "stall clock not reset on a no-agreement block")
 }
 
+// TestHandlePendingMilestonePreForkSkipsRotation covers the fork-off branch of
+// handlePendingMilestone: before the span-rotation-on-stall hardfork, the
+// pending milestone path must remain a pure log-and-return no-op.
+func TestHandlePendingMilestonePreForkSkipsRotation(t *testing.T) {
+	_, app, ctx, privKeys := SetupAppWithABCICtxAndValidators(t, 3)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+	seedSpan(t, app, ctx)
+	seedProducerSelection(t, app, ctx, validators)
+
+	origFork := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
+	helper.SetSpanRotationOnStallHeight(0)
+
+	valSet := stakeTypes.NewValidatorSet(validators)
+	minVP := valSet.GetTotalVotingPower()/3 + 1
+	extVotes := actualHeadExtVotes(t, validators, privKeys, psPendingHead, fill32(0x5A), len(validators))
+
+	ctx = ctx.WithBlockHeight(5000)
+	require.NoError(t, app.handlePendingMilestone(ctx, singleBlockPendingProp(psPendingHead, 0x01), valSet, extVotes, minVP))
+
+	last, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), last.Id, "fork-off pending milestone path must not rotate")
+
+	block, _, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
+	require.NoError(t, err)
+	require.Zero(t, block, "fork-off path must not write pending stall tracking")
+	require.Zero(t, height, "fork-off path must not start the pending stall clock")
+}
+
+// TestDebouncePendingStallClockPreForkNoop covers the helper debounce's fork-off
+// guard: if the hardfork is not active, the pending-stall tracking must be left
+// unchanged so pre-fork blocks do not write new state.
+func TestDebouncePendingStallClockPreForkNoop(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	seedSpan(t, app, ctx)
+
+	origFork := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
+	helper.SetSpanRotationOnStallHeight(0)
+
+	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, fill32(0x7A), 777))
+	require.NoError(t, app.debouncePendingStallClock(ctx.WithBlockHeight(9000), 9999))
+
+	block, id, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
+	require.NoError(t, err)
+	require.Equal(t, psPendingHead, block)
+	require.Equal(t, fill32(0x7A), id)
+	require.Equal(t, uint64(777), height)
+}
+
+// TestDebouncePendingStallClockNoTrackingNoop covers the other debounce branch:
+// under the fork, an unset pending-stall clock must remain a no-op rather than
+// writing a synthetic baseline.
+func TestDebouncePendingStallClockNoTrackingNoop(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	seedSpan(t, app, ctx)
+
+	origFork := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
+	helper.SetSpanRotationOnStallHeight(1)
+
+	require.NoError(t, app.debouncePendingStallClock(ctx.WithBlockHeight(9000), 9999))
+
+	block, _, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
+	require.NoError(t, err)
+	require.Zero(t, block)
+	require.Zero(t, height)
+}
+
+// TestHandlePendingMilestoneMissingLastSpanErrors pins the error-return branch:
+// when the keeper cannot resolve the last span, the pending milestone path must
+// fail fast instead of trying to rotate from a nonexistent runway.
+func TestHandlePendingMilestoneMissingLastSpanErrors(t *testing.T) {
+	_, app, ctx, privKeys := SetupAppWithABCICtxAndValidators(t, 3)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	origFork := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
+	helper.SetSpanRotationOnStallHeight(1)
+
+	valSet := stakeTypes.NewValidatorSet(validators)
+	minVP := valSet.GetTotalVotingPower()/3 + 1
+	extVotes := actualHeadExtVotes(t, validators, privKeys, psPendingHead, fill32(0x5A), len(validators))
+
+	ctx = ctx.WithBlockHeight(5000)
+	err := app.handlePendingMilestone(ctx, singleBlockPendingProp(psPendingHead, 0x01), valSet, extVotes, minVP)
+	require.Error(t, err)
+}
+
 // TestHandlePendingMilestoneDropsOutOfRangeActualHead pins the byzantine-poison guard (POS-3629): a
 // >1/3 slice agreeing on a head beyond the last span's end (the scheduled runway — no honest producer
 // can advance past it) must be filtered by the maxBlock bound, so it is never written into the stall
@@ -701,6 +791,39 @@ func TestHandlePendingMilestoneDropsOutOfRangeActualHead(t *testing.T) {
 	require.NoError(t, err)
 	require.Zero(t, height, "an out-of-range head must never be written into the stall tracking")
 	require.Zero(t, block, "tracking head must stay unset")
+}
+
+// TestRotateSpanFromPendingHeadFallsBackToLastSpanStart covers the defensive fallback
+// in producer lookup: if the next block after the pending head is not owned by any
+// span, the code must fall back to the last span's start block instead of failing.
+func TestRotateSpanFromPendingHeadFallsBackToLastSpanStart(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 5)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	// Build only a future-scheduled span, so pendingHead+1 has no owner and the
+	// fallback path must resolve the current producer from the last span's start.
+	futureSpan := borTypes.Span{
+		Id:                2,
+		StartBlock:        1000,
+		EndBlock:          1100,
+		BorChainId:        "1",
+		ValidatorSet:      stakeTypes.ValidatorSet{Validators: validators},
+		SelectedProducers: []stakeTypes.Validator{*validators[1]},
+	}
+	require.NoError(t, app.BorKeeper.AddNewSpan(ctx, &futureSpan))
+	seedProducerSelection(t, app, ctx, validators)
+
+	origFork := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
+	helper.SetSpanRotationOnStallHeight(1)
+
+	prop := singleBlockPendingProp(150, 0x66)
+	require.NoError(t, app.rotateSpanFromPendingHead(ctx.WithBlockHeight(5000), prop.StartBlockNumber, propHeadID(prop)))
+
+	last, err := app.BorKeeper.GetLastSpan(ctx)
+	require.NoError(t, err)
+	require.Equal(t, uint64(3), last.Id, "fallback path must still mint a span")
+	require.Equal(t, uint64(151), last.StartBlock, "rotation must still start at pendingHead+1")
 }
 
 // seedFutureSpan adds a future-scheduled span 2 [psSpanEnd+1, psSpanEnd+6310] (producer valSlice[1]),
