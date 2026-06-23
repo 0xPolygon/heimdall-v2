@@ -1,19 +1,27 @@
 package app
 
 import (
+	"context"
+	"errors"
 	"math"
+	"sort"
 	"testing"
 
+	corestore "cosmossdk.io/core/store"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	helpermocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
+	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
+	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -97,6 +105,151 @@ func seedProducerSelection(t *testing.T, app *HeimdallApp, ctx sdk.Context, vali
 		active[v.ValId] = struct{}{}
 	}
 	require.NoError(t, app.BorKeeper.UpdateLatestActiveProducer(ctx, active))
+}
+
+type scriptedStoreService struct {
+	store corestore.KVStore
+}
+
+func (s scriptedStoreService) OpenKVStore(context.Context) corestore.KVStore {
+	return s.store
+}
+
+type scriptedKVStore struct {
+	values     map[string][]byte
+	setCount   int
+	failOnSet  map[int]error
+	hasErr     error
+	getErr     error
+	deleteErr  error
+	iterErr    error
+	reverseErr error
+}
+
+func newScriptedKVStore() *scriptedKVStore {
+	return &scriptedKVStore{
+		values:    map[string][]byte{},
+		failOnSet: map[int]error{},
+	}
+}
+
+func (s *scriptedKVStore) Get(key []byte) ([]byte, error) {
+	if s.getErr != nil {
+		return nil, s.getErr
+	}
+	if value, ok := s.values[string(key)]; ok {
+		return append([]byte(nil), value...), nil
+	}
+	return nil, nil
+}
+
+func (s *scriptedKVStore) Has(key []byte) (bool, error) {
+	if s.hasErr != nil {
+		return false, s.hasErr
+	}
+	_, ok := s.values[string(key)]
+	return ok, nil
+}
+
+func (s *scriptedKVStore) Set(key, value []byte) error {
+	s.setCount++
+	if err, ok := s.failOnSet[s.setCount]; ok {
+		return err
+	}
+	s.values[string(key)] = append([]byte(nil), value...)
+	return nil
+}
+
+func (s *scriptedKVStore) Delete(key []byte) error {
+	if s.deleteErr != nil {
+		return s.deleteErr
+	}
+	delete(s.values, string(key))
+	return nil
+}
+
+func (s *scriptedKVStore) Iterator(start, end []byte) (corestore.Iterator, error) {
+	if s.iterErr != nil {
+		return nil, s.iterErr
+	}
+	return newScriptedIterator(s.values, start, end, false), nil
+}
+
+func (s *scriptedKVStore) ReverseIterator(start, end []byte) (corestore.Iterator, error) {
+	if s.reverseErr != nil {
+		return nil, s.reverseErr
+	}
+	return newScriptedIterator(s.values, start, end, true), nil
+}
+
+type scriptedIterator struct {
+	keys   [][]byte
+	values [][]byte
+	idx    int
+	start  []byte
+	end    []byte
+}
+
+func newScriptedIterator(values map[string][]byte, start, end []byte, reverse bool) *scriptedIterator {
+	keys := make([]string, 0, len(values))
+	for k := range values {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	if reverse {
+		for i, j := 0, len(keys)-1; i < j; i, j = i+1, j-1 {
+			keys[i], keys[j] = keys[j], keys[i]
+		}
+	}
+
+	outKeys := make([][]byte, 0, len(keys))
+	outVals := make([][]byte, 0, len(keys))
+	for _, k := range keys {
+		keyBytes := []byte(k)
+		if len(start) > 0 && string(keyBytes) < string(start) {
+			continue
+		}
+		if len(end) > 0 && string(keyBytes) >= string(end) {
+			continue
+		}
+		outKeys = append(outKeys, keyBytes)
+		outVals = append(outVals, append([]byte(nil), values[k]...))
+	}
+
+	return &scriptedIterator{keys: outKeys, values: outVals, start: start, end: end}
+}
+
+func (it *scriptedIterator) Domain() (start []byte, end []byte) { return it.start, it.end }
+func (it *scriptedIterator) Valid() bool                        { return it.idx >= 0 && it.idx < len(it.keys) }
+func (it *scriptedIterator) Next()                              { it.idx++ }
+func (it *scriptedIterator) Key() []byte                        { return it.keys[it.idx] }
+func (it *scriptedIterator) Value() []byte                      { return it.values[it.idx] }
+func (it *scriptedIterator) Error() error                       { return nil }
+func (it *scriptedIterator) Close() error                       { return nil }
+
+func newPendingStallTestApp(t *testing.T, base *HeimdallApp, milestoneStore corestore.KVStore, borStore corestore.KVStore) *HeimdallApp {
+	t.Helper()
+	authAddr := authtypes.NewModuleAddress(govtypes.ModuleName).String()
+
+	milestoneKeeper := milestoneKeeper.NewKeeper(
+		base.appCodec,
+		authAddr,
+		scriptedStoreService{store: milestoneStore},
+		base.caller,
+	)
+	borKeeper := borKeeper.NewKeeper(
+		base.appCodec,
+		scriptedStoreService{store: borStore},
+		authAddr,
+		base.ChainManagerKeeper,
+		&base.StakeKeeper,
+		&milestoneKeeper,
+		base.caller,
+	)
+
+	base.MilestoneKeeper = milestoneKeeper
+	base.BorKeeper = borKeeper
+	return base
 }
 
 func TestCheckAndRotateOnPendingStall(t *testing.T) {
@@ -208,6 +361,34 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, uint64(blockHeight)+buffer, trackHeight, "pending-stall clock debounced")
 	})
+}
+
+func TestCheckAndRotateOnPendingStallErrorsOnTrackingStoreRead(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	seedSpan(t, app, ctx)
+
+	milestoneStore := newScriptedKVStore()
+	milestoneStore.hasErr = errors.New("tracking read failed")
+	app = newPendingStallTestApp(t, app, milestoneStore, newScriptedKVStore())
+
+	prop := singleBlockPendingProp(psPendingHead, 0xAB)
+	err := app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(1000), prop.StartBlockNumber, propHeadID(prop))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "tracking read failed")
+}
+
+func TestCheckAndRotateOnPendingStallErrorsOnTrackingWrite(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	seedSpan(t, app, ctx)
+
+	milestoneStore := newScriptedKVStore()
+	milestoneStore.failOnSet[1] = errors.New("tracking write failed")
+	app = newPendingStallTestApp(t, app, milestoneStore, newScriptedKVStore())
+
+	prop := singleBlockPendingProp(psPendingHead, 0xAC)
+	err := app.checkAndRotateOnPendingStall(ctx.WithBlockHeight(1000), prop.StartBlockNumber, propHeadID(prop))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "tracking write failed")
 }
 
 // TestCheckAndRotateOnPendingStallReRotatesAwayFromInstalledProducer pins the re-rotation path: when
@@ -458,6 +639,64 @@ func TestRotateSpanFromPendingHeadErrorsOnMissingParams(t *testing.T) {
 	err := app.rotateSpanFromPendingHead(ctx.WithBlockHeight(5000), prop.StartBlockNumber, propHeadID(prop))
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "not found")
+}
+
+func TestRecordPendingStallRotationErrorsOnMilestoneWrite(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	seedSpan(t, app, ctx)
+
+	milestoneStore := newScriptedKVStore()
+	milestoneStore.failOnSet[1] = errors.New("last milestone block failed")
+	app = newPendingStallTestApp(t, app, milestoneStore, newScriptedKVStore())
+
+	err := app.recordPendingStallRotation(ctx.WithBlockHeight(5000), psPendingHead, []byte("pending"), psSpanEnd, 1)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "last milestone block failed")
+}
+
+func TestRecordPendingStallRotationErrorsOnTrackingWrite(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	seedSpan(t, app, ctx)
+
+	milestoneStore := newScriptedKVStore()
+	milestoneStore.failOnSet[2] = errors.New("tracking update failed")
+	app = newPendingStallTestApp(t, app, milestoneStore, newScriptedKVStore())
+
+	err := app.recordPendingStallRotation(ctx.WithBlockHeight(5000), psPendingHead, []byte("pending"), psSpanEnd, 1)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "tracking update failed")
+}
+
+func TestRecordPendingStallRotationErrorsOnFailedProducerWrite(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	seedSpan(t, app, ctx)
+
+	milestoneStore := newScriptedKVStore()
+	borStore := newScriptedKVStore()
+	borStore.failOnSet[1] = errors.New("failed producer write failed")
+	app = newPendingStallTestApp(t, app, milestoneStore, borStore)
+
+	err := app.recordPendingStallRotation(ctx.WithBlockHeight(5000), psPendingHead, []byte("pending"), psSpanEnd, 1)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed producer write failed")
+}
+
+func TestDebouncePendingStallClockErrorsOnTrackingWrite(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	seedSpan(t, app, ctx)
+
+	origFork := helper.GetSpanRotationOnStallHeight()
+	t.Cleanup(func() { helper.SetSpanRotationOnStallHeight(origFork) })
+	helper.SetSpanRotationOnStallHeight(1)
+
+	milestoneStore := newScriptedKVStore()
+	app = newPendingStallTestApp(t, app, milestoneStore, newScriptedKVStore())
+	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, psPendingHead, []byte("tracked"), 100))
+	milestoneStore.failOnSet[4] = errors.New("debounce tracking write failed")
+
+	err := app.debouncePendingStallClock(ctx.WithBlockHeight(9000), 9999)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "debounce tracking write failed")
 }
 
 // TestRotateSpanFromPendingHeadErrorsOnCorruptSpanLookup covers the defensive fallback branch where
