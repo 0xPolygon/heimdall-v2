@@ -22,9 +22,9 @@ func (s *KeeperTestSuite) queryDeterministicStateSyncs(
 	toTime time.Time,
 	limit uint64,
 ) (*types.RecordListWithTimeResponse, error) {
-	original := helper.GetV080HardforkHeight()
-	helper.SetV080HardforkHeight(1)
-	defer helper.SetV080HardforkHeight(original)
+	original := helper.GetZurichHardforkHeight()
+	helper.SetZurichHardforkHeight(1)
+	defer helper.SetZurichHardforkHeight(original)
 
 	storeCtx := ctx.WithBlockHeight(resolvedHeight).WithBlockHeader(cmtproto.Header{
 		Time:   toTime.Add(-time.Second),
@@ -101,22 +101,6 @@ func (s *KeeperTestSuite) TestProcessPendingVisibilityEventsEmpty() {
 	require.NoError(ck.ProcessPendingVisibilityEvents(ctx))
 }
 
-// TestVisibilityTimeUpgradeID verifies get/set of the upgrade boundary marker.
-func (s *KeeperTestSuite) TestVisibilityTimeUpgradeID() {
-	ctx, ck := s.ctx, s.keeper
-	require := s.Require()
-
-	// Not set initially
-	_, err := ck.GetVisibilityTimeUpgradeID(ctx)
-	require.Error(err, "upgrade ID should not exist initially")
-
-	// Set and retrieve
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 42))
-	id, err := ck.GetVisibilityTimeUpgradeID(ctx)
-	require.NoError(err)
-	require.Equal(uint64(42), id)
-}
-
 // TestGetRecordListWithTime_LegacyQueryPreserved verifies that when no upgrade ID
 // is set, the query behaves identically to the original legacy path.
 func (s *KeeperTestSuite) TestGetRecordListWithTime_LegacyQueryPreserved() {
@@ -152,8 +136,6 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_AlwaysUsesRecordTime() {
 
 	baseTime := time.Date(2026, 1, 12, 16, 50, 0, 0, time.UTC)
 
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
-
 	// Create an event with record_time within the query window
 	rec := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1",
 		baseTime.Add(8*time.Minute+14*time.Second))
@@ -186,8 +168,6 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HaltSimulation() {
 
 	recordTime := time.Date(2026, 1, 12, 16, 58, 14, 0, time.UTC)
 	borToTime := time.Date(2026, 1, 12, 16, 58, 30, 0, time.UTC)
-
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 3131120))
 
 	rec := types.NewEventRecord(TxHash1, 1, 3131120, Address1, make([]byte, 1), "1", recordTime)
 	require.NoError(ck.SetEventRecord(ctx, rec))
@@ -223,8 +203,6 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingEventsIncluded() {
 
 	now := time.Now().UTC()
 
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
-
 	// Create an event with record_time in the past
 	rec := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1",
 		now.Add(-5*time.Minute))
@@ -253,7 +231,6 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_HybridQuery() {
 	baseTime := time.Date(2026, 1, 12, 16, 0, 0, 0, time.UTC)
 
 	// Upgrade boundary at event ID 3
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 3))
 
 	// Events 1-2: pre-upgrade (legacy), record_time within the query window
 	for i := uint64(1); i <= 2; i++ {
@@ -299,7 +276,6 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_AllEventsReturnedByRecordTim
 	baseTime := time.Date(2026, 1, 12, 16, 0, 0, 0, time.UTC)
 
 	// Upgrade boundary at event ID 3
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 3))
 
 	// Events 1-2: pre-upgrade, record_time within the query window
 	for i := uint64(1); i <= 2; i++ {
@@ -372,19 +348,19 @@ func (s *KeeperTestSuite) TestVisibilityTimeFeatureFlag() {
 	require := s.Require()
 
 	// Save and restore the original value
-	original := helper.GetV080HardforkHeight()
-	defer helper.SetV080HardforkHeight(original)
+	original := helper.GetZurichHardforkHeight()
+	defer helper.SetZurichHardforkHeight(original)
 
 	// Height 0 means disabled
-	helper.SetV080HardforkHeight(0)
-	require.False(helper.IsV080Hardfork(100))
-	require.False(helper.IsV080Hardfork(0))
+	helper.SetZurichHardforkHeight(0)
+	require.False(helper.IsZurichHardfork(100))
+	require.False(helper.IsZurichHardfork(0))
 
 	// Height 256 means enabled at block 256+
-	helper.SetV080HardforkHeight(256)
-	require.False(helper.IsV080Hardfork(255))
-	require.True(helper.IsV080Hardfork(256))
-	require.True(helper.IsV080Hardfork(300))
+	helper.SetZurichHardforkHeight(256)
+	require.False(helper.IsZurichHardfork(255))
+	require.True(helper.IsZurichHardfork(256))
+	require.True(helper.IsZurichHardfork(300))
 }
 
 // TestPostHandlerAddsToVisibilityPending verifies that PostHandleMsgEventRecord
@@ -394,11 +370,11 @@ func (s *KeeperTestSuite) TestPostHandlerAddsToVisibilityPending() {
 	require := s.Require()
 
 	// Save and restore the original value
-	original := helper.GetV080HardforkHeight()
-	defer helper.SetV080HardforkHeight(original)
+	original := helper.GetZurichHardforkHeight()
+	defer helper.SetZurichHardforkHeight(original)
 
 	// Enable visibility time at block 1
-	helper.SetV080HardforkHeight(1)
+	helper.SetZurichHardforkHeight(1)
 
 	// Set block height to an enabled height
 	ctx = ctx.WithBlockHeight(10)
@@ -416,11 +392,6 @@ func (s *KeeperTestSuite) TestPostHandlerAddsToVisibilityPending() {
 	hasPending, err := ck.PendingVisibilityEvents.Has(ctx, 42)
 	require.NoError(err)
 	require.True(hasPending, "event should be in pending visibility events")
-
-	// Verify upgrade ID was set
-	upgradeID, err := ck.GetVisibilityTimeUpgradeID(ctx)
-	require.NoError(err)
-	require.Equal(uint64(42), upgradeID, "upgrade ID should be set to first post-upgrade event")
 }
 
 // TestPostHandlerSkipsVisibilityWhenDisabled verifies that PostHandleMsgEventRecord
@@ -430,11 +401,11 @@ func (s *KeeperTestSuite) TestPostHandlerSkipsVisibilityWhenDisabled() {
 	require := s.Require()
 
 	// Save and restore
-	original := helper.GetV080HardforkHeight()
-	defer helper.SetV080HardforkHeight(original)
+	original := helper.GetZurichHardforkHeight()
+	defer helper.SetZurichHardforkHeight(original)
 
 	// Disable visibility time
-	helper.SetV080HardforkHeight(0)
+	helper.SetZurichHardforkHeight(0)
 
 	ctx = ctx.WithBlockHeight(10)
 
@@ -451,87 +422,6 @@ func (s *KeeperTestSuite) TestPostHandlerSkipsVisibilityWhenDisabled() {
 	hasPending, err := ck.PendingVisibilityEvents.Has(ctx, 99)
 	require.NoError(err)
 	require.False(hasPending, "event should not be in pending when feature is disabled")
-
-	// Verify upgrade ID was not set
-	_, err = ck.GetVisibilityTimeUpgradeID(ctx)
-	require.Error(err, "upgrade ID should not be set when feature is disabled")
-}
-
-// TestUpgradeIDBoundarySetOnce verifies that the visibility time upgrade ID
-// stays anchored when later post-HF events arrive with larger IDs (the common
-// monotonic case).
-func (s *KeeperTestSuite) TestUpgradeIDBoundarySetOnce() {
-	ctx, ck, postHandler := s.ctx, s.keeper, s.postHandler
-	require := s.Require()
-
-	original := helper.GetV080HardforkHeight()
-	defer helper.SetV080HardforkHeight(original)
-
-	helper.SetV080HardforkHeight(1)
-	ctx = ctx.WithBlockHeight(10)
-
-	// The first event sets the upgrade ID
-	postHandler(ctx, new(types.NewMsgEventRecord(
-		Address1, TxHash1, 1, 100, 10, []byte(Address2), make([]byte, 0), s.chainId,
-	)), sidetxs.Vote_VOTE_YES)
-
-	upgradeID, err := ck.GetVisibilityTimeUpgradeID(ctx)
-	require.NoError(err)
-	require.Equal(uint64(10), upgradeID)
-
-	// A later event with a larger ID must not raise the boundary
-	postHandler(ctx, new(types.NewMsgEventRecord(
-		Address1, TxHash1, 2, 200, 20, []byte(Address2), make([]byte, 0), s.chainId,
-	)), sidetxs.Vote_VOTE_YES)
-
-	upgradeID, err = ck.GetVisibilityTimeUpgradeID(ctx)
-	require.NoError(err)
-	require.Equal(uint64(10), upgradeID, "upgrade ID should stay at the smaller seen ID")
-}
-
-// TestUpgradeIDBoundaryTracksMin verifies that when post-HF events arrive in
-// non-monotonic order (proposer reordering, mempool race), the boundary
-// converges to the smallest ID seen — never the first one observed. This
-// keeps every post-HF event on the visibility_height-gated query path; the
-// previous "first-seen" implementation would have left the smaller-ID event
-// on the legacy record_time path and leaked it one block early.
-func (s *KeeperTestSuite) TestUpgradeIDBoundaryTracksMin() {
-	ctx, ck, postHandler := s.ctx, s.keeper, s.postHandler
-	require := s.Require()
-
-	original := helper.GetV080HardforkHeight()
-	defer helper.SetV080HardforkHeight(original)
-
-	helper.SetV080HardforkHeight(1)
-	ctx = ctx.WithBlockHeight(10)
-
-	// Activation block — proposer placed the larger-ID side-tx first.
-	postHandler(ctx, new(types.NewMsgEventRecord(
-		Address1, TxHash1, 1, 100, 101, []byte(Address2), make([]byte, 0), s.chainId,
-	)), sidetxs.Vote_VOTE_YES)
-
-	upgradeID, err := ck.GetVisibilityTimeUpgradeID(ctx)
-	require.NoError(err)
-	require.Equal(uint64(101), upgradeID)
-
-	// Second side-tx in the same block carries a smaller ID — the boundary
-	// must drop to it so event 100 isn't routed through the legacy branch.
-	postHandler(ctx, new(types.NewMsgEventRecord(
-		Address1, TxHash1, 2, 100, 100, []byte(Address2), make([]byte, 0), s.chainId,
-	)), sidetxs.Vote_VOTE_YES)
-
-	upgradeID, err = ck.GetVisibilityTimeUpgradeID(ctx)
-	require.NoError(err)
-	require.Equal(uint64(100), upgradeID, "boundary must converge to min(seen ids)")
-
-	// A subsequent larger ID must not raise the boundary.
-	postHandler(ctx, new(types.NewMsgEventRecord(
-		Address1, TxHash1, 3, 100, 200, []byte(Address2), make([]byte, 0), s.chainId,
-	)), sidetxs.Vote_VOTE_YES)
-
-	upgradeID, err = ck.GetVisibilityTimeUpgradeID(ctx)
-	require.NoError(err)
-	require.Equal(uint64(100), upgradeID, "later larger ID must not raise the boundary")
 }
 
 // TestGetRecordListWithTime_PendingAtFirstID verifies that GetRecordListWithTime
@@ -543,7 +433,6 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingAtFirstID() {
 	require := s.Require()
 
 	now := time.Now().UTC()
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
 
 	// Events 1-3: all post-upgrade. Event 1 is pending, events 2-3 have visibility_height.
 	for i := uint64(1); i <= 3; i++ {
@@ -576,7 +465,6 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_PendingGapInMiddle() {
 	require := s.Require()
 
 	now := time.Now().UTC()
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
 
 	// Events 1-4: all post-upgrade
 	for i := uint64(1); i <= 4; i++ {
@@ -611,7 +499,6 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_RecordTimeBreakPreservesCont
 	require := s.Require()
 
 	baseTime := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
 
 	// Events 1-5: post-upgrade with increasing record_time
 	for i := uint64(1); i <= 5; i++ {
@@ -646,8 +533,6 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_RecordTimeBreakPreservesCont
 func (s *KeeperTestSuite) TestQueryDeterminismAcrossCommittedStates() {
 	ctx, ck, queryClient := s.ctx, s.keeper, s.queryClient
 	require := s.Require()
-
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
 
 	// Block H: event stored with pending status
 	blockHTime := time.Date(2026, 1, 12, 16, 58, 14, 0, time.UTC)
@@ -696,9 +581,9 @@ func (s *KeeperTestSuite) TestEndToEndVisibilityTimeLifecycle() {
 	ctx, ck, queryClient, postHandler := s.ctx, s.keeper, s.queryClient, s.postHandler
 	require := s.Require()
 
-	original := helper.GetV080HardforkHeight()
-	defer helper.SetV080HardforkHeight(original)
-	helper.SetV080HardforkHeight(1)
+	original := helper.GetZurichHardforkHeight()
+	defer helper.SetZurichHardforkHeight(original)
+	helper.SetZurichHardforkHeight(1)
 
 	// Block H+1: PostHandler stores event and adds to pending
 	blockH1Time := time.Date(2026, 3, 15, 10, 0, 0, 0, time.UTC)
@@ -923,8 +808,6 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_BasicFlow() {
 	ctx = ctx.WithBlockHeight(10000)
 	require := s.Require()
 
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
-
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
 
 	// Create 5 events with ascending visibility heights
@@ -957,7 +840,6 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_HybridQuery() {
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
 
 	// Upgrade boundary at event ID 3
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 3))
 
 	// Events 1-2: pre-upgrade (legacy), record_time within the query window
 	for i := uint64(1); i <= 2; i++ {
@@ -998,8 +880,6 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_LegacyOutOfOrderR
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
 	toTime := baseTime.Add(51 * time.Minute)
 
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 200))
-
 	// Event 100 is legacy but recorded after event 101.
 	require.NoError(ck.SetEventRecord(ctx, types.NewEventRecord(
 		TxHash1, 100, 100, Address1, make([]byte, 1), "1", baseTime.Add(52*time.Minute),
@@ -1023,8 +903,6 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_PendingExcluded()
 
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
 
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
-
 	// Create 3 events, only set visibility_height for events 1 and 3 (event 2 pending)
 	for i := uint64(1); i <= 3; i++ {
 		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
@@ -1032,7 +910,8 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_PendingExcluded()
 		require.NoError(ck.SetEventRecord(ctx, rec))
 	}
 	require.NoError(ck.VisibilityHeightByID.Set(ctx, 1, 100))
-	// event 2: no visibility height (pending)
+	// event 2: post-HF but still pending (in the pending set, no visibility_height yet)
+	require.NoError(ck.AddPendingVisibilityEvent(ctx, 2))
 	require.NoError(ck.VisibilityHeightByID.Set(ctx, 3, 102))
 
 	resp, err := s.queryDeterministicStateSyncs(ctx, 200, 1, baseTime.Add(time.Hour), 10)
@@ -1052,8 +931,6 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_OutOfOrderVisibil
 
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
 
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
-
 	for i := uint64(1); i <= 2; i++ {
 		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
 			baseTime.Add(time.Duration(i)*time.Minute))
@@ -1071,8 +948,8 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_OutOfOrderVisibil
 }
 
 // TestRecordListWithTime_Deterministic_LegacyEventDoesNotHidePostUpgradeEvents verifies
-// that an out-of-order legacy event near the upgrade boundary does not truncate the
-// scan before eligible post-upgrade events.
+// that an out-of-order legacy event does not truncate the scan before eligible
+// post-upgrade events.
 func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_LegacyEventDoesNotHidePostUpgradeEvents() {
 	ctx, ck := s.ctx, s.keeper
 	ctx = ctx.WithBlockHeight(10000)
@@ -1080,8 +957,6 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_LegacyEventDoesNo
 
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
 	toTime := baseTime.Add(45 * time.Minute)
-
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 101))
 
 	require.NoError(ck.SetEventRecord(ctx, types.NewEventRecord(
 		TxHash1, 100, 100, Address1, make([]byte, 1), "1", baseTime.Add(50*time.Minute),
@@ -1109,7 +984,6 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_DeterministicAcro
 	require := s.Require()
 
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
 
 	// Create events 1-3 with visibility heights 100, 101, 102
 	for i := uint64(1); i <= 3; i++ {
@@ -1269,7 +1143,6 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_ContiguousIDs() {
 	require := s.Require()
 
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 1))
 
 	// Create 10 events
 	for i := uint64(1); i <= 10; i++ {
@@ -1307,10 +1180,7 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_PreAndPostUpgrade
 
 	baseTime := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
 
-	// Set upgrade boundary at event ID 4
-	require.NoError(ck.SetVisibilityTimeUpgradeID(ctx, 4))
-
-	// Events 1-3: pre-upgrade (legacy), filtered by record_time
+	// Events 1-3: pre-upgrade (legacy, no visibility_height), filtered by record_time
 	for i := uint64(1); i <= 3; i++ {
 		rec := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1",
 			baseTime.Add(time.Duration(i)*time.Minute))
@@ -1364,16 +1234,14 @@ func (s *KeeperTestSuite) TestRecordListWithTime_Deterministic_PreAndPostUpgrade
 	require.NoError(err)
 	require.Equal(int64(100), resolved, "final query should resolve the intended height")
 
-	// Verify events 1-3 are pre-upgrade (id < upgradeID=4)
+	// Verify events 1-3 are pre-upgrade (no visibility_height, record_time filtered)
 	for i := 0; i < 3; i++ {
 		require.Equal(uint64(i+1), resp.EventRecords[i].Id)
-		require.True(resp.EventRecords[i].Id < 4, "events 1-3 are pre-upgrade (record_time filtered)")
 	}
 
-	// Verify events 4-6 are post-upgrade (id >= upgradeID=4)
+	// Verify events 4-6 are post-upgrade (visibility_height filtered)
 	for i := 3; i < 6; i++ {
 		require.Equal(uint64(i+1), resp.EventRecords[i].Id)
-		require.True(resp.EventRecords[i].Id >= 4, "events 4-6 are post-upgrade (visibility_height filtered)")
 	}
 }
 

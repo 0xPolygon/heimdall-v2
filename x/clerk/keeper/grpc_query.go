@@ -121,7 +121,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if helper.IsV080Hardfork(sdkCtx.BlockHeight()) {
+	if helper.IsZurichHardfork(sdkCtx.BlockHeight()) {
 		return q.recordListWithTimeDeterministic(ctx, request)
 	}
 
@@ -189,7 +189,10 @@ func (q queryServer) recordListWithTimeDeterministic(ctx context.Context, reques
 	latestIndexedTime, err := q.k.GetLatestIndexedBlockTime(ctx)
 	if err != nil {
 		if errors.Is(err, ErrNoBlockFound) {
-			return &types.RecordListWithTimeResponse{EventRecords: []types.EventRecord{}}, nil
+			// Block-time index is empty (no committed block past the HF height has
+			// been indexed yet): the cutoff can only be pre-HF, so answer with
+			// legacy record_time semantics rather than dropping events.
+			return q.recordListWithTimeLegacy(ctx, request)
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -200,7 +203,11 @@ func (q queryServer) recordListWithTimeDeterministic(ctx context.Context, reques
 	height, err := q.k.GetBlockHeightByTime(ctx, cutoffUnix)
 	if err != nil {
 		if errors.Is(err, ErrNoBlockFound) {
-			return &types.RecordListWithTimeResponse{EventRecords: []types.EventRecord{}}, nil
+			// Cutoff falls before the first indexed (post-HF) block: this is a pre-HF
+			// window with no height to pin. Fall back to the legacy record_time query
+			// so a node replaying pre-HF blocks derives the same state-sync set
+			// producers committed.
+			return q.recordListWithTimeLegacy(ctx, request)
 		}
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -233,7 +240,7 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 
 	// Get the main tx receipt.
 	txHash := common.FromHex(request.TxHash)
-	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
+	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(ctx, common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
 	if err != nil || receipt == nil {
 		return nil, status.Errorf(codes.Internal, "transaction is not confirmed yet. please wait for sometime and try again")
 	}
@@ -270,7 +277,7 @@ func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequ
 
 	// Get the main tx receipt.
 	txHash := common.FromHex(request.TxHash)
-	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
+	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(ctx, common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
 	if err != nil || receipt == nil {
 		return nil, status.Errorf(codes.Internal, "transaction is not confirmed yet. please wait for sometime and try again")
 	}
@@ -336,14 +343,7 @@ func (q queryServer) recordListVisibleAtHeight(
 	toTime time.Time,
 	pagination query.PageRequest,
 ) ([]types.EventRecord, error) {
-	// Determine the upgrade boundary. If not set, all events use the legacy path.
-	upgradeId, err := q.k.GetVisibilityTimeUpgradeID(ctx)
-	if err != nil {
-		if !errors.Is(err, collections.ErrNotFound) {
-			return nil, status.Errorf(codes.Internal, "failed to get visibility time upgrade ID: %v", err)
-		}
-		upgradeId = ^uint64(0)
-	}
+	var err error
 
 	requestedHeight := uint64(heimdallHeight)
 
@@ -378,32 +378,15 @@ func (q queryServer) recordListVisibleAtHeight(
 			return nil, status.Errorf(codes.Internal, "error reading event record from iterator: %v", err)
 		}
 
-		if value.Id < upgradeId {
-			// Legacy event: filter by record_time < to_time for backward compatibility.
-			// Event IDs can be committed out of record_time order, so an ineligible
-			// event must be skipped rather than terminating the scan.
-			if !value.RecordTime.Before(toTime) {
-				continue
-			}
-		} else {
-			// Post-upgrade event: filter by visibility_height and record_time.
-			// Neither visibility_height nor record_time is guaranteed to be monotonic
-			// in event ID order, so skip ineligible records instead of breaking.
-			var visibilityHeight uint64
-			visibilityHeight, err = q.k.GetVisibilityHeightForEvent(ctx, value.Id)
-			if err != nil {
-				if errors.Is(err, collections.ErrNotFound) {
-					// Event exists but has no visibility_height yet (still pending).
-					continue
-				}
-				return nil, status.Errorf(codes.Internal, "failed to get visibility height for event %d: %v", value.Id, err)
-			}
-			if visibilityHeight > requestedHeight {
-				continue
-			}
-			if !value.RecordTime.Before(toTime) {
-				continue
-			}
+		var visible bool
+		visible, err = q.isRecordVisible(ctx, value, requestedHeight, toTime)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to evaluate visibility for event %d: %v", value.Id, err)
+		}
+		// Event IDs can be committed out of record_time and visibility order, so an
+		// ineligible event must be skipped rather than terminating the scan.
+		if !visible {
+			continue
 		}
 
 		if skipped < pagination.Offset {
@@ -424,6 +407,36 @@ func (q queryServer) recordListVisibleAtHeight(
 	}
 
 	return result, nil
+}
+
+// isRecordVisible reports whether an event record is eligible for the
+// deterministic state-sync list at the resolved Heimdall height.
+//   - has visibility_height -> post-HF event, visible once that height is at or
+//     below the resolved height (and record_time precedes the cutoff).
+//   - in the pending set     -> post-HF event awaiting its height next block,
+//     kept hidden so the result stays deterministic.
+//   - neither                -> pre-HF (legacy) event, filtered on record_time
+//     alone, preserving backward-compatible behavior.
+func (q queryServer) isRecordVisible(ctx context.Context, value types.EventRecord, requestedHeight uint64, toTime time.Time) (bool, error) {
+	visibilityHeight, err := q.k.GetVisibilityHeightForEvent(ctx, value.Id)
+	switch {
+	case err == nil:
+		if visibilityHeight > requestedHeight {
+			return false, nil
+		}
+	case errors.Is(err, collections.ErrNotFound):
+		isPending, pErr := q.k.HasPendingVisibilityEvent(ctx, value.Id)
+		if pErr != nil {
+			return false, pErr
+		}
+		if isPending {
+			return false, nil
+		}
+	default:
+		return false, err
+	}
+
+	return value.RecordTime.Before(toTime), nil
 }
 
 func isPaginationEmpty(p query.PageRequest) bool {

@@ -34,6 +34,13 @@ func TestErrFailedToQueryBor(t *testing.T) {
 	require.Equal(t, "failed to query bor", types.ErrFailedToQueryBor.Error())
 }
 
+func TestErrBorBlockNotFound(t *testing.T) {
+	require.NotNil(t, types.ErrBorBlockNotFound)
+	require.Equal(t, "bor block not found locally", types.ErrBorBlockNotFound.Error())
+	require.False(t, errors.Is(types.ErrBorBlockNotFound, types.ErrFailedToQueryBor))
+	require.False(t, errors.Is(types.ErrFailedToQueryBor, types.ErrBorBlockNotFound))
+}
+
 func TestErrLatestMilestoneNotFound(t *testing.T) {
 	require.NotNil(t, types.ErrLatestMilestoneNotFound)
 	require.Equal(t, "latest milestone not found", types.ErrLatestMilestoneNotFound.Error())

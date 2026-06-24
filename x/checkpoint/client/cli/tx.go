@@ -265,7 +265,7 @@ func SendCheckpointAckCmd() *cobra.Command {
 				return err
 			}
 
-			receipt, err := contractCaller.GetConfirmedTxReceipt(txHash, chainManagerParams.Params.MainChainTxConfirmations)
+			receipt, err := contractCaller.GetConfirmedTxReceipt(cmd.Context(), txHash, chainManagerParams.Params.MainChainTxConfirmations)
 			if err != nil || receipt == nil {
 				return fmt.Errorf("transaction %s is not confirmed yet, please wait and try again later", txHash)
 			}

@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"errors"
-
 	"cosmossdk.io/collections"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -24,12 +22,6 @@ func (k *Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 	}
 
 	// Deterministic state sync fields.
-	if data.VisibilityTimeUpgradeId > 0 {
-		if err := k.SetVisibilityTimeUpgradeID(ctx, data.VisibilityTimeUpgradeId); err != nil {
-			k.Logger(ctx).Error("Error setting visibility time upgrade ID", "error", err)
-		}
-	}
-
 	for _, eventID := range data.PendingVisibilityEventIds {
 		if err := k.AddPendingVisibilityEvent(ctx, eventID); err != nil {
 			k.Logger(ctx).Error("Error adding pending visibility event", "id", eventID, "error", err)
@@ -56,16 +48,6 @@ func (k *Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	gs := &types.GenesisState{
 		EventRecords:    k.GetAllEventRecords(ctx),
 		RecordSequences: k.GetRecordSequences(ctx),
-	}
-
-	// Export visibility time upgrade ID.
-	upgradeID, err := k.GetVisibilityTimeUpgradeID(ctx)
-	if err != nil {
-		if !errors.Is(err, collections.ErrNotFound) {
-			logger.Error("Error exporting visibility time upgrade ID", "error", err)
-		}
-	} else {
-		gs.VisibilityTimeUpgradeId = upgradeID
 	}
 
 	// Export pending visibility events.

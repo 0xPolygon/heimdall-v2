@@ -127,6 +127,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 
 	// get and validate the main tx receipt
 	receipt := helper.FetchAndValidateReceipt(
+		ctx,
 		contractCaller,
 		helper.ReceiptValidationParams{
 			TxHash:         msg.TxHash,
@@ -303,6 +304,7 @@ func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) 
 	// get and validate the main tx receipt
 	contractCaller := s.k.contractCaller
 	receipt := helper.FetchAndValidateReceipt(
+		ctx,
 		contractCaller,
 		helper.ReceiptValidationParams{
 			TxHash:         msg.TxHash,
@@ -403,6 +405,7 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 	// get and validate the main tx receipt
 	contractCaller := s.k.contractCaller
 	receipt := helper.FetchAndValidateReceipt(
+		ctx,
 		contractCaller,
 		helper.ReceiptValidationParams{
 			TxHash:         msg.TxHash,
@@ -543,6 +546,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 
 	// get and validate the main tx receipt
 	receipt := helper.FetchAndValidateReceipt(
+		ctx,
 		contractCaller,
 		helper.ReceiptValidationParams{
 			TxHash:         msg.TxHash,
@@ -738,14 +742,22 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 	validator.LastUpdated = sequence
 	validator.Nonce = msg.Nonce
 
-	// set validator amount
-	p, err := helper.GetPowerFromAmount(msg.NewAmount.BigInt())
-	if err != nil {
-		s.k.Logger(ctx).Error("Error in calculating power value from amount", hmTypes.LogKeyError, err)
-		return err
-	}
+	// A validator that has already signaled exit keeps zero voting power: later
+	// L1 stake-update events must not restore power to a deactivated
+	// validator. The event is still consumed (nonce/sequence advance) so the
+	// bridge does not keep resubmitting it.
+	if helper.IsZurichHardfork(ctx.BlockHeight()) && validator.EndEpoch != 0 {
+		validator.VotingPower = 0
+	} else {
+		// set validator amount
+		p, err := helper.GetPowerFromAmount(msg.NewAmount.BigInt())
+		if err != nil {
+			s.k.Logger(ctx).Error("Error in calculating power value from amount", hmTypes.LogKeyError, err)
+			return err
+		}
 
-	validator.VotingPower = p.Int64()
+		validator.VotingPower = p.Int64()
+	}
 
 	err = s.k.AddValidator(ctx, validator)
 	if err != nil {
