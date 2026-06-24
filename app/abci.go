@@ -723,7 +723,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			logger.Info("2/3rd majority reached on milestone proposition",
 				"startBlock", majorityMilestone.StartBlockNumber,
 				"endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1),
-				strutil.HashesToString(majorityMilestone.BlockHashes),
+				"blockHashes", strutil.HashesToString(majorityMilestone.BlockHashes),
 			)
 			isValidMilestone = true
 		}
@@ -804,12 +804,8 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
 				return nil, err
 			}
-		} else {
-			logger.Info("1/3rd voting power found on milestone proposition, skipping span rotation",
-				"startBlock", pendingMilestone.StartBlockNumber,
-				"endBlock", pendingMilestone.StartBlockNumber+uint64(len(pendingMilestone.BlockHashes)-1),
-				strutil.HashesToString(pendingMilestone.BlockHashes),
-			)
+		} else if err := app.handlePendingMilestone(ctx, pendingMilestone, validatorSet, extVoteInfo, minMajorityVP); err != nil {
+			return nil, err
 		}
 	}
 
@@ -965,7 +961,7 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 			return err
 		}
 
-		err = app.BorKeeper.AddNewVeBlopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault)
+		err = app.BorKeeper.AddNewVeBlopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, nil)
 		if err != nil {
 			logger.Error("Error occurred while adding new veblop span", "error", err)
 			return err
@@ -1073,7 +1069,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 
 		delete(latestActiveProducer, currentProducer)
 
-		err = app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault)
+		err = app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, nil)
 		if err != nil {
 			logger.Warn("Error occurred while adding new veblop span", "error", err)
 		} else {
@@ -1087,6 +1083,14 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 			err = app.BorKeeper.AddLatestFailedProducer(addSpanCtx, currentProducer)
 			if err != nil {
 				logger.Error("Error occurred while adding latest failed producer", "error", err)
+				return err
+			}
+
+			// Debounce the pending-stall clock too (fork-gated), so a pending milestone reappearing
+			// at the same head doesn't immediately re-rotate the producer we just installed.
+			err = app.debouncePendingStallClock(addSpanCtx, uint64(ctx.BlockHeight())+helper.GetSpanRotationBuffer(ctx))
+			if err != nil {
+				logger.Error("Error occurred while debouncing pending stall clock", "error", err)
 				return err
 			}
 

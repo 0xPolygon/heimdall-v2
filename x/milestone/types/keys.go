@@ -20,4 +20,10 @@ var (
 	MilestoneMapPrefixKey       = collections.NewPrefix([]byte{0x81})
 	CountPrefixKey              = collections.NewPrefix([]byte{0x83})
 	LastMilestoneBlockPrefixKey = collections.NewPrefix([]byte{0x84})
+
+	// pending-bor-head stall tracking (written only past the
+	// Ithaca hardfork height).
+	PendingBorBlockPrefixKey       = collections.NewPrefix([]byte{0x85})
+	PendingBorBlockIdPrefixKey     = collections.NewPrefix([]byte{0x86})
+	PendingBorBlockHeightPrefixKey = collections.NewPrefix([]byte{0x87})
 )
