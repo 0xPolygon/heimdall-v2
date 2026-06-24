@@ -994,7 +994,7 @@ func fill32(seed byte) []byte {
 	return h
 }
 
-// TestHandlePendingMilestoneRotatesFromActualHead pins the POS-3629 fix: the rotation keys on the
+// TestHandlePendingMilestoneRotatesFromActualHead pins the fix: the rotation keys on the
 // >1/3-agreed actual bor head reported in vote extensions, not the (capped) milestone proposition
 // tail. The proposition passed here heads at psSpanStart, but the validators agree the actual head
 // is psPendingHead, so the new span must start at psPendingHead+1 — the blocks between the
@@ -1063,7 +1063,7 @@ func TestHandlePendingMilestoneSkipsWithoutActualHeadAgreement(t *testing.T) {
 }
 
 // TestHandlePendingMilestonePreForkSkipsRotation covers the fork-off branch of
-// handlePendingMilestone: before the span-rotation-on-stall hardfork, the
+// handlePendingMilestone: before the Ithaca hardfork, the
 // pending milestone path must remain a pure log-and-return no-op.
 func TestHandlePendingMilestonePreForkSkipsRotation(t *testing.T) {
 	_, app, ctx, privKeys := SetupAppWithABCICtxAndValidators(t, 3)
@@ -1199,7 +1199,7 @@ func TestHandlePendingMilestoneErrorsOnMalformedActualHeadVote(t *testing.T) {
 	require.Contains(t, err.Error(), "error while unmarshalling vote extension")
 }
 
-// TestHandlePendingMilestoneDropsOutOfRangeActualHead pins the byzantine-poison guard (POS-3629): a
+// TestHandlePendingMilestoneDropsOutOfRangeActualHead pins the byzantine-poison guard: a
 // >1/3 slice agreeing on a head beyond the last span's end (the scheduled runway — no honest producer
 // can advance past it) must be filtered by the maxBlock bound, so it is never written into the stall
 // tracking and never triggers a rotation. Without the bound the fabricated head would be tracked on
@@ -1283,7 +1283,7 @@ func seedFutureSpan(t *testing.T, app *HeimdallApp, ctx sdk.Context, valSlice []
 }
 
 // TestHandlePendingMilestoneRecoversAcrossSpanBoundary pins that recovery still works when bor
-// honestly crosses into an already-scheduled future span while milestones lag (POS-3629). The bound
+// honestly crosses into an already-scheduled future span while milestones lag. The bound
 // is the last span's end (the scheduled runway), so an honest head inside the future span is kept,
 // not dropped — an earlier active-span-only bound would have denied this legitimate recovery.
 func TestHandlePendingMilestoneRecoversAcrossSpanBoundary(t *testing.T) {
@@ -1320,8 +1320,8 @@ func TestHandlePendingMilestoneRecoversAcrossSpanBoundary(t *testing.T) {
 	require.Equal(t, crossedHead+1, last.StartBlock, "rotation starts at the agreed cross-boundary head + 1")
 }
 
-// TestHandlePendingMilestoneByzantineMinorityCannotSteerHead pins the highest-voting-power tally
-// (POS-3629): a >1/3 byzantine minority reporting a higher fabricated head (here inside a future span)
+// TestHandlePendingMilestoneByzantineMinorityCannotSteerHead pins the highest-voting-power tally:
+// a >1/3 byzantine minority reporting a higher fabricated head (here inside a future span)
 // cannot outvote the converged honest majority on the real head. The agreed head — and therefore the
 // stall tracking — follows the honest majority, so the minority can neither steer rotation into the
 // future producer nor reset the clock by rotating a fake head's hash. Highest-block-number selection

@@ -16,15 +16,15 @@ import (
 )
 
 // handlePendingMilestone is the PreBlocker action for a pending (1/3<=PM<2/3) milestone. Before the
-// span-rotation-on-stall hardfork it simply logs and lets the pending gate suppress rotation; after
-// it, a stalled pending head can force a rotation (POS-3629).
+// Ithaca hardfork it simply logs and lets the pending gate suppress rotation; after
+// it, a stalled pending head can force a rotation.
 func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone *milestoneTypes.MilestoneProposition, validatorSet *stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, minMajorityVP int64) error {
 	logger := app.Logger()
 
 	if helper.IsIthaca(ctx.BlockHeight()) {
 		// Key the stall/rotation on the >1/3-agreed actual bor head, not the capped milestone
 		// proposition tail, so blocks the producer made beyond the proposition window are preserved
-		// rather than reorged (POS-3629).
+		// rather than reorged.
 		//
 		// Bound the agreed head by the last span's end — the furthest scheduled runway. An honest
 		// producer cannot advance past the scheduled spans, so a head beyond it is fabricated. Bounding
@@ -68,7 +68,7 @@ func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone
 }
 
 // checkAndRotateOnPendingStall forces a span rotation when the >1/3-agreed actual bor head
-// (POS-3629) stops advancing for longer than the stall threshold, even under a pending milestone.
+// stops advancing for longer than the stall threshold, even under a pending milestone.
 // The head is the validators' agreed actual latest block (resolved by the caller via
 // GetMajorityActualHead), not the capped milestone proposition tail, so blocks the producer made
 // beyond the proposition window are preserved rather than reorged. It tracks the head and its hash

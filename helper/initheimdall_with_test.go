@@ -13,7 +13,7 @@ import (
 )
 
 // TestInitHeimdallConfigWithSetsIthacaHeightPerChain drives the
-// real init path through each chain branch so the POS-3629 assignment lines in
+// real init path through each chain branch so the Ithaca assignment lines in
 // InitHeimdallConfigWith stay covered. A tiny JSON-RPC stub and a real
 // priv_validator_key.json keep the init code on the happy path without touching
 // production services.
@@ -108,7 +108,7 @@ producer_votes = ""
 			home := mkHome(t, tc.chain)
 			InitHeimdallConfigWith(home, "")
 
-			require.Equal(t, int64(0), GetIthacaHeight(), "POS-3629 gate stays disabled until a scheduled height is set")
+			require.Equal(t, int64(0), GetIthacaHeight(), "Ithaca gate stays disabled until a scheduled height is set")
 			require.Equal(t, tc.wantRioHeight, GetRioHeight())
 			require.Equal(t, tc.wantInitHeight, GetInitialHeight())
 		})

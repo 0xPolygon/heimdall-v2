@@ -274,7 +274,7 @@ var feeWithdrawValidatorGateHeight int64 = 0
 
 var zurichHardforkHeight int64 = 0
 
-// ithacaHeight gates POS-3629: forcing a span rotation when bor's
+// ithacaHeight gates forced span rotation when bor's
 // pending head stalls under a 1/3<=PM<2/3 milestone. Zero disables it (no network
 // height assigned yet).
 var ithacaHeight int64 = 0
@@ -1048,7 +1048,7 @@ func GetSpanRotationBuffer(ctx sdk.Context) uint64 {
 }
 
 // GetBorStallThreshold is the number of Heimdall heights the >1/3-agreed pending
-// bor head may stay static before a span rotation is forced (POS-3629). It reuses
+// bor head may stay static before a span rotation is forced. It reuses
 // the change-producer threshold ("same number as regular forced rotation") but is a
 // distinct getter so it can be tuned independently later.
 func GetBorStallThreshold(ctx sdk.Context) int64 {

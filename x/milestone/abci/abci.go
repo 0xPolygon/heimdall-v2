@@ -82,7 +82,7 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 
 	// Use the header getBlockInfo actually built the proposition from (it refreshes a stale cached
 	// header internally), not the caller's possibly-stale latestHeader — otherwise the reported actual
-	// head can fall behind the proposition's own end and fail validateLatestHead (POS-3629).
+	// head can fall behind the proposition's own end and fail validateLatestHead.
 	latestBlockNumber, latestBlockHash := actualHeadFields(ctx, effectiveLatestHeader)
 
 	if err := borKeeper.CanVoteProducers(ctx); err == nil {
@@ -125,7 +125,7 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 }
 
 // actualHeadFields returns the actual latest bor head (number, hash) to embed in a proposition for
-// the pending-stall rotation to key on instead of the capped proposition tail (POS-3629). Emission
+// the pending-stall rotation to key on instead of the capped proposition tail. Emission
 // is fork-gated on the vote extension's own height: VE validation rejects unknown fields, so these
 // must not appear before the Ithaca height, by which point the network has done the
 // coordinated upgrade the fork requires. Returns zero/nil when the fork is off or no latest header
@@ -309,7 +309,7 @@ func GetMajorityMilestoneProposition(
 	// parent can clear majority alongside the honest one. The check is hardfork-gated so already-live
 	// behavior is preserved and only the gate boundary ever changes behavior, never a finalized height:
 	//   - Ithaca: key by the block we will actually return (startBlock), because earlier overlapping
-	//     blocks may also have majority support and must not decide the parent (POS-3629);
+	//     blocks may also have majority support and must not decide the parent;
 	//   - Zurich (already live): the deployed direct lookup keyed on majorityBlocks[0];
 	//   - pre-Zurich: the legacy tournament over proposed parents.
 	// Ithaca is checked first since it activates after Zurich.
@@ -452,7 +452,7 @@ func GetMajorityMilestoneProposition(
 	return proposition, aggregatedProposersHash, supportingValidatorList[0], supportingValidatorIDs, nil
 }
 
-// GetMajorityActualHead tallies the actual latest bor head reported in vote extensions (POS-3629)
+// GetMajorityActualHead tallies the actual latest bor head reported in vote extensions
 // and returns the (number, hash) with the greatest summed voting power that reaches minMajorityVP,
 // with found=true. Each validator reports a single latest head; during a stall honest validators
 // converge on the same head, so the most-voted head is the real tip, and a >1/3 byzantine minority
@@ -711,7 +711,7 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keepe
 	return validateLatestHead(milestoneProp)
 }
 
-// validateLatestHead checks the optional actual-head fields (POS-3629). They are emitted together
+// validateLatestHead checks the optional actual-head fields. They are emitted together
 // post-fork or both absent pre-fork, so a partially-populated pair is rejected. When present, the
 // head cannot be behind the proposition's own last block. Assumes BlockHashes is non-empty (the
 // caller checks that).
@@ -737,7 +737,7 @@ func validateLatestHead(milestoneProp *types.MilestoneProposition) error {
 	// When the head is the proposition's own last block, both reference the same block, so their
 	// hashes must match. Beyond propEnd the head is legitimately outside the proposition window and
 	// the cross-check doesn't apply. Closes a vote-power split where a validator feeds the milestone
-	// and actual-head tallies different hashes at the same height (POS-3629).
+	// and actual-head tallies different hashes at the same height.
 	if milestoneProp.LatestBlockNumber == propEnd &&
 		!bytes.Equal(milestoneProp.LatestBlockHash, milestoneProp.BlockHashes[len(milestoneProp.BlockHashes)-1]) {
 		return fmt.Errorf("latest block hash does not match proposition tail at height %d", propEnd)

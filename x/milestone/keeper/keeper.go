@@ -35,9 +35,9 @@ type Keeper struct {
 	count              collections.Item[uint64]
 	lastMilestoneBlock collections.Item[uint64]
 
-	// POS-3629: the >1/3-agreed pending bor head, its actual bor block hash, and the
+	// the >1/3-agreed pending bor head, its actual bor block hash, and the
 	// Heimdall height at which either last changed. Written only past the
-	// span-rotation-on-stall hardfork; absent reads as zero.
+	// Ithaca hardfork; absent reads as zero.
 	lastPendingBorBlock       collections.Item[uint64]
 	lastPendingBorBlockId     collections.Item[[]byte]
 	lastPendingBorBlockHeight collections.Item[uint64]
@@ -122,7 +122,7 @@ func (k Keeper) GetLastMilestoneBlock(ctx context.Context) (uint64, error) {
 	return block, nil
 }
 
-// GetPendingBorBlockTracking returns the tracked >1/3-agreed pending bor head (POS-3629),
+// GetPendingBorBlockTracking returns the tracked >1/3-agreed pending bor head,
 // its actual bor block hash, and the Heimdall height at which the head or its identity last
 // changed. Absent entries read as zero/nil (pre-fork, or before any pending head is seen).
 func (k Keeper) GetPendingBorBlockTracking(ctx context.Context) (uint64, []byte, uint64, error) {
@@ -153,7 +153,7 @@ func itemOrDefault[T any](ctx context.Context, item collections.Item[T]) (T, err
 }
 
 // SetPendingBorBlockTracking records the >1/3-agreed pending bor head, its actual bor
-// block hash, and the Heimdall height to measure the stall from (POS-3629).
+// block hash, and the Heimdall height to measure the stall from.
 func (k Keeper) SetPendingBorBlockTracking(ctx context.Context, block uint64, id []byte, height uint64) error {
 	if err := k.lastPendingBorBlock.Set(ctx, block); err != nil {
 		return err

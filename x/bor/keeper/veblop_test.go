@@ -444,7 +444,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			expectedError:    false,
 		},
 		{
-			// POS-3629 finding #7: the exclusion set must be honored in the fallback path,
+			// the exclusion set must be honored in the fallback path,
 			// not only the active-filter path. Here activeValidatorIDs is empty (so the
 			// fallback rebuilds the candidate list), and the producer the fallback would
 			// otherwise pick (2) is excluded, so it must select a different one.
@@ -477,7 +477,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			expectedError:       false,
 		},
 		{
-			// POS-3629: an exclusion that empties a non-empty active set must re-trigger the
+			// an exclusion that empties a non-empty active set must re-trigger the
 			// fallback, not hand an empty slice to SelectProducer. Here the active filter keeps a
 			// single candidate (2) that the exclusion set then removes; the fallback must rebuild
 			// from the full candidate list ([2,3] minus current 1) and, after exclusion, select 3.

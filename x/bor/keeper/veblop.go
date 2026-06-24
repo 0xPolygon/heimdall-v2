@@ -253,8 +253,7 @@ func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64,
 	activeCandidates := k.FilterByActiveProducerSet(ctx, candidates, activeValidatorIDs)
 
 	// Honor an explicit exclusion set before the empty check, so an exclusion that fully empties the
-	// active set still triggers the fallback below instead of handing an empty slice to SelectProducer
-	// (POS-3629).
+	// active set still triggers the fallback below instead of handing an empty slice to SelectProducer.
 	activeCandidates = filterExcludedProducers(activeCandidates, excludedProducerIDs)
 
 	// If no candidate is available after threshold filtering,
@@ -479,7 +478,7 @@ func (k *Keeper) CalculateProducerSet(ctx context.Context, producerSetLimit uint
 }
 
 // filterExcludedProducers drops any candidate present in excluded, preserving order. A nil/empty
-// exclusion set returns the candidates unchanged (POS-3629; no-op for non-stall callers).
+// exclusion set returns the candidates unchanged (no-op for non-stall callers).
 func filterExcludedProducers(candidates []uint64, excluded map[uint64]struct{}) []uint64 {
 	if len(excluded) == 0 {
 		return candidates

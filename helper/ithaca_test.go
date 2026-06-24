@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestIsIthaca verifies the POS-3629 hardfork gate: disabled when the height is
+// TestIsIthaca verifies the Ithaca hardfork gate: disabled when the height is
 // zero (the default on every network), and active only at/after a configured height.
 func TestIsIthaca(t *testing.T) {
 	orig := GetIthacaHeight()
@@ -27,7 +27,7 @@ func TestIsIthaca(t *testing.T) {
 	require.True(t, IsIthaca(101))
 }
 
-// TestGetBorStallThreshold keeps the POS-3629 threshold alias honest: the stall
+// TestGetBorStallThreshold keeps the stall-threshold alias honest: the stall
 // threshold must exactly match the existing change-producer threshold helper.
 func TestGetBorStallThreshold(t *testing.T) {
 	ctx := sdk.Context{}.WithBlockHeight(1234)
@@ -35,7 +35,7 @@ func TestGetBorStallThreshold(t *testing.T) {
 }
 
 // TestConfigAccessorsAndSetters covers the tiny helper accessors that were
-// introduced alongside the POS-3629 gates so their branches stay covered even
+// introduced alongside the Ithaca gates so their branches stay covered even
 // when the broader init path is not exercised.
 func TestConfigAccessorsAndSetters(t *testing.T) {
 	origRio := GetRioHeight()

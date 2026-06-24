@@ -234,7 +234,7 @@ func TestGetMajorityMilestoneProposition_MajorityWins(t *testing.T) {
 // does not. The canonical parent (lastEndBlockHash) must be selected whenever it clears the threshold,
 // regardless of any other parent's voting power, so the honest milestone is returned.
 func TestGetMajorityMilestoneProposition_TwoParentsClearThreshold(t *testing.T) {
-	// POS-3629 canonical-parent behavior is gated by Ithaca (which activates after Zurich).
+	// The canonical-parent behavior is gated by Ithaca (which activates after Zurich).
 	helper.SetZurichHardforkHeight(1)
 	helper.SetIthacaHeight(1)
 	t.Cleanup(func() {
@@ -309,7 +309,7 @@ func TestGetMajorityMilestoneProposition_TwoParentsClearThreshold(t *testing.T) 
 // nil. A tournament with an ascending lex tie-break would hand the equal-power case to the bogus
 // parent and return nil, silently dropping the pending-stall path.
 func TestGetMajorityMilestoneProposition_ByzantineEqualPowerBogusParent(t *testing.T) {
-	// POS-3629 canonical-parent behavior is gated by Ithaca (which activates after Zurich).
+	// The canonical-parent behavior is gated by Ithaca (which activates after Zurich).
 	helper.SetZurichHardforkHeight(1)
 	helper.SetIthacaHeight(1)
 	t.Cleanup(func() {
@@ -384,7 +384,7 @@ func TestGetMajorityMilestoneProposition_ByzantineEqualPowerBogusParent(t *testi
 // lastEndBlock+1. The parent-child majority check must use that returned start block; keying it by the
 // first majority block would incorrectly drop the valid pending range.
 func TestGetMajorityMilestoneProposition_ParentCheckUsesReturnedStartBlock(t *testing.T) {
-	// The startBlock-keyed parent check is the POS-3629 fix, gated by Ithaca (after Zurich).
+	// The startBlock-keyed parent check is gated by Ithaca (after Zurich).
 	helper.SetZurichHardforkHeight(1)
 	helper.SetIthacaHeight(1)
 	t.Cleanup(func() {
@@ -1259,7 +1259,7 @@ func TestActualHeadFields(t *testing.T) {
 // TestGetBlockInfoReturnsRefreshedHeader pins that getBlockInfo returns the header it actually built
 // the proposition from — including the one it refreshes internally when the caller's cached header is
 // behind propStartBlock ("Heimdall faster than Bor"). Returning the stale input instead would let the
-// actual-head fields fall behind the proposition end and fail validateLatestHead (POS-3629).
+// actual-head fields fall behind the proposition end and fail validateLatestHead.
 func TestGetBlockInfoReturnsRefreshedHeader(t *testing.T) {
 	ctx := sdk.Context{}.WithBlockHeight(100)
 	const startBlock = uint64(100)

@@ -6879,7 +6879,7 @@ func createVoteExtensionsWithPartialSupport(t *testing.T, validators []*stakeTyp
 
 	targetSupportingPower := (totalVotingPower * int64(supportPercentage)) / 100
 
-	// Create milestone proposition. The actual-head fields (POS-3629) mirror the single-block head
+	// Create milestone proposition. The actual-head fields mirror the single-block head
 	// here, so the >1/3 actual-head tally resolves to StartBlockNumber.
 	newMilestone := &milestoneTypes.MilestoneProposition{
 		StartBlockNumber:  lastMilestone.EndBlock + 1,
@@ -6941,7 +6941,7 @@ func createVoteExtensionsWithPartialSupport(t *testing.T, validators []*stakeTyp
 }
 
 // actualHeadExtVotes builds committed vote extensions in which the first `supporters` validators
-// report (number, hash) as their actual latest bor head (POS-3629), decoupled from any proposition
+// report (number, hash) as their actual latest bor head, decoupled from any proposition
 // window — for driving the >1/3 actual-head tally in handlePendingMilestone.
 func actualHeadExtVotes(t *testing.T, validators []*stakeTypes.Validator, validatorPrivKeys []secp256k1.PrivKey, number uint64, hash []byte, supporters int) []abci.ExtendedVoteInfo {
 	t.Helper()
@@ -6971,7 +6971,7 @@ func actualHeadExtVotes(t *testing.T, validators []*stakeTypes.Validator, valida
 
 // actualHeadExtVotesSplit builds committed vote extensions where validators[:splitIdx] report
 // (numA, hashA) as their actual head and validators[splitIdx:] report (numB, hashB) — for driving a
-// byzantine-minority-vs-honest-majority actual-head tally in handlePendingMilestone (POS-3629).
+// byzantine-minority-vs-honest-majority actual-head tally in handlePendingMilestone.
 func actualHeadExtVotesSplit(t *testing.T, validators []*stakeTypes.Validator, validatorPrivKeys []secp256k1.PrivKey, splitIdx int, numA uint64, hashA []byte, numB uint64, hashB []byte) []abci.ExtendedVoteInfo {
 	t.Helper()
 	votes := make([]abci.ExtendedVoteInfo, 0, len(validators))

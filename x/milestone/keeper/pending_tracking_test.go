@@ -1,6 +1,6 @@
 package keeper_test
 
-// TestPendingBorBlockTracking covers the POS-3629 pending-bor-head tracking accessors:
+// TestPendingBorBlockTracking covers the pending-bor-head tracking accessors:
 // absent reads as zero/nil, and set/get round-trips the head, its identity, and the height.
 func (s *KeeperTestSuite) TestPendingBorBlockTracking() {
 	ctx, keeper, require := s.ctx, s.milestoneKeeper, s.Require()
@@ -30,7 +30,7 @@ func (s *KeeperTestSuite) TestPendingBorBlockTracking() {
 }
 
 // TestKeeperAccessorHelpers covers the small keeper methods that only read or
-// mutate a single field so the accessors introduced for POS-3629 stay covered.
+// mutate a single field so the accessors introduced for the pending-stall feature stay covered.
 func (s *KeeperTestSuite) TestKeeperAccessorHelpers() {
 	ctx, keeper, require := s.ctx, s.milestoneKeeper, s.Require()
 
