@@ -245,7 +245,17 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			tolerateBorErr := helper.IsZurichHardfork(req.Height) &&
 				(errors.Is(err, borTypes.ErrFailedToQueryBor) ||
 					errors.Is(err, borTypes.ErrBorBlockNotFound))
-			if helper.IsPhuketHardfork(req.Height) && hasCheckpointTx && !tolerateBorErr {
+			// Ithaca additionally tolerates the case where no non-rp vote extension reaches the
+			// >2/3 majority (e.g. a Bor outage split the validators' extensions), which would
+			// otherwise permanently halt the chain at a checkpoint. Accepting keeps the chain
+			// live; the checkpoint stays inert in PreBlocker (no majority => no signatures stored,
+			// nothing buffered), preserving the >2/3-to-commit invariant. Signatures are verified
+			// before the majority tally, so a forged extension cannot use this path. Gated on
+			// Ithaca (not the already-live Zurich) so this deterministic accept/reject change
+			// activates at a coordinated future height.
+			tolerateNoMajority := helper.IsIthaca(req.Height) &&
+				errors.Is(err, ErrNoMajorityNonRpVoteExtension)
+			if helper.IsPhuketHardfork(req.Height) && hasCheckpointTx && !tolerateBorErr && !tolerateNoMajority {
 				logger.Error("Invalid non-rp vote extension proposal for checkpoint tx, rejecting proposal", "error", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}

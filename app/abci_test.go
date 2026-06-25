@@ -5249,6 +5249,133 @@ func TestProcessProposal_NonRpVoteExtensionTamperedSignatureAlwaysRejected(t *te
 		"tampered NonRpExtensionSignature must reject regardless of Zurich tolerateBorErr")
 }
 
+// TestProcessProposal_NonRpVoteExtensionNoMajorityHardforkGated verifies the Ithaca-gated
+// tolerance for the no-majority case: when a Bor outage splits validators' non-rp vote
+// extensions so none reaches >2/3, ProcessProposal must reject before Ithaca (the historical
+// halt that POS-3633 targets) and accept at/after Ithaca, keeping the chain live. The checkpoint
+// stays inert in PreBlocker (no majority => nothing stored), preserving the >2/3-to-commit
+// invariant; signatures are verified before the majority tally, so this path cannot bypass
+// signature verification.
+func TestProcessProposal_NonRpVoteExtensionNoMajorityHardforkGated(t *testing.T) {
+	const runHeight = int64(3)
+	const round = int32(1)
+	helper.SetPhuketHardforkHeight(1)
+	t.Cleanup(func() { helper.SetPhuketHardforkHeight(0) })
+
+	cases := []struct {
+		name       string
+		activation int64
+		wantStatus abci.ResponseProcessProposal_ProposalStatus
+	}{
+		{name: "below activation: rejects", activation: runHeight + 1, wantStatus: abci.ResponseProcessProposal_REJECT},
+		{name: "at activation: accepts", activation: runHeight, wantStatus: abci.ResponseProcessProposal_ACCEPT},
+		{name: "above activation: accepts", activation: runHeight - 1, wantStatus: abci.ResponseProcessProposal_ACCEPT},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			helper.SetIthacaHeight(tc.activation)
+			t.Cleanup(func() { helper.SetIthacaHeight(0) })
+
+			priv, app, ctx, validatorPrivKeys := SetupAppWithABCICtxAndValidators(t, 3)
+			validators := app.StakeKeeper.GetAllValidators(ctx)
+			require.GreaterOrEqual(t, len(validators), 3)
+
+			// Pair each validator with its signing key by address (GetAllValidators may reorder
+			// relative to validatorPrivKeys, so index-based pairing would sign with the wrong key).
+			privByAddr := make(map[string]secp256k1.PrivKey, len(validatorPrivKeys))
+			for _, pk := range validatorPrivKeys {
+				privByAddr[common.Bytes2Hex(pk.PubKey().Address())] = pk
+			}
+			type valInfo struct {
+				addrBytes []byte
+				power     int64
+				priv      secp256k1.PrivKey
+			}
+			infos := make([]valInfo, 0, 3)
+			for _, v := range validators {
+				addrBytes := common.FromHex(v.Signer)
+				if pk, ok := privByAddr[common.Bytes2Hex(addrBytes)]; ok {
+					infos = append(infos, valInfo{addrBytes: addrBytes, power: v.VotingPower, priv: pk})
+				}
+				if len(infos) == 3 {
+					break
+				}
+			}
+			require.Len(t, infos, 3)
+
+			// Checkpoint tx; proposer must equal the tx signer or the ante chain rejects.
+			packedVE, checkpointMsg := buildCheckpointNonRpVoteExt(t, app, ctx, priv.PubKey().Address().String(), 2_000_001)
+			txBytes, err := buildSignedTx(checkpointMsg, ctx, priv, app)
+			require.NoError(t, err)
+
+			// Valid RP vote extension, identical across validators (the RP majority is separate
+			// from the non-rp majority being tested here).
+			veProto := sidetxs.VoteExtension{
+				SideTxResponses: []sidetxs.SideTxResponse{
+					{TxHash: common.FromHex(TxHash1), Result: sidetxs.Vote_VOTE_YES},
+					{TxHash: make([]byte, 32), Result: sidetxs.Vote_VOTE_YES},
+					{TxHash: append([]byte{0x01}, common.FromHex(TxHash1)[1:]...), Result: sidetxs.Vote_VOTE_YES},
+				},
+				BlockHash: common.FromHex(TxHash2),
+				Height:    runHeight - 1,
+			}
+			veBytes, err := veProto.Marshal()
+			require.NoError(t, err)
+			signVE := func(p secp256k1.PrivKey, extension []byte) []byte {
+				cve := cmtproto.CanonicalVoteExtension{Extension: extension, Height: runHeight - 1, Round: int64(round), ChainId: ctx.ChainID()}
+				var buf bytes.Buffer
+				_, err := protoio.NewDelimitedWriter(&buf).WriteMsg(&cve)
+				require.NoError(t, err)
+				sig, err := p.Sign(buf.Bytes())
+				require.NoError(t, err)
+				return sig
+			}
+
+			dummyNonRpVE, err := GetDummyNonRpVoteExtension(runHeight-1, ctx.ChainID())
+			require.NoError(t, err)
+
+			// Three distinct non-rp extensions => no single one reaches >2/3 (each 1/3): the split
+			// a Bor outage produces. Each validator signs its OWN non-rp content so the now-first
+			// signature check passes and we reach the no-majority decision.
+			nonRpFor := [][]byte{
+				packedVE,
+				dummyNonRpVE,
+				append(append([]byte{}, dummyNonRpVE...), 0x01),
+			}
+			votes := make([]abci.ExtendedVoteInfo, 3)
+			canonical := make([]abci.VoteInfo, 3)
+			for i, vi := range infos {
+				nonRpSig, err := vi.priv.Sign(nonRpFor[i])
+				require.NoError(t, err)
+				votes[i] = abci.ExtendedVoteInfo{
+					BlockIdFlag:             cmtproto.BlockIDFlagCommit,
+					VoteExtension:           veBytes,
+					ExtensionSignature:      signVE(vi.priv, veBytes),
+					NonRpVoteExtension:      nonRpFor[i],
+					NonRpExtensionSignature: nonRpSig,
+					Validator:               abci.Validator{Address: vi.addrBytes, Power: vi.power},
+				}
+				canonical[i] = abci.VoteInfo{Validator: votes[i].Validator, BlockIdFlag: cmtproto.BlockIDFlagCommit}
+			}
+			extCommit := &abci.ExtendedCommitInfo{Round: round, Votes: votes}
+			extCommitBytes, err := extCommit.Marshal()
+			require.NoError(t, err)
+
+			app.caller = setupBorBlockNotFoundCaller()
+
+			res, err := app.ProcessProposal(&abci.RequestProcessProposal{
+				Txs:                [][]byte{extCommitBytes, txBytes},
+				Height:             runHeight,
+				ProposedLastCommit: abci.CommitInfo{Round: round, Votes: canonical},
+			})
+			require.NoError(t, err)
+			require.NotNil(t, res)
+			require.Equal(t, tc.wantStatus, res.Status)
+		})
+	}
+}
+
 // TestValidateNonRpVoteExtensionData_ErrBorBlockNotFoundWrapChain asserts the
 // errors.Is stays intact end-to-end from IsValidCheckpoint through
 // validateCheckpointMsgData and validateNonRpVoteExtensionData.

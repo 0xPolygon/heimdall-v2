@@ -861,6 +861,15 @@ func ValidateNonRpVoteExtensions(
 		return nil
 	}
 
+	// Signatures first: NonRpExtensionSignature must be verified before both the majority tally
+	// and the Bor-dependent payload validation, so neither caller carve-out can suppress a
+	// signature failure. The Zurich gated tolerateBorErr (Bor unreachable) and the Ithaca gated
+	// no-majority carve-out both run only after signatures are known good; otherwise a proposer
+	// could tamper with non-rp content to fake a no-majority and slip past signature checks.
+	if err := checkNonRpVoteExtensionsSignatures(ctx, extVoteInfo, validatorSet); err != nil {
+		return fmt.Errorf("failed to check non rp vote extensions signatures: %w", err)
+	}
+
 	// Check if there is a vote extension with majority voting power
 	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, validatorSet, logger)
 	if err != nil {
@@ -870,13 +879,6 @@ func ValidateNonRpVoteExtensions(
 	// Not running rejectUnknownVoteExtFields() here, because
 	// NonRpVoteExtension is not a protobuf-encoded sidetxs.VoteExtension and
 	// it would incorrectly reject valid non-rp VEs.
-
-	// Signatures first: NonRpExtensionSignature must be verified before any
-	// Bor-dependent payload validation, so the Zurich gated tolerateBorErr carve-out
-	// in callers cannot suppress a signature failure when Bor is unreachable.
-	if err := checkNonRpVoteExtensionsSignatures(ctx, extVoteInfo, validatorSet); err != nil {
-		return fmt.Errorf("failed to check non rp vote extensions signatures: %w", err)
-	}
 
 	if err := validateNonRpVoteExtensionData(ctx, height-1, majorityExt, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
 		return fmt.Errorf("failed to validate majority non rp vote extension: %w", err)
@@ -962,6 +964,13 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 	return nil
 }
 
+// ErrNoMajorityNonRpVoteExtension is returned by getMajorityNonRpVoteExtension when no single
+// non-rp vote extension reaches the >2/3 voting-power threshold. It is a matchable sentinel so
+// callers can distinguish "the majority could not form" (a liveness condition, e.g. a Bor outage
+// split the validators' extensions) from a genuinely invalid extension, and tolerate it under the
+// Ithaca hardfork.
+var ErrNoMajorityNonRpVoteExtension = errors.New("insufficient voting power for majority non-rp vote extension")
+
 // getMajorityNonRpVoteExtension returns the non-rp vote extension with the majority voting power
 // It enforces that the majority extension must have >2/3 voting power
 func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, validatorSet *stakeTypes.ValidatorSet, logger log.Logger) ([]byte, error) {
@@ -1029,7 +1038,7 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 
 	// Enforce >2/3 voting power threshold only after the consensus-fixes hardfork.
 	if isPhuketHardfork && maxVotingPower <= majorityVP {
-		return nil, fmt.Errorf("insufficient voting power for majority non-rp vote extension: got %d, required >%d", maxVotingPower, majorityVP)
+		return nil, fmt.Errorf("%w: got %d, required >%d", ErrNoMajorityNonRpVoteExtension, maxVotingPower, majorityVP)
 	}
 
 	return hashToExt[maxHash], nil
