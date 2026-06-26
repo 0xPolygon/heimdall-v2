@@ -963,6 +963,16 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 
 		err = app.BorKeeper.AddNewVeBlopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, nil)
 		if err != nil {
+			// Span creation must never halt milestone commit. The parallel stall-rotation
+			// path already logs and continues on this error; mirror it so a transient
+			// inability to select a producer (e.g. the candidate set collapsing to the
+			// current producer) degrades to a retry at the next boundary instead of a fatal
+			// PreBlocker error that wedges every validator. Gated to keep pre-fork replay
+			// deterministic.
+			if helper.IsKyoto(ctx.BlockHeight()) {
+				logger.Warn("Error occurred while adding new veblop span; skipping future span this round", "error", err)
+				return nil
+			}
 			logger.Error("Error occurred while adding new veblop span", "error", err)
 			return err
 		}
