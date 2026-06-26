@@ -88,7 +88,7 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg) (
 	}
 
 	// sequence id
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(ctx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
 	if srv.HasRecordSequence(ctx, sequence) {
@@ -198,7 +198,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, s
 	logger.Debug("Persisting clerk state", "sideTxResult", sideTxResult)
 
 	// sequence id
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(ctx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// create the event record
 	record := types.NewEventRecord(

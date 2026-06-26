@@ -2,6 +2,7 @@ package helper
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"cosmossdk.io/log"
@@ -17,9 +18,18 @@ type SequenceChecker interface {
 }
 
 // CalculateSequence computes the unique sequence ID from block number and log index.
-// Formula: sequence = (blockNumber × DefaultLogIndexUnit) + logIndex
-// This creates a unique identifier for each event based on its position in the blockchain.
-func CalculateSequence(blockNumber, logIndex uint64) string {
+// Formula: sequence = (blockNumber × DefaultLogIndexUnit) + logIndex.
+//
+// That positional formula is only injective while logIndex < DefaultLogIndexUnit;
+// a log index at or above the unit aliases the next block's low indices (e.g.
+// (B, unit) == (B+1, 0)), letting one L1 event suppress another. Real L1 blocks
+// never reach that many logs, so historical keys are unchanged. At/after the Kyoto
+// hardfork, an out-of-range log index gets a delimited, collision-free key instead;
+// the height gate keeps pre-fork keys (and replay) byte-identical.
+func CalculateSequence(height int64, blockNumber, logIndex uint64) string {
+	if IsKyoto(height) && logIndex >= uint64(types.DefaultLogIndexUnit) {
+		return fmt.Sprintf("%d_%d", blockNumber, logIndex)
+	}
 	blockNum := new(big.Int).SetUint64(blockNumber)
 	sequence := new(big.Int).Mul(blockNum, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(logIndex))
@@ -33,11 +43,12 @@ func CalculateSequence(blockNumber, logIndex uint64) string {
 func CheckEventAlreadyProcessed(
 	ctx context.Context,
 	checker SequenceChecker,
+	height int64,
 	blockNumber, logIndex uint64,
 	logger log.Logger,
 	moduleName string,
 ) bool {
-	sequence := CalculateSequence(blockNumber, logIndex)
+	sequence := CalculateSequence(height, blockNumber, logIndex)
 
 	if checker.HasSequence(ctx, sequence) {
 		logger.Error("Event already processed",

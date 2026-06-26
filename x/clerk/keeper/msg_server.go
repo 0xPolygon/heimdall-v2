@@ -63,7 +63,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	}
 
 	// sequence id
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(sdk.UnwrapSDKContext(ctx).BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
 	if srv.HasRecordSequence(ctx, sequence) {

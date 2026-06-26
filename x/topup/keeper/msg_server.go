@@ -60,10 +60,10 @@ func (srv msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (
 		return nil, errors.Wrapf(sdkerrors.ErrInsufficientFunds, "default fee exceeds amount to topup")
 	}
 
-	// calculate sequence
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
-
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	// calculate sequence
+	sequence := helper.CalculateSequence(sdkCtx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if incoming tx already exists
 	exists, err := srv.k.HasTopupSequence(ctx, sequence)

@@ -62,10 +62,38 @@ func TestCalculateSequence(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := CalculateSequence(tt.blockNumber, tt.logIndex)
+			result := CalculateSequence(0, tt.blockNumber, tt.logIndex)
 			require.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestCalculateSequenceInjectiveAtKyoto(t *testing.T) {
+	SetKyotoHeight(1)
+	defer SetKyotoHeight(0)
+
+	const kyotoActive = int64(10)
+
+	// Below the unit the legacy positional key is preserved.
+	require.Equal(t, "100000", CalculateSequence(kyotoActive, 1, 0))
+	require.Equal(t, "100001", CalculateSequence(kyotoActive, 1, 1))
+
+	// The classic collision (B, unit) vs (B+1, 0) no longer aliases at/after Kyoto.
+	collidingHigh := CalculateSequence(kyotoActive, 1, 100000)
+	collidingLow := CalculateSequence(kyotoActive, 2, 0)
+	require.NotEqual(t, collidingHigh, collidingLow)
+
+	// Below the fork the legacy formula still collides (behavior preserved for replay).
+	require.Equal(t,
+		CalculateSequence(0, 1, 100000),
+		CalculateSequence(0, 2, 0),
+	)
+
+	// Out-of-range keys stay injective among themselves.
+	require.NotEqual(t,
+		CalculateSequence(kyotoActive, 1, 100000),
+		CalculateSequence(kyotoActive, 1, 100001),
+	)
 }
 
 func TestCheckEventAlreadyProcessed(t *testing.T) {
@@ -116,6 +144,7 @@ func TestCheckEventAlreadyProcessed(t *testing.T) {
 			result := CheckEventAlreadyProcessed(
 				ctx,
 				checker,
+				0,
 				tt.blockNumber,
 				tt.logIndex,
 				logger,
