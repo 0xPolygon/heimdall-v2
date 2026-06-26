@@ -549,6 +549,11 @@ func (srv sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 		return err
 	}
 
+	if dup, dErr := srv.isDowntimeAlreadyRecorded(ctx, validatorId, msg.DowntimeRange); dErr != nil {
+		return dErr
+	} else if dup {
+		return nil
+	}
 	isProducer := false
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -706,6 +711,29 @@ func (srv sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 	}
 
 	return nil
+}
+
+// isDowntimeAlreadyRecorded reports whether an identical planned downtime (same producer
+// and range) is already stored, so the post-handler can skip re-creating a veBlop span on
+// replay — otherwise a re-approved duplicate appends another span at the same start block
+// and corrupts the span sequence. Gated: only consulted at/after the Kyoto hardfork, so
+// historical replay below the fork is unchanged.
+func (srv sideMsgServer) isDowntimeAlreadyRecorded(ctx sdk.Context, validatorId uint64, r types.BlockRange) (bool, error) {
+	if !helper.IsKyoto(ctx.BlockHeight()) {
+		return false, nil
+	}
+	recorded, err := srv.k.ProducerPlannedDowntime.Has(ctx, validatorId)
+	if err != nil {
+		return false, err
+	}
+	if !recorded {
+		return false, nil
+	}
+	existing, err := srv.k.ProducerPlannedDowntime.Get(ctx, validatorId)
+	if err != nil {
+		return false, err
+	}
+	return existing.StartBlock == r.StartBlock && existing.EndBlock == r.EndBlock, nil
 }
 
 // recordBorMetric records metrics for side and post-handlers.
