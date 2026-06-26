@@ -145,6 +145,15 @@ func getFastForwardMilestoneStartBlock(latestMilestoneEndBlock, ffMilestoneBlock
 	return latestMilestoneEndBlock + ffMilestoneBlockInterval
 }
 
+// validatorBoundToRequiredParent reports whether a validator's milestone vote may count toward the
+// winning range. The aggregate parent check binds the parent only to the first block of the range;
+// before counting a validator's support we also require its own voted parent to match, so a vote
+// carrying the correct block hashes under a fabricated parent cannot inflate the support tally.
+// Gated on Kyoto so replay of pre-fork blocks keeps the original tallying.
+func validatorBoundToRequiredParent(height int64, votedParent, requiredParent []byte) bool {
+	return !helper.IsKyoto(height) || bytes.Equal(votedParent, requiredParent)
+}
+
 func GetMajorityMilestoneProposition(
 	ctx sdk.Context,
 	validatorSet *stakeTypes.ValidatorSet,
@@ -161,6 +170,7 @@ func GetMajorityMilestoneProposition(
 	blockHashVotes := make(map[uint64]map[string]int64) // block -> (hash + td) -> voting power
 	blockToHashAndTd := make(map[uint64][]byte)
 	validatorVotes := make(map[string]map[uint64][]byte) // validator -> block -> (hash + td)
+	validatorParentHash := make(map[string][]byte)       // validator -> parent hash it voted
 	validatorAddresses := make(map[string][]byte)
 	valAddressToVotingPower := make(map[string]int64)
 	parentHashes := make(map[string]struct{})
@@ -215,6 +225,7 @@ func GetMajorityMilestoneProposition(
 		validatorVotes[valAddr] = make(map[uint64][]byte)
 
 		prop := voteExtension.MilestoneProposition
+		validatorParentHash[valAddr] = prop.ParentHash
 		for i, blockHash := range prop.BlockHashes {
 			blockTd := prop.BlockTds[i]
 			var buf bytes.Buffer
@@ -374,6 +385,9 @@ func GetMajorityMilestoneProposition(
 	supportingValidatorIDs := make(map[uint64]struct{})
 
 	for valAddr, blocks := range validatorVotes {
+		if !validatorBoundToRequiredParent(ctx.BlockHeight(), validatorParentHash[valAddr], lastEndBlockHash) {
+			continue
+		}
 		supports := true
 		for blockNum := startBlock; blockNum <= endBlock; blockNum++ {
 			hash, hasBlock := blocks[blockNum]
