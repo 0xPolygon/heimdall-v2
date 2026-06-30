@@ -268,6 +268,10 @@ func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64,
 		activeCandidates = filterExcludedProducers(newCandidates, excludedProducerIDs)
 	}
 
+	// Post-Ithaca, recover a candidate so the future-span path can't hand SelectProducer an empty set (see eligibleProducerFallback).
+	if len(activeCandidates) == 0 && helper.IsIthaca(ctx.BlockHeight()) {
+		activeCandidates = k.eligibleProducerFallback(ctx, currentProducer, activeValidatorIDs, excludedProducerIDs)
+	}
 	// If the declaring producer requested a specific replacement, try to honor it.
 	// The target must still be an active candidate and not down for the range.
 	// If any check fails, we fall through to round-robin rather than blocking span creation.
