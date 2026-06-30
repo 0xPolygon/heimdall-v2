@@ -9,17 +9,15 @@ import (
 // eligibleProducerFallback returns a deterministic candidate set for the degenerate case
 // where producer election leaves no selectable candidate other than the current producer
 // (the elected set has collapsed to the lone incumbent, or every alternative was filtered
-// out). It draws from the caller's active set (milestone supporters in the future-span
-// path, latest active producers in the rotation paths) first, then the full validator set,
-// each sorted ascending with the current and excluded producers removed.
+// out). It draws from the caller's active set (the milestone supporters) first, then the
+// full validator set, each sorted ascending with the current and excluded producers removed.
 //
-// In the future-span (milestone) path this is always non-empty: a >2/3 milestone that
-// excludes the current producer leaves a non-empty supporting set, so SelectProducer never
-// receives an empty slice there and the PreBlocker halt cannot occur. In the non-fatal
-// rotation / pending-stall paths it may legitimately return empty (e.g. every producer is
-// failed/excluded); those callers already treat an empty selection as "skip this rotation
-// and retry", so the result is intentionally not forced non-empty — reinstalling an
-// excluded producer would defeat the rotation those paths exist to perform.
+// Only the future-span PreBlocker path reaches this, where an empty candidate set is a fatal
+// chain halt. There it is always non-empty: a >2/3 milestone that excludes the current
+// producer leaves a non-empty supporting set, so SelectProducer never receives an empty slice
+// and the halt cannot occur. The validator-set step is defense-in-depth for that guarantee;
+// the non-fatal rotation paths do not opt into this fallback and keep their skip-and-retry
+// behavior.
 func (k *Keeper) eligibleProducerFallback(ctx sdk.Context, currentProducer uint64, activeValidatorIDs, excludedProducerIDs map[uint64]struct{}) []uint64 {
 	if c := sortedEligibleProducers(activeValidatorIDs, currentProducer, excludedProducerIDs); len(c) > 0 {
 		return c

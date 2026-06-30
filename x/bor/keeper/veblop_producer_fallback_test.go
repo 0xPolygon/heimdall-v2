@@ -82,8 +82,10 @@ func TestEligibleProducerFallback(t *testing.T) {
 }
 
 // SelectNextSpanProducer must not hand SelectProducer an empty slice once the elected set
-// has collapsed to the current producer: pre-Ithaca it still errors (gate off), post-Ithaca
-// the fallback supplies a replacement from the active set.
+// has collapsed to the current producer, but only when the caller opts in (the future-span
+// path). Pre-Ithaca it still errors (gate off); post-Ithaca without opt-in it still errors
+// (non-fatal paths keep skip-and-retry); post-Ithaca with opt-in the fallback supplies a
+// replacement from the active set.
 func TestSelectNextSpanProducerEmptyCandidateFallback(t *testing.T) {
 	k, ctx, sk := newFallbackKeeper(t)
 
@@ -110,12 +112,20 @@ func TestSelectNextSpanProducerEmptyCandidateFallback(t *testing.T) {
 	// Current producer (1) is excluded from the active set, emptying the candidate list.
 	active := map[uint64]struct{}{2: {}, 3: {}, 4: {}}
 
-	helper.SetIthacaHeight(0) // gate off -> still errors
-	_, err = k.SelectNextSpanProducer(ctx, 1, active, limit, 240, 383, types.RoundRobinDefault, nil)
+	helper.SetIthacaHeight(0) // gate off -> still errors even with opt-in
+	_, err = k.SelectNextSpanProducer(ctx, 1, active, limit, 240, 383, types.RoundRobinDefault, nil, true)
 	require.Error(t, err)
 
-	helper.SetIthacaHeight(1) // gate on -> fallback selects a non-current producer
-	got, err := k.SelectNextSpanProducer(ctx, 1, active, limit, 240, 383, types.RoundRobinDefault, nil)
+	helper.SetIthacaHeight(1)
+	// Without opt-in the non-fatal paths keep their skip-and-retry behavior: still errors,
+	// whether the flag is omitted entirely or passed explicitly false.
+	_, err = k.SelectNextSpanProducer(ctx, 1, active, limit, 240, 383, types.RoundRobinDefault, nil)
+	require.Error(t, err)
+	_, err = k.SelectNextSpanProducer(ctx, 1, active, limit, 240, 383, types.RoundRobinDefault, nil, false)
+	require.Error(t, err)
+
+	// With opt-in (the future-span path) the fallback selects a non-current producer.
+	got, err := k.SelectNextSpanProducer(ctx, 1, active, limit, 240, 383, types.RoundRobinDefault, nil, true)
 	require.NoError(t, err)
 	require.NotEqual(t, uint64(1), got)
 	require.Contains(t, []uint64{2, 3, 4}, got)

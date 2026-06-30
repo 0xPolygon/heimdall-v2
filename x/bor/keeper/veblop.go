@@ -14,12 +14,17 @@ import (
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-// AddNewVeBlopSpan adds a new veBlop (Validator-elected block producer) span
-func (k *Keeper) AddNewVeBlopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}, heimdallBlock uint64, targetProducerID uint64, excludedProducerIDs map[uint64]struct{}) error {
+// AddNewVeBlopSpan adds a new veBlop (Validator-elected block producer) span.
+//
+// fallbackToActiveSet opts the caller into the post-Ithaca empty-candidate recovery in
+// SelectNextSpanProducer. Only the future-span PreBlocker path passes true: there an empty
+// candidate set is a fatal chain halt. The rotation / pending-stall / side-message callers omit
+// it (default false) and keep their existing skip-and-retry behavior on an empty selection.
+func (k *Keeper) AddNewVeBlopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}, heimdallBlock uint64, targetProducerID uint64, excludedProducerIDs map[uint64]struct{}, fallbackToActiveSet ...bool) error {
 	logger := k.Logger(ctx)
 
 	// select next producers
-	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, helper.GetProducerSetLimit(ctx), startBlock, endBlock, targetProducerID, excludedProducerIDs)
+	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs, helper.GetProducerSetLimit(ctx), startBlock, endBlock, targetProducerID, excludedProducerIDs, fallbackToActiveSet...)
 	if err != nil {
 		return err
 	}
@@ -237,7 +242,7 @@ func (k *Keeper) ClearLatestFailedProducer(ctx context.Context) error {
 
 // SelectNextSpanProducer selects the next producer for a new span.
 // It calculates the candidate set, filters by active producers, and selects one.
-func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit, startBlock, endBlock uint64, targetProducerID uint64, excludedProducerIDs map[uint64]struct{}) (uint64, error) {
+func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}, producerSetLimit, startBlock, endBlock uint64, targetProducerID uint64, excludedProducerIDs map[uint64]struct{}, fallbackToActiveSet ...bool) (uint64, error) {
 	candidates, err := k.CalculateProducerSet(ctx, producerSetLimit)
 	if err != nil {
 		return 0, fmt.Errorf("failed to calculate producer set: %w", err)
@@ -268,8 +273,8 @@ func (k *Keeper) SelectNextSpanProducer(ctx sdk.Context, currentProducer uint64,
 		activeCandidates = filterExcludedProducers(newCandidates, excludedProducerIDs)
 	}
 
-	// Post-Ithaca, recover a candidate so the future-span path can't hand SelectProducer an empty set (see eligibleProducerFallback).
-	if len(activeCandidates) == 0 && helper.IsIthaca(ctx.BlockHeight()) {
+	// Post-Ithaca, recover a candidate so the future-span path (the only opt-in via fallbackToActiveSet) can't hand SelectProducer an empty set (see eligibleProducerFallback).
+	if len(activeCandidates) == 0 && len(fallbackToActiveSet) > 0 && fallbackToActiveSet[0] && helper.IsIthaca(ctx.BlockHeight()) {
 		activeCandidates = k.eligibleProducerFallback(ctx, currentProducer, activeValidatorIDs, excludedProducerIDs)
 	}
 	// If the declaring producer requested a specific replacement, try to honor it.
