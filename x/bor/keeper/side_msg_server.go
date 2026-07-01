@@ -700,7 +700,7 @@ func (srv sideMsgServer) PostHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 		spanEndBlock = msg.DowntimeRange.StartBlock + params.SpanDuration
 	}
 
-	if err := srv.k.AddNewVeBlopSpan(ctx, validatorId, msg.DowntimeRange.StartBlock, spanEndBlock, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), msg.TargetProducerId, nil); err != nil {
+	if err := srv.k.AddNewVeBlopSpan(ctx, validatorId, msg.DowntimeRange.StartBlock, spanEndBlock, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), msg.TargetProducerId, nil, false); err != nil {
 		logger.Error("Error occurred while adding new veBlop span", "error", err)
 		return err
 	}

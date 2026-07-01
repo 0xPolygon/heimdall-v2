@@ -117,10 +117,8 @@ func TestSelectNextSpanProducerEmptyCandidateFallback(t *testing.T) {
 	require.Error(t, err)
 
 	helper.SetIthacaHeight(1)
-	// Without opt-in the non-fatal paths keep their skip-and-retry behavior: still errors,
-	// whether the flag is omitted entirely or passed explicitly false.
-	_, err = k.SelectNextSpanProducer(ctx, 1, active, limit, 240, 383, types.RoundRobinDefault, nil)
-	require.Error(t, err)
+	// Without opt-in the non-fatal paths keep their skip-and-retry behavior: still errors
+	// when fallbackToActiveSet is false.
 	_, err = k.SelectNextSpanProducer(ctx, 1, active, limit, 240, 383, types.RoundRobinDefault, nil, false)
 	require.Error(t, err)
 

@@ -1069,7 +1069,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 
 		delete(latestActiveProducer, currentProducer)
 
-		err = app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, nil)
+		err = app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, nil, false)
 		if err != nil {
 			logger.Warn("Error occurred while adding new veblop span", "error", err)
 		} else {
