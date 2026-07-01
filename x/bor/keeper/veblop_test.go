@@ -534,7 +534,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			startBlock := lastSpan.EndBlock + 1
 			endBlock := lastSpan.EndBlock + params.SpanDuration
 
-			result, err := borKeeper.SelectNextSpanProducer(ctx, 1, tc.activeValidatorIDs, tc.producerSetLimit, startBlock, endBlock, types.RoundRobinDefault, tc.excludedProducerIDs)
+			result, err := borKeeper.SelectNextSpanProducer(ctx, 1, tc.activeValidatorIDs, tc.producerSetLimit, startBlock, endBlock, types.RoundRobinDefault, tc.excludedProducerIDs, false)
 
 			if tc.expectedError {
 				require.Error(err)
@@ -623,7 +623,7 @@ func (s *KeeperTestSuite) TestAddNewVeBlopSpan() {
 	borChainID := "137"
 	heimdallBlock := uint64(5000)
 
-	err := borKeeper.AddNewVeBlopSpan(ctx, 1, startBlock, endBlock, borChainID, active, heimdallBlock, types.RoundRobinDefault, nil)
+	err := borKeeper.AddNewVeBlopSpan(ctx, 1, startBlock, endBlock, borChainID, active, heimdallBlock, types.RoundRobinDefault, nil, false)
 	require.NoError(err)
 
 	span, err := borKeeper.GetSpan(ctx, 1)
@@ -692,7 +692,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducerWithTarget() {
 		setupMocks()
 
 		active := map[uint64]struct{}{2: {}, 3: {}}
-		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3, nil)
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3, nil, false)
 		require.NoError(err)
 		require.Equal(uint64(3), result)
 	})
@@ -705,7 +705,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducerWithTarget() {
 		require.NoError(borKeeper.ProducerPlannedDowntime.Set(ctx, 3, types.BlockRange{StartBlock: 1000, EndBlock: 2500}))
 
 		active := map[uint64]struct{}{2: {}, 3: {}}
-		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3, nil)
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3, nil, false)
 		require.NoError(err)
 		require.Equal(uint64(2), result)
 
@@ -718,7 +718,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducerWithTarget() {
 		setupMocks()
 
 		active := map[uint64]struct{}{2: {}}
-		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3, nil)
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3, nil, false)
 		require.NoError(err)
 		require.Equal(uint64(2), result)
 	})
@@ -729,7 +729,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducerWithTarget() {
 		setupMocks()
 
 		active := map[uint64]struct{}{2: {}, 3: {}}
-		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, types.RoundRobinDefault, nil)
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, types.RoundRobinDefault, nil, false)
 		require.NoError(err)
 		require.Equal(uint64(2), result)
 	})
@@ -740,7 +740,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducerWithTarget() {
 		setupMocks()
 
 		active := map[uint64]struct{}{2: {}, 3: {}}
-		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 999, nil)
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 999, nil, false)
 		require.NoError(err)
 		require.Equal(uint64(2), result)
 	})
@@ -752,7 +752,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducerWithTarget() {
 		setupMocks()
 
 		active := map[uint64]struct{}{2: {}, 3: {}}
-		result, err := borKeeper.SelectNextSpanProducer(ctx, 2, active, 2, 1002, 2001, 2, nil)
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 2, active, 2, 1002, 2001, 2, nil, false)
 		require.NoError(err)
 		require.Equal(uint64(3), result) // round-robin: next after current=2 in [2,3] is 3
 	})
@@ -766,7 +766,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducerWithTarget() {
 		require.NoError(borKeeper.ProducerPlannedDowntime.Set(ctx, 3, types.BlockRange{StartBlock: 1500, EndBlock: 2500}))
 
 		active := map[uint64]struct{}{2: {}, 3: {}}
-		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3, nil)
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3, nil, false)
 		require.NoError(err)
 		require.Equal(uint64(2), result)
 
@@ -782,7 +782,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducerWithTarget() {
 		require.NoError(borKeeper.ProducerPlannedDowntime.Set(ctx, 3, types.BlockRange{StartBlock: 500, EndBlock: 900}))
 
 		active := map[uint64]struct{}{2: {}, 3: {}}
-		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3, nil)
+		result, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 3, nil, false)
 		require.NoError(err)
 		require.Equal(uint64(3), result)
 
@@ -797,14 +797,14 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducerWithTarget() {
 		active := map[uint64]struct{}{2: {}, 3: {}}
 
 		// With invalid target (falls through)
-		resultWithTarget, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 999, nil)
+		resultWithTarget, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 999, nil, false)
 		require.NoError(err)
 
 		require.NoError(borKeeper.ClearProducerVotes(ctx))
 		setupMocks()
 
 		// Without target
-		resultNoTarget, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 0, nil)
+		resultNoTarget, err := borKeeper.SelectNextSpanProducer(ctx, 1, active, 2, 1002, 2001, 0, nil, false)
 		require.NoError(err)
 
 		require.Equal(resultNoTarget, resultWithTarget)
@@ -843,7 +843,7 @@ func (s *KeeperTestSuite) TestAddNewVeBlopSpanWithTarget() {
 	active := map[uint64]struct{}{1: {}, 2: {}, 3: {}}
 
 	// Valid target=3 should be selected over round-robin
-	err := borKeeper.AddNewVeBlopSpan(ctx, 1, 200, 300, "137", active, 5000, 3, nil)
+	err := borKeeper.AddNewVeBlopSpan(ctx, 1, 200, 300, "137", active, 5000, 3, nil, false)
 	require.NoError(err)
 
 	span, err := borKeeper.GetSpan(ctx, 1)
@@ -886,7 +886,7 @@ func (s *KeeperTestSuite) TestAddNewVeBlopSpanTargetFallthrough() {
 
 	active := map[uint64]struct{}{1: {}, 2: {}, 3: {}}
 
-	err := borKeeper.AddNewVeBlopSpan(ctx, 1, 200, 300, "137", active, 5000, 3, nil)
+	err := borKeeper.AddNewVeBlopSpan(ctx, 1, 200, 300, "137", active, 5000, 3, nil, false)
 	require.NoError(err)
 
 	span, err := borKeeper.GetSpan(ctx, 1)
@@ -915,7 +915,7 @@ func (s *KeeperTestSuite) TestAddNewVeBlopSpanCalculateProducerSetError() {
 
 	active := map[uint64]struct{}{}
 
-	err := borKeeper.AddNewVeBlopSpan(ctx, 1, 200, 300, "137", active, 5000, types.RoundRobinDefault, nil)
+	err := borKeeper.AddNewVeBlopSpan(ctx, 1, 200, 300, "137", active, 5000, types.RoundRobinDefault, nil, false)
 	require.Error(err)
 	require.Contains(err.Error(), "validator set error")
 }
@@ -958,7 +958,7 @@ func (s *KeeperTestSuite) TestAddNewVeBlopSpanGetValidatorSetError() {
 
 	active := map[uint64]struct{}{1: {}, 2: {}}
 
-	err := borKeeper.AddNewVeBlopSpan(ctx, 1, 200, 300, "137", active, 5000, types.RoundRobinDefault, nil)
+	err := borKeeper.AddNewVeBlopSpan(ctx, 1, 200, 300, "137", active, 5000, types.RoundRobinDefault, nil, false)
 	require.Error(err)
 	require.Contains(err.Error(), "validator set unavailable")
 }

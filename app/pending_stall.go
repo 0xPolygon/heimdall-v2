@@ -202,7 +202,7 @@ func (app *HeimdallApp) rotateSpanFromPendingHead(ctx sdk.Context, pendingHead u
 		return err
 	}
 
-	if err := app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, pendingHead+1, endBlock, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, excludedProducers); err != nil {
+	if err := app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, pendingHead+1, endBlock, lastSpan.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, excludedProducers, false); err != nil {
 		// Don't halt consensus if no producer can be selected this block; retry next block.
 		logger.Warn("Error occurred while adding new veblop span on pending stall", "error", err)
 		return nil
