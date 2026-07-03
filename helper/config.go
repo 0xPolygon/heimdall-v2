@@ -394,10 +394,10 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		log.Fatalln("unable to read flag values. Check log for details.", "Error", err)
 	}
 
-	logLevelStr := viper.GetString(flags.FlagLogLevel)
-	logLevel, err := zerolog.ParseLevel(logLevelStr)
+	levelOpt, err := LogLevelOption(viper.GetString(flags.FlagLogLevel))
 	if err != nil {
-		logLevel = zerolog.InfoLevel
+		// Don't fail config init on a malformed spec; fall back to info.
+		levelOpt = logger.LevelOption(zerolog.InfoLevel)
 	}
 
 	logNoColor := viper.GetBool(flags.FlagLogNoColor)
@@ -408,7 +408,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		logOpts = append(logOpts, logger.ColorOption(!logNoColor))
 	}
 	logOpts = append(logOpts,
-		logger.LevelOption(logLevel),
+		levelOpt,
 		logger.TimeFormatOption(LogTimestampFormat),
 	)
 
