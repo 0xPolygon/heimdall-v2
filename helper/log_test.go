@@ -58,6 +58,27 @@ func TestLogLevelOption_FiltersRealLogger(t *testing.T) {
 	require.NotContains(t, out, `"message":"dropped"`)
 }
 
+func TestLogLevelOptionOrDefault(t *testing.T) {
+	t.Run("valid spec passes through without warning", func(t *testing.T) {
+		warned := false
+		opt := LogLevelOptionOrDefault("*:info,mempool:debug", func(string, ...any) { warned = true })
+		var cfg logger.Config
+		opt(&cfg)
+		require.NotNil(t, cfg.Filter)
+		require.False(t, warned, "valid spec must not warn")
+	})
+
+	t.Run("malformed spec warns and falls back to info", func(t *testing.T) {
+		warned := false
+		opt := LogLevelOptionOrDefault("mempool:notalevel", func(string, ...any) { warned = true })
+		var cfg logger.Config
+		opt(&cfg)
+		require.Equal(t, zerolog.InfoLevel, cfg.Level)
+		require.Nil(t, cfg.Filter)
+		require.True(t, warned, "malformed spec must warn before falling back")
+	})
+}
+
 func applyLogLevel(t *testing.T, s string) logger.Config {
 	t.Helper()
 	opt, err := LogLevelOption(s)

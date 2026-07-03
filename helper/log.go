@@ -27,3 +27,15 @@ func LogLevelOption(logLevelStr string) (logger.Option, error) {
 	}
 	return logger.FilterOption(filter), nil
 }
+
+// LogLevelOptionOrDefault is LogLevelOption with a fallback: on a malformed
+// spec it warns via warnf and returns the info-level option. A typo in
+// log_level then degrades to info visibly, instead of silently mis-filtering.
+func LogLevelOptionOrDefault(logLevelStr string, warnf func(string, ...any)) logger.Option {
+	opt, err := LogLevelOption(logLevelStr)
+	if err != nil {
+		warnf("invalid log_level, falling back to info", "log_level", logLevelStr, "error", err)
+		return logger.LevelOption(zerolog.InfoLevel)
+	}
+	return opt
+}
