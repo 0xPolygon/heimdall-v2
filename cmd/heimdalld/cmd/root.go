@@ -130,10 +130,10 @@ func NewRootCmd() *cobra.Command {
 			// Set log_level value to viper
 			viper.Set(flags.FlagLogLevel, logLevelStr)
 
-			logLevel, err := zerolog.ParseLevel(logLevelStr)
-			if err != nil {
-				return err
-			}
+			// A plain level applies globally; a "module:level" list filters per
+			// module so debug can be scoped to a single subsystem. A malformed
+			// spec warns and falls back to info rather than blocking startup.
+			levelOpt := helper.LogLevelOptionOrDefault(logLevelStr, helper.Logger.Warn)
 
 			logNoColor := serverCtx.Viper.GetBool(flags.FlagLogNoColor)
 			// Store timestamps with millisecond precision so that log lines carry
@@ -149,7 +149,7 @@ func NewRootCmd() *cobra.Command {
 				logOpts = append(logOpts, log.ColorOption(!logNoColor))
 			}
 			logOpts = append(logOpts,
-				log.LevelOption(logLevel),
+				levelOpt,
 				log.TimeFormatOption(helper.LogTimestampFormat),
 			)
 
