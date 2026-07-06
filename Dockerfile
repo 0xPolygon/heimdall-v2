@@ -1,5 +1,5 @@
 # ─── BUILDER STAGE ───────────────────────────────────────────────────────────────
-FROM golang:1.26.4-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 ARG HEIMDALL_DIR=/var/lib/heimdall/
 ENV HEIMDALL_DIR=${HEIMDALL_DIR}
