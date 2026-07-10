@@ -105,8 +105,10 @@ const (
 	mimeTypeApplicationJSON = "application/json"
 
 	// maxMsgsPerTx bounds how many messages a single tx may carry through CheckTx.
-	// Capping here avoids mempool amplification where one oversized tx packs thousands of messages,
-	// forcing decode and validation on every gossip hop before rejection.
+	// The tx is still decoded once (needed to count its messages), but capping
+	// here skips the per-message veBlop validation loop and the downstream ante
+	// processing in BaseApp.CheckTx that an oversized multi-message tx would
+	// otherwise trigger on every gossip hop.
 	// Enforced in CheckTx only, so block validity and consensus are unaffected.
 	maxMsgsPerTx = 16
 )
