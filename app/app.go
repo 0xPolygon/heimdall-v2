@@ -103,6 +103,14 @@ const (
 	// HTTP header constants
 	headerContentType       = "Content-Type"
 	mimeTypeApplicationJSON = "application/json"
+
+	// maxMsgsPerTx bounds how many messages a single tx may carry through CheckTx.
+	// The tx is still decoded once (needed to count its messages), but capping
+	// here skips the per-message veBlop validation loop and the downstream ante
+	// processing in BaseApp.CheckTx that an oversized multi-message tx would
+	// otherwise trigger on every gossip hop.
+	// Enforced in CheckTx only, so block validity and consensus are unaffected.
+	maxMsgsPerTx = 16
 )
 
 var (
@@ -496,6 +504,12 @@ func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx
 		}
 
 		msgs := tx.GetMsgs()
+		if len(msgs) > maxMsgsPerTx {
+			return &abci.ResponseCheckTx{
+				Code: sdkerrors.ErrTxTooLarge.ABCICode(),
+				Log:  fmt.Sprintf("tx carries %d messages, exceeds per-tx limit of %d", len(msgs), maxMsgsPerTx),
+			}, nil
+		}
 		for _, msg := range msgs {
 			// Check for MsgVoteProducers and apply VEBLOP validation
 			if _, ok := msg.(*borTypes.MsgVoteProducers); ok {
