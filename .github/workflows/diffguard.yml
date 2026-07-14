@@ -64,6 +64,7 @@ jobs:
         # The text report above contains mutation results; this second run is
         # only for a cheap machine-readable shape report.
         if: always()
+        continue-on-error: true
         run: |
           diffguard \
             --base origin/${{ github.base_ref }} \
