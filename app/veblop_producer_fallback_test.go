@@ -175,6 +175,64 @@ func TestVeBlopEmptyElectedSetPostIthacaFallsBack(t *testing.T) {
 	require.True(t, ok, "new producer %d should be one of the milestone supporters", newProducer)
 }
 
+// A supporter drawn from the penultimate set may have exited by the time the future span is
+// frozen: its record survives with zero power and it is absent from the current validator set.
+// The fallback must not select it, otherwise the span's sole producer has zero power, which Bor
+// reads as a validator deletion and cannot build a producer snapshot from (chain halt). The
+// selected producer must instead be a positive-power member of the frozen validator set.
+func TestVeBlopFallbackSkipsExitedSupporter(t *testing.T) {
+	s := stageSingletonProducer(t)
+
+	oldIthaca := helper.GetIthacaHeight()
+	helper.SetIthacaHeight(s.height)
+	t.Cleanup(func() { helper.SetIthacaHeight(oldIthaca) })
+
+	// Deactivate the lowest-ID supporter — the one the deterministic (ascending) fallback would
+	// otherwise pick first — reproducing an approved MsgValidatorExit at this transition.
+	removed := s.validators[1]
+	for _, validator := range s.validators[2:] {
+		if validator.ValId < removed.ValId {
+			removed = validator
+		}
+	}
+	deactivated := removed.Copy()
+	deactivated.EndEpoch = 1
+	deactivated.VotingPower = 0
+	require.NoError(t, s.app.StakeKeeper.AddValidator(s.ctx, *deactivated))
+
+	// The real EndBlock update keeps the older snapshot used for vote-extension tallying and
+	// removes the validator from the current set used to freeze the new span.
+	updates, err := s.app.StakeKeeper.ApplyAndReturnValidatorSetUpdates(s.ctx)
+	require.NoError(t, err)
+	require.Len(t, updates, 1)
+	require.Zero(t, updates[0].Power)
+
+	_, err = s.app.PreBlocker(s.ctx, &abci.RequestFinalizeBlock{
+		Height:          s.height,
+		Txs:             [][]byte{s.extCommitBytes},
+		ProposerAddress: common.FromHex(s.validators[1].Signer),
+	})
+	require.NoError(t, err)
+
+	span, err := s.app.BorKeeper.GetLastSpan(s.ctx)
+	require.NoError(t, err)
+	require.Equal(t, s.lastSpan.Id+1, span.Id)
+	require.Len(t, span.SelectedProducers, 1)
+
+	producer := span.SelectedProducers[0]
+	require.NotEqual(t, removed.ValId, producer.ValId, "exited validator must not be selected as producer")
+	require.Positive(t, producer.VotingPower)
+
+	inFrozenSet := false
+	for _, validator := range span.ValidatorSet.Validators {
+		if validator.ValId == producer.ValId {
+			inFrozenSet = true
+		}
+		require.NotEqual(t, removed.ValId, validator.ValId, "exited validator must be absent from the frozen set")
+	}
+	require.True(t, inFrozenSet, "selected producer must be a member of the frozen validator set")
+}
+
 func milestoneExtendedCommit(t *testing.T, chainID string, height int64, validators []*stakeTypes.Validator, validatorPrivKeys []cmtsecp256k1.PrivKey, currentProducerID uint64, milestone *milestoneTypes.MilestoneProposition) []byte {
 	t.Helper()
 	require.Len(t, validatorPrivKeys, len(validators))

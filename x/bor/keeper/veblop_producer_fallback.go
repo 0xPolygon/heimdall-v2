@@ -12,28 +12,44 @@ import (
 // out). It draws from the caller's active set (the milestone supporters) first, then the
 // full validator set, each sorted ascending with the current and excluded producers removed.
 //
+// Every candidate is restricted to a positive-power member of the current validator set.
+// The active set carries milestone supporter IDs resolved against the penultimate validator
+// set, which can name a validator that has since exited: its record survives with zero power
+// and it is absent from the current set. Selecting such a validator freezes a span whose sole
+// producer has zero power, which Bor reads as a validator deletion and cannot build a producer
+// snapshot from. Intersecting with the current positive-power set keeps that producer out.
+//
 // Only the future-span PreBlocker path reaches this, where an empty candidate set is a fatal
-// chain halt. There it is always non-empty: a >2/3 milestone that excludes the current
-// producer leaves a non-empty supporting set, so SelectProducer never receives an empty slice
-// and the halt cannot occur. The validator-set step is defense-in-depth for that guarantee;
-// the non-fatal rotation paths do not opt into this fallback and keep their skip-and-retry
-// behavior.
+// chain halt. The current-validator-set step makes the result deterministically non-empty
+// whenever the set holds a positive-power validator other than the current and excluded
+// producers, so selection does not depend on how many supporters remain eligible. The non-fatal
+// rotation paths do not opt into this fallback and keep their skip-and-retry behavior.
 func (k *Keeper) eligibleProducerFallback(ctx sdk.Context, currentProducer uint64, activeValidatorIDs, excludedProducerIDs map[uint64]struct{}) []uint64 {
-	if c := sortedEligibleProducers(activeValidatorIDs, currentProducer, excludedProducerIDs); len(c) > 0 {
-		return c
-	}
-
 	valSet, err := k.sk.GetValidatorSet(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("Failed to get validator set for producer fallback", "error", err)
 		return nil
 	}
 
-	valIDs := make(map[uint64]struct{}, len(valSet.Validators))
+	eligible := make(map[uint64]struct{}, len(valSet.Validators))
 	for _, v := range valSet.Validators {
-		valIDs[v.ValId] = struct{}{}
+		if v.VotingPower > 0 {
+			eligible[v.ValId] = struct{}{}
+		}
 	}
-	return sortedEligibleProducers(valIDs, currentProducer, excludedProducerIDs)
+
+	// Prefer the milestone supporters, restricted to currently-eligible validators.
+	supporters := make(map[uint64]struct{}, len(activeValidatorIDs))
+	for id := range activeValidatorIDs {
+		if _, ok := eligible[id]; ok {
+			supporters[id] = struct{}{}
+		}
+	}
+	if c := sortedEligibleProducers(supporters, currentProducer, excludedProducerIDs); len(c) > 0 {
+		return c
+	}
+
+	return sortedEligibleProducers(eligible, currentProducer, excludedProducerIDs)
 }
 
 // sortedEligibleProducers returns the ids in set, ascending, omitting the current producer
