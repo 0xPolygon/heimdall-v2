@@ -54,7 +54,7 @@ jobs:
             --file-size-delta-tolerance-floor 20 \
             --tier1-threshold 80 \
             --tier2-threshold 60 \
-            --mutation-sample-rate 20 \
+            --mutation-sample-rate 100 \
             --test-timeout 5m \
             --output text \
             --fail-on all \
@@ -68,6 +68,15 @@ jobs:
         run: |
           diffguard \
             --base origin/${{ github.base_ref }} \
+            --complexity-threshold 15 \
+            --complexity-delta-tolerance 5 \
+            --function-size-threshold 80 \
+            --function-size-delta-tolerance 15 \
+            --file-size-threshold 800 \
+            --file-size-delta-tolerance-pct 10 \
+            --file-size-delta-tolerance-floor 20 \
+            --tier1-threshold 80 \
+            --tier2-threshold 60 \
             --skip-mutation \
             --output json \
             --fail-on none \
