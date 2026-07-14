@@ -14,6 +14,9 @@ jobs:
   diffguard:
     name: Quality metrics
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v6
         with:
