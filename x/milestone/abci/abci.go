@@ -605,8 +605,11 @@ func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startB
 	var err error
 	if latestHeader == nil {
 		latestHeader, err = contractCaller.GetBorChainBlock(ctx, nil)
-		if err != nil || latestHeader == nil {
+		if err != nil {
 			return nil, nil, nil, nil, nil, fmt.Errorf("failed to get the latest header: %w", err)
+		}
+		if latestHeader == nil {
+			return nil, nil, nil, nil, nil, errors.New("failed to get the latest header: nil header returned")
 		}
 	}
 
@@ -617,8 +620,11 @@ func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startB
 	// This handles the case where Heimdall blocks faster than Bor.
 	if latestBlockNum < startBlockNum {
 		latestHeader, err = contractCaller.GetBorChainBlock(ctx, nil)
-		if err != nil || latestHeader == nil {
+		if err != nil {
 			return nil, nil, nil, nil, nil, fmt.Errorf("failed to refresh the latest header: %w", err)
+		}
+		if latestHeader == nil {
+			return nil, nil, nil, nil, nil, errors.New("failed to refresh the latest header: nil header returned")
 		}
 		latestBlockNum = latestHeader.Number.Uint64()
 		// If still not available, return ErrNoNewHeadersFound since Bor hasn't produced the block yet.
@@ -655,6 +661,9 @@ func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startB
 			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock+1)))
 			if err != nil {
 				return nil, nil, nil, nil, nil, fmt.Errorf("failed to get header for parent hash: %w", err)
+			}
+			if header == nil {
+				return nil, nil, nil, nil, nil, errors.New("failed to get header for parent hash: nil header returned")
 			}
 
 			parentHash = header.ParentHash.Bytes()
