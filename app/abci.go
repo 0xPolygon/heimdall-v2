@@ -566,7 +566,11 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			logger.Warn("non-rp vote extension validation failed, accepting due to bor query error", "validator", valAddr, "error", err)
 		}
 
-		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, voteExtension.MilestoneProposition); err != nil {
+		// Gate fork-specific fields at the authenticated vote-extension height, not an ambient context
+		// height. BaseApp currently sets ctx.BlockHeight() to req.Height, but keeping the basis explicit
+		// avoids ambiguity at the activation boundary and for direct handler callers.
+		milestoneCtx := ctx.WithBlockHeight(voteExtension.Height)
+		if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &app.MilestoneKeeper, voteExtension.MilestoneProposition); err != nil {
 			logger.Error(heimdallTypes.ErrAlertMilestonePropositionVoteExtensionRejected, "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
@@ -714,7 +718,11 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			}
 		}
 
-		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, majorityMilestone); err != nil {
+		// FinalizeBlock at H consumes the extended commit produced at H-1. Revalidate the majority
+		// proposition against that vote-extension height so the Ithaca boundary matches VerifyVoteExtension,
+		// PrepareProposal, and ProcessProposal.
+		milestoneCtx := ctx.WithBlockHeight(req.Height - 1)
+		if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &app.MilestoneKeeper, majorityMilestone); err != nil {
 			logger.Warn("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
 			// We don't want to halt consensus because of an invalid majority milestone proposition
 		} else if helper.IsRio(majorityMilestone.StartBlockNumber) && ctx.BlockHeight() == int64(lastSpanHeimdallBlock)+1 {

@@ -558,7 +558,7 @@ func tallyActualHeads(ctx sdk.Context, validatorSet *stakeTypes.ValidatorSet, ex
 }
 
 // decodeActualHeadVote extracts the actual latest-head fields from a committed vote extension. ok is
-// false for non-committed votes or propositions without the latest-head fields (skip them).
+// false for non-committed votes, missing fields, or a malformed latest-head hash (skip them).
 func decodeActualHeadVote(vote abciTypes.ExtendedVoteInfo) (uint64, []byte, bool, error) {
 	if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
 		return 0, nil, false, nil
@@ -568,6 +568,9 @@ func decodeActualHeadVote(vote abciTypes.ExtendedVoteInfo) (uint64, []byte, bool
 		return 0, nil, false, fmt.Errorf("error while unmarshalling vote extension: %w", err)
 	}
 	if ve.MilestoneProposition == nil || len(ve.MilestoneProposition.LatestBlockHash) == 0 {
+		return 0, nil, false, nil
+	}
+	if len(ve.MilestoneProposition.LatestBlockHash) != common.HashLength {
 		return 0, nil, false, nil
 	}
 	return ve.MilestoneProposition.LatestBlockNumber, ve.MilestoneProposition.LatestBlockHash, true, nil
@@ -706,6 +709,16 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keepe
 
 	if len(duplicateBlockHashes) != len(milestoneProp.BlockHashes) {
 		return fmt.Errorf("duplicate block hashes found")
+	}
+
+	// Older binaries treat the Ithaca latest-head fields as unknown protobuf fields and reject the
+	// entire vote extension. Reject them explicitly on upgraded binaries before activation too, so a
+	// byzantine validator cannot make old and new validators disagree during the mixed-version rollout.
+	if !helper.IsIthaca(ctx.BlockHeight()) {
+		if milestoneProp.LatestBlockNumber != 0 || len(milestoneProp.LatestBlockHash) != 0 {
+			return fmt.Errorf("latest block fields set before Ithaca")
+		}
+		return nil
 	}
 
 	return validateLatestHead(milestoneProp)
