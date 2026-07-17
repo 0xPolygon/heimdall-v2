@@ -22,6 +22,8 @@ jobs:
           # diffguard needs full history for merge-base and file history checks.
           fetch-depth: 0
 
+      - name: Fetch base branch ref
+        run: git fetch --no-tags --depth=1 origin ${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
