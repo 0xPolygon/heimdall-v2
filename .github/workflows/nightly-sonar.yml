@@ -6,23 +6,30 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: nightly-sonar-develop
+  group: nightly-sonar-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   sonar:
-    name: Run SonarCloud on develop
+    name: Run SonarCloud on ${{ matrix.ref }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        ref:
+          - develop
+          - main
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SCAN_REF: ${{ matrix.ref }}
 
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: develop
+          ref: ${{ matrix.ref }}
 
       - name: Run SonarCloud analysis
         id: sonar
@@ -37,6 +44,8 @@ jobs:
         run: |
           {
             echo "## Nightly Sonar"
+            echo "Branch: $SCAN_REF"
+            echo
             case "${{ steps.sonar.outcome }}" in
               success)
                 echo "SonarCloud analysis completed successfully."

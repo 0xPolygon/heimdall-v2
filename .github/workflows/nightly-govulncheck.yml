@@ -6,20 +6,26 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: nightly-govulncheck-develop
+  group: nightly-govulncheck-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   govulncheck:
-    name: Run govulncheck on develop
+    name: Run govulncheck on ${{ matrix.ref }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        ref:
+          - develop
+          - main
 
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: develop
+          ref: ${{ matrix.ref }}
 
       - uses: actions/setup-go@v6
         with:
@@ -30,8 +36,10 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-govulncheck-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-govulncheck-
+          key: ${{ runner.os }}-govulncheck-${{ matrix.ref }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-govulncheck-${{ matrix.ref }}-
+            ${{ runner.os }}-govulncheck-
 
       - name: Run govulncheck
         run: make vulncheck
