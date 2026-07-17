@@ -23,7 +23,10 @@ jobs:
           fetch-depth: 0
 
       - name: Fetch base branch ref
-        run: git fetch --no-tags --depth=1 origin ${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: git fetch --no-tags origin "refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
@@ -42,11 +45,13 @@ jobs:
       - name: Run diffguard
         id: diffguard
         shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
           # Keep diffguard's exit code when tee writes the step summary.
           set -o pipefail
           diffguard \
-            --base origin/${{ github.base_ref }} \
+            --base "origin/$BASE_REF" \
             --complexity-threshold 15 \
             --complexity-delta-tolerance 5 \
             --function-size-threshold 80 \
@@ -67,9 +72,11 @@ jobs:
         # only for a cheap machine-readable shape report.
         if: always()
         continue-on-error: true
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
           diffguard \
-            --base origin/${{ github.base_ref }} \
+            --base "origin/$BASE_REF" \
             --complexity-threshold 15 \
             --complexity-delta-tolerance 5 \
             --function-size-threshold 80 \
