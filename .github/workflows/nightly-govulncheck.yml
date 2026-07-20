@@ -5,14 +5,13 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch:
 
-concurrency:
-  group: nightly-govulncheck-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   govulncheck:
     name: Run govulncheck on ${{ matrix.ref }}
     runs-on: ubuntu-latest
+    concurrency:
+      group: nightly-govulncheck-${{ matrix.ref }}
+      cancel-in-progress: true
     permissions:
       contents: read
     strategy:
