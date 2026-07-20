@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: nightly-sonar-${{ github.ref }}
+  group: nightly-sonar-${{ matrix.ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
