@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - '**'
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, edited]
 
 concurrency:
   group: diffguard-${{ github.event.pull_request.number || github.ref }}
@@ -13,6 +13,7 @@ concurrency:
 jobs:
   diffguard:
     name: Quality metrics
+    if: github.event.action != 'edited' || github.event.changes.base
     runs-on: ubuntu-latest
     permissions:
       contents: read
