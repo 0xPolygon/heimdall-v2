@@ -9,6 +9,7 @@ jobs:
   sonar:
     name: Run SonarCloud on ${{ matrix.ref }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     concurrency:
       group: nightly-sonar-${{ matrix.ref }}
       cancel-in-progress: true
