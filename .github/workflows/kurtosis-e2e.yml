@@ -37,7 +37,7 @@ jobs:
         run: docker save bor:local | gzip > bor-image.tar.gz
 
       - name: Upload bor docker image
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: bor-image
           path: bor-image.tar.gz
@@ -57,7 +57,7 @@ jobs:
         run: docker save heimdall-v2:local | gzip > heimdall-v2-image.tar.gz
 
       - name: Upload heimdall-v2 docker image
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: heimdall-v2-image
           path: heimdall-v2-image.tar.gz
@@ -102,12 +102,12 @@ jobs:
 
       # Load images
       - name: Download bor docker image
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: bor-image
 
       - name: Download heimdall-v2 docker image
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
           name: heimdall-v2-image
 

@@ -1,0 +1,45 @@
+name: Nightly Govulncheck
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  govulncheck:
+    name: Run govulncheck on ${{ matrix.ref }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: nightly-govulncheck-${{ matrix.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        ref:
+          - develop
+          - main
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ matrix.ref }}
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-govulncheck-${{ matrix.ref }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-govulncheck-${{ matrix.ref }}-
+            ${{ runner.os }}-govulncheck-
+
+      - name: Run govulncheck
+        run: make vulncheck

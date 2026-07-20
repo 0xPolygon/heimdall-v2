@@ -1,0 +1,62 @@
+name: Nightly Sonar
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  sonar:
+    name: Run SonarCloud on ${{ matrix.ref }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: nightly-sonar-${{ matrix.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        ref:
+          - develop
+          - main
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SCAN_REF: ${{ matrix.ref }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ matrix.ref }}
+
+      - name: Run SonarCloud analysis
+        id: sonar
+        if: env.SONAR_TOKEN != ''
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@c7ee0f9df90b7aa20e8dcf9695dcfe2e7da5b4f2 # v7
+        with:
+          args: -Dsonar.branch.name=${{ matrix.ref }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Report informational status
+        if: always()
+        run: |
+          {
+            echo "## Nightly Sonar"
+            echo "Branch: $SCAN_REF"
+            echo
+            case "${{ steps.sonar.outcome }}" in
+              success)
+                echo "SonarCloud analysis completed successfully."
+                ;;
+              skipped)
+                echo "SonarCloud analysis was skipped because SONAR_TOKEN is not available."
+                ;;
+              *)
+                echo "SonarCloud analysis did not complete successfully. This check is informational and does not fail CI."
+                ;;
+            esac
+          } >> "$GITHUB_STEP_SUMMARY"

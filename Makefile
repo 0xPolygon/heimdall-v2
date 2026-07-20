@@ -10,6 +10,7 @@ DOCKER := $(shell which docker)
 PACKAGE_NAME := github.com/0xPolygon/heimdall-v2
 HTTPS_GIT := https://$(PACKAGE_NAME).git
 GOLANG_CROSS_VERSION  ?= v1.24.1
+GOVULNCHECK_VERSION ?= v1.4.0
 
 # Fetch git latest tag
 LATEST_GIT_TAG:=$(shell git describe --tags $(git rev-list --tags --max-count=1))
@@ -76,7 +77,7 @@ test-coverage:
 
 .PHONY: vulncheck
 vulncheck:
-	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+	@go run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION) ./...
 
 .PHONY: lint-deps
 lint-deps:
