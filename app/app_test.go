@@ -10,10 +10,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/bank"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -272,4 +274,70 @@ func TestEndBlockerEmitsTransferEvent(t *testing.T) {
 	require.NotNil(t, amountAttr)
 	require.NotNil(t, amountAttr.Value, "amount attribute value should not be nil")
 	require.Equal(t, feeAmount.String(), amountAttr.Value)
+}
+
+// CheckTx rejects txs carrying more than maxMsgsPerTx messages before the
+// per-message validation loop, neutralizing the oversized-tx mempool flood.
+func TestCheckTx_RejectsTxExceedingMsgCap(t *testing.T) {
+	priv, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 1)
+
+	signer := sdk.AccAddress(priv.PubKey().Address()).String()
+	makeMsgs := func(n int) []sdk.Msg {
+		msgs := make([]sdk.Msg, n)
+		for i := range msgs {
+			msgs[i] = &banktypes.MsgSend{
+				FromAddress: signer,
+				ToAddress:   signer,
+				Amount:      sdk.NewCoins(sdk.NewInt64Coin("pol", 1)),
+			}
+		}
+		return msgs
+	}
+
+	cases := []struct {
+		name       string
+		count      int
+		wantCapHit bool
+	}{
+		{name: "single message passes the cap", count: 1, wantCapHit: false},
+		{name: "at cap passes", count: maxMsgsPerTx, wantCapHit: false},
+		{name: "one over cap is rejected", count: maxMsgsPerTx + 1, wantCapHit: true},
+		{name: "far over cap is rejected", count: maxMsgsPerTx * 100, wantCapHit: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			txBytes, err := buildSignedMultiMsgTx(makeMsgs(tc.count), ctx, priv, app)
+			require.NoError(t, err)
+
+			resp, err := app.CheckTx(&abci.RequestCheckTx{Tx: txBytes, Type: abci.CheckTxType_New})
+			require.NoError(t, err)
+
+			if tc.wantCapHit {
+				require.Equal(t, sdkerrors.ErrTxTooLarge.ABCICode(), resp.Code)
+				require.Contains(t, resp.Log, "exceeds per-tx limit")
+			} else {
+				require.NotEqual(t, sdkerrors.ErrTxTooLarge.ABCICode(), resp.Code,
+					"under-cap tx must not be rejected by the message cap; log=%s", resp.Log)
+			}
+		})
+	}
+}
+
+// The cap guard only applies to fresh CheckTx, not recheck, matching the
+// veBlop guards it sits alongside.
+func TestCheckTx_MsgCapSkippedOnRecheck(t *testing.T) {
+	priv, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 1)
+
+	signer := sdk.AccAddress(priv.PubKey().Address()).String()
+	msgs := make([]sdk.Msg, maxMsgsPerTx+1)
+	for i := range msgs {
+		msgs[i] = &banktypes.MsgSend{FromAddress: signer, ToAddress: signer, Amount: sdk.NewCoins(sdk.NewInt64Coin("pol", 1))}
+	}
+	txBytes, err := buildSignedMultiMsgTx(msgs, ctx, priv, app)
+	require.NoError(t, err)
+
+	resp, err := app.CheckTx(&abci.RequestCheckTx{Tx: txBytes, Type: abci.CheckTxType_Recheck})
+	require.NoError(t, err)
+	require.NotEqual(t, sdkerrors.ErrTxTooLarge.ABCICode(), resp.Code)
 }

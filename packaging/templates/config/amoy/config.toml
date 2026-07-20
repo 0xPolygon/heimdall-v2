@@ -45,7 +45,18 @@ db_backend = "goleveldb"
 # Database directory
 db_dir = "data"
 
-# Output level for logging, including package level options
+# Output level for logging. Two forms are accepted:
+#   - a single level applied to every module, e.g. "info" or "debug"
+#   - a comma-separated list of "module:level" pairs with an optional "*:level"
+#     default, e.g. "*:info,mempool:debug". The per-module form scopes debug to
+#     one subsystem without the log volume of a global debug level.
+# Levels: trace, debug, info, warn, error, fatal, panic, disabled.
+# The module is the value of the "module" field in a log line. Common modules:
+#   CometBFT: consensus, p2p, mempool, blocksync, statesync, pex, evidence,
+#             txindex, rpc-server, state
+#   Heimdall: server, x/bor, x/checkpoint, x/milestone, x/clerk, x/topup,
+#             x/stake, x/chainmanager, x/auth, x/bank, x/gov,
+#             bridge/processor, bridge/broadcaster
 log_level = "info"
 
 # Output format: 'plain' (colored text) or 'json'
