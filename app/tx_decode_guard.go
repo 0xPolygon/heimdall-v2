@@ -8,13 +8,15 @@ import (
 )
 
 // maxAnyNestingDepth bounds how many nested google.protobuf.Any unwraps a transaction
-// may carry. It sits above the SDK's own Any-unpack recursion limit (10), so it never
-// rejects a transaction the decoder would otherwise accept — it only lets us discard a
-// pathologically nested message before the decoder's unknown-field pre-pass walks and
-// copies every level. Any-typed message fields (e.g. gov MsgSubmitProposal.messages)
-// can self-chain, and that pre-pass copies each level's Any value, so an unbounded chain
-// costs work proportional to depth times size; this cap keeps a rejected transaction
-// cheap to reject at mempool admission (CheckTx) and on the consensus path (ProcessProposal).
+// may carry, letting us discard a pathologically nested message before the decoder's
+// unknown-field pre-pass walks and copies every level. Any-typed message fields (e.g.
+// gov MsgSubmitProposal.messages) can self-chain, and that pre-pass copies each level's
+// Any value, so an unbounded chain costs work proportional to depth times size. The cap
+// sits well above the decoder's own Any-unpack limit (10), so no legitimately Any-typed
+// chain reaches it. The scan is a byte-level heuristic (see anyValue), so a field whose
+// bytes are crafted to mimic a deep Any chain could also trip it — but that only rejects
+// such a crafted transaction, and because the check is Kyoto-gated and run identically at
+// CheckTx and ProcessProposal, every validator reaches the same decision.
 const maxAnyNestingDepth = 16
 
 // hasOverNestedTx reports whether, at/after the Kyoto height, any of txs exceeds the Any
@@ -46,10 +48,10 @@ func checkTxNesting(txBytes []byte) error {
 }
 
 // scanAnyNesting follows Any chains, incrementing depth per unwrap, and rejects nesting
-// beyond maxAnyNestingDepth. It descends only into detected Any values (recursion depth
-// therefore equals the Any-unwrap count), which keeps the scan from interpreting a scalar
-// string/bytes field as a message and rejecting a transaction the real decoder accepts.
-// protowire returns sub-slices, so the scan never copies.
+// beyond maxAnyNestingDepth. It descends only into values matching the Any envelope shape
+// (anyValue), so recursion depth equals the Any-unwrap count and a scalar field is walked
+// only if its bytes happen to mimic that shape. protowire returns sub-slices, so the scan
+// never copies.
 func scanAnyNesting(msg []byte, depth int) error {
 	if depth > maxAnyNestingDepth {
 		return sdkerrors.ErrTxDecode.Wrapf("message Any nesting exceeds max depth %d", maxAnyNestingDepth)
