@@ -86,10 +86,10 @@ func TestCheckTxNestingDepthBoundary(t *testing.T) {
 }
 
 func TestScanAnyNestingBoundary(t *testing.T) {
-	require.NoError(t, scanAnyNesting(nestedAnyBody(maxAnyNestingDepth), 0))
-	require.Error(t, scanAnyNesting(nestedAnyBody(maxAnyNestingDepth+1), 0))
-	// Starting depth is honored: an otherwise-shallow body one level from the cap trips.
-	require.Error(t, scanAnyNesting(nestedAnyBody(2), maxAnyNestingDepth))
+	require.NoError(t, scanAnyNesting(nestedAnyBody(maxAnyNestingDepth), 0, 0))
+	require.Error(t, scanAnyNesting(nestedAnyBody(maxAnyNestingDepth+1), 0, 0))
+	// Starting anyDepth is honored: an otherwise-shallow body one level from the cap trips.
+	require.Error(t, scanAnyNesting(nestedAnyBody(2), maxAnyNestingDepth, 0))
 }
 
 func TestCheckTxNestingScansAuthInfo(t *testing.T) {
@@ -115,12 +115,12 @@ func TestAnyValue(t *testing.T) {
 		wantVal string
 	}{
 		{name: "valid any", in: validAny(), wantOK: true, wantVal: "payload"},
+		// An extra field on the envelope must not disqualify the Any, else it hides a chain from the guard.
+		{name: "extra field tolerated", in: append(validAny(), lenField(1024, []byte("x"))...), wantOK: true, wantVal: "payload"},
 		{name: "type url without slash", in: lenField(1, []byte("cosmos.gov.v1.Msg")), wantOK: false},
 		{name: "empty type url", in: lenField(1, []byte{}), wantOK: false},
 		{name: "value only, no type url", in: lenField(2, []byte("payload")), wantOK: false},
-		{name: "unexpected field number", in: append(validAny(), lenField(3, []byte("x"))...), wantOK: false},
-		{name: "non length-delimited field", in: varintField(1, 7), wantOK: false},
-		{name: "valid type url then non-LEN value", in: append(lenField(1, []byte("/x")), varintField(2, 9)...), wantOK: false},
+		{name: "type url as non length-delimited field", in: varintField(1, 7), wantOK: false},
 		{name: "malformed", in: []byte{0x0a, 0x05, 0x01}, wantOK: false},
 		{name: "empty", in: []byte{}, wantOK: false},
 	}
@@ -135,27 +135,21 @@ func TestAnyValue(t *testing.T) {
 	}
 }
 
+func TestIsProtoMessage(t *testing.T) {
+	require.True(t, isProtoMessage(lenField(1, []byte("x"))))
+	require.True(t, isProtoMessage(varintField(1, 7)))
+	require.True(t, isProtoMessage(append(lenField(1, []byte("a")), varintField(2, 9)...)))
+	require.False(t, isProtoMessage(nil))
+	require.False(t, isProtoMessage([]byte{}))
+	require.False(t, isProtoMessage([]byte{0xff}))                   // malformed tag
+	require.False(t, isProtoMessage([]byte{0x0a, 0x05, 0x01, 0x02})) // truncated LEN value
+}
+
 func TestIsTypeURL(t *testing.T) {
 	require.True(t, isTypeURL([]byte("/cosmos.gov.v1.MsgSubmitProposal")))
 	require.False(t, isTypeURL([]byte("cosmos.gov.v1.MsgSubmitProposal")))
 	require.False(t, isTypeURL([]byte{}))
 	require.False(t, isTypeURL(nil))
-}
-
-func TestProtoField(t *testing.T) {
-	tx := txRawWithBody([]byte("body-bytes"))
-	v, ok := protoField(tx, 1)
-	require.True(t, ok)
-	require.Equal(t, "body-bytes", string(v))
-
-	_, ok = protoField(tx, 2)
-	require.False(t, ok)
-
-	// First match wins when a field number repeats.
-	dup := append(lenField(1, []byte("first")), lenField(1, []byte("second"))...)
-	v, ok = protoField(dup, 1)
-	require.True(t, ok)
-	require.Equal(t, "first", string(v))
 }
 
 func TestNextLenField(t *testing.T) {
@@ -234,4 +228,74 @@ func TestBoundedNestingTxDecoder(t *testing.T) {
 	// A shallow tx passes the guard and reaches the inner decoder.
 	_, err = dec(txRawWithBody(nestedAnyBody(2)))
 	require.ErrorIs(t, err, sentinel)
+}
+
+// wrapAnyMessageExtra is wrapAnyMessage with a throwaway extra field on the Any envelope.
+func wrapAnyMessageExtra(inner []byte) []byte {
+	var anyB []byte
+	anyB = protowire.AppendTag(anyB, 1, protowire.BytesType)
+	anyB = protowire.AppendString(anyB, govProposalTypeURL)
+	anyB = protowire.AppendTag(anyB, 2, protowire.BytesType)
+	anyB = protowire.AppendBytes(anyB, inner)
+	anyB = protowire.AppendTag(anyB, 1024, protowire.BytesType) // non-critical extra field
+	anyB = protowire.AppendBytes(anyB, []byte("x"))
+
+	var msg []byte
+	msg = protowire.AppendTag(msg, 1, protowire.BytesType)
+	msg = protowire.AppendBytes(msg, anyB)
+	return msg
+}
+
+// An extra field on every Any envelope must not let the chain slip past the guard.
+func TestCheckTxNesting_ExtraFieldAnyChainNotBypassed(t *testing.T) {
+	body := func(d int) []byte {
+		cur := []byte{}
+		for range d {
+			cur = wrapAnyMessageExtra(cur)
+		}
+		return cur
+	}
+	require.NoError(t, checkTxNesting(txRawWithBody(body(maxAnyNestingDepth))))
+	require.Error(t, checkTxNesting(txRawWithBody(body(maxAnyNestingDepth+1))))
+}
+
+// A duplicated body_bytes must not let a shallow decoy hide a deep chain: the inner decoder
+// applies last-field-wins, so every occurrence has to be scanned.
+func TestCheckTxNesting_DuplicateBodyBytesNotBypassed(t *testing.T) {
+	shallow := nestedAnyBody(1)
+	deep := nestedAnyBody(maxAnyNestingDepth + 1)
+	require.Error(t, checkTxNesting(append(lenField(1, shallow), lenField(1, deep)...)))
+	require.Error(t, checkTxNesting(append(lenField(1, deep), lenField(1, shallow)...)))
+}
+
+// wrapAnyBehindNonAny nests the next level as: Msg{ Any{ value: NonAny{ field7: inner } } },
+// so each Any is reached through a non-Any wrapper.
+func wrapAnyBehindNonAny(inner []byte) []byte {
+	var wrap []byte
+	wrap = protowire.AppendTag(wrap, 7, protowire.BytesType)
+	wrap = protowire.AppendBytes(wrap, inner)
+
+	var anyB []byte
+	anyB = protowire.AppendTag(anyB, 1, protowire.BytesType)
+	anyB = protowire.AppendString(anyB, govProposalTypeURL)
+	anyB = protowire.AppendTag(anyB, 2, protowire.BytesType)
+	anyB = protowire.AppendBytes(anyB, wrap)
+
+	var msg []byte
+	msg = protowire.AppendTag(msg, 1, protowire.BytesType)
+	msg = protowire.AppendBytes(msg, anyB)
+	return msg
+}
+
+// An Any chain diluted with non-Any wrapper layers must still be counted.
+func TestCheckTxNesting_AnyBehindNonAnyStillCounted(t *testing.T) {
+	body := func(d int) []byte {
+		cur := []byte{}
+		for range d {
+			cur = wrapAnyBehindNonAny(cur)
+		}
+		return cur
+	}
+	require.NoError(t, checkTxNesting(txRawWithBody(body(maxAnyNestingDepth))))
+	require.Error(t, checkTxNesting(txRawWithBody(body(maxAnyNestingDepth+1))))
 }

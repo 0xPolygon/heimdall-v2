@@ -1048,10 +1048,15 @@ func checkpointWindowContinuity(ctx sdk.Context, height int64, checkpointKeeper 
 	}
 	lastCheckpoint, err := checkpointKeeper.GetLastCheckpoint(ctx)
 	if err != nil {
-		if errors.Is(err, checkpointTypes.ErrNoCheckpointFound) && startBlock != 0 {
-			return fmt.Errorf("first checkpoint must start from block 0, got %d", startBlock)
+		if errors.Is(err, checkpointTypes.ErrNoCheckpointFound) {
+			if startBlock != 0 {
+				return fmt.Errorf("first checkpoint must start from block 0, got %d", startBlock)
+			}
+			return nil
 		}
-		return nil
+		// Any other error (store/decode) is abnormal; propagate it so the extension is
+		// rejected deterministically rather than silently skipping the continuity check.
+		return fmt.Errorf("failed to read last checkpoint for continuity check: %w", err)
 	}
 	if lastCheckpoint.EndBlock+1 != startBlock {
 		return fmt.Errorf("checkpoint not in continuity: expected start %d, got %d", lastCheckpoint.EndBlock+1, startBlock)

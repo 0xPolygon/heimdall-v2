@@ -16,6 +16,13 @@ import (
 // cheap to reject on every decode path (CheckTx, PrepareProposal, ProcessProposal).
 const maxAnyNestingDepth = 16
 
+// maxScanDepth bounds the guard's own recursion over the message tree so the scan cost
+// stays proportional to transaction size regardless of shape. It is comfortably above
+// maxAnyNestingDepth: an Any chain long enough to matter trips the Any cap first, while
+// deep non-Any nesting (which the decoder does not amplify) is simply not descended past
+// this ceiling.
+const maxScanDepth = 64
+
 // boundedNestingTxDecoder wraps a TxDecoder with a cheap Any-nesting pre-scan.
 func boundedNestingTxDecoder(inner sdk.TxDecoder) sdk.TxDecoder {
 	return func(txBytes []byte) (sdk.Tx, error) {
@@ -26,62 +33,52 @@ func boundedNestingTxDecoder(inner sdk.TxDecoder) sdk.TxDecoder {
 	}
 }
 
-// checkTxNesting walks the transaction's message trees following Any chains and rejects
-// nesting beyond maxAnyNestingDepth. A malformed prefix is left for the real decoder to
-// report; this scan only ever adds a rejection, never accepts what the decoder rejects.
+// checkTxNesting scans every TxRaw.body_bytes (field 1) and auth_info_bytes (field 2) for
+// excessive Any nesting. It walks all occurrences, not just the first: the inner decoder
+// applies last-field-wins to these singular fields, so a duplicated field must not let a
+// shallow decoy hide a deep chain behind it.
 func checkTxNesting(txBytes []byte) error {
-	// TxRaw: body_bytes = field 1, auth_info_bytes = field 2, both length-delimited.
-	if body, ok := protoField(txBytes, 1); ok {
-		if err := scanAnyNesting(body, 0); err != nil {
-			return err
+	return forEachLenField(txBytes, func(num protowire.Number, v []byte) error {
+		if num == 1 || num == 2 {
+			return scanAnyNesting(v, 0, 0)
 		}
-	}
-	if authInfo, ok := protoField(txBytes, 2); ok {
-		if err := scanAnyNesting(authInfo, 0); err != nil {
-			return err
-		}
-	}
-	return nil
+		return nil
+	})
 }
 
-// scanAnyNesting descends only through Any values, incrementing depth per unwrap. It
-// never copies: protowire returns sub-slices of the input, so the whole scan is bounded
-// by maxAnyNestingDepth times the message size.
-func scanAnyNesting(msg []byte, depth int) error {
-	if depth > maxAnyNestingDepth {
+// scanAnyNesting walks a message tree, counting Any unwraps in anyDepth and total recursion
+// in scanDepth. It descends into every sub-message, so an Any reached through non-Any
+// wrappers is still counted; anyDepth (not scanDepth) is what rejects, so deep non-Any
+// nesting is never mistaken for a nested-Any chain. protowire returns sub-slices, so the
+// scan never copies.
+func scanAnyNesting(msg []byte, anyDepth, scanDepth int) error {
+	if anyDepth > maxAnyNestingDepth {
 		return sdkerrors.ErrTxDecode.Wrapf("message Any nesting exceeds max depth %d", maxAnyNestingDepth)
+	}
+	if scanDepth >= maxScanDepth {
+		return nil
 	}
 	return forEachLenField(msg, func(_ protowire.Number, v []byte) error {
 		if inner, ok := anyValue(v); ok {
-			return scanAnyNesting(inner, depth+1)
+			return scanAnyNesting(inner, anyDepth+1, scanDepth+1)
+		}
+		if isProtoMessage(v) {
+			return scanAnyNesting(v, anyDepth, scanDepth+1)
 		}
 		return nil
 	})
 }
 
-// protoField returns the value of the first length-delimited field numbered want.
-func protoField(b []byte, want protowire.Number) ([]byte, bool) {
-	var found []byte
-	got := false
-	_ = forEachLenField(b, func(num protowire.Number, v []byte) error {
-		if num == want && !got {
-			found, got = v, true
-		}
-		return nil
-	})
-	return found, got
-}
-
-// anyValue reports whether v is a google.protobuf.Any and returns its value bytes. An Any
-// carries only field 1 (type_url, a "/"-prefixed string) and field 2 (value, bytes), both
-// length-delimited; any other field number or a non length-delimited field disqualifies
-// the match, so plain scalar fields are not mistaken for Any and descended into.
+// anyValue reports whether v is shaped like a google.protobuf.Any and returns its value
+// bytes. An Any carries a "/"-prefixed type_url in field 1 and a value in field 2; any
+// other field is ignored — the decoder tolerates non-critical extra fields on the envelope,
+// so the guard must too, or a throwaway field would hide a chain from it.
 func anyValue(v []byte) ([]byte, bool) {
 	var typeURL, value []byte
 	rest := v
 	for len(rest) > 0 {
 		num, val, n, ok := nextLenField(rest)
-		if !ok || val == nil {
+		if !ok {
 			return nil, false
 		}
 		rest = rest[n:]
@@ -90,8 +87,6 @@ func anyValue(v []byte) ([]byte, bool) {
 			typeURL = val
 		case 2:
 			value = val
-		default:
-			return nil, false
 		}
 	}
 	if !isTypeURL(typeURL) {
@@ -103,6 +98,23 @@ func anyValue(v []byte) ([]byte, bool) {
 // isTypeURL reports whether b is a non-empty, "/"-prefixed proto type URL.
 func isTypeURL(b []byte) bool {
 	return len(b) > 0 && b[0] == '/'
+}
+
+// isProtoMessage reports whether b parses cleanly as a sequence of protobuf fields, so the
+// guard descends into genuine sub-messages and not into scalar string/bytes payloads.
+func isProtoMessage(b []byte) bool {
+	if len(b) == 0 {
+		return false
+	}
+	rest := b
+	for len(rest) > 0 {
+		_, _, n, ok := nextLenField(rest)
+		if !ok {
+			return false
+		}
+		rest = rest[n:]
+	}
+	return true
 }
 
 // forEachLenField invokes fn for every length-delimited field (number, value) in b,
