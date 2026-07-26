@@ -86,10 +86,10 @@ func TestCheckTxNestingDepthBoundary(t *testing.T) {
 }
 
 func TestScanAnyNestingBoundary(t *testing.T) {
-	require.NoError(t, scanAnyNesting(nestedAnyBody(maxAnyNestingDepth), 0, 0))
-	require.Error(t, scanAnyNesting(nestedAnyBody(maxAnyNestingDepth+1), 0, 0))
-	// Starting anyDepth is honored: an otherwise-shallow body one level from the cap trips.
-	require.Error(t, scanAnyNesting(nestedAnyBody(2), maxAnyNestingDepth, 0))
+	require.NoError(t, scanAnyNesting(nestedAnyBody(maxAnyNestingDepth), 0))
+	require.Error(t, scanAnyNesting(nestedAnyBody(maxAnyNestingDepth+1), 0))
+	// Starting depth is honored: an otherwise-shallow body one level from the cap trips.
+	require.Error(t, scanAnyNesting(nestedAnyBody(2), maxAnyNestingDepth))
 }
 
 func TestCheckTxNestingScansAuthInfo(t *testing.T) {
@@ -133,16 +133,6 @@ func TestAnyValue(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestIsProtoMessage(t *testing.T) {
-	require.True(t, isProtoMessage(lenField(1, []byte("x"))))
-	require.True(t, isProtoMessage(varintField(1, 7)))
-	require.True(t, isProtoMessage(append(lenField(1, []byte("a")), varintField(2, 9)...)))
-	require.False(t, isProtoMessage(nil))
-	require.False(t, isProtoMessage([]byte{}))
-	require.False(t, isProtoMessage([]byte{0xff}))                   // malformed tag
-	require.False(t, isProtoMessage([]byte{0x0a, 0x05, 0x01, 0x02})) // truncated LEN value
 }
 
 func TestIsTypeURL(t *testing.T) {
@@ -268,34 +258,3 @@ func TestCheckTxNesting_DuplicateBodyBytesNotBypassed(t *testing.T) {
 	require.Error(t, checkTxNesting(append(lenField(1, deep), lenField(1, shallow)...)))
 }
 
-// wrapAnyBehindNonAny nests the next level as: Msg{ Any{ value: NonAny{ field7: inner } } },
-// so each Any is reached through a non-Any wrapper.
-func wrapAnyBehindNonAny(inner []byte) []byte {
-	var wrap []byte
-	wrap = protowire.AppendTag(wrap, 7, protowire.BytesType)
-	wrap = protowire.AppendBytes(wrap, inner)
-
-	var anyB []byte
-	anyB = protowire.AppendTag(anyB, 1, protowire.BytesType)
-	anyB = protowire.AppendString(anyB, govProposalTypeURL)
-	anyB = protowire.AppendTag(anyB, 2, protowire.BytesType)
-	anyB = protowire.AppendBytes(anyB, wrap)
-
-	var msg []byte
-	msg = protowire.AppendTag(msg, 1, protowire.BytesType)
-	msg = protowire.AppendBytes(msg, anyB)
-	return msg
-}
-
-// An Any chain diluted with non-Any wrapper layers must still be counted.
-func TestCheckTxNesting_AnyBehindNonAnyStillCounted(t *testing.T) {
-	body := func(d int) []byte {
-		cur := []byte{}
-		for range d {
-			cur = wrapAnyBehindNonAny(cur)
-		}
-		return cur
-	}
-	require.NoError(t, checkTxNesting(txRawWithBody(body(maxAnyNestingDepth))))
-	require.Error(t, checkTxNesting(txRawWithBody(body(maxAnyNestingDepth+1))))
-}

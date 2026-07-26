@@ -16,13 +16,6 @@ import (
 // cheap to reject on every decode path (CheckTx, PrepareProposal, ProcessProposal).
 const maxAnyNestingDepth = 16
 
-// maxScanDepth bounds the guard's own recursion over the message tree so the scan cost
-// stays proportional to transaction size regardless of shape. It is comfortably above
-// maxAnyNestingDepth: an Any chain long enough to matter trips the Any cap first, while
-// deep non-Any nesting (which the decoder does not amplify) is simply not descended past
-// this ceiling.
-const maxScanDepth = 64
-
 // boundedNestingTxDecoder wraps a TxDecoder with a cheap Any-nesting pre-scan.
 func boundedNestingTxDecoder(inner sdk.TxDecoder) sdk.TxDecoder {
 	return func(txBytes []byte) (sdk.Tx, error) {
@@ -40,30 +33,24 @@ func boundedNestingTxDecoder(inner sdk.TxDecoder) sdk.TxDecoder {
 func checkTxNesting(txBytes []byte) error {
 	return forEachLenField(txBytes, func(num protowire.Number, v []byte) error {
 		if num == 1 || num == 2 {
-			return scanAnyNesting(v, 0, 0)
+			return scanAnyNesting(v, 0)
 		}
 		return nil
 	})
 }
 
-// scanAnyNesting walks a message tree, counting Any unwraps in anyDepth and total recursion
-// in scanDepth. It descends into every sub-message, so an Any reached through non-Any
-// wrappers is still counted; anyDepth (not scanDepth) is what rejects, so deep non-Any
-// nesting is never mistaken for a nested-Any chain. protowire returns sub-slices, so the
-// scan never copies.
-func scanAnyNesting(msg []byte, anyDepth, scanDepth int) error {
-	if anyDepth > maxAnyNestingDepth {
+// scanAnyNesting follows Any chains, incrementing depth per unwrap, and rejects nesting
+// beyond maxAnyNestingDepth. It descends only into detected Any values (recursion depth
+// therefore equals the Any-unwrap count), which keeps the scan from interpreting a scalar
+// string/bytes field as a message and rejecting a transaction the real decoder accepts.
+// protowire returns sub-slices, so the scan never copies.
+func scanAnyNesting(msg []byte, depth int) error {
+	if depth > maxAnyNestingDepth {
 		return sdkerrors.ErrTxDecode.Wrapf("message Any nesting exceeds max depth %d", maxAnyNestingDepth)
-	}
-	if scanDepth >= maxScanDepth {
-		return nil
 	}
 	return forEachLenField(msg, func(_ protowire.Number, v []byte) error {
 		if inner, ok := anyValue(v); ok {
-			return scanAnyNesting(inner, anyDepth+1, scanDepth+1)
-		}
-		if isProtoMessage(v) {
-			return scanAnyNesting(v, anyDepth, scanDepth+1)
+			return scanAnyNesting(inner, depth+1)
 		}
 		return nil
 	})
@@ -98,23 +85,6 @@ func anyValue(v []byte) ([]byte, bool) {
 // isTypeURL reports whether b is a non-empty, "/"-prefixed proto type URL.
 func isTypeURL(b []byte) bool {
 	return len(b) > 0 && b[0] == '/'
-}
-
-// isProtoMessage reports whether b parses cleanly as a sequence of protobuf fields, so the
-// guard descends into genuine sub-messages and not into scalar string/bytes payloads.
-func isProtoMessage(b []byte) bool {
-	if len(b) == 0 {
-		return false
-	}
-	rest := b
-	for len(rest) > 0 {
-		_, _, n, ok := nextLenField(rest)
-		if !ok {
-			return false
-		}
-		rest = rest[n:]
-	}
-	return true
 }
 
 // forEachLenField invokes fn for every length-delimited field (number, value) in b,
