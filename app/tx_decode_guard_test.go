@@ -4,9 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protowire"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 const govProposalTypeURL = "/cosmos.gov.v1.MsgSubmitProposal"
@@ -59,6 +60,35 @@ func varintField(num protowire.Number, val uint64) []byte {
 	b = protowire.AppendTag(b, num, protowire.VarintType)
 	b = protowire.AppendVarint(b, val)
 	return b
+}
+
+func TestHasOverNestedTx(t *testing.T) {
+	orig := helper.GetKyotoHeight()
+	t.Cleanup(func() { helper.SetKyotoHeight(orig) })
+
+	bomb := txRawWithBody(nestedAnyBody(maxAnyNestingDepth + 1))
+	shallow := txRawWithBody(nestedAnyBody(1))
+
+	tests := []struct {
+		name        string
+		kyotoHeight int64
+		height      int64
+		txs         [][]byte
+		want        bool
+	}{
+		{name: "fork disabled ignores bomb", kyotoHeight: 0, height: 1000, txs: [][]byte{bomb}, want: false},
+		{name: "before activation ignores bomb", kyotoHeight: 100, height: 99, txs: [][]byte{bomb}, want: false},
+		{name: "at activation catches bomb", kyotoHeight: 100, height: 100, txs: [][]byte{bomb}, want: true},
+		{name: "after activation catches bomb", kyotoHeight: 100, height: 101, txs: [][]byte{shallow, bomb}, want: true},
+		{name: "after activation passes shallow", kyotoHeight: 100, height: 101, txs: [][]byte{shallow}, want: false},
+		{name: "no txs", kyotoHeight: 100, height: 101, txs: nil, want: false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			helper.SetKyotoHeight(tc.kyotoHeight)
+			require.Equal(t, tc.want, hasOverNestedTx(tc.height, tc.txs))
+		})
+	}
 }
 
 func TestCheckTxNestingDepthBoundary(t *testing.T) {
@@ -203,21 +233,6 @@ func TestForEachLenField(t *testing.T) {
 		return nil
 	}))
 	require.Equal(t, 0, calls)
-}
-
-func TestBoundedNestingTxDecoder(t *testing.T) {
-	sentinel := errors.New("inner reached")
-	inner := sdk.TxDecoder(func([]byte) (sdk.Tx, error) { return nil, sentinel })
-	dec := boundedNestingTxDecoder(inner)
-
-	// A deeply nested tx is rejected by the guard, before the inner decoder runs.
-	_, err := dec(txRawWithBody(nestedAnyBody(maxAnyNestingDepth + 1)))
-	require.Error(t, err)
-	require.NotErrorIs(t, err, sentinel)
-
-	// A shallow tx passes the guard and reaches the inner decoder.
-	_, err = dec(txRawWithBody(nestedAnyBody(2)))
-	require.ErrorIs(t, err, sentinel)
 }
 
 // wrapAnyMessageExtra is wrapAnyMessage with a throwaway extra field on the Any envelope.

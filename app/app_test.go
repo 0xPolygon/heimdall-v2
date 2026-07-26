@@ -20,6 +20,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
@@ -322,6 +323,34 @@ func TestCheckTx_RejectsTxExceedingMsgCap(t *testing.T) {
 			}
 		})
 	}
+}
+
+// At/after Kyoto, CheckTx rejects an over-nested transaction with the nesting-bound
+// log before the full decode; below Kyoto the guard is inert and the same bytes fall
+// through to the ordinary decoder. The distinct log is what proves the guard, not the
+// decoder, produced the rejection.
+func TestCheckTx_RejectsOverNestedTx(t *testing.T) {
+	_, app, _, _ := SetupAppWithABCICtxAndValidators(t, 1)
+	orig := helper.GetKyotoHeight()
+	t.Cleanup(func() { helper.SetKyotoHeight(orig) })
+
+	bomb := txRawWithBody(nestedAnyBody(maxAnyNestingDepth + 1))
+	const nestingLog = "transaction exceeds the message nesting bound"
+
+	t.Run("at/after kyoto the guard rejects", func(t *testing.T) {
+		helper.SetKyotoHeight(1)
+		resp, err := app.CheckTx(&abci.RequestCheckTx{Tx: bomb, Type: abci.CheckTxType_New})
+		require.NoError(t, err)
+		require.Equal(t, sdkerrors.ErrTxDecode.ABCICode(), resp.Code)
+		require.Equal(t, nestingLog, resp.Log)
+	})
+
+	t.Run("below kyoto the guard is inert", func(t *testing.T) {
+		helper.SetKyotoHeight(0)
+		resp, err := app.CheckTx(&abci.RequestCheckTx{Tx: bomb, Type: abci.CheckTxType_New})
+		require.NoError(t, err)
+		require.NotEqual(t, nestingLog, resp.Log)
+	})
 }
 
 // The cap guard only applies to fresh CheckTx, not recheck, matching the

@@ -1,9 +1,10 @@
 package app
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"google.golang.org/protobuf/encoding/protowire"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 // maxAnyNestingDepth bounds how many nested google.protobuf.Any unwraps a transaction
@@ -13,17 +14,22 @@ import (
 // copies every level. Any-typed message fields (e.g. gov MsgSubmitProposal.messages)
 // can self-chain, and that pre-pass copies each level's Any value, so an unbounded chain
 // costs work proportional to depth times size; this cap keeps a rejected transaction
-// cheap to reject on every decode path (CheckTx, PrepareProposal, ProcessProposal).
+// cheap to reject at mempool admission (CheckTx) and on the consensus path (ProcessProposal).
 const maxAnyNestingDepth = 16
 
-// boundedNestingTxDecoder wraps a TxDecoder with a cheap Any-nesting pre-scan.
-func boundedNestingTxDecoder(inner sdk.TxDecoder) sdk.TxDecoder {
-	return func(txBytes []byte) (sdk.Tx, error) {
-		if err := checkTxNesting(txBytes); err != nil {
-			return nil, err
-		}
-		return inner(txBytes)
+// hasOverNestedTx reports whether, at/after the Kyoto height, any of txs exceeds the Any
+// nesting bound. Gated so the accept/reject decision is uniform across validators from the
+// fork boundary; before Kyoto it is a no-op and decode behavior is unchanged.
+func hasOverNestedTx(height int64, txs [][]byte) bool {
+	if !helper.IsKyoto(height) {
+		return false
 	}
+	for _, tx := range txs {
+		if checkTxNesting(tx) != nil {
+			return true
+		}
+	}
+	return false
 }
 
 // checkTxNesting scans every TxRaw.body_bytes (field 1) and auth_info_bytes (field 2) for

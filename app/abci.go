@@ -193,6 +193,11 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
+		if hasOverNestedTx(req.Height, req.Txs[1:]) {
+			logger.Error("Rejecting proposal: a transaction exceeds the message nesting bound")
+			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+		}
+
 		// extract the ExtendedCommitInfo from the txs (it is encoded at the beginning, index 0)
 		extCommitInfo := new(abci.ExtendedCommitInfo)
 		extendedCommitTx := req.Txs[0]
