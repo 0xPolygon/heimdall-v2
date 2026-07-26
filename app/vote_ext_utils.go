@@ -1038,7 +1038,7 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 // validateCheckpointMsgData validates the extension is a valid checkpoint
 // checkpointWindowContinuity cheaply rejects a non-RP checkpoint window that doesn't
 // continue from the last checkpoint, before the Bor RPC inside IsValidCheckpoint. The
-// window is attacker-controlled; shifting [start,end] each round would otherwise miss the
+// window is proposer-supplied; a window that shifts [start,end] each round would otherwise miss the
 // root cache and force a fresh GetRootHash on every honest validator. A legitimate
 // checkpoint starts at the last checkpoint's end block + 1 (enforced by the checkpoint side
 // handler). Gated so vote validity is unchanged until the hardfork.

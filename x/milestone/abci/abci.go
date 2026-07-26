@@ -148,7 +148,7 @@ func getFastForwardMilestoneStartBlock(latestMilestoneEndBlock, ffMilestoneBlock
 // validatorBoundToRequiredParent reports whether a validator's milestone vote may count toward the
 // winning range. The aggregate parent check binds the parent only to the first block of the range;
 // before counting a validator's support we also require its own voted parent to match, so a vote
-// carrying the correct block hashes under a fabricated parent cannot inflate the support tally.
+// carrying the correct block hashes under a non-matching parent is not counted toward the range.
 // Gated on Kyoto so replay of pre-fork blocks keeps the original tallying.
 func validatorBoundToRequiredParent(height int64, votedParent, requiredParent []byte) bool {
 	return !helper.IsKyoto(height) || bytes.Equal(votedParent, requiredParent)

@@ -22,9 +22,9 @@ type SequenceChecker interface {
 //
 // That positional formula is only injective while logIndex < DefaultLogIndexUnit;
 // a log index at or above the unit aliases the next block's low indices (e.g.
-// (B, unit) == (B+1, 0)), letting one L1 event suppress another. Real L1 blocks
-// never reach that many logs, so historical keys are unchanged. At/after the Kyoto
-// hardfork, an out-of-range log index gets a delimited, collision-free key instead;
+// (B, unit) == (B+1, 0)), so two distinct L1 events can map to the same key. Real L1
+// blocks never reach that many logs, so historical keys are unchanged. At/after the Kyoto
+// hardfork, an out-of-range log index gets a delimited, injective key instead;
 // the height gate keeps pre-fork keys (and replay) byte-identical.
 func CalculateSequence(height int64, blockNumber, logIndex uint64) string {
 	if IsKyoto(height) && logIndex >= uint64(types.DefaultLogIndexUnit) {

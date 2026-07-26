@@ -71,7 +71,7 @@ func TestCheckTxNestingDepthBoundary(t *testing.T) {
 		{name: "shallow nesting", depth: 3, wantErr: false},
 		{name: "at max depth", depth: maxAnyNestingDepth, wantErr: false},
 		{name: "one past max depth", depth: maxAnyNestingDepth + 1, wantErr: true},
-		{name: "deep bomb", depth: 5000, wantErr: true},
+		{name: "deeply nested", depth: 5000, wantErr: true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -226,7 +226,7 @@ func TestBoundedNestingTxDecoder(t *testing.T) {
 	inner := sdk.TxDecoder(func([]byte) (sdk.Tx, error) { return nil, sentinel })
 	dec := boundedNestingTxDecoder(inner)
 
-	// Deep bomb is rejected by the guard, before the inner decoder runs.
+	// A deeply nested tx is rejected by the guard, before the inner decoder runs.
 	_, err := dec(txRawWithBody(nestedAnyBody(maxAnyNestingDepth + 1)))
 	require.Error(t, err)
 	require.NotErrorIs(t, err, sentinel)

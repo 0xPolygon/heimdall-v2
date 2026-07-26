@@ -17,14 +17,14 @@ import (
 )
 
 // A votes only block 1 (correct parent); B votes blocks 1-2 (correct parent);
-// the attacker votes blocks 1-2 but under a wrong parent. Block-level majority and
-// the first-block parent check pass on honest power, but the long range [1,2] only
-// clears 2/3 if the attacker's wrong-parent vote is counted as range support.
+// C votes blocks 1-2 but under a non-matching parent. Block-level majority and
+// the first-block parent check pass on the honest power, but the long range [1,2] only
+// clears 2/3 if C's non-matching-parent vote is counted as range support.
 func TestGetMajorityMilestoneProposition_RangeSupportRequiresParentHash(t *testing.T) {
 	vA := &stakeTypes.Validator{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 33}
 	vB := &stakeTypes.Validator{Signer: "0x2222222222222222222222222222222222222222", VotingPower: 34}
-	vAtk := &stakeTypes.Validator{Signer: "0x3333333333333333333333333333333333333333", VotingPower: 33}
-	validatorSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{vA, vB, vAtk}}
+	vC := &stakeTypes.Validator{Signer: "0x3333333333333333333333333333333333333333", VotingPower: 33}
+	validatorSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{vA, vB, vC}}
 
 	parent := []byte("correctParent")
 	wrongParent := []byte("wrongParent")
@@ -51,7 +51,7 @@ func TestGetMajorityMilestoneProposition_RangeSupportRequiresParentHash(t *testi
 	extVotes := []abciTypes.ExtendedVoteInfo{
 		{BlockIdFlag: cmtTypes.BlockIDFlagCommit, VoteExtension: mkVE(t, parent, [][]byte{h1}), Validator: abciTypes.Validator{Address: common.HexToAddress(vA.Signer).Bytes()}},
 		{BlockIdFlag: cmtTypes.BlockIDFlagCommit, VoteExtension: mkVE(t, parent, [][]byte{h1, h2}), Validator: abciTypes.Validator{Address: common.HexToAddress(vB.Signer).Bytes()}},
-		{BlockIdFlag: cmtTypes.BlockIDFlagCommit, VoteExtension: mkVE(t, wrongParent, [][]byte{h1, h2}), Validator: abciTypes.Validator{Address: common.HexToAddress(vAtk.Signer).Bytes()}},
+		{BlockIdFlag: cmtTypes.BlockIDFlagCommit, VoteExtension: mkVE(t, wrongParent, [][]byte{h1, h2}), Validator: abciTypes.Validator{Address: common.HexToAddress(vC.Signer).Bytes()}},
 	}
 	logger := log.NewTestLogger(t)
 	lastEndBlock := uint64(0)

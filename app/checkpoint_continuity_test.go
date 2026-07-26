@@ -11,7 +11,7 @@ import (
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
-// A non-RP checkpoint vote extension carries an attacker-controlled [start,end]
+// A non-RP checkpoint vote extension carries a proposer-supplied [start,end]
 // window. Below Kyoto the window reaches the Bor RPC inside IsValidCheckpoint
 // (here returning ErrBorBlockNotFound); at/after Kyoto a window that breaks
 // checkpoint continuity is rejected by the cheap pre-RPC guard, so the expensive

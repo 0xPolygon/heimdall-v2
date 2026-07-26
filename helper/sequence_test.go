@@ -78,12 +78,12 @@ func TestCalculateSequenceInjectiveAtKyoto(t *testing.T) {
 	require.Equal(t, "100000", CalculateSequence(kyotoActive, 1, 0))
 	require.Equal(t, "100001", CalculateSequence(kyotoActive, 1, 1))
 
-	// The classic collision (B, unit) vs (B+1, 0) no longer aliases at/after Kyoto.
-	collidingHigh := CalculateSequence(kyotoActive, 1, 100000)
-	collidingLow := CalculateSequence(kyotoActive, 2, 0)
-	require.NotEqual(t, collidingHigh, collidingLow)
+	// The aliasing case (B, unit) vs (B+1, 0) maps to distinct keys at/after Kyoto.
+	aliasHigh := CalculateSequence(kyotoActive, 1, 100000)
+	aliasLow := CalculateSequence(kyotoActive, 2, 0)
+	require.NotEqual(t, aliasHigh, aliasLow)
 
-	// Below the fork the legacy formula still collides (behavior preserved for replay).
+	// Below the fork the legacy formula still aliases (behavior preserved for replay).
 	require.Equal(t,
 		CalculateSequence(0, 1, 100000),
 		CalculateSequence(0, 2, 0),
