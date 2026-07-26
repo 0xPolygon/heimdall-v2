@@ -143,6 +143,12 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 	require.NoError(err)
 	require.NotNil(res)
 	require.True(res.IsOld)
+
+	// A log index whose sequence was never stored is reported as not old.
+	res, err = queryClient.IsStakeTxOld(ctx, &types.QueryStakeIsOldTxRequest{TxHash: TxHash1, LogIndex: logIndex + 1})
+	require.NoError(err)
+	require.NotNil(res)
+	require.False(res.IsOld)
 }
 
 func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
