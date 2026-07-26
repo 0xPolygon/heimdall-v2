@@ -21,6 +21,9 @@ import (
 // the first-block parent check pass on the honest power, but the long range [1,2] only
 // clears 2/3 if C's non-matching-parent vote is counted as range support.
 func TestGetMajorityMilestoneProposition_RangeSupportRequiresParentHash(t *testing.T) {
+	origKyoto := helper.GetKyotoHeight()
+	t.Cleanup(func() { helper.SetKyotoHeight(origKyoto) })
+
 	vA := &stakeTypes.Validator{Signer: "0x1111111111111111111111111111111111111111", VotingPower: 33}
 	vB := &stakeTypes.Validator{Signer: "0x2222222222222222222222222222222222222222", VotingPower: 34}
 	vC := &stakeTypes.Validator{Signer: "0x3333333333333333333333333333333333333333", VotingPower: 33}
@@ -68,7 +71,6 @@ func TestGetMajorityMilestoneProposition_RangeSupportRequiresParentHash(t *testi
 
 	t.Run("at/after kyoto, long range not counted without matching parent", func(t *testing.T) {
 		helper.SetKyotoHeight(1)
-		defer helper.SetKyotoHeight(0)
 		ctx := sdk.Context{}.WithBlockHeight(100)
 		prop, _, _, _, err := GetMajorityMilestoneProposition(ctx, validatorSet, extVotes, majorityVP, logger, &lastEndBlock, parent)
 		require.NoError(t, err)

@@ -16,6 +16,9 @@ import (
 // fails. Below Kyoto that error is fatal in PreBlocker (the halt this fixes); at/after
 // Kyoto it is tolerated so milestone commit and liveness continue.
 func TestCheckAndAddFutureSpan_NonFatalWhenSpanCreationFails(t *testing.T) {
+	origKyoto := helper.GetKyotoHeight()
+	origRio := helper.GetRioHeight()
+	t.Cleanup(func() { helper.SetKyotoHeight(origKyoto); helper.SetRioHeight(origRio) })
 	setup := func(t *testing.T) (*HeimdallApp, sdk.Context, *milestoneTypes.MilestoneProposition, borTypes.Span, map[uint64]struct{}) {
 		t.Helper()
 		_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
@@ -64,14 +67,12 @@ func TestCheckAndAddFutureSpan_NonFatalWhenSpanCreationFails(t *testing.T) {
 
 	t.Run("below kyoto, span-creation failure is fatal", func(t *testing.T) {
 		helper.SetKyotoHeight(0)
-		t.Cleanup(func() { helper.SetRioHeight(0) })
 		app, ctx, milestone, lastSpan, supporting := setup(t)
 		require.Error(t, app.checkAndAddFutureSpan(ctx, milestone, lastSpan, supporting))
 	})
 
 	t.Run("at/after kyoto, span-creation failure is tolerated", func(t *testing.T) {
 		helper.SetKyotoHeight(1)
-		t.Cleanup(func() { helper.SetKyotoHeight(0); helper.SetRioHeight(0) })
 		app, ctx, milestone, lastSpan, supporting := setup(t)
 		require.NoError(t, app.checkAndAddFutureSpan(ctx, milestone, lastSpan, supporting))
 		last, err := app.BorKeeper.GetLastSpan(ctx)

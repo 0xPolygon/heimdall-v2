@@ -69,8 +69,9 @@ func TestCalculateSequence(t *testing.T) {
 }
 
 func TestCalculateSequenceInjectiveAtKyoto(t *testing.T) {
+	orig := GetKyotoHeight()
+	t.Cleanup(func() { SetKyotoHeight(orig) })
 	SetKyotoHeight(1)
-	defer SetKyotoHeight(0)
 
 	const kyotoActive = int64(10)
 

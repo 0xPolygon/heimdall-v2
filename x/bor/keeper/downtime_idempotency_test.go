@@ -19,6 +19,9 @@ import (
 func (s *KeeperTestSuite) TestPostHandleSetProducerDowntimeIdempotency() {
 	require := s.Require()
 
+	origKyoto := helper.GetKyotoHeight()
+	defer helper.SetKyotoHeight(origKyoto)
+
 	id1, id2, id3 := uint64(1), uint64(2), uint64(3)
 	addr1 := common.HexToAddress("0x0000000000000000000000000000000000000001").Hex()
 	addr2 := common.HexToAddress("0x0000000000000000000000000000000000000002").Hex()
@@ -98,7 +101,6 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntimeIdempotency() {
 	}
 
 	s.Run("at/after kyoto, duplicate downtime creates no extra span", func() {
-		defer helper.SetKyotoHeight(0)
 		prepare(1) // active at height 500
 
 		require.NoError(post())
@@ -109,7 +111,6 @@ func (s *KeeperTestSuite) TestPostHandleSetProducerDowntimeIdempotency() {
 	})
 
 	s.Run("below kyoto, legacy path appends a span each time", func() {
-		defer helper.SetKyotoHeight(0)
 		prepare(1000) // inactive at height 500
 
 		require.NoError(post())

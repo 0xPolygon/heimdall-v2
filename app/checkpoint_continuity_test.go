@@ -20,6 +20,8 @@ func TestValidateCheckpointMsgData_ContinuityGate(t *testing.T) {
 	const height = int64(3)
 
 	_, app, ctx, _ := SetupAppWithABCICtx(t)
+	origKyoto := helper.GetKyotoHeight()
+	t.Cleanup(func() { helper.SetKyotoHeight(origKyoto) })
 	validators := app.StakeKeeper.GetAllValidators(ctx)
 	caller := setupBorBlockNotFoundCaller()
 
@@ -36,7 +38,6 @@ func TestValidateCheckpointMsgData_ContinuityGate(t *testing.T) {
 
 	t.Run("at/after kyoto is rejected before the bor RPC", func(t *testing.T) {
 		helper.SetKyotoHeight(1)
-		defer helper.SetKyotoHeight(0)
 		err := validateNonRpVoteExtensionData(ctx, height, packedVE, app.ChainManagerKeeper, app.CheckpointKeeper, caller)
 		require.Error(t, err)
 		require.False(t, errors.Is(err, borTypes.ErrBorBlockNotFound),
@@ -48,6 +49,8 @@ func TestValidateCheckpointMsgData_ContinuityGate(t *testing.T) {
 // seeded-checkpoint paths and the exact end-block+1 boundary.
 func TestCheckpointWindowContinuity(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtx(t)
+	origKyoto := helper.GetKyotoHeight()
+	t.Cleanup(func() { helper.SetKyotoHeight(origKyoto) })
 	const height = int64(10)
 
 	t.Run("kyoto off lets any window pass", func(t *testing.T) {
@@ -56,7 +59,6 @@ func TestCheckpointWindowContinuity(t *testing.T) {
 	})
 
 	helper.SetKyotoHeight(1)
-	defer helper.SetKyotoHeight(0)
 
 	t.Run("no prior checkpoint: start 0 is valid", func(t *testing.T) {
 		require.NoError(t, checkpointWindowContinuity(ctx, height, app.CheckpointKeeper, 0))
