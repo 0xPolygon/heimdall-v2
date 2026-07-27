@@ -522,7 +522,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		feeWithdrawValidatorGateHeight = 46361000
 		zurichHardforkHeight = 47880000
 		ithacaHeight = 50185000
-		kyotoHeight = 0  // TODO set block number when the hardfork is scheduled
+		kyotoHeight = 0 // TODO set block number when the hardfork is scheduled
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -550,7 +550,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		feeWithdrawValidatorGateHeight = 35914000
 		zurichHardforkHeight = 37750000
 		ithacaHeight = 40776000
-		kyotoHeight = 0  // TODO set block number when the hardfork is scheduled
+		kyotoHeight = 0 // TODO set block number when the hardfork is scheduled
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -564,7 +564,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		feeWithdrawValidatorGateHeight = 0
 		zurichHardforkHeight = 0
 		ithacaHeight = 0
-		kyotoHeight = 0
+		kyotoHeight = 1
 	}
 }
 
