@@ -134,7 +134,10 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 			return fmt.Errorf("invalid sideTxResponses detected for validator %s and tx %s, error: %w", valAddrStr, common.Bytes2Hex(txHash), err)
 		}
 
-		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &milestoneKeeper, voteExtension.MilestoneProposition); err != nil {
+		// Gate fork-specific proposition fields at the vote extension's own height. During proposal
+		// processing ctx is one block ahead of the extension being validated.
+		milestoneCtx := ctx.WithBlockHeight(voteExtension.Height)
+		if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &milestoneKeeper, voteExtension.MilestoneProposition); err != nil {
 			return fmt.Errorf("invalid milestone proposition detected for validator %s, error: %w", valAddrStr, err)
 		}
 
@@ -424,7 +427,10 @@ func filterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 			continue
 		}
 
-		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &milestoneKeeper, voteExtension.MilestoneProposition); err != nil {
+		// Gate fork-specific proposition fields at the vote extension's own height. PrepareProposal's
+		// context is one block ahead of the extension being filtered.
+		milestoneCtx := ctx.WithBlockHeight(voteExtension.Height)
+		if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &milestoneKeeper, voteExtension.MilestoneProposition); err != nil {
 			if applyVEsFilteringFixes {
 				logger.Warn("Invalid milestone proposition detected for validator, emitting placeholder", "validator", valAddrStr, "error", err)
 				validVoteExtensions = append(validVoteExtensions, toFilteredPlaceholder(vote))

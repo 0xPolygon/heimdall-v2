@@ -90,15 +90,16 @@ producer_votes = ""
 	}
 
 	cases := []struct {
-		name           string
-		chain          string
-		wantRioHeight  int64
-		wantInitHeight int64
+		name             string
+		chain            string
+		wantRioHeight    int64
+		wantInitHeight   int64
+		wantIthacaHeight int64
 	}{
-		{name: "mainnet", chain: MainChain, wantRioHeight: 77414656, wantInitHeight: 24404501},
-		{name: "mumbai", chain: MumbaiChain, wantRioHeight: 48473856, wantInitHeight: 0},
-		{name: "amoy", chain: AmoyChain, wantRioHeight: 26272256, wantInitHeight: 8788501},
-		{name: "default", chain: "local", wantRioHeight: 128, wantInitHeight: 0},
+		{name: "mainnet", chain: MainChain, wantRioHeight: 77414656, wantInitHeight: 24404501, wantIthacaHeight: 50185000},
+		{name: "mumbai", chain: MumbaiChain, wantRioHeight: 48473856, wantInitHeight: 0, wantIthacaHeight: 0},
+		{name: "amoy", chain: AmoyChain, wantRioHeight: 26272256, wantInitHeight: 8788501, wantIthacaHeight: 40776000},
+		{name: "default", chain: "local", wantRioHeight: 128, wantInitHeight: 0, wantIthacaHeight: 0},
 	}
 
 	for _, tc := range cases {
@@ -108,7 +109,7 @@ producer_votes = ""
 			home := mkHome(t, tc.chain)
 			InitHeimdallConfigWith(home, "")
 
-			require.Equal(t, int64(0), GetIthacaHeight(), "Ithaca gate stays disabled until a scheduled height is set")
+			require.Equal(t, tc.wantIthacaHeight, GetIthacaHeight())
 			require.Equal(t, tc.wantRioHeight, GetRioHeight())
 			require.Equal(t, tc.wantInitHeight, GetInitialHeight())
 		})
