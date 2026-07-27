@@ -88,6 +88,58 @@ func TestValidateVoteExtensions(t *testing.T) {
 	}
 }
 
+func TestValidateVoteExtensionsRejectsIthacaFieldsFromPreForkVote(t *testing.T) {
+	setupAppResult := SetupApp(t, 1)
+	hApp := setupAppResult.App
+	validatorPrivKey := setupAppResult.ValidatorKeys[0]
+	ctx := setupContextWithVoteExtensionsEnableHeight(hApp.BaseApp.NewContext(true), 1)
+
+	validators := hApp.StakeKeeper.GetAllValidators(ctx)
+	require.Len(t, validators, 1)
+	valSet, err := hApp.StakeKeeper.GetPreviousBlockValidatorSet(ctx)
+	require.NoError(t, err)
+	cometVal := abci.Validator{
+		Address: common.FromHex(validators[0].Signer),
+		Power:   validators[0].VotingPower,
+	}
+
+	blockHash := common.FromHex(TxHash2)
+	prop := milestoneTypes.MilestoneProposition{
+		BlockHashes:       [][]byte{blockHash},
+		BlockTds:          []uint64{1},
+		StartBlockNumber:  10,
+		LatestBlockNumber: 10,
+		LatestBlockHash:   blockHash,
+	}
+	validatorPubKey, ok := validatorPrivKey.PubKey().(cmtcrypto.PubKey)
+	require.True(t, ok)
+	ext := setupExtendedVoteInfoWithMilestoneProposition(
+		t,
+		cmtTypes.BlockIDFlagCommit,
+		common.FromHex(TxHash1),
+		blockHash,
+		cometVal,
+		validatorPrivKey,
+		VoteExtBlockHeight,
+		hApp,
+		validatorPubKey,
+		prop,
+	)
+
+	origIthaca := helper.GetIthacaHeight()
+	t.Cleanup(func() { helper.SetIthacaHeight(origIthaca) })
+
+	// The proposal is processed at H, but the signed extension belongs to H-1. Activating Ithaca at
+	// H must not make the pre-fork extension valid on upgraded nodes.
+	helper.SetIthacaHeight(CurrentHeight)
+	err = ValidateVoteExtensions(ctx.WithBlockHeight(CurrentHeight), CurrentHeight, []abci.ExtendedVoteInfo{ext}, 1, &valSet, hApp.MilestoneKeeper)
+	require.ErrorContains(t, err, "latest block fields set before Ithaca")
+
+	// Once the extension's own height is at the activation boundary, the same fields are valid.
+	helper.SetIthacaHeight(VoteExtBlockHeight)
+	require.NoError(t, ValidateVoteExtensions(ctx.WithBlockHeight(CurrentHeight), CurrentHeight, []abci.ExtendedVoteInfo{ext}, 1, &valSet, hApp.MilestoneKeeper))
+}
+
 func TestTallyVotes(t *testing.T) {
 	val1, err := address.NewHexCodec().StringToBytes(ValAddr1)
 	require.NoError(t, err)

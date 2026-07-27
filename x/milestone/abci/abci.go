@@ -572,7 +572,7 @@ func tallyActualHeads(ctx sdk.Context, validatorSet *stakeTypes.ValidatorSet, ex
 }
 
 // decodeActualHeadVote extracts the actual latest-head fields from a committed vote extension. ok is
-// false for non-committed votes or propositions without the latest-head fields (skip them).
+// false for non-committed votes, missing fields, or a malformed latest-head hash (skip them).
 func decodeActualHeadVote(vote abciTypes.ExtendedVoteInfo) (uint64, []byte, bool, error) {
 	if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
 		return 0, nil, false, nil
@@ -582,6 +582,9 @@ func decodeActualHeadVote(vote abciTypes.ExtendedVoteInfo) (uint64, []byte, bool
 		return 0, nil, false, fmt.Errorf("error while unmarshalling vote extension: %w", err)
 	}
 	if ve.MilestoneProposition == nil || len(ve.MilestoneProposition.LatestBlockHash) == 0 {
+		return 0, nil, false, nil
+	}
+	if len(ve.MilestoneProposition.LatestBlockHash) != common.HashLength {
 		return 0, nil, false, nil
 	}
 	return ve.MilestoneProposition.LatestBlockNumber, ve.MilestoneProposition.LatestBlockHash, true, nil
@@ -616,8 +619,11 @@ func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startB
 	var err error
 	if latestHeader == nil {
 		latestHeader, err = contractCaller.GetBorChainBlock(ctx, nil)
-		if err != nil || latestHeader == nil {
+		if err != nil {
 			return nil, nil, nil, nil, nil, fmt.Errorf("failed to get the latest header: %w", err)
+		}
+		if latestHeader == nil {
+			return nil, nil, nil, nil, nil, errors.New("failed to get the latest header: nil header returned")
 		}
 	}
 
@@ -628,8 +634,11 @@ func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startB
 	// This handles the case where Heimdall blocks faster than Bor.
 	if latestBlockNum < startBlockNum {
 		latestHeader, err = contractCaller.GetBorChainBlock(ctx, nil)
-		if err != nil || latestHeader == nil {
+		if err != nil {
 			return nil, nil, nil, nil, nil, fmt.Errorf("failed to refresh the latest header: %w", err)
+		}
+		if latestHeader == nil {
+			return nil, nil, nil, nil, nil, errors.New("failed to refresh the latest header: nil header returned")
 		}
 		latestBlockNum = latestHeader.Number.Uint64()
 		// If still not available, return ErrNoNewHeadersFound since Bor hasn't produced the block yet.
@@ -666,6 +675,9 @@ func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startB
 			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock+1)))
 			if err != nil {
 				return nil, nil, nil, nil, nil, fmt.Errorf("failed to get header for parent hash: %w", err)
+			}
+			if header == nil {
+				return nil, nil, nil, nil, nil, errors.New("failed to get header for parent hash: nil header returned")
 			}
 
 			parentHash = header.ParentHash.Bytes()
@@ -720,6 +732,16 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keepe
 
 	if len(duplicateBlockHashes) != len(milestoneProp.BlockHashes) {
 		return fmt.Errorf("duplicate block hashes found")
+	}
+
+	// Older binaries treat the Ithaca latest-head fields as unknown protobuf fields and reject the
+	// entire vote extension. Reject them explicitly on upgraded binaries before activation too, so a
+	// byzantine validator cannot make old and new validators disagree during the mixed-version rollout.
+	if !helper.IsIthaca(ctx.BlockHeight()) {
+		if milestoneProp.LatestBlockNumber != 0 || len(milestoneProp.LatestBlockHash) != 0 {
+			return fmt.Errorf("latest block fields set before Ithaca")
+		}
+		return nil
 	}
 
 	return validateLatestHead(milestoneProp)

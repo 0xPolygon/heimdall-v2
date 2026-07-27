@@ -838,6 +838,63 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 	}
 }
 
+func TestVerifyVoteExtensionHandlerUsesAuthenticatedHeightForIthaca(t *testing.T) {
+	setupAppResult := SetupApp(t, 1)
+	hApp := setupAppResult.App
+	ctx := setupContextWithVoteExtensionsEnableHeight(hApp.BaseApp.NewContext(true), 1)
+	validators := hApp.StakeKeeper.GetAllValidators(ctx)
+	require.Len(t, validators, 1)
+
+	origIthaca := helper.GetIthacaHeight()
+	origPhuket := helper.GetPhuketHardforkHeight()
+	helper.SetIthacaHeight(100)
+	helper.SetPhuketHardforkHeight(0)
+	t.Cleanup(func() {
+		helper.SetIthacaHeight(origIthaca)
+		helper.SetPhuketHardforkHeight(origPhuket)
+	})
+
+	makeReq := func(height int64) *abci.RequestVerifyVoteExtension {
+		t.Helper()
+		blockHash := common.HexToHash("0x1234").Bytes()
+		ve := &sidetxs.VoteExtension{
+			Height:    height,
+			BlockHash: blockHash,
+			MilestoneProposition: &milestoneTypes.MilestoneProposition{
+				BlockHashes:       [][]byte{blockHash},
+				BlockTds:          []uint64{1},
+				StartBlockNumber:  10,
+				LatestBlockNumber: 10,
+				LatestBlockHash:   blockHash,
+			},
+		}
+		bz, err := ve.Marshal()
+		require.NoError(t, err)
+		dummyNonRp, err := GetDummyNonRpVoteExtension(height, hApp.ChainID())
+		require.NoError(t, err)
+		return &abci.RequestVerifyVoteExtension{
+			Height:             height,
+			Hash:               blockHash,
+			ValidatorAddress:   common.FromHex(validators[0].Signer),
+			VoteExtension:      bz,
+			NonRpVoteExtension: dummyNonRp,
+		}
+	}
+
+	handler := hApp.VerifyVoteExtensionHandler()
+
+	// A direct caller supplies a stale pre-fork context, but the authenticated request and encoded
+	// extension are at the Ithaca height. Validation must accept based on the extension height.
+	res, err := handler(ctx.WithBlockHeight(99), makeReq(100))
+	require.NoError(t, err)
+	require.Equal(t, abci.ResponseVerifyVoteExtension_ACCEPT, res.Status)
+
+	// Conversely, a future-looking ambient context must not make pre-fork fields valid.
+	res, err = handler(ctx.WithBlockHeight(100), makeReq(99))
+	require.NoError(t, err)
+	require.Equal(t, abci.ResponseVerifyVoteExtension_REJECT, res.Status)
+}
+
 func TestVerifyVoteExtensionHandler_AcceptsOnBorQueryError(t *testing.T) {
 	helper.SetPhuketHardforkHeight(1)
 	t.Cleanup(func() {

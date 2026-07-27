@@ -741,6 +741,9 @@ func TestValidateMilestonePropositionFork(t *testing.T) {
 
 func TestValidateMilestoneProposition(t *testing.T) {
 	ctx, milestoneKeeper := newTestMilestoneKeeper(t)
+	origIthaca := helper.GetIthacaHeight()
+	helper.SetIthacaHeight(1)
+	t.Cleanup(func() { helper.SetIthacaHeight(origIthaca) })
 
 	makeProp := func(blockHashes [][]byte, blockTds []uint64, start uint64, latestNum uint64, latestHash []byte) *types.MilestoneProposition {
 		return &types.MilestoneProposition{
@@ -836,6 +839,44 @@ func TestValidateMilestoneProposition(t *testing.T) {
 		prop := makeProp([][]byte{fill32(0x01), fill32(0x02)}, []uint64{1, 2}, 10, 99, fill32(0xFF))
 		require.NoError(t, ValidateMilestoneProposition(ctx, milestoneKeeper, prop))
 	})
+}
+
+func TestValidateMilestonePropositionIthacaBoundary(t *testing.T) {
+	ctx, milestoneKeeper := newTestMilestoneKeeper(t)
+	origIthaca := helper.GetIthacaHeight()
+	const forkHeight int64 = 100
+	helper.SetIthacaHeight(forkHeight)
+	t.Cleanup(func() { helper.SetIthacaHeight(origIthaca) })
+
+	validHead := &types.MilestoneProposition{
+		BlockHashes:       [][]byte{fill32(0x01)},
+		BlockTds:          []uint64{1},
+		StartBlockNumber:  10,
+		LatestBlockNumber: 10,
+		LatestBlockHash:   fill32(0x01),
+	}
+
+	err := ValidateMilestoneProposition(ctx.WithBlockHeight(forkHeight-1), milestoneKeeper, validHead)
+	require.ErrorContains(t, err, "latest block fields set before Ithaca")
+	require.NoError(t, ValidateMilestoneProposition(ctx.WithBlockHeight(forkHeight), milestoneKeeper, validHead))
+	require.NoError(t, ValidateMilestoneProposition(ctx.WithBlockHeight(forkHeight+1), milestoneKeeper, validHead))
+
+	withoutHead := &types.MilestoneProposition{
+		BlockHashes:      [][]byte{fill32(0x01)},
+		BlockTds:         []uint64{1},
+		StartBlockNumber: 10,
+	}
+	require.NoError(t, ValidateMilestoneProposition(ctx.WithBlockHeight(forkHeight-1), milestoneKeeper, withoutHead))
+
+	numberOnly := *withoutHead
+	numberOnly.LatestBlockNumber = 10
+	err = ValidateMilestoneProposition(ctx.WithBlockHeight(forkHeight-1), milestoneKeeper, &numberOnly)
+	require.ErrorContains(t, err, "latest block fields set before Ithaca")
+
+	hashOnly := *withoutHead
+	hashOnly.LatestBlockHash = fill32(0x01)
+	err = ValidateMilestoneProposition(ctx.WithBlockHeight(forkHeight-1), milestoneKeeper, &hashOnly)
+	require.ErrorContains(t, err, "latest block fields set before Ithaca")
 }
 
 func newTestMilestoneKeeper(t *testing.T) (sdk.Context, *keeper.Keeper) {
@@ -1046,6 +1087,30 @@ func TestGetMajorityActualHead(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, found)
 		require.Equal(t, uint64(200), head)
+	})
+
+	t.Run("malformed latest-head hash is skipped before tallying", func(t *testing.T) {
+		valSet := &stakeTypes.ValidatorSet{Validators: []*stakeTypes.Validator{
+			{Signer: s1, VotingPower: 100},
+		}}
+		ve := &sidetxs.VoteExtension{MilestoneProposition: &types.MilestoneProposition{
+			StartBlockNumber:  200,
+			BlockHashes:       [][]byte{fill32(0xAA)},
+			BlockTds:          []uint64{1},
+			LatestBlockNumber: 200,
+			LatestBlockHash:   []byte{0xAA},
+		}}
+		data, err := ve.Marshal()
+		require.NoError(t, err)
+
+		votes := []abciTypes.ExtendedVoteInfo{{
+			BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
+			VoteExtension: data,
+			Validator:     abciTypes.Validator{Address: common.HexToAddress(s1).Bytes()},
+		}}
+		_, _, found, err := GetMajorityActualHead(ctx, valSet, votes, 34, math.MaxUint64)
+		require.NoError(t, err)
+		require.False(t, found, "a malformed hash must not enter the actual-head tally")
 	})
 
 	t.Run("out-of-range head is dropped even when it has the greater voting power", func(t *testing.T) {
