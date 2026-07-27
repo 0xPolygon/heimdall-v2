@@ -21,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
@@ -667,27 +668,42 @@ func (cp *CheckpointProcessor) parseCheckpointSignatures(signatures []checkpoint
 		return bytes.Compare(sideTxSigs[i].address, sideTxSigs[j].address) < 0
 	})
 
-	dummyLegacyTxn := ethTypes.NewTx(&ethTypes.LegacyTx{
-		Nonce:    0,
-		To:       &common.Address{},
-		Value:    nil,
-		Gas:      0,
-		GasPrice: nil,
-		Data:     nil,
-	})
-
 	sigs := make([][3]*big.Int, 0, len(sideTxSigs))
 
 	for _, sideTxSig := range sideTxSigs {
-		R, S, V, err := ethTypes.HomesteadSigner{}.SignatureValues(dummyLegacyTxn, sideTxSig.sig)
+		if len(sideTxSig.sig) != crypto.SignatureLength {
+			return nil, fmt.Errorf("checkpointProcessor: invalid signature length %d, want %d", len(sideTxSig.sig), crypto.SignatureLength)
+		}
+
+		v, err := normalizeCheckpointV(sideTxSig.sig[crypto.RecoveryIDOffset])
 		if err != nil {
 			return nil, err
 		}
 
-		sigs = append(sigs, [3]*big.Int{R, S, V})
+		r := new(big.Int).SetBytes(sideTxSig.sig[:32])
+		s := new(big.Int).SetBytes(sideTxSig.sig[32:64])
+
+		sigs = append(sigs, [3]*big.Int{r, s, v})
 	}
 
 	return sigs, nil
+}
+
+// normalizeCheckpointV maps a secp256k1 recovery byte to the {27,28} form the
+// L1 RootChain contract's ecrecover expects. CometBFT signing emits {0,1}; some
+// libraries pre-add 27. Any other value is rejected: the consensus-layer
+// signature check ignores the recovery byte, so a crafted vote extension could
+// otherwise carry a byte that recovers to the zero address on L1 and breaks the
+// contract's sorted-signer accounting.
+func normalizeCheckpointV(recoveryID byte) (*big.Int, error) {
+	switch recoveryID {
+	case 0, 1:
+		return big.NewInt(int64(recoveryID) + 27), nil
+	case 27, 28:
+		return big.NewInt(int64(recoveryID)), nil
+	default:
+		return nil, fmt.Errorf("checkpointProcessor: invalid signature recovery id %d", recoveryID)
+	}
 }
 
 // fetchDividendAccountRoot - fetches dividend account root hash

@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 	"errors"
-	"math/big"
 	"time"
 
 	"cosmossdk.io/collections"
@@ -246,14 +245,17 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 	}
 
 	// Get the sequence id.
-	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(heimdallTypes.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(request.LogIndex))
+	sequence := helper.CalculateSequence(sdk.UnwrapSDKContext(ctx).BlockHeight(), receipt.BlockNumber.Uint64(), request.LogIndex)
 	// Check if the incoming tx already exists.
-	if !q.k.HasRecordSequence(ctx, sequence.String()) {
+	if !q.k.HasRecordSequence(ctx, sequence) {
 		return nil, status.Error(codes.NotFound, "record sequence not found")
 	}
 
-	return &types.RecordSequenceResponse{Sequence: sequence.Uint64()}, nil
+	// The response carries the positional numeric id, which equals the lookup key for every
+	// log index a real L1 block produces. Out-of-range indexes only exist post-Kyoto as a
+	// rejected attack shape and never reach a stored record here.
+	numericID := receipt.BlockNumber.Uint64()*uint64(heimdallTypes.DefaultLogIndexUnit) + request.LogIndex
+	return &types.RecordSequenceResponse{Sequence: numericID}, nil
 }
 
 // IsClerkTxOld implements the gRPC service handler to query the status of a clerk tx
@@ -283,11 +285,10 @@ func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequ
 	}
 
 	// Get the sequence id.
-	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(heimdallTypes.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(request.LogIndex))
+	sequence := helper.CalculateSequence(sdk.UnwrapSDKContext(ctx).BlockHeight(), receipt.BlockNumber.Uint64(), request.LogIndex)
 
 	// Check if the incoming tx already exists.
-	if !q.k.HasRecordSequence(ctx, sequence.String()) {
+	if !q.k.HasRecordSequence(ctx, sequence) {
 		return nil, status.Error(codes.NotFound, "record sequence not found")
 	}
 

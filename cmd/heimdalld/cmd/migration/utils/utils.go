@@ -107,6 +107,22 @@ func AddProperty(data map[string]interface{}, path string, key string, value int
 	return nil
 }
 
+// AddPropertyIfMissing sets key to value only when key is not already present at
+// path, leaving an existing value untouched. Genesis-migration defaults must not
+// clobber values carried over from the source genesis (e.g. consensus_params.block
+// limits), which a plain AddProperty would overwrite.
+func AddPropertyIfMissing(data map[string]interface{}, path string, key string, value interface{}) error {
+	current, err := traversePath(data, path)
+	if err != nil {
+		return err
+	}
+	if _, exists := current[key]; exists {
+		return nil
+	}
+	current[key] = value
+	return nil
+}
+
 // traversePath traverses the path in the data map.
 func traversePath(data map[string]interface{}, path string) (map[string]interface{}, error) {
 	if path == "." {

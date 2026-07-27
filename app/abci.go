@@ -193,6 +193,11 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
+		if hasOverNestedTx(req.Height, req.Txs[1:]) {
+			logger.Error("Rejecting proposal: a transaction exceeds the message nesting bound")
+			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+		}
+
 		// extract the ExtendedCommitInfo from the txs (it is encoded at the beginning, index 0)
 		extCommitInfo := new(abci.ExtendedCommitInfo)
 		extendedCommitTx := req.Txs[0]
@@ -963,6 +968,16 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 
 		err = app.BorKeeper.AddNewVeBlopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, nil, true)
 		if err != nil {
+			// Span creation must never halt milestone commit. The parallel stall-rotation
+			// path already logs and continues on this error; mirror it so a transient
+			// inability to select a producer (e.g. the candidate set collapsing to the
+			// current producer) degrades to a retry at the next boundary instead of a fatal
+			// PreBlocker error that wedges every validator. Gated to keep pre-fork replay
+			// deterministic.
+			if helper.IsKyoto(ctx.BlockHeight()) {
+				logger.Warn("Error occurred while adding new veblop span; skipping future span this round", "error", err)
+				return nil
+			}
 			logger.Error("Error occurred while adding new veblop span", "error", err)
 			return err
 		}

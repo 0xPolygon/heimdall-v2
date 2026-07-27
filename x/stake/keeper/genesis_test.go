@@ -91,3 +91,52 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 
 	require.Equal(customTxs, actualParams.LastBlockTxs.Txs)
 }
+
+func (s *KeeperTestSuite) makeValidators(base uint64, count int) []*types.Validator {
+	r := rand.New(rand.NewSource(int64(base) + 1))
+	accounts := simulation.RandomAccounts(r, count)
+	validators := make([]*types.Validator, count)
+	for i := 0; i < count; i++ {
+		pk := secp256k1.GenPrivKey().PubKey()
+		v, err := types.NewValidator(base+uint64(i), 0, 0, uint64(i), int64(10+i), pk, accounts[i].Address.String())
+		s.Require().NoError(err)
+		validators[i] = v
+	}
+	return validators
+}
+
+// A genesis re-bootstrap imports an exported genesis: the penultimate set it
+// carries must survive InitGenesis, otherwise the H-2 set is empty on the first
+// block and vote-extension verification fails.
+func (s *KeeperTestSuite) TestInitGenesisRestoresExportedPenultimateSet() {
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
+	current := s.makeValidators(0, 4)
+	currentSet := types.NewValidatorSet(current)
+	penultimate := types.NewValidatorSet(s.makeValidators(200, 2))
+
+	gen := types.NewGenesisState(current, *currentSet, nil)
+	gen.PenultimateBlockValidatorSet = *penultimate
+
+	keeper.InitGenesis(ctx, gen)
+
+	got, err := keeper.GetPenultimateBlockValidatorSet(ctx)
+	require.NoError(err)
+	require.True(penultimate.Equal(got))
+}
+
+func (s *KeeperTestSuite) TestInitGenesisPenultimateFallsBackToCurrent() {
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
+	current := s.makeValidators(0, 4)
+	currentSet := types.NewValidatorSet(current)
+
+	// no PenultimateBlockValidatorSet (legacy/pre-field export)
+	gen := types.NewGenesisState(current, *currentSet, nil)
+
+	keeper.InitGenesis(ctx, gen)
+
+	got, err := keeper.GetPenultimateBlockValidatorSet(ctx)
+	require.NoError(err)
+	require.Equal(currentSet.Len(), got.Len())
+}

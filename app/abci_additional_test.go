@@ -135,6 +135,31 @@ func TestProcessProposalHandler_RejectsBorSideMessages(t *testing.T) {
 	})
 }
 
+// At/after Kyoto, ProcessProposal rejects a proposal carrying an over-nested
+// transaction before the ExtendedCommitInfo is even decoded, so the expensive
+// unknown-field pre-pass never runs on any honest validator.
+func TestProcessProposalHandler_RejectsOverNestedTx(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+	seedSpan(t, app, ctx)
+
+	orig := helper.GetKyotoHeight()
+	t.Cleanup(func() { helper.SetKyotoHeight(orig) })
+	helper.SetKyotoHeight(1)
+
+	emptyCommit := &abci.ExtendedCommitInfo{}
+	extCommitBytes, err := emptyCommit.Marshal()
+	require.NoError(t, err)
+	bomb := txRawWithBody(nestedAnyBody(maxAnyNestingDepth + 1))
+
+	resp, err := app.NewProcessProposalHandler()(ctx, &abci.RequestProcessProposal{
+		Txs:                [][]byte{extCommitBytes, bomb},
+		Height:             1,
+		ProposedLastCommit: abci.CommitInfo{Round: emptyCommit.Round},
+	})
+	require.NoError(t, err)
+	require.Equal(t, abci.ResponseProcessProposal_REJECT, resp.Status)
+}
+
 func TestExtractTxHash(t *testing.T) {
 	validHash := common.BigToHash(common.Big1)
 	validBytes := validHash.Bytes()
