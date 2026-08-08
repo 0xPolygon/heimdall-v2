@@ -123,3 +123,47 @@ func TestMsgDecode(t *testing.T) {
 	require.Equal(t, msgValidatorExit.ValId, msgValidatorExit2.ValId)
 	require.Equal(t, msgValidatorExit.DeactivationEpoch, msgValidatorExit2.DeactivationEpoch)
 }
+
+func TestMsgValidatorJoin_ValidateBasic_NilAmount(t *testing.T) {
+	t.Parallel()
+
+	pk1 := secp256k1.GenPrivKey().PubKey()
+	msg := types.MsgValidatorJoin{
+		From:            pk1.Address().String(),
+		ValId:           1,
+		ActivationEpoch: 1,
+		Amount:          math.Int{},
+		SignerPubKey:    pk1.Bytes(),
+		TxHash:          make([]byte, 32),
+		LogIndex:        1,
+		BlockNumber:     1,
+		Nonce:           1,
+	}
+
+	require.NotPanics(t, func() {
+		err := msg.ValidateBasic()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "amount is required")
+	})
+}
+
+func TestMsgStakeUpdate_ValidateBasic_NilAmount(t *testing.T) {
+	t.Parallel()
+
+	pk1 := secp256k1.GenPrivKey().PubKey()
+	msg := types.MsgStakeUpdate{
+		From:        pk1.Address().String(),
+		ValId:       1,
+		NewAmount:   math.Int{},
+		TxHash:      make([]byte, 32),
+		LogIndex:    1,
+		BlockNumber: 1,
+		Nonce:       1,
+	}
+
+	require.NotPanics(t, func() {
+		err := msg.ValidateBasic()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "amount is required")
+	})
+}
