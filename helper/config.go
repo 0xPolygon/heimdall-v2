@@ -280,8 +280,7 @@ var zurichHardforkHeight int64 = 0
 var ithacaHeight int64 = 0
 
 // kyotoHeight gates the batch of consensus-affecting security fixes activated at
-// the upcoming hardfork. Zero disables it (no mainnet/Amoy height assigned yet);
-// local/devnet activates it from height 1.
+// the Kyoto hardfork. Zero disables it; local/devnet activates it from height 1.
 var kyotoHeight int64 = 0
 
 type ChainManagerAddressMigration struct {
@@ -522,7 +521,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		feeWithdrawValidatorGateHeight = 46361000
 		zurichHardforkHeight = 47880000
 		ithacaHeight = 50185000
-		kyotoHeight = 0 // TODO set block number when the hardfork is scheduled
+		kyotoHeight = 51533000
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -550,7 +549,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		feeWithdrawValidatorGateHeight = 35914000
 		zurichHardforkHeight = 37750000
 		ithacaHeight = 40776000
-		kyotoHeight = 0 // TODO set block number when the hardfork is scheduled
+		kyotoHeight = 42252000
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
