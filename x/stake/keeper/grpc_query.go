@@ -4,15 +4,16 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"math/big"
 	"time"
 
 	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -165,11 +166,10 @@ func (q queryServer) IsStakeTxOld(ctx context.Context, req *types.QueryStakeIsOl
 		return nil, status.Errorf(codes.NotFound, "receipt not found")
 	}
 
-	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(req.LogIndex))
+	sequence := helper.CalculateSequence(sdk.UnwrapSDKContext(ctx).BlockHeight(), receipt.BlockNumber.Uint64(), req.LogIndex)
 
 	// check if incoming tx already exists
-	if !q.k.HasStakingSequence(ctx, sequence.String()) {
+	if !q.k.HasStakingSequence(ctx, sequence) {
 		return &types.QueryStakeIsOldTxResponse{IsOld: false}, nil
 	}
 

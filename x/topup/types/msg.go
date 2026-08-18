@@ -47,6 +47,12 @@ func (msg MsgWithdrawFeeTx) Type() string {
 }
 
 func (msg MsgTopupTx) ValidateBasic() error {
+	// Guard before IsNegative: a nil/uninitialized Int (e.g. a proto-decoded
+	// message with the fee field omitted) panics on IsNegative, and ValidateBasic
+	// runs ahead of signature verification, so the panic is reachable unauthenticated.
+	if msg.Fee.IsNil() {
+		return errors.New("fee is required")
+	}
 	if msg.Fee.IsNegative() {
 		return errors.New("fee cannot be negative")
 	}
@@ -67,6 +73,9 @@ func (msg MsgTopupTx) ValidateBasic() error {
 }
 
 func (msg MsgWithdrawFeeTx) ValidateBasic() error {
+	if msg.Amount.IsNil() {
+		return errors.New("amount is required")
+	}
 	if msg.Amount.IsNegative() {
 		return errors.New("amount cannot be negative")
 	}

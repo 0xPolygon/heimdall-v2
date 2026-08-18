@@ -279,6 +279,10 @@ var zurichHardforkHeight int64 = 0
 // height assigned yet).
 var ithacaHeight int64 = 0
 
+// kyotoHeight gates the batch of consensus-affecting security fixes activated at
+// the Kyoto hardfork. Zero disables it; local/devnet activates it from height 1.
+var kyotoHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -517,6 +521,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		feeWithdrawValidatorGateHeight = 46361000
 		zurichHardforkHeight = 47880000
 		ithacaHeight = 50185000
+		kyotoHeight = 51533000
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -530,6 +535,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		feeWithdrawValidatorGateHeight = 0
 		zurichHardforkHeight = 0
 		ithacaHeight = 0
+		kyotoHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -543,6 +549,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		feeWithdrawValidatorGateHeight = 35914000
 		zurichHardforkHeight = 37750000
 		ithacaHeight = 40776000
+		kyotoHeight = 42252000
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -556,6 +563,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		feeWithdrawValidatorGateHeight = 0
 		zurichHardforkHeight = 0
 		ithacaHeight = 0
+		kyotoHeight = 1
 	}
 }
 
@@ -980,6 +988,18 @@ func SetIthacaHeight(height int64) {
 
 func GetIthacaHeight() int64 {
 	return ithacaHeight
+}
+
+func IsKyoto(height int64) bool {
+	return kyotoHeight > 0 && height >= kyotoHeight
+}
+
+func SetKyotoHeight(height int64) {
+	kyotoHeight = height
+}
+
+func GetKyotoHeight() int64 {
+	return kyotoHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {

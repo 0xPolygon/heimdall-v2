@@ -168,7 +168,7 @@ func getTests(t *testing.T, priv cryptotypes.PrivKey, app *HeimdallApp, ctx sdk.
 			}(),
 			verify: func(t *testing.T, app *HeimdallApp, ctx sdk.Context) {
 				// After the approval, the topup sequence should exist
-				seq := helper.CalculateSequence(50, 0)
+				seq := helper.CalculateSequence(ctx.BlockHeight(), 50, 0)
 				exists, err := app.TopupKeeper.HasTopupSequence(ctx, seq)
 				require.NoError(t, err)
 				require.True(t, exists)
@@ -309,7 +309,7 @@ func getTests(t *testing.T, priv cryptotypes.PrivKey, app *HeimdallApp, ctx sdk.
 			verify: func(t *testing.T, app *HeimdallApp, ctx sdk.Context) {
 				// Both sideTxs should have been processed
 				require.True(t, app.ClerkKeeper.HasEventRecord(ctx, 1))
-				seq := helper.CalculateSequence(100, 0)
+				seq := helper.CalculateSequence(ctx.BlockHeight(), 100, 0)
 				exists, err := app.TopupKeeper.HasTopupSequence(ctx, seq)
 				require.NoError(t, err)
 				require.True(t, exists)

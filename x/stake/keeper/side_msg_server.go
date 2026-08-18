@@ -106,7 +106,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	}
 
 	// add the sequence
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(ctx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
 	if s.k.HasStakingSequence(ctx, sequence) {
@@ -282,7 +282,7 @@ func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) 
 	}
 
 	// add the sequence
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(ctx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
 	if s.k.HasStakingSequence(ctx, sequence) {
@@ -394,7 +394,7 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 	oldSigner := util.FormatAddress(validator.Signer)
 
 	// add the sequence
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(ctx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
 	if s.k.HasStakingSequence(ctx, sequence) {
@@ -525,7 +525,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 	}
 
 	// add the sequence
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(ctx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
 	if s.k.HasStakingSequence(ctx, sequence) {
@@ -614,7 +614,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	}
 
 	// Check for replay attack
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(ctx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
 	if s.k.HasStakingSequence(ctx, sequence) {
@@ -716,7 +716,7 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 	}
 
 	// check for replay attack
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(ctx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
 	if s.k.HasStakingSequence(ctx, sequence) {
@@ -814,7 +814,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	}
 
 	// Check for replay attack
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(ctx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 	// check if the event has already been processed
 	if s.k.HasStakingSequence(ctx, sequence) {
 		s.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence)
@@ -975,7 +975,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 	}
 
 	// check for replay attack
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(ctx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
 	if s.k.HasStakingSequence(ctx, sequence) {

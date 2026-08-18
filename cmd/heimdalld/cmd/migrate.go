@@ -991,15 +991,18 @@ func addMissingCometBFTConsensusParams(genesisData map[string]interface{}, initi
 		return err
 	}
 
-	if err := utils.AddProperty(genesisData, "consensus_params", "block", make(map[string]interface{})); err != nil {
+	// Preserve any block limits carried over from the source genesis; only fill
+	// the CometBFT defaults when the source omits them. A plain AddProperty here
+	// reseeds the whole block map and silently discards configured max_bytes/max_gas.
+	if err := utils.AddPropertyIfMissing(genesisData, "consensus_params", "block", make(map[string]interface{})); err != nil {
 		return err
 	}
 
-	if err := utils.AddProperty(genesisData, "consensus_params.block", "max_gas", "10000000"); err != nil {
+	if err := utils.AddPropertyIfMissing(genesisData, "consensus_params.block", "max_gas", "10000000"); err != nil {
 		return err
 	}
 
-	if err := utils.AddProperty(genesisData, "consensus_params.block", "max_bytes", "2097152"); err != nil {
+	if err := utils.AddPropertyIfMissing(genesisData, "consensus_params.block", "max_bytes", "2097152"); err != nil {
 		return err
 	}
 

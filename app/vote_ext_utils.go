@@ -920,7 +920,7 @@ func validateNonRpVoteExtensionData(
 	}
 
 	// Check if valid checkpoint data
-	if err := validateCheckpointMsgData(ctx, extension, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
+	if err := validateCheckpointMsgData(ctx, height, extension, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
 		return fmt.Errorf("failed to validate checkpoint msg data: %w", err)
 	}
 
@@ -1042,7 +1042,35 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 }
 
 // validateCheckpointMsgData validates the extension is a valid checkpoint
-func validateCheckpointMsgData(ctx sdk.Context, extension []byte, chainManagerKeeper chainManagerKeeper.Keeper, checkpointKeeper checkpointKeeper.Keeper, contractCaller helper.IContractCaller) error {
+// checkpointWindowContinuity cheaply rejects a non-RP checkpoint window that doesn't
+// continue from the last checkpoint, before the Bor RPC inside IsValidCheckpoint. The
+// window is proposer-supplied; a window that shifts [start,end] each round would otherwise miss the
+// root cache and force a fresh GetRootHash on every honest validator. A legitimate
+// checkpoint starts at the last checkpoint's end block + 1 (enforced by the checkpoint side
+// handler). Gated so vote validity is unchanged until the hardfork.
+func checkpointWindowContinuity(ctx sdk.Context, height int64, checkpointKeeper checkpointKeeper.Keeper, startBlock uint64) error {
+	if !helper.IsKyoto(height) {
+		return nil
+	}
+	lastCheckpoint, err := checkpointKeeper.GetLastCheckpoint(ctx)
+	if err != nil {
+		if errors.Is(err, checkpointTypes.ErrNoCheckpointFound) {
+			if startBlock != 0 {
+				return fmt.Errorf("first checkpoint must start from block 0, got %d", startBlock)
+			}
+			return nil
+		}
+		// Any other error (store/decode) is abnormal; propagate it so the extension is
+		// rejected deterministically rather than silently skipping the continuity check.
+		return fmt.Errorf("failed to read last checkpoint for continuity check: %w", err)
+	}
+	if lastCheckpoint.EndBlock+1 != startBlock {
+		return fmt.Errorf("checkpoint not in continuity: expected start %d, got %d", lastCheckpoint.EndBlock+1, startBlock)
+	}
+	return nil
+}
+
+func validateCheckpointMsgData(ctx sdk.Context, height int64, extension []byte, chainManagerKeeper chainManagerKeeper.Keeper, checkpointKeeper checkpointKeeper.Keeper, contractCaller helper.IContractCaller) error {
 	if len(extension) < minNonRpVoteExtensionSize {
 		return fmt.Errorf("non-rp vote extension size is too small: %d, min: %d", len(extension), minNonRpVoteExtensionSize)
 	}
@@ -1062,6 +1090,10 @@ func validateCheckpointMsgData(ctx sdk.Context, extension []byte, chainManagerKe
 	}
 
 	borChainTxConfirmations := chainParams.BorChainTxConfirmations
+
+	if err := checkpointWindowContinuity(ctx, height, checkpointKeeper, checkpointMsg.StartBlock); err != nil {
+		return err
+	}
 
 	params, err := checkpointKeeper.GetParams(ctx)
 	if err != nil {
