@@ -265,6 +265,19 @@ bor_grpc_url = "http://localhost:3131"
 # Bearer token for bor gRPC authentication (empty disables auth)
 bor_grpc_token = ""
 
+# Enable an auxiliary HTTP/3 QUIC listener for Bor-facing REST traffic.
+enable_quic_sidecar = "false"
+
+# UDP listen address for the QUIC sidecar. Empty derives host:port from the REST API address.
+quic_sidecar_listen_addr = ""
+
+# Optional HTTP upstream for the QUIC sidecar reverse proxy. Empty uses the local REST API.
+quic_sidecar_upstream_url = ""
+
+# TLS certificate and key for the QUIC sidecar. Non-loopback listeners must set both.
+quic_sidecar_cert_file = ""
+quic_sidecar_key_file = ""
+
 # RPC endpoint for cometBFT
 comet_bft_rpc_url = "http://0.0.0.0:26657"
 

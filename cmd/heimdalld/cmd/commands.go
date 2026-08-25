@@ -251,6 +251,10 @@ func initRootCmd(
 				})
 			}
 
+			g.Go(func() error {
+				return helper.StartQUICSidecar(ctx, svrCtx.Logger)
+			})
+
 			return nil
 		},
 	})

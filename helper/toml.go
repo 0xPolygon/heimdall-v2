@@ -32,6 +32,19 @@ bor_grpc_url = "{{ .Custom.BorGRPCUrl }}"
 # Bearer token for bor gRPC authentication (empty disables auth)
 bor_grpc_token = "{{ .Custom.BorGRPCToken }}"
 
+# Enable an auxiliary HTTP/3 QUIC listener for Bor-facing REST traffic.
+enable_quic_sidecar = "{{ .Custom.EnableQUICSidecar }}"
+
+# UDP listen address for the QUIC sidecar. Empty derives host:port from the REST API address.
+quic_sidecar_listen_addr = "{{ .Custom.QUICSidecarListenAddr }}"
+
+# Optional HTTP upstream for the QUIC sidecar reverse proxy. Empty uses the local REST API.
+quic_sidecar_upstream_url = "{{ .Custom.QUICSidecarUpstreamURL }}"
+
+# TLS certificate and key for the QUIC sidecar. Non-loopback listeners must set both.
+quic_sidecar_cert_file = "{{ .Custom.QUICSidecarCertFile }}"
+quic_sidecar_key_file = "{{ .Custom.QUICSidecarKeyFile }}"
+
 # RPC endpoint for cometBFT
 comet_bft_rpc_url = "{{ .Custom.CometBFTRPCUrl }}"
 

@@ -75,6 +75,7 @@ const (
 	DefaultBorRPCUrl   = "http://localhost:8545"
 	DefaultBorGRPCUrl  = "localhost:3131"
 	DefaultBorGRPCFlag = false
+	DefaultQUICSidecar = false
 
 	DefaultEthRPCTimeout = 5 * time.Second
 	DefaultBorRPCTimeout = 1 * time.Second
@@ -168,13 +169,18 @@ func init() {
 
 // CustomConfig represents heimdall config
 type CustomConfig struct {
-	EthRPCUrl      string `mapstructure:"eth_rpc_url"`       // RPC endpoint for the main chain
-	BorRPCUrl      string `mapstructure:"bor_rpc_url"`       // RPC endpoint for bor chain
-	BorGRPCFlag    bool   `mapstructure:"bor_grpc_flag"`     // gRPC flag for bor chain
-	BorGRPCUrl     string `mapstructure:"bor_grpc_url"`      // gRPC endpoint for bor chain
-	BorGRPCToken   string `mapstructure:"bor_grpc_token"`    // bearer token for bor gRPC; empty = no auth
-	CometBFTRPCUrl string `mapstructure:"comet_bft_rpc_url"` // cometBft node url
-	SubGraphUrl    string `mapstructure:"sub_graph_url"`     // sub graph url
+	EthRPCUrl              string `mapstructure:"eth_rpc_url"`               // RPC endpoint for the main chain
+	BorRPCUrl              string `mapstructure:"bor_rpc_url"`               // RPC endpoint for bor chain
+	BorGRPCFlag            bool   `mapstructure:"bor_grpc_flag"`             // gRPC flag for bor chain
+	BorGRPCUrl             string `mapstructure:"bor_grpc_url"`              // gRPC endpoint for bor chain
+	BorGRPCToken           string `mapstructure:"bor_grpc_token"`            // bearer token for bor gRPC; empty = no auth
+	EnableQUICSidecar      bool   `mapstructure:"enable_quic_sidecar"`       // expose an auxiliary HTTP/3 listener for Bor-facing REST traffic
+	QUICSidecarListenAddr  string `mapstructure:"quic_sidecar_listen_addr"`  // UDP listen address for the QUIC sidecar; empty derives from the REST API address
+	QUICSidecarUpstreamURL string `mapstructure:"quic_sidecar_upstream_url"` // optional HTTP upstream for the sidecar reverse proxy; empty uses the local REST API
+	QUICSidecarCertFile    string `mapstructure:"quic_sidecar_cert_file"`    // certificate path for the QUIC sidecar; required for non-loopback listeners
+	QUICSidecarKeyFile     string `mapstructure:"quic_sidecar_key_file"`     // key path for the QUIC sidecar; required for non-loopback listeners
+	CometBFTRPCUrl         string `mapstructure:"comet_bft_rpc_url"`         // cometBft node url
+	SubGraphUrl            string `mapstructure:"sub_graph_url"`             // sub graph url
 
 	EthRPCTimeout time.Duration `mapstructure:"eth_rpc_timeout"` // timeout for eth rpc
 	BorRPCTimeout time.Duration `mapstructure:"bor_rpc_timeout"` // timeout for bor rpc
@@ -800,10 +806,11 @@ func fetchStableHeadersAtHeight(ctx context.Context, httpClient parityHTTPFetche
 // GetDefaultHeimdallConfig returns configuration with default params
 func GetDefaultHeimdallConfig() CustomConfig {
 	return CustomConfig{
-		EthRPCUrl:   DefaultMainRPCUrl,
-		BorRPCUrl:   DefaultBorRPCUrl,
-		BorGRPCFlag: DefaultBorGRPCFlag,
-		BorGRPCUrl:  DefaultBorGRPCUrl,
+		EthRPCUrl:         DefaultMainRPCUrl,
+		BorRPCUrl:         DefaultBorRPCUrl,
+		BorGRPCFlag:       DefaultBorGRPCFlag,
+		BorGRPCUrl:        DefaultBorGRPCUrl,
+		EnableQUICSidecar: DefaultQUICSidecar,
 
 		ProducerVotes: DefaultMainnetProducers,
 
