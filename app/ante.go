@@ -20,6 +20,11 @@ type HandlerOptions struct {
 // maxMultiSendOutputs bounds aggregate bank-transfer outputs per tx so flat-ante txs can't fan out unboundedly.
 const maxMultiSendOutputs = 16
 
+// maxFeeCoins bounds the number of coins a declared fee may contain. Heimdall
+// substitutes a single fixed-denom coin for the fee actually charged, so a
+// conforming tx never needs more than one.
+const maxFeeCoins = 1
+
 // NewAnteHandler returns an AnteHandler that checks and increments sequence
 // numbers, checks signatures & account numbers, and deducts fees from the first
 // signer.
@@ -39,6 +44,8 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 	anteDecorators := []sdk.AnteDecorator{
 		ante.NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
 		ante.NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
+		// Bound the fee-coin count before ValidateBasicDecorator's own O(n) scan over the same slice.
+		ante.NewFeeCoinsCapDecorator(maxFeeCoins, helper.IsKyoto),
 		ante.NewValidateBasicDecorator(),
 		ante.NewMsgMultiSendCapDecorator(maxMultiSendOutputs, helper.IsZurichHardfork),
 		checkpointante.NewAccountRootHashLenDecorator(helper.IsZurichHardfork),
