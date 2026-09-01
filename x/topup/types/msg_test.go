@@ -148,6 +148,25 @@ func TestMsgTopupTx_ValidateBasic(t *testing.T) {
 		err := msg.ValidateBasic()
 		require.NoError(t, err)
 	})
+
+	t.Run("rejects nil fee without panicking", func(t *testing.T) {
+		t.Parallel()
+
+		msg := types.MsgTopupTx{
+			Proposer:    "0x1234567890123456789012345678901234567890",
+			User:        "0x1234567890123456789012345678901234567891",
+			Fee:         sdkmath.Int{},
+			TxHash:      make([]byte, 32),
+			LogIndex:    1,
+			BlockNumber: 100,
+		}
+
+		require.NotPanics(t, func() {
+			err := msg.ValidateBasic()
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "fee is required")
+		})
+	})
 }
 
 func TestNewMsgWithdrawFeeTx(t *testing.T) {
@@ -204,6 +223,21 @@ func TestMsgWithdrawFeeTx_ValidateBasic(t *testing.T) {
 		err := msg.ValidateBasic()
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "amount cannot be negative")
+	})
+
+	t.Run("rejects nil amount without panicking", func(t *testing.T) {
+		t.Parallel()
+
+		msg := types.MsgWithdrawFeeTx{
+			Proposer: "0x1234567890123456789012345678901234567890",
+			Amount:   sdkmath.Int{},
+		}
+
+		require.NotPanics(t, func() {
+			err := msg.ValidateBasic()
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "amount is required")
+		})
 	})
 
 	t.Run("rejects invalid proposer", func(t *testing.T) {

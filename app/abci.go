@@ -193,6 +193,11 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
+		if hasOverNestedTx(req.Height, req.Txs[1:]) {
+			logger.Error("Rejecting proposal: a transaction exceeds the message nesting bound")
+			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+		}
+
 		// extract the ExtendedCommitInfo from the txs (it is encoded at the beginning, index 0)
 		extCommitInfo := new(abci.ExtendedCommitInfo)
 		extendedCommitTx := req.Txs[0]
@@ -566,7 +571,11 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			logger.Warn("non-rp vote extension validation failed, accepting due to bor query error", "validator", valAddr, "error", err)
 		}
 
-		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, voteExtension.MilestoneProposition); err != nil {
+		// Gate fork-specific fields at the authenticated vote-extension height, not an ambient context
+		// height. BaseApp currently sets ctx.BlockHeight() to req.Height, but keeping the basis explicit
+		// avoids ambiguity at the activation boundary and for direct handler callers.
+		milestoneCtx := ctx.WithBlockHeight(voteExtension.Height)
+		if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &app.MilestoneKeeper, voteExtension.MilestoneProposition); err != nil {
 			logger.Error(heimdallTypes.ErrAlertMilestonePropositionVoteExtensionRejected, "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
@@ -714,7 +723,11 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			}
 		}
 
-		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, majorityMilestone); err != nil {
+		// FinalizeBlock at H consumes the extended commit produced at H-1. Revalidate the majority
+		// proposition against that vote-extension height so the Ithaca boundary matches VerifyVoteExtension,
+		// PrepareProposal, and ProcessProposal.
+		milestoneCtx := ctx.WithBlockHeight(req.Height - 1)
+		if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &app.MilestoneKeeper, majorityMilestone); err != nil {
 			logger.Warn("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
 			// We don't want to halt consensus because of an invalid majority milestone proposition
 		} else if helper.IsRio(majorityMilestone.StartBlockNumber) && ctx.BlockHeight() == int64(lastSpanHeimdallBlock)+1 {
@@ -723,7 +736,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			logger.Info("2/3rd majority reached on milestone proposition",
 				"startBlock", majorityMilestone.StartBlockNumber,
 				"endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1),
-				strutil.HashesToString(majorityMilestone.BlockHashes),
+				"blockHashes", strutil.HashesToString(majorityMilestone.BlockHashes),
 			)
 			isValidMilestone = true
 		}
@@ -804,12 +817,8 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
 				return nil, err
 			}
-		} else {
-			logger.Info("1/3rd voting power found on milestone proposition, skipping span rotation",
-				"startBlock", pendingMilestone.StartBlockNumber,
-				"endBlock", pendingMilestone.StartBlockNumber+uint64(len(pendingMilestone.BlockHashes)-1),
-				strutil.HashesToString(pendingMilestone.BlockHashes),
-			)
+		} else if err := app.handlePendingMilestone(ctx, pendingMilestone, validatorSet, extVoteInfo, minMajorityVP); err != nil {
+			return nil, err
 		}
 	}
 
@@ -965,8 +974,18 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 			return err
 		}
 
-		err = app.BorKeeper.AddNewVeBlopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault)
+		err = app.BorKeeper.AddNewVeBlopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, nil, true)
 		if err != nil {
+			// Span creation must never halt milestone commit. The parallel stall-rotation
+			// path already logs and continues on this error; mirror it so a transient
+			// inability to select a producer (e.g. the candidate set collapsing to the
+			// current producer) degrades to a retry at the next boundary instead of a fatal
+			// PreBlocker error that wedges every validator. Gated to keep pre-fork replay
+			// deterministic.
+			if helper.IsKyoto(ctx.BlockHeight()) {
+				logger.Warn("Error occurred while adding new veblop span; skipping future span this round", "error", err)
+				return nil
+			}
 			logger.Error("Error occurred while adding new veblop span", "error", err)
 			return err
 		}
@@ -1073,7 +1092,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 
 		delete(latestActiveProducer, currentProducer)
 
-		err = app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault)
+		err = app.BorKeeper.AddNewVeBlopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()), borTypes.RoundRobinDefault, nil, false)
 		if err != nil {
 			logger.Warn("Error occurred while adding new veblop span", "error", err)
 		} else {
@@ -1087,6 +1106,14 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 			err = app.BorKeeper.AddLatestFailedProducer(addSpanCtx, currentProducer)
 			if err != nil {
 				logger.Error("Error occurred while adding latest failed producer", "error", err)
+				return err
+			}
+
+			// Debounce the pending-stall clock too (fork-gated), so a pending milestone reappearing
+			// at the same head doesn't immediately re-rotate the producer we just installed.
+			err = app.debouncePendingStallClock(addSpanCtx, uint64(ctx.BlockHeight())+helper.GetSpanRotationBuffer(ctx))
+			if err != nil {
+				logger.Error("Error occurred while debouncing pending stall clock", "error", err)
 				return err
 			}
 

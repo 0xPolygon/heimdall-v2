@@ -103,6 +103,14 @@ const (
 	// HTTP header constants
 	headerContentType       = "Content-Type"
 	mimeTypeApplicationJSON = "application/json"
+
+	// maxMsgsPerTx bounds how many messages a single tx may carry through CheckTx.
+	// The tx is still decoded once (needed to count its messages), but capping
+	// here skips the per-message veBlop validation loop and the downstream ante
+	// processing in BaseApp.CheckTx that an oversized multi-message tx would
+	// otherwise trigger on every gossip hop.
+	// Enforced in CheckTx only, so block validity and consensus are unaffected.
+	maxMsgsPerTx = 16
 )
 
 var (
@@ -487,6 +495,10 @@ func NewHeimdallApp(
 func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
 	// Only apply veBlop validation during normal CheckTx (not recheck)
 	if req.Type == abci.CheckTxType_New {
+		// Gated on the next height so the mempool filter tracks ProcessProposal's fork boundary.
+		if hasOverNestedTx(app.LastBlockHeight()+1, [][]byte{req.Tx}) {
+			return &abci.ResponseCheckTx{Code: sdkerrors.ErrTxDecode.ABCICode(), Log: "transaction exceeds the message nesting bound"}, nil
+		}
 		tx, err := app.TxDecode(req.Tx)
 		if err != nil {
 			return &abci.ResponseCheckTx{
@@ -496,6 +508,12 @@ func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx
 		}
 
 		msgs := tx.GetMsgs()
+		if len(msgs) > maxMsgsPerTx {
+			return &abci.ResponseCheckTx{
+				Code: sdkerrors.ErrTxTooLarge.ABCICode(),
+				Log:  fmt.Sprintf("tx carries %d messages, exceeds per-tx limit of %d", len(msgs), maxMsgsPerTx),
+			}, nil
+		}
 		for _, msg := range msgs {
 			// Check for MsgVoteProducers and apply VEBLOP validation
 			if _, ok := msg.(*borTypes.MsgVoteProducers); ok {

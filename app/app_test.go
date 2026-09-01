@@ -10,14 +10,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/bank"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
@@ -272,4 +275,98 @@ func TestEndBlockerEmitsTransferEvent(t *testing.T) {
 	require.NotNil(t, amountAttr)
 	require.NotNil(t, amountAttr.Value, "amount attribute value should not be nil")
 	require.Equal(t, feeAmount.String(), amountAttr.Value)
+}
+
+// CheckTx rejects txs carrying more than maxMsgsPerTx messages before the
+// per-message validation loop, neutralizing the oversized-tx mempool flood.
+func TestCheckTx_RejectsTxExceedingMsgCap(t *testing.T) {
+	priv, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 1)
+
+	signer := sdk.AccAddress(priv.PubKey().Address()).String()
+	makeMsgs := func(n int) []sdk.Msg {
+		msgs := make([]sdk.Msg, n)
+		for i := range msgs {
+			msgs[i] = &banktypes.MsgSend{
+				FromAddress: signer,
+				ToAddress:   signer,
+				Amount:      sdk.NewCoins(sdk.NewInt64Coin("pol", 1)),
+			}
+		}
+		return msgs
+	}
+
+	cases := []struct {
+		name       string
+		count      int
+		wantCapHit bool
+	}{
+		{name: "single message passes the cap", count: 1, wantCapHit: false},
+		{name: "at cap passes", count: maxMsgsPerTx, wantCapHit: false},
+		{name: "one over cap is rejected", count: maxMsgsPerTx + 1, wantCapHit: true},
+		{name: "far over cap is rejected", count: maxMsgsPerTx * 100, wantCapHit: true},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			txBytes, err := buildSignedMultiMsgTx(makeMsgs(tc.count), ctx, priv, app)
+			require.NoError(t, err)
+
+			resp, err := app.CheckTx(&abci.RequestCheckTx{Tx: txBytes, Type: abci.CheckTxType_New})
+			require.NoError(t, err)
+
+			if tc.wantCapHit {
+				require.Equal(t, sdkerrors.ErrTxTooLarge.ABCICode(), resp.Code)
+				require.Contains(t, resp.Log, "exceeds per-tx limit")
+			} else {
+				require.NotEqual(t, sdkerrors.ErrTxTooLarge.ABCICode(), resp.Code,
+					"under-cap tx must not be rejected by the message cap; log=%s", resp.Log)
+			}
+		})
+	}
+}
+
+// At/after Kyoto, CheckTx rejects an over-nested transaction with the nesting-bound
+// log before the full decode; below Kyoto the guard is inert and the same bytes fall
+// through to the ordinary decoder. The distinct log is what proves the guard, not the
+// decoder, produced the rejection.
+func TestCheckTx_RejectsOverNestedTx(t *testing.T) {
+	_, app, _, _ := SetupAppWithABCICtxAndValidators(t, 1)
+	orig := helper.GetKyotoHeight()
+	t.Cleanup(func() { helper.SetKyotoHeight(orig) })
+
+	bomb := txRawWithBody(nestedAnyBody(maxAnyNestingDepth + 1))
+	const nestingLog = "transaction exceeds the message nesting bound"
+
+	t.Run("at/after kyoto the guard rejects", func(t *testing.T) {
+		helper.SetKyotoHeight(1)
+		resp, err := app.CheckTx(&abci.RequestCheckTx{Tx: bomb, Type: abci.CheckTxType_New})
+		require.NoError(t, err)
+		require.Equal(t, sdkerrors.ErrTxDecode.ABCICode(), resp.Code)
+		require.Equal(t, nestingLog, resp.Log)
+	})
+
+	t.Run("below kyoto the guard is inert", func(t *testing.T) {
+		helper.SetKyotoHeight(0)
+		resp, err := app.CheckTx(&abci.RequestCheckTx{Tx: bomb, Type: abci.CheckTxType_New})
+		require.NoError(t, err)
+		require.NotEqual(t, nestingLog, resp.Log)
+	})
+}
+
+// The cap guard only applies to fresh CheckTx, not recheck, matching the
+// veBlop guards it sits alongside.
+func TestCheckTx_MsgCapSkippedOnRecheck(t *testing.T) {
+	priv, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 1)
+
+	signer := sdk.AccAddress(priv.PubKey().Address()).String()
+	msgs := make([]sdk.Msg, maxMsgsPerTx+1)
+	for i := range msgs {
+		msgs[i] = &banktypes.MsgSend{FromAddress: signer, ToAddress: signer, Amount: sdk.NewCoins(sdk.NewInt64Coin("pol", 1))}
+	}
+	txBytes, err := buildSignedMultiMsgTx(msgs, ctx, priv, app)
+	require.NoError(t, err)
+
+	resp, err := app.CheckTx(&abci.RequestCheckTx{Tx: txBytes, Type: abci.CheckTxType_Recheck})
+	require.NoError(t, err)
+	require.NotEqual(t, sdkerrors.ErrTxTooLarge.ABCICode(), resp.Code)
 }

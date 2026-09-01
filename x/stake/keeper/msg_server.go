@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"strconv"
 	"strings"
 	"time"
@@ -90,13 +89,11 @@ func (srv msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJ
 	}
 
 	// add the sequence
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+	sequence := helper.CalculateSequence(sdk.UnwrapSDKContext(ctx).BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
-	if srv.k.HasStakingSequence(ctx, sequence.String()) {
-		srv.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence.String())
+	if srv.k.HasStakingSequence(ctx, sequence) {
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence)
 		return nil, errors.Wrapf(sdkerrors.ErrConflict, hmTypes.ErrMsgOldEventsNotAllowed)
 	}
 
@@ -141,13 +138,11 @@ func (srv msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate)
 	}
 
 	// add the sequence
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+	sequence := helper.CalculateSequence(sdk.UnwrapSDKContext(ctx).BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
-	if srv.k.HasStakingSequence(ctx, sequence.String()) {
-		srv.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence.String())
+	if srv.k.HasStakingSequence(ctx, sequence) {
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence)
 		return nil, errors.Wrapf(sdkerrors.ErrConflict, hmTypes.ErrMsgOldEventsNotAllowed)
 	}
 
@@ -205,13 +200,11 @@ func (srv msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdat
 	oldSigner := util.FormatAddress(validator.Signer)
 
 	// add the sequence
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+	sequence := helper.CalculateSequence(sdk.UnwrapSDKContext(ctx).BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
-	if srv.k.HasStakingSequence(ctx, sequence.String()) {
-		srv.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence.String())
+	if srv.k.HasStakingSequence(ctx, sequence) {
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence)
 		return nil, errors.Wrapf(sdkerrors.ErrConflict, hmTypes.ErrMsgOldEventsNotAllowed)
 	}
 
@@ -259,13 +252,11 @@ func (srv msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorE
 	}
 
 	// add the sequence
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+	sequence := helper.CalculateSequence(sdk.UnwrapSDKContext(ctx).BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
-	if srv.k.HasStakingSequence(ctx, sequence.String()) {
-		srv.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence.String())
+	if srv.k.HasStakingSequence(ctx, sequence) {
+		srv.k.Logger(ctx).Error(hmTypes.ErrMsgEventAlreadyProcessed, hmTypes.LogKeySequence, sequence)
 		return nil, errors.Wrapf(sdkerrors.ErrConflict, hmTypes.ErrMsgOldEventsNotAllowed)
 	}
 

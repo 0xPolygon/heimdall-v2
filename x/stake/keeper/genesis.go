@@ -31,6 +31,11 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) []abc
 			panic(fmt.Errorf("error updating previous validator set in store while initializing stake genesis: %w", err))
 		}
 
+		// Restore the H-2 set so a re-bootstrap doesn't start empty (the VE path reads it).
+		if err := k.UpdatePenultimateBlockValidatorSetInStore(ctx, penultimateValidatorSetFromGenesis(data, *resultValSet)); err != nil {
+			panic(fmt.Errorf("error updating penultimate validator set in store while initializing stake genesis: %w", err))
+		}
+
 		// add validators in store
 		for _, validator := range resultValSet.Validators {
 			// Add individual validator to the state
@@ -88,6 +93,16 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) []abc
 	}
 
 	return cometVals
+}
+
+// penultimateValidatorSetFromGenesis returns the H-2 validator set to restore on import:
+// the exported penultimate set, or the fallback (current set) when the export predates
+// that field — mirroring the genesis previous==current convention.
+func penultimateValidatorSetFromGenesis(data *types.GenesisState, fallback types.ValidatorSet) types.ValidatorSet {
+	if len(data.PenultimateBlockValidatorSet.Validators) == 0 {
+		return fallback
+	}
+	return data.PenultimateBlockValidatorSet
 }
 
 // ExportGenesis returns a GenesisState for the given stake context and keeper.

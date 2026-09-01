@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math/big"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -65,11 +66,10 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 	}
 
 	// get sequence id
-	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(req.LogIndex))
+	sequence := helper.CalculateSequence(sdk.UnwrapSDKContext(ctx).BlockHeight(), receipt.BlockNumber.Uint64(), req.LogIndex)
 
 	// check if incoming tx already exists
-	exists, err := q.k.HasTopupSequence(ctx, sequence.String())
+	exists, err := q.k.HasTopupSequence(ctx, sequence)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -79,7 +79,7 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 		return nil, status.Errorf(codes.NotFound, "sequence with hash %s not found", req.TxHash)
 	}
 
-	return &types.QueryTopupSequenceResponse{Sequence: sequence.String()}, nil
+	return &types.QueryTopupSequenceResponse{Sequence: sequence}, nil
 }
 
 // IsTopupTxOld implements the gRPC service handler to query the status of a topup tx
@@ -111,11 +111,10 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 	}
 
 	// get sequence id
-	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(req.LogIndex))
+	sequence := helper.CalculateSequence(sdk.UnwrapSDKContext(ctx).BlockHeight(), receipt.BlockNumber.Uint64(), req.LogIndex)
 
 	// check if incoming tx already exists
-	exists, err := q.k.HasTopupSequence(ctx, sequence.String())
+	exists, err := q.k.HasTopupSequence(ctx, sequence)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

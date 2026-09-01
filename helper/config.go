@@ -274,6 +274,15 @@ var feeWithdrawValidatorGateHeight int64 = 0
 
 var zurichHardforkHeight int64 = 0
 
+// ithacaHeight gates forced span rotation when bor's
+// pending head stalls under a 1/3<=PM<2/3 milestone. Zero disables it (no network
+// height assigned yet).
+var ithacaHeight int64 = 0
+
+// kyotoHeight gates the batch of consensus-affecting security fixes activated at
+// the Kyoto hardfork. Zero disables it; local/devnet activates it from height 1.
+var kyotoHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -389,11 +398,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		log.Fatalln("unable to read flag values. Check log for details.", "Error", err)
 	}
 
-	logLevelStr := viper.GetString(flags.FlagLogLevel)
-	logLevel, err := zerolog.ParseLevel(logLevelStr)
-	if err != nil {
-		logLevel = zerolog.InfoLevel
-	}
+	levelOpt := LogLevelOptionOrDefault(viper.GetString(flags.FlagLogLevel), Logger.Warn)
 
 	logNoColor := viper.GetBool(flags.FlagLogNoColor)
 	var logOpts []logger.Option
@@ -403,7 +408,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		logOpts = append(logOpts, logger.ColorOption(!logNoColor))
 	}
 	logOpts = append(logOpts,
-		logger.LevelOption(logLevel),
+		levelOpt,
 		logger.TimeFormatOption(LogTimestampFormat),
 	)
 
@@ -515,6 +520,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		phuketHardforkHeight = 44070000
 		feeWithdrawValidatorGateHeight = 46361000
 		zurichHardforkHeight = 47880000
+		ithacaHeight = 50185000
+		kyotoHeight = 51533000
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -527,6 +534,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		phuketHardforkHeight = 0
 		feeWithdrawValidatorGateHeight = 0
 		zurichHardforkHeight = 0
+		ithacaHeight = 0
+		kyotoHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -539,6 +548,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		phuketHardforkHeight = 32276400
 		feeWithdrawValidatorGateHeight = 35914000
 		zurichHardforkHeight = 37750000
+		ithacaHeight = 40776000
+		kyotoHeight = 42252000
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -551,6 +562,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		phuketHardforkHeight = 0
 		feeWithdrawValidatorGateHeight = 0
 		zurichHardforkHeight = 0
+		ithacaHeight = 0
+		kyotoHeight = 1
 	}
 }
 
@@ -965,6 +978,30 @@ func GetZurichHardforkHeight() int64 {
 	return zurichHardforkHeight
 }
 
+func IsIthaca(height int64) bool {
+	return ithacaHeight > 0 && height >= ithacaHeight
+}
+
+func SetIthacaHeight(height int64) {
+	ithacaHeight = height
+}
+
+func GetIthacaHeight() int64 {
+	return ithacaHeight
+}
+
+func IsKyoto(height int64) bool {
+	return kyotoHeight > 0 && height >= kyotoHeight
+}
+
+func SetKyotoHeight(height int64) {
+	kyotoHeight = height
+}
+
+func GetKyotoHeight() int64 {
+	return kyotoHeight
+}
+
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
 	chainMigration := chainManagerAddressMigrations[conf.Custom.Chain]
 	if chainMigration == nil {
@@ -1024,6 +1061,14 @@ func GetSpanRotationBuffer(ctx sdk.Context) uint64 {
 		return newSpanRotationBuffer
 	}
 	return spanRotationBuffer
+}
+
+// GetBorStallThreshold is the number of Heimdall heights the >1/3-agreed pending
+// bor head may stay static before a span rotation is forced. It reuses
+// the change-producer threshold ("same number as regular forced rotation") but is a
+// distinct getter so it can be tuned independently later.
+func GetBorStallThreshold(ctx sdk.Context) int64 {
+	return GetChangeProducerThreshold(ctx)
 }
 
 // DecorateWithHeimdallFlags adds persistent flags for app configs and bind flags with command

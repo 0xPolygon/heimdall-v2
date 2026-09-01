@@ -83,7 +83,7 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	}
 
 	// calculate sequence
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(ctx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if incoming tx already exists
 	exists, err := s.k.HasTopupSequence(ctx, sequence)
@@ -183,7 +183,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	}
 
 	// calculate sequence
-	sequence := helper.CalculateSequence(msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(ctx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
 	exists, err := s.k.HasTopupSequence(ctx, sequence)
