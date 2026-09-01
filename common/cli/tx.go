@@ -3,6 +3,8 @@ package cli
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"cosmossdk.io/log"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -17,9 +19,36 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-const errorFetchingAccount = "error fetching account"
+const (
+	accountSequenceMismatch = "account sequence mismatch"
+	broadcastMaxAttempts    = 3
+	broadcastRetryDelay     = time.Second
+	errorFetchingAccount    = "error fetching account"
+)
 
 func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger log.Logger) error {
+	var lastErr error
+	for attempt := 1; attempt <= broadcastMaxAttempts; attempt++ {
+		err := broadcastMsgOnce(clientCtx, sender, msg, logger)
+		if err == nil {
+			return nil
+		}
+
+		lastErr = err
+		if !strings.Contains(err.Error(), accountSequenceMismatch) {
+			return err
+		}
+
+		if attempt < broadcastMaxAttempts {
+			logger.Info("Retrying tx after account sequence mismatch", "attempt", attempt+1, "maxAttempts", broadcastMaxAttempts, "address", sender)
+			time.Sleep(broadcastRetryDelay)
+		}
+	}
+
+	return lastErr
+}
+
+func broadcastMsgOnce(clientCtx client.Context, sender string, msg sdk.Msg, logger log.Logger) error {
 	// create tx factory
 	txf, err := MakeTxFactory(clientCtx, sender, logger)
 	if err != nil {
@@ -57,6 +86,10 @@ func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger l
 	// Now check if the transaction response is not okay
 	if txResponse.Code != abci.CodeTypeOK {
 		logger.Error("Transaction response returned a non-ok code", "txResponseCode", txResponse.Code, "txResponseLog", txResponse.RawLog)
+		if txResponse.RawLog != "" {
+			return fmt.Errorf("broadcast succeeded but received non-ok response code: %d: %s", txResponse.Code, txResponse.RawLog)
+		}
+
 		return fmt.Errorf("broadcast succeeded but received non-ok response code: %d", txResponse.Code)
 	}
 
