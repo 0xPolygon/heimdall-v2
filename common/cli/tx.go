@@ -21,31 +21,47 @@ import (
 
 const (
 	accountSequenceMismatch = "account sequence mismatch"
-	broadcastMaxAttempts    = 3
 	broadcastRetryDelay     = time.Second
 	errorFetchingAccount    = "error fetching account"
 )
 
+var (
+	broadcastMsgOnceFunc = broadcastMsgOnce
+	broadcastRetrySleep  = time.Sleep
+)
+
 func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger log.Logger) error {
-	var lastErr error
-	for attempt := 1; attempt <= broadcastMaxAttempts; attempt++ {
-		err := broadcastMsgOnce(clientCtx, sender, msg, logger)
-		if err == nil {
-			return nil
-		}
+	return retryBroadcastMsg(func() error {
+		return broadcastMsgOnceFunc(clientCtx, sender, msg, logger)
+	}, broadcastRetrySleep)
+}
 
-		lastErr = err
-		if !strings.Contains(err.Error(), accountSequenceMismatch) {
-			return err
-		}
-
-		if attempt < broadcastMaxAttempts {
-			logger.Info("Retrying tx after account sequence mismatch", "attempt", attempt+1, "maxAttempts", broadcastMaxAttempts, "address", sender)
-			time.Sleep(broadcastRetryDelay)
-		}
+func retryBroadcastMsg(broadcast func() error, sleep func(time.Duration)) error {
+	err := broadcast()
+	if !isAccountSequenceMismatch(err) {
+		return err
 	}
 
-	return lastErr
+	sleep(broadcastRetryDelay)
+	err = broadcast()
+	if !isAccountSequenceMismatch(err) {
+		return err
+	}
+
+	sleep(broadcastRetryDelay)
+	return broadcast()
+}
+
+func isAccountSequenceMismatch(err error) bool {
+	return err != nil && strings.Contains(err.Error(), accountSequenceMismatch)
+}
+
+func nonOKBroadcastError(code uint32, rawLog string) error {
+	if rawLog != "" {
+		return fmt.Errorf("broadcast succeeded but received non-ok response code: %d: %s", code, rawLog)
+	}
+
+	return fmt.Errorf("broadcast succeeded but received non-ok response code: %d", code)
 }
 
 func broadcastMsgOnce(clientCtx client.Context, sender string, msg sdk.Msg, logger log.Logger) error {
@@ -86,11 +102,7 @@ func broadcastMsgOnce(clientCtx client.Context, sender string, msg sdk.Msg, logg
 	// Now check if the transaction response is not okay
 	if txResponse.Code != abci.CodeTypeOK {
 		logger.Error("Transaction response returned a non-ok code", "txResponseCode", txResponse.Code, "txResponseLog", txResponse.RawLog)
-		if txResponse.RawLog != "" {
-			return fmt.Errorf("broadcast succeeded but received non-ok response code: %d: %s", txResponse.Code, txResponse.RawLog)
-		}
-
-		return fmt.Errorf("broadcast succeeded but received non-ok response code: %d", txResponse.Code)
+		return nonOKBroadcastError(txResponse.Code, txResponse.RawLog)
 	}
 
 	logger.Info(fmt.Sprintf("Tx with hash %s broadcasted successfully.", txResponse.TxHash))
