@@ -11,6 +11,9 @@ jobs:
     name: Quality metrics
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    concurrency:
+      group: diffguard-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     permissions:
       contents: read
     steps:
