@@ -68,7 +68,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Notify Slack on non-success
-        if: always() && env.HAS_SLACK_WEBHOOK == 'true' && steps.sonar.outcome != 'success'
+        if: always() && env.HAS_SLACK_WEBHOOK == 'true' && env.HAS_SONAR_TOKEN == 'true' && steps.sonar.outcome != 'success'
         continue-on-error: true
         uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1
         with:
