@@ -3,8 +3,6 @@ package cli
 import (
 	"context"
 	"fmt"
-	"strings"
-	"time"
 
 	"cosmossdk.io/log"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -19,52 +17,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-const (
-	accountSequenceMismatch = "account sequence mismatch"
-	broadcastRetryDelay     = time.Second
-	errorFetchingAccount    = "error fetching account"
-)
-
-var (
-	broadcastMsgOnceFunc = broadcastMsgOnce
-	broadcastRetrySleep  = time.Sleep
-)
+const errorFetchingAccount = "error fetching account"
 
 func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger log.Logger) error {
-	return retryBroadcastMsg(func() error {
-		return broadcastMsgOnceFunc(clientCtx, sender, msg, logger)
-	}, broadcastRetrySleep)
-}
-
-func retryBroadcastMsg(broadcast func() error, sleep func(time.Duration)) error {
-	err := broadcast()
-	if !isAccountSequenceMismatch(err) {
-		return err
-	}
-
-	sleep(broadcastRetryDelay)
-	err = broadcast()
-	if !isAccountSequenceMismatch(err) {
-		return err
-	}
-
-	sleep(broadcastRetryDelay)
-	return broadcast()
-}
-
-func isAccountSequenceMismatch(err error) bool {
-	return err != nil && strings.Contains(err.Error(), accountSequenceMismatch)
-}
-
-func nonOKBroadcastError(code uint32, rawLog string) error {
-	if rawLog != "" {
-		return fmt.Errorf("broadcast succeeded but received non-ok response code: %d: %s", code, rawLog)
-	}
-
-	return fmt.Errorf("broadcast succeeded but received non-ok response code: %d", code)
-}
-
-func broadcastMsgOnce(clientCtx client.Context, sender string, msg sdk.Msg, logger log.Logger) error {
 	// create tx factory
 	txf, err := MakeTxFactory(clientCtx, sender, logger)
 	if err != nil {
@@ -102,7 +57,7 @@ func broadcastMsgOnce(clientCtx client.Context, sender string, msg sdk.Msg, logg
 	// Now check if the transaction response is not okay
 	if txResponse.Code != abci.CodeTypeOK {
 		logger.Error("Transaction response returned a non-ok code", "txResponseCode", txResponse.Code, "txResponseLog", txResponse.RawLog)
-		return nonOKBroadcastError(txResponse.Code, txResponse.RawLog)
+		return fmt.Errorf("broadcast succeeded but received non-ok response code: %d", txResponse.Code)
 	}
 
 	logger.Info(fmt.Sprintf("Tx with hash %s broadcasted successfully.", txResponse.TxHash))
