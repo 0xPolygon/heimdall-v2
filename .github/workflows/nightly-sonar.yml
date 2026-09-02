@@ -24,6 +24,7 @@ jobs:
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       SCAN_REF: ${{ matrix.ref }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
     steps:
       - uses: actions/checkout@v6
@@ -60,3 +61,13 @@ jobs:
                 ;;
             esac
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify Slack on non-success
+        if: always() && env.SLACK_WEBHOOK_URL != '' && steps.sonar.outcome != 'success'
+        continue-on-error: true
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": ":information_source: Nightly Sonar finished with ${{ steps.sonar.outcome }} on ${{ github.repository }} (${{ matrix.ref }})\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+            }

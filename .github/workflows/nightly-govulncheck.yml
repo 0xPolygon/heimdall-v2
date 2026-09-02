@@ -21,6 +21,8 @@ jobs:
         ref:
           - develop
           - main
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
     steps:
       - uses: actions/checkout@v6
@@ -43,3 +45,13 @@ jobs:
 
       - name: Run govulncheck
         run: make vulncheck
+
+      - name: Notify Slack on failure
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
+        continue-on-error: true
+        uses: slackapi/slack-github-action@v1
+        with:
+          payload: |
+            {
+              "text": ":warning: Nightly govulncheck failed on ${{ github.repository }} (${{ matrix.ref }})\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+            }
