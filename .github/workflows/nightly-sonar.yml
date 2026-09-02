@@ -22,9 +22,9 @@ jobs:
           - develop
           - main
     env:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      HAS_SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK != '' }}
+      HAS_SONAR_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
       SCAN_REF: ${{ matrix.ref }}
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
     steps:
       - uses: actions/checkout@v6
@@ -34,13 +34,14 @@ jobs:
 
       - name: Run SonarCloud analysis
         id: sonar
-        if: env.SONAR_TOKEN != ''
+        if: env.HAS_SONAR_TOKEN == 'true'
         continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@c7ee0f9df90b7aa20e8dcf9695dcfe2e7da5b4f2 # v7
         with:
           args: -Dsonar.branch.name=${{ matrix.ref }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Report informational status
         if: always()
@@ -63,11 +64,13 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Notify Slack on non-success
-        if: always() && env.SLACK_WEBHOOK_URL != '' && steps.sonar.outcome != 'success'
+        if: always() && env.HAS_SLACK_WEBHOOK == 'true' && steps.sonar.outcome != 'success'
         continue-on-error: true
-        uses: slackapi/slack-github-action@v1
+        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1
         with:
           payload: |
             {
               "text": ":information_source: Nightly Sonar finished with ${{ steps.sonar.outcome }} on ${{ github.repository }} (${{ matrix.ref }})\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
             }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
