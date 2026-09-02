@@ -55,7 +55,11 @@ jobs:
                 echo "SonarCloud analysis completed successfully."
                 ;;
               skipped)
-                echo "SonarCloud analysis was skipped because SONAR_TOKEN is not available."
+                if [ "$HAS_SONAR_TOKEN" != "true" ]; then
+                  echo "SonarCloud analysis was skipped because SONAR_TOKEN is not available."
+                else
+                  echo "SonarCloud analysis was skipped before it started. Check earlier workflow steps for the cause."
+                fi
                 ;;
               *)
                 echo "SonarCloud analysis did not complete successfully. This check is informational and does not fail CI."
