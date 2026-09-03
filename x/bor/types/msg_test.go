@@ -192,20 +192,6 @@ func TestMsgProposeSpan_Type(t *testing.T) {
 	})
 }
 
-func TestMsgBackfillSpans_Type(t *testing.T) {
-	t.Parallel()
-
-	t.Run("returns correct event type", func(t *testing.T) {
-		t.Parallel()
-
-		msg := types.MsgBackfillSpans{}
-		msgType := msg.Type()
-
-		require.Equal(t, types.EventTypeBackfillSpans, msgType)
-		require.NotEmpty(t, msgType)
-	})
-}
-
 func TestMsgProposeSpan_Route(t *testing.T) {
 	t.Parallel()
 
@@ -220,29 +206,6 @@ func TestMsgProposeSpan_Route(t *testing.T) {
 	})
 }
 
-func TestMsgBackfillSpans_Route(t *testing.T) {
-	t.Parallel()
-
-	t.Run("returns correct router key", func(t *testing.T) {
-		t.Parallel()
-
-		msg := types.MsgBackfillSpans{}
-		route := msg.Route()
-
-		require.Equal(t, types.RouterKey, route)
-		require.NotEmpty(t, route)
-	})
-
-	t.Run("route matches MsgProposeSpan route", func(t *testing.T) {
-		t.Parallel()
-
-		msg1 := types.MsgProposeSpan{}
-		msg2 := types.MsgBackfillSpans{}
-
-		require.Equal(t, msg1.Route(), msg2.Route())
-	})
-}
-
 func TestMessageTypes(t *testing.T) {
 	t.Parallel()
 
@@ -254,27 +217,5 @@ func TestMessageTypes(t *testing.T) {
 		// Type and Route should be non-empty and distinct
 		require.NotEmpty(t, msg.Type())
 		require.NotEmpty(t, msg.Route())
-	})
-
-	t.Run("validates MsgBackfillSpans type and route are consistent", func(t *testing.T) {
-		t.Parallel()
-
-		msg := types.MsgBackfillSpans{}
-
-		// Type and Route should be non-empty and distinct
-		require.NotEmpty(t, msg.Type())
-		require.NotEmpty(t, msg.Route())
-	})
-
-	t.Run("validates message types are different", func(t *testing.T) {
-		t.Parallel()
-
-		msg1 := types.MsgProposeSpan{}
-		msg2 := types.MsgBackfillSpans{}
-
-		// Different messages should have different types
-		require.NotEqual(t, msg1.Type(), msg2.Type())
-		// But the same route (same module)
-		require.Equal(t, msg1.Route(), msg2.Route())
 	})
 }

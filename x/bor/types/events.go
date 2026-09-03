@@ -2,14 +2,11 @@ package types
 
 // bor module event types
 const (
-	EventTypeProposeSpan   = "propose-span"
-	EventTypeBackfillSpans = "backfill-spans"
+	EventTypeProposeSpan = "propose-span"
 
-	AttributeKeySpanID           = "span-id"
-	AttributeKeySpanStartBlock   = "start-block"
-	AttributeKeySpanEndBlock     = "end-block"
-	AttributesKeyLatestSpanId    = "latest-span-id"
-	AttributesKeyLatestBorSpanId = "latest-bor-span-id"
+	AttributeKeySpanID         = "span-id"
+	AttributeKeySpanStartBlock = "start-block"
+	AttributeKeySpanEndBlock   = "end-block"
 
 	AttributeValueCategory = ModuleName
 )

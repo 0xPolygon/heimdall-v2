@@ -261,6 +261,11 @@ func (m *MsgUpdateParamsResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgUpdateParamsResponse proto.InternalMessageInfo
 
 // MsgBackfillSpans defines the message for backfilling missing spans.
+// Kept so historical blocks containing a MsgBackfillSpans tx (2 known on
+// Amoy at heights 8790181 and 8790209) replay with matching ExecTxResult.
+// The side handler / post handler / dispatch were removed to close the
+// side-tx response-slot censorship vector; the msg-server handler is
+// validation-only (no state writes).
 type MsgBackfillSpans struct {
 	// Address of the validator proposing the backfill.
 	Proposer string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
@@ -663,7 +668,11 @@ type MsgClient interface {
 	// Only the governance authority can execute this.
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 	// BackfillSpans defines a method to backfill missing spans.
-	// This is used during chain recovery or when spans need to be reconstructed.
+	// The side handler / post handler / dispatch are deliberately not registered
+	// (see x/bor/keeper/side_msg_server.go SideTxHandler / PostTxHandler) so
+	// this msg consumes no side-tx response slot. The msg-server handler is
+	// retained as input-validation only (no state writes) so historical blocks
+	// containing this msg replay with the same ExecTxResult shape.
 	BackfillSpans(ctx context.Context, in *MsgBackfillSpans, opts ...grpc.CallOption) (*MsgBackfillSpansResponse, error)
 	// VoteProducers defines a method for validators to submit their producer
 	// votes.
@@ -735,7 +744,11 @@ type MsgServer interface {
 	// Only the governance authority can execute this.
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 	// BackfillSpans defines a method to backfill missing spans.
-	// This is used during chain recovery or when spans need to be reconstructed.
+	// The side handler / post handler / dispatch are deliberately not registered
+	// (see x/bor/keeper/side_msg_server.go SideTxHandler / PostTxHandler) so
+	// this msg consumes no side-tx response slot. The msg-server handler is
+	// retained as input-validation only (no state writes) so historical blocks
+	// containing this msg replay with the same ExecTxResult shape.
 	BackfillSpans(context.Context, *MsgBackfillSpans) (*MsgBackfillSpansResponse, error)
 	// VoteProducers defines a method for validators to submit their producer
 	// votes.
