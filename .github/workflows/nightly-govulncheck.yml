@@ -1,0 +1,59 @@
+name: Nightly Govulncheck
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  govulncheck:
+    name: Run govulncheck on ${{ matrix.ref }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: nightly-govulncheck-${{ matrix.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        ref:
+          - develop
+          - main
+    env:
+      HAS_SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK != '' }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ matrix.ref }}
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-govulncheck-${{ matrix.ref }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-govulncheck-${{ matrix.ref }}-
+            ${{ runner.os }}-govulncheck-
+
+      - name: Run govulncheck
+        run: make vulncheck
+
+      - name: Notify Slack on failure
+        if: failure() && env.HAS_SLACK_WEBHOOK == 'true'
+        continue-on-error: true
+        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1
+        with:
+          payload: |
+            {
+              "text": ":warning: Nightly govulncheck failed on ${{ github.repository }} (${{ matrix.ref }})\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

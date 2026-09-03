@@ -1,0 +1,80 @@
+name: Nightly Sonar
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  sonar:
+    name: Run SonarCloud on ${{ matrix.ref }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: nightly-sonar-${{ matrix.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        ref:
+          - develop
+          - main
+    env:
+      HAS_SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK != '' }}
+      HAS_SONAR_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
+      SCAN_REF: ${{ matrix.ref }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ matrix.ref }}
+
+      - name: Run SonarCloud analysis
+        id: sonar
+        if: env.HAS_SONAR_TOKEN == 'true'
+        continue-on-error: true
+        uses: SonarSource/sonarqube-scan-action@c7ee0f9df90b7aa20e8dcf9695dcfe2e7da5b4f2 # v7
+        with:
+          args: -Dsonar.branch.name=${{ matrix.ref }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Report informational status
+        if: always()
+        run: |
+          {
+            echo "## Nightly Sonar"
+            echo "Branch: $SCAN_REF"
+            echo
+            case "${{ steps.sonar.outcome }}" in
+              success)
+                echo "SonarCloud analysis completed successfully."
+                ;;
+              skipped)
+                if [ "$HAS_SONAR_TOKEN" != "true" ]; then
+                  echo "SonarCloud analysis was skipped because SONAR_TOKEN is not available."
+                else
+                  echo "SonarCloud analysis was skipped before it started. Check earlier workflow steps for the cause."
+                fi
+                ;;
+              *)
+                echo "SonarCloud analysis did not complete successfully. This check is informational and does not fail CI."
+                ;;
+            esac
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify Slack on non-success
+        if: always() && env.HAS_SLACK_WEBHOOK == 'true' && env.HAS_SONAR_TOKEN == 'true' && steps.sonar.outcome != 'success'
+        continue-on-error: true
+        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1
+        with:
+          payload: |
+            {
+              "text": ":information_source: Nightly Sonar finished with ${{ steps.sonar.outcome }} on ${{ github.repository }} (${{ matrix.ref }})\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
