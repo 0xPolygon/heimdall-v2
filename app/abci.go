@@ -470,7 +470,9 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			logger.Warn("extend vote budget exhausted before milestone proposition, skipping",
 				"elapsed", time.Since(startTime))
 		} else {
+			genStart := time.Now()
 			milestoneProp, err = milestoneAbci.GenMilestoneProposition(ctx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
+			metrics.RecordMilestoneGenerationDuration(genStart)
 		}
 		if err != nil {
 			if errors.Is(err, milestoneAbci.ErrNoNewHeadersFound) {
@@ -740,8 +742,10 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &app.MilestoneKeeper, majorityMilestone); err != nil {
 			logger.Warn("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
 			// We don't want to halt consensus because of an invalid majority milestone proposition
+			metrics.RecordMilestoneMajorityCommitSuppressed("validate_failed")
 		} else if helper.IsRio(majorityMilestone.StartBlockNumber) && ctx.BlockHeight() == int64(lastSpanHeimdallBlock)+1 {
 			logger.Info("Last span was created in the previous block, skipping milestone addition", "lastSpanHeimdallBlock", lastSpanHeimdallBlock, "currentBlock", ctx.BlockHeight())
+			metrics.RecordMilestoneMajorityCommitSuppressed("rio_last_span_same_block")
 		} else {
 			logger.Info("2/3rd majority reached on milestone proposition",
 				"startBlock", majorityMilestone.StartBlockNumber,

@@ -201,6 +201,38 @@ var (
 		},
 		[]string{"method"},
 	)
+
+	// MilestoneMajorityCommitSuppressedTotal counts PreBlocker turns that found
+	// a supported (2/3) milestone proposition that was NOT committed, labeled
+	// by why: "validate_failed" (ValidateMilestoneProposition rejected it) or
+	// "rio_last_span_same_block" (the Rio guard skipped it because the last
+	// span was created in the previous block). Pairs with
+	// MilestoneMajorityFoundTotal{threshold="two_thirds"}: without this, a
+	// validate-failure storm is indistinguishable from healthy convergence.
+	MilestoneMajorityCommitSuppressedTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: Namespace,
+			Subsystem: "milestone",
+			Name:      "majority_commit_suppressed_total",
+			Help:      "Number of PreBlocker turns with a 2/3 majority milestone proposition that was found but not committed, labeled by reason",
+		},
+		[]string{"reason"},
+	)
+
+	// MilestoneGenerationDuration tracks the end-to-end wall-clock time spent
+	// inside GenMilestoneProposition, which makes multiple Bor RPC calls
+	// (GetBorChainBlock, GetBorChainBlockInfoInBatch). Complements
+	// BorRPCCallDuration by showing how much of the ExtendVote budget the
+	// milestone-proposition path consumes as a whole, versus the side-tx loop.
+	MilestoneGenerationDuration = promauto.NewHistogram(
+		prometheus.HistogramOpts{
+			Namespace: Namespace,
+			Subsystem: "milestone",
+			Name:      "proposition_generation_duration_seconds",
+			Help:      "Wall-clock time spent generating a milestone proposition (GenMilestoneProposition)",
+			Buckets:   prometheus.DefBuckets,
+		},
+	)
 )
 
 // RecordABCIHandlerDuration records the time taken for any ABCI handler.
@@ -243,4 +275,16 @@ func RecordVoteExtensionRejected(reason string) {
 // given Bor RPC method's histogram.
 func RecordBorRPCCallDuration(method string, start time.Time) {
 	BorRPCCallDuration.WithLabelValues(method).Observe(time.Since(start).Seconds())
+}
+
+// RecordMilestoneMajorityCommitSuppressed increments the commit-suppressed
+// counter for the given reason.
+func RecordMilestoneMajorityCommitSuppressed(reason string) {
+	MilestoneMajorityCommitSuppressedTotal.WithLabelValues(reason).Inc()
+}
+
+// RecordMilestoneGenerationDuration observes the elapsed time since start
+// against the milestone-proposition-generation histogram.
+func RecordMilestoneGenerationDuration(start time.Time) {
+	MilestoneGenerationDuration.Observe(time.Since(start).Seconds())
 }
