@@ -825,6 +825,29 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 			wantReason: "unknown_fields",
 		},
 		{
+			name: "malformed bytes that pass unknown-fields check but fail proto.Unmarshal",
+			// rejectUnknownVoteExtFields (unknownproto.RejectUnknownFieldsStrict) treats
+			// MilestoneProposition.block_tds (a packed-varint scalar field) as opaque once its
+			// declared length fits the remaining buffer: it never decodes the packed varints
+			// themselves, so a truncated varint sequence sails through. gogoproto's real
+			// Unmarshal, however, must decode each packed varint and fails with
+			// "unexpected EOF" on the same bytes. This exercises the branch at line ~547
+			// (proto.Unmarshal failure) as opposed to the unknown-fields branch above.
+			//
+			// Wire layout: VoteExtension.milestone_proposition (field 4, wiretype 2) wraps
+			// MilestoneProposition.block_tds (field 4, wiretype 2, packed) wraps a single
+			// truncated varint byte (0x80: continuation bit set, no continuation byte).
+			req: abci.RequestVerifyVoteExtension{
+				VoteExtension:      []byte{0x22, 0x03, 0x22, 0x01, 0x80},
+				NonRpVoteExtension: respExtend.NonRpExtension,
+				ValidatorAddress:   voteInfo.Validator.Address,
+				Height:             3,
+				Hash:               []byte("test-hash"),
+			},
+			wantStatus: abci.ResponseVerifyVoteExtension_REJECT,
+			wantReason: "unmarshal_failed",
+		},
+		{
 			name:       "height mismatch",
 			req:        abci.RequestVerifyVoteExtension{VoteExtension: respExtend.VoteExtension, NonRpVoteExtension: respExtend.NonRpExtension, ValidatorAddress: voteInfo.Validator.Address, Height: 4, Hash: []byte("test-hash")},
 			wantStatus: abci.ResponseVerifyVoteExtension_REJECT,
@@ -3711,6 +3734,65 @@ func TestPreBlockerSpanRotationWithMinorityMilestone(t *testing.T) {
 	currentSpan, err := app.BorKeeper.GetLastSpan(ctx)
 	require.NoError(t, err)
 	require.Equal(t, span.Id, currentSpan.Id, "Span should not have been rotated when 1/3+ voting power supports a milestone")
+}
+
+// TestPreBlocker_PendingMilestoneHandlingErrorPropagates tests that PreBlocker propagates a real
+// error from handlePendingMilestone rather than swallowing it. Post-Ithaca, handlePendingMilestone
+// calls app.BorKeeper.GetLastSpan first; with no span ever recorded, that lookup fails, and
+// PreBlocker must surface the resulting error (not silently return a nil error, which is what a
+// branch_removal or return_value mutation of the `if err := app.handlePendingMilestone(...); err
+// != nil { return nil, err }` guard would produce).
+func TestPreBlocker_PendingMilestoneHandlingErrorPropagates(t *testing.T) {
+	_, app, ctx, validatorPrivKeys := SetupAppWithABCICtxAndValidators(t, 10)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	// Set up consensus params to enable vote extensions
+	params := cmtproto.ConsensusParams{
+		Abci: &cmtproto.ABCIParams{
+			VoteExtensionsEnableHeight: 1,
+		},
+	}
+	ctx = ctx.WithConsensusParams(params)
+
+	// Set up the initial state with a milestone, but deliberately no span.
+	milestone := milestoneTypes.Milestone{
+		MilestoneId: "1",
+		StartBlock:  0,
+		EndBlock:    100,
+		Hash:        common.HexToHash("0x1234").Bytes(),
+	}
+	err := app.MilestoneKeeper.AddMilestone(ctx, milestone)
+	require.NoError(t, err)
+
+	// Activate Ithaca so handlePendingMilestone takes the GetLastSpan/GetMajorityActualHead path
+	// instead of the pre-Ithaca log-and-return-nil path.
+	origIthaca := helper.GetIthacaHeight()
+	helper.SetIthacaHeight(1)
+	t.Cleanup(func() { helper.SetIthacaHeight(origIthaca) })
+
+	blockHeight := int64(milestone.EndBlock) + helper.GetChangeProducerThreshold(ctx) + 1
+	ctx = ctx.WithBlockHeight(blockHeight)
+
+	// Create vote extensions with 40% voting power supporting a new milestone: more than 1/3 but
+	// less than 2/3, so PreBlocker takes the pending-milestone (handlePendingMilestone) branch.
+	voteExtensions := createVoteExtensionsWithPartialSupport(t, validators, validatorPrivKeys, &milestone, 40, blockHeight-1)
+
+	extCommit := &abci.ExtendedCommitInfo{
+		Round: 0,
+		Votes: voteExtensions,
+	}
+	extCommitBytes, err := extCommit.Marshal()
+	require.NoError(t, err)
+
+	req := &abci.RequestFinalizeBlock{
+		Height:          ctx.BlockHeight(),
+		Txs:             [][]byte{extCommitBytes, []byte("dummy-tx")},
+		ProposerAddress: common.FromHex(validators[0].Signer),
+	}
+
+	resp, err := app.PreBlocker(ctx, req)
+	require.Error(t, err, "PreBlocker must propagate the error from handlePendingMilestone (no span found) rather than swallowing it")
+	require.Nil(t, resp)
 }
 
 // TestPreBlockerSpanRotationWithoutMinorityMilestone tests that span rotation occurs
