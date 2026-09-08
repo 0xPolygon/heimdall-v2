@@ -5726,9 +5726,11 @@ func TestExtendVoteHandler_BudgetHardforkGated(t *testing.T) {
 			app.caller = working
 
 			// With extendVoteBudget zeroed and the budget active (at/above activation), both budget
-			// checkpoints observe elapsed time against their respective histograms before short-circuiting.
+			// checkpoints observe elapsed time against their respective histograms before short-circuiting,
+			// and the side-tx loop's exhaustion is also recorded against the exhausted-count counter.
 			sideTxLoopBefore := histogramVecSampleCount(t, metrics.ExtendVoteElapsedSeconds, "side_tx_loop")
 			preMilestoneBefore := histogramVecSampleCount(t, metrics.ExtendVoteElapsedSeconds, "pre_milestone")
+			sideTxLoopExhaustedBefore := promtestutil.ToFloat64(metrics.ExtendVoteBudgetExhaustedTotal.WithLabelValues("side_tx_loop"))
 
 			respExtend, err := app.ExtendVoteHandler()(ctx, &abci.RequestExtendVote{
 				Txs:    [][]byte{extCommitBytes, txBytes},
@@ -5746,6 +5748,8 @@ func TestExtendVoteHandler_BudgetHardforkGated(t *testing.T) {
 					"budget exhaustion in the side-tx loop must record an elapsed observation for phase=side_tx_loop")
 				require.Equal(t, preMilestoneBefore+1, preMilestoneAfter,
 					"budget exhaustion before milestone generation must record an elapsed observation for phase=pre_milestone")
+				require.Equal(t, sideTxLoopExhaustedBefore+1, promtestutil.ToFloat64(metrics.ExtendVoteBudgetExhaustedTotal.WithLabelValues("side_tx_loop")),
+					"budget exhaustion in the side-tx loop must increment the exhausted-count counter for phase=side_tx_loop")
 			}
 
 			var ve sidetxs.VoteExtension
