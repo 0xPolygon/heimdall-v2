@@ -393,13 +393,15 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		// decode txs and execute side txs
 		for _, rawTx := range txs {
-			if budgetActive && !time.Now().Before(deadline) {
-				metrics.RecordExtendVoteBudgetExhausted("side_tx_loop")
+			if budgetActive {
 				metrics.RecordExtendVoteElapsed("side_tx_loop", startTime)
-				logger.Warn("extend vote budget exhausted, returning partial response",
-					"processed_side_handlers", len(sideTxRes),
-					"elapsed", time.Since(startTime))
-				break
+				if !time.Now().Before(deadline) {
+					metrics.RecordExtendVoteBudgetExhausted("side_tx_loop")
+					logger.Warn("extend vote budget exhausted, returning partial response",
+						"processed_side_handlers", len(sideTxRes),
+						"elapsed", time.Since(startTime))
+					break
+				}
 			}
 			// create a cache wrapped context for stateless execution
 			ctx, _ = app.cacheTxContext(ctx)
@@ -464,9 +466,11 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		}
 
 		var milestoneProp *milestoneTypes.MilestoneProposition
+		if budgetActive {
+			metrics.RecordExtendVoteElapsed("pre_milestone", startTime)
+		}
 		if budgetActive && !time.Now().Before(deadline) {
 			metrics.RecordExtendVoteBudgetExhausted("pre_milestone")
-			metrics.RecordExtendVoteElapsed("pre_milestone", startTime)
 			logger.Warn("extend vote budget exhausted before milestone proposition, skipping",
 				"elapsed", time.Since(startTime))
 		} else {
