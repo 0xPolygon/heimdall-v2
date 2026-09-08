@@ -34,6 +34,9 @@ import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
+	"github.com/prometheus/client_golang/prometheus"
+	promtestutil "github.com/prometheus/client_golang/prometheus/testutil"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -42,6 +45,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	helpermocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
@@ -621,10 +625,23 @@ func TestExtendVoteHandler(t *testing.T) {
 		Hash:   []byte("test-hash"),
 		Height: 3,
 	}
+
+	// The mocked GetBorChainBlockInfoInBatch always returns an empty header batch, so
+	// GenMilestoneProposition always fails with ErrNoNewHeadersFound here, and since no Zurich
+	// budget is active, the milestone-proposition-generation path always runs. Assert both the
+	// no-new-headers counter and the generation-duration histogram move accordingly.
+	noNewHeadersBefore := promtestutil.ToFloat64(metrics.MilestoneNoNewHeadersTotal)
+	genDurationBefore := histogramSampleCount(t, metrics.MilestoneGenerationDuration)
+
 	respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
 	require.NoError(t, err)
 	require.NotNil(t, respExtend.VoteExtension)
 	mockCaller.AssertCalled(t, "GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+
+	require.Equal(t, noNewHeadersBefore+1, promtestutil.ToFloat64(metrics.MilestoneNoNewHeadersTotal),
+		"ExtendVoteHandler must record a no-new-headers event when GenMilestoneProposition returns ErrNoNewHeadersFound")
+	require.Equal(t, genDurationBefore+1, histogramSampleCount(t, metrics.MilestoneGenerationDuration),
+		"ExtendVoteHandler must record the milestone-proposition-generation duration")
 
 	terrUnmarshal := "error occurred while decoding ExtendedCommitInfo"
 	terrTxDecode := "error occurred while decoding tx bytes in ExtendVoteHandler"
@@ -791,6 +808,9 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 		name       string
 		req        abci.RequestVerifyVoteExtension
 		wantStatus abci.ResponseVerifyVoteExtension_VerifyStatus
+		// wantReason is the metrics.VoteExtensionRejectedTotal label expected to be incremented by
+		// exactly one when wantStatus is REJECT. Empty for the ACCEPT case.
+		wantReason string
 	}{
 		{
 			name:       "valid extension",
@@ -798,42 +818,67 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 			wantStatus: abci.ResponseVerifyVoteExtension_ACCEPT,
 		},
 		{
-			name:       "unmarshal fail",
+			name:       "unknown fields / garbage bytes",
 			req:        abci.RequestVerifyVoteExtension{VoteExtension: []byte{0x01, 0x02, 0x03}, NonRpVoteExtension: respExtend.NonRpExtension, ValidatorAddress: voteInfo.Validator.Address, Height: 3, Hash: []byte("test-hash")},
 			wantStatus: abci.ResponseVerifyVoteExtension_REJECT,
+			// [0x01, 0x02, 0x03] fails the unknown-fields check before it ever reaches proto.Unmarshal.
+			wantReason: "unknown_fields",
 		},
 		{
 			name:       "height mismatch",
 			req:        abci.RequestVerifyVoteExtension{VoteExtension: respExtend.VoteExtension, NonRpVoteExtension: respExtend.NonRpExtension, ValidatorAddress: voteInfo.Validator.Address, Height: 4, Hash: []byte("test-hash")},
 			wantStatus: abci.ResponseVerifyVoteExtension_REJECT,
+			wantReason: "height_mismatch",
 		},
 		{
 			name:       "hash mismatch",
 			req:        abci.RequestVerifyVoteExtension{VoteExtension: respExtend.VoteExtension, NonRpVoteExtension: respExtend.NonRpExtension, ValidatorAddress: voteInfo.Validator.Address, Height: 3, Hash: []byte("wrong-hash")},
 			wantStatus: abci.ResponseVerifyVoteExtension_REJECT,
+			wantReason: "hash_mismatch",
 		},
 		{
 			name: "side-tx validation failure",
-			// construct invalid side extension bytes
+			// construct a well-formed extension (correct height/hash so it passes those checks)
+			// with a malformed side-tx response (invalid tx hash length) so it is rejected by
+			// validateSideTxResponses specifically.
 			req: func() abci.RequestVerifyVoteExtension {
-				fake := &sidetxs.VoteExtension{BlockHash: respExtend.VoteExtension, Height: 3, SideTxResponses: nil}
-				bz, _ := gogoproto.Marshal(fake)
+				fake := &sidetxs.VoteExtension{
+					BlockHash: []byte("test-hash"),
+					Height:    3,
+					SideTxResponses: []sidetxs.SideTxResponse{
+						{TxHash: []byte("too-short"), Result: sidetxs.Vote_VOTE_YES},
+					},
+				}
+				bz, err := gogoproto.Marshal(fake)
+				require.NoError(t, err)
 				return abci.RequestVerifyVoteExtension{VoteExtension: bz, NonRpVoteExtension: respExtend.NonRpExtension, ValidatorAddress: voteInfo.Validator.Address, Height: 3, Hash: []byte("test-hash")}
 			}(),
 			wantStatus: abci.ResponseVerifyVoteExtension_REJECT,
+			wantReason: "invalid_side_tx_responses",
 		},
 		{
 			name:       "non-rp validation error",
 			req:        abci.RequestVerifyVoteExtension{VoteExtension: respExtend.VoteExtension, NonRpVoteExtension: []byte{0x01, 0x02, 0x03, 0xFF}, ValidatorAddress: voteInfo.Validator.Address, Height: 3, Hash: []byte("test-hash")},
 			wantStatus: abci.ResponseVerifyVoteExtension_REJECT,
+			wantReason: "nonrp_rejected",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			var rejectedBefore float64
+			if tc.wantReason != "" {
+				rejectedBefore = promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues(tc.wantReason))
+			}
+
 			resp, err := app.VerifyVoteExtensionHandler()(ctx, &tc.req)
 			require.NoError(t, err)
 			require.Equal(t, tc.wantStatus, resp.Status)
+
+			if tc.wantReason != "" {
+				require.Equal(t, rejectedBefore+1, promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues(tc.wantReason)),
+					"VerifyVoteExtensionHandler must record a rejection for reason=%s", tc.wantReason)
+			}
 		})
 	}
 }
@@ -890,9 +935,12 @@ func TestVerifyVoteExtensionHandlerUsesAuthenticatedHeightForIthaca(t *testing.T
 	require.Equal(t, abci.ResponseVerifyVoteExtension_ACCEPT, res.Status)
 
 	// Conversely, a future-looking ambient context must not make pre-fork fields valid.
+	milestoneRejectedBefore := promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues("milestone_proposition_rejected"))
 	res, err = handler(ctx.WithBlockHeight(100), makeReq(99))
 	require.NoError(t, err)
 	require.Equal(t, abci.ResponseVerifyVoteExtension_REJECT, res.Status)
+	require.Equal(t, milestoneRejectedBefore+1, promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues("milestone_proposition_rejected")),
+		"VerifyVoteExtensionHandler must record a rejection for reason=milestone_proposition_rejected when pre-fork fields are populated")
 }
 
 func TestVerifyVoteExtensionHandler_AcceptsOnBorQueryError(t *testing.T) {
@@ -1033,10 +1081,15 @@ func TestVerifyVoteExtensionHandler_RejectsUnknownFieldsPadding(t *testing.T) {
 		VoteExtension:    paddedVE,
 	}
 
+	unknownFieldsRejectedBefore := promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues("unknown_fields"))
+
 	resp, err := hApp.VerifyVoteExtensionHandler()(ctx, req)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, abci.ResponseVerifyVoteExtension_REJECT, resp.Status)
+
+	require.Equal(t, unknownFieldsRejectedBefore+1, promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues("unknown_fields")),
+		"VerifyVoteExtensionHandler must record a rejection for reason=unknown_fields when protobuf padding is present")
 }
 
 // TestPreBlocker tests the PreBlocker function of the HeimdallApp by creating a MsgProposeSpan message, building a signed transaction, creating an extension commit, and calling the PreBlocker with the transaction and extension commit to ensure it processes without errors.
@@ -3645,9 +3698,14 @@ func TestPreBlockerSpanRotationWithMinorityMilestone(t *testing.T) {
 		ProposerAddress: common.FromHex(validators[0].Signer),
 	}
 
+	oneThirdFoundBefore := promtestutil.ToFloat64(metrics.MilestoneMajorityFoundTotal.WithLabelValues("one_third"))
+
 	// Execute PreBlocker
 	_, err = app.PreBlocker(ctx, req)
 	require.NoError(t, err)
+
+	require.Equal(t, oneThirdFoundBefore+1, promtestutil.ToFloat64(metrics.MilestoneMajorityFoundTotal.WithLabelValues("one_third")),
+		"PreBlocker must record a majority-found event for threshold=one_third when only 1/3+ voting power supports a milestone")
 
 	// Verify that span was not rotated
 	currentSpan, err := app.BorKeeper.GetLastSpan(ctx)
@@ -3803,9 +3861,14 @@ func TestPreBlockerSpanRotationWithMajorityMilestone(t *testing.T) {
 		ProposerAddress: common.FromHex(validators[0].Signer),
 	}
 
+	twoThirdsFoundBefore := promtestutil.ToFloat64(metrics.MilestoneMajorityFoundTotal.WithLabelValues("two_thirds"))
+
 	// Execute PreBlocker
 	_, err = app.PreBlocker(ctx, req)
 	require.NoError(t, err)
+
+	require.Equal(t, twoThirdsFoundBefore+1, promtestutil.ToFloat64(metrics.MilestoneMajorityFoundTotal.WithLabelValues("two_thirds")),
+		"PreBlocker must record a majority-found event for threshold=two_thirds when a 2/3+ majority milestone is committed")
 
 	// When there's a 2/3-majority milestone, it gets processed normally
 	// This can include creating a new span if the milestone warrants it
@@ -3816,6 +3879,201 @@ func TestPreBlockerSpanRotationWithMajorityMilestone(t *testing.T) {
 	latestMilestone, err := app.MilestoneKeeper.GetLastMilestone(ctx)
 	require.NoError(t, err)
 	require.Equal(t, uint64(101), latestMilestone.EndBlock, "New milestone should have been added with correct end block")
+}
+
+// TestPreBlocker_MajorityMilestoneValidateFailedSuppressesCommit tests that a 2/3-majority
+// milestone proposition that fails ValidateMilestoneProposition (here: malformed block hash
+// length) is NOT committed, and that this is recorded as a
+// metrics.MilestoneMajorityCommitSuppressedTotal{reason="validate_failed"} event rather than
+// silently falling through.
+func TestPreBlocker_MajorityMilestoneValidateFailedSuppressesCommit(t *testing.T) {
+	_, app, ctx, validatorPrivKeys := SetupAppWithABCICtxAndValidators(t, 10)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	params := cmtproto.ConsensusParams{
+		Abci: &cmtproto.ABCIParams{
+			VoteExtensionsEnableHeight: 1,
+		},
+	}
+	ctx = ctx.WithConsensusParams(params)
+
+	milestone := milestoneTypes.Milestone{
+		MilestoneId: "1",
+		StartBlock:  0,
+		EndBlock:    100,
+		Hash:        common.HexToHash("0x1234").Bytes(),
+	}
+	err := app.MilestoneKeeper.AddMilestone(ctx, milestone)
+	require.NoError(t, err)
+	err = app.MilestoneKeeper.SetLastMilestoneBlock(ctx, milestone.EndBlock)
+	require.NoError(t, err)
+
+	span := &borTypes.Span{
+		Id:         1,
+		StartBlock: 1,
+		EndBlock:   200,
+		ValidatorSet: stakeTypes.ValidatorSet{
+			Validators: validators,
+			Proposer:   validators[0],
+		},
+		SelectedProducers: []stakeTypes.Validator{*validators[0]},
+		BorChainId:        "test",
+	}
+	err = app.BorKeeper.AddNewSpan(ctx, span)
+	require.NoError(t, err)
+
+	blockHeight := int64(milestone.EndBlock) + helper.GetChangeProducerThreshold(ctx) + 1
+	ctx = ctx.WithBlockHeight(blockHeight)
+	// Keep the Rio guard out of the way (IsRio false for this proposition's start block) so the
+	// validate-failure branch is unambiguously what suppresses the commit.
+	helper.SetRioHeight(0)
+	t.Cleanup(func() { helper.SetRioHeight(0) })
+
+	// Every validator votes for the same proposition, guaranteeing 100% (>2/3) support, but the
+	// proposition carries a block hash that is not 32 bytes long, which
+	// ValidateMilestoneProposition rejects via validateLatestHead/length checks downstream of
+	// GetMajorityMilestoneProposition's own hash+td round-trip (which does not itself validate
+	// hash length).
+	malformedHash := bytes.Repeat([]byte{0xAB}, 20) // not common.HashLength (32)
+	invalidMilestone := &milestoneTypes.MilestoneProposition{
+		StartBlockNumber: milestone.EndBlock + 1,
+		BlockHashes:      [][]byte{malformedHash},
+		ParentHash:       milestone.Hash,
+		BlockTds:         []uint64{1},
+	}
+
+	dummyNonRpExt, err := GetDummyNonRpVoteExtension(blockHeight-1, "test-chain")
+	require.NoError(t, err)
+
+	voteExtensions := make([]abci.ExtendedVoteInfo, 0, len(validators))
+	for i, validator := range validators {
+		voteExtension := &sidetxs.VoteExtension{
+			BlockHash:            []byte("test-block-hash"),
+			Height:               blockHeight - 1,
+			MilestoneProposition: invalidMilestone,
+			SideTxResponses:      []sidetxs.SideTxResponse{},
+		}
+		encoded, err := gogoproto.Marshal(voteExtension)
+		require.NoError(t, err)
+		voteExtensions = append(voteExtensions, abci.ExtendedVoteInfo{
+			Validator: abci.Validator{
+				Address: validatorPrivKeys[i].PubKey().Address(),
+				Power:   validator.VotingPower,
+			},
+			VoteExtension:           encoded,
+			ExtensionSignature:      []byte("dummy-signature"),
+			NonRpVoteExtension:      dummyNonRpExt,
+			NonRpExtensionSignature: []byte("dummy-non-rp-signature"),
+			BlockIdFlag:             cmtproto.BlockIDFlagCommit,
+		})
+	}
+
+	extCommit := &abci.ExtendedCommitInfo{
+		Round: 0,
+		Votes: voteExtensions,
+	}
+	extCommitBytes, err := extCommit.Marshal()
+	require.NoError(t, err)
+
+	req := &abci.RequestFinalizeBlock{
+		Height:          ctx.BlockHeight(),
+		Txs:             [][]byte{extCommitBytes, []byte("dummy-tx")},
+		ProposerAddress: common.FromHex(validators[0].Signer),
+	}
+
+	suppressedBefore := promtestutil.ToFloat64(metrics.MilestoneMajorityCommitSuppressedTotal.WithLabelValues("validate_failed"))
+
+	_, err = app.PreBlocker(ctx, req)
+	require.NoError(t, err)
+
+	require.Equal(t, suppressedBefore+1, promtestutil.ToFloat64(metrics.MilestoneMajorityCommitSuppressedTotal.WithLabelValues("validate_failed")),
+		"PreBlocker must record a commit-suppressed event for reason=validate_failed when the majority milestone proposition fails validation")
+
+	// No new milestone should have been committed.
+	latestMilestone, err := app.MilestoneKeeper.GetLastMilestone(ctx)
+	require.NoError(t, err)
+	require.Equal(t, milestone.EndBlock, latestMilestone.EndBlock, "no new milestone should have been committed when validation fails")
+}
+
+// TestPreBlocker_MajorityMilestoneRioLastSpanSuppressesCommit tests that a valid 2/3-majority
+// milestone proposition is NOT committed when the Rio guard trips (the last span was created in
+// the immediately preceding block), and that this is recorded as a
+// metrics.MilestoneMajorityCommitSuppressedTotal{reason="rio_last_span_same_block"} event.
+func TestPreBlocker_MajorityMilestoneRioLastSpanSuppressesCommit(t *testing.T) {
+	_, app, ctx, validatorPrivKeys := SetupAppWithABCICtxAndValidators(t, 10)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	params := cmtproto.ConsensusParams{
+		Abci: &cmtproto.ABCIParams{
+			VoteExtensionsEnableHeight: 1,
+		},
+	}
+	ctx = ctx.WithConsensusParams(params)
+
+	milestone := milestoneTypes.Milestone{
+		MilestoneId: "1",
+		StartBlock:  0,
+		EndBlock:    100,
+		Hash:        common.HexToHash("0x1234").Bytes(),
+	}
+	err := app.MilestoneKeeper.AddMilestone(ctx, milestone)
+	require.NoError(t, err)
+	err = app.MilestoneKeeper.SetLastMilestoneBlock(ctx, milestone.EndBlock)
+	require.NoError(t, err)
+
+	span := &borTypes.Span{
+		Id:         1,
+		StartBlock: 1,
+		EndBlock:   200,
+		ValidatorSet: stakeTypes.ValidatorSet{
+			Validators: validators,
+			Proposer:   validators[0],
+		},
+		SelectedProducers: []stakeTypes.Validator{*validators[0]},
+		BorChainId:        "test",
+	}
+	err = app.BorKeeper.AddNewSpan(ctx, span)
+	require.NoError(t, err)
+
+	blockHeight := int64(milestone.EndBlock) + helper.GetChangeProducerThreshold(ctx) + 1
+	ctx = ctx.WithBlockHeight(blockHeight)
+	// The proposition's start block (milestone.EndBlock+1) must be >= Rio height for IsRio to be true.
+	helper.SetRioHeight(int64(milestone.EndBlock + 1))
+	t.Cleanup(func() { helper.SetRioHeight(0) })
+
+	// Trip the Rio guard: the last span was recorded as having been created exactly one block
+	// before the current one.
+	require.NoError(t, app.BorKeeper.SetLastSpanBlock(ctx, uint64(blockHeight-1)))
+
+	// Every validator votes for the same, otherwise-valid proposition, guaranteeing 100% (>2/3)
+	// support.
+	voteExtensions := createVoteExtensionsWithPartialSupport(t, validators, validatorPrivKeys, &milestone, 100, blockHeight-1)
+
+	extCommit := &abci.ExtendedCommitInfo{
+		Round: 0,
+		Votes: voteExtensions,
+	}
+	extCommitBytes, err := extCommit.Marshal()
+	require.NoError(t, err)
+
+	req := &abci.RequestFinalizeBlock{
+		Height:          ctx.BlockHeight(),
+		Txs:             [][]byte{extCommitBytes, []byte("dummy-tx")},
+		ProposerAddress: common.FromHex(validators[0].Signer),
+	}
+
+	suppressedBefore := promtestutil.ToFloat64(metrics.MilestoneMajorityCommitSuppressedTotal.WithLabelValues("rio_last_span_same_block"))
+
+	_, err = app.PreBlocker(ctx, req)
+	require.NoError(t, err)
+
+	require.Equal(t, suppressedBefore+1, promtestutil.ToFloat64(metrics.MilestoneMajorityCommitSuppressedTotal.WithLabelValues("rio_last_span_same_block")),
+		"PreBlocker must record a commit-suppressed event for reason=rio_last_span_same_block when the last span was created in the previous block")
+
+	// No new milestone should have been committed.
+	latestMilestone, err := app.MilestoneKeeper.GetLastMilestone(ctx)
+	require.NoError(t, err)
+	require.Equal(t, milestone.EndBlock, latestMilestone.EndBlock, "no new milestone should have been committed when the Rio guard trips")
 }
 
 // TestPrepareProposal_MultipleTransactionsPerBlock tests the PrepareProposal handler's ability to handle multiple transactions in a single block, ensuring that all transactions are included in the proposal response and that the ExtendedCommitInfo is properly accounted for in the transaction count, thus validating the correct behavior of transaction processing and proposal preparation in scenarios with multiple transactions.
@@ -5385,6 +5643,11 @@ func TestExtendVoteHandler_BudgetHardforkGated(t *testing.T) {
 			app.MilestoneKeeper.IContractCaller = working
 			app.caller = working
 
+			// With extendVoteBudget zeroed and the budget active (at/above activation), both budget
+			// checkpoints observe elapsed time against their respective histograms before short-circuiting.
+			sideTxLoopBefore := histogramVecSampleCount(t, metrics.ExtendVoteElapsedSeconds, "side_tx_loop")
+			preMilestoneBefore := histogramVecSampleCount(t, metrics.ExtendVoteElapsedSeconds, "pre_milestone")
+
 			respExtend, err := app.ExtendVoteHandler()(ctx, &abci.RequestExtendVote{
 				Txs:    [][]byte{extCommitBytes, txBytes},
 				Hash:   []byte("test-hash"),
@@ -5392,6 +5655,16 @@ func TestExtendVoteHandler_BudgetHardforkGated(t *testing.T) {
 			})
 			require.NoError(t, err)
 			require.NotNil(t, respExtend.VoteExtension)
+
+			if budgetActiveForCase := tc.activation <= runHeight; budgetActiveForCase {
+				sideTxLoopAfter := histogramVecSampleCount(t, metrics.ExtendVoteElapsedSeconds, "side_tx_loop")
+				preMilestoneAfter := histogramVecSampleCount(t, metrics.ExtendVoteElapsedSeconds, "pre_milestone")
+
+				require.Equal(t, sideTxLoopBefore+1, sideTxLoopAfter,
+					"budget exhaustion in the side-tx loop must record an elapsed observation for phase=side_tx_loop")
+				require.Equal(t, preMilestoneBefore+1, preMilestoneAfter,
+					"budget exhaustion before milestone generation must record an elapsed observation for phase=pre_milestone")
+			}
 
 			var ve sidetxs.VoteExtension
 			require.NoError(t, gogoproto.Unmarshal(respExtend.VoteExtension, &ve))
@@ -7092,4 +7365,26 @@ func TestExtractTxHashMsgEventRecordValidation(t *testing.T) {
 			require.Equal(t, tc.hash, hash)
 		})
 	}
+}
+
+// histogramSampleCount returns the number of observations recorded so far in
+// a plain (non-vector) prometheus.Histogram, by reading its internal dto.Metric.
+// testutil.CollectAndCount is not usable here because it counts the number of
+// distinct time series (always 1 for a non-vector histogram), not the number
+// of observations within that single series.
+func histogramSampleCount(t *testing.T, h interface{ Write(*dto.Metric) error }) uint64 {
+	t.Helper()
+	m := &dto.Metric{}
+	require.NoError(t, h.Write(m))
+	return m.GetHistogram().GetSampleCount()
+}
+
+// histogramVecSampleCount returns the number of observations recorded so far for one label
+// value of a prometheus.HistogramVec, by reading its internal dto.Metric.
+func histogramVecSampleCount(t *testing.T, hv *prometheus.HistogramVec, labelValue string) uint64 {
+	t.Helper()
+	observer := hv.WithLabelValues(labelValue)
+	h, ok := observer.(prometheus.Histogram)
+	require.True(t, ok, "HistogramVec.WithLabelValues must return a prometheus.Histogram")
+	return histogramSampleCount(t, h)
 }
