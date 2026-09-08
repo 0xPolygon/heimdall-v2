@@ -393,12 +393,15 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		// decode txs and execute side txs
 		for _, rawTx := range txs {
-			if budgetActive && !time.Now().Before(deadline) {
-				metrics.RecordExtendVoteBudgetExhausted("side_tx_loop")
-				logger.Warn("extend vote budget exhausted, returning partial response",
-					"processed_side_handlers", len(sideTxRes),
-					"elapsed", time.Since(startTime))
-				break
+			if budgetActive {
+				metrics.RecordExtendVoteElapsed("side_tx_loop", startTime)
+				if !time.Now().Before(deadline) {
+					metrics.RecordExtendVoteBudgetExhausted("side_tx_loop")
+					logger.Warn("extend vote budget exhausted, returning partial response",
+						"processed_side_handlers", len(sideTxRes),
+						"elapsed", time.Since(startTime))
+					break
+				}
 			}
 			// create a cache wrapped context for stateless execution
 			ctx, _ = app.cacheTxContext(ctx)
@@ -463,15 +466,21 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		}
 
 		var milestoneProp *milestoneTypes.MilestoneProposition
+		if budgetActive {
+			metrics.RecordExtendVoteElapsed("pre_milestone", startTime)
+		}
 		if budgetActive && !time.Now().Before(deadline) {
 			metrics.RecordExtendVoteBudgetExhausted("pre_milestone")
 			logger.Warn("extend vote budget exhausted before milestone proposition, skipping",
 				"elapsed", time.Since(startTime))
 		} else {
+			genStart := time.Now()
 			milestoneProp, err = milestoneAbci.GenMilestoneProposition(ctx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
+			metrics.RecordMilestoneGenerationDuration(genStart)
 		}
 		if err != nil {
 			if errors.Is(err, milestoneAbci.ErrNoNewHeadersFound) {
+				metrics.RecordMilestoneNoNewHeaders()
 				logger.Debug("No new headers found for generating milestone proposition, continuing without it")
 			} else {
 				logger.Warn("Error occurred while generating milestone proposition", "error", err)
@@ -532,23 +541,27 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		}
 
 		if err := rejectUnknownVoteExtFields(req.VoteExtension); err != nil {
+			metrics.RecordVoteExtensionRejected("unknown_fields")
 			logger.Error(heimdallTypes.ErrAlertVoteExtensionRejected+" Error while checking unknown fields in VoteExtension", "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
 		var voteExtension sidetxs.VoteExtension
 		if err := proto.Unmarshal(req.VoteExtension, &voteExtension); err != nil {
+			metrics.RecordVoteExtensionRejected("unmarshal_failed")
 			logger.Error(heimdallTypes.ErrAlertVoteExtensionRejected+" Error while unmarshalling VoteExtension", "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
 		// ensure block height and hash match
 		if req.Height != voteExtension.Height {
+			metrics.RecordVoteExtensionRejected("height_mismatch")
 			logger.Error(heimdallTypes.ErrAlertVoteExtensionRejected, "block height", req.Height, "consolidatedSideTxResponse height", voteExtension.Height, "validator", valAddr)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
 		if !bytes.Equal(req.Hash, voteExtension.BlockHash) {
+			metrics.RecordVoteExtensionRejected("hash_mismatch")
 			logger.Error(heimdallTypes.ErrAlertVoteExtensionRejected, "block hash", common.Bytes2Hex(req.Hash), "consolidatedSideTxResponse blockHash", common.Bytes2Hex(voteExtension.BlockHash), "validator", valAddr)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
@@ -556,6 +569,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		// check for duplicate votes
 		txHash, err := validateSideTxResponses(voteExtension.SideTxResponses)
 		if err != nil {
+			metrics.RecordVoteExtensionRejected("invalid_side_tx_responses")
 			logger.Error(heimdallTypes.ErrAlertVoteExtensionRejected, "validator", valAddr, "tx hash", common.Bytes2Hex(txHash), "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
@@ -565,6 +579,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			tolerateBorErr := errors.Is(err, borTypes.ErrFailedToQueryBor) ||
 				(helper.IsZurichHardfork(req.Height) && errors.Is(err, borTypes.ErrBorBlockNotFound))
 			if helper.IsPhuketHardfork(req.Height) && !tolerateBorErr {
+				metrics.RecordVoteExtensionRejected("nonrp_rejected")
 				logger.Error(heimdallTypes.ErrAlertNonRpVoteExtensionRejected, "validator", valAddr, "error", err)
 				return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 			}
@@ -576,6 +591,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		// avoids ambiguity at the activation boundary and for direct handler callers.
 		milestoneCtx := ctx.WithBlockHeight(voteExtension.Height)
 		if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &app.MilestoneKeeper, voteExtension.MilestoneProposition); err != nil {
+			metrics.RecordVoteExtensionRejected("milestone_proposition_rejected")
 			logger.Error(heimdallTypes.ErrAlertMilestonePropositionVoteExtensionRejected, "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
@@ -730,14 +746,17 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &app.MilestoneKeeper, majorityMilestone); err != nil {
 			logger.Warn("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
 			// We don't want to halt consensus because of an invalid majority milestone proposition
+			metrics.RecordMilestoneMajorityCommitSuppressed("validate_failed")
 		} else if helper.IsRio(majorityMilestone.StartBlockNumber) && ctx.BlockHeight() == int64(lastSpanHeimdallBlock)+1 {
 			logger.Info("Last span was created in the previous block, skipping milestone addition", "lastSpanHeimdallBlock", lastSpanHeimdallBlock, "currentBlock", ctx.BlockHeight())
+			metrics.RecordMilestoneMajorityCommitSuppressed("rio_last_span_same_block")
 		} else {
 			logger.Info("2/3rd majority reached on milestone proposition",
 				"startBlock", majorityMilestone.StartBlockNumber,
 				"endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1),
 				"blockHashes", strutil.HashesToString(majorityMilestone.BlockHashes),
 			)
+			metrics.RecordMilestoneMajorityFound("two_thirds")
 			isValidMilestone = true
 		}
 	}
@@ -817,8 +836,11 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			if err := app.checkAndRotateCurrentSpan(ctx); err != nil {
 				return nil, err
 			}
-		} else if err := app.handlePendingMilestone(ctx, pendingMilestone, validatorSet, extVoteInfo, minMajorityVP); err != nil {
-			return nil, err
+		} else {
+			metrics.RecordMilestoneMajorityFound("one_third")
+			if err := app.handlePendingMilestone(ctx, pendingMilestone, validatorSet, extVoteInfo, minMajorityVP); err != nil {
+				return nil, err
+			}
 		}
 	}
 
