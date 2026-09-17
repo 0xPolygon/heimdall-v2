@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch to scan
+        default: develop
 
 jobs:
   govulncheck:
@@ -19,8 +23,7 @@ jobs:
       fail-fast: false
       matrix:
         ref:
-          - develop
-          - main
+          - ${{ inputs.ref || 'develop' }}
     env:
       HAS_SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK != '' }}
 
