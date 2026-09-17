@@ -5783,7 +5783,7 @@ func TestExtendVoteHandler_BudgetExhausted_LogsWarning(t *testing.T) {
 	priv, _, _ := testdata.KeyTestPubAddr()
 
 	var logBuf bytes.Buffer
-	setupResult := SetupAppWithPrivKeyAndLogger(t, 1, priv, log.NewLogger(&logBuf))
+	setupResult := SetupAppWithPrivKey(t, 1, priv, log.NewLogger(&logBuf))
 	app := setupResult.App
 	validatorPrivKeys := setupResult.ValidatorKeys
 
