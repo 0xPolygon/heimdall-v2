@@ -30,30 +30,6 @@ func IsBlockCloseToSpanEnd(blockNumber, spanEnd uint64) bool {
 	return blockNumber <= spanEnd && blockNumber >= (spanEnd-100)
 }
 
-func GenerateBorCommittedSpans(latestBorBlock uint64, latestBorUsedSpan *Span) []Span {
-	spanLength := latestBorUsedSpan.EndBlock - latestBorUsedSpan.StartBlock
-	estimatedSpans := (latestBorBlock - latestBorUsedSpan.EndBlock) / spanLength
-	if estimatedSpans > 0 {
-		estimatedSpans++ // Add buffer
-	}
-	spans := make([]Span, 0, estimatedSpans)
-	prevSpan := latestBorUsedSpan
-	for latestBorBlock > prevSpan.EndBlock {
-		startBlock := prevSpan.EndBlock + 1
-		newSpan := Span{
-			Id:                prevSpan.Id + 1,
-			StartBlock:        startBlock,
-			EndBlock:          startBlock + spanLength,
-			BorChainId:        latestBorUsedSpan.BorChainId,
-			SelectedProducers: latestBorUsedSpan.SelectedProducers,
-			ValidatorSet:      latestBorUsedSpan.ValidatorSet,
-		}
-		spans = append(spans, newSpan)
-		prevSpan = &newSpan
-	}
-	return spans
-}
-
 // CalcCurrentBorSpanId computes the Bor span ID corresponding to latestBorBlock,
 // using latestHeimdallSpan as the reference. It returns an error if inputs are invalid
 // (nil span, zero, or negative span length) or if arithmetic overflow is detected.
