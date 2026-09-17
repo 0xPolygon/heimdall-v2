@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
 	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -5765,6 +5766,57 @@ func TestExtendVoteHandler_BudgetHardforkGated(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestExtendVoteHandler_BudgetExhausted_LogsWarning asserts that exhausting the
+// side-tx loop budget logs a warning, not just the metric side effects already
+// covered by TestExtendVoteHandler_BudgetHardforkGated.
+func TestExtendVoteHandler_BudgetExhausted_LogsWarning(t *testing.T) {
+	const runHeight = int64(3)
+	helper.SetZurichHardforkHeight(runHeight)
+	t.Cleanup(func() { helper.SetZurichHardforkHeight(0) })
+
+	originalBudget := extendVoteBudget
+	extendVoteBudget = 0
+	t.Cleanup(func() { extendVoteBudget = originalBudget })
+
+	priv, _, _ := testdata.KeyTestPubAddr()
+
+	var logBuf bytes.Buffer
+	setupResult := SetupAppWithPrivKeyAndLogger(t, 1, priv, log.NewLogger(&logBuf))
+	app := setupResult.App
+	validatorPrivKeys := setupResult.ValidatorKeys
+
+	ctx := app.BaseApp.NewContext(true).WithChainID(app.ChainID())
+	ctx = ctx.WithConsensusParams(cmtproto.ConsensusParams{
+		Abci: &cmtproto.ABCIParams{VoteExtensionsEnableHeight: 1},
+	})
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	msg := &types.MsgCheckpoint{
+		Proposer:        validators[0].Signer,
+		StartBlock:      100,
+		EndBlock:        200,
+		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		BorChainId:      "test",
+	}
+	txBytes, err := buildSignedTx(msg, ctx, priv, app)
+	require.NoError(t, err)
+
+	extCommitBytes, _, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, 2, nil)
+	require.NoError(t, err)
+
+	respExtend, err := app.ExtendVoteHandler()(ctx, &abci.RequestExtendVote{
+		Txs:    [][]byte{extCommitBytes, txBytes},
+		Hash:   []byte("test-hash"),
+		Height: runHeight,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, respExtend.VoteExtension)
+
+	require.Contains(t, logBuf.String(), "extend vote budget exhausted, returning partial response",
+		"exhausting the side-tx loop budget must log a warning")
 }
 
 func TestABCI_FullBlockLifecycle_NoPreBlocker(t *testing.T) {

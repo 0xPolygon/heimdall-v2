@@ -71,6 +71,14 @@ func SetupApp(t *testing.T, numOfVals uint64) SetupAppResult {
 // present as a funded auth+bank genesis account so tests can use it as a tx signer/fee payer.
 func SetupAppWithPrivKey(t *testing.T, numOfVals uint64, priv cryptotypes.PrivKey) SetupAppResult {
 	t.Helper()
+	return SetupAppWithPrivKeyAndLogger(t, numOfVals, priv, log.NewTestLogger(t))
+}
+
+// SetupAppWithPrivKeyAndLogger is like SetupAppWithPrivKey but lets the caller supply the
+// app's logger (e.g. a buffer-backed one) instead of the default test logger, so tests can
+// assert on log output.
+func SetupAppWithPrivKeyAndLogger(t *testing.T, numOfVals uint64, priv cryptotypes.PrivKey, logger log.Logger) SetupAppResult {
+	t.Helper()
 
 	// generate validators, accounts and balances
 	validatorPrivKeys, validators, accounts, balances := generateValidators(t, numOfVals)
@@ -89,7 +97,7 @@ func SetupAppWithPrivKey(t *testing.T, numOfVals uint64, priv cryptotypes.PrivKe
 	balances = append(balances, genBal)
 
 	// set up the app with a validator set and respective accounts
-	app, db, logger, privKeys := setupAppWithValidatorSet(t, validatorPrivKeys, validators, accounts, balances)
+	app, db, _, privKeys := setupAppWithValidatorSetAndLogger(t, logger, validatorPrivKeys, validators, accounts, balances)
 
 	return SetupAppResult{
 		App:           app,
@@ -138,13 +146,19 @@ func generateValidators(t *testing.T, numOfVals uint64) ([]cmtcrypto.PrivKey, []
 
 func setupAppWithValidatorSet(t *testing.T, validatorPrivKeys []cmtcrypto.PrivKey, validators []*stakeTypes.Validator, accounts []authtypes.GenesisAccount, balances []banktypes.Balance, testOpts ...*helper.TestOpts) (*HeimdallApp, *dbm.MemDB, log.Logger, []cmtcrypto.PrivKey) {
 	t.Helper()
+	return setupAppWithValidatorSetAndLogger(t, log.NewTestLogger(t), validatorPrivKeys, validators, accounts, balances, testOpts...)
+}
+
+// setupAppWithValidatorSetAndLogger is like setupAppWithValidatorSet but lets the caller
+// supply the app's logger instead of always constructing a default test logger.
+func setupAppWithValidatorSetAndLogger(t *testing.T, logger log.Logger, validatorPrivKeys []cmtcrypto.PrivKey, validators []*stakeTypes.Validator, accounts []authtypes.GenesisAccount, balances []banktypes.Balance, testOpts ...*helper.TestOpts) (*HeimdallApp, *dbm.MemDB, log.Logger, []cmtcrypto.PrivKey) {
+	t.Helper()
 
 	db := dbm.NewMemDB()
 
 	appOptions := make(simtestutil.AppOptionsMap)
 	appOptions[flags.FlagHome] = DefaultNodeHome
 
-	logger := log.NewTestLogger(t)
 	app := NewHeimdallApp(logger, db, nil, true, appOptions)
 	genesisState := app.DefaultGenesis()
 
