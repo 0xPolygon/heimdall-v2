@@ -127,19 +127,42 @@ func (rl *RootChainListener) eventTopicByName(name string) (common.Hash, bool) {
 // the first place — callers that resolve a hit to a specific value do that
 // check themselves once they have the receipt to decode from.
 func validateReceiptLog(receipt *types.Receipt, expectedAddr common.Address, expectedTopic common.Hash, txHash, logIndex string) (*types.Log, error) {
+	if err := validateReceiptShape(receipt, txHash); err != nil {
+		return nil, err
+	}
+	log, err := resolveAndValidateLog(receipt, txHash, logIndex)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateLogIdentity(log, expectedAddr, expectedTopic, txHash, logIndex); err != nil {
+		return nil, err
+	}
+	return log, nil
+}
+
+// validateReceiptShape confirms the receipt itself is well-formed and
+// actually for the requested, successful transaction, before any of its
+// logs are inspected.
+func validateReceiptShape(receipt *types.Receipt, txHash string) error {
 	if receipt == nil {
-		return nil, fmt.Errorf("nil receipt for tx %s", txHash)
+		return fmt.Errorf("nil receipt for tx %s", txHash)
 	}
 	if receipt.BlockNumber == nil || receipt.BlockNumber.Sign() == 0 {
-		return nil, fmt.Errorf("receipt for tx %s has no block number (not mined)", txHash)
+		return fmt.Errorf("receipt for tx %s has no block number (not mined)", txHash)
 	}
-	expectedHash := common.HexToHash(txHash)
-	if receipt.TxHash != expectedHash {
-		return nil, fmt.Errorf("receipt tx hash %s does not match requested tx %s", receipt.TxHash.Hex(), txHash)
+	if receipt.TxHash != common.HexToHash(txHash) {
+		return fmt.Errorf("receipt tx hash %s does not match requested tx %s", receipt.TxHash.Hex(), txHash)
 	}
 	if receipt.Status != types.ReceiptStatusSuccessful {
-		return nil, fmt.Errorf("tx %s reverted (status=%d)", txHash, receipt.Status)
+		return fmt.Errorf("tx %s reverted (status=%d)", txHash, receipt.Status)
 	}
+	return nil
+}
+
+// resolveAndValidateLog finds the requested log index in the receipt and
+// confirms its block/transaction metadata actually agrees with the receipt
+// it supposedly came from.
+func resolveAndValidateLog(receipt *types.Receipt, txHash, logIndex string) (*types.Log, error) {
 	log := findLogByIndex(receipt.Logs, logIndex)
 	if log == nil {
 		return nil, fmt.Errorf("no log found for log index %s in tx %s", logIndex, txHash)
@@ -147,19 +170,25 @@ func validateReceiptLog(receipt *types.Receipt, expectedAddr common.Address, exp
 	if log.Removed {
 		return nil, fmt.Errorf("log at index %s in tx %s is removed (reorg'd)", logIndex, txHash)
 	}
-	if log.TxHash != expectedHash {
+	if log.TxHash != common.HexToHash(txHash) {
 		return nil, fmt.Errorf("log tx hash %s does not match requested tx %s", log.TxHash.Hex(), txHash)
 	}
 	if log.BlockNumber != receipt.BlockNumber.Uint64() || log.BlockHash != receipt.BlockHash || log.TxIndex != receipt.TransactionIndex {
 		return nil, fmt.Errorf("log block/transaction metadata does not match its own receipt (tx %s, log index %s)", txHash, logIndex)
 	}
+	return log, nil
+}
+
+// validateLogIdentity confirms the log actually came from the expected
+// contract and carries the specific event topic that was asked for.
+func validateLogIdentity(log *types.Log, expectedAddr common.Address, expectedTopic common.Hash, txHash, logIndex string) error {
 	if log.Address != expectedAddr {
-		return nil, fmt.Errorf("log address %s does not match expected contract %s", log.Address.Hex(), expectedAddr.Hex())
+		return fmt.Errorf("log address %s does not match expected contract %s", log.Address.Hex(), expectedAddr.Hex())
 	}
 	if len(log.Topics) == 0 || log.Topics[0] != expectedTopic {
-		return nil, fmt.Errorf("log topic does not match expected event (tx %s, log index %s)", txHash, logIndex)
+		return fmt.Errorf("log topic does not match expected event (tx %s, log index %s)", txHash, logIndex)
 	}
-	return log, nil
+	return nil
 }
 
 // pickStakeEventHit returns the first non-empty entity row, tagged with the
