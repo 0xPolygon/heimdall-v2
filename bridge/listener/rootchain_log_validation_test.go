@@ -535,6 +535,47 @@ func TestPruneStaleLogFailureCounts(t *testing.T) {
 	require.Equal(t, uint64(3), rl.logFailureCounts["recurring"])
 }
 
+// TestRejectRootChainLog_CapsTrackedFailures proves logFailureCounts can't
+// grow without bound: an endpoint returning a fresh, distinct bad log on
+// every poll never lets any single entry reach maxRootChainLogRejections,
+// so nothing is ever quarantined or pruned to bound the map naturally. Once
+// the cap is reached, a brand-new key is refused, but an already-tracked
+// one still increments.
+func TestRejectRootChainLog_CapsTrackedFailures(t *testing.T) {
+	knownTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
+	knownEvent := &abi.Event{Name: helper.NewHeaderBlockEvent}
+	rl := &RootChainListener{
+		eventMap:      map[common.Hash]*abi.Event{knownTopic: knownEvent},
+		eventContract: map[common.Hash]rootChainContract{knownTopic: rootChainContractRootChain},
+	}
+	rl.BaseListener.Logger = log.NewNopLogger()
+
+	const block = uint64(100)
+	existingLog := unrecognizedTopicLog(block, common.HexToHash("0xaaaa12"))
+	rl.logFailureCounts = make(map[string]uint64, maxTrackedLogFailures)
+	rl.logFailureCounts[rootChainLogKey(*existingLog)] = 5
+	for i := 1; i < maxTrackedLogFailures; i++ {
+		rl.logFailureCounts[strconv.Itoa(i)] = 1
+	}
+	require.Len(t, rl.logFailureCounts, maxTrackedLogFailures)
+
+	contractAddresses := map[rootChainContract]common.Address{}
+	fromBlock, toBlock := big.NewInt(int64(block)), big.NewInt(int64(block))
+
+	state := newRootChainRejectionState()
+	_, ok := rl.validateLogAgainstQuery(*existingLog, contractAddresses, fromBlock, toBlock, state)
+	require.False(t, ok)
+	require.Equal(t, uint64(6), rl.logFailureCounts[rootChainLogKey(*existingLog)], "an already-tracked key keeps incrementing at the cap")
+	require.Len(t, rl.logFailureCounts, maxTrackedLogFailures)
+
+	newLog := unrecognizedTopicLog(block, common.HexToHash("0xaaaa13"))
+	state = newRootChainRejectionState()
+	_, ok = rl.validateLogAgainstQuery(*newLog, contractAddresses, fromBlock, toBlock, state)
+	require.False(t, ok)
+	require.NotContains(t, rl.logFailureCounts, rootChainLogKey(*newLog), "a brand-new key is refused once the cap is reached")
+	require.Len(t, rl.logFailureCounts, maxTrackedLogFailures)
+}
+
 // mockEthGetLogsByRange starts a JSON-RPC HTTP server that answers
 // eth_getLogs by inspecting the request's fromBlock/toBlock and calling
 // logsFor to decide what to return for that exact sub-range — so different
@@ -706,6 +747,45 @@ func TestProcessRootChainBlockRange_QuarantineNeverResolvesAWiderRange(t *testin
 	// never have been independently queried at all.
 	require.Greater(t, requestCount.Load(), int64(1),
 		"the range must be bisected down to the single block that actually owns the quarantined log, never resolved in one wide-range request")
+}
+
+// TestProcessRootChainBlockRange_QuarantinesAnOutOfRangeLog proves a log
+// whose own claimed block number is permanently outside the range being
+// swept — an endpoint returning garbage from before the sweep even started,
+// never inside any sub-range bisection can reach — still gets quarantined
+// and stops blocking the cursor, instead of withholding it forever because
+// its own blockNumber can never equal the single block being resolved.
+func TestProcessRootChainBlockRange_QuarantinesAnOutOfRangeLog(t *testing.T) {
+	const queriedBlock = uint64(500)
+	badLog := &types.Log{
+		Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+		Topics:      []common.Hash{common.HexToHash("0x9999999999999999999999999999999999999999999999999999999999999999")},
+		TxHash:      common.HexToHash("0xaaaa10"),
+		BlockNumber: 0,
+	}
+
+	rl, rootChainContext := twoBlockListener(t, func(fromBlock, toBlock uint64) []*types.Log {
+		return []*types.Log{badLog}
+	})
+
+	quarantinedBefore := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
+
+	for cycle := 1; cycle < maxRootChainLogRejections; cycle++ {
+		state := newRootChainRejectionState()
+		err := rl.processRootChainBlockRange(rootChainContext, big.NewInt(int64(queriedBlock)), big.NewInt(int64(queriedBlock)), state)
+		require.Error(t, err, "cycle %d (below the threshold) must still withhold the cursor", cycle)
+	}
+
+	state := newRootChainRejectionState()
+	err := rl.processRootChainBlockRange(rootChainContext, big.NewInt(int64(queriedBlock)), big.NewInt(int64(queriedBlock)), state)
+	require.NoError(t, err, "the Nth cycle must quarantine the out-of-range log and advance the cursor instead of erroring forever")
+
+	quarantinedAfter := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
+	require.Equal(t, float64(1), quarantinedAfter-quarantinedBefore)
+
+	lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+	require.NoError(t, err)
+	require.Equal(t, strconv.FormatUint(queriedBlock, 10), string(lastBlockBytes))
 }
 
 // TestQueryAndBroadcastEvents_TransientFailureNeverTouchesQuarantine proves a

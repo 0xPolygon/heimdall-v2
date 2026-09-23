@@ -45,7 +45,10 @@ func (rl *RootChainListener) confirmedHeadBlock(rootChainContext *RootChainListe
 		return nil, false
 	}
 
-	return headerNumber.Sub(headerNumber, confirmationBlocks), true
+	// A fresh *big.Int, not an in-place Sub on headerNumber: newHeader.header
+	// is owned by the caller for the rest of ProcessHeader, so mutating its
+	// Number field here would corrupt it for anything read afterward.
+	return new(big.Int).Sub(headerNumber, confirmationBlocks), true
 }
 
 // fromBlockAfterLastPersisted returns the first block to process: the block

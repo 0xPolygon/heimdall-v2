@@ -80,6 +80,14 @@ const (
 // rejectRootChainLog and quarantineRootChainLog.
 const maxRootChainLogRejections = 100
 
+// maxTrackedLogFailures bounds logFailureCounts itself, independent of any
+// single log's own count: an endpoint that returns a different bad
+// txHash:index on every poll never lets any one entry reach
+// maxRootChainLogRejections, so nothing is ever quarantined or pruned. Once
+// this many distinct logs are being tracked, rejectRootChainLog stops
+// adding new ones rather than growing the map for the life of the process.
+const maxTrackedLogFailures = 10_000
+
 var (
 	errMainChainClientUnavailable = errors.New("main chain client is nil")
 	errNoSupportedRootChainTopics = errors.New("no supported rootChain event topics configured")
@@ -219,8 +227,16 @@ type rootChainLogDetail struct {
 	txHash      ethCommon.Hash
 	logIndex    uint64
 	blockNumber uint64
-	address     ethCommon.Address
-	topic       ethCommon.Hash
+	// blockNumberUntrusted is set for a rejection reason that is itself about
+	// blockNumber not matching the query (currently only "outside the
+	// requested block range") — for those, the field the log claims is
+	// exactly what's in question, so isQuarantineExcludable can't use it to
+	// confirm this log belongs to the block being resolved. It doesn't need
+	// to: the rejection itself is derived independently, from the query's
+	// own bounds, not from trusting the log.
+	blockNumberUntrusted bool
+	address              ethCommon.Address
+	topic                ethCommon.Hash
 }
 
 // queryAndBroadcastEvents fetches supported events from the rootChain and handles all of them
@@ -350,17 +366,23 @@ func (rl *RootChainListener) classifyRootChainLogs(logs []types.Log, contractAdd
 
 // isQuarantineExcludable reports whether logKey, having already crossed the
 // quarantine threshold, may be excluded from the current batch rather than
-// failing it. Both conditions matter: fromBlock == toBlock confirms
-// bisection has narrowed to the exact single block, not some still-being-
-// bisected wider range, and detail.blockNumber == toBlock confirms the
-// quarantined log's own claimed block is this block, not some other block
-// from earlier in the same cycle's bisection tree. Without both, excluding
-// the log would let a multi-block range report success — and
-// persistLastRootBlock advance the cursor — while never actually
-// re-querying every block in it.
+// failing it. fromBlock == toBlock always matters: bisection must have
+// narrowed to the exact single block, not some still-being-bisected wider
+// range, or excluding the log would let a multi-block range report success
+// — and persistLastRootBlock advance the cursor — while never actually
+// re-querying every block in it. Beyond that, exclusion needs independent
+// confirmation the log doesn't belong to the block being resolved:
+// detail.blockNumber == toBlock for a log whose claimed block was trusted
+// when it was rejected, or unconditionally for one whose claimed block was
+// itself the reason for rejection (blockNumberUntrusted) — that rejection
+// was derived from the query's own bounds, not from the log, so it holds
+// regardless of what the log claims.
 func isQuarantineExcludable(state *rootChainRejectionState, logKey string, fromBlock, toBlock *big.Int) bool {
 	detail, quarantined := state.quarantine[logKey]
-	return quarantined && fromBlock.Cmp(toBlock) == 0 && detail.blockNumber == toBlock.Uint64()
+	if !quarantined || fromBlock.Cmp(toBlock) != 0 {
+		return false
+	}
+	return detail.blockNumberUntrusted || detail.blockNumber == toBlock.Uint64()
 }
 
 // validateLogAgainstQuery checks that a log returned by FilterLogs actually
@@ -382,21 +404,21 @@ func isQuarantineExcludable(state *rootChainRejectionState, logKey string, fromB
 // self-heal path today.
 func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int, state *rootChainRejectionState) (*abi.Event, bool) {
 	if vLog.Removed {
-		return rl.rejectRootChainLog(state, vLog, "a removed (reorg'd) log", "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(state, vLog, fromBlock, toBlock, "a removed (reorg'd) log", "txHash", vLog.TxHash)
 	}
 
 	if vLog.BlockNumber < fromBlock.Uint64() || vLog.BlockNumber > toBlock.Uint64() {
-		return rl.rejectRootChainLog(state, vLog, "a log outside the requested block range",
+		return rl.rejectRootChainLog(state, vLog, fromBlock, toBlock, "a log outside the requested block range",
 			"blockNumber", vLog.BlockNumber, "fromBlock", fromBlock, "toBlock", toBlock, "txHash", vLog.TxHash)
 	}
 
 	if len(vLog.Topics) == 0 {
-		return rl.rejectRootChainLog(state, vLog, "a log with no topics", "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(state, vLog, fromBlock, toBlock, "a log with no topics", "txHash", vLog.TxHash)
 	}
 
 	selectedEvent, ok := rl.eventMap[vLog.Topics[0]]
 	if !ok {
-		return rl.rejectRootChainLog(state, vLog, "a log with an unrecognized topic", "topic", vLog.Topics[0], "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(state, vLog, fromBlock, toBlock, "a log with an unrecognized topic", "topic", vLog.Topics[0], "txHash", vLog.TxHash)
 	}
 
 	// eventMap spans every event the three ABIs define; rootChainEvents is the
@@ -404,17 +426,17 @@ func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAdd
 	// rootChainEventTopics). A topic can resolve in eventMap while still being
 	// outside that subset, which would otherwise defeat this exact check.
 	if _, ok := rootChainEvents[selectedEvent.Name]; !ok {
-		return rl.rejectRootChainLog(state, vLog, "a log for an event outside the query's topic set", "event", selectedEvent.Name, "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(state, vLog, fromBlock, toBlock, "a log for an event outside the query's topic set", "event", selectedEvent.Name, "txHash", vLog.TxHash)
 	}
 
 	contract, ok := rl.eventContract[vLog.Topics[0]]
 	if !ok {
-		return rl.rejectRootChainLog(state, vLog, "a log for an event missing from the contract-binding map", "event", selectedEvent.Name, "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(state, vLog, fromBlock, toBlock, "a log for an event missing from the contract-binding map", "event", selectedEvent.Name, "txHash", vLog.TxHash)
 	}
 
 	expectedAddress := contractAddresses[contract]
 	if vLog.Address != expectedAddress {
-		return rl.rejectRootChainLog(state, vLog, "a log from an address that doesn't match its event's contract",
+		return rl.rejectRootChainLog(state, vLog, fromBlock, toBlock, "a log from an address that doesn't match its event's contract",
 			"address", vLog.Address, "expectedAddress", expectedAddress, "event", selectedEvent.Name, "txHash", vLog.TxHash)
 	}
 
@@ -435,8 +457,11 @@ func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAdd
 // duplicated within it. Crossing maxRootChainLogRejections records an entry
 // in state.quarantine keyed by this exact log, for validateAndHandleLogs to
 // act on — never keyed by block number alone, so a different log or a
-// transient failure on the same block can't consume it.
-func (rl *RootChainListener) rejectRootChainLog(state *rootChainRejectionState, vLog types.Log, reason string, keyvals ...any) (*abi.Event, bool) {
+// transient failure on the same block can't consume it. fromBlock/toBlock
+// are the query that produced this rejection, recorded on the quarantine
+// entry as blockNumberUntrusted whenever vLog.BlockNumber itself is outside
+// them — see isQuarantineExcludable for why that distinction matters.
+func (rl *RootChainListener) rejectRootChainLog(state *rootChainRejectionState, vLog types.Log, fromBlock, toBlock *big.Int, reason string, keyvals ...any) (*abi.Event, bool) {
 	logKey := rootChainLogKey(vLog)
 	rl.Logger.Error("RootChainListener: rootchain log query returned "+reason, keyvals...)
 
@@ -449,6 +474,10 @@ func (rl *RootChainListener) rejectRootChainLog(state *rootChainRejectionState, 
 	if rl.logFailureCounts == nil {
 		rl.logFailureCounts = make(map[string]uint64)
 	}
+	if _, tracked := rl.logFailureCounts[logKey]; !tracked && len(rl.logFailureCounts) >= maxTrackedLogFailures {
+		rl.Logger.Warn("RootChainListener: too many distinct rootchain logs failing validation, not tracking another one toward quarantine", "logKey", logKey, "tracked", len(rl.logFailureCounts))
+		return nil, false
+	}
 	rl.logFailureCounts[logKey]++
 	if rl.logFailureCounts[logKey] >= maxRootChainLogRejections {
 		var topic ethCommon.Hash
@@ -456,13 +485,14 @@ func (rl *RootChainListener) rejectRootChainLog(state *rootChainRejectionState, 
 			topic = vLog.Topics[0]
 		}
 		state.quarantine[logKey] = &rootChainLogDetail{
-			logKey:      logKey,
-			reason:      reason,
-			txHash:      vLog.TxHash,
-			logIndex:    uint64(vLog.Index),
-			blockNumber: vLog.BlockNumber,
-			address:     vLog.Address,
-			topic:       topic,
+			logKey:               logKey,
+			reason:               reason,
+			txHash:               vLog.TxHash,
+			logIndex:             uint64(vLog.Index),
+			blockNumber:          vLog.BlockNumber,
+			blockNumberUntrusted: vLog.BlockNumber < fromBlock.Uint64() || vLog.BlockNumber > toBlock.Uint64(),
+			address:              vLog.Address,
+			topic:                topic,
 		}
 	}
 
