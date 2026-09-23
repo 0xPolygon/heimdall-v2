@@ -788,6 +788,36 @@ func TestProcessRootChainBlockRange_QuarantinesAnOutOfRangeLog(t *testing.T) {
 	require.Equal(t, strconv.FormatUint(queriedBlock, 10), string(lastBlockBytes))
 }
 
+// TestProcessRootChainBlockRange_QuarantineClearsWholeChunkInOneCycle proves
+// a persistently-misbehaving log an endpoint returns for every query
+// regardless of the requested range gets excluded at every single-block leaf
+// that re-encounters it within the same cycle, not just the first one
+// bisection reaches — so a wide, multi-block chunk clears entirely in one
+// cycle once the log crosses the quarantine threshold, instead of only the
+// first excluded block's cursor advancing and every other leaf failing
+// because the quarantine entry was already consumed. The quarantine metric
+// still fires exactly once despite the log being excluded at several leaves.
+func TestProcessRootChainBlockRange_QuarantineClearsWholeChunkInOneCycle(t *testing.T) {
+	rl, rootChainContext := newQuarantineTestListener(t)
+	badLogKey := rootChainLogKey(types.Log{TxHash: common.HexToHash("0xbad"), Index: 0})
+	rl.logFailureCounts = map[string]uint64{badLogKey: maxRootChainLogRejections - 1}
+
+	quarantinedBefore := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
+
+	state := newRootChainRejectionState()
+	err := rl.processRootChainBlockRange(rootChainContext, big.NewInt(100), big.NewInt(103), state)
+	require.NoError(t, err, "the whole 4-block chunk must clear in one cycle, not just the block first excluded")
+
+	quarantinedAfter := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
+	require.Equal(t, float64(1), quarantinedAfter-quarantinedBefore, "the same log is excluded at several leaves but quarantined only once")
+
+	lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+	require.NoError(t, err)
+	require.Equal(t, "103", string(lastBlockBytes))
+
+	require.Empty(t, rl.logFailureCounts, "the quarantined log's failure count is dropped")
+}
+
 // TestQueryAndBroadcastEvents_TransientFailureNeverTouchesQuarantine proves a
 // transient, non-content failure (the L1 client not being ready) can't be
 // confused with a validation-rejection quarantine: it fails before
