@@ -572,8 +572,70 @@ func TestRejectRootChainLog_CapsTrackedFailures(t *testing.T) {
 	state = newRootChainRejectionState()
 	_, ok = rl.validateLogAgainstQuery(*newLog, contractAddresses, fromBlock, toBlock, state)
 	require.False(t, ok)
-	require.NotContains(t, rl.logFailureCounts, rootChainLogKey(*newLog), "a brand-new key is refused once the cap is reached")
-	require.Len(t, rl.logFailureCounts, maxTrackedLogFailures)
+	require.Equal(t, uint64(1), rl.logFailureCounts[rootChainLogKey(*newLog)], "a brand-new key is admitted by evicting the lowest-count entry, not refused")
+	require.Len(t, rl.logFailureCounts, maxTrackedLogFailures, "the map stays at the cap: one eviction per new key")
+	require.Contains(t, rl.logFailureCounts, rootChainLogKey(*existingLog), "eviction must never remove the key that's actively accumulating toward quarantine")
+}
+
+// TestEvictLowestTrackedLogFailure uses enough distinct counts that only one
+// entry is the true minimum, so the evicted key can be checked directly
+// rather than merely "some low-count entry, whichever Go's randomized map
+// iteration happens to visit last" — a bug that always evicted the
+// last-visited entry regardless of its count would still look plausible
+// against a handful of tied entries.
+func TestEvictLowestTrackedLogFailure(t *testing.T) {
+	const n = 50
+	rl := &RootChainListener{logFailureCounts: make(map[string]uint64, n)}
+	for i := 0; i < n; i++ {
+		rl.logFailureCounts[strconv.Itoa(i)] = uint64(i + 1)
+	}
+
+	rl.evictLowestTrackedLogFailure()
+
+	require.Len(t, rl.logFailureCounts, n-1)
+	require.NotContains(t, rl.logFailureCounts, "0", "the entry with the smallest count must be the one evicted")
+	for i := 1; i < n; i++ {
+		require.Equal(t, uint64(i+1), rl.logFailureCounts[strconv.Itoa(i)], "every other entry must survive untouched")
+	}
+}
+
+// TestRejectRootChainLog_EvictionLetsARecurringLogReachQuarantine proves the
+// eviction policy actually resolves the scenario the cap exists for: once
+// logFailureCounts is full of one-off entries (a single flood of distinct
+// bad logs, never seen again), a log that keeps recurring every cycle still
+// climbs to maxRootChainLogRejections and gets quarantined, instead of
+// permanently losing the race for a map slot to the very entries it should
+// be able to outlast.
+func TestRejectRootChainLog_EvictionLetsARecurringLogReachQuarantine(t *testing.T) {
+	knownTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
+	knownEvent := &abi.Event{Name: helper.NewHeaderBlockEvent}
+	rl := &RootChainListener{
+		eventMap:      map[common.Hash]*abi.Event{knownTopic: knownEvent},
+		eventContract: map[common.Hash]rootChainContract{knownTopic: rootChainContractRootChain},
+	}
+	rl.BaseListener.Logger = log.NewNopLogger()
+
+	const block = uint64(200)
+	rl.logFailureCounts = make(map[string]uint64, maxTrackedLogFailures)
+	for i := 0; i < maxTrackedLogFailures; i++ {
+		rl.logFailureCounts[strconv.Itoa(i)] = 1
+	}
+
+	recurringLog := unrecognizedTopicLog(block, common.HexToHash("0xaaaa14"))
+	contractAddresses := map[rootChainContract]common.Address{}
+	fromBlock, toBlock := big.NewInt(int64(block)), big.NewInt(int64(block))
+
+	for cycle := 1; cycle <= maxRootChainLogRejections; cycle++ {
+		state := newRootChainRejectionState()
+		_, ok := rl.validateLogAgainstQuery(*recurringLog, contractAddresses, fromBlock, toBlock, state)
+		require.False(t, ok)
+		if cycle < maxRootChainLogRejections {
+			_, quarantined := state.quarantine[rootChainLogKey(*recurringLog)]
+			require.False(t, quarantined, "cycle %d must not have crossed the threshold yet", cycle)
+		}
+	}
+
+	require.Equal(t, uint64(maxRootChainLogRejections), rl.logFailureCounts[rootChainLogKey(*recurringLog)])
 }
 
 // mockEthGetLogsByRange starts a JSON-RPC HTTP server that answers

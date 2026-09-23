@@ -84,8 +84,11 @@ const maxRootChainLogRejections = 100
 // single log's own count: an endpoint that returns a different bad
 // txHash:index on every poll never lets any one entry reach
 // maxRootChainLogRejections, so nothing is ever quarantined or pruned. Once
-// this many distinct logs are being tracked, rejectRootChainLog stops
-// adding new ones rather than growing the map for the life of the process.
+// this many distinct logs are tracked, rejectRootChainLog evicts the entry
+// with the lowest count to make room for a new one — never refuses the new
+// key outright, or a log that keeps recurring after the map has filled with
+// one-off entries could never accumulate enough count to be quarantined,
+// stalling the cursor on it forever.
 const maxTrackedLogFailures = 10_000
 
 var (
@@ -474,8 +477,7 @@ func (rl *RootChainListener) rejectRootChainLog(state *rootChainRejectionState, 
 		rl.logFailureCounts = make(map[string]uint64)
 	}
 	if _, tracked := rl.logFailureCounts[logKey]; !tracked && len(rl.logFailureCounts) >= maxTrackedLogFailures {
-		rl.Logger.Warn("RootChainListener: too many distinct rootchain logs failing validation, not tracking another one toward quarantine", "logKey", logKey, "tracked", len(rl.logFailureCounts))
-		return nil, false
+		rl.evictLowestTrackedLogFailure()
 	}
 	rl.logFailureCounts[logKey]++
 	if rl.logFailureCounts[logKey] >= maxRootChainLogRejections {
@@ -495,6 +497,26 @@ func (rl *RootChainListener) rejectRootChainLog(state *rootChainRejectionState, 
 	}
 
 	return nil, false
+}
+
+// evictLowestTrackedLogFailure drops the tracked entry with the smallest
+// failure count, making room for a new one once logFailureCounts is at
+// maxTrackedLogFailures. The lowest count is the closest thing available to
+// "least established" without adding separate recency bookkeeping: a log
+// that keeps recurring climbs past any one-off flood entry within a few
+// cycles and earns a permanent slot, while flood entries that are never
+// seen again keep losing ties and get evicted first.
+func (rl *RootChainListener) evictLowestTrackedLogFailure() {
+	var lowestKey string
+	var lowestCount uint64
+	first := true
+	for logKey, count := range rl.logFailureCounts {
+		if first || count < lowestCount {
+			lowestKey, lowestCount = logKey, count
+			first = false
+		}
+	}
+	delete(rl.logFailureCounts, lowestKey)
 }
 
 // quarantineRootChainLog is called once a log has failed validation
