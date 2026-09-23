@@ -148,128 +148,16 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 		return
 	}
 
-	requiredConfirmations := rootChainContext.ChainmanagerParams.MainChainTxConfirmations
-	headerNumber := newHeader.header.Number
-	from := headerNumber
-
-	// If the incoming header is a `finalized` header, it can directly be considered as
-	// the upper cap (i.e., the `to` value)
-	//
-	// If the incoming header is a `latest` header, rely on `requiredConfirmations` to get
-	// finalized block range.
-	if !newHeader.isFinalized {
-		// This check is only useful when the L1 blocks received are < requiredConfirmations
-		// just for the below headerNumber -= requiredConfirmations math operation
-		confirmationBlocks := big.NewInt(0).SetUint64(requiredConfirmations)
-		if headerNumber.Cmp(confirmationBlocks) <= 0 {
-			rl.Logger.Error("RootChainListener: block number less than confirmations required", "blockNumber", headerNumber.Uint64, "confirmationsRequired", confirmationBlocks.Uint64)
-			return
-		}
-
-		// subtract the `confirmationBlocks` to only consider blocks before that
-		headerNumber = headerNumber.Sub(headerNumber, confirmationBlocks)
-
-		// update the `from` value
-		from = headerNumber
+	from, to, ok := rl.rootChainBlockRangeToProcess(rootChainContext, newHeader)
+	if !ok {
+		return
 	}
 
-	// get the last block from storage
-	hasLastBlock, _ := rl.storageClient.Has([]byte(lastRootBlockKey), nil)
-	if hasLastBlock {
-		lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
-		if err != nil {
-			rl.Logger.Error("RootChainListener: error while fetching last block bytes from storage", "error", err)
-			return
-		}
-
-		rl.Logger.Debug("RootChainListener: got last block from bridge storage", "lastBlock", string(lastBlockBytes))
-
-		if result, err := strconv.ParseUint(string(lastBlockBytes), 10, 64); err == nil {
-			if result >= headerNumber.Uint64() {
-				return
-			}
-
-			from = big.NewInt(0).SetUint64(result + 1)
-		}
-	}
-
-	to := headerNumber
-
-	// Prepare block range
-	if to.Cmp(from) == -1 {
-		from = to
-	}
-
-	// process logs in chunks to avoid oversized FilterLogs responses
-	for chunkFrom := new(big.Int).Set(from); chunkFrom.Cmp(to) <= 0; {
-		chunkTo := new(big.Int).Add(chunkFrom, big.NewInt(maxRootChainBlockRange-1))
-		if chunkTo.Cmp(to) > 0 {
-			chunkTo = to
-		}
-
-		if err := rl.processRootChainBlockRange(rootChainContext, chunkFrom, chunkTo); err != nil {
-			rl.Logger.Error(
-				"queryAndBroadcastEvents failed",
-				"error", err,
-				"from", chunkFrom,
-				"to", chunkTo,
-			)
-			// do not advance the cursor, as we want to retry this range on the next header
-			return
-		}
-
-		chunkFrom = new(big.Int).Add(chunkTo, big.NewInt(1))
-	}
-}
-
-// processRootChainBlockRange queries and handles logs for a block range. If the
-// range fails, it is split into smaller ranges until either processing succeeds
-// or a single-block query fails. The root block cursor is advanced only after the
-// current range has been fully processed.
-func (rl *RootChainListener) processRootChainBlockRange(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int) error {
-	if err := rl.queryAndBroadcastEvents(rootChainContext, fromBlock, toBlock); err != nil {
-		// A single-block failure cannot be split further. Return the error so
-		// the caller keeps the cursor unchanged and retries this block later.
-		if fromBlock.Cmp(toBlock) >= 0 {
-			return err
-		}
-
-		// Split the failed range and retry smaller ranges. If the left half
-		// also fails, it will be split again by the recursive call below.
-		midBlock := splitBlockRange(fromBlock, toBlock)
-		rl.Logger.Warn(
-			"RootChainListener: splitting rootChain event log query after RPC failure",
-			"error", err,
-			"fromBlock", fromBlock,
-			"toBlock", toBlock,
-			"leftToBlock", midBlock,
-		)
-
-		// Process the earlier half first to preserve root-chain block order.
-		if err := rl.processRootChainBlockRange(rootChainContext, fromBlock, midBlock); err != nil {
-			return err
-		}
-
-		// Process the later half only after the earlier half has succeeded.
-		nextBlock := new(big.Int).Add(midBlock, big.NewInt(1))
-		return rl.processRootChainBlockRange(rootChainContext, nextBlock, toBlock)
-	}
-
-	// Persist only after the full range has been handled successfully.
-	return rl.persistLastRootBlock(toBlock)
-}
-
-func (rl *RootChainListener) persistLastRootBlock(block *big.Int) error {
-	if err := rl.storageClient.Put([]byte(lastRootBlockKey), []byte(block.String()), nil); err != nil {
-		rl.Logger.Error("RootChainListener: error persisting last root block in storage", "error", err, "lastRootBlock", block.String())
-		return err
-	}
-
-	return nil
+	rl.processRootChainBlockRangeInChunks(rootChainContext, from, to)
 }
 
 // queryAndBroadcastEvents fetches supported events from the rootChain and handles all of them
-func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int) error {
+func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int, rejectedLogs map[string]struct{}) error {
 	rl.Logger.Debug("RootChainListener: querying rootChain event logs", "fromBlock", fromBlock, "toBlock", toBlock)
 
 	if rl.contractCaller.MainChainClient == nil {
@@ -319,18 +207,18 @@ func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChain
 		rl.Logger.Debug("RootChainListener: new logs found", "numberOfLogs", len(logs))
 	}
 
-	return rl.validateAndHandleLogs(logs, contractAddresses, fromBlock, toBlock)
+	return rl.validateAndHandleLogs(logs, contractAddresses, fromBlock, toBlock, rejectedLogs)
 }
 
 // validateAndHandleLogs validates every log in the batch before handling any
 // of it: a batch with one bad log among several good ones must not partially
 // dispatch, or a retry of the same range (see processRootChainBlockRange)
 // would re-dispatch the already-handled ones.
-func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int) error {
+func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int, rejectedLogs map[string]struct{}) error {
 	selectedEvents := make([]*abi.Event, len(logs))
 
 	for i, vLog := range logs {
-		selectedEvent, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		selectedEvent, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, rejectedLogs)
 		if !ok {
 			return errUnexpectedRootChainLog
 		}
@@ -362,23 +250,27 @@ func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAdd
 // covers that gap for checkpoint acks, the three nonce-gated stake events,
 // and state syncs; validator joins, top-ups, slashes, and unjails have no
 // self-heal path today.
-func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int) (*abi.Event, bool) {
+func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int, rejectedLogs map[string]struct{}) (*abi.Event, bool) {
+	// Identifies this log across every bisection level that re-encounters it
+	// within the same top-level call, for rejectRootChainLog's dedup.
+	logKey := vLog.TxHash.Hex() + ":" + strconv.FormatUint(uint64(vLog.Index), 10)
+
 	if vLog.Removed {
-		return rl.rejectRootChainLog("a removed (reorg'd) log", "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(rejectedLogs, logKey, "a removed (reorg'd) log", "txHash", vLog.TxHash)
 	}
 
 	if vLog.BlockNumber < fromBlock.Uint64() || vLog.BlockNumber > toBlock.Uint64() {
-		return rl.rejectRootChainLog("a log outside the requested block range",
+		return rl.rejectRootChainLog(rejectedLogs, logKey, "a log outside the requested block range",
 			"blockNumber", vLog.BlockNumber, "fromBlock", fromBlock, "toBlock", toBlock, "txHash", vLog.TxHash)
 	}
 
 	if len(vLog.Topics) == 0 {
-		return rl.rejectRootChainLog("a log with no topics", "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(rejectedLogs, logKey, "a log with no topics", "txHash", vLog.TxHash)
 	}
 
 	selectedEvent, ok := rl.eventMap[vLog.Topics[0]]
 	if !ok {
-		return rl.rejectRootChainLog("a log with an unrecognized topic", "topic", vLog.Topics[0], "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(rejectedLogs, logKey, "a log with an unrecognized topic", "topic", vLog.Topics[0], "txHash", vLog.TxHash)
 	}
 
 	// eventMap spans every event the three ABIs define; rootChainEvents is the
@@ -386,29 +278,39 @@ func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAdd
 	// rootChainEventTopics). A topic can resolve in eventMap while still being
 	// outside that subset, which would otherwise defeat this exact check.
 	if _, ok := rootChainEvents[selectedEvent.Name]; !ok {
-		return rl.rejectRootChainLog("a log for an event outside the query's topic set", "event", selectedEvent.Name, "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(rejectedLogs, logKey, "a log for an event outside the query's topic set", "event", selectedEvent.Name, "txHash", vLog.TxHash)
 	}
 
 	contract, ok := rl.eventContract[vLog.Topics[0]]
 	if !ok {
-		return rl.rejectRootChainLog("a log for an event missing from the contract-binding map", "event", selectedEvent.Name, "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(rejectedLogs, logKey, "a log for an event missing from the contract-binding map", "event", selectedEvent.Name, "txHash", vLog.TxHash)
 	}
 
 	expectedAddress := contractAddresses[contract]
 	if vLog.Address != expectedAddress {
-		return rl.rejectRootChainLog("a log from an address that doesn't match its event's contract",
+		return rl.rejectRootChainLog(rejectedLogs, logKey, "a log from an address that doesn't match its event's contract",
 			"address", vLog.Address, "expectedAddress", expectedAddress, "event", selectedEvent.Name, "txHash", vLog.TxHash)
 	}
 
 	return selectedEvent, true
 }
 
-// rejectRootChainLog logs and counts a rootchain log query rejection, always
-// returning (nil, false) so validateLogAgainstQuery's reject sites read as a
-// single line each.
-func (rl *RootChainListener) rejectRootChainLog(reason string, keyvals ...any) (*abi.Event, bool) {
+// rejectRootChainLog logs a rootchain log query rejection, always returning
+// (nil, false) so validateLogAgainstQuery's reject sites read as a single
+// line each. It counts the rejection in rootchain_listener_log_rejected_total
+// at most once per logKey per rejectedLogs set: processRootChainBlockRange
+// bisects a failed range and re-queries every sub-range that still contains
+// a persistently-bad log, so without this the same log would inflate the
+// metric by roughly log2(range) within a single poll cycle. rejectedLogs is
+// shared across that whole cycle (see ProcessHeader) so the metric still
+// increments once per cycle for a log that's still broken — that's honest
+// signal, just not duplicated within it.
+func (rl *RootChainListener) rejectRootChainLog(rejectedLogs map[string]struct{}, logKey, reason string, keyvals ...any) (*abi.Event, bool) {
 	rl.Logger.Error("RootChainListener: rootchain log query returned "+reason, keyvals...)
-	metrics.RootChainListenerLogRejected.Inc()
+	if _, alreadyCounted := rejectedLogs[logKey]; !alreadyCounted {
+		rejectedLogs[logKey] = struct{}{}
+		metrics.RootChainListenerLogRejected.Inc()
+	}
 	return nil, false
 }
 
@@ -426,13 +328,6 @@ func rootChainEventTopics(eventMap map[ethCommon.Hash]*abi.Event) []ethCommon.Ha
 	}
 
 	return topics
-}
-
-func splitBlockRange(fromBlock *big.Int, toBlock *big.Int) *big.Int {
-	return new(big.Int).Add(
-		fromBlock,
-		new(big.Int).Div(new(big.Int).Sub(toBlock, fromBlock), big.NewInt(2)),
-	)
 }
 
 func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string, logBytes []byte, delay time.Duration, event interface{}) {

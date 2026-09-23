@@ -1,16 +1,25 @@
 package listener
 
 import (
+	"encoding/json"
+	"io"
 	"math/big"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"cosmossdk.io/log"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
+	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
 func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
@@ -81,7 +90,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		event, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		event, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.True(t, ok)
 		require.Same(t, rootChainEvent, event)
 	})
@@ -96,7 +105,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		event, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		event, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.True(t, ok)
 		require.Same(t, stakingInfoEvent, event)
 	})
@@ -107,11 +116,11 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 		rl := newListener()
 
 		lowerBound := types.Log{Address: rootChainAddress, Topics: []common.Hash{rootChainTopic}, BlockNumber: fromBlock.Uint64()}
-		_, ok := rl.validateLogAgainstQuery(lowerBound, contractAddresses, fromBlock, toBlock)
+		_, ok := rl.validateLogAgainstQuery(lowerBound, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.True(t, ok)
 
 		upperBound := types.Log{Address: rootChainAddress, Topics: []common.Hash{rootChainTopic}, BlockNumber: toBlock.Uint64()}
-		_, ok = rl.validateLogAgainstQuery(upperBound, contractAddresses, fromBlock, toBlock)
+		_, ok = rl.validateLogAgainstQuery(upperBound, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.True(t, ok)
 	})
 
@@ -125,7 +134,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.False(t, ok)
 	})
 
@@ -141,7 +150,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.False(t, ok)
 	})
 
@@ -157,7 +166,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.False(t, ok)
 	})
 
@@ -171,7 +180,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: fromBlock.Uint64() - 1,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.False(t, ok)
 	})
 
@@ -185,7 +194,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: toBlock.Uint64() + 1,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.False(t, ok)
 	})
 
@@ -199,7 +208,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.False(t, ok)
 	})
 
@@ -213,7 +222,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.False(t, ok)
 	})
 
@@ -227,7 +236,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.False(t, ok)
 	})
 
@@ -241,7 +250,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.False(t, ok)
 	})
 
@@ -256,7 +265,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			Removed:     true,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.False(t, ok)
 	})
 }
@@ -298,7 +307,7 @@ func TestRootChainListener_ValidateAndHandleLogs(t *testing.T) {
 
 		var err error
 		require.NotPanics(t, func() {
-			err = rl.validateAndHandleLogs(logs, contractAddresses, fromBlock, toBlock)
+			err = rl.validateAndHandleLogs(logs, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		})
 		require.ErrorIs(t, err, errUnexpectedRootChainLog)
 	})
@@ -308,7 +317,96 @@ func TestRootChainListener_ValidateAndHandleLogs(t *testing.T) {
 
 		rl := newListener()
 
-		err := rl.validateAndHandleLogs(nil, contractAddresses, fromBlock, toBlock)
+		err := rl.validateAndHandleLogs(nil, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
 		require.NoError(t, err)
 	})
+}
+
+// mockEthGetLogs starts a JSON-RPC HTTP server that answers eth_getLogs with
+// the given logs JSON for every request, regardless of the requested block
+// range — simulating an endpoint that doesn't honor FilterLogs' filter, the
+// exact scenario validateLogAgainstQuery exists to catch. requestCount is
+// incremented on every call, so a caller can confirm bisection actually
+// re-queried the endpoint more than once.
+func mockEthGetLogs(t *testing.T, logsJSON string, requestCount *int) string {
+	t.Helper()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+
+		var req struct {
+			ID     json.RawMessage `json:"id"`
+			Method string          `json:"method"`
+		}
+		require.NoError(t, json.Unmarshal(body, &req))
+		require.Equal(t, "eth_getLogs", req.Method)
+		*requestCount++
+
+		w.Header().Set("Content-Type", "application/json")
+		_, err = w.Write([]byte(`{"jsonrpc":"2.0","id":` + string(req.ID) + `,"result":` + logsJSON + `}`))
+		require.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+	return server.URL
+}
+
+// TestProcessRootChainBlockRange_DedupesRejectionMetricAcrossBisection proves
+// the fix for the metric-inflation bug: a persistently-bad log returned by
+// every sub-query during range bisection must only increment
+// rootchain_listener_log_rejected_total once per top-level call, not once
+// per bisection level that re-encounters it.
+func TestProcessRootChainBlockRange_DedupesRejectionMetricAcrossBisection(t *testing.T) {
+	knownTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
+	knownEvent := &abi.Event{Name: helper.NewHeaderBlockEvent}
+	// Not in eventMap at all: every sub-range query re-encounters this same
+	// log and fails the same "unrecognized topic" check, regardless of which
+	// bisected fromBlock/toBlock it's queried against.
+	badLogTopic := common.HexToHash("0x9999999999999999999999999999999999999999999999999999999999999999")
+
+	badLog := &types.Log{
+		Address: common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+		Topics:  []common.Hash{badLogTopic},
+		TxHash:  common.HexToHash("0xbad"),
+		Index:   0,
+	}
+	logsJSON, err := json.Marshal([]*types.Log{badLog})
+	require.NoError(t, err)
+
+	rl := &RootChainListener{
+		eventMap:      map[common.Hash]*abi.Event{knownTopic: knownEvent},
+		eventContract: map[common.Hash]rootChainContract{knownTopic: rootChainContractRootChain},
+	}
+	rl.BaseListener.Logger = log.NewNopLogger()
+
+	var requestCount int
+	rpcURL := mockEthGetLogs(t, string(logsJSON), &requestCount)
+	client, err := ethclient.Dial(rpcURL)
+	require.NoError(t, err)
+	rl.contractCaller.MainChainClient = client
+	rl.contractCaller.MainChainTimeout = 5 * time.Second
+
+	rootChainContext := &RootChainListenerContext{
+		ChainmanagerParams: &chainmanagerTypes.Params{
+			ChainParams: chainmanagerTypes.ChainParams{
+				RootChainAddress:   "0x1111111111111111111111111111111111111111",
+				StakingInfoAddress: "0x2222222222222222222222222222222222222222",
+				StateSenderAddress: "0x3333333333333333333333333333333333333333",
+			},
+		},
+	}
+
+	before := testutil.ToFloat64(metrics.RootChainListenerLogRejected)
+
+	rejectedLogs := make(map[string]struct{})
+	// A 4-block range bisects into several sub-queries (range, then halves,
+	// down to single blocks) before processRootChainBlockRange gives up —
+	// every one of them re-fetches and re-rejects the same bad log.
+	err = rl.processRootChainBlockRange(rootChainContext, big.NewInt(100), big.NewInt(103), rejectedLogs)
+	require.Error(t, err)
+
+	require.Greater(t, requestCount, 1, "the range must actually have been bisected into more than one sub-query")
+
+	after := testutil.ToFloat64(metrics.RootChainListenerLogRejected)
+	require.Equal(t, float64(1), after-before, "one bad log across a bisected range must increment the rejection counter exactly once")
 }
