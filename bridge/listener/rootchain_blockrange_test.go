@@ -256,6 +256,36 @@ func TestProcessRootChainBlockRange_RightHalfNotAttemptedWhenLeftFails(t *testin
 	require.Error(t, err, "the cursor must not advance when the range as a whole fails")
 }
 
+// TestProcessRootChainBlockRangeInChunks_TransientAbortPreservesFailureCount
+// proves pruneStaleLogFailureCounts must not run against an empty
+// countedThisCycle on a transient, pre-validation abort, or it wipes the
+// failure count of the very log the abort left blocking the cursor.
+// Sequence: cycle 1 fails validation (count 0->1); cycle 2 aborts
+// transiently before validating anything (count must stay 1, not reset to
+// 0); cycle 3 fails validation again (count 1->2, progress preserved across
+// the blip).
+func TestProcessRootChainBlockRangeInChunks_TransientAbortPreservesFailureCount(t *testing.T) {
+	const block = uint64(100)
+	badLog := unrecognizedTopicLog(block, common.HexToHash("0xaaaa8"))
+	logKey := rootChainLogKey(*badLog)
+
+	rl, rootChainContext := twoBlockListener(t, func(fromBlock, toBlock uint64) []*types.Log {
+		return []*types.Log{badLog}
+	})
+
+	rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)))
+	require.Equal(t, uint64(1), rl.logFailureCounts[logKey], "cycle 1: a fresh validation failure counts once")
+
+	realClient := rl.contractCaller.MainChainClient
+	rl.contractCaller.MainChainClient = nil
+	rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)))
+	rl.contractCaller.MainChainClient = realClient
+	require.Equal(t, uint64(1), rl.logFailureCounts[logKey], "cycle 2: a transient pre-validation abort must not reset progress toward quarantine")
+
+	rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)))
+	require.Equal(t, uint64(2), rl.logFailureCounts[logKey], "cycle 3: progress resumes across the transient blip instead of restarting from zero")
+}
+
 func TestPersistLastRootBlock(t *testing.T) {
 	t.Run("writes the block number as a readable string", func(t *testing.T) {
 		rl := &RootChainListener{}

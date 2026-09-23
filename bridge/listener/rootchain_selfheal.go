@@ -202,15 +202,18 @@ func (rl *RootChainListener) resolveCheckpointAckLog(ctx context.Context, latest
 func (rl *RootChainListener) confirmHeaderBlockId(receipt *types.Receipt, rootChainAddress, logIndex, expectedHeaderBlockId string) error {
 	idx, err := strconv.ParseUint(logIndex, 10, 64)
 	if err != nil {
+		metrics.SelfHealValidationRejected.Inc()
 		return fmt.Errorf("invalid log index %q: %w", logIndex, err)
 	}
 
 	decoded, err := rl.contractCaller.DecodeNewHeaderBlockEvent(rootChainAddress, receipt, idx)
 	if err != nil {
+		metrics.SelfHealValidationRejected.Inc()
 		return fmt.Errorf("failed to decode NewHeaderBlock event: %w", err)
 	}
 
 	if decoded.HeaderBlockId.String() != expectedHeaderBlockId {
+		metrics.SelfHealValidationRejected.Inc()
 		return fmt.Errorf("decoded headerBlockId %s does not match requested %s", decoded.HeaderBlockId.String(), expectedHeaderBlockId)
 	}
 

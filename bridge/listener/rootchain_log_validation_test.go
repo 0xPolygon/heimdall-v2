@@ -377,9 +377,12 @@ func mockEthGetLogs(t *testing.T, logsJSON string, requestCount *atomic.Int64) s
 func TestProcessRootChainBlockRange_DedupesRejectionMetricAcrossBisection(t *testing.T) {
 	knownTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
 	knownEvent := &abi.Event{Name: helper.NewHeaderBlockEvent}
-	// Not in eventMap at all: every sub-range query re-encounters this same
-	// log and fails the same "unrecognized topic" check, regardless of which
-	// bisected fromBlock/toBlock it's queried against.
+	// Not in eventMap at all, and BlockNumber left at its zero value, which
+	// falls outside every sub-range this test bisects into (all >= 100): this
+	// same log re-fails the range check on every single sub-query, regardless
+	// of which bisected fromBlock/toBlock it's queried against. Which check
+	// rejects it doesn't matter for this test — only that it's the same
+	// logKey every time.
 	badLogTopic := common.HexToHash("0x9999999999999999999999999999999999999999999999999999999999999999")
 
 	badLog := &types.Log{
@@ -441,10 +444,11 @@ func newQuarantineTestListener(t *testing.T) (*RootChainListener, *RootChainList
 	badLogTopic := common.HexToHash("0x9999999999999999999999999999999999999999999999999999999999999999")
 
 	badLog := &types.Log{
-		Address: common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
-		Topics:  []common.Hash{badLogTopic},
-		TxHash:  common.HexToHash("0xbad"),
-		Index:   0,
+		Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+		Topics:      []common.Hash{badLogTopic},
+		TxHash:      common.HexToHash("0xbad"),
+		Index:       0,
+		BlockNumber: 100,
 	}
 	logsJSON, err := json.Marshal([]*types.Log{badLog})
 	require.NoError(t, err)
@@ -616,12 +620,11 @@ func unrecognizedTopicLog(blockNumber uint64, txHash common.Hash) *types.Log {
 	}
 }
 
-// TestProcessRootChainBlockRange_QuarantineIsScopedToItsOwnLog proves the fix
-// for the cross-block misfire Copilot and Codegenie both flagged: quarantine
-// is keyed by the exact rejected log (txHash+logIndex), not by block number
-// or a single shared slot, so a *different*, not-yet-eligible bad log at a
-// different block within the same poll cycle can never be mistaken for the
-// one that actually crossed the threshold.
+// TestProcessRootChainBlockRange_QuarantineIsScopedToItsOwnLog proves
+// quarantine is keyed by the exact rejected log (txHash+logIndex), not by
+// block number or a single shared slot, so a *different*, not-yet-eligible
+// bad log at a different block within the same poll cycle can never be
+// mistaken for the one that actually crossed the threshold.
 func TestProcessRootChainBlockRange_QuarantineIsScopedToItsOwnLog(t *testing.T) {
 	const blockN, blockM = uint64(200), uint64(201)
 	logX := unrecognizedTopicLog(blockN, common.HexToHash("0xaaaa1"))
@@ -659,6 +662,52 @@ func TestProcessRootChainBlockRange_QuarantineIsScopedToItsOwnLog(t *testing.T) 
 	require.Equal(t, uint64(1), rl.logFailureCounts[rootChainLogKey(*logY)], "Y was only counted once, on its own merits, not quarantined")
 }
 
+// TestProcessRootChainBlockRange_QuarantineNeverResolvesAWiderRange proves
+// quarantine may only exclude a log at the exact single-block range it
+// bisects down to, never at a still-being-bisected wider range. Without
+// that check, a quarantine-eligible log reported at the start of a
+// wide chunk would let validateAndHandleLogs return success for the whole
+// chunk on the strength of one FilterLogs round trip — advancing the cursor
+// across every other block in it without any of them ever having been
+// independently queried.
+func TestProcessRootChainBlockRange_QuarantineNeverResolvesAWiderRange(t *testing.T) {
+	const badBlock = uint64(200)
+	badLog := unrecognizedTopicLog(badBlock, common.HexToHash("0xaaaa9"))
+
+	var requestCount atomic.Int64
+	rl, rootChainContext := twoBlockListener(t, func(fromBlock, toBlock uint64) []*types.Log {
+		requestCount.Add(1)
+		if fromBlock <= badBlock && badBlock <= toBlock {
+			return []*types.Log{badLog}
+		}
+		return nil
+	})
+	// Already eligible: this cycle's rejection crosses the threshold on the
+	// very first encounter, at the top-level (unbisected) range.
+	rl.logFailureCounts = map[string]uint64{rootChainLogKey(*badLog): maxRootChainLogRejections - 1}
+
+	quarantinedBefore := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
+
+	state := newRootChainRejectionState()
+	err := rl.processRootChainBlockRange(rootChainContext, big.NewInt(int64(badBlock)), big.NewInt(int64(badBlock+3)), state)
+	require.NoError(t, err, "every block besides badBlock is genuinely clean, so bisection resolves the whole range")
+
+	quarantinedAfter := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
+	require.Equal(t, float64(1), quarantinedAfter-quarantinedBefore, "the bad log is quarantined exactly once, at its own block")
+
+	lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+	require.NoError(t, err)
+	require.Equal(t, strconv.FormatUint(badBlock+3, 10), string(lastBlockBytes))
+
+	// The load-bearing assertion: a bug that lets quarantine resolve the
+	// whole 4-block chunk in the single top-level FilterLogs call would
+	// still land on the same end cursor and the same quarantine count, but
+	// with requestCount stuck at 1 — blocks badBlock+1..badBlock+3 would
+	// never have been independently queried at all.
+	require.Greater(t, requestCount.Load(), int64(1),
+		"the range must be bisected down to the single block that actually owns the quarantined log, never resolved in one wide-range request")
+}
+
 // TestQueryAndBroadcastEvents_TransientFailureNeverTouchesQuarantine proves a
 // transient, non-content failure (the L1 client not being ready) can't be
 // confused with a validation-rejection quarantine: it fails before
@@ -686,10 +735,9 @@ func TestQueryAndBroadcastEvents_TransientFailureNeverTouchesQuarantine(t *testi
 }
 
 // TestProcessRootChainBlockRange_QuarantineDispatchesOtherValidLogsInTheSameBlock
-// proves the fix for the "quarantine drops legitimate sibling events"
-// finding: a block containing both a persistently-bad log and a genuinely
-// valid one must still dispatch the valid one when the bad one is
-// quarantined, instead of losing it along with the bad log.
+// proves a block containing both a persistently-bad log and a genuinely
+// valid one still dispatches the valid one when the bad one is quarantined,
+// instead of losing it along with the bad log.
 func TestProcessRootChainBlockRange_QuarantineDispatchesOtherValidLogsInTheSameBlock(t *testing.T) {
 	const block = uint64(300)
 	validTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
@@ -706,6 +754,15 @@ func TestProcessRootChainBlockRange_QuarantineDispatchesOtherValidLogsInTheSameB
 	})
 	rl.logFailureCounts = map[string]uint64{rootChainLogKey(*badLog): maxRootChainLogRejections - 1}
 
+	// handleLog itself always runs; every handleXLog variant's actual send
+	// is gated behind a validator-set REST check this test doesn't stand up.
+	// onLogDispatched is the seam that makes dispatch observable regardless,
+	// so this test would fail if the dispatch loop were ever deleted.
+	var dispatched []common.Hash
+	rl.onLogDispatched = func(vLog types.Log, _ *abi.Event) {
+		dispatched = append(dispatched, vLog.TxHash)
+	}
+
 	quarantinedBefore := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
 
 	state := newRootChainRejectionState()
@@ -714,6 +771,9 @@ func TestProcessRootChainBlockRange_QuarantineDispatchesOtherValidLogsInTheSameB
 		err = rl.processRootChainBlockRange(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)), state)
 	}, "handleLog for the valid log must run without panicking")
 	require.NoError(t, err, "the batch succeeds: the only failing log was quarantined, the other one dispatched cleanly")
+
+	require.Equal(t, []common.Hash{validLog.TxHash}, dispatched,
+		"the valid log must dispatch exactly once; the quarantined log must never dispatch")
 
 	quarantinedAfter := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
 	require.Equal(t, float64(1), quarantinedAfter-quarantinedBefore)

@@ -18,12 +18,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 // mockL1Receipt starts a JSON-RPC HTTP server that answers
@@ -89,8 +91,8 @@ func newCheckpointAckTestListener(t *testing.T, routes checkpointAckTestRoutes) 
 }
 
 // rootChainABIForTest and stateSenderABIForTest parse the same ABI JSON the
-// production ContractCaller loads, so tests can decode real events (Finding
-// 2's content-validation) rather than a name-only stand-in.
+// production ContractCaller loads, so tests can decode real events and
+// exercise content validation, rather than a name-only stand-in.
 func rootChainABIForTest(t *testing.T) abi.ABI {
 	t.Helper()
 	a, err := abi.JSON(strings.NewReader(rootchain.RootchainMetaData.ABI))
@@ -570,6 +572,31 @@ func TestConfirmHeaderBlockId(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to decode")
 	})
+
+	t.Run("increments the self-heal rejection metric on every rejection branch", func(t *testing.T) {
+		rootChainABI := rootChainABIForTest(t)
+		rlWithABI := &RootChainListener{}
+		rlWithABI.contractCaller.RootChainABI = rootChainABI
+
+		mismatchLog := newHeaderBlockLog(t, rootChainABI, common.HexToAddress(rootChainAddr), 60000, 42,
+			common.HexToHash("0xblockhash"), common.HexToHash("0xabc"), 1, 0)
+		mismatchReceipt := &types.Receipt{Logs: []*types.Log{mismatchLog}}
+
+		before := testutil.ToFloat64(metrics.SelfHealValidationRejected)
+
+		err := rlWithABI.confirmHeaderBlockId(nil, rootChainAddr, "not-a-number", "60000")
+		require.Error(t, err)
+
+		err = rlWithABI.confirmHeaderBlockId(&types.Receipt{}, rootChainAddr, "3", "60000")
+		require.Error(t, err)
+
+		err = rlWithABI.confirmHeaderBlockId(mismatchReceipt, rootChainAddr, "0", "60001")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match requested")
+
+		after := testutil.ToFloat64(metrics.SelfHealValidationRejected)
+		require.Equal(t, float64(3), after-before)
+	})
 }
 
 // TestConfirmStateSyncedId exercises confirmStateSyncedId's own error paths
@@ -623,5 +650,30 @@ func TestConfirmStateSyncedId(t *testing.T) {
 		err = rlWithABI.confirmStateSyncedId(receipt, stateSenderAddr, "0", 5)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "does not match requested")
+	})
+
+	t.Run("increments the self-heal rejection metric on every rejection branch", func(t *testing.T) {
+		stateSenderABI := stateSenderABIForTest(t)
+		rlWithABI := &RootChainListener{}
+		rlWithABI.contractCaller.StateSenderABI = stateSenderABI
+
+		mismatchLog := newStateSyncedLog(t, stateSenderABI, common.HexToAddress(stateSenderAddr), 5, 42,
+			common.HexToHash("0xblockhash"), common.HexToHash("0xabc"), 1, 0)
+		mismatchReceipt := &types.Receipt{Logs: []*types.Log{mismatchLog}}
+
+		before := testutil.ToFloat64(metrics.SelfHealValidationRejected)
+
+		err := rlWithABI.confirmStateSyncedId(nil, stateSenderAddr, "not-a-number", 5)
+		require.Error(t, err)
+
+		err = rlWithABI.confirmStateSyncedId(&types.Receipt{}, stateSenderAddr, "0", 5)
+		require.Error(t, err)
+
+		err = rlWithABI.confirmStateSyncedId(mismatchReceipt, stateSenderAddr, "0", 6)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match requested")
+
+		after := testutil.ToFloat64(metrics.SelfHealValidationRejected)
+		require.Equal(t, float64(3), after-before)
 	})
 }

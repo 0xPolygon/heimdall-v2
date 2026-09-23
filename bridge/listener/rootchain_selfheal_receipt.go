@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 // fetchAndValidateStakeEventLog pulls the L1 receipt for the given hit, runs
@@ -64,11 +65,13 @@ func (rl *RootChainListener) fetchAndValidateStakeEventLog(ctx context.Context, 
 func (rl *RootChainListener) confirmStakeEventIdentity(receipt *types.Receipt, stakingInfoAddress string, hit *txAndLogIndex, validatorId, nonce uint64) error {
 	idx, err := strconv.ParseUint(hit.LogIndex, 10, 64)
 	if err != nil {
+		metrics.SelfHealValidationRejected.Inc()
 		return fmt.Errorf("invalid log index %q: %w", hit.LogIndex, err)
 	}
 
 	gotValidatorId, gotNonce, err := rl.decodeStakeEventFields(receipt, stakingInfoAddress, hit.EventName, idx)
 	if err != nil {
+		metrics.SelfHealValidationRejected.Inc()
 		return err
 	}
 
@@ -79,6 +82,7 @@ func (rl *RootChainListener) confirmStakeEventIdentity(receipt *types.Receipt, s
 	// populated regardless, but guard both since Cmp panics on a nil
 	// receiver either way.
 	if gotValidatorId == nil || gotNonce == nil {
+		metrics.SelfHealValidationRejected.Inc()
 		return fmt.Errorf("decoded %s event at tx %s log index %s is missing validatorId/nonce",
 			hit.EventName, hit.TransactionHash, hit.LogIndex)
 	}
@@ -87,6 +91,7 @@ func (rl *RootChainListener) confirmStakeEventIdentity(receipt *types.Receipt, s
 	// first would silently truncate an oversized on-chain value, letting it
 	// alias the requested (validatorId, nonce) after wraparound.
 	if gotValidatorId.Cmp(new(big.Int).SetUint64(validatorId)) != 0 || gotNonce.Cmp(new(big.Int).SetUint64(nonce)) != 0 {
+		metrics.SelfHealValidationRejected.Inc()
 		return fmt.Errorf("decoded (validatorId=%s, nonce=%s) does not match requested (validatorId=%d, nonce=%d)",
 			gotValidatorId.String(), gotNonce.String(), validatorId, nonce)
 	}
@@ -152,13 +157,16 @@ func (rl *RootChainListener) eventTopicByName(name string) (common.Hash, bool) {
 // check themselves once they have the receipt to decode from.
 func validateReceiptLog(receipt *types.Receipt, expectedAddr common.Address, expectedTopic common.Hash, txHash, logIndex string) (*types.Log, error) {
 	if err := validateReceiptShape(receipt, txHash); err != nil {
+		metrics.SelfHealValidationRejected.Inc()
 		return nil, err
 	}
 	log, err := resolveAndValidateLog(receipt, txHash, logIndex)
 	if err != nil {
+		metrics.SelfHealValidationRejected.Inc()
 		return nil, err
 	}
 	if err := validateLogIdentity(log, expectedAddr, expectedTopic, txHash, logIndex); err != nil {
+		metrics.SelfHealValidationRejected.Inc()
 		return nil, err
 	}
 	return log, nil

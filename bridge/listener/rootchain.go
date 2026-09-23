@@ -50,6 +50,13 @@ type RootChainListener struct {
 
 	// For self-healing, it will be only initialized if sub_graph_url is provided
 	subGraphClient *subGraphClient
+
+	// onLogDispatched, when set, is called right after handleLog dispatches a
+	// validated log. Every handleLog variant gates its real side effect
+	// behind a validator-set check that needs REST/queue plumbing to
+	// exercise directly, so this is the seam tests use to observe that
+	// dispatch happened at all, and for which log. Left nil in production.
+	onLogDispatched func(vLog types.Log, selectedEvent *abi.Event)
 }
 
 // rootChainContract identifies which of the three watched L1 contracts an
@@ -282,28 +289,9 @@ func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChain
 // below its own threshold, the whole batch still withholds exactly as
 // before, and the quarantine-eligible log stays eligible (not reset) for
 // the next attempt — quarantine is per log, not a blanket give-up on the
-// block.
+// block. See isQuarantineExcludable for the conditions that gate exclusion.
 func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int, state *rootChainRejectionState) error {
-	selectedEvents := make([]*abi.Event, len(logs))
-	dispatch := make([]bool, len(logs))
-	var toQuarantine []string
-	unquarantinedFailure := false
-
-	for i, vLog := range logs {
-		selectedEvent, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, state)
-		if !ok {
-			logKey := rootChainLogKey(vLog)
-			if _, quarantined := state.quarantine[logKey]; quarantined {
-				toQuarantine = append(toQuarantine, logKey)
-				continue
-			}
-			unquarantinedFailure = true
-			continue
-		}
-		selectedEvents[i] = selectedEvent
-		dispatch[i] = true
-	}
-
+	selectedEvents, dispatch, toQuarantine, unquarantinedFailure := rl.classifyRootChainLogs(logs, contractAddresses, fromBlock, toBlock, state)
 	if unquarantinedFailure {
 		return errUnexpectedRootChainLog
 	}
@@ -322,10 +310,57 @@ func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAdd
 	for i, vLog := range logs {
 		if dispatch[i] {
 			rl.handleLog(vLog, selectedEvents[i])
+			if rl.onLogDispatched != nil {
+				rl.onLogDispatched(vLog, selectedEvents[i])
+			}
 		}
 	}
 
 	return nil
+}
+
+// classifyRootChainLogs validates every log against the query and sorts
+// each one into exactly one bucket: dispatch (selectedEvents[i]/dispatch[i],
+// safe to hand to handleLog), toQuarantine (excludable per
+// isQuarantineExcludable), or neither — in which case unquarantinedFailure
+// is set, telling the caller the whole batch must fail regardless of what
+// else this call found.
+func (rl *RootChainListener) classifyRootChainLogs(logs []types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int, state *rootChainRejectionState) (selectedEvents []*abi.Event, dispatch []bool, toQuarantine []string, unquarantinedFailure bool) {
+	selectedEvents = make([]*abi.Event, len(logs))
+	dispatch = make([]bool, len(logs))
+
+	for i, vLog := range logs {
+		selectedEvent, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, state)
+		if ok {
+			selectedEvents[i] = selectedEvent
+			dispatch[i] = true
+			continue
+		}
+
+		logKey := rootChainLogKey(vLog)
+		if isQuarantineExcludable(state, logKey, fromBlock, toBlock) {
+			toQuarantine = append(toQuarantine, logKey)
+			continue
+		}
+		unquarantinedFailure = true
+	}
+
+	return selectedEvents, dispatch, toQuarantine, unquarantinedFailure
+}
+
+// isQuarantineExcludable reports whether logKey, having already crossed the
+// quarantine threshold, may be excluded from the current batch rather than
+// failing it. Both conditions matter: fromBlock == toBlock confirms
+// bisection has narrowed to the exact single block, not some still-being-
+// bisected wider range, and detail.blockNumber == toBlock confirms the
+// quarantined log's own claimed block is this block, not some other block
+// from earlier in the same cycle's bisection tree. Without both, excluding
+// the log would let a multi-block range report success — and
+// persistLastRootBlock advance the cursor — while never actually
+// re-querying every block in it.
+func isQuarantineExcludable(state *rootChainRejectionState, logKey string, fromBlock, toBlock *big.Int) bool {
+	detail, quarantined := state.quarantine[logKey]
+	return quarantined && fromBlock.Cmp(toBlock) == 0 && detail.blockNumber == toBlock.Uint64()
 }
 
 // validateLogAgainstQuery checks that a log returned by FilterLogs actually

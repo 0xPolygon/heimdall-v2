@@ -21,11 +21,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -627,6 +629,57 @@ func TestValidateReceiptLog(t *testing.T) {
 	})
 }
 
+// TestValidateReceiptLog_IncrementsRejectionMetric is deliberately its own,
+// non-parallel top-level test: TestValidateReceiptLog above runs its
+// rejection subtests in parallel with the rest of the package, which would
+// make a before/after delta on the shared counter racy. It exercises all
+// three of validateReceiptLog's rejection branches (receipt shape, log
+// resolution, log identity), not just the first.
+func TestValidateReceiptLog_IncrementsRejectionMetric(t *testing.T) {
+	expectedAddr := common.HexToAddress("0xa59C847Bd5aC0172Ff4FE912C5d29E5A71A7512B")
+	expectedTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
+	txHash := common.HexToHash("0xabc")
+	blockHash := common.HexToHash("0xblockhash")
+	const blockNumber uint64 = 42
+	const txIndex uint = 1
+
+	receiptAt := func(logs []*types.Log) *types.Receipt {
+		return &types.Receipt{
+			TxHash:           txHash,
+			Status:           types.ReceiptStatusSuccessful,
+			BlockNumber:      new(big.Int).SetUint64(blockNumber),
+			BlockHash:        blockHash,
+			TransactionIndex: txIndex,
+			Logs:             logs,
+		}
+	}
+	wrongAddrLog := &types.Log{
+		Index:       0,
+		Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+		Topics:      []common.Hash{expectedTopic},
+		TxHash:      txHash,
+		BlockNumber: blockNumber,
+		BlockHash:   blockHash,
+		TxIndex:     txIndex,
+	}
+
+	before := testutil.ToFloat64(metrics.SelfHealValidationRejected)
+
+	_, err := validateReceiptLog(nil, expectedAddr, expectedTopic, txHash.Hex(), "0")
+	require.Error(t, err)
+
+	_, err = validateReceiptLog(receiptAt(nil), expectedAddr, expectedTopic, txHash.Hex(), "0")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no log found")
+
+	_, err = validateReceiptLog(receiptAt([]*types.Log{wrongAddrLog}), expectedAddr, expectedTopic, txHash.Hex(), "0")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "does not match expected contract")
+
+	after := testutil.ToFloat64(metrics.SelfHealValidationRejected)
+	require.Equal(t, float64(3), after-before)
+}
+
 // stakingInfoABIForTest parses the same ABI JSON the production
 // ContractCaller loads, so tests can decode real stake events.
 func stakingInfoABIForTest(t *testing.T) abi.ABI {
@@ -864,6 +917,51 @@ func TestConfirmStakeEventIdentity(t *testing.T) {
 		err := rl.confirmStakeEventIdentity(nil, stakingInfoAddr, hit, 7, 3)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "invalid log index")
+	})
+
+	t.Run("increments the self-heal rejection metric on every rejection branch", func(t *testing.T) {
+		rl := newListener(t)
+		stakingInfoABI := rl.contractCaller.StakingInfoABI
+
+		matchingLog := newStakeEventLog(t, stakingInfoABI, helper.StakeUpdateEvent, common.HexToAddress(stakingInfoAddr), 7, 3, 42,
+			common.HexToHash("0xblockhash"), common.HexToHash("0xabc"), 1, 0)
+		mismatchReceipt := &types.Receipt{Logs: []*types.Log{matchingLog}}
+
+		// nonce is non-indexed on SignerChange, so an empty Data leaves the
+		// decoded nonce nil rather than zero — a structurally valid log with
+		// no Data exercises the missing-fields branch, not the decode-failure
+		// or mismatch ones above.
+		filler := common.HexToAddress("0x3333333333333333333333333333333333333333")
+		signerChangeEvent := stakingInfoABI.Events[helper.SignerChangeEvent]
+		topicCols, err := abi.MakeTopics([]interface{}{big.NewInt(7)}, []interface{}{filler}, []interface{}{filler})
+		require.NoError(t, err)
+		topics := []common.Hash{signerChangeEvent.ID}
+		for _, col := range topicCols {
+			topics = append(topics, col[0])
+		}
+		missingFieldsReceipt := &types.Receipt{Logs: []*types.Log{{Address: common.HexToAddress(stakingInfoAddr), Topics: topics, Index: 0}}}
+
+		before := testutil.ToFloat64(metrics.SelfHealValidationRejected)
+
+		hit := &txAndLogIndex{LogIndex: "not-a-number", EventName: helper.StakeUpdateEvent}
+		err = rl.confirmStakeEventIdentity(nil, stakingInfoAddr, hit, 7, 3)
+		require.Error(t, err)
+
+		hit = &txAndLogIndex{LogIndex: "0", EventName: helper.StakeUpdateEvent}
+		err = rl.confirmStakeEventIdentity(&types.Receipt{}, stakingInfoAddr, hit, 7, 3)
+		require.Error(t, err)
+
+		err = rl.confirmStakeEventIdentity(mismatchReceipt, stakingInfoAddr, hit, 7, 99)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match requested")
+
+		hit = &txAndLogIndex{LogIndex: "0", EventName: helper.SignerChangeEvent}
+		err = rl.confirmStakeEventIdentity(missingFieldsReceipt, stakingInfoAddr, hit, 7, 3)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "missing validatorId/nonce")
+
+		after := testutil.ToFloat64(metrics.SelfHealValidationRejected)
+		require.Equal(t, float64(4), after-before)
 	})
 
 	for _, eventName := range []string{helper.StakeUpdateEvent, helper.SignerChangeEvent, helper.UnstakeInitEvent} {

@@ -99,8 +99,12 @@ func (rl *RootChainListener) processRootChainBlockRangeInChunks(rootChainContext
 				"from", chunkFrom,
 				"to", chunkTo,
 			)
-			// do not advance the cursor, as we want to retry this range on the next header
-			rl.pruneStaleLogFailureCounts(state.countedThisCycle)
+			// Do not advance the cursor, as we want to retry this range on the
+			// next header. Do not prune here either: on an abort,
+			// state.countedThisCycle only reflects logs validated before the
+			// failure (empty, if the failure was transient and pre-validation),
+			// so pruning against it now would wipe the failure count of the
+			// log this abort is blocking on, not just genuinely stale entries.
 			return
 		}
 

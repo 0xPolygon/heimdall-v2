@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 // stateSynced represents the StateSynced event.
@@ -265,15 +266,18 @@ func (rl *RootChainListener) getStateSynced(ctx context.Context, stateId int64) 
 func (rl *RootChainListener) confirmStateSyncedId(receipt *types.Receipt, stateSenderAddress, logIndex string, stateId int64) error {
 	idx, err := strconv.ParseUint(logIndex, 10, 64)
 	if err != nil {
+		metrics.SelfHealValidationRejected.Inc()
 		return fmt.Errorf("invalid log index %q: %w", logIndex, err)
 	}
 
 	decoded, err := rl.contractCaller.DecodeStateSyncedEvent(stateSenderAddress, receipt, idx)
 	if err != nil {
+		metrics.SelfHealValidationRejected.Inc()
 		return fmt.Errorf("failed to decode StateSynced event: %w", err)
 	}
 
 	if decoded.Id.Cmp(big.NewInt(stateId)) != 0 {
+		metrics.SelfHealValidationRejected.Inc()
 		return fmt.Errorf("decoded stateId %s does not match requested %d", decoded.Id.String(), stateId)
 	}
 
