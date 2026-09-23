@@ -181,15 +181,27 @@ type rootChainRejectionState struct {
 	// level that re-encounters it.
 	countedThisCycle map[string]struct{}
 
-	// quarantine is set once a rejection in this cycle has pushed a log's
-	// persistent failure count to maxRootChainLogRejections, so
-	// processRootChainBlockRange's single-block base case can advance past
-	// it instead of withholding the cursor.
-	quarantine *rootChainLogDetail
+	// quarantine holds one entry per logKey whose persistent failure count
+	// has crossed maxRootChainLogRejections in this cycle, keyed by the same
+	// logKey used everywhere else — never by block number alone, so a
+	// transient failure on an unrelated log can never be mistaken for this
+	// one's quarantine. validateAndHandleLogs consumes an entry only once
+	// the whole batch containing it is otherwise clean (see there for why).
+	quarantine map[string]*rootChainLogDetail
 }
 
 func newRootChainRejectionState() *rootChainRejectionState {
-	return &rootChainRejectionState{countedThisCycle: make(map[string]struct{})}
+	return &rootChainRejectionState{
+		countedThisCycle: make(map[string]struct{}),
+		quarantine:       make(map[string]*rootChainLogDetail),
+	}
+}
+
+// rootChainLogKey identifies a log uniquely across every bisection level and
+// poll cycle that re-encounters it, for both the per-cycle rejection dedup
+// and the persistent per-log failure count.
+func rootChainLogKey(vLog types.Log) string {
+	return vLog.TxHash.Hex() + ":" + strconv.FormatUint(uint64(vLog.Index), 10)
 }
 
 // rootChainLogDetail carries everything an operator needs to investigate and
@@ -261,21 +273,56 @@ func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChain
 // validateAndHandleLogs validates every log in the batch before handling any
 // of it: a batch with one bad log among several good ones must not partially
 // dispatch, or a retry of the same range (see processRootChainBlockRange)
-// would re-dispatch the already-handled ones.
+// would re-dispatch the already-handled ones. The one exception is a log
+// that has crossed maxRootChainLogRejections this cycle (state.quarantine) —
+// it's excluded rather than failing the batch, so a real event sharing its
+// block isn't permanently lost along with it. Quarantine is only actually
+// committed (logged, metriced, and cleared) once the rest of the batch is
+// otherwise clean: if some other log in the same batch is still failing and
+// below its own threshold, the whole batch still withholds exactly as
+// before, and the quarantine-eligible log stays eligible (not reset) for
+// the next attempt — quarantine is per log, not a blanket give-up on the
+// block.
 func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int, state *rootChainRejectionState) error {
 	selectedEvents := make([]*abi.Event, len(logs))
+	dispatch := make([]bool, len(logs))
+	var toQuarantine []string
+	unquarantinedFailure := false
 
 	for i, vLog := range logs {
 		selectedEvent, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, state)
 		if !ok {
-			return errUnexpectedRootChainLog
+			logKey := rootChainLogKey(vLog)
+			if _, quarantined := state.quarantine[logKey]; quarantined {
+				toQuarantine = append(toQuarantine, logKey)
+				continue
+			}
+			unquarantinedFailure = true
+			continue
 		}
-
 		selectedEvents[i] = selectedEvent
+		dispatch[i] = true
+	}
+
+	if unquarantinedFailure {
+		return errUnexpectedRootChainLog
+	}
+
+	for _, logKey := range toQuarantine {
+		// A real txHash+logIndex pair is unique to one log, so this map can't
+		// genuinely hold a duplicate key within one batch — guarded anyway
+		// since a malformed/adversarial RPC response is exactly what every
+		// other check in this file already refuses to take on faith.
+		if detail, ok := state.quarantine[logKey]; ok {
+			rl.quarantineRootChainLog(detail)
+			delete(state.quarantine, logKey)
+		}
 	}
 
 	for i, vLog := range logs {
-		rl.handleLog(vLog, selectedEvents[i])
+		if dispatch[i] {
+			rl.handleLog(vLog, selectedEvents[i])
+		}
 	}
 
 	return nil
@@ -350,11 +397,12 @@ func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAdd
 // within a single poll cycle. state is shared across that whole cycle (see
 // ProcessHeader) so both the metric and the failure count still advance once
 // per cycle for a log that's still broken — that's honest signal, just not
-// duplicated within it. Crossing maxRootChainLogRejections sets
-// state.quarantine so the caller can advance past the block instead of
-// withholding it forever.
+// duplicated within it. Crossing maxRootChainLogRejections records an entry
+// in state.quarantine keyed by this exact log, for validateAndHandleLogs to
+// act on — never keyed by block number alone, so a different log or a
+// transient failure on the same block can't consume it.
 func (rl *RootChainListener) rejectRootChainLog(state *rootChainRejectionState, vLog types.Log, reason string, keyvals ...any) (*abi.Event, bool) {
-	logKey := vLog.TxHash.Hex() + ":" + strconv.FormatUint(uint64(vLog.Index), 10)
+	logKey := rootChainLogKey(vLog)
 	rl.Logger.Error("RootChainListener: rootchain log query returned "+reason, keyvals...)
 
 	if _, alreadyCounted := state.countedThisCycle[logKey]; alreadyCounted {
@@ -372,7 +420,7 @@ func (rl *RootChainListener) rejectRootChainLog(state *rootChainRejectionState, 
 		if len(vLog.Topics) > 0 {
 			topic = vLog.Topics[0]
 		}
-		state.quarantine = &rootChainLogDetail{
+		state.quarantine[logKey] = &rootChainLogDetail{
 			logKey:      logKey,
 			reason:      reason,
 			txHash:      vLog.TxHash,

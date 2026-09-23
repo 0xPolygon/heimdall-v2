@@ -41,7 +41,7 @@ func (rl *RootChainListener) confirmedHeadBlock(rootChainContext *RootChainListe
 	requiredConfirmations := rootChainContext.ChainmanagerParams.MainChainTxConfirmations
 	confirmationBlocks := big.NewInt(0).SetUint64(requiredConfirmations)
 	if headerNumber.Cmp(confirmationBlocks) <= 0 {
-		rl.Logger.Error("RootChainListener: block number less than confirmations required", "blockNumber", headerNumber.Uint64, "confirmationsRequired", confirmationBlocks.Uint64)
+		rl.Logger.Error("RootChainListener: block number less than confirmations required", "blockNumber", headerNumber.Uint64(), "confirmationsRequired", confirmationBlocks.Uint64())
 		return nil, false
 	}
 
@@ -113,20 +113,15 @@ func (rl *RootChainListener) processRootChainBlockRangeInChunks(rootChainContext
 // processRootChainBlockRange queries and handles logs for a block range. If the
 // range fails, it is split into smaller ranges until either processing succeeds
 // or a single-block query fails. The root block cursor is advanced only after the
-// current range has been fully processed. A single block whose log has been
-// quarantined (see rootChainRejectionState) is treated as processed rather
-// than retried forever.
+// current range has been fully processed. A quarantined log doesn't make this
+// function itself succeed on a technicality — validateAndHandleLogs commits
+// the quarantine and returns nil only once the rest of its batch is clean,
+// so a genuine success here already reflects that.
 func (rl *RootChainListener) processRootChainBlockRange(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int, state *rootChainRejectionState) error {
 	if err := rl.queryAndBroadcastEvents(rootChainContext, fromBlock, toBlock, state); err != nil {
-		// A single-block failure cannot be split further.
+		// A single-block failure cannot be split further. Return the error so
+		// the caller keeps the cursor unchanged and retries this block later.
 		if fromBlock.Cmp(toBlock) >= 0 {
-			if state.quarantine != nil {
-				rl.quarantineRootChainLog(state.quarantine)
-				state.quarantine = nil
-				return rl.persistLastRootBlock(toBlock)
-			}
-			// Return the error so the caller keeps the cursor unchanged and
-			// retries this block later.
 			return err
 		}
 

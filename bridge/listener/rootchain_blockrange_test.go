@@ -3,6 +3,7 @@ package listener
 import (
 	"encoding/json"
 	"math/big"
+	"sync/atomic"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -168,7 +169,7 @@ func TestRootChainBlockRangeToProcess(t *testing.T) {
 // in-memory storage client, so the chunk-loop's own boundaries can be
 // exercised without any log-validation noise. requestCount is incremented on
 // every eth_getLogs call the chunk loop makes.
-func emptyLogsListener(t *testing.T) (*RootChainListener, *RootChainListenerContext, *int) {
+func emptyLogsListener(t *testing.T) (*RootChainListener, *RootChainListenerContext, *atomic.Int64) {
 	t.Helper()
 
 	knownTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
@@ -181,7 +182,7 @@ func emptyLogsListener(t *testing.T) (*RootChainListener, *RootChainListenerCont
 	rl.BaseListener.Logger = log.NewNopLogger()
 	rl.storageClient = newMemLevelDB(t)
 
-	var requestCount int
+	var requestCount atomic.Int64
 	emptyLogs, err := json.Marshal([]*types.Log{})
 	require.NoError(t, err)
 	rpcURL := mockEthGetLogs(t, string(emptyLogs), &requestCount)
@@ -211,7 +212,7 @@ func TestProcessRootChainBlockRangeInChunks(t *testing.T) {
 		to := new(big.Int).Add(from, big.NewInt(maxRootChainBlockRange-1))
 		rl.processRootChainBlockRangeInChunks(rootChainContext, from, to)
 
-		require.Equal(t, 1, *requestCount)
+		require.Equal(t, int64(1), requestCount.Load())
 		lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
 		require.NoError(t, err)
 		require.Equal(t, to.String(), string(lastBlockBytes))
@@ -224,7 +225,7 @@ func TestProcessRootChainBlockRangeInChunks(t *testing.T) {
 		to := new(big.Int).Add(from, big.NewInt(maxRootChainBlockRange))
 		rl.processRootChainBlockRangeInChunks(rootChainContext, from, to)
 
-		require.Equal(t, 2, *requestCount)
+		require.Equal(t, int64(2), requestCount.Load())
 		lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
 		require.NoError(t, err)
 		require.Equal(t, to.String(), string(lastBlockBytes))
@@ -235,7 +236,7 @@ func TestProcessRootChainBlockRangeInChunks(t *testing.T) {
 
 		rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(1000), big.NewInt(1000))
 
-		require.Equal(t, 1, *requestCount)
+		require.Equal(t, int64(1), requestCount.Load())
 		lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
 		require.NoError(t, err)
 		require.Equal(t, "1000", string(lastBlockBytes))

@@ -6,6 +6,9 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -339,9 +342,11 @@ func TestRootChainListener_ValidateAndHandleLogs(t *testing.T) {
 // the given logs JSON for every request, regardless of the requested block
 // range — simulating an endpoint that doesn't honor FilterLogs' filter, the
 // exact scenario validateLogAgainstQuery exists to catch. requestCount is
-// incremented on every call, so a caller can confirm bisection actually
-// re-queried the endpoint more than once.
-func mockEthGetLogs(t *testing.T, logsJSON string, requestCount *int) string {
+// incremented on every call from the handler goroutine, so it must be an
+// atomic counter — the TCP round-trip between that goroutine and the test
+// goroutine reading it later is not a happens-before edge the race detector
+// recognizes.
+func mockEthGetLogs(t *testing.T, logsJSON string, requestCount *atomic.Int64) string {
 	t.Helper()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -354,7 +359,7 @@ func mockEthGetLogs(t *testing.T, logsJSON string, requestCount *int) string {
 		}
 		require.NoError(t, json.Unmarshal(body, &req))
 		require.Equal(t, "eth_getLogs", req.Method)
-		*requestCount++
+		requestCount.Add(1)
 
 		w.Header().Set("Content-Type", "application/json")
 		_, err = w.Write([]byte(`{"jsonrpc":"2.0","id":` + string(req.ID) + `,"result":` + logsJSON + `}`))
@@ -392,7 +397,7 @@ func TestProcessRootChainBlockRange_DedupesRejectionMetricAcrossBisection(t *tes
 	}
 	rl.BaseListener.Logger = log.NewNopLogger()
 
-	var requestCount int
+	var requestCount atomic.Int64
 	rpcURL := mockEthGetLogs(t, string(logsJSON), &requestCount)
 	client, err := ethclient.Dial(rpcURL)
 	require.NoError(t, err)
@@ -418,7 +423,7 @@ func TestProcessRootChainBlockRange_DedupesRejectionMetricAcrossBisection(t *tes
 	err = rl.processRootChainBlockRange(rootChainContext, big.NewInt(100), big.NewInt(103), state)
 	require.Error(t, err)
 
-	require.Greater(t, requestCount, 1, "the range must actually have been bisected into more than one sub-query")
+	require.Greater(t, requestCount.Load(), int64(1), "the range must actually have been bisected into more than one sub-query")
 
 	after := testutil.ToFloat64(metrics.RootChainListenerLogRejected)
 	require.Equal(t, float64(1), after-before, "one bad log across a bisected range must increment the rejection counter exactly once")
@@ -451,7 +456,7 @@ func newQuarantineTestListener(t *testing.T) (*RootChainListener, *RootChainList
 	rl.BaseListener.Logger = log.NewNopLogger()
 	rl.storageClient = newMemLevelDB(t)
 
-	var requestCount int
+	var requestCount atomic.Int64
 	rpcURL := mockEthGetLogs(t, string(logsJSON), &requestCount)
 	client, err := ethclient.Dial(rpcURL)
 	require.NoError(t, err)
@@ -524,4 +529,196 @@ func TestPruneStaleLogFailureCounts(t *testing.T) {
 	require.NotContains(t, rl.logFailureCounts, "stale", "a log not rejected again this cycle must be dropped")
 	require.Contains(t, rl.logFailureCounts, "recurring", "a log rejected again this cycle must be kept")
 	require.Equal(t, uint64(3), rl.logFailureCounts["recurring"])
+}
+
+// mockEthGetLogsByRange starts a JSON-RPC HTTP server that answers
+// eth_getLogs by inspecting the request's fromBlock/toBlock and calling
+// logsFor to decide what to return for that exact sub-range — so different
+// single-block queries within the same bisected range can be given
+// different (or no) logs, unlike mockEthGetLogs' one-fixed-response-always.
+func mockEthGetLogsByRange(t *testing.T, logsFor func(fromBlock, toBlock uint64) []*types.Log) string {
+	t.Helper()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+
+		var req struct {
+			ID     json.RawMessage   `json:"id"`
+			Method string            `json:"method"`
+			Params []json.RawMessage `json:"params"`
+		}
+		require.NoError(t, json.Unmarshal(body, &req))
+		require.Equal(t, "eth_getLogs", req.Method)
+
+		var filter struct {
+			FromBlock string `json:"fromBlock"`
+			ToBlock   string `json:"toBlock"`
+		}
+		require.NoError(t, json.Unmarshal(req.Params[0], &filter))
+		fromBlock, err := strconv.ParseUint(strings.TrimPrefix(filter.FromBlock, "0x"), 16, 64)
+		require.NoError(t, err)
+		toBlock, err := strconv.ParseUint(strings.TrimPrefix(filter.ToBlock, "0x"), 16, 64)
+		require.NoError(t, err)
+
+		logsJSON, err := json.Marshal(logsFor(fromBlock, toBlock))
+		require.NoError(t, err)
+
+		w.Header().Set("Content-Type", "application/json")
+		_, err = w.Write([]byte(`{"jsonrpc":"2.0","id":` + string(req.ID) + `,"result":` + string(logsJSON) + `}`))
+		require.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+	return server.URL
+}
+
+// twoBlockListener wires a listener plus chain-manager context whose
+// eth_getLogs mock is driven by logsFor, for tests that need different
+// blocks within one range to behave differently.
+func twoBlockListener(t *testing.T, logsFor func(fromBlock, toBlock uint64) []*types.Log) (*RootChainListener, *RootChainListenerContext) {
+	t.Helper()
+
+	knownTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
+	knownEvent := &abi.Event{Name: helper.NewHeaderBlockEvent}
+
+	rl := &RootChainListener{
+		eventMap:      map[common.Hash]*abi.Event{knownTopic: knownEvent},
+		eventContract: map[common.Hash]rootChainContract{knownTopic: rootChainContractRootChain},
+	}
+	rl.BaseListener.Logger = log.NewNopLogger()
+	rl.storageClient = newMemLevelDB(t)
+
+	rpcURL := mockEthGetLogsByRange(t, logsFor)
+	client, err := ethclient.Dial(rpcURL)
+	require.NoError(t, err)
+	rl.contractCaller.MainChainClient = client
+	rl.contractCaller.MainChainTimeout = 5 * time.Second
+
+	rootChainContext := &RootChainListenerContext{
+		ChainmanagerParams: &chainmanagerTypes.Params{
+			ChainParams: chainmanagerTypes.ChainParams{
+				RootChainAddress:   "0x1111111111111111111111111111111111111111",
+				StakingInfoAddress: "0x2222222222222222222222222222222222222222",
+				StateSenderAddress: "0x3333333333333333333333333333333333333333",
+			},
+		},
+	}
+
+	return rl, rootChainContext
+}
+
+func unrecognizedTopicLog(blockNumber uint64, txHash common.Hash) *types.Log {
+	return &types.Log{
+		Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+		Topics:      []common.Hash{common.HexToHash("0x9999999999999999999999999999999999999999999999999999999999999999")},
+		TxHash:      txHash,
+		BlockNumber: blockNumber,
+	}
+}
+
+// TestProcessRootChainBlockRange_QuarantineIsScopedToItsOwnLog proves the fix
+// for the cross-block misfire Copilot and Codegenie both flagged: quarantine
+// is keyed by the exact rejected log (txHash+logIndex), not by block number
+// or a single shared slot, so a *different*, not-yet-eligible bad log at a
+// different block within the same poll cycle can never be mistaken for the
+// one that actually crossed the threshold.
+func TestProcessRootChainBlockRange_QuarantineIsScopedToItsOwnLog(t *testing.T) {
+	const blockN, blockM = uint64(200), uint64(201)
+	logX := unrecognizedTopicLog(blockN, common.HexToHash("0xaaaa1"))
+	logY := unrecognizedTopicLog(blockM, common.HexToHash("0xaaaa2"))
+
+	rl, rootChainContext := twoBlockListener(t, func(fromBlock, toBlock uint64) []*types.Log {
+		var logs []*types.Log
+		if fromBlock <= blockN && blockN <= toBlock {
+			logs = append(logs, logX)
+		}
+		if fromBlock <= blockM && blockM <= toBlock {
+			logs = append(logs, logY)
+		}
+		return logs
+	})
+
+	// X has already failed maxRootChainLogRejections-1 times in earlier
+	// cycles; this cycle's rejection is its 100th. Y is fresh.
+	rl.logFailureCounts = map[string]uint64{rootChainLogKey(*logX): maxRootChainLogRejections - 1}
+
+	quarantinedBefore := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
+
+	state := newRootChainRejectionState()
+	err := rl.processRootChainBlockRange(rootChainContext, big.NewInt(int64(blockN)), big.NewInt(int64(blockM)), state)
+	require.Error(t, err, "Y's own, unrelated, not-yet-eligible failure must still withhold the range")
+
+	quarantinedAfter := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
+	require.Equal(t, float64(1), quarantinedAfter-quarantinedBefore, "X was quarantined on its own merits")
+
+	lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+	require.NoError(t, err)
+	require.Equal(t, strconv.FormatUint(blockN, 10), string(lastBlockBytes), "the cursor advanced through X's own block, not Y's")
+
+	require.NotContains(t, rl.logFailureCounts, rootChainLogKey(*logX), "X's count was cleared by its own quarantine")
+	require.Equal(t, uint64(1), rl.logFailureCounts[rootChainLogKey(*logY)], "Y was only counted once, on its own merits, not quarantined")
+}
+
+// TestQueryAndBroadcastEvents_TransientFailureNeverTouchesQuarantine proves a
+// transient, non-content failure (the L1 client not being ready) can't be
+// confused with a validation-rejection quarantine: it fails before
+// validateAndHandleLogs is ever called, so a pending quarantine entry from
+// elsewhere in the same cycle is left completely untouched.
+func TestQueryAndBroadcastEvents_TransientFailureNeverTouchesQuarantine(t *testing.T) {
+	rl := &RootChainListener{}
+	rl.BaseListener.Logger = log.NewNopLogger()
+	// MainChainClient deliberately left nil: the transient-unavailable path.
+
+	rootChainContext := &RootChainListenerContext{
+		ChainmanagerParams: &chainmanagerTypes.Params{
+			ChainParams: chainmanagerTypes.ChainParams{RootChainAddress: "0x1111111111111111111111111111111111111111"},
+		},
+	}
+
+	state := newRootChainRejectionState()
+	pending := &rootChainLogDetail{logKey: "unrelated-log", blockNumber: 999}
+	state.quarantine["unrelated-log"] = pending
+
+	err := rl.queryAndBroadcastEvents(rootChainContext, big.NewInt(500), big.NewInt(500), state)
+	require.ErrorIs(t, err, errMainChainClientUnavailable)
+
+	require.Same(t, pending, state.quarantine["unrelated-log"], "a transient failure must never consume a pending quarantine for a different log")
+}
+
+// TestProcessRootChainBlockRange_QuarantineDispatchesOtherValidLogsInTheSameBlock
+// proves the fix for the "quarantine drops legitimate sibling events"
+// finding: a block containing both a persistently-bad log and a genuinely
+// valid one must still dispatch the valid one when the bad one is
+// quarantined, instead of losing it along with the bad log.
+func TestProcessRootChainBlockRange_QuarantineDispatchesOtherValidLogsInTheSameBlock(t *testing.T) {
+	const block = uint64(300)
+	validTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
+	validLog := &types.Log{
+		Address:     common.HexToAddress("0x1111111111111111111111111111111111111111"),
+		Topics:      []common.Hash{validTopic},
+		TxHash:      common.HexToHash("0xaaaa3"),
+		BlockNumber: block,
+	}
+	badLog := unrecognizedTopicLog(block, common.HexToHash("0xbad"))
+
+	rl, rootChainContext := twoBlockListener(t, func(fromBlock, toBlock uint64) []*types.Log {
+		return []*types.Log{validLog, badLog}
+	})
+	rl.logFailureCounts = map[string]uint64{rootChainLogKey(*badLog): maxRootChainLogRejections - 1}
+
+	quarantinedBefore := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
+
+	state := newRootChainRejectionState()
+	var err error
+	require.NotPanics(t, func() {
+		err = rl.processRootChainBlockRange(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)), state)
+	}, "handleLog for the valid log must run without panicking")
+	require.NoError(t, err, "the batch succeeds: the only failing log was quarantined, the other one dispatched cleanly")
+
+	quarantinedAfter := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
+	require.Equal(t, float64(1), quarantinedAfter-quarantinedBefore)
+
+	lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+	require.NoError(t, err)
+	require.Equal(t, strconv.FormatUint(block, 10), string(lastBlockBytes))
 }
