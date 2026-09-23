@@ -74,10 +74,14 @@ const (
 	maxRootChainBlockRange = 5000                   // Maximum number of blocks to fetch logs for in a single FilterLogs call
 )
 
-// maxRootChainLogRejections bounds how many consecutive poll cycles a single
-// log can fail validation before it's quarantined: the cursor advances past
-// the block containing it instead of withholding it forever. See
-// rejectRootChainLog and quarantineRootChainLog.
+// maxRootChainLogRejections bounds how many poll cycles a single log can
+// fail validation before it's quarantined: the cursor advances past the
+// block containing it instead of withholding it forever. Cycles need not be
+// strictly back-to-back — a log's count survives a cycle that aborts before
+// content validation even runs (see the abort path in
+// processRootChainBlockRangeInChunks) — so this bounds total occurrences,
+// not a run of adjacent ones. See rejectRootChainLog and
+// quarantineRootChainLog.
 const maxRootChainLogRejections = 100
 
 // maxTrackedLogFailures bounds logFailureCounts itself, independent of any
@@ -499,21 +503,36 @@ func (rl *RootChainListener) rejectRootChainLog(state *rootChainRejectionState, 
 	return nil, false
 }
 
-// evictLowestTrackedLogFailure drops the tracked entry with the smallest
-// failure count, making room for a new one once logFailureCounts is at
-// maxTrackedLogFailures. The lowest count is the closest thing available to
-// "least established" without adding separate recency bookkeeping: a log
-// that keeps recurring climbs past any one-off flood entry within a few
-// cycles and earns a permanent slot, while flood entries that are never
-// seen again keep losing ties and get evicted first.
+// evictionSampleSize bounds how many entries evictLowestTrackedLogFailure
+// inspects. Go randomizes map iteration order per call, so stopping after
+// this many entries is an effective random sample without needing a
+// separate shuffle — the same approach Redis uses for approximate-LRU
+// eviction, for the same reason: scanning the whole keyspace to find the
+// true minimum is too expensive to do on every admission.
+const evictionSampleSize = 20
+
+// evictLowestTrackedLogFailure drops the lowest-count entry among a bounded
+// random sample, making room for a new one once logFailureCounts is at
+// maxTrackedLogFailures. Sampling instead of scanning the whole map matters
+// at this cap: a full scan costs O(maxTrackedLogFailures) per admission, so
+// a single response introducing that many new logs in one poll would cost
+// O(maxTrackedLogFailures²). The sample doesn't need to find the true
+// global minimum either — a log that keeps recurring climbs past any
+// one-off flood entry within a few cycles and earns a permanent slot
+// regardless of which lower entry was evicted to make room for it, and a
+// flood large enough to fill the map leaves the sample overwhelmingly
+// likely to land on one of its many equally-evictable entries.
 func (rl *RootChainListener) evictLowestTrackedLogFailure() {
 	var lowestKey string
 	var lowestCount uint64
-	first := true
+	sampled := 0
 	for logKey, count := range rl.logFailureCounts {
-		if first || count < lowestCount {
+		if sampled == 0 || count < lowestCount {
 			lowestKey, lowestCount = logKey, count
-			first = false
+		}
+		sampled++
+		if sampled >= evictionSampleSize {
+			break
 		}
 	}
 	delete(rl.logFailureCounts, lowestKey)
@@ -533,7 +552,7 @@ func (rl *RootChainListener) quarantineRootChainLog(detail *rootChainLogDetail) 
 		"blockNumber", detail.blockNumber,
 		"address", detail.address,
 		"topic", detail.topic,
-		"consecutiveFailures", maxRootChainLogRejections,
+		"totalFailures", maxRootChainLogRejections,
 	)
 	metrics.RootChainListenerLogQuarantined.Inc()
 	delete(rl.logFailureCounts, detail.logKey)

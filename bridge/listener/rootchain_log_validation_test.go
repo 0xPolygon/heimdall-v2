@@ -584,7 +584,9 @@ func TestRejectRootChainLog_CapsTrackedFailures(t *testing.T) {
 // last-visited entry regardless of its count would still look plausible
 // against a handful of tied entries.
 func TestEvictLowestTrackedLogFailure(t *testing.T) {
-	const n = 50
+	// At or below evictionSampleSize, the whole map fits in one sample, so
+	// which entry gets evicted is still fully deterministic.
+	const n = evictionSampleSize
 	rl := &RootChainListener{logFailureCounts: make(map[string]uint64, n)}
 	for i := 0; i < n; i++ {
 		rl.logFailureCounts[strconv.Itoa(i)] = uint64(i + 1)
@@ -597,6 +599,30 @@ func TestEvictLowestTrackedLogFailure(t *testing.T) {
 	for i := 1; i < n; i++ {
 		require.Equal(t, uint64(i+1), rl.logFailureCounts[strconv.Itoa(i)], "every other entry must survive untouched")
 	}
+}
+
+// TestEvictLowestTrackedLogFailure_StaysBoundedUnderFlood proves eviction
+// cost doesn't scale with map size: flooding maxTrackedLogFailures brand-new
+// keys into an already-full map — the exact scenario an endpoint returning
+// that many distinct malformed logs in a single poll would trigger — must
+// complete quickly. A full-map scan per eviction would multiply out to
+// roughly maxTrackedLogFailures² operations here and take seconds; a
+// bounded sample keeps it to a small multiple of maxTrackedLogFailures.
+func TestEvictLowestTrackedLogFailure_StaysBoundedUnderFlood(t *testing.T) {
+	rl := &RootChainListener{logFailureCounts: make(map[string]uint64, maxTrackedLogFailures)}
+	for i := 0; i < maxTrackedLogFailures; i++ {
+		rl.logFailureCounts[strconv.Itoa(i)] = 1
+	}
+
+	start := time.Now()
+	for i := 0; i < maxTrackedLogFailures; i++ {
+		rl.evictLowestTrackedLogFailure()
+		rl.logFailureCounts[strconv.Itoa(maxTrackedLogFailures+i)] = 1
+	}
+	elapsed := time.Since(start)
+
+	require.Len(t, rl.logFailureCounts, maxTrackedLogFailures)
+	require.Less(t, elapsed, 200*time.Millisecond, "eviction must stay bounded by evictionSampleSize regardless of map size, not scan the whole map on every insertion")
 }
 
 // TestRejectRootChainLog_EvictionLetsARecurringLogReachQuarantine proves the
