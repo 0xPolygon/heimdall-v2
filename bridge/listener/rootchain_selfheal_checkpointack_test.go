@@ -591,4 +591,37 @@ func TestConfirmStateSyncedId(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to decode")
 	})
+
+	t.Run("rejects an oversized decoded id whose Int64() truncation would falsely match", func(t *testing.T) {
+		stateSenderABI := stateSenderABIForTest(t)
+		rlWithABI := &RootChainListener{}
+		rlWithABI.contractCaller.StateSenderABI = stateSenderABI
+
+		// 2^64+5: doesn't fit in int64, but its low 64 bits equal 5, so the
+		// old buggy decoded.Id.Int64() != stateId comparison would have
+		// wrongly treated this as a match against a requested stateId of 5.
+		oversized := new(big.Int).Add(new(big.Int).Lsh(big.NewInt(1), 64), big.NewInt(5))
+		event := stateSenderABI.Events[helper.StateSyncedEvent]
+		var nonIndexed abi.Arguments
+		for _, arg := range event.Inputs {
+			if !arg.Indexed {
+				nonIndexed = append(nonIndexed, arg)
+			}
+		}
+		data, err := nonIndexed.Pack([]byte{})
+		require.NoError(t, err)
+		receiver := common.HexToAddress("0x2222222222222222222222222222222222222222")
+		topicCols, err := abi.MakeTopics([]interface{}{oversized}, []interface{}{receiver})
+		require.NoError(t, err)
+		topics := []common.Hash{event.ID}
+		for _, col := range topicCols {
+			topics = append(topics, col[0])
+		}
+		log := &types.Log{Address: common.HexToAddress(stateSenderAddr), Topics: topics, Data: data, Index: 0}
+		receipt := &types.Receipt{Logs: []*types.Log{log}}
+
+		err = rlWithABI.confirmStateSyncedId(receipt, stateSenderAddr, "0", 5)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match requested")
+	})
 }

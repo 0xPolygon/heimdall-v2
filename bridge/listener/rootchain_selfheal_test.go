@@ -492,7 +492,21 @@ func TestValidateReceiptLog(t *testing.T) {
 		}
 		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "not mined")
+		require.Contains(t, err.Error(), "invalid block number")
+	})
+
+	t.Run("rejects a receipt whose block number doesn't fit in uint64", func(t *testing.T) {
+		t.Parallel()
+		oversized := new(big.Int).Lsh(big.NewInt(1), 64) // 2^64, one past uint64 max
+		receipt := &types.Receipt{
+			TxHash:      expectedHash,
+			Status:      types.ReceiptStatusSuccessful,
+			BlockNumber: oversized,
+			Logs:        []*types.Log{matchingLog(3, expectedAddr, []common.Hash{expectedTopic}, expectedHash)},
+		}
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid block number")
 	})
 
 	t.Run("rejects a receipt for a different transaction", func(t *testing.T) {
@@ -536,15 +550,30 @@ func TestValidateReceiptLog(t *testing.T) {
 		require.Contains(t, err.Error(), "no log found")
 	})
 
-	t.Run("ignores a nil log entry while searching by index", func(t *testing.T) {
+	t.Run("rejects the whole receipt when a nil log entry precedes the target", func(t *testing.T) {
 		t.Parallel()
 		receipt := receiptAt(expectedHash, types.ReceiptStatusSuccessful, []*types.Log{
 			nil,
 			matchingLog(3, expectedAddr, []common.Hash{expectedTopic}, expectedHash),
 		})
-		log, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
-		require.NoError(t, err)
-		require.NotNil(t, log)
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "malformed (nil) log entry")
+	})
+
+	t.Run("rejects the whole receipt when a nil log entry follows the target", func(t *testing.T) {
+		t.Parallel()
+		// The re-scan every helper.ContractCaller Decode*Event does over
+		// receipt.Logs has no nil check, so a nil anywhere in the slice is
+		// fatal downstream even though findLogByIndex alone would find the
+		// target fine here.
+		receipt := receiptAt(expectedHash, types.ReceiptStatusSuccessful, []*types.Log{
+			matchingLog(3, expectedAddr, []common.Hash{expectedTopic}, expectedHash),
+			nil,
+		})
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "malformed (nil) log entry")
 	})
 
 	t.Run("rejects a removed (reorg'd) log", func(t *testing.T) {
@@ -857,6 +886,59 @@ func TestConfirmStakeEventIdentity(t *testing.T) {
 		err := rl.confirmStakeEventIdentity(receipt, stakingInfoAddr, hit, 7, 3)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "unrecognized stake event name")
+	})
+
+	// oversizedLow64Match is 2^64+5: doesn't fit in uint64, but its low 64
+	// bits equal 5, so the old buggy decoded.ValidatorId.Uint64() != validatorId
+	// comparison would have wrongly treated this as a match against a
+	// requested validatorId/nonce of 5.
+	oversizedLow64Match := new(big.Int).Add(new(big.Int).Lsh(big.NewInt(1), 64), big.NewInt(5))
+
+	t.Run("StakeUpdate: rejects an oversized decoded validatorId whose Uint64() truncation would falsely match", func(t *testing.T) {
+		rl := newListener(t)
+		stakingInfoABI := rl.contractCaller.StakingInfoABI
+		event := stakingInfoABI.Events[helper.StakeUpdateEvent]
+		topicCols, err := abi.MakeTopics([]interface{}{oversizedLow64Match}, []interface{}{big.NewInt(3)}, []interface{}{big.NewInt(0)})
+		require.NoError(t, err)
+		topics := []common.Hash{event.ID}
+		for _, col := range topicCols {
+			topics = append(topics, col[0])
+		}
+		log := &types.Log{Address: common.HexToAddress(stakingInfoAddr), Topics: topics, Index: 0}
+		receipt := &types.Receipt{Logs: []*types.Log{log}}
+
+		hit := &txAndLogIndex{LogIndex: "0", EventName: helper.StakeUpdateEvent}
+		err = rl.confirmStakeEventIdentity(receipt, stakingInfoAddr, hit, 5, 3)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match requested")
+	})
+
+	t.Run("SignerChange: rejects an oversized decoded nonce whose Uint64() truncation would falsely match", func(t *testing.T) {
+		rl := newListener(t)
+		stakingInfoABI := rl.contractCaller.StakingInfoABI
+		event := stakingInfoABI.Events[helper.SignerChangeEvent]
+		var nonIndexed abi.Arguments
+		for _, arg := range event.Inputs {
+			if !arg.Indexed {
+				nonIndexed = append(nonIndexed, arg)
+			}
+		}
+		data, err := nonIndexed.Pack(oversizedLow64Match, []byte{})
+		require.NoError(t, err)
+		filler := common.HexToAddress("0x3333333333333333333333333333333333333333")
+		topicCols, err := abi.MakeTopics([]interface{}{big.NewInt(7)}, []interface{}{filler}, []interface{}{filler})
+		require.NoError(t, err)
+		topics := []common.Hash{event.ID}
+		for _, col := range topicCols {
+			topics = append(topics, col[0])
+		}
+		log := &types.Log{Address: common.HexToAddress(stakingInfoAddr), Topics: topics, Data: data, Index: 0}
+		receipt := &types.Receipt{Logs: []*types.Log{log}}
+
+		hit := &txAndLogIndex{LogIndex: "0", EventName: helper.SignerChangeEvent}
+		err = rl.confirmStakeEventIdentity(receipt, stakingInfoAddr, hit, 7, 5)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match requested")
 	})
 }
 

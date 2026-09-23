@@ -3,6 +3,7 @@ package listener
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"strconv"
 	"time"
 
@@ -66,33 +67,36 @@ func (rl *RootChainListener) confirmStakeEventIdentity(receipt *types.Receipt, s
 		return fmt.Errorf("invalid log index %q: %w", hit.LogIndex, err)
 	}
 
-	var gotValidatorId, gotNonce uint64
+	var gotValidatorId, gotNonce *big.Int
 	switch hit.EventName {
 	case helper.StakeUpdateEvent:
 		decoded, decodeErr := rl.contractCaller.DecodeValidatorStakeUpdateEvent(stakingInfoAddress, receipt, idx)
 		if decodeErr != nil {
 			return fmt.Errorf("failed to decode StakeUpdate event: %w", decodeErr)
 		}
-		gotValidatorId, gotNonce = decoded.ValidatorId.Uint64(), decoded.Nonce.Uint64()
+		gotValidatorId, gotNonce = decoded.ValidatorId, decoded.Nonce
 	case helper.SignerChangeEvent:
 		decoded, decodeErr := rl.contractCaller.DecodeSignerUpdateEvent(stakingInfoAddress, receipt, idx)
 		if decodeErr != nil {
 			return fmt.Errorf("failed to decode SignerChange event: %w", decodeErr)
 		}
-		gotValidatorId, gotNonce = decoded.ValidatorId.Uint64(), decoded.Nonce.Uint64()
+		gotValidatorId, gotNonce = decoded.ValidatorId, decoded.Nonce
 	case helper.UnstakeInitEvent:
 		decoded, decodeErr := rl.contractCaller.DecodeValidatorExitEvent(stakingInfoAddress, receipt, idx)
 		if decodeErr != nil {
 			return fmt.Errorf("failed to decode UnstakeInit event: %w", decodeErr)
 		}
-		gotValidatorId, gotNonce = decoded.ValidatorId.Uint64(), decoded.Nonce.Uint64()
+		gotValidatorId, gotNonce = decoded.ValidatorId, decoded.Nonce
 	default:
 		return fmt.Errorf("unrecognized stake event name %q", hit.EventName)
 	}
 
-	if gotValidatorId != validatorId || gotNonce != nonce {
-		return fmt.Errorf("decoded (validatorId=%d, nonce=%d) does not match requested (validatorId=%d, nonce=%d)",
-			gotValidatorId, gotNonce, validatorId, nonce)
+	// Compare the decoded *big.Int fields directly — converting to uint64
+	// first would silently truncate an oversized on-chain value, letting it
+	// alias the requested (validatorId, nonce) after wraparound.
+	if gotValidatorId.Cmp(new(big.Int).SetUint64(validatorId)) != 0 || gotNonce.Cmp(new(big.Int).SetUint64(nonce)) != 0 {
+		return fmt.Errorf("decoded (validatorId=%s, nonce=%s) does not match requested (validatorId=%d, nonce=%d)",
+			gotValidatorId.String(), gotNonce.String(), validatorId, nonce)
 	}
 
 	return nil
@@ -147,8 +151,8 @@ func validateReceiptShape(receipt *types.Receipt, txHash string) error {
 	if receipt == nil {
 		return fmt.Errorf("nil receipt for tx %s", txHash)
 	}
-	if receipt.BlockNumber == nil || receipt.BlockNumber.Sign() == 0 {
-		return fmt.Errorf("receipt for tx %s has no block number (not mined)", txHash)
+	if receipt.BlockNumber == nil || receipt.BlockNumber.Sign() == 0 || !receipt.BlockNumber.IsUint64() {
+		return fmt.Errorf("receipt for tx %s has an invalid block number", txHash)
 	}
 	if receipt.TxHash != common.HexToHash(txHash) {
 		return fmt.Errorf("receipt tx hash %s does not match requested tx %s", receipt.TxHash.Hex(), txHash)
@@ -163,6 +167,9 @@ func validateReceiptShape(receipt *types.Receipt, txHash string) error {
 // confirms its block/transaction metadata actually agrees with the receipt
 // it supposedly came from.
 func resolveAndValidateLog(receipt *types.Receipt, txHash, logIndex string) (*types.Log, error) {
+	if err := receiptLogsWellFormed(receipt.Logs, txHash); err != nil {
+		return nil, err
+	}
 	log := findLogByIndex(receipt.Logs, logIndex)
 	if log == nil {
 		return nil, fmt.Errorf("no log found for log index %s in tx %s", logIndex, txHash)
@@ -213,16 +220,27 @@ func pickStakeEventHit(r stakeEventByNonceResponse) *txAndLogIndex {
 	return nil
 }
 
-// findLogByIndex returns the receipt log whose decimal-string index equals the
-// given target. The subgraph stores logIndex as a decimal string; comparing
-// strings avoids parsing each call. receipt.Logs is []*types.Log — a
-// malformed response can contain a nil entry, so each one is checked before
-// dereferencing.
-func findLogByIndex(logs []*types.Log, target string) *types.Log {
+// receiptLogsWellFormed rejects the whole receipt if receipt.Logs contains
+// any nil entry, before findLogByIndex or any Decode*Event scan ever runs
+// over it. Every helper.ContractCaller Decode*Event re-scans receipt.Logs
+// from scratch with no nil check, so a nil anywhere in the slice is fatal to
+// that later scan even when it sits well clear of the log this function is
+// about to return as valid.
+func receiptLogsWellFormed(logs []*types.Log, txHash string) error {
 	for _, log := range logs {
 		if log == nil {
-			continue
+			return fmt.Errorf("receipt for tx %s contains a malformed (nil) log entry", txHash)
 		}
+	}
+	return nil
+}
+
+// findLogByIndex returns the receipt log whose decimal-string index equals the
+// given target. The subgraph stores logIndex as a decimal string; comparing
+// strings avoids parsing each call. Callers must run receiptLogsWellFormed
+// first — this function assumes no entry in logs is nil.
+func findLogByIndex(logs []*types.Log, target string) *types.Log {
+	for _, log := range logs {
 		if strconv.Itoa(int(log.Index)) == target {
 			return log
 		}

@@ -273,8 +273,8 @@ func (rl *RootChainListener) confirmStateSyncedId(receipt *types.Receipt, stateS
 		return fmt.Errorf("failed to decode StateSynced event: %w", err)
 	}
 
-	if decoded.Id.Int64() != stateId {
-		return fmt.Errorf("decoded stateId %d does not match requested %d", decoded.Id.Int64(), stateId)
+	if decoded.Id.Cmp(big.NewInt(stateId)) != 0 {
+		return fmt.Errorf("decoded stateId %s does not match requested %d", decoded.Id.String(), stateId)
 	}
 
 	return nil
