@@ -67,28 +67,20 @@ func (rl *RootChainListener) confirmStakeEventIdentity(receipt *types.Receipt, s
 		return fmt.Errorf("invalid log index %q: %w", hit.LogIndex, err)
 	}
 
-	var gotValidatorId, gotNonce *big.Int
-	switch hit.EventName {
-	case helper.StakeUpdateEvent:
-		decoded, decodeErr := rl.contractCaller.DecodeValidatorStakeUpdateEvent(stakingInfoAddress, receipt, idx)
-		if decodeErr != nil {
-			return fmt.Errorf("failed to decode StakeUpdate event: %w", decodeErr)
-		}
-		gotValidatorId, gotNonce = decoded.ValidatorId, decoded.Nonce
-	case helper.SignerChangeEvent:
-		decoded, decodeErr := rl.contractCaller.DecodeSignerUpdateEvent(stakingInfoAddress, receipt, idx)
-		if decodeErr != nil {
-			return fmt.Errorf("failed to decode SignerChange event: %w", decodeErr)
-		}
-		gotValidatorId, gotNonce = decoded.ValidatorId, decoded.Nonce
-	case helper.UnstakeInitEvent:
-		decoded, decodeErr := rl.contractCaller.DecodeValidatorExitEvent(stakingInfoAddress, receipt, idx)
-		if decodeErr != nil {
-			return fmt.Errorf("failed to decode UnstakeInit event: %w", decodeErr)
-		}
-		gotValidatorId, gotNonce = decoded.ValidatorId, decoded.Nonce
-	default:
-		return fmt.Errorf("unrecognized stake event name %q", hit.EventName)
+	gotValidatorId, gotNonce, err := rl.decodeStakeEventFields(receipt, stakingInfoAddress, hit.EventName, idx)
+	if err != nil {
+		return err
+	}
+
+	// nonce is a non-indexed field on SignerChange/UnstakeInit, so it's only
+	// populated by ABI-unpacking the log's Data — which helper.UnpackLog
+	// skips entirely (no error) when Data is empty, leaving Nonce nil.
+	// validatorId is indexed on every one of these events and is always
+	// populated regardless, but guard both since Cmp panics on a nil
+	// receiver either way.
+	if gotValidatorId == nil || gotNonce == nil {
+		return fmt.Errorf("decoded %s event at tx %s log index %s is missing validatorId/nonce",
+			hit.EventName, hit.TransactionHash, hit.LogIndex)
 	}
 
 	// Compare the decoded *big.Int fields directly — converting to uint64
@@ -100,6 +92,34 @@ func (rl *RootChainListener) confirmStakeEventIdentity(receipt *types.Receipt, s
 	}
 
 	return nil
+}
+
+// decodeStakeEventFields decodes the stake event named eventName at idx and
+// returns its (validatorId, nonce) fields. Each of the three nonce-gated
+// stake event types has its own ABI shape, so each is decoded separately.
+func (rl *RootChainListener) decodeStakeEventFields(receipt *types.Receipt, stakingInfoAddress, eventName string, idx uint64) (*big.Int, *big.Int, error) {
+	switch eventName {
+	case helper.StakeUpdateEvent:
+		decoded, err := rl.contractCaller.DecodeValidatorStakeUpdateEvent(stakingInfoAddress, receipt, idx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode StakeUpdate event: %w", err)
+		}
+		return decoded.ValidatorId, decoded.Nonce, nil
+	case helper.SignerChangeEvent:
+		decoded, err := rl.contractCaller.DecodeSignerUpdateEvent(stakingInfoAddress, receipt, idx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode SignerChange event: %w", err)
+		}
+		return decoded.ValidatorId, decoded.Nonce, nil
+	case helper.UnstakeInitEvent:
+		decoded, err := rl.contractCaller.DecodeValidatorExitEvent(stakingInfoAddress, receipt, idx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to decode UnstakeInit event: %w", err)
+		}
+		return decoded.ValidatorId, decoded.Nonce, nil
+	default:
+		return nil, nil, fmt.Errorf("unrecognized stake event name %q", eventName)
+	}
 }
 
 // eventTopicByName finds the topic hash for a known event name. Self-heal's
@@ -241,7 +261,7 @@ func receiptLogsWellFormed(logs []*types.Log, txHash string) error {
 // first — this function assumes no entry in logs is nil.
 func findLogByIndex(logs []*types.Log, target string) *types.Log {
 	for _, log := range logs {
-		if strconv.Itoa(int(log.Index)) == target {
+		if strconv.FormatUint(uint64(log.Index), 10) == target {
 			return log
 		}
 	}

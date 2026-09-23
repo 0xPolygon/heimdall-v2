@@ -389,7 +389,12 @@ func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAdd
 		return rl.rejectRootChainLog("a log for an event outside the query's topic set", "event", selectedEvent.Name, "txHash", vLog.TxHash)
 	}
 
-	expectedAddress := contractAddresses[rl.eventContract[vLog.Topics[0]]]
+	contract, ok := rl.eventContract[vLog.Topics[0]]
+	if !ok {
+		return rl.rejectRootChainLog("a log for an event missing from the contract-binding map", "event", selectedEvent.Name, "txHash", vLog.TxHash)
+	}
+
+	expectedAddress := contractAddresses[contract]
 	if vLog.Address != expectedAddress {
 		return rl.rejectRootChainLog("a log from an address that doesn't match its event's contract",
 			"address", vLog.Address, "expectedAddress", expectedAddress, "event", selectedEvent.Name, "txHash", vLog.TxHash)

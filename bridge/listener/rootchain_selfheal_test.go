@@ -940,6 +940,42 @@ func TestConfirmStakeEventIdentity(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "does not match requested")
 	})
+
+	// nonce is non-indexed on SignerChange/UnstakeInit, so it's only ever
+	// populated from the log's Data — an empty Data leaves it nil rather than
+	// zero. A structurally valid log (right address, right topic0, right
+	// indexed args) with no Data must be rejected with an error, not panic
+	// Cmp-ing against a nil *big.Int.
+	filler := common.HexToAddress("0x3333333333333333333333333333333333333333")
+	emptyDataIndexedArgs := map[string][]interface{}{
+		// SignerChange(uint256 indexed validatorId, uint256 nonce, address indexed oldSigner, address indexed newSigner, bytes signerPubkey)
+		helper.SignerChangeEvent: {big.NewInt(7), filler, filler},
+		// UnstakeInit(address indexed user, uint256 indexed validatorId, uint256 nonce, uint256 deactivationEpoch, uint256 indexed amount)
+		helper.UnstakeInitEvent: {filler, big.NewInt(7), big.NewInt(0)},
+	}
+	for _, eventName := range []string{helper.SignerChangeEvent, helper.UnstakeInitEvent} {
+		t.Run(eventName+": rejects a log with empty Data instead of panicking on a nil decoded nonce", func(t *testing.T) {
+			rl := newListener(t)
+			stakingInfoABI := rl.contractCaller.StakingInfoABI
+			event := stakingInfoABI.Events[eventName]
+			indexedArgs := emptyDataIndexedArgs[eventName]
+			topicCols, err := abi.MakeTopics([]interface{}{indexedArgs[0]}, []interface{}{indexedArgs[1]}, []interface{}{indexedArgs[2]})
+			require.NoError(t, err)
+			topics := []common.Hash{event.ID}
+			for _, col := range topicCols {
+				topics = append(topics, col[0])
+			}
+			log := &types.Log{Address: common.HexToAddress(stakingInfoAddr), Topics: topics, Index: 0} // Data deliberately left nil/empty
+			receipt := &types.Receipt{Logs: []*types.Log{log}}
+
+			hit := &txAndLogIndex{LogIndex: "0", EventName: eventName}
+			require.NotPanics(t, func() {
+				err = rl.confirmStakeEventIdentity(receipt, stakingInfoAddr, hit, 7, 3)
+			})
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "missing validatorId/nonce")
+		})
+	}
 }
 
 // orchestrationTest exercises processStakeEvents → recoverStakeEventsForValidator

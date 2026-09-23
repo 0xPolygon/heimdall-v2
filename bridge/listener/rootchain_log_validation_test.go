@@ -32,6 +32,13 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 	unqueriedTopic := common.HexToHash("0x4444444444444444444444444444444444444444444444444444444444444444")
 	unqueriedEvent := &abi.Event{Name: "OwnershipTransferred"}
 
+	// In eventMap and rootChainEvents (so it clears both earlier checks) but
+	// deliberately absent from eventContract — the gap the explicit ok-check
+	// on that lookup exists to close. Production listeners always populate
+	// both maps together; this simulates them falling out of sync.
+	unboundContractTopic := common.HexToHash("0x5555555555555555555555555555555555555555555555555555555555555555")
+	unboundContractEvent := &abi.Event{Name: helper.StakeUpdateEvent}
+
 	rootChainAddress := common.HexToAddress("0xaaaa000000000000000000000000000000aaaa")
 	stakingInfoAddress := common.HexToAddress("0xbbbb000000000000000000000000000000bbbb")
 	stateSenderAddress := common.HexToAddress("0xcccc000000000000000000000000000000cccc")
@@ -48,14 +55,16 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 	newListener := func() *RootChainListener {
 		rl := &RootChainListener{
 			eventMap: map[common.Hash]*abi.Event{
-				rootChainTopic:   rootChainEvent,
-				stakingInfoTopic: stakingInfoEvent,
-				unqueriedTopic:   unqueriedEvent,
+				rootChainTopic:       rootChainEvent,
+				stakingInfoTopic:     stakingInfoEvent,
+				unqueriedTopic:       unqueriedEvent,
+				unboundContractTopic: unboundContractEvent,
 			},
 			eventContract: map[common.Hash]rootChainContract{
 				rootChainTopic:   rootChainContractRootChain,
 				stakingInfoTopic: rootChainContractStakingInfo,
 				unqueriedTopic:   rootChainContractRootChain,
+				// unboundContractTopic intentionally has no eventContract entry.
 			},
 		}
 		rl.BaseListener.Logger = log.NewNopLogger()
@@ -215,6 +224,20 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 		vLog := types.Log{
 			Address:     rootChainAddress,
 			Topics:      []common.Hash{unqueriedTopic},
+			BlockNumber: 150,
+		}
+
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
+		require.False(t, ok)
+	})
+
+	t.Run("rejects a log whose topic resolves in eventMap but has no eventContract entry", func(t *testing.T) {
+		t.Parallel()
+
+		rl := newListener()
+		vLog := types.Log{
+			Address:     rootChainAddress,
+			Topics:      []common.Hash{unboundContractTopic},
 			BlockNumber: 150,
 		}
 
