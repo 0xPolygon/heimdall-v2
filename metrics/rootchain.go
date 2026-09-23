@@ -18,8 +18,10 @@ var RootChainListenerLogRejected = promauto.NewCounter(prometheus.CounterOpts{
 })
 
 // RootChainListenerLogQuarantined counts rootchain logs that failed
-// validation on maxRootChainLogRejections consecutive poll cycles and were
-// therefore quarantined: the cursor advanced past the block containing them
+// validation on maxRootChainLogRejections poll cycles (not necessarily
+// back-to-back — a cycle that aborts before content validation runs still
+// preserves progress) and were therefore quarantined: the cursor advanced
+// past the block containing them
 // instead of withholding it forever. Distinct from log_rejected_total, which
 // also fires for a rejection that later self-resolves — a non-zero rate here
 // means a specific log needs manual operator investigation, not just a

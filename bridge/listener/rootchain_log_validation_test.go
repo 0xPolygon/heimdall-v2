@@ -539,8 +539,8 @@ func TestPruneStaleLogFailureCounts(t *testing.T) {
 // grow without bound: an endpoint returning a fresh, distinct bad log on
 // every poll never lets any single entry reach maxRootChainLogRejections,
 // so nothing is ever quarantined or pruned to bound the map naturally. Once
-// the cap is reached, a brand-new key is refused, but an already-tracked
-// one still increments.
+// the cap is reached, a brand-new key is admitted by evicting the
+// lowest-count entry, and an already-tracked one still increments.
 func TestRejectRootChainLog_CapsTrackedFailures(t *testing.T) {
 	knownTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
 	knownEvent := &abi.Event{Name: helper.NewHeaderBlockEvent}
@@ -904,6 +904,49 @@ func TestProcessRootChainBlockRange_QuarantineClearsWholeChunkInOneCycle(t *test
 	require.Equal(t, "103", string(lastBlockBytes))
 
 	require.Empty(t, rl.logFailureCounts, "the quarantined log's failure count is dropped")
+}
+
+// TestQueryAndBroadcastEvents_StopsAtFilterLogsCallBudget proves the budget
+// check itself: once state.filterLogsCalls is already at the cap, the next
+// call is refused before it would have reached the network, and the counter
+// doesn't advance past the cap.
+func TestQueryAndBroadcastEvents_StopsAtFilterLogsCallBudget(t *testing.T) {
+	var requestCount atomic.Int64
+	rl, rootChainContext := twoBlockListener(t, func(fromBlock, toBlock uint64) []*types.Log {
+		requestCount.Add(1)
+		return nil
+	})
+	state := newRootChainRejectionState()
+	state.filterLogsCalls = maxRootChainFilterLogsCallsPerCycle
+
+	err := rl.queryAndBroadcastEvents(rootChainContext, big.NewInt(1), big.NewInt(1), state)
+
+	require.ErrorIs(t, err, errFilterLogsCallBudgetReached)
+	require.Equal(t, maxRootChainFilterLogsCallsPerCycle, state.filterLogsCalls, "the refused call must not itself count toward the budget")
+	require.Equal(t, int64(0), requestCount.Load(), "a refused call must never reach the network")
+}
+
+// TestProcessRootChainBlockRange_BoundsFilterLogsCallsPerCycle proves the
+// concern the budget exists for: an endpoint that returns the same
+// quarantine-excludable log for every query forces bisection to visit every
+// leaf of the range to confirm it all resolves — up to 2*N-1 FilterLogs
+// calls for an N-block range. Without a bound, a large enough range turns
+// one poll cycle into thousands of synchronous round trips to an endpoint
+// already known to be misbehaving; with it, the cycle aborts (to retry next
+// cycle) once the budget is spent, rather than continuing to climb.
+func TestProcessRootChainBlockRange_BoundsFilterLogsCallsPerCycle(t *testing.T) {
+	const rangeWidth = 1000 // 2*1000-1 = 1999 tree nodes, well past the budget
+	badLog := unrecognizedTopicLog(1500, common.HexToHash("0xaaaa16"))
+	rl, rootChainContext := twoBlockListener(t, func(fromBlock, toBlock uint64) []*types.Log {
+		return []*types.Log{badLog}
+	})
+	rl.logFailureCounts = map[string]uint64{rootChainLogKey(*badLog): maxRootChainLogRejections - 1}
+
+	state := newRootChainRejectionState()
+	err := rl.processRootChainBlockRange(rootChainContext, big.NewInt(1000), big.NewInt(1000+rangeWidth-1), state)
+
+	require.Error(t, err, "the budget must force this cycle to abort before the full range resolves")
+	require.Equal(t, maxRootChainFilterLogsCallsPerCycle, state.filterLogsCalls, "FilterLogs calls must stop exactly at the budget, not scale with the range's full 2N-1 bisection cost")
 }
 
 // TestQueryAndBroadcastEvents_TransientFailureNeverTouchesQuarantine proves a

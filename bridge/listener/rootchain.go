@@ -95,10 +95,21 @@ const maxRootChainLogRejections = 100
 // stalling the cursor on it forever.
 const maxTrackedLogFailures = 10_000
 
+// maxRootChainFilterLogsCallsPerCycle bounds how many FilterLogs round trips
+// a single ProcessHeader poll cycle can make. Resolving a maxRootChainBlockRange
+// chunk that's quarantine-excludable at every leaf needs up to 2*N-1 calls in
+// the worst case; capping well below that keeps one poll cycle from turning
+// into thousands of sequential round trips to an endpoint already known to be
+// misbehaving. What doesn't get resolved this cycle is retried next cycle —
+// logFailureCounts and the persisted cursor both carry real progress forward,
+// so this trades one big cycle for several bounded ones, not lost progress.
+const maxRootChainFilterLogsCallsPerCycle = 500
+
 var (
-	errMainChainClientUnavailable = errors.New("main chain client is nil")
-	errNoSupportedRootChainTopics = errors.New("no supported rootChain event topics configured")
-	errUnexpectedRootChainLog     = errors.New("rootchain log query returned a log that doesn't match the query")
+	errMainChainClientUnavailable  = errors.New("main chain client is nil")
+	errNoSupportedRootChainTopics  = errors.New("no supported rootChain event topics configured")
+	errUnexpectedRootChainLog      = errors.New("rootchain log query returned a log that doesn't match the query")
+	errFilterLogsCallBudgetReached = errors.New("rootchain FilterLogs call budget reached for this poll cycle")
 
 	rootChainEvents = map[string]struct{}{
 		helper.NewHeaderBlockEvent: {},
@@ -219,6 +230,16 @@ type rootChainRejectionState struct {
 	// clearing logFailureCounts) to once per logKey per cycle, independent of
 	// how many single-block leaves reuse the still-live quarantine entry.
 	quarantinedThisCycle map[string]struct{}
+
+	// filterLogsCalls counts how many FilterLogs round trips this cycle has
+	// made. An endpoint that keeps returning the same quarantine-excludable
+	// log for every query forces bisection to visit every leaf to resolve a
+	// wide chunk (see the quarantine field above) — up to 2*N-1 calls for an
+	// N-block chunk. queryAndBroadcastEvents stops making new calls once this
+	// crosses maxRootChainFilterLogsCallsPerCycle, so one cycle can't turn
+	// into thousands of synchronous round trips to an endpoint already known
+	// to be misbehaving; whatever didn't get resolved resumes next cycle.
+	filterLogsCalls int
 }
 
 func newRootChainRejectionState() *rootChainRejectionState {
@@ -256,6 +277,13 @@ func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChain
 		// don't advance the cursor if the client isn't ready.
 		return errMainChainClientUnavailable
 	}
+
+	if state.filterLogsCalls >= maxRootChainFilterLogsCallsPerCycle {
+		rl.Logger.Warn("RootChainListener: FilterLogs call budget reached for this poll cycle, resuming the rest next cycle",
+			"fromBlock", fromBlock, "toBlock", toBlock, "budget", maxRootChainFilterLogsCallsPerCycle)
+		return errFilterLogsCallBudgetReached
+	}
+	state.filterLogsCalls++
 
 	ctx, cancel := context.WithTimeout(context.Background(), rl.contractCaller.MainChainTimeout)
 	defer cancel()
