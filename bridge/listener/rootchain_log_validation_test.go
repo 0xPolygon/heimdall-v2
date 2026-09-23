@@ -535,6 +535,53 @@ func TestPruneStaleLogFailureCounts(t *testing.T) {
 	require.Equal(t, uint64(3), rl.logFailureCounts["recurring"])
 }
 
+// countingLogger counts Error calls by message, for tests that need to prove
+// a log line fires at most once per event rather than trusting side-channel
+// state (like the metric or the count) as a stand-in for the log itself.
+type countingLogger struct {
+	log.Logger
+	errorCalls map[string]int
+}
+
+func newCountingLogger() *countingLogger {
+	return &countingLogger{Logger: log.NewNopLogger(), errorCalls: make(map[string]int)}
+}
+
+func (c *countingLogger) Error(msg string, _ ...any) {
+	c.errorCalls[msg]++
+}
+
+// TestRejectRootChainLog_LogsOnceThenDedupes proves the rejection log line
+// follows the same per-cycle dedup as the metric and the failure count, not
+// just "before" them: re-encountering the same log at a later bisection
+// level within the same cycle must not print a second error line, since an
+// endpoint that keeps returning one bad log across many bisection levels
+// would otherwise flood the log at the same rate the metric dedup was added
+// to prevent for the counter.
+func TestRejectRootChainLog_LogsOnceThenDedupes(t *testing.T) {
+	knownTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
+	knownEvent := &abi.Event{Name: helper.NewHeaderBlockEvent}
+	rl := &RootChainListener{
+		eventMap:      map[common.Hash]*abi.Event{knownTopic: knownEvent},
+		eventContract: map[common.Hash]rootChainContract{knownTopic: rootChainContractRootChain},
+	}
+	spy := newCountingLogger()
+	rl.BaseListener.Logger = spy
+
+	badLog := unrecognizedTopicLog(100, common.HexToHash("0xaaaa17"))
+	contractAddresses := map[rootChainContract]common.Address{}
+	fromBlock, toBlock := big.NewInt(100), big.NewInt(100)
+	state := newRootChainRejectionState()
+
+	// Simulate the same log being re-encountered at two different bisection
+	// levels within the same cycle.
+	_, _ = rl.validateLogAgainstQuery(*badLog, contractAddresses, fromBlock, toBlock, state)
+	_, _ = rl.validateLogAgainstQuery(*badLog, contractAddresses, fromBlock, toBlock, state)
+
+	require.Equal(t, 1, spy.errorCalls["RootChainListener: rootchain log query returned a log with an unrecognized topic"],
+		"the rejection log line must be deduped the same way the metric already is")
+}
+
 // TestRejectRootChainLog_CapsTrackedFailures proves logFailureCounts can't
 // grow without bound: an endpoint returning a fresh, distinct bad log on
 // every poll never lets any single entry reach maxRootChainLogRejections,

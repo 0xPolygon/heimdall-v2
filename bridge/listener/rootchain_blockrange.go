@@ -136,7 +136,7 @@ func (rl *RootChainListener) processRootChainBlockRange(rootChainContext *RootCh
 		// also fails, it will be split again by the recursive call below.
 		midBlock := splitBlockRange(fromBlock, toBlock)
 		rl.Logger.Warn(
-			"RootChainListener: splitting rootChain event log query after RPC failure",
+			"RootChainListener: splitting rootChain event log query after a failed query",
 			"error", err,
 			"fromBlock", fromBlock,
 			"toBlock", toBlock,

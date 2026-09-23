@@ -482,27 +482,29 @@ func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAdd
 
 // rejectRootChainLog logs a rootchain log query rejection, always returning
 // (nil, false) so validateLogAgainstQuery's reject sites read as a single
-// line each. It counts the rejection in rootchain_listener_log_rejected_total,
-// and advances the log's persistent failure count, at most once per logKey
+// line each. The log line, the rootchain_listener_log_rejected_total counter,
+// and the log's persistent failure count all advance at most once per logKey
 // per state.countedThisCycle set: processRootChainBlockRange bisects a
 // failed range and re-queries every sub-range that still contains a
-// persistently-bad log, so without this the same log would inflate the
-// metric — and reach the quarantine threshold — by roughly log2(range)
-// within a single poll cycle. state is shared across that whole cycle (see
-// ProcessHeader) so both the metric and the failure count still advance once
-// per cycle for a log that's still broken — that's honest signal, just not
-// duplicated within it. Crossing maxRootChainLogRejections records an entry
-// in state.quarantine keyed by this exact log, for validateAndHandleLogs to
-// act on — never keyed by block number alone, so a different log or a
-// transient failure on the same block can't consume it.
+// persistently-bad log, so without this dedup a single bad log returned by
+// every sub-query would inflate the metric — and reach the quarantine
+// threshold — by roughly log2(range) within a single poll cycle, and (before
+// the call budget) could otherwise print up to hundreds of duplicate error
+// lines for one log in one cycle. state is shared across that whole cycle
+// (see ProcessHeader) so the log, the metric, and the failure count still all
+// advance once per cycle for a log that's still broken — that's honest
+// signal, just not duplicated within it. Crossing maxRootChainLogRejections
+// records an entry in state.quarantine keyed by this exact log, for
+// validateAndHandleLogs to act on — never keyed by block number alone, so a
+// different log or a transient failure on the same block can't consume it.
 func (rl *RootChainListener) rejectRootChainLog(state *rootChainRejectionState, vLog types.Log, reason string, keyvals ...any) (*abi.Event, bool) {
 	logKey := rootChainLogKey(vLog)
-	rl.Logger.Error("RootChainListener: rootchain log query returned "+reason, keyvals...)
-
 	if _, alreadyCounted := state.countedThisCycle[logKey]; alreadyCounted {
 		return nil, false
 	}
 	state.countedThisCycle[logKey] = struct{}{}
+
+	rl.Logger.Error("RootChainListener: rootchain log query returned "+reason, keyvals...)
 	metrics.RootChainListenerLogRejected.Inc()
 
 	if rl.logFailureCounts == nil {
