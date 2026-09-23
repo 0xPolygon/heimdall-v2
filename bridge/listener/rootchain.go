@@ -40,6 +40,14 @@ type RootChainListener struct {
 	// (not just any of the three watched contracts).
 	eventContract map[ethCommon.Hash]rootChainContract
 
+	// Consecutive-poll-cycle failure count per rejected log (keyed the same
+	// way as rootChainRejectionState.countedThisCycle), so a log that keeps
+	// failing validation across many polls can be quarantined instead of
+	// withholding the cursor forever. Only ever touched from ProcessHeader,
+	// which BaseListener.StartHeaderProcess drives from a single goroutine,
+	// so no lock is needed. Pruned each cycle in pruneStaleLogFailureCounts.
+	logFailureCounts map[string]uint64
+
 	// For self-healing, it will be only initialized if sub_graph_url is provided
 	subGraphClient *subGraphClient
 }
@@ -58,6 +66,12 @@ const (
 	lastRootBlockKey       = "rootchain-last-block" // Storage key
 	maxRootChainBlockRange = 5000                   // Maximum number of blocks to fetch logs for in a single FilterLogs call
 )
+
+// maxRootChainLogRejections bounds how many consecutive poll cycles a single
+// log can fail validation before it's quarantined: the cursor advances past
+// the block containing it instead of withholding it forever. See
+// rejectRootChainLog and quarantineRootChainLog.
+const maxRootChainLogRejections = 100
 
 var (
 	errMainChainClientUnavailable = errors.New("main chain client is nil")
@@ -104,10 +118,11 @@ func NewRootChainListener() *RootChainListener {
 	}
 
 	return &RootChainListener{
-		stakingInfoAbi: &contractCaller.StakingInfoABI,
-		stateSenderAbi: &contractCaller.StateSenderABI,
-		eventMap:       eventMap,
-		eventContract:  eventContract,
+		stakingInfoAbi:   &contractCaller.StakingInfoABI,
+		stateSenderAbi:   &contractCaller.StateSenderABI,
+		eventMap:         eventMap,
+		eventContract:    eventContract,
+		logFailureCounts: make(map[string]uint64),
 	}
 }
 
@@ -156,8 +171,41 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 	rl.processRootChainBlockRangeInChunks(rootChainContext, from, to)
 }
 
+// rootChainRejectionState tracks per-log rejection bookkeeping shared across
+// one ProcessHeader poll cycle's whole call tree — every chunk and every
+// bisection level processRootChainBlockRange visits for that cycle.
+type rootChainRejectionState struct {
+	// countedThisCycle ensures rootchain_listener_log_rejected_total, and the
+	// persistent per-log failure count in RootChainListener.logFailureCounts,
+	// only advance once per distinct log per cycle — not once per bisection
+	// level that re-encounters it.
+	countedThisCycle map[string]struct{}
+
+	// quarantine is set once a rejection in this cycle has pushed a log's
+	// persistent failure count to maxRootChainLogRejections, so
+	// processRootChainBlockRange's single-block base case can advance past
+	// it instead of withholding the cursor.
+	quarantine *rootChainLogDetail
+}
+
+func newRootChainRejectionState() *rootChainRejectionState {
+	return &rootChainRejectionState{countedThisCycle: make(map[string]struct{})}
+}
+
+// rootChainLogDetail carries everything an operator needs to investigate and
+// manually recover a quarantined log.
+type rootChainLogDetail struct {
+	logKey      string
+	reason      string
+	txHash      ethCommon.Hash
+	logIndex    uint64
+	blockNumber uint64
+	address     ethCommon.Address
+	topic       ethCommon.Hash
+}
+
 // queryAndBroadcastEvents fetches supported events from the rootChain and handles all of them
-func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int, rejectedLogs map[string]struct{}) error {
+func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int, state *rootChainRejectionState) error {
 	rl.Logger.Debug("RootChainListener: querying rootChain event logs", "fromBlock", fromBlock, "toBlock", toBlock)
 
 	if rl.contractCaller.MainChainClient == nil {
@@ -207,18 +255,18 @@ func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChain
 		rl.Logger.Debug("RootChainListener: new logs found", "numberOfLogs", len(logs))
 	}
 
-	return rl.validateAndHandleLogs(logs, contractAddresses, fromBlock, toBlock, rejectedLogs)
+	return rl.validateAndHandleLogs(logs, contractAddresses, fromBlock, toBlock, state)
 }
 
 // validateAndHandleLogs validates every log in the batch before handling any
 // of it: a batch with one bad log among several good ones must not partially
 // dispatch, or a retry of the same range (see processRootChainBlockRange)
 // would re-dispatch the already-handled ones.
-func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int, rejectedLogs map[string]struct{}) error {
+func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int, state *rootChainRejectionState) error {
 	selectedEvents := make([]*abi.Event, len(logs))
 
 	for i, vLog := range logs {
-		selectedEvent, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, rejectedLogs)
+		selectedEvent, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, state)
 		if !ok {
 			return errUnexpectedRootChainLog
 		}
@@ -250,27 +298,23 @@ func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAdd
 // covers that gap for checkpoint acks, the three nonce-gated stake events,
 // and state syncs; validator joins, top-ups, slashes, and unjails have no
 // self-heal path today.
-func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int, rejectedLogs map[string]struct{}) (*abi.Event, bool) {
-	// Identifies this log across every bisection level that re-encounters it
-	// within the same top-level call, for rejectRootChainLog's dedup.
-	logKey := vLog.TxHash.Hex() + ":" + strconv.FormatUint(uint64(vLog.Index), 10)
-
+func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int, state *rootChainRejectionState) (*abi.Event, bool) {
 	if vLog.Removed {
-		return rl.rejectRootChainLog(rejectedLogs, logKey, "a removed (reorg'd) log", "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(state, vLog, "a removed (reorg'd) log", "txHash", vLog.TxHash)
 	}
 
 	if vLog.BlockNumber < fromBlock.Uint64() || vLog.BlockNumber > toBlock.Uint64() {
-		return rl.rejectRootChainLog(rejectedLogs, logKey, "a log outside the requested block range",
+		return rl.rejectRootChainLog(state, vLog, "a log outside the requested block range",
 			"blockNumber", vLog.BlockNumber, "fromBlock", fromBlock, "toBlock", toBlock, "txHash", vLog.TxHash)
 	}
 
 	if len(vLog.Topics) == 0 {
-		return rl.rejectRootChainLog(rejectedLogs, logKey, "a log with no topics", "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(state, vLog, "a log with no topics", "txHash", vLog.TxHash)
 	}
 
 	selectedEvent, ok := rl.eventMap[vLog.Topics[0]]
 	if !ok {
-		return rl.rejectRootChainLog(rejectedLogs, logKey, "a log with an unrecognized topic", "topic", vLog.Topics[0], "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(state, vLog, "a log with an unrecognized topic", "topic", vLog.Topics[0], "txHash", vLog.TxHash)
 	}
 
 	// eventMap spans every event the three ABIs define; rootChainEvents is the
@@ -278,17 +322,17 @@ func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAdd
 	// rootChainEventTopics). A topic can resolve in eventMap while still being
 	// outside that subset, which would otherwise defeat this exact check.
 	if _, ok := rootChainEvents[selectedEvent.Name]; !ok {
-		return rl.rejectRootChainLog(rejectedLogs, logKey, "a log for an event outside the query's topic set", "event", selectedEvent.Name, "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(state, vLog, "a log for an event outside the query's topic set", "event", selectedEvent.Name, "txHash", vLog.TxHash)
 	}
 
 	contract, ok := rl.eventContract[vLog.Topics[0]]
 	if !ok {
-		return rl.rejectRootChainLog(rejectedLogs, logKey, "a log for an event missing from the contract-binding map", "event", selectedEvent.Name, "txHash", vLog.TxHash)
+		return rl.rejectRootChainLog(state, vLog, "a log for an event missing from the contract-binding map", "event", selectedEvent.Name, "txHash", vLog.TxHash)
 	}
 
 	expectedAddress := contractAddresses[contract]
 	if vLog.Address != expectedAddress {
-		return rl.rejectRootChainLog(rejectedLogs, logKey, "a log from an address that doesn't match its event's contract",
+		return rl.rejectRootChainLog(state, vLog, "a log from an address that doesn't match its event's contract",
 			"address", vLog.Address, "expectedAddress", expectedAddress, "event", selectedEvent.Name, "txHash", vLog.TxHash)
 	}
 
@@ -297,21 +341,86 @@ func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAdd
 
 // rejectRootChainLog logs a rootchain log query rejection, always returning
 // (nil, false) so validateLogAgainstQuery's reject sites read as a single
-// line each. It counts the rejection in rootchain_listener_log_rejected_total
-// at most once per logKey per rejectedLogs set: processRootChainBlockRange
-// bisects a failed range and re-queries every sub-range that still contains
-// a persistently-bad log, so without this the same log would inflate the
-// metric by roughly log2(range) within a single poll cycle. rejectedLogs is
-// shared across that whole cycle (see ProcessHeader) so the metric still
-// increments once per cycle for a log that's still broken — that's honest
-// signal, just not duplicated within it.
-func (rl *RootChainListener) rejectRootChainLog(rejectedLogs map[string]struct{}, logKey, reason string, keyvals ...any) (*abi.Event, bool) {
+// line each. It counts the rejection in rootchain_listener_log_rejected_total,
+// and advances the log's persistent failure count, at most once per logKey
+// per state.countedThisCycle set: processRootChainBlockRange bisects a
+// failed range and re-queries every sub-range that still contains a
+// persistently-bad log, so without this the same log would inflate the
+// metric — and reach the quarantine threshold — by roughly log2(range)
+// within a single poll cycle. state is shared across that whole cycle (see
+// ProcessHeader) so both the metric and the failure count still advance once
+// per cycle for a log that's still broken — that's honest signal, just not
+// duplicated within it. Crossing maxRootChainLogRejections sets
+// state.quarantine so the caller can advance past the block instead of
+// withholding it forever.
+func (rl *RootChainListener) rejectRootChainLog(state *rootChainRejectionState, vLog types.Log, reason string, keyvals ...any) (*abi.Event, bool) {
+	logKey := vLog.TxHash.Hex() + ":" + strconv.FormatUint(uint64(vLog.Index), 10)
 	rl.Logger.Error("RootChainListener: rootchain log query returned "+reason, keyvals...)
-	if _, alreadyCounted := rejectedLogs[logKey]; !alreadyCounted {
-		rejectedLogs[logKey] = struct{}{}
-		metrics.RootChainListenerLogRejected.Inc()
+
+	if _, alreadyCounted := state.countedThisCycle[logKey]; alreadyCounted {
+		return nil, false
 	}
+	state.countedThisCycle[logKey] = struct{}{}
+	metrics.RootChainListenerLogRejected.Inc()
+
+	if rl.logFailureCounts == nil {
+		rl.logFailureCounts = make(map[string]uint64)
+	}
+	rl.logFailureCounts[logKey]++
+	if rl.logFailureCounts[logKey] >= maxRootChainLogRejections {
+		var topic ethCommon.Hash
+		if len(vLog.Topics) > 0 {
+			topic = vLog.Topics[0]
+		}
+		state.quarantine = &rootChainLogDetail{
+			logKey:      logKey,
+			reason:      reason,
+			txHash:      vLog.TxHash,
+			logIndex:    uint64(vLog.Index),
+			blockNumber: vLog.BlockNumber,
+			address:     vLog.Address,
+			topic:       topic,
+		}
+	}
+
 	return nil, false
+}
+
+// quarantineRootChainLog is called once a log has failed validation
+// maxRootChainLogRejections times in a row: it logs everything needed for
+// manual investigation, counts it in rootchain_listener_log_quarantined_total
+// (distinct from the rejection counter, so an operator can tell "still
+// retrying" from "gave up, needs a human"), and drops the log's entry from
+// logFailureCounts since it's now resolved one way or another.
+func (rl *RootChainListener) quarantineRootChainLog(detail *rootChainLogDetail) {
+	rl.Logger.Error("RootChainListener: quarantining a rootchain log stuck failing validation",
+		"reason", detail.reason,
+		"txHash", detail.txHash,
+		"logIndex", detail.logIndex,
+		"blockNumber", detail.blockNumber,
+		"address", detail.address,
+		"topic", detail.topic,
+		"consecutiveFailures", maxRootChainLogRejections,
+	)
+	metrics.RootChainListenerLogQuarantined.Inc()
+	delete(rl.logFailureCounts, detail.logKey)
+}
+
+// pruneStaleLogFailureCounts drops any tracked failure count for a log that
+// wasn't rejected again in the cycle that just finished. Because
+// processRootChainBlockRangeInChunks's chunk loop and processRootChainBlockRange's
+// bisection both give up immediately on the first still-failing sub-range,
+// only the single earliest unresolved block can ever be under active
+// investigation at a time — every count entry that isn't in countedThisCycle
+// belongs to a position that has since resolved (succeeded or been
+// quarantined), so this keeps logFailureCounts from growing without bound
+// over the node's lifetime.
+func (rl *RootChainListener) pruneStaleLogFailureCounts(countedThisCycle map[string]struct{}) {
+	for logKey := range rl.logFailureCounts {
+		if _, seen := countedThisCycle[logKey]; !seen {
+			delete(rl.logFailureCounts, logKey)
+		}
+	}
 }
 
 func rootChainEventTopics(eventMap map[ethCommon.Hash]*abi.Event) []ethCommon.Hash {

@@ -16,11 +16,24 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/require"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/storage"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
+
+// newMemLevelDB opens an in-memory leveldb instance, so tests exercising
+// persistLastRootBlock/fromBlockAfterLastPersisted can read and write the
+// cursor for real instead of needing a live on-disk DB.
+func newMemLevelDB(t *testing.T) *leveldb.DB {
+	t.Helper()
+	db, err := leveldb.Open(storage.NewMemStorage(), nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+	return db
+}
 
 func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 	t.Parallel()
@@ -90,7 +103,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		event, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		event, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.True(t, ok)
 		require.Same(t, rootChainEvent, event)
 	})
@@ -105,7 +118,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		event, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		event, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.True(t, ok)
 		require.Same(t, stakingInfoEvent, event)
 	})
@@ -116,11 +129,11 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 		rl := newListener()
 
 		lowerBound := types.Log{Address: rootChainAddress, Topics: []common.Hash{rootChainTopic}, BlockNumber: fromBlock.Uint64()}
-		_, ok := rl.validateLogAgainstQuery(lowerBound, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		_, ok := rl.validateLogAgainstQuery(lowerBound, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.True(t, ok)
 
 		upperBound := types.Log{Address: rootChainAddress, Topics: []common.Hash{rootChainTopic}, BlockNumber: toBlock.Uint64()}
-		_, ok = rl.validateLogAgainstQuery(upperBound, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		_, ok = rl.validateLogAgainstQuery(upperBound, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.True(t, ok)
 	})
 
@@ -134,7 +147,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.False(t, ok)
 	})
 
@@ -150,7 +163,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.False(t, ok)
 	})
 
@@ -166,7 +179,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.False(t, ok)
 	})
 
@@ -180,7 +193,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: fromBlock.Uint64() - 1,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.False(t, ok)
 	})
 
@@ -194,7 +207,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: toBlock.Uint64() + 1,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.False(t, ok)
 	})
 
@@ -208,7 +221,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.False(t, ok)
 	})
 
@@ -222,7 +235,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.False(t, ok)
 	})
 
@@ -236,7 +249,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.False(t, ok)
 	})
 
@@ -250,7 +263,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			BlockNumber: 150,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.False(t, ok)
 	})
 
@@ -265,7 +278,7 @@ func TestRootChainListener_ValidateLogAgainstQuery(t *testing.T) {
 			Removed:     true,
 		}
 
-		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.False(t, ok)
 	})
 }
@@ -307,7 +320,7 @@ func TestRootChainListener_ValidateAndHandleLogs(t *testing.T) {
 
 		var err error
 		require.NotPanics(t, func() {
-			err = rl.validateAndHandleLogs(logs, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+			err = rl.validateAndHandleLogs(logs, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		})
 		require.ErrorIs(t, err, errUnexpectedRootChainLog)
 	})
@@ -317,7 +330,7 @@ func TestRootChainListener_ValidateAndHandleLogs(t *testing.T) {
 
 		rl := newListener()
 
-		err := rl.validateAndHandleLogs(nil, contractAddresses, fromBlock, toBlock, map[string]struct{}{})
+		err := rl.validateAndHandleLogs(nil, contractAddresses, fromBlock, toBlock, newRootChainRejectionState())
 		require.NoError(t, err)
 	})
 }
@@ -398,15 +411,117 @@ func TestProcessRootChainBlockRange_DedupesRejectionMetricAcrossBisection(t *tes
 
 	before := testutil.ToFloat64(metrics.RootChainListenerLogRejected)
 
-	rejectedLogs := make(map[string]struct{})
+	state := newRootChainRejectionState()
 	// A 4-block range bisects into several sub-queries (range, then halves,
 	// down to single blocks) before processRootChainBlockRange gives up —
 	// every one of them re-fetches and re-rejects the same bad log.
-	err = rl.processRootChainBlockRange(rootChainContext, big.NewInt(100), big.NewInt(103), rejectedLogs)
+	err = rl.processRootChainBlockRange(rootChainContext, big.NewInt(100), big.NewInt(103), state)
 	require.Error(t, err)
 
 	require.Greater(t, requestCount, 1, "the range must actually have been bisected into more than one sub-query")
 
 	after := testutil.ToFloat64(metrics.RootChainListenerLogRejected)
 	require.Equal(t, float64(1), after-before, "one bad log across a bisected range must increment the rejection counter exactly once")
+}
+
+// newQuarantineTestListener wires a listener against a mock eth_getLogs
+// endpoint that always returns the same unrecognized-topic log for the
+// single block [100,100], plus a real in-memory storage client so the
+// success/quarantine path (which persists the cursor) can be exercised.
+func newQuarantineTestListener(t *testing.T) (*RootChainListener, *RootChainListenerContext) {
+	t.Helper()
+
+	knownTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
+	knownEvent := &abi.Event{Name: helper.NewHeaderBlockEvent}
+	badLogTopic := common.HexToHash("0x9999999999999999999999999999999999999999999999999999999999999999")
+
+	badLog := &types.Log{
+		Address: common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+		Topics:  []common.Hash{badLogTopic},
+		TxHash:  common.HexToHash("0xbad"),
+		Index:   0,
+	}
+	logsJSON, err := json.Marshal([]*types.Log{badLog})
+	require.NoError(t, err)
+
+	rl := &RootChainListener{
+		eventMap:      map[common.Hash]*abi.Event{knownTopic: knownEvent},
+		eventContract: map[common.Hash]rootChainContract{knownTopic: rootChainContractRootChain},
+	}
+	rl.BaseListener.Logger = log.NewNopLogger()
+	rl.storageClient = newMemLevelDB(t)
+
+	var requestCount int
+	rpcURL := mockEthGetLogs(t, string(logsJSON), &requestCount)
+	client, err := ethclient.Dial(rpcURL)
+	require.NoError(t, err)
+	rl.contractCaller.MainChainClient = client
+	rl.contractCaller.MainChainTimeout = 5 * time.Second
+
+	rootChainContext := &RootChainListenerContext{
+		ChainmanagerParams: &chainmanagerTypes.Params{
+			ChainParams: chainmanagerTypes.ChainParams{
+				RootChainAddress:   "0x1111111111111111111111111111111111111111",
+				StakingInfoAddress: "0x2222222222222222222222222222222222222222",
+				StateSenderAddress: "0x3333333333333333333333333333333333333333",
+			},
+		},
+	}
+
+	return rl, rootChainContext
+}
+
+// TestProcessRootChainBlockRange_QuarantinesAfterMaxRejections proves the
+// bounded-quarantine behavior: a log that fails validation on fewer than
+// maxRootChainLogRejections separate poll cycles keeps withholding the
+// cursor exactly as before, but on the Nth cycle it's quarantined — the
+// cursor advances past it, a distinct quarantine metric fires once, and its
+// entry is dropped from the persistent failure-count map.
+func TestProcessRootChainBlockRange_QuarantinesAfterMaxRejections(t *testing.T) {
+	rl, rootChainContext := newQuarantineTestListener(t)
+
+	rejectedBefore := testutil.ToFloat64(metrics.RootChainListenerLogRejected)
+	quarantinedBefore := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
+
+	// Each call simulates one ProcessHeader poll cycle: a fresh
+	// rootChainRejectionState, but the same rl (so its persistent
+	// logFailureCounts carries over across cycles).
+	for cycle := 1; cycle < maxRootChainLogRejections; cycle++ {
+		state := newRootChainRejectionState()
+		err := rl.processRootChainBlockRange(rootChainContext, big.NewInt(100), big.NewInt(100), state)
+		require.Error(t, err, "cycle %d (below the threshold) must still withhold the cursor", cycle)
+	}
+
+	_, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+	require.ErrorIs(t, err, leveldb.ErrNotFound, "the cursor must not have advanced before the threshold is reached")
+
+	// The Nth cycle crosses the threshold.
+	state := newRootChainRejectionState()
+	err = rl.processRootChainBlockRange(rootChainContext, big.NewInt(100), big.NewInt(100), state)
+	require.NoError(t, err, "the Nth cycle must quarantine the log and advance the cursor instead of erroring")
+
+	rejectedAfter := testutil.ToFloat64(metrics.RootChainListenerLogRejected)
+	require.Equal(t, float64(maxRootChainLogRejections), rejectedAfter-rejectedBefore, "the rejection counter fires once per cycle, including the quarantining one")
+
+	quarantinedAfter := testutil.ToFloat64(metrics.RootChainListenerLogQuarantined)
+	require.Equal(t, float64(1), quarantinedAfter-quarantinedBefore, "the quarantine counter fires exactly once")
+
+	lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+	require.NoError(t, err)
+	require.Equal(t, "100", string(lastBlockBytes), "the cursor must have advanced past the quarantined block")
+
+	require.Empty(t, rl.logFailureCounts, "a quarantined log's failure count must be dropped, not kept forever")
+}
+
+func TestPruneStaleLogFailureCounts(t *testing.T) {
+	rl := &RootChainListener{logFailureCounts: map[string]uint64{
+		"stale":     5,
+		"recurring": 3,
+	}}
+
+	rl.pruneStaleLogFailureCounts(map[string]struct{}{"recurring": {}})
+
+	require.NotContains(t, rl.logFailureCounts, "stale", "a log not rejected again this cycle must be dropped")
+	require.Contains(t, rl.logFailureCounts, "recurring", "a log rejected again this cycle must be kept")
+	require.Equal(t, uint64(3), rl.logFailureCounts["recurring"])
 }

@@ -82,11 +82,9 @@ func (rl *RootChainListener) fromBlockAfterLastPersisted(headerNumber *big.Int) 
 // responses, stopping (without advancing the cursor further) on the first
 // chunk that fails.
 func (rl *RootChainListener) processRootChainBlockRangeInChunks(rootChainContext *RootChainListenerContext, from, to *big.Int) {
-	// Shared across every chunk and every bisection level this call makes, so
-	// one persistently-bad log inside a single ProcessHeader invocation is
-	// only ever counted once in rootchain_listener_log_rejected_total — see
-	// rejectRootChainLog.
-	rejectedLogs := make(map[string]struct{})
+	// Shared across every chunk and every bisection level this call makes —
+	// see rootChainRejectionState.
+	state := newRootChainRejectionState()
 
 	for chunkFrom := new(big.Int).Set(from); chunkFrom.Cmp(to) <= 0; {
 		chunkTo := new(big.Int).Add(chunkFrom, big.NewInt(maxRootChainBlockRange-1))
@@ -94,7 +92,7 @@ func (rl *RootChainListener) processRootChainBlockRangeInChunks(rootChainContext
 			chunkTo = to
 		}
 
-		if err := rl.processRootChainBlockRange(rootChainContext, chunkFrom, chunkTo, rejectedLogs); err != nil {
+		if err := rl.processRootChainBlockRange(rootChainContext, chunkFrom, chunkTo, state); err != nil {
 			rl.Logger.Error(
 				"queryAndBroadcastEvents failed",
 				"error", err,
@@ -102,22 +100,33 @@ func (rl *RootChainListener) processRootChainBlockRangeInChunks(rootChainContext
 				"to", chunkTo,
 			)
 			// do not advance the cursor, as we want to retry this range on the next header
+			rl.pruneStaleLogFailureCounts(state.countedThisCycle)
 			return
 		}
 
 		chunkFrom = new(big.Int).Add(chunkTo, big.NewInt(1))
 	}
+
+	rl.pruneStaleLogFailureCounts(state.countedThisCycle)
 }
 
 // processRootChainBlockRange queries and handles logs for a block range. If the
 // range fails, it is split into smaller ranges until either processing succeeds
 // or a single-block query fails. The root block cursor is advanced only after the
-// current range has been fully processed.
-func (rl *RootChainListener) processRootChainBlockRange(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int, rejectedLogs map[string]struct{}) error {
-	if err := rl.queryAndBroadcastEvents(rootChainContext, fromBlock, toBlock, rejectedLogs); err != nil {
-		// A single-block failure cannot be split further. Return the error so
-		// the caller keeps the cursor unchanged and retries this block later.
+// current range has been fully processed. A single block whose log has been
+// quarantined (see rootChainRejectionState) is treated as processed rather
+// than retried forever.
+func (rl *RootChainListener) processRootChainBlockRange(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int, state *rootChainRejectionState) error {
+	if err := rl.queryAndBroadcastEvents(rootChainContext, fromBlock, toBlock, state); err != nil {
+		// A single-block failure cannot be split further.
 		if fromBlock.Cmp(toBlock) >= 0 {
+			if state.quarantine != nil {
+				rl.quarantineRootChainLog(state.quarantine)
+				state.quarantine = nil
+				return rl.persistLastRootBlock(toBlock)
+			}
+			// Return the error so the caller keeps the cursor unchanged and
+			// retries this block later.
 			return err
 		}
 
@@ -133,13 +142,13 @@ func (rl *RootChainListener) processRootChainBlockRange(rootChainContext *RootCh
 		)
 
 		// Process the earlier half first to preserve root-chain block order.
-		if err := rl.processRootChainBlockRange(rootChainContext, fromBlock, midBlock, rejectedLogs); err != nil {
+		if err := rl.processRootChainBlockRange(rootChainContext, fromBlock, midBlock, state); err != nil {
 			return err
 		}
 
 		// Process the later half only after the earlier half has succeeded.
 		nextBlock := new(big.Int).Add(midBlock, big.NewInt(1))
-		return rl.processRootChainBlockRange(rootChainContext, nextBlock, toBlock, rejectedLogs)
+		return rl.processRootChainBlockRange(rootChainContext, nextBlock, toBlock, state)
 	}
 
 	// Persist only after the full range has been handled successfully.
