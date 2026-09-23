@@ -3,6 +3,7 @@ package listener
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"sync"
@@ -73,64 +74,16 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 		return
 	}
 
-	l1HeaderBlockId, err := strconv.ParseUint(latestL1Checkpoint.HeaderBlockId, 10, 64)
-	if err != nil {
-		rl.Logger.Error("Self-healing: failed to parse L1 checkpoint header block ID", "error", err)
-		return
-	}
-
-	// Get checkpoint parameters to get ChildChainBlockInterval.
-	checkpointParams, err := util.GetCheckpointParams(rl.cliCtx.Codec)
-	if err != nil {
-		rl.Logger.Error("Self-healing: failed to get checkpoint params", "error", err)
-		return
-	}
-
-	l1HeaderBlockId = l1HeaderBlockId / checkpointParams.ChildChainBlockInterval
-
-	// Get the latest checkpoint id from Heimdall using the checkpoint ack count.
-	// Using GetLatestCheckpoint returns an error if there is no checkpoint.
-	// So we use GetCheckpointAckCount instead.
-	ackCount, err := util.GetCheckpointAckCount(rl.cliCtx.Codec)
-	if err != nil {
-		rl.Logger.Error("Self-healing: failed to get checkpoint ack count", "error", err)
-		return
-	}
-
-	if l1HeaderBlockId == ackCount {
-		rl.Logger.Info("Self-healing: latest checkpoint is already synced on heimdall; skipping", "l1HeaderBlockId", l1HeaderBlockId, "heimdallAckCount", ackCount)
-		return
-	}
-
-	// Check if we have a checkpoint in the buffer.
-	bufferedCheckpoint, err := util.GetBufferedCheckpoint(rl.cliCtx.Codec)
-	if err != nil {
-		rl.Logger.Error("Self-healing: failed to get buffered checkpoint", "error", err)
-		return
-	}
-
-	if bufferedCheckpoint == nil || bufferedCheckpoint.Id == 0 {
-		rl.Logger.Warn("Self-healing: empty buffered checkpoint")
-		return
-	}
-
-	// Check if the buffered checkpoint matches the L1 checkpoint.
-	if l1HeaderBlockId != bufferedCheckpoint.Id {
-		rl.Logger.Info("Self-healing: no matching buffered checkpoint found", "l1HeaderBlockId", l1HeaderBlockId, "bufferedCheckpointId", bufferedCheckpoint.Id)
+	l1HeaderBlockId, ready, err := rl.checkpointAckReady(latestL1Checkpoint)
+	if err != nil || !ready {
 		return
 	}
 
 	rl.Logger.Info("Self-healing: found matching buffered checkpoint, preparing to send ACK", "checkpointId", l1HeaderBlockId)
 
-	// Get the transaction receipt to construct the ACK.
-	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(latestL1Checkpoint.TransactionHash))
+	targetLog, err := rl.resolveCheckpointAckLog(ctx, latestL1Checkpoint)
 	if err != nil {
-		rl.Logger.Error("Self-healing: failed to get transaction receipt for L1 checkpoint", "txHash", latestL1Checkpoint.TransactionHash, "error", err)
-		return
-	}
-	targetLog := findLogByIndex(receipt.Logs, latestL1Checkpoint.LogIndex)
-	if targetLog == nil {
-		rl.Logger.Error("Self-healing: failed to find matching log in transaction receipt", "txHash", latestL1Checkpoint.TransactionHash, "expectedLogIndex", latestL1Checkpoint.LogIndex)
+		rl.Logger.Error("Self-healing: failed to resolve L1 checkpoint log", "txHash", latestL1Checkpoint.TransactionHash, "error", err)
 		return
 	}
 	rl.Logger.Info("Self-healing: retrieved log for NewHeaderBlock event", "headerBlockId", l1HeaderBlockId, "logIndex", latestL1Checkpoint.LogIndex, "txHash", latestL1Checkpoint.TransactionHash)
@@ -147,6 +100,85 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 	// Send the checkpoint ACK task.
 	rl.SendTaskWithDelay("sendCheckpointAckToHeimdall", helper.NewHeaderBlockEvent, logBytes, 0, nil)
 	rl.Logger.Info("Self-healing: successfully queued checkpoint ACK task", "headerBlockId", l1HeaderBlockId, "logIndex", latestL1Checkpoint.LogIndex, "txHash", targetLog.TxHash.Hex())
+}
+
+// checkpointAckReady reports whether Heimdall's buffered checkpoint matches
+// the latest L1 checkpoint and is ready to be ACKed. A false ready value
+// (with a nil error) means there's nothing to do this cycle, not a failure.
+func (rl *RootChainListener) checkpointAckReady(latestL1Checkpoint *newHeaderBlock) (uint64, bool, error) {
+	l1HeaderBlockId, err := strconv.ParseUint(latestL1Checkpoint.HeaderBlockId, 10, 64)
+	if err != nil {
+		rl.Logger.Error("Self-healing: failed to parse L1 checkpoint header block ID", "error", err)
+		return 0, false, err
+	}
+
+	// Get checkpoint parameters to get ChildChainBlockInterval.
+	checkpointParams, err := util.GetCheckpointParams(rl.cliCtx.Codec)
+	if err != nil {
+		rl.Logger.Error("Self-healing: failed to get checkpoint params", "error", err)
+		return 0, false, err
+	}
+
+	l1HeaderBlockId /= checkpointParams.ChildChainBlockInterval
+
+	// Get the latest checkpoint id from Heimdall using the checkpoint ack count.
+	// Using GetLatestCheckpoint returns an error if there is no checkpoint.
+	// So we use GetCheckpointAckCount instead.
+	ackCount, err := util.GetCheckpointAckCount(rl.cliCtx.Codec)
+	if err != nil {
+		rl.Logger.Error("Self-healing: failed to get checkpoint ack count", "error", err)
+		return 0, false, err
+	}
+
+	if l1HeaderBlockId == ackCount {
+		rl.Logger.Info("Self-healing: latest checkpoint is already synced on heimdall; skipping", "l1HeaderBlockId", l1HeaderBlockId, "heimdallAckCount", ackCount)
+		return l1HeaderBlockId, false, nil
+	}
+
+	// Check if we have a checkpoint in the buffer.
+	bufferedCheckpoint, err := util.GetBufferedCheckpoint(rl.cliCtx.Codec)
+	if err != nil {
+		rl.Logger.Error("Self-healing: failed to get buffered checkpoint", "error", err)
+		return l1HeaderBlockId, false, err
+	}
+
+	if bufferedCheckpoint == nil || bufferedCheckpoint.Id == 0 {
+		rl.Logger.Warn("Self-healing: empty buffered checkpoint")
+		return l1HeaderBlockId, false, nil
+	}
+
+	// Check if the buffered checkpoint matches the L1 checkpoint.
+	if l1HeaderBlockId != bufferedCheckpoint.Id {
+		rl.Logger.Info("Self-healing: no matching buffered checkpoint found", "l1HeaderBlockId", l1HeaderBlockId, "bufferedCheckpointId", bufferedCheckpoint.Id)
+		return l1HeaderBlockId, false, nil
+	}
+
+	return l1HeaderBlockId, true, nil
+}
+
+// resolveCheckpointAckLog fetches the L1 receipt for the latest checkpoint
+// and validates its log against the RootChain address and NewHeaderBlock
+// topic from ChainManager params. Chain params are fetched first since
+// they're a cheap local call — no point spending an L1 RPC round-trip before
+// confirming we can even resolve what to check it against.
+func (rl *RootChainListener) resolveCheckpointAckLog(ctx context.Context, latestL1Checkpoint *newHeaderBlock) (*types.Log, error) {
+	rootChainContext, err := rl.getRootChainContext()
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch chain manager params: %w", err)
+	}
+	expectedAddr := common.HexToAddress(rootChainContext.ChainmanagerParams.ChainParams.RootChainAddress)
+
+	expectedTopic, ok := rl.eventTopicByName(helper.NewHeaderBlockEvent)
+	if !ok {
+		return nil, fmt.Errorf("no known topic for event %q", helper.NewHeaderBlockEvent)
+	}
+
+	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(latestL1Checkpoint.TransactionHash))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get transaction receipt: %w", err)
+	}
+
+	return validateReceiptLog(receipt, expectedAddr, expectedTopic, latestL1Checkpoint.TransactionHash, latestL1Checkpoint.LogIndex)
 }
 
 // processStakeEvents recovers any missing nonce-gated stake event for each validator.

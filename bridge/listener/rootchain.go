@@ -11,10 +11,12 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
@@ -33,9 +35,24 @@ type RootChainListener struct {
 	// Pre-built topic→event lookup (avoids per-log linear scan across ABIs)
 	eventMap map[ethCommon.Hash]*abi.Event
 
+	// Pre-built topic→emitting-contract lookup, so a log's address can be
+	// checked against the specific contract its topic says it came from
+	// (not just any of the three watched contracts).
+	eventContract map[ethCommon.Hash]rootChainContract
+
 	// For self-healing, it will be only initialized if sub_graph_url is provided
 	subGraphClient *subGraphClient
 }
+
+// rootChainContract identifies which of the three watched L1 contracts an
+// event belongs to.
+type rootChainContract int
+
+const (
+	rootChainContractRootChain rootChainContract = iota
+	rootChainContractStateSender
+	rootChainContractStakingInfo
+)
 
 const (
 	lastRootBlockKey       = "rootchain-last-block" // Storage key
@@ -45,6 +62,7 @@ const (
 var (
 	errMainChainClientUnavailable = errors.New("main chain client is nil")
 	errNoSupportedRootChainTopics = errors.New("no supported rootChain event topics configured")
+	errUnexpectedRootChainLog     = errors.New("rootchain log query returned a log that doesn't match the query")
 
 	rootChainEvents = map[string]struct{}{
 		helper.NewHeaderBlockEvent: {},
@@ -66,17 +84,22 @@ func NewRootChainListener() *RootChainListener {
 		panic(err)
 	}
 
-	abis := []*abi.ABI{
-		&contractCaller.RootChainABI,
-		&contractCaller.StateSenderABI,
-		&contractCaller.StakingInfoABI,
+	abiSources := []struct {
+		abi      *abi.ABI
+		contract rootChainContract
+	}{
+		{&contractCaller.RootChainABI, rootChainContractRootChain},
+		{&contractCaller.StateSenderABI, rootChainContractStateSender},
+		{&contractCaller.StakingInfoABI, rootChainContractStakingInfo},
 	}
 
 	eventMap := make(map[ethCommon.Hash]*abi.Event)
-	for _, abiObj := range abis {
-		for _, event := range abiObj.Events {
+	eventContract := make(map[ethCommon.Hash]rootChainContract)
+	for _, src := range abiSources {
+		for _, event := range src.abi.Events {
 			e := event
 			eventMap[e.ID] = &e
+			eventContract[e.ID] = src.contract
 		}
 	}
 
@@ -84,6 +107,7 @@ func NewRootChainListener() *RootChainListener {
 		stakingInfoAbi: &contractCaller.StakingInfoABI,
 		stateSenderAbi: &contractCaller.StateSenderABI,
 		eventMap:       eventMap,
+		eventContract:  eventContract,
 	}
 }
 
@@ -259,13 +283,19 @@ func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChain
 	// get chain params
 	chainParams := rootChainContext.ChainmanagerParams.ChainParams
 
+	contractAddresses := map[rootChainContract]ethCommon.Address{
+		rootChainContractRootChain:   ethCommon.HexToAddress(chainParams.RootChainAddress),
+		rootChainContractStakingInfo: ethCommon.HexToAddress(chainParams.StakingInfoAddress),
+		rootChainContractStateSender: ethCommon.HexToAddress(chainParams.StateSenderAddress),
+	}
+
 	query := ethereum.FilterQuery{
 		FromBlock: fromBlock,
 		ToBlock:   toBlock,
 		Addresses: []ethCommon.Address{
-			ethCommon.HexToAddress(chainParams.RootChainAddress),
-			ethCommon.HexToAddress(chainParams.StakingInfoAddress),
-			ethCommon.HexToAddress(chainParams.StateSenderAddress),
+			contractAddresses[rootChainContractRootChain],
+			contractAddresses[rootChainContractStakingInfo],
+			contractAddresses[rootChainContractStateSender],
 		},
 	}
 
@@ -289,20 +319,92 @@ func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChain
 		rl.Logger.Debug("RootChainListener: new logs found", "numberOfLogs", len(logs))
 	}
 
-	for _, vLog := range logs {
-		if len(vLog.Topics) == 0 {
-			continue
-		}
+	return rl.validateAndHandleLogs(logs, contractAddresses, fromBlock, toBlock)
+}
 
-		selectedEvent, ok := rl.eventMap[vLog.Topics[0]]
+// validateAndHandleLogs validates every log in the batch before handling any
+// of it: a batch with one bad log among several good ones must not partially
+// dispatch, or a retry of the same range (see processRootChainBlockRange)
+// would re-dispatch the already-handled ones.
+func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int) error {
+	selectedEvents := make([]*abi.Event, len(logs))
+
+	for i, vLog := range logs {
+		selectedEvent, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock)
 		if !ok {
-			continue
+			return errUnexpectedRootChainLog
 		}
 
-		rl.handleLog(vLog, selectedEvent)
+		selectedEvents[i] = selectedEvent
+	}
+
+	for i, vLog := range logs {
+		rl.handleLog(vLog, selectedEvents[i])
 	}
 
 	return nil
+}
+
+// validateLogAgainstQuery checks that a log returned by FilterLogs actually
+// matches what was queried: a block number inside the requested range, a
+// topic in the exact set of events this query asked for (not just any event
+// these three contracts can ever emit), and an address matching the specific
+// contract that topic's event belongs to (not just any of the three watched
+// contracts — a StakingInfo-family topic must come from StakingInfoAddress,
+// not merely from one of the three). FilterLogs is expected to only ever
+// return matching logs; this exists so an endpoint that doesn't honor the
+// filter is caught here rather than treated as a legitimate empty match and
+// silently passed over.
+//
+// This only catches a response shaped wrong. It can't catch one that's
+// merely incomplete but otherwise well-formed — the query has no independent
+// way to know what should have come back. Self-heal (rootchain_selfheal.go)
+// covers that gap for checkpoint acks, the three nonce-gated stake events,
+// and state syncs; validator joins, top-ups, slashes, and unjails have no
+// self-heal path today.
+func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAddresses map[rootChainContract]ethCommon.Address, fromBlock, toBlock *big.Int) (*abi.Event, bool) {
+	if vLog.Removed {
+		return rl.rejectRootChainLog("a removed (reorg'd) log", "txHash", vLog.TxHash)
+	}
+
+	if vLog.BlockNumber < fromBlock.Uint64() || vLog.BlockNumber > toBlock.Uint64() {
+		return rl.rejectRootChainLog("a log outside the requested block range",
+			"blockNumber", vLog.BlockNumber, "fromBlock", fromBlock, "toBlock", toBlock, "txHash", vLog.TxHash)
+	}
+
+	if len(vLog.Topics) == 0 {
+		return rl.rejectRootChainLog("a log with no topics", "txHash", vLog.TxHash)
+	}
+
+	selectedEvent, ok := rl.eventMap[vLog.Topics[0]]
+	if !ok {
+		return rl.rejectRootChainLog("a log with an unrecognized topic", "topic", vLog.Topics[0], "txHash", vLog.TxHash)
+	}
+
+	// eventMap spans every event the three ABIs define; rootChainEvents is the
+	// curated subset this listener actually queried for (see
+	// rootChainEventTopics). A topic can resolve in eventMap while still being
+	// outside that subset, which would otherwise defeat this exact check.
+	if _, ok := rootChainEvents[selectedEvent.Name]; !ok {
+		return rl.rejectRootChainLog("a log for an event outside the query's topic set", "event", selectedEvent.Name, "txHash", vLog.TxHash)
+	}
+
+	expectedAddress := contractAddresses[rl.eventContract[vLog.Topics[0]]]
+	if vLog.Address != expectedAddress {
+		return rl.rejectRootChainLog("a log from an address that doesn't match its event's contract",
+			"address", vLog.Address, "expectedAddress", expectedAddress, "event", selectedEvent.Name, "txHash", vLog.TxHash)
+	}
+
+	return selectedEvent, true
+}
+
+// rejectRootChainLog logs and counts a rootchain log query rejection, always
+// returning (nil, false) so validateLogAgainstQuery's reject sites read as a
+// single line each.
+func (rl *RootChainListener) rejectRootChainLog(reason string, keyvals ...any) (*abi.Event, bool) {
+	rl.Logger.Error("RootChainListener: rootchain log query returned "+reason, keyvals...)
+	metrics.RootChainListenerLogRejected.Inc()
+	return nil, false
 }
 
 func rootChainEventTopics(eventMap map[ethCommon.Hash]*abi.Event) []ethCommon.Hash {

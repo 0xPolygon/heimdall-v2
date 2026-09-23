@@ -122,9 +122,9 @@ func TestMaxNonceFromResponse(t *testing.T) {
 func TestPickStakeEventHit(t *testing.T) {
 	t.Parallel()
 
-	stake := txAndLogIndex{TransactionHash: "0xstake", LogIndex: "1"}
-	signer := txAndLogIndex{TransactionHash: "0xsigner", LogIndex: "2"}
-	exit := txAndLogIndex{TransactionHash: "0xexit", LogIndex: "3"}
+	stake := txAndLogIndex{TransactionHash: "0xstake", LogIndex: "1", EventName: helper.StakeUpdateEvent}
+	signer := txAndLogIndex{TransactionHash: "0xsigner", LogIndex: "2", EventName: helper.SignerChangeEvent}
+	exit := txAndLogIndex{TransactionHash: "0xexit", LogIndex: "3", EventName: helper.UnstakeInitEvent}
 
 	tests := []struct {
 		name     string
@@ -412,45 +412,79 @@ func TestQuerySubGraph_HTTPStatusCheck(t *testing.T) {
 	})
 }
 
-func TestValidateStakeEventReceipt(t *testing.T) {
+func TestValidateReceiptLog(t *testing.T) {
 	t.Parallel()
 
 	expectedAddr := common.HexToAddress("0xa59C847Bd5aC0172Ff4FE912C5d29E5A71A7512B")
 	otherAddr := common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
-	hit := &txAndLogIndex{TransactionHash: "0xabc", LogIndex: "3"}
+	expectedTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
+	otherTopic := common.HexToHash("0x2222222222222222222222222222222222222222222222222222222222222222")
+	txHash, logIndex := "0xabc", "3"
+	expectedHash := common.HexToHash(txHash)
+	otherHash := common.HexToHash("0xdef")
 
 	t.Run("happy path returns matching log", func(t *testing.T) {
 		t.Parallel()
 		receipt := &types.Receipt{
+			TxHash: expectedHash,
 			Status: types.ReceiptStatusSuccessful,
 			Logs: []*types.Log{
-				{Index: 0, Address: expectedAddr, TxHash: common.HexToHash("0x1")},
-				{Index: 3, Address: expectedAddr, TxHash: common.HexToHash("0xabc")},
+				{Index: 0, Address: expectedAddr, Topics: []common.Hash{expectedTopic}, TxHash: expectedHash},
+				{Index: 3, Address: expectedAddr, Topics: []common.Hash{expectedTopic}, TxHash: expectedHash},
 			},
 		}
 
-		eventReceipt, err := validateStakeEventReceipt(receipt, expectedAddr, hit)
+		eventReceipt, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
 		require.NoError(t, err)
 		require.NotNil(t, eventReceipt)
-		require.Equal(t, common.HexToHash("0xabc"), eventReceipt.TxHash)
+		require.Equal(t, uint(3), eventReceipt.Index)
 	})
 
 	t.Run("rejects nil receipt", func(t *testing.T) {
 		t.Parallel()
-		_, err := validateStakeEventReceipt(nil, expectedAddr, hit)
+		_, err := validateReceiptLog(nil, expectedAddr, expectedTopic, txHash, logIndex)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "nil receipt")
+	})
+
+	t.Run("rejects a receipt for a different transaction", func(t *testing.T) {
+		t.Parallel()
+		receipt := &types.Receipt{
+			TxHash: otherHash,
+			Status: types.ReceiptStatusSuccessful,
+			Logs: []*types.Log{
+				{Index: 3, Address: expectedAddr, Topics: []common.Hash{expectedTopic}, TxHash: otherHash},
+			},
+		}
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "receipt tx hash")
+	})
+
+	t.Run("rejects a log whose own tx hash doesn't match the receipt's", func(t *testing.T) {
+		t.Parallel()
+		receipt := &types.Receipt{
+			TxHash: expectedHash,
+			Status: types.ReceiptStatusSuccessful,
+			Logs: []*types.Log{
+				{Index: 3, Address: expectedAddr, Topics: []common.Hash{expectedTopic}, TxHash: otherHash},
+			},
+		}
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "log tx hash")
 	})
 
 	t.Run("rejects reverted tx", func(t *testing.T) {
 		t.Parallel()
 		receipt := &types.Receipt{
+			TxHash: expectedHash,
 			Status: types.ReceiptStatusFailed,
 			Logs: []*types.Log{
-				{Index: 3, Address: expectedAddr},
+				{Index: 3, Address: expectedAddr, Topics: []common.Hash{expectedTopic}, TxHash: expectedHash},
 			},
 		}
-		_, err := validateStakeEventReceipt(receipt, expectedAddr, hit)
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "reverted")
 	})
@@ -458,28 +492,87 @@ func TestValidateStakeEventReceipt(t *testing.T) {
 	t.Run("rejects when log index not present", func(t *testing.T) {
 		t.Parallel()
 		receipt := &types.Receipt{
+			TxHash: expectedHash,
 			Status: types.ReceiptStatusSuccessful,
 			Logs: []*types.Log{
-				{Index: 0, Address: expectedAddr},
-				{Index: 1, Address: expectedAddr},
+				{Index: 0, Address: expectedAddr, Topics: []common.Hash{expectedTopic}, TxHash: expectedHash},
+				{Index: 1, Address: expectedAddr, Topics: []common.Hash{expectedTopic}, TxHash: expectedHash},
 			},
 		}
-		_, err := validateStakeEventReceipt(receipt, expectedAddr, hit)
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "no log found")
+	})
+
+	t.Run("ignores a nil log entry while searching by index", func(t *testing.T) {
+		t.Parallel()
+		receipt := &types.Receipt{
+			TxHash: expectedHash,
+			Status: types.ReceiptStatusSuccessful,
+			Logs: []*types.Log{
+				nil,
+				{Index: 3, Address: expectedAddr, Topics: []common.Hash{expectedTopic}, TxHash: expectedHash},
+			},
+		}
+		log, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.NoError(t, err)
+		require.NotNil(t, log)
+	})
+
+	t.Run("rejects a removed (reorg'd) log", func(t *testing.T) {
+		t.Parallel()
+		receipt := &types.Receipt{
+			TxHash: expectedHash,
+			Status: types.ReceiptStatusSuccessful,
+			Logs: []*types.Log{
+				{Index: 3, Address: expectedAddr, Topics: []common.Hash{expectedTopic}, TxHash: expectedHash, Removed: true},
+			},
+		}
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "removed")
 	})
 
 	t.Run("rejects log emitted by a different contract", func(t *testing.T) {
 		t.Parallel()
 		receipt := &types.Receipt{
+			TxHash: expectedHash,
 			Status: types.ReceiptStatusSuccessful,
 			Logs: []*types.Log{
-				{Index: 3, Address: otherAddr},
+				{Index: 3, Address: otherAddr, Topics: []common.Hash{expectedTopic}, TxHash: expectedHash},
 			},
 		}
-		_, err := validateStakeEventReceipt(receipt, expectedAddr, hit)
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "does not match expected StakingInfo")
+		require.Contains(t, err.Error(), "does not match expected contract")
+	})
+
+	t.Run("rejects log with a different topic than expected", func(t *testing.T) {
+		t.Parallel()
+		receipt := &types.Receipt{
+			TxHash: expectedHash,
+			Status: types.ReceiptStatusSuccessful,
+			Logs: []*types.Log{
+				{Index: 3, Address: expectedAddr, Topics: []common.Hash{otherTopic}, TxHash: expectedHash},
+			},
+		}
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "topic does not match")
+	})
+
+	t.Run("rejects log with no topics", func(t *testing.T) {
+		t.Parallel()
+		receipt := &types.Receipt{
+			TxHash: expectedHash,
+			Status: types.ReceiptStatusSuccessful,
+			Logs: []*types.Log{
+				{Index: 3, Address: expectedAddr, Topics: []common.Hash{}, TxHash: expectedHash},
+			},
+		}
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "topic does not match")
 	})
 }
 
