@@ -3,8 +3,10 @@ package listener
 import (
 	"encoding/json"
 	"io"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -14,10 +16,13 @@ import (
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
+	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
@@ -45,14 +50,6 @@ func mockL1Receipt(t *testing.T, receiptJSON string) string {
 	}))
 	t.Cleanup(server.Close)
 	return server.URL
-}
-
-func zeroBloomHex() string {
-	b := make([]byte, 512)
-	for i := range b {
-		b[i] = '0'
-	}
-	return `"0x` + string(b) + `"`
 }
 
 // checkpointAckTestRoutes maps a checkpoint REST path to the raw JSON body to
@@ -91,17 +88,31 @@ func newCheckpointAckTestListener(t *testing.T, routes checkpointAckTestRoutes) 
 	return rl
 }
 
-// testEventTopic is the fixed topic hash used by newReceiptResolveTestListener
-// for whichever single event the caller is testing (only one event is ever
-// registered in eventMap per test, so any fixed hash works).
-var testEventTopic = common.HexToHash("0x9999999999999999999999999999999999999999999999999999999999999999")
+// rootChainABIForTest and stateSenderABIForTest parse the same ABI JSON the
+// production ContractCaller loads, so tests can decode real events (Finding
+// 2's content-validation) rather than a name-only stand-in.
+func rootChainABIForTest(t *testing.T) abi.ABI {
+	t.Helper()
+	a, err := abi.JSON(strings.NewReader(rootchain.RootchainMetaData.ABI))
+	require.NoError(t, err)
+	return a
+}
+
+func stateSenderABIForTest(t *testing.T) abi.ABI {
+	t.Helper()
+	a, err := abi.JSON(strings.NewReader(statesender.StatesenderMetaData.ABI))
+	require.NoError(t, err)
+	return a
+}
 
 // newReceiptResolveTestListener wires both a mocked heimdall REST API (for
 // ChainManager params) and a mocked L1 JSON-RPC endpoint (for
 // TransactionReceipt) so resolveCheckpointAckLog / getStateSynced can be
-// exercised end to end without a real devnet. eventName/testEventTopic are
-// registered in eventMap so eventTopicByName resolves, matching what
-// resolveCheckpointAckLog/getStateSynced look up in production.
+// exercised end to end without a real devnet. The real RootChain/StateSender
+// ABIs are loaded onto the contract caller and eventMap is populated with the
+// real event ID, so a log's content can actually be decoded — a fabricated
+// topic/name pair can't exercise the content-validation (headerBlockId /
+// stateId) checks that sit downstream of validateReceiptLog.
 //
 // Must NOT run in parallel: helper.SetTestConfig mutates global config.
 func newReceiptResolveTestListener(t *testing.T, rootChainAddr, stateSenderAddr, eventName, receiptJSON string) *RootChainListener {
@@ -113,7 +124,22 @@ func newReceiptResolveTestListener(t *testing.T, rootChainAddr, stateSenderAddr,
 			"state_sender_address": "` + stateSenderAddr + `"
 		}}}`,
 	})
-	rl.eventMap = map[common.Hash]*abi.Event{testEventTopic: {Name: eventName}}
+
+	rootChainABI := rootChainABIForTest(t)
+	stateSenderABI := stateSenderABIForTest(t)
+	rl.contractCaller.RootChainABI = rootChainABI
+	rl.contractCaller.StateSenderABI = stateSenderABI
+
+	var event abi.Event
+	switch eventName {
+	case helper.NewHeaderBlockEvent:
+		event = rootChainABI.Events[eventName]
+	case helper.StateSyncedEvent:
+		event = stateSenderABI.Events[eventName]
+	default:
+		t.Fatalf("unsupported event name %q", eventName)
+	}
+	rl.eventMap = map[common.Hash]*abi.Event{event.ID: &event}
 
 	rpcURL := mockL1Receipt(t, receiptJSON)
 	client, err := ethclient.Dial(rpcURL)
@@ -121,6 +147,100 @@ func newReceiptResolveTestListener(t *testing.T, rootChainAddr, stateSenderAddr,
 	rl.contractCaller.MainChainClient = client
 
 	return rl
+}
+
+// newHeaderBlockLog builds a real, ABI-encodable NewHeaderBlock log: the
+// proposer/reward topics are fixed filler values (irrelevant to the tests
+// here), headerBlockId is the one field self-heal's content-validation
+// actually checks.
+func newHeaderBlockLog(t *testing.T, rootChainABI abi.ABI, contractAddr common.Address, headerBlockId int64, blockNumber uint64, blockHash, txHash common.Hash, txIndex, logIndex uint) *types.Log {
+	t.Helper()
+
+	event := rootChainABI.Events[helper.NewHeaderBlockEvent]
+	var nonIndexed abi.Arguments
+	for _, arg := range event.Inputs {
+		if !arg.Indexed {
+			nonIndexed = append(nonIndexed, arg)
+		}
+	}
+	data, err := nonIndexed.Pack(big.NewInt(1), big.NewInt(2), common.HexToHash("0xroot"))
+	require.NoError(t, err)
+
+	proposer := common.HexToAddress("0x1111111111111111111111111111111111111111")
+	reward := big.NewInt(0)
+	topicCols, err := abi.MakeTopics([]interface{}{proposer}, []interface{}{big.NewInt(headerBlockId)}, []interface{}{reward})
+	require.NoError(t, err)
+
+	topics := []common.Hash{event.ID}
+	for _, col := range topicCols {
+		topics = append(topics, col[0])
+	}
+
+	return &types.Log{
+		Address:     contractAddr,
+		Topics:      topics,
+		Data:        data,
+		BlockNumber: blockNumber,
+		TxHash:      txHash,
+		TxIndex:     txIndex,
+		BlockHash:   blockHash,
+		Index:       logIndex,
+	}
+}
+
+// newStateSyncedLog builds a real, ABI-encodable StateSynced log; id is the
+// field self-heal's content-validation actually checks.
+func newStateSyncedLog(t *testing.T, stateSenderABI abi.ABI, contractAddr common.Address, stateId int64, blockNumber uint64, blockHash, txHash common.Hash, txIndex, logIndex uint) *types.Log {
+	t.Helper()
+
+	event := stateSenderABI.Events[helper.StateSyncedEvent]
+	var nonIndexed abi.Arguments
+	for _, arg := range event.Inputs {
+		if !arg.Indexed {
+			nonIndexed = append(nonIndexed, arg)
+		}
+	}
+	data, err := nonIndexed.Pack([]byte{})
+	require.NoError(t, err)
+
+	receiver := common.HexToAddress("0x2222222222222222222222222222222222222222")
+	topicCols, err := abi.MakeTopics([]interface{}{big.NewInt(stateId)}, []interface{}{receiver})
+	require.NoError(t, err)
+
+	topics := []common.Hash{event.ID}
+	for _, col := range topicCols {
+		topics = append(topics, col[0])
+	}
+
+	return &types.Log{
+		Address:     contractAddr,
+		Topics:      topics,
+		Data:        data,
+		BlockNumber: blockNumber,
+		TxHash:      txHash,
+		TxIndex:     txIndex,
+		BlockHash:   blockHash,
+		Index:       logIndex,
+	}
+}
+
+// receiptJSONWithLog marshals a real types.Receipt (matching the go-ethereum
+// RPC receipt shape) carrying the given log, so mockL1Receipt serves
+// something ethclient can actually decode end to end.
+func receiptJSONWithLog(t *testing.T, txHash, blockHash common.Hash, blockNumber uint64, txIndex uint, log *types.Log) string {
+	t.Helper()
+
+	receipt := &types.Receipt{
+		Status:           types.ReceiptStatusSuccessful,
+		TxHash:           txHash,
+		BlockNumber:      new(big.Int).SetUint64(blockNumber),
+		BlockHash:        blockHash,
+		TransactionIndex: txIndex,
+		Logs:             []*types.Log{log},
+	}
+	b, err := json.Marshal(receipt)
+	require.NoError(t, err)
+	return string(b)
 }
 
 // TestCheckpointAckReady exercises checkpointAckReady's ready/not-ready/error
@@ -227,80 +347,65 @@ func TestCheckpointAckReady(t *testing.T) {
 func TestResolveCheckpointAckLog(t *testing.T) {
 	const rootChainAddr = "0x107a27363FE1Ba8578B8a8c76acDB237cDB35533"
 	const otherAddr = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+	const requestedHeaderBlockId = 60000
 
-	receiptWithLogFrom := func(addr string) string {
-		return `{
-			"status": "0x1",
-			"transactionHash": "0x0000000000000000000000000000000000000000000000000000000000000abc",
-			"transactionIndex": "0x0",
-			"blockHash": "0x0000000000000000000000000000000000000000000000000000000000000001",
-			"blockNumber": "0x1",
-			"cumulativeGasUsed": "0x0",
-			"gasUsed": "0x0",
-			"logsBloom": ` + zeroBloomHex() + `,
-			"logs": [{
-				"address": "` + addr + `",
-				"topics": ["0x9999999999999999999999999999999999999999999999999999999999999999"],
-				"data": "0x",
-				"blockNumber": "0x1",
-				"transactionHash": "0x0000000000000000000000000000000000000000000000000000000000000abc",
-				"transactionIndex": "0x0",
-				"blockHash": "0x0000000000000000000000000000000000000000000000000000000000000001",
-				"logIndex": "0x3",
-				"removed": false
-			}]
-		}`
-	}
+	txHash := common.HexToHash("0xabc")
+	blockHash := common.HexToHash("0x01")
+	const blockNumber uint64 = 1
+	const txIndex uint = 0
+	const logIndex uint = 3
 
-	t.Run("accepts a log from the expected RootChain address", func(t *testing.T) {
-		rl := newReceiptResolveTestListener(t, rootChainAddr, "0x0000000000000000000000000000000000000001", helper.NewHeaderBlockEvent, receiptWithLogFrom(rootChainAddr))
+	t.Run("accepts a log from the expected RootChain address with the requested headerBlockId", func(t *testing.T) {
+		rootChainABI := rootChainABIForTest(t)
+		log := newHeaderBlockLog(t, rootChainABI, common.HexToAddress(rootChainAddr), requestedHeaderBlockId, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+		rl := newReceiptResolveTestListener(t, rootChainAddr, "0x0000000000000000000000000000000000000001", helper.NewHeaderBlockEvent, receiptJSON)
 
-		log, err := rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: "0x0000000000000000000000000000000000000000000000000000000000000abc", LogIndex: "3"})
+		got, err := rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: txHash.Hex(), LogIndex: "3", HeaderBlockId: "60000"})
 		require.NoError(t, err)
-		require.NotNil(t, log)
+		require.NotNil(t, got)
 	})
 
 	t.Run("rejects a log from an address that doesn't match RootChain", func(t *testing.T) {
-		rl := newReceiptResolveTestListener(t, rootChainAddr, "0x0000000000000000000000000000000000000001", helper.NewHeaderBlockEvent, receiptWithLogFrom(otherAddr))
+		rootChainABI := rootChainABIForTest(t)
+		log := newHeaderBlockLog(t, rootChainABI, common.HexToAddress(otherAddr), requestedHeaderBlockId, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+		rl := newReceiptResolveTestListener(t, rootChainAddr, "0x0000000000000000000000000000000000000001", helper.NewHeaderBlockEvent, receiptJSON)
 
-		_, err := rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: "0x0000000000000000000000000000000000000000000000000000000000000abc", LogIndex: "3"})
+		_, err := rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: txHash.Hex(), LogIndex: "3", HeaderBlockId: "60000"})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "does not match expected contract")
 	})
 
 	t.Run("rejects a log with the right address but a different topic", func(t *testing.T) {
-		receiptJSON := `{
-			"status": "0x1",
-			"transactionHash": "0x0000000000000000000000000000000000000000000000000000000000000abc",
-			"transactionIndex": "0x0",
-			"blockHash": "0x0000000000000000000000000000000000000000000000000000000000000001",
-			"blockNumber": "0x1",
-			"cumulativeGasUsed": "0x0",
-			"gasUsed": "0x0",
-			"logsBloom": ` + zeroBloomHex() + `,
-			"logs": [{
-				"address": "` + rootChainAddr + `",
-				"topics": ["0x8888888888888888888888888888888888888888888888888888888888888888"],
-				"data": "0x",
-				"blockNumber": "0x1",
-				"transactionHash": "0x0000000000000000000000000000000000000000000000000000000000000abc",
-				"transactionIndex": "0x0",
-				"blockHash": "0x0000000000000000000000000000000000000000000000000000000000000001",
-				"logIndex": "0x3",
-				"removed": false
-			}]
-		}`
+		rootChainABI := rootChainABIForTest(t)
+		log := newHeaderBlockLog(t, rootChainABI, common.HexToAddress(rootChainAddr), requestedHeaderBlockId, blockNumber, blockHash, txHash, txIndex, logIndex)
+		log.Topics[0] = common.HexToHash("0x8888888888888888888888888888888888888888888888888888888888888888")
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
 		rl := newReceiptResolveTestListener(t, rootChainAddr, "0x0000000000000000000000000000000000000001", helper.NewHeaderBlockEvent, receiptJSON)
 
-		_, err := rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: "0x0000000000000000000000000000000000000000000000000000000000000abc", LogIndex: "3"})
+		_, err := rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: txHash.Hex(), LogIndex: "3", HeaderBlockId: "60000"})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "topic does not match")
+	})
+
+	t.Run("rejects a structurally valid log whose decoded headerBlockId doesn't match what was requested", func(t *testing.T) {
+		rootChainABI := rootChainABIForTest(t)
+		log := newHeaderBlockLog(t, rootChainABI, common.HexToAddress(rootChainAddr), requestedHeaderBlockId, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+		rl := newReceiptResolveTestListener(t, rootChainAddr, "0x0000000000000000000000000000000000000001", helper.NewHeaderBlockEvent, receiptJSON)
+
+		// Requested headerBlockId (60001) differs from what the log actually
+		// encodes (60000): structural validation alone would accept this.
+		_, err := rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: txHash.Hex(), LogIndex: "3", HeaderBlockId: "60001"})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match requested")
 	})
 
 	t.Run("errors when chain manager params are unavailable", func(t *testing.T) {
 		rl := newCheckpointAckTestListener(t, checkpointAckTestRoutes{})
 
-		_, err := rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: "0x0000000000000000000000000000000000000000000000000000000000000abc", LogIndex: "3"})
+		_, err := rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: txHash.Hex(), LogIndex: "3", HeaderBlockId: "60000"})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "chain manager params")
 	})
@@ -311,53 +416,40 @@ func TestResolveCheckpointAckLog(t *testing.T) {
 		})
 		// eventMap deliberately left nil/empty: eventTopicByName must fail closed.
 
-		_, err := rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: "0x0000000000000000000000000000000000000000000000000000000000000abc", LogIndex: "3"})
+		_, err := rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: txHash.Hex(), LogIndex: "3", HeaderBlockId: "60000"})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "no known topic")
 	})
 
 	t.Run("errors when the L1 receipt fetch fails", func(t *testing.T) {
-		rl := newReceiptResolveTestListener(t, rootChainAddr, "0x0000000000000000000000000000000000000001", helper.NewHeaderBlockEvent, receiptWithLogFrom(rootChainAddr))
+		rootChainABI := rootChainABIForTest(t)
+		log := newHeaderBlockLog(t, rootChainABI, common.HexToAddress(rootChainAddr), requestedHeaderBlockId, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+		rl := newReceiptResolveTestListener(t, rootChainAddr, "0x0000000000000000000000000000000000000001", helper.NewHeaderBlockEvent, receiptJSON)
 		brokenClient, err := ethclient.Dial("http://127.0.0.1:1")
 		require.NoError(t, err)
 		rl.contractCaller.MainChainClient = brokenClient
 
-		_, err = rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: "0x0000000000000000000000000000000000000000000000000000000000000abc", LogIndex: "3"})
+		_, err = rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: txHash.Hex(), LogIndex: "3", HeaderBlockId: "60000"})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to get transaction receipt")
 	})
 }
 
 // TestGetStateSynced_ReceiptValidation exercises getStateSynced's receipt
-// fetch and address-validation path (the subgraph-query half is covered by
+// fetch, address-validation, and content-validation (decoded id vs requested
+// stateId) paths (the subgraph-query half is covered by
 // TestSubgraphErrorChecks_OtherEntities).
 func TestGetStateSynced_ReceiptValidation(t *testing.T) {
 	const stateSenderAddr = "0xb661f1577e8749456FA749d44e8A77A9d604e603"
 	const otherAddr = "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+	const requestedStateId = 5
 
-	receiptWithLogFrom := func(addr string) string {
-		return `{
-			"status": "0x1",
-			"transactionHash": "0x0000000000000000000000000000000000000000000000000000000000000abc",
-			"transactionIndex": "0x0",
-			"blockHash": "0x0000000000000000000000000000000000000000000000000000000000000001",
-			"blockNumber": "0x1",
-			"cumulativeGasUsed": "0x0",
-			"gasUsed": "0x0",
-			"logsBloom": ` + zeroBloomHex() + `,
-			"logs": [{
-				"address": "` + addr + `",
-				"topics": ["0x9999999999999999999999999999999999999999999999999999999999999999"],
-				"data": "0x",
-				"blockNumber": "0x1",
-				"transactionHash": "0x0000000000000000000000000000000000000000000000000000000000000abc",
-				"transactionIndex": "0x0",
-				"blockHash": "0x0000000000000000000000000000000000000000000000000000000000000001",
-				"logIndex": "0x0",
-				"removed": false
-			}]
-		}`
-	}
+	txHash := common.HexToHash("0xabc")
+	blockHash := common.HexToHash("0x01")
+	const blockNumber uint64 = 1
+	const txIndex uint = 0
+	const logIndex uint = 0
 
 	newStateSyncedTestListener := func(t *testing.T, receiptJSON string) *RootChainListener {
 		t.Helper()
@@ -365,28 +457,52 @@ func TestGetStateSynced_ReceiptValidation(t *testing.T) {
 		return rl
 	}
 
-	t.Run("accepts a log from the expected StateSender address", func(t *testing.T) {
+	t.Run("accepts a log from the expected StateSender address with the requested stateId", func(t *testing.T) {
 		graph := newSubgraph(`{"data":{"stateSynceds":[{"logIndex":"0","transactionHash":"0xabc"}]}}`)
 		defer graph.Close()
 
-		rl := newStateSyncedTestListener(t, receiptWithLogFrom(stateSenderAddr))
+		stateSenderABI := stateSenderABIForTest(t)
+		log := newStateSyncedLog(t, stateSenderABI, common.HexToAddress(stateSenderAddr), requestedStateId, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+		rl := newStateSyncedTestListener(t, receiptJSON)
 		rl.subGraphClient = &subGraphClient{graphUrl: graph.URL, httpClient: http.DefaultClient}
 
-		log, err := rl.getStateSynced(t.Context(), 5)
+		got, err := rl.getStateSynced(t.Context(), requestedStateId)
 		require.NoError(t, err)
-		require.NotNil(t, log)
+		require.NotNil(t, got)
 	})
 
 	t.Run("rejects a log from an address that doesn't match StateSender", func(t *testing.T) {
 		graph := newSubgraph(`{"data":{"stateSynceds":[{"logIndex":"0","transactionHash":"0xabc"}]}}`)
 		defer graph.Close()
 
-		rl := newStateSyncedTestListener(t, receiptWithLogFrom(otherAddr))
+		stateSenderABI := stateSenderABIForTest(t)
+		log := newStateSyncedLog(t, stateSenderABI, common.HexToAddress(otherAddr), requestedStateId, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+		rl := newStateSyncedTestListener(t, receiptJSON)
 		rl.subGraphClient = &subGraphClient{graphUrl: graph.URL, httpClient: http.DefaultClient}
 
-		_, err := rl.getStateSynced(t.Context(), 5)
+		_, err := rl.getStateSynced(t.Context(), requestedStateId)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "does not match expected contract")
+	})
+
+	t.Run("rejects a structurally valid log whose decoded stateId doesn't match what was requested", func(t *testing.T) {
+		graph := newSubgraph(`{"data":{"stateSynceds":[{"logIndex":"0","transactionHash":"0xabc"}]}}`)
+		defer graph.Close()
+
+		stateSenderABI := stateSenderABIForTest(t)
+		// Log actually encodes id 6, but the subgraph hit was fetched under a
+		// query for stateId 5 — a mismatched subgraph response would slip
+		// through structural validation alone.
+		log := newStateSyncedLog(t, stateSenderABI, common.HexToAddress(stateSenderAddr), 6, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+		rl := newStateSyncedTestListener(t, receiptJSON)
+		rl.subGraphClient = &subGraphClient{graphUrl: graph.URL, httpClient: http.DefaultClient}
+
+		_, err := rl.getStateSynced(t.Context(), requestedStateId)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match requested")
 	})
 
 	t.Run("errors when chain manager params are unavailable", func(t *testing.T) {
@@ -396,7 +512,7 @@ func TestGetStateSynced_ReceiptValidation(t *testing.T) {
 		rl := newCheckpointAckTestListener(t, checkpointAckTestRoutes{})
 		rl.subGraphClient = &subGraphClient{graphUrl: graph.URL, httpClient: http.DefaultClient}
 
-		_, err := rl.getStateSynced(t.Context(), 5)
+		_, err := rl.getStateSynced(t.Context(), requestedStateId)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "chain manager params")
 	})
@@ -411,7 +527,7 @@ func TestGetStateSynced_ReceiptValidation(t *testing.T) {
 		rl.subGraphClient = &subGraphClient{graphUrl: graph.URL, httpClient: http.DefaultClient}
 		// eventMap deliberately left nil/empty: eventTopicByName must fail closed.
 
-		_, err := rl.getStateSynced(t.Context(), 5)
+		_, err := rl.getStateSynced(t.Context(), requestedStateId)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "no known topic")
 	})
@@ -420,14 +536,59 @@ func TestGetStateSynced_ReceiptValidation(t *testing.T) {
 		graph := newSubgraph(`{"data":{"stateSynceds":[{"logIndex":"0","transactionHash":"0xabc"}]}}`)
 		defer graph.Close()
 
-		rl := newStateSyncedTestListener(t, receiptWithLogFrom(stateSenderAddr))
+		stateSenderABI := stateSenderABIForTest(t)
+		log := newStateSyncedLog(t, stateSenderABI, common.HexToAddress(stateSenderAddr), requestedStateId, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+		rl := newStateSyncedTestListener(t, receiptJSON)
 		rl.subGraphClient = &subGraphClient{graphUrl: graph.URL, httpClient: http.DefaultClient}
 		brokenClient, err := ethclient.Dial("http://127.0.0.1:1")
 		require.NoError(t, err)
 		rl.contractCaller.MainChainClient = brokenClient
 
-		_, err = rl.getStateSynced(t.Context(), 5)
+		_, err = rl.getStateSynced(t.Context(), requestedStateId)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "connection refused")
+	})
+}
+
+// TestConfirmHeaderBlockId exercises confirmHeaderBlockId's own error paths
+// directly: a malformed log index and a receipt that doesn't actually
+// contain the requested event (decode failure).
+func TestConfirmHeaderBlockId(t *testing.T) {
+	const rootChainAddr = "0x107a27363FE1Ba8578B8a8c76acDB237cDB35533"
+
+	rl := &RootChainListener{}
+
+	t.Run("rejects a malformed log index", func(t *testing.T) {
+		err := rl.confirmHeaderBlockId(nil, rootChainAddr, "not-a-number", "60000")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid log index")
+	})
+
+	t.Run("fails to decode when the receipt has no matching log", func(t *testing.T) {
+		err := rl.confirmHeaderBlockId(&types.Receipt{}, rootChainAddr, "3", "60000")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to decode")
+	})
+}
+
+// TestConfirmStateSyncedId exercises confirmStateSyncedId's own error paths
+// directly: a malformed log index and a receipt that doesn't actually
+// contain the requested event (decode failure).
+func TestConfirmStateSyncedId(t *testing.T) {
+	const stateSenderAddr = "0xb661f1577e8749456FA749d44e8A77A9d604e603"
+
+	rl := &RootChainListener{}
+
+	t.Run("rejects a malformed log index", func(t *testing.T) {
+		err := rl.confirmStateSyncedId(nil, stateSenderAddr, "not-a-number", 5)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid log index")
+	})
+
+	t.Run("fails to decode when the receipt has no matching log", func(t *testing.T) {
+		err := rl.confirmStateSyncedId(&types.Receipt{}, stateSenderAddr, "0", 5)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to decode")
 	})
 }

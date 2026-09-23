@@ -156,17 +156,21 @@ func (rl *RootChainListener) checkpointAckReady(latestL1Checkpoint *newHeaderBlo
 	return l1HeaderBlockId, true, nil
 }
 
-// resolveCheckpointAckLog fetches the L1 receipt for the latest checkpoint
-// and validates its log against the RootChain address and NewHeaderBlock
-// topic from ChainManager params. Chain params are fetched first since
-// they're a cheap local call — no point spending an L1 RPC round-trip before
+// resolveCheckpointAckLog fetches the L1 receipt for the latest checkpoint,
+// validates its log against the RootChain address and NewHeaderBlock topic
+// from ChainManager params, then decodes the event and confirms its
+// headerBlockId is actually the one that was requested — structural
+// validation alone doesn't rule out a subgraph hit pointing at a different,
+// genuine NewHeaderBlock event. Chain params are fetched first since they're
+// a cheap local call — no point spending an L1 RPC round-trip before
 // confirming we can even resolve what to check it against.
 func (rl *RootChainListener) resolveCheckpointAckLog(ctx context.Context, latestL1Checkpoint *newHeaderBlock) (*types.Log, error) {
 	rootChainContext, err := rl.getRootChainContext()
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch chain manager params: %w", err)
 	}
-	expectedAddr := common.HexToAddress(rootChainContext.ChainmanagerParams.ChainParams.RootChainAddress)
+	rootChainAddress := rootChainContext.ChainmanagerParams.ChainParams.RootChainAddress
+	expectedAddr := common.HexToAddress(rootChainAddress)
 
 	expectedTopic, ok := rl.eventTopicByName(helper.NewHeaderBlockEvent)
 	if !ok {
@@ -178,7 +182,39 @@ func (rl *RootChainListener) resolveCheckpointAckLog(ctx context.Context, latest
 		return nil, fmt.Errorf("failed to get transaction receipt: %w", err)
 	}
 
-	return validateReceiptLog(receipt, expectedAddr, expectedTopic, latestL1Checkpoint.TransactionHash, latestL1Checkpoint.LogIndex)
+	log, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, latestL1Checkpoint.TransactionHash, latestL1Checkpoint.LogIndex)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := rl.confirmHeaderBlockId(receipt, rootChainAddress, latestL1Checkpoint.LogIndex, latestL1Checkpoint.HeaderBlockId); err != nil {
+		return nil, err
+	}
+
+	return log, nil
+}
+
+// confirmHeaderBlockId decodes the NewHeaderBlock event at logIndex and
+// confirms its headerBlockId matches the one the subgraph hit was queried
+// for. A structurally valid log (right contract, right topic, right tx) can
+// still be content-wise the wrong event if the subgraph returns a mismatched
+// reference.
+func (rl *RootChainListener) confirmHeaderBlockId(receipt *types.Receipt, rootChainAddress, logIndex, expectedHeaderBlockId string) error {
+	idx, err := strconv.ParseUint(logIndex, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid log index %q: %w", logIndex, err)
+	}
+
+	decoded, err := rl.contractCaller.DecodeNewHeaderBlockEvent(rootChainAddress, receipt, idx)
+	if err != nil {
+		return fmt.Errorf("failed to decode NewHeaderBlock event: %w", err)
+	}
+
+	if decoded.HeaderBlockId.String() != expectedHeaderBlockId {
+		return fmt.Errorf("decoded headerBlockId %s does not match requested %s", decoded.HeaderBlockId.String(), expectedHeaderBlockId)
+	}
+
+	return nil
 }
 
 // processStakeEvents recovers any missing nonce-gated stake event for each validator.
@@ -291,7 +327,7 @@ func (rl *RootChainListener) replayStakeEvent(ctx context.Context, id, l1MaxNonc
 		return false
 	}
 
-	stakeEventLog, err := rl.fetchAndValidateStakeEventLog(ctx, hit)
+	stakeEventLog, err := rl.fetchAndValidateStakeEventLog(ctx, hit, id, nonce)
 	if err != nil {
 		rl.Logger.Error("Self-healing: L1 receipt validation failed for stake event", "validatorId", id, "nonce", nonce, "txHash", hit.TransactionHash, "error", err)
 		return false

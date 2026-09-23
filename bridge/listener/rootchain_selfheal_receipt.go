@@ -12,19 +12,24 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-// fetchAndValidateStakeEventLog pulls the L1 receipt for the given hit and
-// runs validateReceiptLog against the StakingInfo address and the hit's own
-// event name from ChainManager params. The receipt fetch is wrapped in
-// ExponentialBackoff so transient L1 RPC blips don't kill per-validator
-// recovery for a full self-heal cycle. validateReceiptLog is intentionally
-// outside the retry — its checks are deterministic, retrying them would
-// waste cycles on permanent failures.
-func (rl *RootChainListener) fetchAndValidateStakeEventLog(ctx context.Context, hit *txAndLogIndex) (*types.Log, error) {
+// fetchAndValidateStakeEventLog pulls the L1 receipt for the given hit, runs
+// validateReceiptLog against the StakingInfo address and the hit's own event
+// name from ChainManager params, then decodes the event and confirms its
+// (validatorId, nonce) are actually the ones that were requested —
+// structural validation alone doesn't rule out a subgraph hit pointing at a
+// different validator's or a different nonce's genuine stake event. The
+// receipt fetch is wrapped in ExponentialBackoff so transient L1 RPC blips
+// don't kill per-validator recovery for a full self-heal cycle.
+// validateReceiptLog and the identity check are intentionally outside the
+// retry — their checks are deterministic, retrying them would waste cycles
+// on permanent failures.
+func (rl *RootChainListener) fetchAndValidateStakeEventLog(ctx context.Context, hit *txAndLogIndex, validatorId, nonce uint64) (*types.Log, error) {
 	rootChainContext, err := rl.getRootChainContext()
 	if err != nil {
 		return nil, fmt.Errorf("self-healing: unable to fetch chain manager params: %w", err)
 	}
-	expectedAddr := common.HexToAddress(rootChainContext.ChainmanagerParams.ChainParams.StakingInfoAddress)
+	stakingInfoAddress := rootChainContext.ChainmanagerParams.ChainParams.StakingInfoAddress
+	expectedAddr := common.HexToAddress(stakingInfoAddress)
 
 	expectedTopic, ok := rl.eventTopicByName(hit.EventName)
 	if !ok {
@@ -43,7 +48,54 @@ func (rl *RootChainListener) fetchAndValidateStakeEventLog(ctx context.Context, 
 	if err != nil {
 		return nil, fmt.Errorf("self-healing: %w", err)
 	}
+
+	if err := rl.confirmStakeEventIdentity(receipt, stakingInfoAddress, hit, validatorId, nonce); err != nil {
+		return nil, fmt.Errorf("self-healing: %w", err)
+	}
+
 	return log, nil
+}
+
+// confirmStakeEventIdentity decodes the stake event named by hit.EventName at
+// hit.LogIndex and confirms its (validatorId, nonce) match what was
+// requested. Each of the three nonce-gated stake event types has its own ABI
+// shape, so each is decoded separately.
+func (rl *RootChainListener) confirmStakeEventIdentity(receipt *types.Receipt, stakingInfoAddress string, hit *txAndLogIndex, validatorId, nonce uint64) error {
+	idx, err := strconv.ParseUint(hit.LogIndex, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid log index %q: %w", hit.LogIndex, err)
+	}
+
+	var gotValidatorId, gotNonce uint64
+	switch hit.EventName {
+	case helper.StakeUpdateEvent:
+		decoded, decodeErr := rl.contractCaller.DecodeValidatorStakeUpdateEvent(stakingInfoAddress, receipt, idx)
+		if decodeErr != nil {
+			return fmt.Errorf("failed to decode StakeUpdate event: %w", decodeErr)
+		}
+		gotValidatorId, gotNonce = decoded.ValidatorId.Uint64(), decoded.Nonce.Uint64()
+	case helper.SignerChangeEvent:
+		decoded, decodeErr := rl.contractCaller.DecodeSignerUpdateEvent(stakingInfoAddress, receipt, idx)
+		if decodeErr != nil {
+			return fmt.Errorf("failed to decode SignerChange event: %w", decodeErr)
+		}
+		gotValidatorId, gotNonce = decoded.ValidatorId.Uint64(), decoded.Nonce.Uint64()
+	case helper.UnstakeInitEvent:
+		decoded, decodeErr := rl.contractCaller.DecodeValidatorExitEvent(stakingInfoAddress, receipt, idx)
+		if decodeErr != nil {
+			return fmt.Errorf("failed to decode UnstakeInit event: %w", decodeErr)
+		}
+		gotValidatorId, gotNonce = decoded.ValidatorId.Uint64(), decoded.Nonce.Uint64()
+	default:
+		return fmt.Errorf("unrecognized stake event name %q", hit.EventName)
+	}
+
+	if gotValidatorId != validatorId || gotNonce != nonce {
+		return fmt.Errorf("decoded (validatorId=%d, nonce=%d) does not match requested (validatorId=%d, nonce=%d)",
+			gotValidatorId, gotNonce, validatorId, nonce)
+	}
+
+	return nil
 }
 
 // eventTopicByName finds the topic hash for a known event name. Self-heal's
@@ -59,17 +111,27 @@ func (rl *RootChainListener) eventTopicByName(name string) (common.Hash, bool) {
 }
 
 // validateReceiptLog verifies a fetched L1 receipt before its log is trusted:
-// the receipt must actually be for the requested transaction, the tx must
-// have succeeded, the indexed log must exist, it must come from the expected
-// contract, and its topic must be the specific event that was asked for —
-// not just any event that contract can emit. Shared by every self-heal path
-// that resolves a subgraph hit (txHash, logIndex) to an L1 log — self-heal
-// must apply at least the same scrutiny as the live listener path, since a
-// subgraph or RPC that returns a mismatched log is the same class of
-// untrusted response either way.
+// the receipt must actually be for the requested transaction and have a real
+// block number, the tx must have succeeded, the indexed log must exist and
+// its block/transaction metadata must agree with the receipt it supposedly
+// came from, it must come from the expected contract, and its topic must be
+// the specific event that was asked for — not just any event that contract
+// can emit. Shared by every self-heal path that resolves a subgraph hit
+// (txHash, logIndex) to an L1 log — self-heal must apply at least the same
+// scrutiny as the live listener path, since a subgraph or RPC that returns a
+// mismatched log is the same class of untrusted response either way.
+//
+// This only binds the log to the receipt's own metadata (shape). It doesn't
+// decode the event and check its content matches the specific query key
+// (headerBlockId / stateId / validatorId+nonce) that selected this hit in
+// the first place — callers that resolve a hit to a specific value do that
+// check themselves once they have the receipt to decode from.
 func validateReceiptLog(receipt *types.Receipt, expectedAddr common.Address, expectedTopic common.Hash, txHash, logIndex string) (*types.Log, error) {
 	if receipt == nil {
 		return nil, fmt.Errorf("nil receipt for tx %s", txHash)
+	}
+	if receipt.BlockNumber == nil || receipt.BlockNumber.Sign() == 0 {
+		return nil, fmt.Errorf("receipt for tx %s has no block number (not mined)", txHash)
 	}
 	expectedHash := common.HexToHash(txHash)
 	if receipt.TxHash != expectedHash {
@@ -87,6 +149,9 @@ func validateReceiptLog(receipt *types.Receipt, expectedAddr common.Address, exp
 	}
 	if log.TxHash != expectedHash {
 		return nil, fmt.Errorf("log tx hash %s does not match requested tx %s", log.TxHash.Hex(), txHash)
+	}
+	if log.BlockNumber != receipt.BlockNumber.Uint64() || log.BlockHash != receipt.BlockHash || log.TxIndex != receipt.TransactionIndex {
+		return nil, fmt.Errorf("log block/transaction metadata does not match its own receipt (tx %s, log index %s)", txHash, logIndex)
 	}
 	if log.Address != expectedAddr {
 		return nil, fmt.Errorf("log address %s does not match expected contract %s", log.Address.Hex(), expectedAddr.Hex())

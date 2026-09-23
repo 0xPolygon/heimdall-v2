@@ -249,8 +249,35 @@ func (rl *RootChainListener) getStateSynced(ctx context.Context, stateId int64) 
 	if err != nil {
 		return nil, fmt.Errorf("self-healing: %w", err)
 	}
+
+	if err := rl.confirmStateSyncedId(receipt, rootChainContext.ChainmanagerParams.ChainParams.StateSenderAddress, hit.LogIndex, stateId); err != nil {
+		return nil, fmt.Errorf("self-healing: %w", err)
+	}
+
 	rl.Logger.Info("Self-healing: retrieved log for StateSynced event", "stateId", stateId, "logIndex", hit.LogIndex, "txHash", hit.TransactionHash)
 	return log, nil
+}
+
+// confirmStateSyncedId decodes the StateSynced event at logIndex and confirms
+// its id matches the state ID that was requested — structural validation
+// alone doesn't rule out a subgraph hit pointing at a different, genuine
+// StateSynced event.
+func (rl *RootChainListener) confirmStateSyncedId(receipt *types.Receipt, stateSenderAddress, logIndex string, stateId int64) error {
+	idx, err := strconv.ParseUint(logIndex, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid log index %q: %w", logIndex, err)
+	}
+
+	decoded, err := rl.contractCaller.DecodeStateSyncedEvent(stateSenderAddress, receipt, idx)
+	if err != nil {
+		return fmt.Errorf("failed to decode StateSynced event: %w", err)
+	}
+
+	if decoded.Id.Int64() != stateId {
+		return fmt.Errorf("decoded stateId %d does not match requested %d", decoded.Id.Int64(), stateId)
+	}
+
+	return nil
 }
 
 // getMaxL1NonceForValidator returns the highest nonce across StakeUpdate,
