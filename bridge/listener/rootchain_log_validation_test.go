@@ -484,8 +484,10 @@ func newQuarantineTestListener(t *testing.T) (*RootChainListener, *RootChainList
 // bounded-quarantine behavior: a log that fails validation on fewer than
 // maxRootChainLogRejections separate poll cycles keeps withholding the
 // cursor exactly as before, but on the Nth cycle it's quarantined — the
-// cursor advances past it, a distinct quarantine metric fires once, and its
-// entry is dropped from the persistent failure-count map.
+// cursor advances past it and a distinct quarantine metric fires once. Its
+// failure-count entry is deliberately left in place (see
+// quarantineRootChainLog): only pruneStaleLogFailureCounts, run after a
+// fully successful cycle, ever drops it.
 func TestProcessRootChainBlockRange_QuarantinesAfterMaxRejections(t *testing.T) {
 	rl, rootChainContext := newQuarantineTestListener(t)
 
@@ -519,7 +521,9 @@ func TestProcessRootChainBlockRange_QuarantinesAfterMaxRejections(t *testing.T) 
 	require.NoError(t, err)
 	require.Equal(t, "100", string(lastBlockBytes), "the cursor must have advanced past the quarantined block")
 
-	require.Empty(t, rl.logFailureCounts, "a quarantined log's failure count must be dropped, not kept forever")
+	badLogKey := rootChainLogKey(types.Log{TxHash: common.HexToHash("0xbad"), Index: 0})
+	require.Equal(t, uint64(maxRootChainLogRejections), rl.logFailureCounts[badLogKey],
+		"the failure count survives quarantine itself — only end-of-cycle pruning drops it")
 }
 
 func TestPruneStaleLogFailureCounts(t *testing.T) {
@@ -661,15 +665,15 @@ func TestEvictLowestTrackedLogFailure_StaysBoundedUnderFlood(t *testing.T) {
 		rl.logFailureCounts[strconv.Itoa(i)] = 1
 	}
 
-	start := time.Now()
-	for i := 0; i < maxTrackedLogFailures; i++ {
-		rl.evictLowestTrackedLogFailure()
+	const floodInsertions = 1000
+	for i := 0; i < floodInsertions; i++ {
+		sampled := rl.evictLowestTrackedLogFailure()
+		require.LessOrEqual(t, sampled, evictionSampleSize,
+			"eviction must inspect at most evictionSampleSize entries regardless of map size, not scan the whole map")
 		rl.logFailureCounts[strconv.Itoa(maxTrackedLogFailures+i)] = 1
 	}
-	elapsed := time.Since(start)
 
 	require.Len(t, rl.logFailureCounts, maxTrackedLogFailures)
-	require.Less(t, elapsed, 200*time.Millisecond, "eviction must stay bounded by evictionSampleSize regardless of map size, not scan the whole map on every insertion")
 }
 
 // TestRejectRootChainLog_EvictionLetsARecurringLogReachQuarantine proves the
@@ -834,7 +838,7 @@ func TestProcessRootChainBlockRange_QuarantineIsScopedToItsOwnLog(t *testing.T) 
 	require.NoError(t, err)
 	require.Equal(t, strconv.FormatUint(blockN, 10), string(lastBlockBytes), "the cursor advanced through X's own block, not Y's")
 
-	require.NotContains(t, rl.logFailureCounts, rootChainLogKey(*logX), "X's count was cleared by its own quarantine")
+	require.Equal(t, uint64(maxRootChainLogRejections), rl.logFailureCounts[rootChainLogKey(*logX)], "X's count survives its own quarantine")
 	require.Equal(t, uint64(1), rl.logFailureCounts[rootChainLogKey(*logY)], "Y was only counted once, on its own merits, not quarantined")
 }
 
@@ -931,7 +935,9 @@ func TestProcessRootChainBlockRange_QuarantinesAnOutOfRangeLog(t *testing.T) {
 // cycle once the log crosses the quarantine threshold, instead of only the
 // first excluded block's cursor advancing and every other leaf failing
 // because the quarantine entry was already consumed. The quarantine metric
-// still fires exactly once despite the log being excluded at several leaves.
+// still fires exactly once despite the log being excluded at several leaves,
+// and its failure count is left in place (see quarantineRootChainLog) rather
+// than cleared as soon as the first leaf excludes it.
 func TestProcessRootChainBlockRange_QuarantineClearsWholeChunkInOneCycle(t *testing.T) {
 	rl, rootChainContext := newQuarantineTestListener(t)
 	badLogKey := rootChainLogKey(types.Log{TxHash: common.HexToHash("0xbad"), Index: 0})
@@ -950,7 +956,44 @@ func TestProcessRootChainBlockRange_QuarantineClearsWholeChunkInOneCycle(t *test
 	require.NoError(t, err)
 	require.Equal(t, "103", string(lastBlockBytes))
 
-	require.Empty(t, rl.logFailureCounts, "the quarantined log's failure count is dropped")
+	require.Equal(t, uint64(maxRootChainLogRejections), rl.logFailureCounts[badLogKey],
+		"the failure count survives quarantine itself — only end-of-cycle pruning drops it")
+}
+
+// TestProcessRootChainBlockRangeInChunks_BudgetAbortResumesQuarantineProgress
+// proves a budget-aborted cycle doesn't force the next cycle to re-earn
+// quarantine eligibility from zero: a log an endpoint returns for every
+// query in a range too wide to fully resolve within the FilterLogs call
+// budget still leaves its failure count at the threshold after the abort,
+// so the very next poll cycle can keep excluding it immediately instead of
+// stalling on the block right after the persisted cursor for ~100 more
+// cycles while it re-accumulates.
+func TestProcessRootChainBlockRangeInChunks_BudgetAbortResumesQuarantineProgress(t *testing.T) {
+	const rangeWidth = 1000 // needs up to 2*1000-1 FilterLogs calls, past the budget
+	badLog := unrecognizedTopicLog(1500, common.HexToHash("0xaaaa18"))
+	rl, rootChainContext := twoBlockListener(t, func(fromBlock, toBlock uint64) []*types.Log {
+		return []*types.Log{badLog}
+	})
+	rl.logFailureCounts = map[string]uint64{rootChainLogKey(*badLog): maxRootChainLogRejections - 1}
+
+	rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(1000), big.NewInt(1000+rangeWidth-1))
+
+	require.Equal(t, uint64(maxRootChainLogRejections), rl.logFailureCounts[rootChainLogKey(*badLog)],
+		"the budget-aborted cycle must not have reset the failure count")
+
+	lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+	require.NoError(t, err)
+	cursorAfterCycle1, err := strconv.ParseUint(string(lastBlockBytes), 10, 64)
+	require.NoError(t, err)
+
+	rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(int64(cursorAfterCycle1+1)), big.NewInt(1000+rangeWidth-1))
+
+	lastBlockBytes, err = rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+	require.NoError(t, err)
+	cursorAfterCycle2, err := strconv.ParseUint(string(lastBlockBytes), 10, 64)
+	require.NoError(t, err)
+	require.Greater(t, cursorAfterCycle2, cursorAfterCycle1,
+		"the second cycle must make further progress immediately, not stall re-accumulating the same log from zero")
 }
 
 // TestQueryAndBroadcastEvents_StopsAtFilterLogsCallBudget proves the budget

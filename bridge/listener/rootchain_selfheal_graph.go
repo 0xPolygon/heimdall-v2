@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -223,7 +224,12 @@ func (rl *RootChainListener) queryStateSyncedHit(ctx context.Context, stateId in
 	return response.Data.StateSynceds[0], nil
 }
 
-// getStateSynced returns the StateSynced event based on the given state ID
+// getStateSynced fetches and validates the StateSynced log for stateId. The
+// receipt fetch is wrapped in ExponentialBackoff so transient L1 RPC blips
+// don't kill self-heal recovery for this state ID; validateReceiptLog and
+// confirmStateSyncedId run once, unwrapped, afterward — those checks are
+// deterministic, so retrying them would only waste cycles on a mismatch
+// that retrying can't fix.
 func (rl *RootChainListener) getStateSynced(ctx context.Context, stateId int64) (*types.Log, error) {
 	hit, err := rl.queryStateSyncedHit(ctx, stateId)
 	if err != nil {
@@ -241,9 +247,12 @@ func (rl *RootChainListener) getStateSynced(ctx context.Context, stateId int64) 
 		return nil, fmt.Errorf("self-healing: no known topic for event %q", helper.StateSyncedEvent)
 	}
 
-	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(hit.TransactionHash))
-	if err != nil {
-		return nil, err
+	var receipt *types.Receipt
+	if err = helper.ExponentialBackoff(func() error {
+		receipt, err = rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(hit.TransactionHash))
+		return err
+	}, 3, time.Second); err != nil {
+		return nil, fmt.Errorf("self-healing: failed to fetch L1 receipt for tx %s: %w", hit.TransactionHash, err)
 	}
 
 	log, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, hit.TransactionHash, hit.LogIndex)

@@ -93,7 +93,18 @@ const maxRootChainLogRejections = 100
 // key outright, or a log that keeps recurring after the map has filled with
 // one-off entries could never accumulate enough count to be quarantined,
 // stalling the cursor on it forever.
-const maxTrackedLogFailures = 10_000
+//
+// A single, un-bisectable block whose response contains more distinct
+// persistently-malformed logs than this cap is a residual gap this doesn't
+// close: every one of them needs to be quarantine-eligible in the very same
+// poll cycle for that block to ever resolve, and with more distinct keys
+// than available slots, at least one is always mid-eviction rather than
+// eligible, so that one block never advances. The cap is set high enough
+// that reaching it requires a single fabricated response with tens of
+// thousands of distinct fake logs — far beyond anything a real L1 block can
+// contain — so this bounds the threat to an endpoint willing to serve an
+// implausibly large adversarial response, not a realistic one.
+const maxTrackedLogFailures = 100_000
 
 // maxRootChainFilterLogsCallsPerCycle bounds how many FilterLogs round trips
 // a single ProcessHeader poll cycle can make. Resolving a maxRootChainBlockRange
@@ -552,7 +563,11 @@ const evictionSampleSize = 20
 // regardless of which lower entry was evicted to make room for it, and a
 // flood large enough to fill the map leaves the sample overwhelmingly
 // likely to land on one of its many equally-evictable entries.
-func (rl *RootChainListener) evictLowestTrackedLogFailure() {
+// Returns the number of entries it actually inspected, so tests can assert
+// the bound directly instead of inferring it from wall-clock timing (which a
+// contended or instrumented CI runner could blow through even though the
+// underlying cost is still O(evictionSampleSize)).
+func (rl *RootChainListener) evictLowestTrackedLogFailure() int {
 	var lowestKey string
 	var lowestCount uint64
 	sampled := 0
@@ -566,14 +581,20 @@ func (rl *RootChainListener) evictLowestTrackedLogFailure() {
 		}
 	}
 	delete(rl.logFailureCounts, lowestKey)
+	return sampled
 }
 
 // quarantineRootChainLog is called once a log has failed validation
 // maxRootChainLogRejections times in a row: it logs everything needed for
 // manual investigation, counts it in rootchain_listener_log_quarantined_total
 // (distinct from the rejection counter, so an operator can tell "still
-// retrying" from "gave up, needs a human"), and drops the log's entry from
-// logFailureCounts since it's now resolved one way or another.
+// retrying" from "gave up, needs a human". It deliberately does not touch
+// logFailureCounts: excluding this log at one leaf doesn't mean the range
+// containing it is fully resolved yet (the FilterLogs call budget can abort
+// a cycle partway through a wide range), so clearing its count here could
+// throw away real progress the next cycle would otherwise resume from.
+// pruneStaleLogFailureCounts is the only place a count gets dropped, and
+// only once a full cycle completes without needing this log again.
 func (rl *RootChainListener) quarantineRootChainLog(detail *rootChainLogDetail) {
 	rl.Logger.Error("RootChainListener: quarantining a rootchain log stuck failing validation",
 		"reason", detail.reason,
@@ -585,7 +606,6 @@ func (rl *RootChainListener) quarantineRootChainLog(detail *rootChainLogDetail) 
 		"totalFailures", maxRootChainLogRejections,
 	)
 	metrics.RootChainListenerLogQuarantined.Inc()
-	delete(rl.logFailureCounts, detail.logKey)
 }
 
 // pruneStaleLogFailureCounts drops any tracked failure count for a log that

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -550,6 +551,42 @@ func TestGetStateSynced_ReceiptValidation(t *testing.T) {
 		_, err = rl.getStateSynced(t.Context(), requestedStateId)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "connection refused")
+	})
+
+	t.Run("a deterministic content mismatch does not retry the receipt fetch", func(t *testing.T) {
+		graph := newSubgraph(`{"data":{"stateSynceds":[{"logIndex":"0","transactionHash":"0xabc"}]}}`)
+		defer graph.Close()
+
+		stateSenderABI := stateSenderABIForTest(t)
+		log := newStateSyncedLog(t, stateSenderABI, common.HexToAddress(otherAddr), requestedStateId, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+
+		var receiptFetches atomic.Int32
+		receiptServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			receiptFetches.Add(1)
+			body, err := io.ReadAll(r.Body)
+			require.NoError(t, err)
+			var req struct {
+				ID json.RawMessage `json:"id"`
+			}
+			require.NoError(t, json.Unmarshal(body, &req))
+			w.Header().Set("Content-Type", "application/json")
+			_, err = w.Write([]byte(`{"jsonrpc":"2.0","id":` + string(req.ID) + `,"result":` + receiptJSON + `}`))
+			require.NoError(t, err)
+		}))
+		defer receiptServer.Close()
+
+		rl := newStateSyncedTestListener(t, receiptJSON)
+		rl.subGraphClient = &subGraphClient{graphUrl: graph.URL, httpClient: http.DefaultClient}
+		client, err := ethclient.Dial(receiptServer.URL)
+		require.NoError(t, err)
+		rl.contractCaller.MainChainClient = client
+
+		_, err = rl.getStateSynced(t.Context(), requestedStateId)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match expected contract")
+		require.Equal(t, int32(1), receiptFetches.Load(),
+			"a deterministic address mismatch must fail once, not retry a result that can't change")
 	})
 }
 
