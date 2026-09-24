@@ -1113,3 +1113,79 @@ func TestProcessRootChainBlockRange_QuarantineDispatchesOtherValidLogsInTheSameB
 	require.NoError(t, err)
 	require.Equal(t, strconv.FormatUint(block, 10), string(lastBlockBytes))
 }
+
+// TestValidateLogAgainstQuery_RejectsWrongShapeEvent proves a log with the
+// right topic0 and contract address, but a topic/data shape that doesn't
+// match its event's ABI, is rejected here rather than reaching handleLog —
+// whose UnpackLog failure is a bare log line with no rejection, letting the
+// batch succeed and the cursor advance past an event that was never queued.
+func TestValidateLogAgainstQuery_RejectsWrongShapeEvent(t *testing.T) {
+	const stateSenderAddr = "0x3333333333333333333333333333333333333333"
+	stateSenderABI := stateSenderABIForTest(t)
+	event := stateSenderABI.Events[helper.StateSyncedEvent]
+
+	rl := &RootChainListener{
+		eventMap:      map[common.Hash]*abi.Event{event.ID: &event},
+		eventContract: map[common.Hash]rootChainContract{event.ID: rootChainContractStateSender},
+	}
+	rl.BaseListener.Logger = log.NewNopLogger()
+	contractAddresses := map[rootChainContract]common.Address{
+		rootChainContractStateSender: common.HexToAddress(stateSenderAddr),
+	}
+	fromBlock, toBlock := big.NewInt(100), big.NewInt(100)
+
+	t.Run("rejects a log missing its two indexed topics", func(t *testing.T) {
+		state := newRootChainRejectionState()
+		// Data is a validly ABI-encoded non-indexed payload, so a mutant that
+		// skips the indexed-topic-count check would fall through to a
+		// successful UnpackValues and wrongly accept this log — the point of
+		// this case is the topic count alone, not the data shape.
+		validData, err := event.Inputs.NonIndexed().Pack([]byte{})
+		require.NoError(t, err)
+		vLog := types.Log{
+			Address:     common.HexToAddress(stateSenderAddr),
+			Topics:      []common.Hash{event.ID},
+			Data:        validData,
+			TxHash:      common.HexToHash("0xshapebad"),
+			BlockNumber: 100,
+		}
+
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, state)
+		require.False(t, ok, "a log missing its indexed topics must not be selected for dispatch")
+	})
+
+	t.Run("accepts a log whose topics and data match the event's ABI", func(t *testing.T) {
+		state := newRootChainRejectionState()
+		vLog := *newStateSyncedLog(t, stateSenderABI, common.HexToAddress(stateSenderAddr), 5,
+			100, common.HexToHash("0x01"), common.HexToHash("0xshapeok"), 0, 0)
+
+		_, ok := rl.validateLogAgainstQuery(vLog, contractAddresses, fromBlock, toBlock, state)
+		require.True(t, ok, "a well-formed log matching the event's ABI must still be selected for dispatch")
+	})
+}
+
+// TestRejectRootChainLog_CountedThisCycleIsBounded proves state.countedThisCycle
+// itself is bounded, not just the persistent logFailureCounts map: a single
+// poll cycle that sees more distinct malformed logs than maxTrackedLogFailures
+// must not grow this per-cycle set without limit.
+func TestRejectRootChainLog_CountedThisCycleIsBounded(t *testing.T) {
+	rl := &RootChainListener{logFailureCounts: make(map[string]uint64, maxTrackedLogFailures)}
+	rl.BaseListener.Logger = log.NewNopLogger()
+	state := newRootChainRejectionState()
+
+	const belowCap = 10
+	for i := 0; i < belowCap; i++ {
+		vLog := types.Log{TxHash: common.HexToHash(strconv.Itoa(i)), Index: 0}
+		rl.rejectRootChainLog(state, vLog, "a log with no topics", "txHash", vLog.TxHash)
+	}
+	require.Len(t, state.countedThisCycle, belowCap,
+		"distinct logs below the cap must still each get counted")
+
+	for i := belowCap; i < maxTrackedLogFailures+1000; i++ {
+		vLog := types.Log{TxHash: common.HexToHash(strconv.Itoa(i)), Index: 0}
+		rl.rejectRootChainLog(state, vLog, "a log with no topics", "txHash", vLog.TxHash)
+	}
+
+	require.LessOrEqual(t, len(state.countedThisCycle), maxTrackedLogFailures,
+		"countedThisCycle must not grow past maxTrackedLogFailures within a single cycle")
+}

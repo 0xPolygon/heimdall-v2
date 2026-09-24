@@ -395,9 +395,10 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 
 		rl.Logger.Info("Self-healing: missing state detected; processing StateSynced event", "stateId", i)
 
-		// getStateSynced retries only its own L1 receipt fetch internally;
-		// no outer retry here, so a deterministic content mismatch fails once
-		// instead of retrying a result that can't change.
+		// getStateSynced retries its subgraph lookup and L1 receipt fetch
+		// internally, each on its own backoff; no outer retry here, so a
+		// deterministic content mismatch fails once instead of retrying a
+		// result that can't change.
 		stateSynced, err := rl.getStateSynced(ctx, i)
 		if err != nil {
 			rl.Logger.Error("Self-healing: failed to retrieve StateSynced event for missing state", "stateId", i, "error", err)

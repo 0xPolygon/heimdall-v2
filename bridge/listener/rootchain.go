@@ -228,7 +228,15 @@ type rootChainRejectionState struct {
 	// countedThisCycle ensures rootchain_listener_log_rejected_total, and the
 	// persistent per-log failure count in RootChainListener.logFailureCounts,
 	// only advance once per distinct log per cycle — not once per bisection
-	// level that re-encounters it.
+	// level that re-encounters it. Bounded at maxTrackedLogFailures entries
+	// (see rejectRootChainLog) for the same reason logFailureCounts is
+	// capped: an endpoint that fabricates more distinct malformed logs than
+	// that in a single response would otherwise grow this map without limit
+	// for the rest of the cycle. Past the cap, further distinct logs still
+	// get rejected (validateAndHandleLogs falls back to failing the whole
+	// batch for anything not already tracked), they just stop accumulating
+	// their own log line, metric, and persistent failure count until the
+	// next cycle.
 	countedThisCycle map[string]struct{}
 
 	// quarantine holds one entry per logKey whose persistent failure count
@@ -496,7 +504,35 @@ func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAdd
 			"address", vLog.Address, "expectedAddress", expectedAddress, "event", selectedEvent.Name, "txHash", vLog.TxHash)
 	}
 
+	if !eventShapeMatches(vLog, selectedEvent) {
+		return rl.rejectRootChainLog(state, vLog, "a log whose topic count or data doesn't match its event's ABI shape",
+			"event", selectedEvent.Name, "numTopics", len(vLog.Topics), "dataLen", len(vLog.Data), "txHash", vLog.TxHash)
+	}
+
 	return selectedEvent, true
+}
+
+// eventShapeMatches reports whether vLog actually decodes against
+// selectedEvent's ABI: the right number of indexed topics, and non-indexed
+// data that unpacks cleanly. A log can pass every other check here (right
+// topic0, right contract, right block range) while still being malformed in
+// a way that only surfaces once handleLog's UnpackLog call fails — and that
+// failure is a bare log line with no rejection, so the batch still succeeds
+// and the cursor advances past an event that was never actually queued.
+// Checking the shape here routes that failure through the same
+// reject/bisect/quarantine path as any other malformed log instead.
+func eventShapeMatches(vLog types.Log, selectedEvent *abi.Event) bool {
+	indexedCount := 0
+	for _, arg := range selectedEvent.Inputs {
+		if arg.Indexed {
+			indexedCount++
+		}
+	}
+	if len(vLog.Topics)-1 != indexedCount {
+		return false
+	}
+	_, err := selectedEvent.Inputs.NonIndexed().UnpackValues(vLog.Data)
+	return err == nil
 }
 
 // rejectRootChainLog logs a rootchain log query rejection, always returning
@@ -519,6 +555,9 @@ func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAdd
 func (rl *RootChainListener) rejectRootChainLog(state *rootChainRejectionState, vLog types.Log, reason string, keyvals ...any) (*abi.Event, bool) {
 	logKey := rootChainLogKey(vLog)
 	if _, alreadyCounted := state.countedThisCycle[logKey]; alreadyCounted {
+		return nil, false
+	}
+	if len(state.countedThisCycle) >= maxTrackedLogFailures {
 		return nil, false
 	}
 	state.countedThisCycle[logKey] = struct{}{}
