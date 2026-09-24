@@ -437,6 +437,40 @@ func TestResolveCheckpointAckLog(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to get transaction receipt")
 	})
+
+	t.Run("retries a transient L1 receipt fetch failure instead of failing immediately", func(t *testing.T) {
+		rootChainABI := rootChainABIForTest(t)
+		log := newHeaderBlockLog(t, rootChainABI, common.HexToAddress(rootChainAddr), requestedHeaderBlockId, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+
+		var receiptCalls atomic.Int32
+		receiptServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, err := io.ReadAll(r.Body)
+			require.NoError(t, err)
+			var req struct {
+				ID json.RawMessage `json:"id"`
+			}
+			require.NoError(t, json.Unmarshal(body, &req))
+			if receiptCalls.Add(1) <= 2 {
+				w.WriteHeader(http.StatusBadGateway)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, err = w.Write([]byte(`{"jsonrpc":"2.0","id":` + string(req.ID) + `,"result":` + receiptJSON + `}`))
+			require.NoError(t, err)
+		}))
+		defer receiptServer.Close()
+
+		rl := newReceiptResolveTestListener(t, rootChainAddr, "0x0000000000000000000000000000000000000001", helper.NewHeaderBlockEvent, receiptJSON)
+		client, err := ethclient.Dial(receiptServer.URL)
+		require.NoError(t, err)
+		rl.contractCaller.MainChainClient = client
+
+		got, err := rl.resolveCheckpointAckLog(t.Context(), &newHeaderBlock{TransactionHash: txHash.Hex(), LogIndex: "3", HeaderBlockId: "60000"})
+		require.NoError(t, err, "two transient receipt-fetch failures must not fail checkpoint-ack resolution within its own retry budget")
+		require.NotNil(t, got)
+		require.Equal(t, int32(3), receiptCalls.Load())
+	})
 }
 
 // TestGetStateSynced_ReceiptValidation exercises getStateSynced's receipt

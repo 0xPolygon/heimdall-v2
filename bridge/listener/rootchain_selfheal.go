@@ -163,7 +163,11 @@ func (rl *RootChainListener) checkpointAckReady(latestL1Checkpoint *newHeaderBlo
 // validation alone doesn't rule out a subgraph hit pointing at a different,
 // genuine NewHeaderBlock event. Chain params are fetched first since they're
 // a cheap local call — no point spending an L1 RPC round-trip before
-// confirming we can even resolve what to check it against.
+// confirming we can even resolve what to check it against. The receipt fetch
+// is wrapped in ExponentialBackoff, matching fetchAndValidateStakeEventLog
+// and getStateSynced, so a transient L1 RPC blip doesn't delay checkpoint-ack
+// recovery to the next tick; validateReceiptLog and confirmHeaderBlockId run
+// once, unwrapped, afterward, since those checks are deterministic.
 func (rl *RootChainListener) resolveCheckpointAckLog(ctx context.Context, latestL1Checkpoint *newHeaderBlock) (*types.Log, error) {
 	rootChainContext, err := rl.getRootChainContext()
 	if err != nil {
@@ -177,8 +181,11 @@ func (rl *RootChainListener) resolveCheckpointAckLog(ctx context.Context, latest
 		return nil, fmt.Errorf("no known topic for event %q", helper.NewHeaderBlockEvent)
 	}
 
-	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(latestL1Checkpoint.TransactionHash))
-	if err != nil {
+	var receipt *types.Receipt
+	if err = helper.ExponentialBackoff(func() error {
+		receipt, err = rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(latestL1Checkpoint.TransactionHash))
+		return err
+	}, 3, time.Second); err != nil {
 		return nil, fmt.Errorf("failed to get transaction receipt: %w", err)
 	}
 
