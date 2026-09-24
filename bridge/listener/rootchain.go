@@ -40,12 +40,18 @@ type RootChainListener struct {
 	// (not just any of the three watched contracts).
 	eventContract map[ethCommon.Hash]rootChainContract
 
-	// Consecutive-poll-cycle failure count per rejected log (keyed the same
-	// way as rootChainRejectionState.countedThisCycle), so a log that keeps
-	// failing validation across many polls can be quarantined instead of
-	// withholding the cursor forever. Only ever touched from ProcessHeader,
-	// which BaseListener.StartHeaderProcess drives from a single goroutine,
-	// so no lock is needed. Pruned each cycle in pruneStaleLogFailureCounts.
+	// Poll-cycle failure count per rejected log (keyed the same way as
+	// rootChainRejectionState.countedThisCycle), so a log that keeps failing
+	// validation across many polls can be quarantined instead of withholding
+	// the cursor forever. Cycles counted toward a log's total need not be
+	// consecutive: a cycle that aborts before content validation runs at all
+	// (a transient RPC error, or the FilterLogs call budget) doesn't touch
+	// this map, and a count set by a since-aborted cycle survives until
+	// pruneStaleLogFailureCounts drops it — which only happens once a full
+	// sweep completes successfully without needing that log again, not on
+	// every cycle. Only ever touched from ProcessHeader, which
+	// BaseListener.StartHeaderProcess drives from a single goroutine, so no
+	// lock is needed.
 	logFailureCounts map[string]uint64
 
 	// For self-healing, it will be only initialized if sub_graph_url is provided
@@ -237,9 +243,11 @@ type rootChainRejectionState struct {
 	quarantine map[string]*rootChainLogDetail
 
 	// quarantinedThisCycle dedupes the one-time side effects of actually
-	// quarantining a log (the log line, rootchain_listener_log_quarantined_total,
-	// clearing logFailureCounts) to once per logKey per cycle, independent of
-	// how many single-block leaves reuse the still-live quarantine entry.
+	// quarantining a log (the log line and rootchain_listener_log_quarantined_total)
+	// to once per logKey per cycle, independent of how many single-block
+	// leaves reuse the still-live quarantine entry. It does not gate
+	// logFailureCounts: quarantineRootChainLog deliberately leaves that entry
+	// in place (see its doc comment) for pruneStaleLogFailureCounts to drop.
 	quarantinedThisCycle map[string]struct{}
 
 	// filterLogsCalls counts how many FilterLogs round trips this cycle has
@@ -363,8 +371,8 @@ func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAdd
 	for _, logKey := range toQuarantine {
 		// state.quarantine keeps the entry for the rest of the cycle (see its
 		// field doc), so this same logKey can show up here again from a later
-		// leaf; quarantinedThisCycle keeps the log line, metric, and
-		// logFailureCounts cleanup to exactly once despite that.
+		// leaf; quarantinedThisCycle keeps the log line and metric to exactly
+		// once despite that (logFailureCounts is left alone either way).
 		if detail, ok := state.quarantine[logKey]; ok {
 			if _, already := state.quarantinedThisCycle[logKey]; !already {
 				rl.quarantineRootChainLog(detail)
@@ -585,10 +593,11 @@ func (rl *RootChainListener) evictLowestTrackedLogFailure() int {
 }
 
 // quarantineRootChainLog is called once a log has failed validation
-// maxRootChainLogRejections times in a row: it logs everything needed for
+// maxRootChainLogRejections times (not necessarily consecutively — see
+// maxRootChainLogRejections's doc comment): it logs everything needed for
 // manual investigation, counts it in rootchain_listener_log_quarantined_total
 // (distinct from the rejection counter, so an operator can tell "still
-// retrying" from "gave up, needs a human". It deliberately does not touch
+// retrying" from "gave up, needs a human"). It deliberately does not touch
 // logFailureCounts: excluding this log at one leaf doesn't mean the range
 // containing it is fully resolved yet (the FilterLogs call budget can abort
 // a cycle partway through a wide range), so clearing its count here could

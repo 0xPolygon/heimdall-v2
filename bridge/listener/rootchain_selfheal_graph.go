@@ -225,14 +225,20 @@ func (rl *RootChainListener) queryStateSyncedHit(ctx context.Context, stateId in
 }
 
 // getStateSynced fetches and validates the StateSynced log for stateId. The
-// receipt fetch is wrapped in ExponentialBackoff so transient L1 RPC blips
-// don't kill self-heal recovery for this state ID; validateReceiptLog and
+// subgraph lookup and the L1 receipt fetch are each wrapped in their own
+// ExponentialBackoff, mirroring replayStakeEvent/fetchAndValidateStakeEventLog,
+// so a transient subgraph or RPC blip doesn't fail self-heal recovery for
+// this state ID until the next tick; validateReceiptLog and
 // confirmStateSyncedId run once, unwrapped, afterward — those checks are
 // deterministic, so retrying them would only waste cycles on a mismatch
 // that retrying can't fix.
 func (rl *RootChainListener) getStateSynced(ctx context.Context, stateId int64) (*types.Log, error) {
-	hit, err := rl.queryStateSyncedHit(ctx, stateId)
-	if err != nil {
+	var hit stateSynced
+	var err error
+	if err = helper.ExponentialBackoff(func() error {
+		hit, err = rl.queryStateSyncedHit(ctx, stateId)
+		return err
+	}, 3, time.Second); err != nil {
 		return nil, err
 	}
 

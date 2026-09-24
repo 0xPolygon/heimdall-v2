@@ -588,6 +588,29 @@ func TestGetStateSynced_ReceiptValidation(t *testing.T) {
 		require.Equal(t, int32(1), receiptFetches.Load(),
 			"a deterministic address mismatch must fail once, not retry a result that can't change")
 	})
+
+	t.Run("retries a transient subgraph failure instead of failing this stateId immediately", func(t *testing.T) {
+		var subgraphCalls atomic.Int32
+		graph := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			if subgraphCalls.Add(1) <= 2 {
+				http.Error(w, "upstream unavailable", http.StatusBadGateway)
+				return
+			}
+			writeJSON(w, `{"data":{"stateSynceds":[{"logIndex":"0","transactionHash":"0xabc"}]}}`)
+		}))
+		defer graph.Close()
+
+		stateSenderABI := stateSenderABIForTest(t)
+		log := newStateSyncedLog(t, stateSenderABI, common.HexToAddress(stateSenderAddr), requestedStateId, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+		rl := newStateSyncedTestListener(t, receiptJSON)
+		rl.subGraphClient = &subGraphClient{graphUrl: graph.URL, httpClient: http.DefaultClient}
+
+		got, err := rl.getStateSynced(t.Context(), requestedStateId)
+		require.NoError(t, err, "two transient subgraph failures must not fail this stateId within its own retry budget")
+		require.NotNil(t, got)
+		require.Equal(t, int32(3), subgraphCalls.Load())
+	})
 }
 
 // TestConfirmHeaderBlockId exercises confirmHeaderBlockId's own error paths
