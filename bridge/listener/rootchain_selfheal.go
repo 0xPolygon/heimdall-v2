@@ -378,7 +378,10 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 		return
 	}
 
-	const maxRetriesPerState = 3
+	gapStart, recoverableEnd, ok := rl.resolveRecoverableStateSyncRange(ctx, latestPolygonStateId.Int64()+1, latestEthereumStateId.Int64())
+	if !ok {
+		return
+	}
 
 	sleepTimer := time.NewTimer(0)
 	if !sleepTimer.Stop() {
@@ -387,76 +390,9 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 
 	defer sleepTimer.Stop()
 
-	for i := latestPolygonStateId.Int64() + 1; i <= latestEthereumStateId.Int64(); i++ {
-		if _, err = util.GetClerkEventRecord(i, rl.cliCtx.Codec); err == nil {
-			rl.Logger.Info("Self-healing: state ID already synced on Heimdall; skipping", "stateId", i)
-			continue
-		}
-
-		rl.Logger.Info("Self-healing: missing state detected; processing StateSynced event", "stateId", i)
-
-		// getStateSynced retries its subgraph lookup and L1 receipt fetch
-		// internally, each on its own backoff; no outer retry here, so a
-		// deterministic content mismatch fails once instead of retrying a
-		// result that can't change.
-		stateSynced, err := rl.getStateSynced(ctx, i)
-		if err != nil {
-			rl.Logger.Error("Self-healing: failed to retrieve StateSynced event for missing state", "stateId", i, "error", err)
-			continue
-		}
-
-		metrics.SelfHealStateSyncsProcessed.Inc()
-
-		var synced bool
-
-		for attempt := 0; attempt < maxRetriesPerState; attempt++ {
-			ignore, err := rl.processEvent(ctx, stateSynced)
-			if err != nil {
-				rl.Logger.Error("Self-healing: failed to process StateSynced event and update Heimdall", "stateId", i, "attempt", attempt+1, "error", err)
-				continue
-			}
-
-			if ignore {
-				synced = true
-				break
-			}
-
-			sleepTimer.Reset(1 * time.Second)
-
-			select {
-			case <-sleepTimer.C:
-			case <-ctx.Done():
-				return
-			}
-
-			var confirmed bool
-
-			for statusCheck := 0; statusCheck < 15; statusCheck++ {
-				if _, err = util.GetClerkEventRecord(i, rl.cliCtx.Codec); err == nil {
-					rl.Logger.Info("Self-healing: stateId found on Heimdall after processing", "stateId", i)
-					confirmed = true
-					break
-				}
-				rl.Logger.Info("Self-healing: stateId not yet found on Heimdall; retrying", "stateId", i)
-				sleepTimer.Reset(1 * time.Second)
-
-				select {
-				case <-sleepTimer.C:
-				case <-ctx.Done():
-					return
-				}
-			}
-
-			if confirmed {
-				synced = true
-				break
-			}
-
-			rl.Logger.Warn("Self-healing: stateId not confirmed after polling; will retry", "stateId", i, "attempt", attempt+1)
-		}
-
-		if !synced {
-			rl.Logger.Error("Self-healing: giving up on stateId after max retries; moving to next", "stateId", i, "maxRetries", maxRetriesPerState)
+	for i := gapStart; i <= recoverableEnd; i++ {
+		if !rl.recoverStateSyncId(ctx, i, sleepTimer) {
+			return
 		}
 	}
 }
