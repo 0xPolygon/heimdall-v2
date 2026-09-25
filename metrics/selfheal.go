@@ -36,4 +36,19 @@ var (
 		Name:      "checkpoint_acks_processed_total",
 		Help:      "Total number of missing NewHeaderBlock checkpoint ACKs queued by the self-heal loop",
 	})
+
+	// SelfHealValidationRejected counts subgraph hits (checkpoint ack, stake
+	// event, or state sync) rejected because the L1 receipt they resolved to
+	// didn't structurally match the request, or decoded to different content
+	// than the one the subgraph was queried for. Unlike a *Processed counter
+	// staying flat, this fires on every rejection whether or not the recovery
+	// path keeps retrying it — a non-zero rate means the subgraph or L1 RPC is
+	// feeding self-heal mismatched data, the same class of untrusted response
+	// the live listener path already tracks via rootchain_listener_log_rejected_total.
+	SelfHealValidationRejected = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: Namespace,
+		Subsystem: "self_healing",
+		Name:      "log_validation_rejected_total",
+		Help:      "Total number of self-heal subgraph hits rejected for not matching the L1 receipt they resolved to",
+	})
 )

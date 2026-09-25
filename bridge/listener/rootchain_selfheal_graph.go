@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 // stateSynced represents the StateSynced event.
@@ -56,6 +57,10 @@ type nonceOnly struct {
 type txAndLogIndex struct {
 	TransactionHash string `json:"transactionHash"`
 	LogIndex        string `json:"logIndex"`
+	// EventName is set by the caller after unmarshaling (never present in the
+	// subgraph JSON itself) to record which of the nonce-gated stake event
+	// entities this hit came from — see pickStakeEventHit.
+	EventName string `json:"-"`
 }
 
 // graphqlError is a single entry in a GraphQL response's top-level errors array.
@@ -179,8 +184,9 @@ func (rl *RootChainListener) getCurrentStateID(ctx context.Context) (*big.Int, e
 	return stateId, nil
 }
 
-// getStateSynced returns the StateSynced event based on the given state ID
-func (rl *RootChainListener) getStateSynced(ctx context.Context, stateId int64) (*types.Log, error) {
+// queryStateSyncedHit queries the subgraph for the (txHash, logIndex) of the
+// StateSynced event with the given state ID.
+func (rl *RootChainListener) queryStateSyncedHit(ctx context.Context, stateId int64) (stateSynced, error) {
 	query := map[string]string{
 		"query": `
 		{
@@ -194,38 +200,103 @@ func (rl *RootChainListener) getStateSynced(ctx context.Context, stateId int64) 
 
 	byteQuery, err := json.Marshal(query)
 	if err != nil {
-		return nil, err
+		return stateSynced{}, err
 	}
 
 	data, err := rl.querySubGraph(byteQuery, ctx)
 	if err != nil {
-		return nil, fmt.Errorf("self-healing: unable to fetch latest stateId from graph with err: %w", err)
+		return stateSynced{}, fmt.Errorf("self-healing: unable to fetch latest stateId from graph with err: %w", err)
 	}
 
 	var response stateSyncedsResponse
 	if err = json.Unmarshal(data, &response); err != nil {
-		return nil, fmt.Errorf("self-healing: unable to unmarshal graph response: %w", err)
+		return stateSynced{}, fmt.Errorf("self-healing: unable to unmarshal graph response: %w", err)
 	}
 
 	if len(response.Errors) > 0 {
-		return nil, fmt.Errorf("self-healing: subgraph returned errors for state synced query: %s", joinGraphQLErrors(response.Errors))
+		return stateSynced{}, fmt.Errorf("self-healing: subgraph returned errors for state synced query: %s", joinGraphQLErrors(response.Errors))
 	}
 
 	if len(response.Data.StateSynceds) == 0 {
-		return nil, fmt.Errorf("self-healing: no state synced event found for state id %d", stateId)
+		return stateSynced{}, fmt.Errorf("self-healing: no state synced event found for state id %d", stateId)
 	}
 
-	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(response.Data.StateSynceds[0].TransactionHash))
-	if err != nil {
+	return response.Data.StateSynceds[0], nil
+}
+
+// getStateSynced fetches and validates the StateSynced log for stateId. The
+// subgraph lookup and the L1 receipt fetch are each wrapped in their own
+// ExponentialBackoff, mirroring replayStakeEvent/fetchAndValidateStakeEventLog,
+// so a transient subgraph or RPC blip doesn't fail self-heal recovery for
+// this state ID until the next tick; validateReceiptLog and
+// confirmStateSyncedId run once, unwrapped, afterward — those checks are
+// deterministic, so retrying them would only waste cycles on a mismatch
+// that retrying can't fix.
+func (rl *RootChainListener) getStateSynced(ctx context.Context, stateId int64) (*types.Log, error) {
+	var hit stateSynced
+	var err error
+	if err = helper.ExponentialBackoff(func() error {
+		hit, err = rl.queryStateSyncedHit(ctx, stateId)
+		return err
+	}, 3, time.Second); err != nil {
 		return nil, err
 	}
 
-	log := findLogByIndex(receipt.Logs, response.Data.StateSynceds[0].LogIndex)
-	if log == nil {
-		return nil, fmt.Errorf("self-healing: no log found for given log index %s and state id %d", response.Data.StateSynceds[0].LogIndex, stateId)
+	rootChainContext, err := rl.getRootChainContext()
+	if err != nil {
+		return nil, fmt.Errorf("self-healing: unable to fetch chain manager params: %w", err)
 	}
-	rl.Logger.Info("Self-healing: retrieved log for StateSynced event", "stateId", stateId, "logIndex", response.Data.StateSynceds[0].LogIndex, "txHash", response.Data.StateSynceds[0].TransactionHash)
+	expectedAddr := common.HexToAddress(rootChainContext.ChainmanagerParams.ChainParams.StateSenderAddress)
+
+	expectedTopic, ok := rl.eventTopicByName(helper.StateSyncedEvent)
+	if !ok {
+		return nil, fmt.Errorf("self-healing: no known topic for event %q", helper.StateSyncedEvent)
+	}
+
+	var receipt *types.Receipt
+	if err = helper.ExponentialBackoff(func() error {
+		receipt, err = rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(hit.TransactionHash))
+		return err
+	}, 3, time.Second); err != nil {
+		return nil, fmt.Errorf("self-healing: failed to fetch L1 receipt for tx %s: %w", hit.TransactionHash, err)
+	}
+
+	log, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, hit.TransactionHash, hit.LogIndex)
+	if err != nil {
+		return nil, fmt.Errorf("self-healing: %w", err)
+	}
+
+	if err := rl.confirmStateSyncedId(receipt, rootChainContext.ChainmanagerParams.ChainParams.StateSenderAddress, hit.LogIndex, stateId); err != nil {
+		return nil, fmt.Errorf("self-healing: %w", err)
+	}
+
+	rl.Logger.Info("Self-healing: retrieved log for StateSynced event", "stateId", stateId, "logIndex", hit.LogIndex, "txHash", hit.TransactionHash)
 	return log, nil
+}
+
+// confirmStateSyncedId decodes the StateSynced event at logIndex and confirms
+// its id matches the state ID that was requested — structural validation
+// alone doesn't rule out a subgraph hit pointing at a different, genuine
+// StateSynced event.
+func (rl *RootChainListener) confirmStateSyncedId(receipt *types.Receipt, stateSenderAddress, logIndex string, stateId int64) error {
+	idx, err := strconv.ParseUint(logIndex, 10, 64)
+	if err != nil {
+		metrics.SelfHealValidationRejected.Inc()
+		return fmt.Errorf("invalid log index %q: %w", logIndex, err)
+	}
+
+	decoded, err := rl.contractCaller.DecodeStateSyncedEvent(stateSenderAddress, receipt, idx)
+	if err != nil {
+		metrics.SelfHealValidationRejected.Inc()
+		return fmt.Errorf("failed to decode StateSynced event: %w", err)
+	}
+
+	if decoded.Id.Cmp(big.NewInt(stateId)) != 0 {
+		metrics.SelfHealValidationRejected.Inc()
+		return fmt.Errorf("decoded stateId %s does not match requested %d", decoded.Id.String(), stateId)
+	}
+
+	return nil
 }
 
 // getMaxL1NonceForValidator returns the highest nonce across StakeUpdate,
@@ -344,82 +415,6 @@ func (rl *RootChainListener) getStakeEventRefByNonce(ctx context.Context, valida
 		return nil, fmt.Errorf("self-healing: no stake event found for validator %d and nonce %d", validatorId, nonce)
 	}
 	return hit, nil
-}
-
-// fetchAndValidateStakeEventLog pulls the L1 receipt for the given hit and
-// runs validateStakeEventReceipt against the StakingInfo address from
-// ChainManager params. The receipt fetch is wrapped in ExponentialBackoff
-// so transient L1 RPC blips don't kill per-validator recovery for a
-// full self-heal cycle. validateStakeEventReceipt is intentionally outside
-// the retry — its checks are deterministic, retrying them would waste
-// cycles on permanent failures.
-func (rl *RootChainListener) fetchAndValidateStakeEventLog(ctx context.Context, hit *txAndLogIndex) (*types.Log, error) {
-	rootChainContext, err := rl.getRootChainContext()
-	if err != nil {
-		return nil, fmt.Errorf("self-healing: unable to fetch chain manager params: %w", err)
-	}
-	expectedAddr := common.HexToAddress(rootChainContext.ChainmanagerParams.ChainParams.StakingInfoAddress)
-
-	var receipt *types.Receipt
-	if err = helper.ExponentialBackoff(func() error {
-		receipt, err = rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(hit.TransactionHash))
-		return err
-	}, 3, time.Second); err != nil {
-		return nil, fmt.Errorf("self-healing: failed to fetch L1 receipt for tx %s: %w", hit.TransactionHash, err)
-	}
-
-	log, err := validateStakeEventReceipt(receipt, expectedAddr, hit)
-	if err != nil {
-		return nil, fmt.Errorf("self-healing: %w", err)
-	}
-	return log, nil
-}
-
-// validateStakeEventReceipt verifies a fetched L1 receipt before its log is
-// trusted: the tx must have succeeded, the indexed log must exist,
-// and the log must come from the expected StakingInfo contract.
-func validateStakeEventReceipt(receipt *types.Receipt, expectedAddr common.Address, hit *txAndLogIndex) (*types.Log, error) {
-	if receipt == nil {
-		return nil, fmt.Errorf("nil receipt for tx %s", hit.TransactionHash)
-	}
-	if receipt.Status != types.ReceiptStatusSuccessful {
-		return nil, fmt.Errorf("tx %s reverted (status=%d)", hit.TransactionHash, receipt.Status)
-	}
-	log := findLogByIndex(receipt.Logs, hit.LogIndex)
-	if log == nil {
-		return nil, fmt.Errorf("no log found for log index %s in tx %s", hit.LogIndex, hit.TransactionHash)
-	}
-	if log.Address != expectedAddr {
-		return nil, fmt.Errorf("log address %s does not match expected StakingInfo %s", log.Address.Hex(), expectedAddr.Hex())
-	}
-	return log, nil
-}
-
-// pickStakeEventHit returns the first non-empty entity row. The shared L1 nonce
-// counter ensures at most one entity holds a (validatorId, nonce) match.
-func pickStakeEventHit(r stakeEventByNonceResponse) *txAndLogIndex {
-	if len(r.Data.StakeUpdates) > 0 {
-		return &r.Data.StakeUpdates[0]
-	}
-	if len(r.Data.SignerChanges) > 0 {
-		return &r.Data.SignerChanges[0]
-	}
-	if len(r.Data.UnstakeInits) > 0 {
-		return &r.Data.UnstakeInits[0]
-	}
-	return nil
-}
-
-// findLogByIndex returns the receipt log whose decimal-string index equals the
-// given target. The subgraph stores logIndex as a decimal string; comparing
-// strings avoids parsing each call.
-func findLogByIndex(logs []*types.Log, target string) *types.Log {
-	for _, log := range logs {
-		if strconv.Itoa(int(log.Index)) == target {
-			return log
-		}
-	}
-	return nil
 }
 
 // getLatestCheckpointFromL1 returns the latest checkpoint from L1 using the subgraph

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -16,11 +17,17 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/require"
 
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -122,31 +129,37 @@ func TestMaxNonceFromResponse(t *testing.T) {
 func TestPickStakeEventHit(t *testing.T) {
 	t.Parallel()
 
+	// Fixtures deliberately omit EventName: pickStakeEventHit is responsible
+	// for tagging the row with the event name based on which entity slice it
+	// came from, so the input must not already carry that tag.
 	stake := txAndLogIndex{TransactionHash: "0xstake", LogIndex: "1"}
 	signer := txAndLogIndex{TransactionHash: "0xsigner", LogIndex: "2"}
 	exit := txAndLogIndex{TransactionHash: "0xexit", LogIndex: "3"}
 
 	tests := []struct {
-		name     string
-		response stakeEventByNonceResponse
-		want     *txAndLogIndex
+		name          string
+		response      stakeEventByNonceResponse
+		wantHit       *txAndLogIndex
+		wantEventName string
 	}{
-		{name: "no hit returns nil", response: stakeEventByNonceResponse{}, want: nil},
-		{name: "stake update hit", response: byNonceResp(&stake, nil, nil), want: &stake},
-		{name: "signer change hit", response: byNonceResp(nil, &signer, nil), want: &signer},
-		{name: "unstake init hit", response: byNonceResp(nil, nil, &exit), want: &exit},
+		{name: "no hit returns nil", response: stakeEventByNonceResponse{}},
+		{name: "stake update hit", response: byNonceResp(&stake, nil, nil), wantHit: &stake, wantEventName: helper.StakeUpdateEvent},
+		{name: "signer change hit", response: byNonceResp(nil, &signer, nil), wantHit: &signer, wantEventName: helper.SignerChangeEvent},
+		{name: "unstake init hit", response: byNonceResp(nil, nil, &exit), wantHit: &exit, wantEventName: helper.UnstakeInitEvent},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := pickStakeEventHit(tt.response)
-			if tt.want == nil {
+			if tt.wantHit == nil {
 				require.Nil(t, got)
 				return
 			}
 			require.NotNil(t, got)
-			require.Equal(t, *tt.want, *got)
+			require.Equal(t, tt.wantHit.TransactionHash, got.TransactionHash)
+			require.Equal(t, tt.wantHit.LogIndex, got.LogIndex)
+			require.Equal(t, tt.wantEventName, got.EventName)
 		})
 	}
 }
@@ -412,75 +425,655 @@ func TestQuerySubGraph_HTTPStatusCheck(t *testing.T) {
 	})
 }
 
-func TestValidateStakeEventReceipt(t *testing.T) {
+func TestValidateReceiptLog(t *testing.T) {
 	t.Parallel()
 
 	expectedAddr := common.HexToAddress("0xa59C847Bd5aC0172Ff4FE912C5d29E5A71A7512B")
 	otherAddr := common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
-	hit := &txAndLogIndex{TransactionHash: "0xabc", LogIndex: "3"}
+	expectedTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
+	otherTopic := common.HexToHash("0x2222222222222222222222222222222222222222222222222222222222222222")
+	txHash, logIndex := "0xabc", "3"
+	expectedHash := common.HexToHash(txHash)
+	otherHash := common.HexToHash("0xdef")
+	blockHash := common.HexToHash("0xbeef")
+	otherBlockHash := common.HexToHash("0xfeed")
+	const blockNumber uint64 = 42
+	const txIndex uint = 1
+
+	// matchingLog carries the same block/transaction metadata as receiptAt,
+	// as a real log always does; tests that want to exercise the metadata
+	// binding check build their own mismatched log instead.
+	matchingLog := func(index uint, addr common.Address, topics []common.Hash, txHash common.Hash) *types.Log {
+		return &types.Log{
+			Index:       index,
+			Address:     addr,
+			Topics:      topics,
+			TxHash:      txHash,
+			BlockNumber: blockNumber,
+			BlockHash:   blockHash,
+			TxIndex:     txIndex,
+		}
+	}
+	receiptAt := func(txHash common.Hash, status uint64, logs []*types.Log) *types.Receipt {
+		return &types.Receipt{
+			TxHash:           txHash,
+			Status:           status,
+			Logs:             logs,
+			BlockNumber:      new(big.Int).SetUint64(blockNumber),
+			BlockHash:        blockHash,
+			TransactionIndex: txIndex,
+		}
+	}
 
 	t.Run("happy path returns matching log", func(t *testing.T) {
 		t.Parallel()
-		receipt := &types.Receipt{
-			Status: types.ReceiptStatusSuccessful,
-			Logs: []*types.Log{
-				{Index: 0, Address: expectedAddr, TxHash: common.HexToHash("0x1")},
-				{Index: 3, Address: expectedAddr, TxHash: common.HexToHash("0xabc")},
-			},
-		}
+		receipt := receiptAt(expectedHash, types.ReceiptStatusSuccessful, []*types.Log{
+			matchingLog(0, expectedAddr, []common.Hash{expectedTopic}, expectedHash),
+			matchingLog(3, expectedAddr, []common.Hash{expectedTopic}, expectedHash),
+		})
 
-		eventReceipt, err := validateStakeEventReceipt(receipt, expectedAddr, hit)
+		eventReceipt, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
 		require.NoError(t, err)
 		require.NotNil(t, eventReceipt)
-		require.Equal(t, common.HexToHash("0xabc"), eventReceipt.TxHash)
+		require.Equal(t, uint(3), eventReceipt.Index)
 	})
 
 	t.Run("rejects nil receipt", func(t *testing.T) {
 		t.Parallel()
-		_, err := validateStakeEventReceipt(nil, expectedAddr, hit)
+		_, err := validateReceiptLog(nil, expectedAddr, expectedTopic, txHash, logIndex)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "nil receipt")
 	})
 
-	t.Run("rejects reverted tx", func(t *testing.T) {
+	t.Run("rejects a receipt with no block number", func(t *testing.T) {
 		t.Parallel()
 		receipt := &types.Receipt{
-			Status: types.ReceiptStatusFailed,
-			Logs: []*types.Log{
-				{Index: 3, Address: expectedAddr},
-			},
+			TxHash: expectedHash,
+			Status: types.ReceiptStatusSuccessful,
+			Logs:   []*types.Log{matchingLog(3, expectedAddr, []common.Hash{expectedTopic}, expectedHash)},
 		}
-		_, err := validateStakeEventReceipt(receipt, expectedAddr, hit)
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid block number")
+	})
+
+	t.Run("rejects a receipt whose block number doesn't fit in uint64", func(t *testing.T) {
+		t.Parallel()
+		oversized := new(big.Int).Lsh(big.NewInt(1), 64) // 2^64, one past uint64 max
+		receipt := &types.Receipt{
+			TxHash:      expectedHash,
+			Status:      types.ReceiptStatusSuccessful,
+			BlockNumber: oversized,
+			Logs:        []*types.Log{matchingLog(3, expectedAddr, []common.Hash{expectedTopic}, expectedHash)},
+		}
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid block number")
+	})
+
+	t.Run("rejects a receipt for a different transaction", func(t *testing.T) {
+		t.Parallel()
+		receipt := receiptAt(otherHash, types.ReceiptStatusSuccessful, []*types.Log{
+			matchingLog(3, expectedAddr, []common.Hash{expectedTopic}, otherHash),
+		})
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "receipt tx hash")
+	})
+
+	t.Run("rejects a log whose own tx hash doesn't match the receipt's", func(t *testing.T) {
+		t.Parallel()
+		receipt := receiptAt(expectedHash, types.ReceiptStatusSuccessful, []*types.Log{
+			matchingLog(3, expectedAddr, []common.Hash{expectedTopic}, otherHash),
+		})
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "log tx hash")
+	})
+
+	t.Run("rejects reverted tx", func(t *testing.T) {
+		t.Parallel()
+		receipt := receiptAt(expectedHash, types.ReceiptStatusFailed, []*types.Log{
+			matchingLog(3, expectedAddr, []common.Hash{expectedTopic}, expectedHash),
+		})
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "reverted")
 	})
 
 	t.Run("rejects when log index not present", func(t *testing.T) {
 		t.Parallel()
-		receipt := &types.Receipt{
-			Status: types.ReceiptStatusSuccessful,
-			Logs: []*types.Log{
-				{Index: 0, Address: expectedAddr},
-				{Index: 1, Address: expectedAddr},
-			},
-		}
-		_, err := validateStakeEventReceipt(receipt, expectedAddr, hit)
+		receipt := receiptAt(expectedHash, types.ReceiptStatusSuccessful, []*types.Log{
+			matchingLog(0, expectedAddr, []common.Hash{expectedTopic}, expectedHash),
+			matchingLog(1, expectedAddr, []common.Hash{expectedTopic}, expectedHash),
+		})
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "no log found")
 	})
 
+	t.Run("rejects the whole receipt when a nil log entry precedes the target", func(t *testing.T) {
+		t.Parallel()
+		receipt := receiptAt(expectedHash, types.ReceiptStatusSuccessful, []*types.Log{
+			nil,
+			matchingLog(3, expectedAddr, []common.Hash{expectedTopic}, expectedHash),
+		})
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "malformed (nil) log entry")
+	})
+
+	t.Run("rejects the whole receipt when a nil log entry follows the target", func(t *testing.T) {
+		t.Parallel()
+		// The re-scan every helper.ContractCaller Decode*Event does over
+		// receipt.Logs has no nil check, so a nil anywhere in the slice is
+		// fatal downstream even though findLogByIndex alone would find the
+		// target fine here.
+		receipt := receiptAt(expectedHash, types.ReceiptStatusSuccessful, []*types.Log{
+			matchingLog(3, expectedAddr, []common.Hash{expectedTopic}, expectedHash),
+			nil,
+		})
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "malformed (nil) log entry")
+	})
+
+	t.Run("rejects a removed (reorg'd) log", func(t *testing.T) {
+		t.Parallel()
+		removed := matchingLog(3, expectedAddr, []common.Hash{expectedTopic}, expectedHash)
+		removed.Removed = true
+		receipt := receiptAt(expectedHash, types.ReceiptStatusSuccessful, []*types.Log{removed})
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "removed")
+	})
+
+	t.Run("rejects log whose block/transaction metadata disagrees with its own receipt", func(t *testing.T) {
+		t.Parallel()
+		mismatched := matchingLog(3, expectedAddr, []common.Hash{expectedTopic}, expectedHash)
+		mismatched.BlockHash = otherBlockHash
+		receipt := receiptAt(expectedHash, types.ReceiptStatusSuccessful, []*types.Log{mismatched})
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match its own receipt")
+	})
+
 	t.Run("rejects log emitted by a different contract", func(t *testing.T) {
 		t.Parallel()
-		receipt := &types.Receipt{
-			Status: types.ReceiptStatusSuccessful,
-			Logs: []*types.Log{
-				{Index: 3, Address: otherAddr},
-			},
-		}
-		_, err := validateStakeEventReceipt(receipt, expectedAddr, hit)
+		receipt := receiptAt(expectedHash, types.ReceiptStatusSuccessful, []*types.Log{
+			matchingLog(3, otherAddr, []common.Hash{expectedTopic}, expectedHash),
+		})
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "does not match expected StakingInfo")
+		require.Contains(t, err.Error(), "does not match expected contract")
 	})
+
+	t.Run("rejects log with a different topic than expected", func(t *testing.T) {
+		t.Parallel()
+		receipt := receiptAt(expectedHash, types.ReceiptStatusSuccessful, []*types.Log{
+			matchingLog(3, expectedAddr, []common.Hash{otherTopic}, expectedHash),
+		})
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "topic does not match")
+	})
+
+	t.Run("rejects log with no topics", func(t *testing.T) {
+		t.Parallel()
+		receipt := receiptAt(expectedHash, types.ReceiptStatusSuccessful, []*types.Log{
+			matchingLog(3, expectedAddr, []common.Hash{}, expectedHash),
+		})
+		_, err := validateReceiptLog(receipt, expectedAddr, expectedTopic, txHash, logIndex)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "topic does not match")
+	})
+}
+
+// TestValidateReceiptLog_IncrementsRejectionMetric is deliberately its own,
+// non-parallel top-level test: TestValidateReceiptLog above runs its
+// rejection subtests in parallel with the rest of the package, which would
+// make a before/after delta on the shared counter racy. It exercises all
+// three of validateReceiptLog's rejection branches (receipt shape, log
+// resolution, log identity), not just the first.
+func TestValidateReceiptLog_IncrementsRejectionMetric(t *testing.T) {
+	expectedAddr := common.HexToAddress("0xa59C847Bd5aC0172Ff4FE912C5d29E5A71A7512B")
+	expectedTopic := common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")
+	txHash := common.HexToHash("0xabc")
+	blockHash := common.HexToHash("0xblockhash")
+	const blockNumber uint64 = 42
+	const txIndex uint = 1
+
+	receiptAt := func(logs []*types.Log) *types.Receipt {
+		return &types.Receipt{
+			TxHash:           txHash,
+			Status:           types.ReceiptStatusSuccessful,
+			BlockNumber:      new(big.Int).SetUint64(blockNumber),
+			BlockHash:        blockHash,
+			TransactionIndex: txIndex,
+			Logs:             logs,
+		}
+	}
+	wrongAddrLog := &types.Log{
+		Index:       0,
+		Address:     common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"),
+		Topics:      []common.Hash{expectedTopic},
+		TxHash:      txHash,
+		BlockNumber: blockNumber,
+		BlockHash:   blockHash,
+		TxIndex:     txIndex,
+	}
+
+	before := testutil.ToFloat64(metrics.SelfHealValidationRejected)
+
+	_, err := validateReceiptLog(nil, expectedAddr, expectedTopic, txHash.Hex(), "0")
+	require.Error(t, err)
+
+	_, err = validateReceiptLog(receiptAt(nil), expectedAddr, expectedTopic, txHash.Hex(), "0")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "no log found")
+
+	_, err = validateReceiptLog(receiptAt([]*types.Log{wrongAddrLog}), expectedAddr, expectedTopic, txHash.Hex(), "0")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "does not match expected contract")
+
+	after := testutil.ToFloat64(metrics.SelfHealValidationRejected)
+	require.Equal(t, float64(3), after-before)
+}
+
+// stakingInfoABIForTest parses the same ABI JSON the production
+// ContractCaller loads, so tests can decode real stake events.
+func stakingInfoABIForTest(t *testing.T) abi.ABI {
+	t.Helper()
+	a, err := abi.JSON(strings.NewReader(stakinginfo.StakinginfoMetaData.ABI))
+	require.NoError(t, err)
+	return a
+}
+
+// newStakeEventLog builds a real, ABI-encodable log for one of the three
+// nonce-gated stake events. validatorId/nonce are the fields self-heal's
+// content-validation actually checks; the remaining fields are filler.
+func newStakeEventLog(t *testing.T, stakingInfoABI abi.ABI, eventName string, contractAddr common.Address, validatorId, nonce uint64, blockNumber uint64, blockHash, txHash common.Hash, txIndex, logIndex uint) *types.Log {
+	t.Helper()
+
+	event := stakingInfoABI.Events[eventName]
+	var nonIndexed abi.Arguments
+	for _, arg := range event.Inputs {
+		if !arg.Indexed {
+			nonIndexed = append(nonIndexed, arg)
+		}
+	}
+
+	var data []byte
+	var indexedValues []interface{}
+	switch eventName {
+	case helper.StakeUpdateEvent:
+		// StakeUpdate(uint256 indexed validatorId, uint256 indexed nonce, uint256 indexed newAmount)
+		indexedValues = []interface{}{new(big.Int).SetUint64(validatorId), new(big.Int).SetUint64(nonce), big.NewInt(0)}
+	case helper.SignerChangeEvent:
+		// SignerChange(uint256 indexed validatorId, uint256 nonce, address indexed oldSigner, address indexed newSigner, bytes signerPubkey)
+		var err error
+		data, err = nonIndexed.Pack(new(big.Int).SetUint64(nonce), []byte{})
+		require.NoError(t, err)
+		filler := common.HexToAddress("0x3333333333333333333333333333333333333333")
+		indexedValues = []interface{}{new(big.Int).SetUint64(validatorId), filler, filler}
+	case helper.UnstakeInitEvent:
+		// UnstakeInit(address indexed user, uint256 indexed validatorId, uint256 nonce, uint256 deactivationEpoch, uint256 indexed amount)
+		var err error
+		data, err = nonIndexed.Pack(new(big.Int).SetUint64(nonce), big.NewInt(0))
+		require.NoError(t, err)
+		filler := common.HexToAddress("0x4444444444444444444444444444444444444444")
+		indexedValues = []interface{}{filler, new(big.Int).SetUint64(validatorId), big.NewInt(0)}
+	default:
+		t.Fatalf("unsupported stake event name %q", eventName)
+	}
+
+	topicArgs := make([][]interface{}, len(indexedValues))
+	for i, v := range indexedValues {
+		topicArgs[i] = []interface{}{v}
+	}
+	topicCols, err := abi.MakeTopics(topicArgs...)
+	require.NoError(t, err)
+
+	topics := []common.Hash{event.ID}
+	for _, col := range topicCols {
+		topics = append(topics, col[0])
+	}
+
+	return &types.Log{
+		Address:     contractAddr,
+		Topics:      topics,
+		Data:        data,
+		BlockNumber: blockNumber,
+		TxHash:      txHash,
+		TxIndex:     txIndex,
+		BlockHash:   blockHash,
+		Index:       logIndex,
+	}
+}
+
+// newStakeEventTestListener wires a mocked heimdall REST API (for
+// ChainManager params, carrying stakingInfoAddr) and a mocked L1 JSON-RPC
+// endpoint serving receiptJSON, with the real StakingInfo ABI loaded and all
+// three nonce-gated stake events registered in eventMap.
+//
+// Must NOT run in parallel: helper.SetTestConfig mutates global config.
+func newStakeEventTestListener(t *testing.T, stakingInfoAddr, receiptJSON string) *RootChainListener {
+	t.Helper()
+
+	rl := newCheckpointAckTestListener(t, checkpointAckTestRoutes{
+		util.ChainManagerParamsURL: `{"params":{"chain_params":{
+			"staking_info_address": "` + stakingInfoAddr + `"
+		}}}`,
+	})
+
+	stakingInfoABI := stakingInfoABIForTest(t)
+	rl.contractCaller.StakingInfoABI = stakingInfoABI
+
+	eventMap := map[common.Hash]*abi.Event{}
+	for _, name := range []string{helper.StakeUpdateEvent, helper.SignerChangeEvent, helper.UnstakeInitEvent} {
+		event := stakingInfoABI.Events[name]
+		eventMap[event.ID] = &event
+	}
+	rl.eventMap = eventMap
+
+	rpcURL := mockL1Receipt(t, receiptJSON)
+	client, err := ethclient.Dial(rpcURL)
+	require.NoError(t, err)
+	rl.contractCaller.MainChainClient = client
+
+	return rl
+}
+
+// TestFetchAndValidateStakeEventLog exercises fetchAndValidateStakeEventLog's
+// content-validation: a structurally valid log (right contract, right topic)
+// whose decoded (validatorId, nonce) don't match what was requested must be
+// rejected, not treated as the recovered event.
+func TestFetchAndValidateStakeEventLog(t *testing.T) {
+	const stakingInfoAddr = "0xb59f30f2A5C39A0B7C8b1e4b6C9E6a52B4a8A0FE"
+	txHash := common.HexToHash("0xabc")
+	blockHash := common.HexToHash("0x01")
+	const blockNumber uint64 = 1
+	const txIndex uint = 0
+	const logIndex uint = 0
+
+	for _, eventName := range []string{helper.StakeUpdateEvent, helper.SignerChangeEvent, helper.UnstakeInitEvent} {
+		t.Run(eventName+": accepts a log with the requested validatorId and nonce", func(t *testing.T) {
+			stakingInfoABI := stakingInfoABIForTest(t)
+			log := newStakeEventLog(t, stakingInfoABI, eventName, common.HexToAddress(stakingInfoAddr), 7, 3, blockNumber, blockHash, txHash, txIndex, logIndex)
+			receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+			rl := newStakeEventTestListener(t, stakingInfoAddr, receiptJSON)
+
+			hit := &txAndLogIndex{TransactionHash: txHash.Hex(), LogIndex: "0", EventName: eventName}
+			got, err := rl.fetchAndValidateStakeEventLog(t.Context(), hit, 7, 3)
+			require.NoError(t, err)
+			require.NotNil(t, got)
+		})
+
+		t.Run(eventName+": rejects a structurally valid log for a different validatorId", func(t *testing.T) {
+			stakingInfoABI := stakingInfoABIForTest(t)
+			log := newStakeEventLog(t, stakingInfoABI, eventName, common.HexToAddress(stakingInfoAddr), 8, 3, blockNumber, blockHash, txHash, txIndex, logIndex)
+			receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+			rl := newStakeEventTestListener(t, stakingInfoAddr, receiptJSON)
+
+			hit := &txAndLogIndex{TransactionHash: txHash.Hex(), LogIndex: "0", EventName: eventName}
+			_, err := rl.fetchAndValidateStakeEventLog(t.Context(), hit, 7, 3)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "does not match requested")
+		})
+
+		t.Run(eventName+": rejects a structurally valid log for a different nonce", func(t *testing.T) {
+			stakingInfoABI := stakingInfoABIForTest(t)
+			log := newStakeEventLog(t, stakingInfoABI, eventName, common.HexToAddress(stakingInfoAddr), 7, 4, blockNumber, blockHash, txHash, txIndex, logIndex)
+			receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+			rl := newStakeEventTestListener(t, stakingInfoAddr, receiptJSON)
+
+			hit := &txAndLogIndex{TransactionHash: txHash.Hex(), LogIndex: "0", EventName: eventName}
+			_, err := rl.fetchAndValidateStakeEventLog(t.Context(), hit, 7, 3)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "does not match requested")
+		})
+	}
+
+	t.Run("rejects an unrecognized event name", func(t *testing.T) {
+		stakingInfoABI := stakingInfoABIForTest(t)
+		log := newStakeEventLog(t, stakingInfoABI, helper.StakeUpdateEvent, common.HexToAddress(stakingInfoAddr), 7, 3, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+		rl := newStakeEventTestListener(t, stakingInfoAddr, receiptJSON)
+
+		hit := &txAndLogIndex{TransactionHash: txHash.Hex(), LogIndex: "0", EventName: "NotARealEvent"}
+		_, err := rl.fetchAndValidateStakeEventLog(t.Context(), hit, 7, 3)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "no known topic")
+	})
+}
+
+// TestFetchAndValidateStakeEventLog_FailureBranches exercises
+// fetchAndValidateStakeEventLog's error paths that sit outside content
+// validation: unavailable ChainManager params and a failed L1 receipt fetch.
+func TestFetchAndValidateStakeEventLog_FailureBranches(t *testing.T) {
+	const stakingInfoAddr = "0xb59f30f2A5C39A0B7C8b1e4b6C9E6a52B4a8A0FE"
+	txHash := common.HexToHash("0xabc")
+	blockHash := common.HexToHash("0x01")
+	const blockNumber uint64 = 1
+	const txIndex uint = 0
+	const logIndex uint = 0
+
+	t.Run("errors when chain manager params are unavailable", func(t *testing.T) {
+		rl := newCheckpointAckTestListener(t, checkpointAckTestRoutes{})
+
+		hit := &txAndLogIndex{TransactionHash: txHash.Hex(), LogIndex: "0", EventName: helper.StakeUpdateEvent}
+		_, err := rl.fetchAndValidateStakeEventLog(t.Context(), hit, 7, 3)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "chain manager params")
+	})
+
+	t.Run("errors when the L1 receipt fetch fails", func(t *testing.T) {
+		stakingInfoABI := stakingInfoABIForTest(t)
+		log := newStakeEventLog(t, stakingInfoABI, helper.StakeUpdateEvent, common.HexToAddress(stakingInfoAddr), 7, 3, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+		rl := newStakeEventTestListener(t, stakingInfoAddr, receiptJSON)
+		brokenClient, err := ethclient.Dial("http://127.0.0.1:1")
+		require.NoError(t, err)
+		rl.contractCaller.MainChainClient = brokenClient
+
+		hit := &txAndLogIndex{TransactionHash: txHash.Hex(), LogIndex: "0", EventName: helper.StakeUpdateEvent}
+		_, err = rl.fetchAndValidateStakeEventLog(t.Context(), hit, 7, 3)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to fetch L1 receipt")
+	})
+
+	t.Run("propagates a validateReceiptLog failure (log from an unexpected contract)", func(t *testing.T) {
+		stakingInfoABI := stakingInfoABIForTest(t)
+		otherAddr := common.HexToAddress("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+		log := newStakeEventLog(t, stakingInfoABI, helper.StakeUpdateEvent, otherAddr, 7, 3, blockNumber, blockHash, txHash, txIndex, logIndex)
+		receiptJSON := receiptJSONWithLog(t, txHash, blockHash, blockNumber, txIndex, log)
+		rl := newStakeEventTestListener(t, stakingInfoAddr, receiptJSON)
+
+		hit := &txAndLogIndex{TransactionHash: txHash.Hex(), LogIndex: "0", EventName: helper.StakeUpdateEvent}
+		_, err := rl.fetchAndValidateStakeEventLog(t.Context(), hit, 7, 3)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match expected contract")
+	})
+}
+
+// TestConfirmStakeEventIdentity exercises confirmStakeEventIdentity's own
+// error paths directly: a malformed log index, a receipt that doesn't
+// actually contain the requested event (decode failure), and an event name
+// outside the three nonce-gated stake events.
+func TestConfirmStakeEventIdentity(t *testing.T) {
+	const stakingInfoAddr = "0xb59f30f2A5C39A0B7C8b1e4b6C9E6a52B4a8A0FE"
+
+	newListener := func(t *testing.T) *RootChainListener {
+		t.Helper()
+		rl := &RootChainListener{BaseListener: BaseListener{Logger: log.NewNopLogger()}}
+		rl.contractCaller.StakingInfoABI = stakingInfoABIForTest(t)
+		return rl
+	}
+
+	t.Run("rejects a malformed log index", func(t *testing.T) {
+		rl := newListener(t)
+		hit := &txAndLogIndex{LogIndex: "not-a-number", EventName: helper.StakeUpdateEvent}
+
+		err := rl.confirmStakeEventIdentity(nil, stakingInfoAddr, hit, 7, 3)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid log index")
+	})
+
+	t.Run("increments the self-heal rejection metric on every rejection branch", func(t *testing.T) {
+		rl := newListener(t)
+		stakingInfoABI := rl.contractCaller.StakingInfoABI
+
+		matchingLog := newStakeEventLog(t, stakingInfoABI, helper.StakeUpdateEvent, common.HexToAddress(stakingInfoAddr), 7, 3, 42,
+			common.HexToHash("0xblockhash"), common.HexToHash("0xabc"), 1, 0)
+		mismatchReceipt := &types.Receipt{Logs: []*types.Log{matchingLog}}
+
+		// nonce is non-indexed on SignerChange, so an empty Data leaves the
+		// decoded nonce nil rather than zero — a structurally valid log with
+		// no Data exercises the missing-fields branch, not the decode-failure
+		// or mismatch ones above.
+		filler := common.HexToAddress("0x3333333333333333333333333333333333333333")
+		signerChangeEvent := stakingInfoABI.Events[helper.SignerChangeEvent]
+		topicCols, err := abi.MakeTopics([]interface{}{big.NewInt(7)}, []interface{}{filler}, []interface{}{filler})
+		require.NoError(t, err)
+		topics := []common.Hash{signerChangeEvent.ID}
+		for _, col := range topicCols {
+			topics = append(topics, col[0])
+		}
+		missingFieldsReceipt := &types.Receipt{Logs: []*types.Log{{Address: common.HexToAddress(stakingInfoAddr), Topics: topics, Index: 0}}}
+
+		before := testutil.ToFloat64(metrics.SelfHealValidationRejected)
+
+		hit := &txAndLogIndex{LogIndex: "not-a-number", EventName: helper.StakeUpdateEvent}
+		err = rl.confirmStakeEventIdentity(nil, stakingInfoAddr, hit, 7, 3)
+		require.Error(t, err)
+
+		hit = &txAndLogIndex{LogIndex: "0", EventName: helper.StakeUpdateEvent}
+		err = rl.confirmStakeEventIdentity(&types.Receipt{}, stakingInfoAddr, hit, 7, 3)
+		require.Error(t, err)
+
+		err = rl.confirmStakeEventIdentity(mismatchReceipt, stakingInfoAddr, hit, 7, 99)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match requested")
+
+		hit = &txAndLogIndex{LogIndex: "0", EventName: helper.SignerChangeEvent}
+		err = rl.confirmStakeEventIdentity(missingFieldsReceipt, stakingInfoAddr, hit, 7, 3)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "missing validatorId/nonce")
+
+		after := testutil.ToFloat64(metrics.SelfHealValidationRejected)
+		require.Equal(t, float64(4), after-before)
+	})
+
+	for _, eventName := range []string{helper.StakeUpdateEvent, helper.SignerChangeEvent, helper.UnstakeInitEvent} {
+		t.Run(eventName+": fails to decode when the receipt has no matching log", func(t *testing.T) {
+			rl := newListener(t)
+			hit := &txAndLogIndex{LogIndex: "0", EventName: eventName}
+			receipt := &types.Receipt{} // no logs at all: Decode*Event can't find a match
+
+			err := rl.confirmStakeEventIdentity(receipt, stakingInfoAddr, hit, 7, 3)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "failed to decode")
+		})
+	}
+
+	t.Run("rejects an event name outside the three nonce-gated stake events", func(t *testing.T) {
+		rl := newListener(t)
+		hit := &txAndLogIndex{LogIndex: "0", EventName: "NotARealEvent"}
+		receipt := &types.Receipt{}
+
+		err := rl.confirmStakeEventIdentity(receipt, stakingInfoAddr, hit, 7, 3)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "unrecognized stake event name")
+	})
+
+	// oversizedLow64Match is 2^64+5: doesn't fit in uint64, but its low 64
+	// bits equal 5, so the old buggy decoded.ValidatorId.Uint64() != validatorId
+	// comparison would have wrongly treated this as a match against a
+	// requested validatorId/nonce of 5.
+	oversizedLow64Match := new(big.Int).Add(new(big.Int).Lsh(big.NewInt(1), 64), big.NewInt(5))
+
+	t.Run("StakeUpdate: rejects an oversized decoded validatorId whose Uint64() truncation would falsely match", func(t *testing.T) {
+		rl := newListener(t)
+		stakingInfoABI := rl.contractCaller.StakingInfoABI
+		event := stakingInfoABI.Events[helper.StakeUpdateEvent]
+		topicCols, err := abi.MakeTopics([]interface{}{oversizedLow64Match}, []interface{}{big.NewInt(3)}, []interface{}{big.NewInt(0)})
+		require.NoError(t, err)
+		topics := []common.Hash{event.ID}
+		for _, col := range topicCols {
+			topics = append(topics, col[0])
+		}
+		log := &types.Log{Address: common.HexToAddress(stakingInfoAddr), Topics: topics, Index: 0}
+		receipt := &types.Receipt{Logs: []*types.Log{log}}
+
+		hit := &txAndLogIndex{LogIndex: "0", EventName: helper.StakeUpdateEvent}
+		err = rl.confirmStakeEventIdentity(receipt, stakingInfoAddr, hit, 5, 3)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match requested")
+	})
+
+	t.Run("SignerChange: rejects an oversized decoded nonce whose Uint64() truncation would falsely match", func(t *testing.T) {
+		rl := newListener(t)
+		stakingInfoABI := rl.contractCaller.StakingInfoABI
+		event := stakingInfoABI.Events[helper.SignerChangeEvent]
+		var nonIndexed abi.Arguments
+		for _, arg := range event.Inputs {
+			if !arg.Indexed {
+				nonIndexed = append(nonIndexed, arg)
+			}
+		}
+		data, err := nonIndexed.Pack(oversizedLow64Match, []byte{})
+		require.NoError(t, err)
+		filler := common.HexToAddress("0x3333333333333333333333333333333333333333")
+		topicCols, err := abi.MakeTopics([]interface{}{big.NewInt(7)}, []interface{}{filler}, []interface{}{filler})
+		require.NoError(t, err)
+		topics := []common.Hash{event.ID}
+		for _, col := range topicCols {
+			topics = append(topics, col[0])
+		}
+		log := &types.Log{Address: common.HexToAddress(stakingInfoAddr), Topics: topics, Data: data, Index: 0}
+		receipt := &types.Receipt{Logs: []*types.Log{log}}
+
+		hit := &txAndLogIndex{LogIndex: "0", EventName: helper.SignerChangeEvent}
+		err = rl.confirmStakeEventIdentity(receipt, stakingInfoAddr, hit, 7, 5)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "does not match requested")
+	})
+
+	// nonce is non-indexed on SignerChange/UnstakeInit, so it's only ever
+	// populated from the log's Data — an empty Data leaves it nil rather than
+	// zero. A structurally valid log (right address, right topic0, right
+	// indexed args) with no Data must be rejected with an error, not panic
+	// Cmp-ing against a nil *big.Int.
+	filler := common.HexToAddress("0x3333333333333333333333333333333333333333")
+	emptyDataIndexedArgs := map[string][]interface{}{
+		// SignerChange(uint256 indexed validatorId, uint256 nonce, address indexed oldSigner, address indexed newSigner, bytes signerPubkey)
+		helper.SignerChangeEvent: {big.NewInt(7), filler, filler},
+		// UnstakeInit(address indexed user, uint256 indexed validatorId, uint256 nonce, uint256 deactivationEpoch, uint256 indexed amount)
+		helper.UnstakeInitEvent: {filler, big.NewInt(7), big.NewInt(0)},
+	}
+	for _, eventName := range []string{helper.SignerChangeEvent, helper.UnstakeInitEvent} {
+		t.Run(eventName+": rejects a log with empty Data instead of panicking on a nil decoded nonce", func(t *testing.T) {
+			rl := newListener(t)
+			stakingInfoABI := rl.contractCaller.StakingInfoABI
+			event := stakingInfoABI.Events[eventName]
+			indexedArgs := emptyDataIndexedArgs[eventName]
+			topicCols, err := abi.MakeTopics([]interface{}{indexedArgs[0]}, []interface{}{indexedArgs[1]}, []interface{}{indexedArgs[2]})
+			require.NoError(t, err)
+			topics := []common.Hash{event.ID}
+			for _, col := range topicCols {
+				topics = append(topics, col[0])
+			}
+			log := &types.Log{Address: common.HexToAddress(stakingInfoAddr), Topics: topics, Index: 0} // Data deliberately left nil/empty
+			receipt := &types.Receipt{Logs: []*types.Log{log}}
+
+			hit := &txAndLogIndex{LogIndex: "0", EventName: eventName}
+			require.NotPanics(t, func() {
+				err = rl.confirmStakeEventIdentity(receipt, stakingInfoAddr, hit, 7, 3)
+			})
+			require.Error(t, err)
+			require.Contains(t, err.Error(), "missing validatorId/nonce")
+		})
+	}
 }
 
 // orchestrationTest exercises processStakeEvents → recoverStakeEventsForValidator
