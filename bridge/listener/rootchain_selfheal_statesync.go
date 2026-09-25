@@ -13,9 +13,11 @@ import (
 )
 
 // resolveRecoverableStateSyncRange finds the portion of [gapStart, gapEnd]
-// that's actually worth recovering and logs the outcome. ok is false when
-// there's nothing to do this cycle (an error, already logged, or none of the
-// gap is old enough yet) — the caller should return without looping.
+// that's actually worth recovering and logs the outcome. ok is false only
+// when none of the gap is old enough yet — the caller should return without
+// looping. A boundary-discovery error does not make ok false: it falls back
+// to the full gap instead, since one bad probe isn't proof the rest of the
+// gap is unrecoverable.
 func (rl *RootChainListener) resolveRecoverableStateSyncRange(ctx context.Context, gapStart, gapEnd int64) (start, end int64, ok bool) {
 	// The gap between heimdall's stateId and the subgraph's latest is not
 	// necessarily a real miss — it's what normal L1 finality lag looks like
@@ -30,8 +32,15 @@ func (rl *RootChainListener) resolveRecoverableStateSyncRange(ctx context.Contex
 	// O(gap).
 	recoverableEnd, err := rl.findRecoverableStateSyncBoundary(ctx, gapStart, gapEnd)
 	if err != nil {
-		rl.Logger.Error("Self-healing: failed to determine recoverable state-sync boundary", "gapStart", gapStart, "gapEnd", gapEnd, "error", err)
-		return 0, 0, false
+		// A probe failure (a bad row, a transient subgraph/RPC blip) isn't
+		// evidence the gap is unrecoverable — it's one lookup that didn't
+		// resolve. Fall back to attempting every ID individually, exactly
+		// like before this optimization existed: recoverStateSyncId already
+		// tolerates and logs a per-ID failure without aborting the rest of
+		// the gap, so a single permanently bad row can't block recovery of
+		// unrelated missing state syncs.
+		rl.Logger.Warn("Self-healing: failed to determine recoverable state-sync boundary; falling back to per-ID recovery", "gapStart", gapStart, "gapEnd", gapEnd, "error", err)
+		return gapStart, gapEnd, true
 	}
 	if recoverableEnd < gapStart {
 		rl.Logger.Info("Self-healing: entire state-sync gap is within the finality depth window; nothing to recover yet", "gapStart", gapStart, "gapEnd", gapEnd)
@@ -138,20 +147,9 @@ func waitOnTimer(ctx context.Context, sleepTimer *time.Timer, d time.Duration) b
 // cases (the whole gap is too recent, or the whole gap is already old
 // enough) resolve with a single lookup instead of a full search.
 func (rl *RootChainListener) findRecoverableStateSyncBoundary(ctx context.Context, lo, hi int64) (int64, error) {
-	loOldEnough, err := rl.stateSyncOldEnough(ctx, lo)
-	if err != nil {
-		return 0, err
-	}
-	if !loOldEnough {
-		return lo - 1, nil
-	}
-
-	hiOldEnough, err := rl.stateSyncOldEnough(ctx, hi)
-	if err != nil {
-		return 0, err
-	}
-	if hiOldEnough {
-		return hi, nil
+	boundary, done, err := rl.checkStateSyncBoundaryEndpoints(ctx, lo, hi)
+	if err != nil || done {
+		return boundary, err
 	}
 
 	for lo < hi {
@@ -170,6 +168,34 @@ func (rl *RootChainListener) findRecoverableStateSyncBoundary(ctx context.Contex
 	}
 
 	return lo, nil
+}
+
+// checkStateSyncBoundaryEndpoints handles findRecoverableStateSyncBoundary's
+// fast paths: lo not old enough (nothing in the gap is recoverable yet), a
+// single-id gap (one probe already answers it), and hi already old enough
+// (the whole gap is recoverable). done is true once boundary is fully
+// resolved this way, without needing the binary search below.
+func (rl *RootChainListener) checkStateSyncBoundaryEndpoints(ctx context.Context, lo, hi int64) (boundary int64, done bool, err error) {
+	loOldEnough, err := rl.stateSyncOldEnough(ctx, lo)
+	if err != nil {
+		return 0, true, err
+	}
+	if !loOldEnough {
+		return lo - 1, true, nil
+	}
+	if lo == hi {
+		return lo, true, nil
+	}
+
+	hiOldEnough, err := rl.stateSyncOldEnough(ctx, hi)
+	if err != nil {
+		return 0, true, err
+	}
+	if hiOldEnough {
+		return hi, true, nil
+	}
+
+	return 0, false, nil
 }
 
 // stateSyncOldEnough resolves stateId's L1 event and reports whether its

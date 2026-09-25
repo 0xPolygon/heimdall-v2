@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -31,7 +32,7 @@ import (
 func TestFindRecoverableStateSyncBoundary(t *testing.T) {
 	t.Run("all ids already old enough resolves to hi from the fast path", func(t *testing.T) {
 		ids := []int64{500, 501, 502, 503}
-		rl := newStateSyncBoundaryTestListener(t, ids, func(int64) bool { return true }, nil)
+		rl, _ := newStateSyncBoundaryTestListener(t, ids, func(int64) bool { return true }, nil)
 
 		got, err := rl.findRecoverableStateSyncBoundary(t.Context(), 500, 503)
 		require.NoError(t, err)
@@ -40,7 +41,7 @@ func TestFindRecoverableStateSyncBoundary(t *testing.T) {
 
 	t.Run("all ids too recent resolves to lo-1", func(t *testing.T) {
 		ids := []int64{600, 601, 602, 603}
-		rl := newStateSyncBoundaryTestListener(t, ids, func(int64) bool { return false }, nil)
+		rl, _ := newStateSyncBoundaryTestListener(t, ids, func(int64) bool { return false }, nil)
 
 		got, err := rl.findRecoverableStateSyncBoundary(t.Context(), 600, 603)
 		require.NoError(t, err)
@@ -50,7 +51,7 @@ func TestFindRecoverableStateSyncBoundary(t *testing.T) {
 	t.Run("mixed range binary-searches the exact boundary", func(t *testing.T) {
 		const cutoff = 703 // 700..703 old enough, 704..707 still too recent
 		ids := []int64{700, 701, 702, 703, 704, 705, 706, 707}
-		rl := newStateSyncBoundaryTestListener(t, ids, func(id int64) bool { return id <= cutoff }, nil)
+		rl, _ := newStateSyncBoundaryTestListener(t, ids, func(id int64) bool { return id <= cutoff }, nil)
 
 		got, err := rl.findRecoverableStateSyncBoundary(t.Context(), 700, 707)
 		require.NoError(t, err)
@@ -58,22 +59,64 @@ func TestFindRecoverableStateSyncBoundary(t *testing.T) {
 	})
 
 	t.Run("a failed probe propagates instead of silently resolving a boundary", func(t *testing.T) {
-		rl := newStateSyncBoundaryTestListener(t, []int64{800}, func(int64) bool { return true }, map[int64]bool{800: true})
+		rl, _ := newStateSyncBoundaryTestListener(t, []int64{800}, func(int64) bool { return true }, map[int64]bool{800: true})
 
 		_, err := rl.findRecoverableStateSyncBoundary(t.Context(), 800, 802)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "resolving stateId 800 for age check")
 		require.Contains(t, err.Error(), "no state synced event found")
 	})
+
+	t.Run("a single-id gap probes the age check exactly once", func(t *testing.T) {
+		rl, hits := newStateSyncBoundaryTestListener(t, []int64{900}, func(int64) bool { return true }, nil)
+
+		got, err := rl.findRecoverableStateSyncBoundary(t.Context(), 900, 900)
+		require.NoError(t, err)
+		require.Equal(t, int64(900), got)
+		require.Equal(t, []int64{900}, hits.snapshot(), "lo==hi must not re-probe the same id as hi")
+	})
+}
+
+// TestResolveRecoverableStateSyncRange_FallsBackOnProbeFailure exercises the
+// wrapper's failure handling directly: a boundary-discovery error must not
+// abandon the whole cycle, since a single bad row elsewhere in the gap would
+// otherwise block recovery of every unrelated missing state sync in it.
+func TestResolveRecoverableStateSyncRange_FallsBackOnProbeFailure(t *testing.T) {
+	rl, _ := newStateSyncBoundaryTestListener(t, []int64{1000}, func(int64) bool { return true }, map[int64]bool{1000: true})
+
+	start, end, ok := rl.resolveRecoverableStateSyncRange(t.Context(), 1000, 1002)
+	require.True(t, ok, "a probe failure must fall back to the full gap, not skip the cycle")
+	require.Equal(t, int64(1000), start)
+	require.Equal(t, int64(1002), end)
 }
 
 const stateSyncBoundaryStateSenderAddr = "0xB59f30f2A5C39A0B7C8b1e4b6C9E6a52B4a8A0FE"
 
+// subgraphCallLog records, in order, every stateId the subgraph mock was
+// queried for — tests use it to assert on probe counts, not just outcomes.
+type subgraphCallLog struct {
+	mu  sync.Mutex
+	ids []int64
+}
+
+func (c *subgraphCallLog) record(id int64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.ids = append(c.ids, id)
+}
+
+func (c *subgraphCallLog) snapshot() []int64 {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return append([]int64(nil), c.ids...)
+}
+
 // newStateSyncBoundaryTestListener wires a self-heal listener against a
 // synthetic subgraph and L1 RPC serving one real, ABI-encodable StateSynced
 // log per id in ids (skipping ids in missing, to simulate a subgraph miss),
-// each with a main-chain block time old enough per isOld(id).
-func newStateSyncBoundaryTestListener(t *testing.T, ids []int64, isOld func(int64) bool, missing map[int64]bool) *RootChainListener {
+// each with a main-chain block time old enough per isOld(id). The returned
+// subgraphCallLog records every id actually probed.
+func newStateSyncBoundaryTestListener(t *testing.T, ids []int64, isOld func(int64) bool, missing map[int64]bool) (*RootChainListener, *subgraphCallLog) {
 	t.Helper()
 
 	stateSenderABI := stateSenderABIForTest(t)
@@ -109,8 +152,9 @@ func newStateSyncBoundaryTestListener(t *testing.T, ids []int64, isOld func(int6
 		txHashByID[id] = txHash
 	}
 
+	hits := &subgraphCallLog{}
 	l1URL := newStateSyncL1RPCServer(t, receipts, blocks)
-	subgraphURL := newStateSyncSubgraphServer(t, txHashByID)
+	subgraphURL := newStateSyncSubgraphServer(t, txHashByID, hits)
 
 	rl := newCheckpointAckTestListener(t, checkpointAckTestRoutes{
 		util.ChainManagerParamsURL: `{"params":{"chain_params":{
@@ -126,7 +170,7 @@ func newStateSyncBoundaryTestListener(t *testing.T, ids []int64, isOld func(int6
 	require.NoError(t, err)
 	rl.contractCaller.MainChainClient = client
 
-	return rl
+	return rl, hits
 }
 
 // newStateSyncBlockJSON renders a minimal but structurally valid
@@ -199,8 +243,9 @@ var stateSyncSubgraphIDRe = regexp.MustCompile(`stateId:\s*(-?\d+)`)
 
 // newStateSyncSubgraphServer answers a getStateSynced query with the
 // registered tx hash for the requested stateId, or an empty result set
-// (a genuine subgraph miss) for any id not in txHashByID.
-func newStateSyncSubgraphServer(t *testing.T, txHashByID map[int64]common.Hash) string {
+// (a genuine subgraph miss) for any id not in txHashByID. Every request is
+// recorded on hits, in order, regardless of outcome.
+func newStateSyncSubgraphServer(t *testing.T, txHashByID map[int64]common.Hash, hits *subgraphCallLog) string {
 	t.Helper()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -211,6 +256,7 @@ func newStateSyncSubgraphServer(t *testing.T, txHashByID map[int64]common.Hash) 
 		require.NotNil(t, m, "no stateId found in subgraph query: %s", body)
 		id, err := strconv.ParseInt(string(m[1]), 10, 64)
 		require.NoError(t, err)
+		hits.record(id)
 
 		txHash, ok := txHashByID[id]
 		if !ok {
