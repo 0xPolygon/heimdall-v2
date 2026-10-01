@@ -79,6 +79,38 @@ func TestLogLevelOptionOrDefault(t *testing.T) {
 	})
 }
 
+func TestLogFormatOption(t *testing.T) {
+	t.Run("json format enables JSON output", func(t *testing.T) {
+		cfg := applyLogFormat(t, "json", false)
+		require.True(t, cfg.OutputJSON)
+	})
+
+	t.Run("plain format enables console output with color", func(t *testing.T) {
+		cfg := applyLogFormat(t, "plain", false)
+		require.False(t, cfg.OutputJSON)
+		require.True(t, cfg.Color)
+	})
+
+	t.Run("plain format honors noColor", func(t *testing.T) {
+		cfg := applyLogFormat(t, "plain", true)
+		require.False(t, cfg.OutputJSON)
+		require.False(t, cfg.Color)
+	})
+
+	t.Run("unset format falls back to console output", func(t *testing.T) {
+		cfg := applyLogFormat(t, "", false)
+		require.False(t, cfg.OutputJSON)
+	})
+}
+
+func applyLogFormat(t *testing.T, logFormat string, noColor bool) logger.Config {
+	t.Helper()
+	opt := LogFormatOption(logFormat, noColor)
+	var cfg logger.Config
+	opt(&cfg)
+	return cfg
+}
+
 func applyLogLevel(t *testing.T, s string) logger.Config {
 	t.Helper()
 	opt, err := LogLevelOption(s)

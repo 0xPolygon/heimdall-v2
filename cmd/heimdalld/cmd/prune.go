@@ -13,6 +13,7 @@ import (
 	blockidxkv "github.com/cometbft/cometbft/state/indexer/block/kv"
 	"github.com/cometbft/cometbft/state/txindex/kv"
 	"github.com/cometbft/cometbft/store"
+	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
 	"github.com/spf13/cobra"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -44,7 +45,7 @@ func PruneCmd() *cobra.Command {
 				}
 				dataDir = filepath.Join(homeDir, ".cometbft", "data")
 			}
-			logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout))
+			logger := servercmtlog.CometLoggerWrapper{Logger: helper.Logger}
 
 			// Report parsed values (placeholder; no pruning logic)
 			logger.Info("Parsed prune-blocks parameters",

@@ -44,6 +44,16 @@ This is a critical architectural distinction:
 
 If a change adds an `IContractCaller` call, verify it's in a side handler path, never a post handler path.
 
+## Panic Isolation for External Calls (`helper.RunIsolated`)
+
+External RPC clients can panic on a malformed or hostile response. `helper.RunIsolated(func() (T, error))` runs the call on its own goroutine, blocks synchronously on the result, and recovers any panic into a plain `error` instead of letting it crash the node. It never re-panics and adds no timeout of its own, so it doesn't change a call's timing or its non-panic return value. A recovered panic is also wrapped with `helper.ErrRecoveredPanic`, so a caller could distinguish it from an ordinary error if needed.
+
+Appropriate for side handlers reached from `ExtendVote`: a recovered panic just becomes another `error`, degrading to the same NO-vote path any other error already takes there.
+
+For the same `IsValidCheckpoint`-style calls also reached from `ProcessProposal`/`VerifyVoteExtension`: `wrapBorQueryError` (`x/checkpoint/types/merkle.go`) wraps a recovered panic with the same `borTypes.ErrFailedToQueryBor` sentinel an ordinary Bor error gets, so both reach the same `tolerateBorErr` carve-out. This is intentional. Whether a given malformed response panics or returns a clean error depends on which Bor/Heimdall version and transport the observing validator runs, not on the input itself, and this repo's release process runs mixed validator versions for extended windows during every rollout. Treating a panic more strictly than an ordinary error here risks validators on different versions reaching different ACCEPT/REJECT verdicts for the identical proposal, which breaks the determinism CometBFT requires of `ProcessProposal`/`VerifyVoteExtension` (see `consensus-critical.md`).
+
+When adding a new `RunIsolated` call anywhere upstream of an existing error-tolerance carve-out in a `ProcessProposal`/`VerifyVoteExtension` path, match the treatment an ordinary error already gets there; don't special-case the panic unless the failure mode is provably deterministic across client versions. Do not introduce this pattern in post-handlers/`PreBlocker`; external calls are already banned there outright.
+
 ## Transaction Construction (`helper/tx.go`)
 
 - `GenerateAuthObj()` creates EIP-1559 `TransactOpts` -- verify gas tip cap and fee cap have upper bounds to prevent overpaying. Don't blindly trust `ethclient.SuggestGasPrice()` from remote RPCs -- a malicious RPC can suggest extreme gas prices.

@@ -162,7 +162,7 @@ func (srv sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetx
 	}
 
 	// fetch current child block
-	childBlock, err := srv.k.contractCaller.GetBorChainBlock(ctx, nil)
+	childBlock, err := fetchBorHeader(ctx, srv.k.contractCaller, nil)
 	if err != nil {
 		logger.Error("Error fetching current child block", "error", err)
 		return sidetxs.Vote_VOTE_NO
@@ -251,13 +251,37 @@ func (srv sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	childBlock, err := srv.k.contractCaller.GetBorChainBlock(ctx, nil)
+	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock < types.PlannedDowntimeMinRange {
+		logger.Error("Time range for planned downtime is too small in bor side handler",
+			"startBlock", msg.DowntimeRange.StartBlock,
+			"endBlock", msg.DowntimeRange.EndBlock,
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	childBlock, err := fetchBorHeader(ctx, srv.k.contractCaller, nil)
 	if err != nil {
 		logger.Error("Error fetching current child block", "error", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	childBlockNumber := childBlock.Number.Uint64()
+	minimumStartBlock := childBlockNumber + types.PlannedDowntimeMinimumTimeInFuture
+	if msg.DowntimeRange.StartBlock < minimumStartBlock {
+		logger.Error("Start block must be at least minFuture in the future",
+			"startBlock", msg.DowntimeRange.StartBlock,
+			"minimumStartBlock", minimumStartBlock,
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	if msg.DowntimeRange.EndBlock > childBlockNumber+types.PlannedDowntimeMaximumTimeInFuture {
+		logger.Error("End block for planned downtime is too far in the future",
+			"currentBlock", childBlockNumber,
+			"endBlock", msg.DowntimeRange.EndBlock,
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
 
 	activeProducers, err := srv.k.GetProducersByBlockNumber(ctx, msg.DowntimeRange.StartBlock)
 	if err != nil {
@@ -324,30 +348,6 @@ func (srv sideMsgServer) SideHandleSetProducerDowntime(ctx sdk.Context, msgI sdk
 			logger.Error("Target producer is not in the candidate producer set", "targetProducerId", msg.TargetProducerId)
 			return sidetxs.Vote_VOTE_NO
 		}
-	}
-
-	if msg.DowntimeRange.EndBlock-msg.DowntimeRange.StartBlock < types.PlannedDowntimeMinRange {
-		logger.Error("Time range for planned downtime is too small in bor side handler",
-			"startBlock", msg.DowntimeRange.StartBlock,
-			"endBlock", msg.DowntimeRange.EndBlock,
-		)
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	if msg.DowntimeRange.StartBlock < childBlockNumber+types.PlannedDowntimeMinimumTimeInFuture {
-		logger.Error("Start block must be at least minFuture in the future",
-			"startBlock", msg.DowntimeRange.StartBlock,
-			"minimumStartBlock", childBlockNumber+types.PlannedDowntimeMinimumTimeInFuture+1,
-		)
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	if msg.DowntimeRange.EndBlock > childBlockNumber+types.PlannedDowntimeMaximumTimeInFuture {
-		logger.Error("End block for planned downtime is too far in the future",
-			"currentBlock", childBlockNumber,
-			"endBlock", msg.DowntimeRange.EndBlock,
-		)
-		return sidetxs.Vote_VOTE_NO
 	}
 
 	logger.Debug(helper.LogSuccessfullyValidated("SetProducerDowntime"))
