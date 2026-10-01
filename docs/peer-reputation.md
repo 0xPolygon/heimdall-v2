@@ -146,9 +146,6 @@ identity, separate ledger, or identity-binding handshake is introduced.
 
 ## Metrics and rollout gate
 
-Import `docs/peer-reputation-dashboard.json` into Grafana and select the existing
-Prometheus datasource. The template is not automatically installed.
-
 - `heimdall_peer_reputation_reason_events_total{reason}`: individual classified events.
 - `heimdall_peer_reputation_reason_windows_total{reason}`: distinct peer windows per reason.
 - `heimdall_peer_reputation_bytes_total{family}`: classified encoded envelope bytes.
