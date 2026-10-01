@@ -124,6 +124,10 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
+			if err := installPeerReputation(cmd, serverCtx); err != nil {
+				return err
+			}
+
 			// Get log_level from serverCtx.Viper
 			logLevelStr := serverCtx.Viper.GetString(flags.FlagLogLevel)
 
