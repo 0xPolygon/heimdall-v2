@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"math/big"
 	"math/rand"
+	"strings"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -416,4 +417,208 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventRecord_ReplayReturnsError() {
 	storedEventRecord, getErr := ck.GetEventRecord(ctx, msg.Id)
 	require.NoError(getErr)
 	require.NotNil(storedEventRecord)
+}
+
+func (s *KeeperTestSuite) TestSideHandleMsgEventRecordTxHashActivation() {
+	ctx, ck, contractCaller := s.ctx, s.keeper, &s.contractCaller
+	require := s.Require()
+	originalLuganoHeight := helper.GetLuganoHeight()
+	helper.SetLuganoHeight(100)
+	s.T().Cleanup(func() { helper.SetLuganoHeight(originalLuganoHeight) })
+
+	ac := address.NewHexCodec()
+	contractAddress, err := ac.StringToBytes(Address2)
+	require.NoError(err)
+	msg := types.NewMsgEventRecord(
+		util.FormatAddress(Address1),
+		"0x00"+TxHash1[2:],
+		1,
+		600,
+		1,
+		contractAddress,
+		nil,
+		s.chainId,
+	)
+
+	receipt := &ethTypes.Receipt{BlockNumber: new(big.Int).SetUint64(msg.BlockNumber)}
+	event := &statesender.StatesenderStateSynced{
+		Id:              new(big.Int).SetUint64(msg.Id),
+		ContractAddress: common.HexToAddress(msg.ContractAddress),
+		Data:            msg.Data,
+	}
+	ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
+	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything, mock.Anything).Return(receipt, nil).Once()
+	contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil).Once()
+
+	require.Equal(sidetxs.Vote_VOTE_YES, s.sideHandler(ctx.WithBlockHeight(99), &msg))
+	require.Equal(sidetxs.Vote_VOTE_NO, s.sideHandler(ctx.WithBlockHeight(100), &msg))
+}
+
+func (s *KeeperTestSuite) TestPostHandleMsgEventRecordTxHashActivation() {
+	ctx, ck := s.ctx, s.keeper
+	require := s.Require()
+	originalLuganoHeight := helper.GetLuganoHeight()
+	helper.SetLuganoHeight(100)
+	s.T().Cleanup(func() { helper.SetLuganoHeight(originalLuganoHeight) })
+
+	postHandler := clerkKeeper.NewSideMsgServerImpl(&ck).(interface {
+		PostHandleMsgEventRecord(sdk.Context, sdk.Msg, sidetxs.Vote) error
+	})
+	ac := address.NewHexCodec()
+	contractAddress, err := ac.StringToBytes(Address2)
+	require.NoError(err)
+
+	newMessage := func(id uint64, txHash string) types.MsgEventRecord {
+		return types.NewMsgEventRecord(
+			util.FormatAddress(Address1), txHash, id, id, id, contractAddress, nil, s.chainId,
+		)
+	}
+
+	oversizedHash := "0x00" + TxHash1[2:]
+	legacyMsg := newMessage(1001, oversizedHash)
+	// A tx included at H-1 is finalized by the post-handler at H.
+	err = postHandler.PostHandleMsgEventRecord(ctx.WithBlockHeight(100), &legacyMsg, sidetxs.Vote_VOTE_YES)
+	require.NoError(err)
+	stored, err := ck.GetEventRecord(ctx, legacyMsg.Id)
+	require.NoError(err)
+	require.Equal(oversizedHash, stored.TxHash)
+
+	invalidMsg := newMessage(1002, oversizedHash)
+	err = postHandler.PostHandleMsgEventRecord(ctx.WithBlockHeight(101), &invalidMsg, sidetxs.Vote_VOTE_YES)
+	require.ErrorIs(err, types.ErrInvalidTxHash)
+	require.False(ck.HasEventRecord(ctx, invalidMsg.Id))
+
+	uppercaseMsg := newMessage(1003, strings.ToUpper(TxHash1))
+	err = postHandler.PostHandleMsgEventRecord(ctx.WithBlockHeight(101), &uppercaseMsg, sidetxs.Vote_VOTE_YES)
+	require.NoError(err)
+	stored, err = ck.GetEventRecord(ctx, uppercaseMsg.Id)
+	require.NoError(err)
+	require.Equal(strings.ToUpper(TxHash1), stored.TxHash)
+}
+
+// contractAddressHomoglyph is U+2126 OHM SIGN, 3 UTF-8 bytes, distinct from and easily
+// confused with U+03A9 GREEK CAPITAL LETTER OMEGA (2 bytes) -- only the former's
+// strings.ToLower mapping (to U+03C9 GREEK SMALL LETTER OMEGA, 2 bytes) changes byte
+// length, so the exact code point matters and is spelled out explicitly here.
+const contractAddressHomoglyph = "Ω"
+
+// TestPostHandleMsgEventRecord_ContractAddressNormalized reproduces the reported Heimdall
+// vs Bor address-decoder mismatch. Appending contractAddressHomoglyph to an otherwise-valid
+// contract address makes heimdall's HexCodec.StringToBytes (ToLower, then decode) resolve
+// to the real 20 address bytes -- so the side handler would vote YES -- while go-ethereum's
+// common.HexToAddress (no ToLower, used independently by Bor) resolves the SAME raw string
+// to a different, nibble-shifted address, because FromHex's odd/even-length zero-pad
+// decision flips between the two decodes. Once persisted verbatim, Bor would route the
+// state sync to the wrong address permanently (HasEventRecord blocks any correction).
+func (s *KeeperTestSuite) TestPostHandleMsgEventRecord_ContractAddressNormalized() {
+	ctx, ck, chainId := s.ctx.WithBlockHeight(1), s.keeper, s.chainId
+	require := s.Require()
+
+	orig := helper.GetLuganoHeight()
+	s.T().Cleanup(func() { helper.SetLuganoHeight(orig) })
+
+	postHandler := clerkKeeper.NewSideMsgServerImpl(&s.keeper).(interface {
+		PostHandleMsgEventRecord(sdk.Context, sdk.Msg, sidetxs.Vote) error
+	})
+
+	ac := address.NewHexCodec()
+
+	realAddr := common.HexToAddress(util.FormatAddress(Address1))
+	craftedContractAddress := realAddr.Hex() + contractAddressHomoglyph // homoglyph appended after a full, valid 40-hex-char address
+
+	// The crafted string must decode, gate-side, to the real address bytes -- otherwise the
+	// side handler would never have voted YES for it in the first place.
+	gateBytes, err := ac.StringToBytes(craftedContractAddress)
+	require.NoError(err)
+	require.Equal(realAddr, common.BytesToAddress(gateBytes), "crafted address must pass the gate's byte-equality check")
+
+	// ... and it must decode differently on Bor's independent, non-ToLower'd path, or this
+	// isn't the reported bug at all.
+	require.NotEqual(realAddr, common.HexToAddress(craftedContractAddress), "crafted address must fool Bor's decoder")
+
+	// Built as a raw struct, not via NewMsgEventRecord: that constructor round-trips the
+	// contract address through BytesToString and can never produce a malformed value. An
+	// attacker's raw tx bytes decode straight into this struct with no such sanitization.
+	msg := types.MsgEventRecord{
+		From:            util.FormatAddress(Address1),
+		TxHash:          TxHash1,
+		LogIndex:        1,
+		BlockNumber:     1,
+		ContractAddress: craftedContractAddress,
+		Data:            make([]byte, 0),
+		Id:              42,
+		ChainId:         chainId,
+	}
+
+	s.Run("PreLugano_StoresRawAndDivergesFromBor", func() {
+		helper.SetLuganoHeight(0)
+		require.NoError(postHandler.PostHandleMsgEventRecord(ctx, &msg, sidetxs.Vote_VOTE_YES))
+
+		stored, getErr := ck.GetEventRecord(ctx, msg.Id)
+		require.NoError(getErr)
+		require.Equal(craftedContractAddress, stored.Contract, "pre-fork, the raw attacker string is persisted verbatim")
+		require.NotEqual(realAddr, common.HexToAddress(stored.Contract), "pre-fork, Bor would misroute the state sync")
+	})
+
+	s.Run("TxIncludedJustBeforeLugano_PostHandlerHeightAtActivation_StoresRaw", func() {
+		msg.Id = 43 // fresh id: HasEventRecord would otherwise reject a replay
+		helper.SetLuganoHeight(2)
+		// Tx included at height 1 (= luganoHeight-1, still pre-Lugano) is finalized by the
+		// post-handler at height 2 (= luganoHeight). Without the -1 adjustment in
+		// contractAddressForRecord, the post-handler's own execution height reaching
+		// activation would incorrectly normalize this tx, diverging from the raw address
+		// HandleMsgEventRecord already emitted for the identical tx at its true (pre-Lugano)
+		// inclusion height -- the exact bug this test guards against.
+		postCtx := ctx.WithBlockHeight(2)
+		require.NoError(postHandler.PostHandleMsgEventRecord(postCtx, &msg, sidetxs.Vote_VOTE_YES))
+
+		stored, getErr := ck.GetEventRecord(postCtx, msg.Id)
+		require.NoError(getErr)
+		require.Equal(craftedContractAddress, stored.Contract,
+			"a tx included just before Lugano must still be stored raw, even though the post-handler's own height already reached activation")
+	})
+
+	s.Run("AtLugano_NormalizesAndAgreesWithBor", func() {
+		msg.Id = 46 // fresh id: HasEventRecord would otherwise reject a replay
+		helper.SetLuganoHeight(1)
+		// A tx included at H-1 is finalized by the post-handler at H: contractAddressForRecord
+		// gates on ctx.BlockHeight()-1, so the post-handler call representing a tx included at
+		// the activation height itself must run one height above it.
+		eventCtx := ctx.WithBlockHeight(2).WithEventManager(sdk.NewEventManager())
+		require.NoError(postHandler.PostHandleMsgEventRecord(eventCtx, &msg, sidetxs.Vote_VOTE_YES))
+
+		stored, getErr := ck.GetEventRecord(eventCtx, msg.Id)
+		require.NoError(getErr)
+		require.Equal(realAddr, common.HexToAddress(stored.Contract), "at/after Lugano, the stored address must agree with what Bor decodes")
+
+		// The emitted event must not leak the raw attacker string either -- an indexer or
+		// relayer reading AttributeKeyRecordContract from the event stream, rather than
+		// querying the stored record, must see the same normalized address.
+		var recordEvent sdk.Event
+		var foundEvent bool
+		for _, e := range eventCtx.EventManager().Events() {
+			if e.Type == types.EventTypeRecord {
+				recordEvent, foundEvent = e, true
+				break
+			}
+		}
+		require.True(foundEvent, "PostHandleMsgEventRecord must emit an EventTypeRecord event")
+		attr, foundAttr := recordEvent.GetAttribute(types.AttributeKeyRecordContract)
+		require.True(foundAttr, "emitted event must carry the contract attribute")
+		require.Equal(stored.Contract, attr.Value, "emitted event's contract attribute must match the normalized, persisted address")
+	})
+
+	s.Run("AtLugano_UndecodableAddressReturnsErrorAndIsNotStored", func() {
+		undecodable := msg
+		undecodable.Id = 44
+		undecodable.ContractAddress = "not-a-hex-address"
+		helper.SetLuganoHeight(1)
+
+		err := postHandler.PostHandleMsgEventRecord(ctx.WithBlockHeight(2), &undecodable, sidetxs.Vote_VOTE_YES)
+		require.Error(err)
+
+		stored, getErr := ck.GetEventRecord(ctx, undecodable.Id)
+		require.Error(getErr)
+		require.Nil(stored)
+	})
 }
