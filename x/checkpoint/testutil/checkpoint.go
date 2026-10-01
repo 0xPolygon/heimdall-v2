@@ -9,6 +9,9 @@ import (
 )
 
 // GenRandCheckpoint returns a random checkpoint header
+// headerSize is an offset, not an inclusive length: the generated window spans
+// headerSize+1 blocks, so a caller wanting a window the checkpoint length bound accepts
+// has to pass an offset one below the intended length.
 func GenRandCheckpoint(start, headerSize, id uint64) (headerBlock types.Checkpoint) {
 	end := start + headerSize
 	borChainID := "1234"

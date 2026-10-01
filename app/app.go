@@ -472,6 +472,10 @@ func NewHeimdallApp(
 		if err := app.LoadLatestVersion(); err != nil {
 			panic(fmt.Errorf("error loading last version: %w", err))
 		}
+		spanCtx := app.NewUncachedContext(true, cmtproto.Header{Height: app.LastBlockHeight()})
+		if err := app.BorKeeper.WarmSpanEndFrontier(spanCtx); err != nil {
+			logger.Warn("Unable to warm Bor span frontier; it will initialize on first use", "error", err)
+		}
 	}
 
 	metrics.InitMetrics()
@@ -496,7 +500,7 @@ func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx
 	// Only apply veBlop validation during normal CheckTx (not recheck)
 	if req.Type == abci.CheckTxType_New {
 		// Gated on the next height so the mempool filter tracks ProcessProposal's fork boundary.
-		if hasOverNestedTx(app.LastBlockHeight()+1, [][]byte{req.Tx}) {
+		if hasOverNestedTx(app.InterfaceRegistry(), app.LastBlockHeight()+1, [][]byte{req.Tx}) {
 			return &abci.ResponseCheckTx{Code: sdkerrors.ErrTxDecode.ABCICode(), Log: "transaction exceeds the message nesting bound"}, nil
 		}
 		tx, err := app.TxDecode(req.Tx)

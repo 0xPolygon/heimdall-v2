@@ -135,9 +135,16 @@ func TestProcessProposalHandler_RejectsBorSideMessages(t *testing.T) {
 	})
 }
 
-// At/after Kyoto, ProcessProposal rejects a proposal carrying an over-nested
-// transaction before the ExtendedCommitInfo is even decoded, so the expensive
-// unknown-field pre-pass never runs on any honest validator.
+// At/after Kyoto, ProcessProposal rejects a proposal carrying an over-nested transaction
+// before the ExtendedCommitInfo is even decoded, so the expensive unknown-field pre-pass never
+// runs on any honest validator. Txs[0] is deliberately undecodable as ExtendedCommitInfo (not
+// a valid, empty one): any depth deep enough to trip this guard is also deep enough to
+// eventually trip the real decode path's own, unrelated, much shallower Any-unpacking
+// recursion limit (MaxUnpackAnyRecursionDepth) if the malformed transaction ever reaches it --
+// so accept/reject status alone can't prove this guard, rather than that fallback, produced
+// the rejection. Reaching (and failing on) the ExtendedCommitInfo decode is what would prove
+// the guard did NOT short-circuit first: that path returns a hard error (not just a REJECT
+// status), which is exactly what this test would observe if the guard failed to fire.
 func TestProcessProposalHandler_RejectsOverNestedTx(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
 	seedSpan(t, app, ctx)
@@ -146,17 +153,14 @@ func TestProcessProposalHandler_RejectsOverNestedTx(t *testing.T) {
 	t.Cleanup(func() { helper.SetKyotoHeight(orig) })
 	helper.SetKyotoHeight(1)
 
-	emptyCommit := &abci.ExtendedCommitInfo{}
-	extCommitBytes, err := emptyCommit.Marshal()
-	require.NoError(t, err)
-	bomb := txRawWithBody(nestedAnyBody(maxAnyNestingDepth + 1))
+	undecodableCommit := []byte{0xff, 0xff, 0xff}
+	bomb := txRawWithBody(nestedAnyBody(maxTxNestingRecursion + 1))
 
 	resp, err := app.NewProcessProposalHandler()(ctx, &abci.RequestProcessProposal{
-		Txs:                [][]byte{extCommitBytes, bomb},
-		Height:             1,
-		ProposedLastCommit: abci.CommitInfo{Round: emptyCommit.Round},
+		Txs:    [][]byte{undecodableCommit, bomb},
+		Height: 1,
 	})
-	require.NoError(t, err)
+	require.NoError(t, err, "the guard must reject before ever attempting to decode the malformed ExtendedCommitInfo")
 	require.Equal(t, abci.ResponseProcessProposal_REJECT, resp.Status)
 }
 
@@ -223,6 +227,12 @@ func TestExtractTxHash(t *testing.T) {
 			ok:   false,
 		},
 		{
+			name: "oversized clerk hash",
+			msg:  &clerkTypes.MsgEventRecord{TxHash: "0x00" + validHash.Hex()[2:]},
+			want: common.Hash{},
+			ok:   false,
+		},
+		{
 			name: "unsupported message",
 			msg:  &borTypes.MsgVoteProducers{},
 			want: common.Hash{},
@@ -243,4 +253,31 @@ func TestExtractTxHash(t *testing.T) {
 	require.True(t, verifyHexTxHash(validHash.Hex()))
 	require.False(t, verifyHexTxHash("0x1234"))
 	require.False(t, verifyHexTxHash(common.Bytes2Hex(validBytes[:31])))
+	require.False(t, verifyHexTxHash("0x00"+validHash.Hex()[2:]))
+}
+
+func TestClerkTxHashValidationMatchesPrefetchExtraction(t *testing.T) {
+	validHash := common.BigToHash(common.Big1).Hex()
+	tests := []struct {
+		name   string
+		txHash string
+		valid  bool
+	}{
+		{name: "canonical", txHash: validHash, valid: true},
+		{name: "leading byte", txHash: "0x00" + validHash[2:]},
+		{name: "short", txHash: validHash[:len(validHash)-2]},
+		{name: "missing prefix", txHash: validHash[2:]},
+		{name: "malformed", txHash: validHash[:len(validHash)-1] + "z"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			msg := &clerkTypes.MsgEventRecord{TxHash: tt.txHash}
+			_, prefetchable := extractTxHash(msg)
+			admissible := msg.ValidateTxHash() == nil
+
+			require.Equal(t, tt.valid, admissible)
+			require.Equal(t, admissible, prefetchable)
+		})
+	}
 }

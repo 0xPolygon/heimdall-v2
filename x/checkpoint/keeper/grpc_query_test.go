@@ -138,7 +138,8 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 
 	cpNumber := uint64(1)
 	startBlock := uint64(0)
-	endBlock := uint64(256)
+	// Both bounds are inclusive, so an avg-length (256) window from 0 ends at 255.
+	endBlock := uint64(255)
 	rootHash := chSim.RandomBytes()
 	proposerAddress := common.HexToAddress(AccountHash).String()
 	timestamp := uint64(time.Now().Unix())

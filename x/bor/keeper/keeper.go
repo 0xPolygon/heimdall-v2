@@ -36,6 +36,7 @@ type Keeper struct {
 	sk             types.StakeKeeper
 	mk             types.MilestoneKeeper
 	contractCaller helper.IContractCaller
+	spanFrontier   *spanEndFrontier
 
 	Schema                  collections.Schema
 	spans                   collections.Map[uint64, types.Span]
@@ -79,6 +80,7 @@ func NewKeeper(
 		sk:                      stakingKeeper,
 		mk:                      milestoneKeeper,
 		contractCaller:          caller,
+		spanFrontier:            &spanEndFrontier{},
 		spans:                   collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollValue[types.Span](cdc)),
 		latestSpan:              collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
 		seedLastProducer:        collections.NewMap(sb, types.SeedLastBlockProducerKey, "seedLastProducer", collections.Uint64Key, collections.BytesValue),
@@ -128,7 +130,12 @@ func (k *Keeper) AddNewSpan(ctx context.Context, span *types.Span) error {
 
 // AddNewRawSpan adds the new span for bor to store
 func (k *Keeper) AddNewRawSpan(ctx context.Context, span *types.Span) error {
-	return k.spans.Set(ctx, span.Id, *span)
+	if err := k.spans.Set(ctx, span.Id, *span); err != nil {
+		return err
+	}
+
+	k.advanceSpanEndFrontier(span.EndBlock)
+	return nil
 }
 
 // GetSpan fetches span indexed by id from store
@@ -360,7 +367,7 @@ func (k *Keeper) FetchNextSpanSeed(ctx context.Context, id uint64) (common.Hash,
 		return common.Hash{}, common.Address{}, err
 	}
 
-	blockHeader, err := k.contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(borBlock)))
+	blockHeader, err := fetchBorHeader(ctx, k.contractCaller, big.NewInt(int64(borBlock)))
 	if err != nil {
 		k.Logger(ctx).Error("Error fetching block header from bor chain while calculating next span seed", "error", err, "block", borBlock)
 		return common.Hash{}, common.Address{}, err
@@ -475,7 +482,7 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 
 	if proposedSpanID == 1 {
 		borBlock = 1
-		author, err = k.contractCaller.GetBorChainBlockAuthor(ctx, big.NewInt(int64(borBlock)))
+		author, err = k.fetchBorBlockAuthor(ctx, big.NewInt(int64(borBlock)))
 		if err != nil {
 			logger.Error("Error fetching first block for span seed", "error", err, "block", borBlock)
 			return 0, nil, err
@@ -528,7 +535,7 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 	}
 
 	for borBlock = seedSpan.EndBlock; borBlock >= seedSpan.StartBlock; borBlock -= borParams.SprintDuration {
-		author, err = k.contractCaller.GetBorChainBlockAuthor(ctx, big.NewInt(int64(borBlock)))
+		author, err = k.fetchBorBlockAuthor(ctx, big.NewInt(int64(borBlock)))
 		if err != nil {
 			logger.Error("Error fetching block author from bor chain while calculating next span seed", "error", err, "block", borBlock)
 			return 0, nil, err
@@ -550,7 +557,7 @@ func (k *Keeper) getBorBlockForSpanSeed(ctx context.Context, seedSpan *types.Spa
 		borBlock = seedSpan.EndBlock
 	}
 
-	author, err = k.contractCaller.GetBorChainBlockAuthor(ctx, big.NewInt(int64(borBlock)))
+	author, err = k.fetchBorBlockAuthor(ctx, big.NewInt(int64(borBlock)))
 	if err != nil {
 		logger.Error("Error fetching end block author from bor chain while calculating next span seed", "error", err, "block", borBlock)
 		return 0, nil, err
@@ -644,6 +651,14 @@ func (k *Keeper) SpanByBlockNumber(ctx context.Context, blockNumber uint64) (typ
 	lastSpan, err := k.GetLastSpan(ctx)
 	if err != nil {
 		return types.Span{}, err
+	}
+
+	maxEnd, err := k.maxSpanEndBlock(ctx)
+	if err != nil {
+		return types.Span{}, err
+	}
+	if blockNumber > maxEnd {
+		return types.Span{}, fmt.Errorf("span not found for block %d", blockNumber)
 	}
 
 	for id := lastSpan.Id; ; id-- {
