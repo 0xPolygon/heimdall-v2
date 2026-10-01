@@ -171,6 +171,11 @@ type HeimdallApp struct {
 
 	// Health service
 	healthService *health.Health
+
+	// last-block re-run after a binary change (see last_block_rerun.go)
+	rerunDB            dbm.DB
+	rerunInProgress    bool
+	rerunMarkerWritten bool
 }
 
 func init() {
@@ -239,6 +244,7 @@ func NewHeimdallApp(
 		interfaceRegistry: interfaceRegistry,
 		keys:              keys,
 		tKeys:             tKeys,
+		rerunDB:           db,
 	}
 
 	// Contract caller
@@ -469,8 +475,15 @@ func NewHeimdallApp(
 	}
 
 	if loadLatest {
-		if err := app.LoadLatestVersion(); err != nil {
-			panic(fmt.Errorf("error loading last version: %w", err))
+		rerun, err := app.loadVersionForRerun(db, logger)
+		if err != nil {
+			panic(err)
+		}
+		app.rerunInProgress = rerun
+		if !rerun {
+			if err := app.LoadLatestVersion(); err != nil {
+				panic(fmt.Errorf("error loading last version: %w", err))
+			}
 		}
 	}
 
@@ -490,6 +503,16 @@ func NewHeimdallApp(
 	app.healthService = healthService
 
 	return app
+}
+
+// Commit commits the block and records this binary as the committer of the latest height.
+func (app *HeimdallApp) Commit() (*abci.ResponseCommit, error) {
+	res, err := app.BaseApp.Commit()
+	if err != nil {
+		return res, err
+	}
+	app.recordCommitByThisBinary()
+	return res, nil
 }
 
 func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
