@@ -114,7 +114,7 @@ func getTests(t *testing.T, priv cryptotypes.PrivKey, app *HeimdallApp, ctx sdk.
 			txBytes: buildTxBytes(t, ctx, priv, app,
 				&clerkTypes.MsgEventRecord{
 					From:            signerAddr,
-					TxHash:          common.Bytes2Hex(common.Hex2Bytes("00000000000000000000000000000000000000000000000000000000deadbeef")),
+					TxHash:          common.HexToHash("0x00000000000000000000000000000000000000000000000000000000deadbeef").Hex(),
 					LogIndex:        0,
 					BlockNumber:     100,
 					Id:              1,
@@ -259,7 +259,7 @@ func getTests(t *testing.T, priv cryptotypes.PrivKey, app *HeimdallApp, ctx sdk.
 			txBytes: func() [][]byte {
 				msg1 := &clerkTypes.MsgEventRecord{
 					From:            signerAddr,
-					TxHash:          common.Bytes2Hex(common.Hex2Bytes("00000000000000000000000000000000000000000000000000000000face0001")),
+					TxHash:          common.HexToHash("0x00000000000000000000000000000000000000000000000000000000face0001").Hex(),
 					LogIndex:        0,
 					BlockNumber:     100,
 					Id:              1,
@@ -690,7 +690,7 @@ func TestFullABCI_ProcessProposalRejectsMultipleSideHandlersPerTx(t *testing.T) 
 	}
 	msg2 := &clerkTypes.MsgEventRecord{
 		From:            signerAddr,
-		TxHash:          common.Bytes2Hex(common.Hex2Bytes("00000000000000000000000000000000000000000000000000000000deadbeef")),
+		TxHash:          common.HexToHash("0x00000000000000000000000000000000000000000000000000000000deadbeef").Hex(),
 		LogIndex:        0,
 		BlockNumber:     100,
 		Id:              1,
@@ -806,7 +806,6 @@ func executeHeight(
 	extCommit abci.ExtendedCommitInfo,
 	txBytes [][]byte,
 ) *abci.ResponseExtendVote {
-
 	validators := app.StakeKeeper.GetAllValidators(ctx)
 
 	// Prepare the proposal

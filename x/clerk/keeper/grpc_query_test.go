@@ -1,10 +1,13 @@
 package keeper_test
 
 import (
+	"strings"
 	"time"
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
+	"github.com/cosmos/gogoproto/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -41,6 +44,55 @@ func (s *KeeperTestSuite) TestGetGRPCRecord_NotFound() {
 	res, err := queryClient.GetRecordById(ctx, req)
 	require.Error(err)
 	require.Nil(res)
+}
+
+func (s *KeeperTestSuite) TestClerkQueriesNormalizeLegacyTxHashes() {
+	ctx, ck := s.ctx, s.keeper
+	require := s.Require()
+	originalLuganoHeight := helper.GetLuganoHeight()
+	helper.SetLuganoHeight(100)
+	s.T().Cleanup(func() { helper.SetLuganoHeight(originalLuganoHeight) })
+	queryServer := clerkKeeper.NewQueryServer(&ck)
+	preForkCtx := sdk.WrapSDKContext(ctx.WithBlockHeight(99))
+	forkCtx := sdk.WrapSDKContext(ctx.WithBlockHeight(100))
+	now := time.Now().UTC()
+	legacyHash := "0x" + strings.Repeat("ab", 300_000) + TxHash1[2:]
+
+	for id := uint64(1); id <= 7; id++ {
+		record := types.NewEventRecord(legacyHash, id, id, Address1, []byte{1}, "1", now.Add(-time.Minute))
+		require.NoError(ck.SetEventRecord(ctx, record))
+	}
+
+	legacyByID, err := queryServer.GetRecordById(preForkCtx, &types.RecordRequest{RecordId: 1})
+	require.NoError(err)
+	require.Equal(legacyHash, legacyByID.Record.TxHash)
+
+	byID, err := queryServer.GetRecordById(forkCtx, &types.RecordRequest{RecordId: 1})
+	require.NoError(err)
+	require.Equal(TxHash1, byID.Record.TxHash)
+
+	list, err := queryServer.GetRecordList(forkCtx, &types.RecordListRequest{Page: 1, Limit: 7})
+	require.NoError(err)
+	require.Len(list.EventRecords, 7)
+	for _, record := range list.EventRecords {
+		require.Equal(TxHash1, record.TxHash)
+	}
+
+	withTime, err := queryServer.GetRecordListWithTime(forkCtx, &types.RecordListWithTimeRequest{
+		FromId:     1,
+		ToTime:     now,
+		Pagination: query.PageRequest{Limit: 7},
+	})
+	require.NoError(err)
+	require.Len(withTime.EventRecords, 7)
+	require.Less(proto.Size(withTime), 4*1024*1024)
+	for _, record := range withTime.EventRecords {
+		require.Equal(TxHash1, record.TxHash)
+	}
+
+	stored, err := ck.GetEventRecord(ctx, 1)
+	require.NoError(err)
+	require.Equal(legacyHash, stored.TxHash)
 }
 
 func (s *KeeperTestSuite) TestGetRecordListWithTime_RejectsUnixEpochTimestamp() {

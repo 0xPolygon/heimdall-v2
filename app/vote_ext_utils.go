@@ -1100,6 +1100,10 @@ func validateCheckpointMsgData(ctx sdk.Context, height int64, extension []byte, 
 		return fmt.Errorf("failed to get checkpoint params: %w", err)
 	}
 
+	if err := checkpointKeeper.ValidateCheckpointWindow(ctx, height, checkpointMsg.StartBlock, checkpointMsg.EndBlock); err != nil {
+		return err
+	}
+
 	isValid, err := checkpointTypes.IsValidCheckpoint(
 		ctx,
 		checkpointMsg.StartBlock,

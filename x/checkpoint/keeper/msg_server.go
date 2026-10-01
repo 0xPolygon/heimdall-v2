@@ -52,6 +52,11 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 		return nil, types.ErrCheckpointParams
 	}
 
+	if err = srv.ValidateCheckpointWindow(ctx, sdkCtx.BlockHeight(), msg.StartBlock, msg.EndBlock); err != nil {
+		logger.Error("Invalid checkpoint window", "startBlock", msg.StartBlock, "endBlock", msg.EndBlock, hmTypes.LogKeyError, err)
+		return nil, err
+	}
+
 	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
 	if err == nil {
 		checkpointBufferTime := uint64(params.CheckpointBufferTime.Seconds())

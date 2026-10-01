@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/common/hex"
@@ -193,6 +194,57 @@ func TestIsTxHashNonEmpty(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := hex.IsTxHashNonEmpty(tt.input)
 			require.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestIsValidTxHash(t *testing.T) {
+	validHash := "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+
+	tests := []struct {
+		name  string
+		input string
+		want  bool
+	}{
+		{name: "lowercase", input: validHash, want: true},
+		{name: "uppercase", input: strings.ToUpper(validHash), want: true},
+		{name: "oversized", input: "0x00" + validHash[2:], want: false},
+		{name: "short", input: validHash[:len(validHash)-2], want: false},
+		{name: "missing prefix", input: validHash[2:], want: false},
+		{name: "invalid hex", input: "0x" + strings.Repeat("z", 64), want: false},
+		{name: "empty", input: "", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, hex.IsValidTxHash(tt.input))
+		})
+	}
+}
+
+func TestNormalizeTxHash(t *testing.T) {
+	validHash := "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+	largeHash := "0x" + strings.Repeat("ab", 300_000) + validHash[2:]
+
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{name: "canonical hash", input: validHash},
+		{name: "uppercase hash", input: strings.ToUpper(validHash)},
+		{name: "short hash", input: "0x1234"},
+		{name: "odd length", input: "0x123"},
+		{name: "no prefix", input: validHash[2:]},
+		{name: "invalid suffix", input: "0x01zz"},
+		{name: "invalid odd length", input: "0xz12"},
+		{name: "large legacy hash", input: largeHash},
+		{name: "empty", input: ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			want := ethcommon.HexToHash(tt.input).Hex()
+			require.Equal(t, want, hex.NormalizeTxHash(tt.input))
 		})
 	}
 }
