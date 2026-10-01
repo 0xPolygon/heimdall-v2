@@ -177,6 +177,7 @@ func initRootCmd(
 
 	AddCommandsWithStartCmdOptions(rootCmd, app.DefaultNodeHome, newApp, newStartApp, appExport, server.StartCmdOptions{
 		AddFlags: func(startCmd *cobra.Command) {
+			addPeerReputationFlag(startCmd)
 			startCmd.Flags().Bool(helper.RestServerFlag, true, "Enable the REST server")
 			startCmd.Flags().Bool(helper.BridgeFlag, false, "Enable the bridge server")
 			startCmd.Flags().Bool(helper.AllProcessesFlag, false, "Enable all bridge processes")
