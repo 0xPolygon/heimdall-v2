@@ -1,18 +1,21 @@
 # Native peer reputation observation
 
-This draft adds opt-in local peer scoring to Heimdall. It does not throttle,
+This draft enables local peer scoring by default in Heimdall. It does not throttle,
 reserve slots, disconnect, jail, or alter consensus. Existing CometBFT protections
 continue unchanged. There is no sidecar, overlay, listener, IPC, extra handshake,
 proof of work, additional signature verification, or Bor dependency.
 
 ## Enable and inspect
 
-Run `heimdalld start --peer-reputation` with in-process CometBFT. The flag defaults
-to false and is not a new config.toml option. It is rejected with `--with-comet=false`
-or `--grpc-only`. Enable the existing CometBFT Prometheus endpoint using
-`[instrumentation] prometheus = true` to scrape the metrics. No new endpoint is
-created. Disabling the flag restores the default nil observer path on restart.
-The observer is installed after configuration parsing and before node creation.
+Normal `heimdalld start` automatically enables scoring on the native peer network.
+Use `--peer-reputation=false` to disable it. The flag is not a config.toml option.
+Query-only (`--grpc-only`) and external-CometBFT (`--with-comet=false`) modes skip
+observation by default because there is no native peer network in this process;
+explicitly requesting `--peer-reputation=true` in those modes returns an error.
+Enable the existing CometBFT Prometheus endpoint using `[instrumentation]
+prometheus = true` to scrape the metrics. No new endpoint is created. The observer
+is installed after configuration parsing and before node creation. Scoring starts
+without requiring the metrics endpoint to be enabled.
 
 The CometBFT dependency is pinned to the [companion fork commit](https://github.com/0xPolygon/cometbft/pull/46) implementing
 `p2p/observation.Observer`. Merge/release that companion before promoting this

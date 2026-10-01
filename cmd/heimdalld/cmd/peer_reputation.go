@@ -12,6 +12,10 @@ import (
 
 const peerReputationFlag = "peer-reputation"
 
+func addPeerReputationFlag(cmd *cobra.Command) {
+	cmd.Flags().Bool(peerReputationFlag, true, "Observe native peer reputation without enforcement (disable with --peer-reputation=false)")
+}
+
 func installPeerReputation(cmd *cobra.Command, ctx *server.Context) error {
 	return configurePeerReputation(cmd, ctx, prometheus.DefaultRegisterer)
 }
@@ -36,7 +40,10 @@ func configurePeerReputation(cmd *cobra.Command, ctx *server.Context, registry p
 		return err
 	}
 	if !withComet || grpcOnly {
-		return fmt.Errorf("--peer-reputation requires in-process CometBFT")
+		if cmd.Flags().Changed(peerReputationFlag) {
+			return fmt.Errorf("--peer-reputation requires in-process CometBFT")
+		}
+		return nil
 	}
 	tracker, err := peerpolicy.New(registry)
 	if err != nil {
