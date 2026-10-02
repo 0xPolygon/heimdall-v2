@@ -93,6 +93,9 @@ func TestLoadLatestOrRerunVersion(t *testing.T) {
 		hApp := reopenApp(t, db)
 		require.Equal(t, latest, hApp.LastBlockHeight())
 		require.False(t, hApp.rerunInProgress)
+		_, ok, err := rerun.ReadPending(db)
+		require.NoError(t, err)
+		require.False(t, ok, "an impossible target must not survive to the next start")
 	})
 
 	t.Run("failed full rollback starts from the latest version", func(t *testing.T) {
