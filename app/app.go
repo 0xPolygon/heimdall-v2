@@ -69,6 +69,7 @@ import (
 	"github.com/hellofresh/health-go/v5"
 
 	"github.com/0xPolygon/heimdall-v2/client/docs"
+	"github.com/0xPolygon/heimdall-v2/app/rerun"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -174,6 +175,7 @@ type HeimdallApp struct {
 
 	// last-block re-run after a binary change (see last_block_rerun.go)
 	rerunDB            dbm.DB
+	rerunEnabled       bool
 	rerunInProgress    bool
 	rerunMarkerWritten bool
 }
@@ -245,6 +247,9 @@ func NewHeimdallApp(
 		keys:              keys,
 		tKeys:             tKeys,
 		rerunDB:           db,
+	}
+	if appOpts != nil {
+		app.rerunEnabled, _ = appOpts.Get(rerun.EnableOption).(bool)
 	}
 
 	// Contract caller

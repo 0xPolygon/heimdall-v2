@@ -40,14 +40,17 @@ func (app *HeimdallApp) recordCommitByThisBinary() {
 	app.rerunInProgress = false
 }
 
+// loadLatestOrRerunVersion acts on a pending re-run only when the start command enabled it.
 func (app *HeimdallApp) loadLatestOrRerunVersion() error {
-	inProgress, err := rerun.Load(app.rerunDB, app.Logger(), app.LoadVersion, app.rollbackStoresAndLoad)
-	if err != nil {
-		return err
-	}
-	app.rerunInProgress = inProgress
-	if inProgress {
-		return nil
+	if app.rerunEnabled {
+		inProgress, err := rerun.Load(app.rerunDB, app.Logger(), app.LoadVersion, app.rollbackStoresAndLoad)
+		if err != nil {
+			return err
+		}
+		app.rerunInProgress = inProgress
+		if inProgress {
+			return nil
+		}
 	}
 	if err := app.LoadLatestVersion(); err != nil {
 		return fmt.Errorf("error loading last version: %w", err)

@@ -102,10 +102,13 @@ func TestWrapStartWithLastBlockRerun(t *testing.T) {
 	require.ErrorIs(t, cmd.PreRunE(cmd, nil), prevErr)
 	require.Zero(t, rc.calls, "the re-run check must not run when the previous pre-run fails")
 
+	require.Nil(t, ctx.Viper.Get(rerun.EnableOption), "the app option is set only when the start pre-run succeeds")
+
 	cmd.PreRunE = nil
 	wrapStartWithLastBlockRerun(cmd)
 	require.NoError(t, cmd.PreRunE(cmd, nil))
 	require.Equal(t, 1, rc.calls)
+	require.Equal(t, true, ctx.Viper.Get(rerun.EnableOption), "the start app must act on the pending re-run")
 }
 
 func TestPrepareLastBlockRerunOpenFails(t *testing.T) {

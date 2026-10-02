@@ -34,6 +34,11 @@ var (
 	pendingKey = []byte("heimdall/last-block-rerun/pending")
 )
 
+// EnableOption is the app option that lets the app act on a pending re-run. Only the start
+// command sets it (next to the CometBFT-side check), so commands that build the app for other
+// work, such as export or rollback, never change the stores because of a pending re-run.
+const EnableOption = "heimdall.last-block-rerun"
+
 // FullRollbackAfterAttempts is the number of executed fast-path attempts after which the stores
 // are rolled back to the target height (the fast path cannot finish when the AppHash changed).
 const FullRollbackAfterAttempts = 1

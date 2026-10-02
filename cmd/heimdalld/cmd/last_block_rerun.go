@@ -26,7 +26,10 @@ func wrapStartWithLastBlockRerun(startCmd *cobra.Command) {
 				return err
 			}
 		}
-		return prepareLastBlockRerun(server.GetServerContextFromCmd(cmd))
+		svrCtx := server.GetServerContextFromCmd(cmd)
+		// The start app creator receives svrCtx.Viper as its app options.
+		svrCtx.Viper.Set(rerun.EnableOption, true)
+		return prepareLastBlockRerun(svrCtx)
 	}
 }
 

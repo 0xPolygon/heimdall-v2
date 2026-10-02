@@ -26,10 +26,19 @@ func committedApp(t *testing.T) (*HeimdallApp, *dbm.MemDB) {
 	return res.App, res.DB
 }
 
+// reopenApp builds the app the way the start command does (re-run enabled).
 func reopenApp(t *testing.T, db dbm.DB) *HeimdallApp {
+	t.Helper()
+	return reopenAppWith(t, db, true)
+}
+
+func reopenAppWith(t *testing.T, db dbm.DB, rerunEnabled bool) *HeimdallApp {
 	t.Helper()
 	appOptions := make(simtestutil.AppOptionsMap)
 	appOptions[flags.FlagHome] = DefaultNodeHome
+	if rerunEnabled {
+		appOptions[rerun.EnableOption] = true
+	}
 	return NewHeimdallApp(log.NewTestLogger(t), db, nil, true, appOptions)
 }
 
@@ -159,4 +168,22 @@ func TestCorruptPendingRerunStopsTheStart(t *testing.T) {
 	require.NoError(t, db.Set([]byte("heimdall/last-block-rerun/pending"), []byte{1}))
 
 	require.Panics(t, func() { reopenApp(t, db) })
+}
+
+func TestPendingRerunIgnoredOutsideStart(t *testing.T) {
+	old, db := committedApp(t)
+	latest := old.LastBlockHeight()
+	pending := rerun.Pending{TargetHeight: latest - 1, Attempts: rerun.FullRollbackAfterAttempts}
+	require.NoError(t, rerun.WritePending(db, pending))
+
+	// For example export or rollback: they build the app without the start option.
+	hApp := reopenAppWith(t, db, false)
+	require.Equal(t, latest, hApp.LastBlockHeight())
+	require.False(t, hApp.rerunInProgress)
+	require.Equal(t, latest, rootmulti.GetLatestVersion(db), "the stores must not be rolled back")
+
+	got, ok, err := rerun.ReadPending(db)
+	require.NoError(t, err)
+	require.True(t, ok, "the pending re-run is left for the next start")
+	require.Equal(t, pending, got)
 }
