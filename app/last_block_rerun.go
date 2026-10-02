@@ -15,34 +15,16 @@ import (
 	hversion "github.com/0xPolygon/heimdall-v2/version"
 )
 
-// Last-block re-run after a binary change.
+// A node that runs an old binary past a hardfork commits the fork block with the old
+// rules and halts one height later (CometBFT checks a block's results only in the next
+// header). Restarting with the new binary does not re-execute the committed block, so
+// the node stays stuck. Each binary therefore records itself as the committer; when a
+// different binary starts, it rolls CometBFT back one height (keeping the block) and
+// loads the app at H-1 without deleting H, so the handshake re-executes H. If the
+// AppHash is unchanged, IAVL treats saving H again as a no-op, so this costs one block.
+// One height is enough: every earlier height was checked by the header after it.
 //
-// A node that runs an old binary past a hardfork height executes blocks with the
-// old rules. Because CometBFT only verifies block H's results in header H+1, the
-// node commits block H (wrong LastResultsHash, or wrong AppHash) and then halts at
-// H+1. Installing the new binary does not help: on restart the handshake sees
-// store, state and app all at H and does not re-execute H.
-//
-// To recover without operator action, every binary records its identity in
-// application.db when it commits. On start, if the last height was committed by a
-// different binary (or by one that predates this feature), the node steps back one
-// height and re-executes it with the current binary:
-//   - CometBFT state is rolled back to H-1 (soft: block H stays in the block store),
-//   - the app loads version H-1 WITHOUT deleting version H,
-//   - the regular CometBFT handshake replays block H against the real app.
-//
-// When the re-executed AppHash equals the stored one (the common hardfork case, where
-// only tx results such as gas differ), IAVL's SaveVersion of an existing version with
-// the same hash is a no-op, so the re-run costs about one block and no fast-node index
-// rebuild. When the AppHash differs, the commit fails; the next start sees the
-// unfinished attempt and falls back to a full application rollback to H-1.
-//
-// One height is always enough: every earlier height was already verified by the
-// header that follows it. Re-executing one's own last block with the current binary
-// is deterministic, so this is safe on a node that was never dirty.
-//
-// These keys live in application.db outside of any IAVL store prefix, so they are
-// local, non-consensus data.
+// The keys live in application.db outside any IAVL prefix: local, non-consensus data.
 
 var (
 	// lastCommitBinaryKey holds the identity of the binary that committed the latest height.
