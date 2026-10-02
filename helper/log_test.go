@@ -139,6 +139,16 @@ func TestWithModuleFilter_ModuleResolution(t *testing.T) {
 		require.Empty(t, buf.String())
 	})
 
+	t.Run("a later With overrides the module", func(t *testing.T) {
+		l, buf := newFilteredLogger(t, "p2p:error,*:info", nil)
+		l.With(logger.ModuleKey, "p2p").With(logger.ModuleKey, "consensus").Info("kept")
+		l.With(logger.ModuleKey, "consensus").With(logger.ModuleKey, "p2p").Info("dropped")
+
+		out := buf.String()
+		require.Contains(t, out, `"message":"kept"`)
+		require.NotContains(t, out, `"message":"dropped"`)
+	})
+
 	t.Run("no module falls back to the default level", func(t *testing.T) {
 		l, buf := newFilteredLogger(t, "p2p:error,*:info", nil)
 		l.Info("kept")

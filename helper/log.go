@@ -49,7 +49,8 @@ func LogLevelOptionOrDefault(logLevelStr string, warnf func(string, ...any)) (lo
 }
 
 // WithModuleFilter wraps l so that lines the filter discards are dropped
-// before they reach zerolog. A nil filter returns l unchanged.
+// before they reach zerolog. A nil filter returns l unchanged. Impl() still
+// returns the underlying zerolog logger, which bypasses the filter.
 func WithModuleFilter(l logger.Logger, filter logger.FilterFunc) logger.Logger {
 	if filter == nil {
 		return l
