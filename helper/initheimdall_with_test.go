@@ -55,12 +55,8 @@ func TestInitHeimdallConfigWithSetsIthacaHeightPerChain(t *testing.T) {
 func TestInitHeimdallConfigWithInstallsModuleFilter(t *testing.T) {
 	restoreInitGlobals(t)
 	rpcURL := newRPCStub(t)
-	origLogger := Logger
 	origLevel := viper.GetString(flags.FlagLogLevel)
-	t.Cleanup(func() {
-		Logger = origLogger
-		viper.Set(flags.FlagLogLevel, origLevel)
-	})
+	t.Cleanup(func() { viper.Set(flags.FlagLogLevel, origLevel) })
 
 	cases := []struct {
 		level   string
@@ -83,10 +79,12 @@ func TestInitHeimdallConfigWithInstallsModuleFilter(t *testing.T) {
 }
 
 // restoreInitGlobals snapshots the package state InitHeimdallConfigWith
-// mutates and restores it when the test ends.
+// mutates, including the package Logger it rebuilds, and restores it when the
+// test ends.
 func restoreInitGlobals(t *testing.T) {
 	t.Helper()
 	origConf := conf
+	origLogger := Logger
 	origMainRPCClient := mainRPCClient
 	origBorRPCClient := borRPCClient
 	origBorClient := borClient
@@ -106,6 +104,7 @@ func restoreInitGlobals(t *testing.T) {
 	origSpan := ithacaHeight
 	t.Cleanup(func() {
 		conf = origConf
+		Logger = origLogger
 		mainRPCClient = origMainRPCClient
 		borRPCClient = origBorRPCClient
 		borClient = origBorClient
