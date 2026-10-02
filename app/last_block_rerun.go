@@ -1,8 +1,13 @@
 package app
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
+	"io"
+	"os"
+	"sync"
 
 	"cosmossdk.io/log"
 	dbm "github.com/cosmos/cosmos-db"
@@ -50,9 +55,38 @@ var (
 // back to a full rollback of its stores to the target height.
 const fullRollbackAfterAttempts = 2
 
-// BinaryIdentity identifies this binary for the re-run check.
+var (
+	binaryIdentityOnce sync.Once
+	binaryIdentity     string
+)
+
+// BinaryIdentity identifies this binary for the re-run check: version@commit for release
+// builds, or the sha256 of the executable when the build carries no version information
+// (for example a plain docker build without .git), so that two different dev builds never
+// look the same.
 func BinaryIdentity() string {
-	return hversion.Version + "@" + hversion.Commit
+	binaryIdentityOnce.Do(func() {
+		if hversion.Version != "" && hversion.Commit != "" {
+			binaryIdentity = hversion.Version + "@" + hversion.Commit
+			return
+		}
+		binaryIdentity = "unversioned"
+		exe, err := os.Executable()
+		if err != nil {
+			return
+		}
+		f, err := os.Open(exe)
+		if err != nil {
+			return
+		}
+		defer f.Close()
+		h := sha256.New()
+		if _, err := io.Copy(h, f); err != nil {
+			return
+		}
+		binaryIdentity = "sha256:" + hex.EncodeToString(h.Sum(nil))
+	})
+	return binaryIdentity
 }
 
 // PendingRerun is an unfinished last-block re-run.
