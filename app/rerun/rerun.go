@@ -34,9 +34,9 @@ var (
 	pendingKey = []byte("heimdall/last-block-rerun/pending")
 )
 
-// FullRollbackAfterAttempts is the number of fast-path attempts after which the stores are
-// rolled back to the target height (the fast path cannot finish when the AppHash changed).
-const FullRollbackAfterAttempts = 2
+// FullRollbackAfterAttempts is the number of executed fast-path attempts after which the stores
+// are rolled back to the target height (the fast path cannot finish when the AppHash changed).
+const FullRollbackAfterAttempts = 1
 
 // unversioned is the identity of a build without version information whose executable cannot be read.
 const unversioned = "unversioned"
@@ -159,8 +159,10 @@ func Decide(appHeight int64, committedBy, self string, pending *Pending) Decisio
 
 // Prepare runs before the node opens its databases. When the last height must be re-executed,
 // it calls rollbackComet, which must roll CometBFT state back one height without removing the
-// block and return the new state height, then records the attempt. It never blocks the start:
-// when the re-run is not possible, it logs why and the node starts as before.
+// block and return the new state height, and records the pending re-run. Attempts are counted
+// by Load, where the fast path really runs, so a start that aborts before loading the app does
+// not count. Prepare never blocks the start: when the re-run is not possible, it clears any
+// pending re-run, logs why and the node starts as before.
 func Prepare(db dbm.DB, appHeight int64, logger log.Logger, rollbackComet func() (int64, error)) error {
 	p, hasPending, err := ReadPending(db)
 	if err != nil {
@@ -186,29 +188,29 @@ func Prepare(db dbm.DB, appHeight int64, logger log.Logger, rollbackComet func()
 	height, err := rollbackComet()
 	if err != nil {
 		logger.Error("cannot re-run the last block, starting without it", "error", err)
-		return nil
+		return db.DeleteSync(pendingKey)
 	}
 	if height != d.TargetHeight {
 		logger.Error("cannot re-run the last block: CometBFT state does not match the app height, starting without it",
 			"cometbft_height", height, "target", d.TargetHeight)
-		return nil
+		return db.DeleteSync(pendingKey)
 	}
 
-	next := Pending{TargetHeight: d.TargetHeight, Attempts: 1}
-	if pending != nil {
-		next.Attempts = pending.Attempts + 1
-	}
-	if err := WritePending(db, next); err != nil {
-		return fmt.Errorf("last-block re-run: write pending re-run: %w", err)
+	if pending == nil {
+		if err := WritePending(db, Pending{TargetHeight: d.TargetHeight}); err != nil {
+			return fmt.Errorf("last-block re-run: write pending re-run: %w", err)
+		}
 	}
 	logger.Info("CometBFT state rolled back one height; block will be re-executed during the handshake",
-		"target", next.TargetHeight, "attempt", next.Attempts)
+		"target", d.TargetHeight)
 	return nil
 }
 
 // Load loads the app for a pending re-run. loadVersion must load the app at a height without
 // deleting later versions; rollbackStores must roll every store back to a height and load it.
-// It returns false when there is no re-run, so the caller loads the latest version.
+// It returns false when there is no re-run, so the caller loads the latest version. When the
+// re-run cannot be done, it clears the pending re-run and returns false, so the node starts as
+// it would without this feature.
 func Load(db dbm.DB, logger log.Logger, loadVersion, rollbackStores func(int64) error) (bool, error) {
 	p, ok, err := ReadPending(db)
 	if err != nil || !ok {
@@ -219,17 +221,22 @@ func Load(db dbm.DB, logger log.Logger, loadVersion, rollbackStores func(int64) 
 		logger.Warn("last-block re-run: fast path did not finish, rolling the app back to the target height",
 			"target", p.TargetHeight, "attempts", p.Attempts)
 		if err := rollbackStores(p.TargetHeight); err != nil {
-			return true, fmt.Errorf("last-block re-run: full rollback to %d failed: %w", p.TargetHeight, err)
+			logger.Error("last-block re-run: cannot roll the app back, starting from the latest version",
+				"target", p.TargetHeight, "error", err)
+			return false, db.DeleteSync(pendingKey)
 		}
 		return true, nil
 	}
 
+	p.Attempts++
+	if err := WritePending(db, p); err != nil {
+		return false, fmt.Errorf("last-block re-run: write pending re-run: %w", err)
+	}
 	logger.Info("last-block re-run: loading app at the previous height; block will be re-executed",
 		"target", p.TargetHeight, "attempt", p.Attempts)
 	if err := loadVersion(p.TargetHeight); err != nil {
-		// For example, the version was pruned. Start from the latest version as before; the
-		// handshake then restores the stored results of the last block, which is no worse than
-		// running without this feature.
+		// For example, the version was pruned. The handshake then restores the stored results of
+		// the last block, which is no worse than running without this feature.
 		logger.Error("last-block re-run: cannot load the previous height, starting from the latest version",
 			"target", p.TargetHeight, "error", err)
 		return false, db.DeleteSync(pendingKey)

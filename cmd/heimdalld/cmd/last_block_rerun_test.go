@@ -85,7 +85,7 @@ func TestPrepareLastBlockRerun(t *testing.T) {
 
 	got, ok := readPending(t, ctx)
 	require.True(t, ok)
-	require.Equal(t, rerun.Pending{TargetHeight: 49, Attempts: 1}, got)
+	require.Equal(t, rerun.Pending{TargetHeight: 49}, got)
 }
 
 func TestWrapStartWithLastBlockRerun(t *testing.T) {

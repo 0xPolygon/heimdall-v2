@@ -8,6 +8,7 @@ import (
 
 // rollbackStoresAndLoad rolls every store back to target and loads the app there. The rollback
 // runs on the multistore first because BaseApp.LoadLatestVersion seals the app and may run once.
+// A failure to load after the rollback is fatal: the stores have already changed.
 func (app *HeimdallApp) rollbackStoresAndLoad(target int64) error {
 	cms := app.CommitMultiStore()
 	if err := cms.LoadLatestVersion(); err != nil {
@@ -16,7 +17,10 @@ func (app *HeimdallApp) rollbackStoresAndLoad(target int64) error {
 	if err := cms.RollbackToVersion(target); err != nil {
 		return err
 	}
-	return app.LoadLatestVersion()
+	if err := app.LoadLatestVersion(); err != nil {
+		panic(fmt.Errorf("last-block re-run: loading the app after the rollback to %d: %w", target, err))
+	}
+	return nil
 }
 
 // recordCommitByThisBinary runs after a successful commit, once per process.

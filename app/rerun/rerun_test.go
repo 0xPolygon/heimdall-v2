@@ -113,6 +113,7 @@ func TestComputeIdentity(t *testing.T) {
 
 func TestPrepare(t *testing.T) {
 	self := BinaryIdentity()
+	stale := &Pending{TargetHeight: 49, Attempts: 1}
 
 	tests := []struct {
 		name          string
@@ -128,22 +129,26 @@ func TestPrepare(t *testing.T) {
 		{name: "same binary", appHeight: 50, committedBy: self, wantRollbacks: 0},
 		{
 			name: "binary without marker", appHeight: 50, rollbackTo: 49,
-			wantRollbacks: 1, wantPending: &Pending{TargetHeight: 49, Attempts: 1},
+			wantRollbacks: 1, wantPending: &Pending{TargetHeight: 49},
 		},
 		{
 			name: "different binary", appHeight: 50, committedBy: "v0@old", rollbackTo: 49,
-			wantRollbacks: 1, wantPending: &Pending{TargetHeight: 49, Attempts: 1},
+			wantRollbacks: 1, wantPending: &Pending{TargetHeight: 49},
 		},
 		{
-			name: "resume counts the attempt", appHeight: 50, committedBy: self, rollbackTo: 49,
-			pending:       &Pending{TargetHeight: 49, Attempts: 1},
-			wantRollbacks: 1, wantPending: &Pending{TargetHeight: 49, Attempts: 2},
+			name: "resume keeps the attempt count", appHeight: 50, committedBy: self, rollbackTo: 49,
+			pending: stale, wantRollbacks: 1, wantPending: stale,
 		},
-		{
-			name: "cometbft rollback fails", appHeight: 50, rollbackErr: errors.New("no blockstore"),
-			wantRollbacks: 1,
-		},
+		{name: "cometbft rollback fails", appHeight: 50, rollbackErr: errors.New("no blockstore"), wantRollbacks: 1},
 		{name: "cometbft height does not match", appHeight: 50, rollbackTo: 47, wantRollbacks: 1},
+		{
+			name: "cometbft rollback fails clears a pending re-run", appHeight: 50, committedBy: self,
+			pending: stale, rollbackErr: errors.New("no blockstore"), wantRollbacks: 1,
+		},
+		{
+			name: "cometbft height mismatch clears a pending re-run", appHeight: 50, committedBy: self,
+			pending: stale, rollbackTo: 47, wantRollbacks: 1,
+		},
 	}
 
 	for _, tc := range tests {
@@ -168,13 +173,27 @@ func TestPrepare(t *testing.T) {
 			got, ok, err := ReadPending(db)
 			require.NoError(t, err)
 			if tc.wantPending == nil {
-				require.Equal(t, tc.pending != nil, ok, "a failed re-run leaves the pending record as it was")
+				require.False(t, ok, "no pending re-run may survive a start without a re-run")
 				return
 			}
 			require.True(t, ok)
 			require.Equal(t, *tc.wantPending, got)
 		})
 	}
+}
+
+func TestPrepareAbortedStartsDoNotCountAttempts(t *testing.T) {
+	db := dbm.NewMemDB()
+	rollback := func() (int64, error) { return 49, nil }
+
+	for i := 0; i < 3; i++ {
+		require.NoError(t, Prepare(db, 50, log.NewNopLogger(), rollback))
+	}
+
+	got, ok, err := ReadPending(db)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Zero(t, got.Attempts)
 }
 
 func TestPrepareReadErrors(t *testing.T) {
@@ -190,31 +209,30 @@ func TestLoad(t *testing.T) {
 	errRollback := errors.New("rollback failed")
 
 	tests := []struct {
-		name            string
-		pending         *Pending
-		loadErr         error
-		rollbackErr     error
-		wantInProgress  bool
-		wantErr         error
-		wantLoaded      int64
-		wantRolledBack  int64
-		wantPendingLeft bool
+		name           string
+		pending        *Pending
+		loadErr        error
+		rollbackErr    error
+		wantInProgress bool
+		wantLoaded     int64
+		wantRolledBack int64
+		wantPending    *Pending
 	}{
 		{name: "no pending re-run"},
 		{
-			name: "fast path", pending: &Pending{TargetHeight: 9, Attempts: 1},
-			wantInProgress: true, wantLoaded: 9, wantPendingLeft: true,
+			name: "fast path counts the attempt", pending: &Pending{TargetHeight: 9},
+			wantInProgress: true, wantLoaded: 9, wantPending: &Pending{TargetHeight: 9, Attempts: 1},
 		},
 		{
-			name: "full rollback after repeated attempts", pending: &Pending{TargetHeight: 9, Attempts: FullRollbackAfterAttempts},
-			wantInProgress: true, wantRolledBack: 9, wantPendingLeft: true,
+			name: "full rollback after an executed attempt", pending: &Pending{TargetHeight: 9, Attempts: FullRollbackAfterAttempts},
+			wantInProgress: true, wantRolledBack: 9, wantPending: &Pending{TargetHeight: 9, Attempts: FullRollbackAfterAttempts},
 		},
 		{
-			name: "full rollback fails", pending: &Pending{TargetHeight: 9, Attempts: FullRollbackAfterAttempts + 1},
-			rollbackErr: errRollback, wantInProgress: true, wantErr: errRollback, wantRolledBack: 9, wantPendingLeft: true,
+			name: "failed full rollback starts from the latest version", pending: &Pending{TargetHeight: 9, Attempts: FullRollbackAfterAttempts + 1},
+			rollbackErr: errRollback, wantRolledBack: 9,
 		},
 		{
-			name: "unloadable target falls back to the latest version", pending: &Pending{TargetHeight: 9, Attempts: 1},
+			name: "unloadable target starts from the latest version", pending: &Pending{TargetHeight: 9},
 			loadErr: errLoad, wantLoaded: 9,
 		},
 	}
@@ -231,14 +249,19 @@ func TestLoad(t *testing.T) {
 			rollback := func(h int64) error { rolledBack = h; return tc.rollbackErr }
 
 			inProgress, err := Load(db, log.NewNopLogger(), load, rollback)
-			require.ErrorIs(t, err, tc.wantErr)
+			require.NoError(t, err)
 			require.Equal(t, tc.wantInProgress, inProgress)
 			require.Equal(t, tc.wantLoaded, loaded)
 			require.Equal(t, tc.wantRolledBack, rolledBack)
 
-			_, ok, err := ReadPending(db)
+			got, ok, err := ReadPending(db)
 			require.NoError(t, err)
-			require.Equal(t, tc.wantPendingLeft, ok)
+			if tc.wantPending == nil {
+				require.False(t, ok)
+				return
+			}
+			require.True(t, ok)
+			require.Equal(t, *tc.wantPending, got)
 		})
 	}
 }

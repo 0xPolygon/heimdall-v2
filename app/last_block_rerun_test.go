@@ -65,7 +65,7 @@ func TestLoadLatestOrRerunVersion(t *testing.T) {
 	t.Run("fast path loads H-1 and keeps version H", func(t *testing.T) {
 		old, db := committedApp(t)
 		latest := old.LastBlockHeight()
-		require.NoError(t, rerun.WritePending(db, rerun.Pending{TargetHeight: latest - 1, Attempts: 1}))
+		require.NoError(t, rerun.WritePending(db, rerun.Pending{TargetHeight: latest - 1}))
 
 		hApp := reopenApp(t, db)
 		require.Equal(t, latest-1, hApp.LastBlockHeight())
@@ -87,17 +87,30 @@ func TestLoadLatestOrRerunVersion(t *testing.T) {
 	t.Run("unloadable target falls back to the latest version", func(t *testing.T) {
 		old, db := committedApp(t)
 		latest := old.LastBlockHeight()
-		require.NoError(t, rerun.WritePending(db, rerun.Pending{TargetHeight: latest + 10, Attempts: 1}))
+		require.NoError(t, rerun.WritePending(db, rerun.Pending{TargetHeight: latest + 10}))
 
 		hApp := reopenApp(t, db)
 		require.Equal(t, latest, hApp.LastBlockHeight())
 		require.False(t, hApp.rerunInProgress)
 	})
 
+	t.Run("failed full rollback starts from the latest version", func(t *testing.T) {
+		old, db := committedApp(t)
+		latest := old.LastBlockHeight()
+		require.NoError(t, rerun.WritePending(db, rerun.Pending{TargetHeight: latest + 10, Attempts: rerun.FullRollbackAfterAttempts}))
+
+		hApp := reopenApp(t, db)
+		require.Equal(t, latest, hApp.LastBlockHeight())
+		require.False(t, hApp.rerunInProgress)
+		_, ok, err := rerun.ReadPending(db)
+		require.NoError(t, err)
+		require.False(t, ok)
+	})
+
 	t.Run("finished re-run clears the in-progress flag on commit", func(t *testing.T) {
 		old, db := committedApp(t)
 		latest := old.LastBlockHeight()
-		require.NoError(t, rerun.WritePending(db, rerun.Pending{TargetHeight: latest - 1, Attempts: 1}))
+		require.NoError(t, rerun.WritePending(db, rerun.Pending{TargetHeight: latest - 1}))
 
 		hApp := reopenApp(t, db)
 		require.True(t, hApp.rerunInProgress)
