@@ -68,8 +68,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/hellofresh/health-go/v5"
 
-	"github.com/0xPolygon/heimdall-v2/client/docs"
 	"github.com/0xPolygon/heimdall-v2/app/rerun"
+	"github.com/0xPolygon/heimdall-v2/client/docs"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
