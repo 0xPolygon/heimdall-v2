@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -111,6 +112,12 @@ func FetchSigners(voteBytes []byte, sigInput []byte) ([]string, error) {
 // TestPopulateABIs tests that package level ABIs cache works as expected
 // by not invoking JSON methods after contracts ABIs' init
 func TestPopulateABIs(t *testing.T) {
+	// Other tests build contract callers and fill the package-level cache, so
+	// start from an empty one regardless of test order.
+	origABIs := ContractsABIsMap
+	ContractsABIsMap = make(map[string]*abi.ABI)
+	t.Cleanup(func() { ContractsABIsMap = origABIs })
+
 	t.Log("ABIs map should be empty and all ABIs not found")
 	assert.True(t, len(ContractsABIsMap) == 0)
 	_, found := ContractsABIsMap[rootchain.RootchainMetaData.ABI]
