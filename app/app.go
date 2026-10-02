@@ -475,15 +475,8 @@ func NewHeimdallApp(
 	}
 
 	if loadLatest {
-		rerun, err := app.loadVersionForRerun(db, logger)
-		if err != nil {
+		if err := app.loadLatestOrRerunVersion(); err != nil {
 			panic(err)
-		}
-		app.rerunInProgress = rerun
-		if !rerun {
-			if err := app.LoadLatestVersion(); err != nil {
-				panic(fmt.Errorf("error loading last version: %w", err))
-			}
 		}
 	}
 
