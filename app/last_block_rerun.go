@@ -186,10 +186,13 @@ func (app *HeimdallApp) loadVersionForRerun(db dbm.DB, logger log.Logger) (bool,
 		// the stored one, so IAVL refused to save the version again). Roll every store back.
 		logger.Warn("last-block re-run: fast path did not finish, rolling the app back to the target height",
 			"target", p.TargetHeight, "attempts", p.Attempts)
-		if err := app.LoadLatestVersion(); err != nil {
+		// Roll back at the multistore level first: BaseApp.LoadLatestVersion seals the app and
+		// may run only once, after the stores are at the target height.
+		cms := app.CommitMultiStore()
+		if err := cms.LoadLatestVersion(); err != nil {
 			return true, err
 		}
-		if err := app.CommitMultiStore().RollbackToVersion(p.TargetHeight); err != nil {
+		if err := cms.RollbackToVersion(p.TargetHeight); err != nil {
 			return true, fmt.Errorf("last-block re-run: full rollback to %d failed: %w", p.TargetHeight, err)
 		}
 		return true, app.LoadLatestVersion()
