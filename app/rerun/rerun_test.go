@@ -265,3 +265,123 @@ func TestLoad(t *testing.T) {
 		})
 	}
 }
+
+var errInjected = errors.New("injected")
+
+// faultyDB fails the selected operations on top of a MemDB.
+type faultyDB struct {
+	dbm.DB
+	getKey     string
+	failSet    bool
+	failDelete bool
+	failBatch  string // "set", "delete" or "write"
+}
+
+func (d *faultyDB) Get(key []byte) ([]byte, error) {
+	if d.getKey != "" && string(key) == d.getKey {
+		return nil, errInjected
+	}
+	return d.DB.Get(key)
+}
+
+func (d *faultyDB) SetSync(key, value []byte) error {
+	if d.failSet {
+		return errInjected
+	}
+	return d.DB.SetSync(key, value)
+}
+
+func (d *faultyDB) DeleteSync(key []byte) error {
+	if d.failDelete {
+		return errInjected
+	}
+	return d.DB.DeleteSync(key)
+}
+
+func (d *faultyDB) NewBatch() dbm.Batch {
+	if d.failBatch != "" {
+		return faultyBatch{Batch: d.DB.NewBatch(), fail: d.failBatch}
+	}
+	return d.DB.NewBatch()
+}
+
+type faultyBatch struct {
+	dbm.Batch
+	fail string
+}
+
+func (b faultyBatch) Set(key, value []byte) error {
+	if b.fail == "set" {
+		return errInjected
+	}
+	return b.Batch.Set(key, value)
+}
+
+func (b faultyBatch) Delete(key []byte) error {
+	if b.fail == "delete" {
+		return errInjected
+	}
+	return b.Batch.Delete(key)
+}
+
+func (b faultyBatch) WriteSync() error {
+	if b.fail == "write" {
+		return errInjected
+	}
+	return b.Batch.WriteSync()
+}
+
+func TestStorageErrors(t *testing.T) {
+	ok := func() (int64, error) { return 49, nil }
+	nop := log.NewNopLogger()
+
+	t.Run("read marker", func(t *testing.T) {
+		db := &faultyDB{DB: dbm.NewMemDB(), getKey: string(lastCommitBinaryKey)}
+		require.ErrorIs(t, Prepare(db, 50, nop, ok), errInjected)
+	})
+
+	t.Run("write pending in Prepare", func(t *testing.T) {
+		db := &faultyDB{DB: dbm.NewMemDB(), failSet: true}
+		require.ErrorIs(t, Prepare(db, 50, nop, ok), errInjected)
+	})
+
+	t.Run("clear pending after a failed cometbft rollback", func(t *testing.T) {
+		db := &faultyDB{DB: dbm.NewMemDB(), failDelete: true}
+		fail := func() (int64, error) { return 0, errors.New("no blockstore") }
+		require.ErrorIs(t, Prepare(db, 50, nop, fail), errInjected)
+	})
+
+	t.Run("read pending in Load", func(t *testing.T) {
+		db := &faultyDB{DB: dbm.NewMemDB(), getKey: string(pendingKey)}
+		inProgress, err := Load(db, nop, nil, nil)
+		require.ErrorIs(t, err, errInjected)
+		require.False(t, inProgress)
+	})
+
+	t.Run("count the attempt in Load", func(t *testing.T) {
+		mem := dbm.NewMemDB()
+		require.NoError(t, WritePending(mem, Pending{TargetHeight: 9}))
+		db := &faultyDB{DB: mem, failSet: true}
+		loaded := false
+		inProgress, err := Load(db, nop, func(int64) error { loaded = true; return nil }, nil)
+		require.ErrorIs(t, err, errInjected)
+		require.False(t, inProgress)
+		require.False(t, loaded, "the fast path does not run when its attempt cannot be recorded")
+	})
+
+	for _, step := range []string{"set", "delete", "write"} {
+		t.Run("record commit fails on "+step, func(t *testing.T) {
+			db := &faultyDB{DB: dbm.NewMemDB(), failBatch: step}
+			require.ErrorIs(t, RecordCommit(db, "v1@abc"), errInjected)
+			committedBy, err := ReadLastCommitBinary(db)
+			require.NoError(t, err)
+			require.Empty(t, committedBy, "nothing is written when the batch fails")
+		})
+	}
+}
+
+func TestComputeIdentityUnreadableExecutable(t *testing.T) {
+	dir := t.TempDir()
+	require.Equal(t, unversioned, computeIdentity("", "", func() (string, error) { return dir, nil }),
+		"a directory cannot be hashed")
+}

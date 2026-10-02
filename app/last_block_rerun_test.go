@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -124,4 +125,35 @@ func TestLoadLatestOrRerunVersion(t *testing.T) {
 		require.NoError(t, err)
 		require.False(t, ok)
 	})
+}
+
+type failingBatchDB struct{ dbm.DB }
+
+func (d failingBatchDB) NewBatch() dbm.Batch { return failingBatch{d.DB.NewBatch()} }
+
+type failingBatch struct{ dbm.Batch }
+
+func (failingBatch) WriteSync() error { return errors.New("disk full") }
+
+func TestRecordCommitByThisBinaryWriteFails(t *testing.T) {
+	hApp, db := committedApp(t)
+	require.NoError(t, db.Delete([]byte("heimdall/last-block-rerun/committed-by")))
+	hApp.rerunDB = failingBatchDB{DB: db}
+	hApp.rerunMarkerWritten = false
+	hApp.rerunInProgress = true
+
+	hApp.recordCommitByThisBinary()
+
+	require.False(t, hApp.rerunMarkerWritten, "a failed write is retried on the next commit")
+	require.True(t, hApp.rerunInProgress)
+	committedBy, err := rerun.ReadLastCommitBinary(db)
+	require.NoError(t, err)
+	require.Empty(t, committedBy)
+}
+
+func TestCorruptPendingRerunStopsTheStart(t *testing.T) {
+	_, db := committedApp(t)
+	require.NoError(t, db.Set([]byte("heimdall/last-block-rerun/pending"), []byte{1}))
+
+	require.Panics(t, func() { reopenApp(t, db) })
 }

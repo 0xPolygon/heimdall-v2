@@ -3,6 +3,7 @@ package heimdalld
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -105,4 +106,15 @@ func TestWrapStartWithLastBlockRerun(t *testing.T) {
 	wrapStartWithLastBlockRerun(cmd)
 	require.NoError(t, cmd.PreRunE(cmd, nil))
 	require.Equal(t, 1, rc.calls)
+}
+
+func TestPrepareLastBlockRerunOpenFails(t *testing.T) {
+	ctx := server.NewDefaultContext()
+	home := filepath.Join(t.TempDir(), "home")
+	require.NoError(t, os.WriteFile(home, nil, 0o600))
+	ctx.Config.SetRoot(home)
+	rc := stubRollback(t, 49, nil)
+
+	require.ErrorContains(t, prepareLastBlockRerun(ctx), "open application db")
+	require.Zero(t, rc.calls)
 }
