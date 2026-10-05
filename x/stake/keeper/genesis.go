@@ -2,11 +2,13 @@ package keeper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -58,6 +60,8 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) []abc
 		}
 	}
 
+	k.importValidatorStore(ctx, data)
+
 	for _, sequence := range data.StakingSequences {
 		err := k.SetStakingSequence(ctx, sequence)
 		if err != nil {
@@ -105,6 +109,56 @@ func penultimateValidatorSetFromGenesis(data *types.GenesisState, fallback types
 	return data.PenultimateBlockValidatorSet
 }
 
+// importValidatorStore restores an exported stake store exactly. The set copies written
+// above only refresh on voting power changes, so their nonce and last_updated can lag the
+// store, they omit validators outside the current set, and rebuilding the set re-increments
+// proposer priority. Genesis files without ValidatorSigners skip this to keep their import
+// unchanged.
+func (k Keeper) importValidatorStore(ctx context.Context, data *types.GenesisState) {
+	if len(data.ValidatorSigners) == 0 {
+		return
+	}
+
+	if err := data.ValidateValidatorSigners(); err != nil {
+		panic(fmt.Errorf("invalid validator signers in stake genesis: %w", err))
+	}
+
+	var errs []error
+	for _, validator := range data.Validators {
+		errs = append(errs, k.AddValidator(ctx, *validator))
+	}
+
+	// AddValidator maps each ID to the last record written, which is wrong for an ID
+	// whose old signer record is still in the store after a signer change.
+	for _, vs := range data.ValidatorSigners {
+		errs = append(errs, k.signer.Set(ctx, vs.ValId, util.FormatAddress(vs.Signer)))
+	}
+
+	// CometBFT runs the genesis validators, derived from the current set, for the first
+	// two blocks, and the previous set becomes the penultimate set that verifies the
+	// second block's vote extensions. So previous must be the current set, not the
+	// exported previous block's set.
+	current := data.CurrentValidatorSet
+	errs = append(errs,
+		k.UpdateValidatorSetInStore(ctx, current),
+		k.UpdatePreviousBlockValidatorSetInStore(ctx, current),
+		k.UpdatePenultimateBlockValidatorSetInStore(ctx, penultimateValidatorSetFromGenesis(data, current)),
+	)
+	if err := errors.Join(errs...); err != nil {
+		panic(fmt.Errorf("error importing the validator store while initializing stake genesis: %w", err))
+	}
+}
+
+func (k Keeper) exportValidatorSigners(ctx context.Context) ([]types.ValidatorSigner, error) {
+	var signers []types.ValidatorSigner
+	err := k.signer.Walk(ctx, nil, func(valID uint64, signer string) (bool, error) {
+		signers = append(signers, types.ValidatorSigner{ValId: valID, Signer: signer})
+		return false, nil
+	})
+
+	return signers, err
+}
+
 // ExportGenesis returns a GenesisState for the given stake context and keeper.
 // The GenesisState will contain the validators and the staking sequences
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
@@ -140,6 +194,12 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return nil
 	}
 
+	validatorSigners, err := k.exportValidatorSigners(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("Error in fetching validator signers from store", "err", err)
+		return nil
+	}
+
 	return &types.GenesisState{
 		Validators:                   k.GetAllValidators(ctx),
 		CurrentValidatorSet:          validatorSet,
@@ -147,5 +207,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		PreviousBlockValidatorSet:    previousValidatorSet,
 		LastBlockTxs:                 lastBlockTxs,
 		PenultimateBlockValidatorSet: penultimateValidatorSet,
+		ValidatorSigners:             validatorSigners,
 	}
 }

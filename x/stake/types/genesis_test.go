@@ -2,10 +2,12 @@ package types_test
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -184,4 +186,149 @@ func TestSetGenesisStateToAppState(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, result)
 	})
+}
+
+func TestGenesisState_ValidateValidatorSigners(t *testing.T) {
+	t.Parallel()
+
+	newVal := func(id uint64) *types.Validator {
+		pub := secp256k1.GenPrivKey().PubKey()
+		v, err := types.NewValidator(id, 0, 0, 1, 10, pub, pub.Address().String())
+		require.NoError(t, err)
+		return v
+	}
+	v1, v2, outside := newVal(1), newVal(2), newVal(3)
+	rotated := *v2
+	rotatedNew := newVal(2)
+
+	base := func() types.GenesisState {
+		return types.GenesisState{
+			Validators:          []*types.Validator{v1, v2, outside, rotatedNew},
+			CurrentValidatorSet: types.ValidatorSet{Validators: []*types.Validator{v1, rotatedNew}},
+			ValidatorSigners: []types.ValidatorSigner{
+				{ValId: 1, Signer: v1.Signer},
+				{ValId: 2, Signer: rotatedNew.Signer},
+				{ValId: 3, Signer: outside.Signer},
+			},
+		}
+	}
+
+	tests := []struct {
+		name    string
+		mutate  func(gs *types.GenesisState)
+		wantErr string
+	}{
+		{name: "consistent export", mutate: func(*types.GenesisState) {}},
+		{name: "legacy genesis without signers", mutate: func(gs *types.GenesisState) {
+			gs.ValidatorSigners = nil
+			gs.CurrentValidatorSet = types.ValidatorSet{}
+		}},
+		{name: "empty current set", wantErr: "require a current validator set", mutate: func(gs *types.GenesisState) {
+			gs.CurrentValidatorSet = types.ValidatorSet{}
+		}},
+		{name: "duplicate signer record", wantErr: "duplicate validator record", mutate: func(gs *types.GenesisState) {
+			gs.Validators = append(gs.Validators, &rotated)
+		}},
+		{name: "duplicate id mapping", wantErr: "duplicate signer mapping", mutate: func(gs *types.GenesisState) {
+			gs.ValidatorSigners = append(gs.ValidatorSigners, types.ValidatorSigner{ValId: 2, Signer: v2.Signer})
+		}},
+		{name: "mapping to unknown signer", wantErr: "no matching record", mutate: func(gs *types.GenesisState) {
+			gs.ValidatorSigners[2].Signer = newVal(3).Signer
+		}},
+		{name: "mapping to another validator's record", wantErr: "no matching record", mutate: func(gs *types.GenesisState) {
+			gs.ValidatorSigners[0].Signer = outside.Signer
+		}},
+		{name: "validator without mapping", wantErr: "validator 3 has no signer mapping", mutate: func(gs *types.GenesisState) {
+			gs.ValidatorSigners = gs.ValidatorSigners[:2]
+		}},
+		{name: "current set member without record", wantErr: "current set validator 4 has no record", mutate: func(gs *types.GenesisState) {
+			gs.CurrentValidatorSet.Validators = append(gs.CurrentValidatorSet.Validators, newVal(4))
+		}},
+		{name: "current set member with another record's id", wantErr: "current set validator 7 does not match its record", mutate: func(gs *types.GenesisState) {
+			member := *v1
+			member.ValId = 7
+			gs.CurrentValidatorSet.Validators[0] = &member
+		}},
+		{name: "current set member with another public key", wantErr: "current set validator 1 does not match its record", mutate: func(gs *types.GenesisState) {
+			member := *v1
+			member.PubKey = outside.PubKey
+			gs.CurrentValidatorSet.Validators[0] = &member
+		}},
+		{name: "current set member with another power", wantErr: "current set validator 1 has power 70 but its record has 10", mutate: func(gs *types.GenesisState) {
+			member := *v1
+			member.VotingPower = 70
+			gs.CurrentValidatorSet.Validators[0] = &member
+		}},
+		{name: "current set member with stale nonce", mutate: func(gs *types.GenesisState) {
+			member := *v1
+			member.Nonce = v1.Nonce - 1
+			gs.CurrentValidatorSet.Validators[0] = &member
+		}},
+		{name: "current set lists an id twice", wantErr: "current set lists validator 1 twice", mutate: func(gs *types.GenesisState) {
+			gs.CurrentValidatorSet.Validators = append(gs.CurrentValidatorSet.Validators, v1)
+		}},
+		{name: "current set total power off", wantErr: "total voting power 7 does not match", mutate: func(gs *types.GenesisState) {
+			gs.CurrentValidatorSet.TotalVotingPower = 7
+		}},
+		{name: "current set total power consistent", mutate: func(gs *types.GenesisState) {
+			gs.CurrentValidatorSet.TotalVotingPower = v1.VotingPower + rotatedNew.VotingPower
+		}},
+		{name: "current set proposer removed by the last update", mutate: func(gs *types.GenesisState) {
+			gs.CurrentValidatorSet.Proposer = outside
+		}},
+		{name: "current set member on its pre-rotation signer", wantErr: "current set validator 2 is not the signer its id maps to", mutate: func(gs *types.GenesisState) {
+			gs.CurrentValidatorSet.Validators[1] = v2
+		}},
+		{name: "id mapped back to its pre-rotation record", wantErr: "current set validator 2 is not the signer its id maps to", mutate: func(gs *types.GenesisState) {
+			gs.ValidatorSigners[1].Signer = v2.Signer
+		}},
+		{name: "signers compared case-insensitively", mutate: func(gs *types.GenesisState) {
+			gs.ValidatorSigners[0].Signer = strings.ToUpper(strings.TrimPrefix(v1.Signer, "0x"))
+			member := *v1
+			member.Signer = strings.ToUpper(v1.Signer)
+			gs.CurrentValidatorSet.Validators[0] = &member
+		}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gs := base()
+			tc.mutate(&gs)
+
+			err := gs.Validate()
+			if tc.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.ErrorContains(t, err, tc.wantErr)
+		})
+	}
+}
+
+func TestGenesisState_ValidatorSignersJSONRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	cdc := codec.NewProtoCodec(codectypes.NewInterfaceRegistry())
+	gs := types.GenesisState{ValidatorSigners: []types.ValidatorSigner{{ValId: 2, Signer: "0xabc"}, {ValId: 5, Signer: "0xdef"}}}
+
+	bz, err := cdc.MarshalJSON(&gs)
+	require.NoError(t, err)
+
+	var got types.GenesisState
+	require.NoError(t, cdc.UnmarshalJSON(bz, &got))
+	require.Equal(t, gs.ValidatorSigners, got.ValidatorSigners)
+}
+
+func TestSetGenesisStateToAppState_ClearsValidatorSigners(t *testing.T) {
+	t.Parallel()
+
+	cdc := codec.NewProtoCodec(codectypes.NewInterfaceRegistry())
+	exported := types.GenesisState{ValidatorSigners: []types.ValidatorSigner{{ValId: 1, Signer: "0xabc"}}}
+	appState := map[string]json.RawMessage{types.ModuleName: cdc.MustMarshalJSON(&exported)}
+
+	appState, err := types.SetGenesisStateToAppState(cdc, appState, nil, types.ValidatorSet{})
+	require.NoError(t, err)
+	require.Empty(t, types.GetGenesisStateFromAppState(cdc, appState).ValidatorSigners)
 }

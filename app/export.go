@@ -31,11 +31,24 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
-	validators, err := stake.WriteValidators(ctx, &app.StakeKeeper)
+	ackCount, err := app.CheckpointKeeper.GetAckCount(ctx)
+	if err != nil {
+		return servertypes.ExportedApp{}, err
+	}
+
+	validators, err := stake.WriteValidators(ctx, &app.StakeKeeper, ackCount)
+
+	// The exported genesis starts a new chain at height, whose first block has no last
+	// commit to carry vote extensions, as the v1 to v2 migration genesis does.
+	consensusParams := app.GetConsensusParams(ctx)
+	if consensusParams.Abci != nil {
+		consensusParams.Abci.VoteExtensionsEnableHeight = height
+	}
+
 	return servertypes.ExportedApp{
 		AppState:        appState,
 		Height:          height,
 		Validators:      validators,
-		ConsensusParams: app.GetConsensusParams(ctx),
+		ConsensusParams: consensusParams,
 	}, err
 }
