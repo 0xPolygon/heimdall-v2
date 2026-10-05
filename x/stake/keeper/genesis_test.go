@@ -214,6 +214,7 @@ func (s *KeeperTestSuite) seedDivergedStore() (rotatedSigner string) {
 			set.Validators[i] = &swapped
 		}
 	}
+	sort.Sort(types.ValidatorsByAddress(set.Validators))
 	require.NoError(keeper.UpdateValidatorSetInStore(ctx, set))
 
 	// a previous block set that differs from the current one, as after a set change

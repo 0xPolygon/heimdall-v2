@@ -140,3 +140,45 @@ func finalizeAndCommit(t *testing.T, hApp *app.HeimdallApp, height int64, propos
 	_, err = hApp.Commit()
 	require.NoError(t, err)
 }
+
+// A current record outside the stored set would give CometBFT a validator the vote
+// extension checks don't know, so InitChain rejects it.
+func TestInitChainRejectsCurrentRecordOutsideTheSet(t *testing.T) {
+	setup := app.SetupApp(t, 3)
+	hApp := setup.App
+	ctx := hApp.NewUncachedContext(false, cmtproto.Header{Height: hApp.LastBlockHeight()})
+	signedBy := hApp.StakeKeeper.GetCurrentValidators(ctx)
+
+	rotated, err := hApp.StakeKeeper.GetValidatorFromValID(ctx, 0)
+	require.NoError(t, err)
+	newPub := secp256k1.GenPrivKey().PubKey()
+	require.NoError(t, hApp.StakeKeeper.UpdateSigner(ctx, newPub.Address().String(), newPub.Bytes(), rotated.Signer))
+	finalizeAndCommit(t, hApp, hApp.LastBlockHeight()+1, signedBy, signedBy)
+
+	exported, err := hApp.ExportAppStateAndValidators(false, nil, nil)
+	require.NoError(t, err)
+
+	var appState map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(exported.AppState, &appState))
+	stakeState := stakeTypes.GetGenesisStateFromAppState(hApp.AppCodec(), appState)
+	for _, v := range stakeState.Validators {
+		if util.FormatAddress(v.Signer) == util.FormatAddress(rotated.Signer) {
+			v.VotingPower, v.EndEpoch = 100, 0
+		}
+	}
+	appState[stakeTypes.ModuleName] = hApp.AppCodec().MustMarshalJSON(stakeState)
+	appStateBytes, err := json.Marshal(appState)
+	require.NoError(t, err)
+
+	appOptions := make(simtestutil.AppOptionsMap)
+	appOptions[flags.FlagHome] = app.DefaultNodeHome
+	fresh := app.NewHeimdallApp(log.NewTestLogger(t), dbm.NewMemDB(), nil, true, appOptions)
+
+	_, err = fresh.InitChain(&abci.RequestInitChain{
+		ChainId:         hApp.ChainID(),
+		ConsensusParams: &exported.ConsensusParams,
+		AppStateBytes:   appStateBytes,
+		InitialHeight:   exported.Height,
+	})
+	require.ErrorContains(t, err, "invalid stake genesis: validator 0 is current but not in the current set")
+}

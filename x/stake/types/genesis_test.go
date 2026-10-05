@@ -2,6 +2,7 @@ package types_test
 
 import (
 	"encoding/json"
+	"sort"
 	"strings"
 	"testing"
 
@@ -214,11 +215,15 @@ func TestGenesisState_ValidateValidatorSigners(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		mutate  func(gs *types.GenesisState)
-		wantErr string
+		name      string
+		mutate    func(gs *types.GenesisState)
+		wantErr   string
+		keepOrder bool
 	}{
 		{name: "consistent export", mutate: func(*types.GenesisState) {}},
+		{name: "current set not sorted by signer", wantErr: "current set is not sorted by signer", keepOrder: true, mutate: func(gs *types.GenesisState) {
+			sort.Sort(sort.Reverse(types.ValidatorsByAddress(gs.CurrentValidatorSet.Validators)))
+		}},
 		{name: "legacy genesis without signers", mutate: func(gs *types.GenesisState) {
 			gs.ValidatorSigners = nil
 			gs.CurrentValidatorSet = types.ValidatorSet{}
@@ -296,6 +301,9 @@ func TestGenesisState_ValidateValidatorSigners(t *testing.T) {
 
 			gs := base()
 			tc.mutate(&gs)
+			if !tc.keepOrder {
+				sort.Sort(types.ValidatorsByAddress(gs.CurrentValidatorSet.Validators))
+			}
 
 			err := gs.Validate()
 			if tc.wantErr == "" {
@@ -331,4 +339,49 @@ func TestSetGenesisStateToAppState_ClearsValidatorSigners(t *testing.T) {
 	appState, err := types.SetGenesisStateToAppState(cdc, appState, nil, types.ValidatorSet{})
 	require.NoError(t, err)
 	require.Empty(t, types.GetGenesisStateFromAppState(cdc, appState).ValidatorSigners)
+}
+
+func TestGenesisState_ValidateCurrentSetMembership(t *testing.T) {
+	t.Parallel()
+
+	const ackCount = 10
+	newVal := func(id, startEpoch uint64, power int64) *types.Validator {
+		pub := secp256k1.GenPrivKey().PubKey()
+		v, err := types.NewValidator(id, startEpoch, 0, 1, power, pub, pub.Address().String())
+		require.NoError(t, err)
+		return v
+	}
+	a, b := newVal(1, 0, 10), newVal(2, 0, 10)
+	pending, retired := newVal(3, ackCount+5, 10), newVal(4, 0, 0)
+
+	tests := []struct {
+		name    string
+		set     []*types.Validator
+		signers []types.ValidatorSigner
+		wantErr string
+	}{
+		{name: "set holds exactly the current records", set: []*types.Validator{a, b}, signers: []types.ValidatorSigner{{ValId: 1}}},
+		{name: "legacy genesis is not checked", set: []*types.Validator{a}},
+		{name: "current record missing from the set", set: []*types.Validator{a}, signers: []types.ValidatorSigner{{ValId: 1}}, wantErr: "validator 2 is current but not in the current set"},
+		{name: "pending record in the set", set: []*types.Validator{a, b, pending}, signers: []types.ValidatorSigner{{ValId: 1}}, wantErr: "current set has 3 members but 2 validators are current"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			gs := types.GenesisState{
+				Validators:          []*types.Validator{a, b, pending, retired},
+				CurrentValidatorSet: types.ValidatorSet{Validators: tc.set},
+				ValidatorSigners:    tc.signers,
+			}
+
+			err := gs.ValidateCurrentSetMembership(ackCount)
+			if tc.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.EqualError(t, err, tc.wantErr)
+		})
+	}
 }

@@ -131,16 +131,55 @@ func (data GenesisState) validateCurrentSetRecords(records map[string]*Validator
 		return err
 	}
 
+	// GetByAddress binary-searches the set, which NewValidatorSet sorts on the legacy path
 	inSet := make(map[uint64]struct{}, len(set.Validators))
+	previous := ""
 	for _, v := range set.Validators {
 		if _, dup := inSet[v.ValId]; dup {
 			return fmt.Errorf("current set lists validator %d twice", v.ValId)
 		}
 		inSet[v.ValId] = struct{}{}
 
+		signer := util.FormatAddress(v.Signer)
+		if signer <= previous {
+			return fmt.Errorf("current set is not sorted by signer at validator %d", v.ValId)
+		}
+		previous = signer
+
 		if err := validateSetMember(v, records, mapped); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// ValidateCurrentSetMembership checks that a genesis carrying ValidatorSigners stores as its
+// current set exactly the records that are current at ackCount: InitChainer hands those to
+// CometBFT, while vote extensions are verified against the stored set.
+func (data GenesisState) ValidateCurrentSetMembership(ackCount uint64) error {
+	if len(data.ValidatorSigners) == 0 {
+		return nil
+	}
+
+	inSet := make(map[string]struct{}, len(data.CurrentValidatorSet.Validators))
+	for _, v := range data.CurrentValidatorSet.Validators {
+		inSet[util.FormatAddress(v.Signer)] = struct{}{}
+	}
+
+	current := 0
+	for _, v := range data.Validators {
+		if !v.IsCurrentValidator(ackCount) {
+			continue
+		}
+		current++
+		if _, ok := inSet[util.FormatAddress(v.Signer)]; !ok {
+			return fmt.Errorf("validator %d is current but not in the current set", v.ValId)
+		}
+	}
+
+	if current != len(inSet) {
+		return fmt.Errorf("current set has %d members but %d validators are current", len(inSet), current)
 	}
 
 	return nil
