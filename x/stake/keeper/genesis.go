@@ -16,14 +16,7 @@ import (
 func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) []abci.ValidatorUpdate {
 	k.PanicIfSetupIsIncomplete()
 
-	// get the current validators' set
-	var vals []*types.Validator
-	if len(data.CurrentValidatorSet.Validators) == 0 {
-		vals = data.Validators
-	} else {
-		vals = data.CurrentValidatorSet.Validators
-	}
-
+	vals := genesisValidators(data)
 	if len(vals) != 0 {
 		resultValSet := types.NewValidatorSet(vals)
 
@@ -97,6 +90,16 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) []abc
 	}
 
 	return cometVals
+}
+
+// genesisValidators returns the validators InitGenesis builds the sets from: the current
+// set, or every validator when the genesis has none.
+func genesisValidators(data *types.GenesisState) []*types.Validator {
+	if len(data.CurrentValidatorSet.Validators) == 0 {
+		return data.Validators
+	}
+
+	return data.CurrentValidatorSet.Validators
 }
 
 // penultimateValidatorSetFromGenesis returns the H-2 validator set to restore on import:
@@ -194,10 +197,10 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return nil
 	}
 
+	// without the signer map the export would silently fall back to the lossy legacy import
 	validatorSigners, err := k.exportValidatorSigners(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("Error in fetching validator signers from store", "err", err)
-		return nil
+		panic(fmt.Errorf("error exporting the validator signers: %w", err))
 	}
 
 	return &types.GenesisState{

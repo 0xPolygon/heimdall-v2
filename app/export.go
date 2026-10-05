@@ -22,16 +22,16 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 	// We export at the last height + 1, because that's the height at which
 	// Tendermint will start InitChain.
 	height := app.LastBlockHeight() + 1
+	ackCount, err := app.CheckpointKeeper.GetAckCount(ctx)
+	if err != nil {
+		return servertypes.ExportedApp{}, err
+	}
+
 	genState, err := app.ModuleManager.ExportGenesisForModules(ctx, app.appCodec, modulesToExport)
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}
 	appState, err := json.MarshalIndent(genState, "", "  ")
-	if err != nil {
-		return servertypes.ExportedApp{}, err
-	}
-
-	ackCount, err := app.CheckpointKeeper.GetAckCount(ctx)
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}

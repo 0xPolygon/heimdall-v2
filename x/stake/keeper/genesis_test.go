@@ -298,3 +298,13 @@ func (s *KeeperTestSuite) TestInitGenesisPanicsOnInconsistentValidatorSigners() 
 		func() { s.stakeKeeper.InitGenesis(s.ctx, exported) },
 	)
 }
+
+func (s *KeeperTestSuite) TestInitGenesisWithoutCurrentSetBuildsItFromValidators() {
+	validators := s.makeValidators(0, 3)
+
+	s.stakeKeeper.InitGenesis(s.ctx, types.NewGenesisState(validators, types.ValidatorSet{}, nil))
+
+	set, err := s.stakeKeeper.GetValidatorSet(s.ctx)
+	s.Require().NoError(err)
+	s.Require().Len(set.Validators, len(validators))
+}

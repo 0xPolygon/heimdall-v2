@@ -221,7 +221,7 @@ func TestGenesisState_ValidateValidatorSigners(t *testing.T) {
 		keepOrder bool
 	}{
 		{name: "consistent export", mutate: func(*types.GenesisState) {}},
-		{name: "current set not sorted by signer", wantErr: "current set is not sorted by signer", keepOrder: true, mutate: func(gs *types.GenesisState) {
+		{name: "current set not sorted by signer", wantErr: "current set is not strictly sorted by signer", keepOrder: true, mutate: func(gs *types.GenesisState) {
 			sort.Sort(sort.Reverse(types.ValidatorsByAddress(gs.CurrentValidatorSet.Validators)))
 		}},
 		{name: "legacy genesis without signers", mutate: func(gs *types.GenesisState) {
@@ -268,6 +268,11 @@ func TestGenesisState_ValidateValidatorSigners(t *testing.T) {
 			member := *v1
 			member.Nonce = v1.Nonce - 1
 			gs.CurrentValidatorSet.Validators[0] = &member
+		}},
+		{name: "current set lists a signer twice", wantErr: "current set is not strictly sorted by signer", mutate: func(gs *types.GenesisState) {
+			again := *v1
+			again.ValId = 7
+			gs.CurrentValidatorSet.Validators = append(gs.CurrentValidatorSet.Validators, &again)
 		}},
 		{name: "current set lists an id twice", wantErr: "current set lists validator 1 twice", mutate: func(gs *types.GenesisState) {
 			gs.CurrentValidatorSet.Validators = append(gs.CurrentValidatorSet.Validators, v1)

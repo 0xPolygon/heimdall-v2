@@ -18,6 +18,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/app"
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -181,4 +182,16 @@ func TestInitChainRejectsCurrentRecordOutsideTheSet(t *testing.T) {
 		InitialHeight:   exported.Height,
 	})
 	require.ErrorContains(t, err, "invalid stake genesis: validator 0 is current but not in the current set")
+}
+
+func TestExportAppStateAndValidators_FailsOnUnreadableAckCount(t *testing.T) {
+	setup := app.SetupApp(t, 1)
+	hApp := setup.App
+	ctx := hApp.NewUncachedContext(false, cmtproto.Header{Height: hApp.LastBlockHeight()})
+
+	// an ack count too short to decode
+	ctx.KVStore(hApp.GetKey(checkpointTypes.StoreKey)).Set(checkpointTypes.AckCountPrefixKey, []byte{0x01})
+
+	_, err := hApp.ExportAppStateAndValidators(false, nil, nil)
+	require.ErrorContains(t, err, "wanted at least 8, got: 1")
 }

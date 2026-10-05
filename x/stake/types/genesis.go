@@ -142,7 +142,7 @@ func (data GenesisState) validateCurrentSetRecords(records map[string]*Validator
 
 		signer := util.FormatAddress(v.Signer)
 		if signer <= previous {
-			return fmt.Errorf("current set is not sorted by signer at validator %d", v.ValId)
+			return fmt.Errorf("current set is not strictly sorted by signer at validator %d", v.ValId)
 		}
 		previous = signer
 
