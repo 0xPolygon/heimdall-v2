@@ -11,7 +11,11 @@ type telemetry struct {
 	collectors      []prometheus.Collector
 }
 
-func newTelemetry() *telemetry {
+func newTelemetry(enforce bool) *telemetry {
+	mode := modeObserve
+	if enforce {
+		mode = modeEnforce
+	}
 	m := &telemetry{}
 	for r := invalidEncoding; r < reasonCount; r++ {
 		m.events[r-1] = m.counter("reason_events_total", "Observed evidence events.", "reason", reasonNames[r])
@@ -20,9 +24,9 @@ func newTelemetry() *telemetry {
 	for f := other; f < familyCount; f++ {
 		m.traffic[f] = m.counter("bytes_total", "Observed encoded envelope bytes. Serving bytes are queued locally.", "family", familyNames[f])
 	}
-	m.actions[0] = m.counter("would_actions_total", "Upward hypothetical action transitions. No enforcement.", "action", "throttle")
-	m.actions[1] = m.counter("would_actions_total", "Upward hypothetical action transitions. No enforcement.", "action", "jail")
-	m.evictions = m.counter("evictions_total", "Peer records evicted at the capacity bound.", "mode", "observe")
+	m.actions[0] = m.counter("would_actions_total", "Upward score-band transitions; not a count of network actions.", "action", "throttle")
+	m.actions[1] = m.counter("would_actions_total", "Upward score-band transitions; not a count of network actions.", "action", "jail")
+	m.evictions = m.counter("evictions_total", "Peer records evicted at the capacity bound.", "mode", mode)
 	m.risk = prometheus.NewHistogram(prometheus.HistogramOpts{
 		Namespace: "heimdall", Subsystem: "peer_reputation", Name: "risk", Help: "Event-sampled risk; not a peer-population distribution.", Buckets: []float64{0, 20, 40, 60, 80, 100},
 	})

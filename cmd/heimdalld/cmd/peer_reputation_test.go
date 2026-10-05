@@ -20,18 +20,20 @@ func peerReputationCommand() *cobra.Command {
 func TestPeerReputationStartup(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
-		name          string
-		args          []string
-		enabled, fail bool
+		name                   string
+		args                   []string
+		enabled, enforce, fail bool
 	}{
-		{"default", nil, true, false},
-		{"disabled", []string{"--peer-reputation=false"}, false, false},
-		{"explicit", []string{"--peer-reputation=true"}, true, false},
-		{"external-comet", []string{"--with-comet=false"}, false, false},
-		{"query-only", []string{"--grpc-only"}, false, false},
-		{"explicit-external", []string{"--with-comet=false", "--peer-reputation=true"}, false, true},
-		{"explicit-query", []string{"--grpc-only", "--peer-reputation=true"}, false, true},
-		{"disabled-query", []string{"--grpc-only", "--peer-reputation=false"}, false, false},
+		{"default", nil, true, true, false},
+		{"observe-only", []string{"--peer-reputation-enforce=false"}, true, false, false},
+		{"enforce-external", []string{"--with-comet=false", "--peer-reputation-enforce=true"}, false, false, true},
+		{"disabled", []string{"--peer-reputation=false"}, false, false, false},
+		{"explicit", []string{"--peer-reputation=true"}, true, true, false},
+		{"external-comet", []string{"--with-comet=false"}, false, false, false},
+		{"query-only", []string{"--grpc-only"}, false, false, false},
+		{"explicit-external", []string{"--with-comet=false", "--peer-reputation=true"}, false, false, true},
+		{"explicit-query", []string{"--grpc-only", "--peer-reputation=true"}, false, false, true},
+		{"disabled-query", []string{"--grpc-only", "--peer-reputation=false"}, false, false, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -46,6 +48,10 @@ func TestPeerReputationStartup(t *testing.T) {
 				require.NoError(t, err)
 			}
 			require.Equal(t, tc.enabled, ctx.Config.P2P.PeerObserver != nil)
+			require.Equal(t, tc.enforce, ctx.Config.P2P.PeerPolicy != nil)
+			if tc.enforce {
+				require.Same(t, ctx.Config.P2P.PeerObserver, ctx.Config.P2P.PeerPolicy)
+			}
 			if tc.enabled {
 				require.ErrorContains(t, configurePeerReputation(cmd, ctx, registry), "register peer reputation metrics")
 			}
@@ -58,6 +64,9 @@ func TestPeerReputationMissingStartupFlags(t *testing.T) {
 	ctx := server.NewDefaultContext()
 	cmd := &cobra.Command{Use: "start"}
 	require.Error(t, installPeerReputation(cmd, ctx))
+	missingEnforce := &cobra.Command{Use: "start"}
+	missingEnforce.Flags().Bool(peerReputationFlag, true, "")
+	require.ErrorContains(t, configurePeerReputation(missingEnforce, ctx, prometheus.NewRegistry()), peerReputationEnforceFlag)
 	addPeerReputationFlag(cmd)
 	require.Error(t, configurePeerReputation(cmd, ctx, prometheus.NewRegistry()))
 	cmd.Flags().Bool("with-comet", true, "")

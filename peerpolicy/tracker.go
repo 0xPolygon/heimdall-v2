@@ -10,6 +10,8 @@ import (
 )
 
 const (
+	modeObserve     = "observe"
+	modeEnforce     = "enforce"
 	windowWidth     = 10 * time.Second
 	windowCount     = 6
 	maxPeers        = 1024
@@ -48,23 +50,24 @@ type peerRecord struct {
 // same authenticated node ID retains evidence until expiry or LRU eviction.
 type Tracker struct {
 	mu      sync.Mutex
+	enforce bool
 	now     func() time.Duration
 	peers   map[string]*list.Element
 	order   *list.List
 	metrics *telemetry
 }
 
-func New(reg prometheus.Registerer) (*Tracker, error) {
+func New(reg prometheus.Registerer, enforce bool) (*Tracker, error) {
 	start := time.Now()
-	return newTracker(reg, func() time.Duration { return time.Since(start) })
+	return newTracker(reg, func() time.Duration { return time.Since(start) }, enforce)
 }
 
-func newTracker(reg prometheus.Registerer, now func() time.Duration) (*Tracker, error) {
-	m := newTelemetry()
+func newTracker(reg prometheus.Registerer, now func() time.Duration, enforce bool) (*Tracker, error) {
+	m := newTelemetry(enforce)
 	if err := reg.Register(m); err != nil {
 		return nil, err
 	}
-	return &Tracker{now: now, peers: make(map[string]*list.Element), order: list.New(), metrics: m}, nil
+	return &Tracker{enforce: enforce, now: now, peers: make(map[string]*list.Element), order: list.New(), metrics: m}, nil
 }
 
 // Observe borrows the existing decoded message without hashing, copying payloads,
@@ -203,17 +206,21 @@ func actionFor(risk uint64) int {
 }
 
 type Snapshot struct {
-	Mode          string            `json:"mode"`
-	Risk          uint64            `json:"risk"`
-	WouldAction   string            `json:"wouldAction"`
-	ReasonWindows map[string]uint64 `json:"reasonWindows"`
+	ConnectionAllowed bool              `json:"connectionAllowed"`
+	Mode              string            `json:"mode"`
+	Risk              uint64            `json:"risk"`
+	WouldAction       string            `json:"wouldAction"`
+	ReasonWindows     map[string]uint64 `json:"reasonWindows"`
 }
 
 // Snapshot is for local callers and tests. Peer IDs never become metric labels.
 func (t *Tracker) Snapshot(id string) Snapshot {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	s := Snapshot{Mode: "observe", WouldAction: "none", ReasonWindows: make(map[string]uint64)}
+	s := Snapshot{Mode: modeObserve, ConnectionAllowed: true, WouldAction: "none", ReasonWindows: make(map[string]uint64)}
+	if t.enforce {
+		s.Mode = modeEnforce
+	}
 	elem := t.peers[id]
 	if elem == nil {
 		return s
@@ -221,6 +228,7 @@ func (t *Tracker) Snapshot(id string) Snapshot {
 	p := elem.Value.(*peerRecord)
 	tick := int64(t.now() / windowWidth)
 	s.Risk = p.risk(tick)
+	s.ConnectionAllowed = !t.enforce || s.Risk < 100
 	s.WouldAction = [...]string{"none", "throttle", "jail"}[actionFor(s.Risk)]
 	for _, b := range p.windows {
 		if tick-b.tick >= windowCount || b.tick > tick {

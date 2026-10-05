@@ -21,7 +21,7 @@ func fixture(t *testing.T) (*Tracker, *time.Duration, *prometheus.Registry) {
 	t.Helper()
 	now := new(time.Duration)
 	reg := prometheus.NewRegistry()
-	tracker, err := newTracker(reg, func() time.Duration { return *now })
+	tracker, err := newTracker(reg, func() time.Duration { return *now }, false)
 	require.NoError(t, err)
 	return tracker, now, reg
 }
@@ -143,7 +143,7 @@ func TestPeerPolicyNeutralAndInputBounds(t *testing.T) {
 	require.Empty(t, tr.peers)
 	tr.Observe(strings.Repeat("x", 128), observation.Event{Kind: observation.InvalidEncoding})
 	require.Len(t, tr.peers, 1)
-	_, err := New(reg)
+	_, err := New(reg, false)
 	require.Error(t, err)
 	require.Zero(t, weight(none))
 	require.Zero(t, weight(reasonCount))
@@ -170,7 +170,7 @@ func TestPeerPolicyConcurrentObservation(t *testing.T) {
 }
 
 func BenchmarkPeerPolicyObserve(b *testing.B) {
-	tr, err := New(prometheus.NewRegistry())
+	tr, err := New(prometheus.NewRegistry(), false)
 	require.NoError(b, err)
 	e := observation.Event{Kind: observation.Received, Bytes: 10, Message: &bc.BlockRequest{Height: 100}}
 	tr.Observe("peer", e)

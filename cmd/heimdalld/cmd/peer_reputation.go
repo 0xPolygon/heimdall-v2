@@ -10,10 +10,14 @@ import (
 	"github.com/0xPolygon/heimdall-v2/peerpolicy"
 )
 
-const peerReputationFlag = "peer-reputation"
+const (
+	peerReputationFlag        = "peer-reputation"
+	peerReputationEnforceFlag = "peer-reputation-enforce"
+)
 
 func addPeerReputationFlag(cmd *cobra.Command) {
-	cmd.Flags().Bool(peerReputationFlag, true, "Observe native peer reputation without enforcement (disable with --peer-reputation=false)")
+	cmd.Flags().Bool(peerReputationFlag, true, "Score native peers (disable with --peer-reputation=false)")
+	cmd.Flags().Bool(peerReputationEnforceFlag, true, "Disconnect and reject peers at risk 100 (observation only with --peer-reputation-enforce=false)")
 }
 
 func installPeerReputation(cmd *cobra.Command, ctx *server.Context) error {
@@ -31,6 +35,10 @@ func configurePeerReputation(cmd *cobra.Command, ctx *server.Context, registry p
 	if !enabled {
 		return nil
 	}
+	enforce, err := cmd.Flags().GetBool(peerReputationEnforceFlag)
+	if err != nil {
+		return err
+	}
 	withComet, err := cmd.Flags().GetBool("with-comet")
 	if err != nil {
 		return err
@@ -40,16 +48,19 @@ func configurePeerReputation(cmd *cobra.Command, ctx *server.Context, registry p
 		return err
 	}
 	if !withComet || grpcOnly {
-		if cmd.Flags().Changed(peerReputationFlag) {
+		if cmd.Flags().Changed(peerReputationFlag) || cmd.Flags().Changed(peerReputationEnforceFlag) {
 			return fmt.Errorf("--peer-reputation requires in-process CometBFT")
 		}
 		return nil
 	}
-	tracker, err := peerpolicy.New(registry)
+	tracker, err := peerpolicy.New(registry, enforce)
 	if err != nil {
 		return fmt.Errorf("register peer reputation metrics: %w", err)
 	}
 	ctx.Config.P2P.PeerObserver = tracker
-	ctx.Logger.Info("Peer reputation observation enabled; scoring does not enforce limits")
+	if enforce {
+		ctx.Config.P2P.PeerPolicy = tracker
+	}
+	ctx.Logger.Info("Peer reputation enabled", "connection_enforcement", enforce)
 	return nil
 }
