@@ -41,6 +41,13 @@ func (rl *RootChainListener) stakeNonceStuck(ctx context.Context, id, nextNonce 
 		return false
 	}
 
+	// The caller read the nonce before the lookups above, so the event may have
+	// just committed. Only a nonce that still has not reached nextNonce is stuck.
+	currentNonce, err := util.GetValidatorNonce(id, rl.cliCtx.Codec)
+	if err != nil || currentNonce >= nextNonce {
+		return false
+	}
+
 	metrics.SelfHealStakeNonceStuck.Inc()
 	rl.Logger.Error("Self-healing: validator nonce is stuck; the next stake event is already processed but the nonce did not advance; skipping validator",
 		"validatorId", id, "heimdallNonce", nextNonce-1, "nextNonce", nextNonce, "txHash", hit.TransactionHash, "logIndex", logIndex)
