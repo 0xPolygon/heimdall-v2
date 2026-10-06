@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"cosmossdk.io/math"
 	"github.com/RichardKnop/machinery/v1/tasks"
@@ -186,7 +185,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 	return nil
 }
 
-func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes string) error {
+func (sp *StakingProcessor) sendUnstakeInitToHeimdall(ctx context.Context, eventName string, logBytes string) error {
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error(errMsgUnmarshallingEvent, "error", err)
@@ -220,7 +219,7 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 
 		if !validNonce {
 			sp.Logger.Info(fmt.Sprintf(infoMsgIgnoringNonceOutOfOrder, "unStakeInit"))
-			return tasks.NewErrRetryTaskLater(msgNonceOutOfOrder, util.StakeNonceRetryDelay*time.Duration(nonceDelay))
+			return sp.retryOutOfOrderNonce(ctx, nonceDelay)
 		}
 
 		sp.Logger.Info(
@@ -274,7 +273,7 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 	return nil
 }
 
-func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes string) error {
+func (sp *StakingProcessor) sendStakeUpdateToHeimdall(ctx context.Context, eventName string, logBytes string) error {
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error(errMsgUnmarshallingEvent, "error", err)
@@ -306,7 +305,7 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 
 		if !validNonce {
 			sp.Logger.Info(fmt.Sprintf(infoMsgIgnoringNonceOutOfOrder, "stakeUpdate"))
-			return tasks.NewErrRetryTaskLater(msgNonceOutOfOrder, util.StakeNonceRetryDelay*time.Duration(nonceDelay))
+			return sp.retryOutOfOrderNonce(ctx, nonceDelay)
 		}
 
 		sp.Logger.Info(
@@ -357,7 +356,7 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 	return nil
 }
 
-func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logBytes string) error {
+func (sp *StakingProcessor) sendSignerChangeToHeimdall(ctx context.Context, eventName string, logBytes string) error {
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error(errMsgUnmarshallingEvent, "error", err)
@@ -404,7 +403,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 
 		if !validNonce {
 			sp.Logger.Info(fmt.Sprintf(infoMsgIgnoringNonceOutOfOrder, "signerChange"))
-			return tasks.NewErrRetryTaskLater(msgNonceOutOfOrder, util.StakeNonceRetryDelay*time.Duration(nonceDelay))
+			return sp.retryOutOfOrderNonce(ctx, nonceDelay)
 		}
 
 		sp.Logger.Info(

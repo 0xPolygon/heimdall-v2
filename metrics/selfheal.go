@@ -28,6 +28,25 @@ var (
 		Help:      "Total number of missing StateSynced events processed by the self-heal loop",
 	})
 
+	// SelfHealStakeNonceStuck counts self-heal cycles that skipped a validator
+	// because heimdall marks its next stake event processed while its nonce
+	// never advanced. Any increase needs a state repair, not a replay.
+	SelfHealStakeNonceStuck = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: Namespace,
+		Subsystem: "self_healing",
+		Name:      "stake_nonce_stuck_total",
+		Help:      "Total number of self-heal cycles that skipped a validator whose next stake event is already processed but whose nonce did not advance",
+	})
+
+	// StakeNonceRetriesDropped counts bridge stake tasks dropped after
+	// retrying an out-of-order nonce for longer than the retry age limit.
+	StakeNonceRetriesDropped = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: Namespace,
+		Subsystem: "bridge",
+		Name:      "stake_nonce_retries_dropped_total",
+		Help:      "Total number of stake tasks dropped after retrying an out-of-order nonce past the retry age limit",
+	})
+
 	// SelfHealCheckpointAcksProcessed counts missing NewHeaderBlock checkpoint
 	// acks successfully queued for replay.
 	SelfHealCheckpointAcksProcessed = promauto.NewCounter(prometheus.CounterOpts{

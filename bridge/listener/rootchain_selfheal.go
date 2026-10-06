@@ -178,6 +178,9 @@ func (rl *RootChainListener) recoverStakeEventsForValidator(ctx context.Context,
 	if !ok || l1MaxNonce <= heimdallNonce {
 		return
 	}
+	if rl.stakeNonceStuck(ctx, id, heimdallNonce+1) {
+		return
+	}
 
 	// Successive iterations are paced by util.StakeNonceRetryDelay so the bridge
 	// processor sees nonces in committed order rather than firing its
