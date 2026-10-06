@@ -60,6 +60,32 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 						{ProtoField: "producer_id"},
 					},
 				},
+				{
+					RpcMethod: "GetProducerVotes",
+					Use:       "producer-votes",
+					Short:     "Query producer votes from all validators",
+				},
+				{
+					RpcMethod: "GetProducerVotesByValidatorId",
+					Use:       "producer-votes-by-validator-id [validator_id]",
+					Short:     "Query producer votes cast by a validator",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+						{ProtoField: "validator_id"},
+					},
+				},
+				{
+					RpcMethod: "GetValidatorPerformanceScore",
+					Use:       "validator-performance-score",
+					Short:     "Query performance scores of all validators",
+				},
+				{
+					RpcMethod: "GetValidatorPerformanceScoreByValidatorId",
+					Use:       "validator-performance-score-by-validator-id [validator_id]",
+					Short:     "Query performance score of a validator",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+						{ProtoField: "validator_id"},
+					},
+				},
 			},
 		},
 	}

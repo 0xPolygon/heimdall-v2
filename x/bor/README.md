@@ -125,6 +125,7 @@ One can run the following query commands from the bor module:
 - `producer-votes-by-validator-id` - Query producer votes cast by a specific validator.
 - `producer-planned-downtime` - Query the planned downtime window for a producer.
 - `validator-performance-score` - Query the performance scores of all validators.
+- `validator-performance-score-by-validator-id` - Query the performance score of a specific validator.
 
 ### CLI commands
 
@@ -150,6 +151,14 @@ heimdalld query bor next-span
 
 ```bash
 heimdalld query bor params
+```
+
+```bash
+heimdalld query bor validator-performance-score
+```
+
+```bash
+heimdalld query bor validator-performance-score-by-validator-id <VALIDATOR_ID>
 ```
 
 ### GRPC Endpoints
@@ -234,4 +243,9 @@ curl localhost:1317/bor/producers/planned-downtime/<PRODUCER_ID>
 ```bash
 # Per-validator block-production reliability scores.
 curl localhost:1317/bor/validator-performance-score
+```
+
+```bash
+# Score of a single validator; 0 if none recorded.
+curl localhost:1317/bor/validator-performance-score/<VALIDATOR_ID>
 ```

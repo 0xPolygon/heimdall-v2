@@ -1582,6 +1582,62 @@ paths:
                       format: byte
       tags:
         - Query
+  /bor/validator-performance-score/{validator_id}:
+    get:
+      summary: >-
+        GetValidatorPerformanceScoreByValidatorId queries the performance score
+        of
+
+        a specific validator.
+      operationId: GetValidatorPerformanceScoreByValidatorId
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              validator_performance_score:
+                type: string
+                format: uint64
+                description: >-
+                  Performance score of the validator; 0 if none has been
+                  recorded.
+            description: >-
+              QueryValidatorPerformanceScoreByValidatorIdResponse is the
+              response type for
+
+              the GetValidatorPerformanceScoreByValidatorId query.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: validator_id
+          description: ID of the validator whose performance score to retrieve.
+          in: path
+          required: true
+          type: string
+          format: uint64
+      tags:
+        - Query
   /chainmanager/params:
     get:
       summary: GetChainManagerParams queries the chainmanager module parameters.
@@ -5585,6 +5641,18 @@ definitions:
 
               was set, its value is undefined otherwise
     description: QuerySpanListResponse is the response type for the GetSpanList query.
+  heimdallv2.bor.QueryValidatorPerformanceScoreByValidatorIdResponse:
+    type: object
+    properties:
+      validator_performance_score:
+        type: string
+        format: uint64
+        description: Performance score of the validator; 0 if none has been recorded.
+    description: >-
+      QueryValidatorPerformanceScoreByValidatorIdResponse is the response type
+      for
+
+      the GetValidatorPerformanceScoreByValidatorId query.
   heimdallv2.bor.QueryValidatorPerformanceScoreResponse:
     type: object
     properties:
