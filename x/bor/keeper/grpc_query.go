@@ -2,9 +2,11 @@ package keeper
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"time"
 
+	"cosmossdk.io/collections"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -294,4 +296,25 @@ func (q queryServer) GetValidatorPerformanceScore(ctx context.Context, _ *types.
 	}
 
 	return &types.QueryValidatorPerformanceScoreResponse{ValidatorPerformanceScore: validatorPerformanceScore}, nil
+}
+
+func (q queryServer) GetValidatorPerformanceScoreByValidatorId(ctx context.Context, req *types.QueryValidatorPerformanceScoreByValidatorIdRequest) (*types.QueryValidatorPerformanceScoreByValidatorIdResponse, error) {
+	var err error
+	start := time.Now()
+	defer recordBorQueryMetric(api.GetValidatorPerformanceScoreByValidatorIdMethod, start, &err)
+
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, errEmptyRequest)
+	}
+
+	score, err := q.k.PerformanceScore.Get(ctx, req.ValidatorId)
+	// A validator with no recorded score has a score of 0.
+	if errors.Is(err, collections.ErrNotFound) {
+		err = nil
+	}
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryValidatorPerformanceScoreByValidatorIdResponse{ValidatorPerformanceScore: score}, nil
 }
