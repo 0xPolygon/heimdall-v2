@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
