@@ -60,10 +60,10 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 						{ProtoField: "producer_id"},
 					},
 				},
+				// Autocli's amino JSON encoder cannot print proto maps, so map responses are REST/gRPC only.
 				{
 					RpcMethod: "GetProducerVotes",
-					Use:       "producer-votes",
-					Short:     "Query producer votes from all validators",
+					Skip:      true,
 				},
 				{
 					RpcMethod: "GetProducerVotesByValidatorId",
@@ -75,8 +75,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				},
 				{
 					RpcMethod: "GetValidatorPerformanceScore",
-					Use:       "validator-performance-score",
-					Short:     "Query performance scores of all validators",
+					Skip:      true,
 				},
 				{
 					RpcMethod: "GetValidatorPerformanceScoreByValidatorId",
