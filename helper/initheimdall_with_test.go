@@ -37,8 +37,8 @@ func TestInitHeimdallConfigWithSetsIthacaHeightPerChain(t *testing.T) {
 		{name: "mainnet", chain: MainChain, wantRioHeight: 77414656, wantInitHeight: 24404501, wantIthacaHeight: 50185000, wantPhuket: 44070000, wantZurich: 47880000, wantFeeGate: 46361000},
 		{name: "mumbai", chain: MumbaiChain, wantRioHeight: 48473856},
 		{name: "amoy", chain: AmoyChain, wantRioHeight: 26272256, wantInitHeight: 8788501, wantIthacaHeight: 40776000, wantPhuket: 32276400, wantZurich: 37750000, wantFeeGate: 35914000},
-		// Local devnets run every live fork from genesis and switch to compact vote extensions mid-run.
-		{name: "default", chain: "local", wantRioHeight: 128, wantIthacaHeight: 1, wantCompactHeight: 500, wantPhuket: 1, wantZurich: 1, wantFeeGate: 1},
+		// Local devnets run every fork from genesis.
+		{name: "default", chain: "local", wantRioHeight: 128, wantIthacaHeight: 1, wantCompactHeight: 1, wantPhuket: 1, wantZurich: 1, wantFeeGate: 1},
 	}
 
 	for _, tc := range cases {

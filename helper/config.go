@@ -569,7 +569,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		zurichHardforkHeight = 1
 		ithacaHeight = 1
 		kyotoHeight = 1
-		compactVoteExtHeight = 500
+		compactVoteExtHeight = 1
 	}
 }
 
