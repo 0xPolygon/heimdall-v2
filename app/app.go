@@ -671,6 +671,10 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	stakingState := staketypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
 	checkpointState := checkpointTypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
 
+	if err := stakingState.ValidateCurrentSetMembership(checkpointState.AckCount); err != nil {
+		return &abci.ResponseInitChain{}, fmt.Errorf("invalid stake genesis: %w", err)
+	}
+
 	// check if the validator is the current one and add to valUpdates else skip
 	var valUpdates []abci.ValidatorUpdate
 
