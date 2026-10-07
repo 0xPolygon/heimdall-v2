@@ -133,7 +133,7 @@ func NewRootCmd() *cobra.Command {
 			// A plain level applies globally; a "module:level" list filters per
 			// module so debug can be scoped to a single subsystem. A malformed
 			// spec warns and falls back to info rather than blocking startup.
-			levelOpt := helper.LogLevelOptionOrDefault(logLevelStr, helper.Logger.Warn)
+			levelOpt, moduleFilter := helper.LogLevelOptionOrDefault(logLevelStr, helper.Logger.Warn)
 
 			logNoColor := serverCtx.Viper.GetBool(flags.FlagLogNoColor)
 			// Store timestamps with millisecond precision so that log lines carry
@@ -153,8 +153,8 @@ func NewRootCmd() *cobra.Command {
 				log.TimeFormatOption(helper.LogTimestampFormat),
 			)
 
-			serverCtx.Logger = log.NewLogger(cmd.OutOrStdout(), logOpts...).With(log.ModuleKey, "server")
-			helper.Logger = log.NewLogger(cmd.OutOrStdout(), logOpts...)
+			serverCtx.Logger = helper.WithModuleFilter(log.NewLogger(cmd.OutOrStdout(), logOpts...), moduleFilter).With(log.ModuleKey, "server")
+			helper.Logger = helper.WithModuleFilter(log.NewLogger(cmd.OutOrStdout(), logOpts...), moduleFilter)
 
 			err = helper.SanitizeConfig(serverCtx.Viper, serverCtx.Logger)
 			if err != nil {
