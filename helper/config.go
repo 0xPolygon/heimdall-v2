@@ -400,7 +400,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		log.Fatalln("unable to read flag values. Check log for details.", "Error", err)
 	}
 
-	levelOpt := LogLevelOptionOrDefault(viper.GetString(flags.FlagLogLevel), Logger.Warn)
+	levelOpt, moduleFilter := LogLevelOptionOrDefault(viper.GetString(flags.FlagLogLevel), Logger.Warn)
 
 	logNoColor := viper.GetBool(flags.FlagLogNoColor)
 	var logOpts []logger.Option
@@ -414,7 +414,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		logger.TimeFormatOption(LogTimestampFormat),
 	)
 
-	Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logOpts...)
+	Logger = WithModuleFilter(logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logOpts...), moduleFilter)
 
 	// perform checks for timeout
 	if conf.Custom.EthRPCTimeout == 0 {

@@ -13,11 +13,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	promtestutil "github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	helpermocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	chainManagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
@@ -215,6 +217,16 @@ func TestVerifyVoteExtensionCompactBoundary(t *testing.T) {
 	wrongPrefix := compactVE()
 	wrongPrefix.BlockHash = testBlockHash[1 : 1+compactVEBlockHashLength]
 	require.Equal(t, abci.ResponseVerifyVoteExtension_REJECT, verify(compactForkHeight, wrongPrefix))
+
+	// Compact header rejections keep the existing rejection metric labels.
+	for reason, ve := range map[string]*sidetxs.VoteExtension{
+		"height_mismatch": legacyVE(compactForkHeight),
+		"hash_mismatch":   {BlockHash: testBlockHash},
+	} {
+		before := promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues(reason))
+		require.Equal(t, abci.ResponseVerifyVoteExtension_REJECT, verify(compactForkHeight, ve))
+		require.Equal(t, before+1, promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues(reason)), reason)
+	}
 }
 
 // Proposal handling at H validates and tallies extensions produced at H-1.

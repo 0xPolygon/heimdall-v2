@@ -34,6 +34,11 @@ type mockListener struct {
 	startCalled         bool
 	processHeaderCalled bool
 	lastHeader          *blockHeader
+	// processedCh, when non-nil, receives one value per ProcessHeader call.
+	// StartHeaderProcess drives ProcessHeader from a single goroutine, so the
+	// send-then-receive pair is enough to make the fields above safe to read
+	// from the test goroutine afterwards, without a bare time.Sleep race.
+	processedCh chan struct{}
 }
 
 func (m *mockListener) Start() error {
@@ -44,6 +49,9 @@ func (m *mockListener) Start() error {
 func (m *mockListener) ProcessHeader(header *blockHeader) {
 	m.processHeaderCalled = true
 	m.lastHeader = header
+	if m.processedCh != nil {
+		m.processedCh <- struct{}{}
+	}
 }
 
 func (m *mockListener) StartHeaderProcess(ctx context.Context) {
@@ -104,7 +112,7 @@ func TestBaseListener_StartHeaderProcess(t *testing.T) {
 	t.Run("processes headers from channel", func(t *testing.T) {
 		t.Parallel()
 
-		listener := &mockListener{}
+		listener := &mockListener{processedCh: make(chan struct{}, 1)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 		listener.BaseListener.HeaderChannel = make(chan *blockHeader, 1)
 		listener.BaseListener.impl = listener
@@ -124,8 +132,11 @@ func TestBaseListener_StartHeaderProcess(t *testing.T) {
 		}
 		listener.HeaderChannel <- testHeader
 
-		// Wait a bit for processing
-		time.Sleep(50 * time.Millisecond)
+		select {
+		case <-listener.processedCh:
+		case <-time.After(1 * time.Second):
+			t.Fatal("ProcessHeader was not called in time")
+		}
 
 		require.True(t, listener.processHeaderCalled)
 		require.NotNil(t, listener.lastHeader)
@@ -164,7 +175,7 @@ func TestBaseListener_StartHeaderProcess(t *testing.T) {
 	t.Run("handles multiple headers in sequence", func(t *testing.T) {
 		t.Parallel()
 
-		listener := &mockListener{}
+		listener := &mockListener{processedCh: make(chan struct{}, 3)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 		listener.BaseListener.HeaderChannel = make(chan *blockHeader, 10)
 		listener.BaseListener.impl = listener
@@ -183,7 +194,12 @@ func TestBaseListener_StartHeaderProcess(t *testing.T) {
 				isFinalized: i%2 == 0,
 			}
 			listener.HeaderChannel <- testHeader
-			time.Sleep(10 * time.Millisecond)
+
+			select {
+			case <-listener.processedCh:
+			case <-time.After(1 * time.Second):
+				t.Fatal("ProcessHeader was not called in time")
+			}
 		}
 
 		// the last header should be 300

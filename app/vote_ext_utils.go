@@ -792,20 +792,25 @@ func voteExtensionBlockHash(height int64, blockHash []byte) []byte {
 	return blockHash
 }
 
+var (
+	errVoteExtensionHeight    = errors.New("invalid vote extension height")
+	errVoteExtensionBlockHash = errors.New("invalid vote extension block hash length")
+)
+
 // validateVoteExtensionHeader checks the height and block hash encoding of an extension produced at
 // veHeight. Compact extensions omit the height, which the extension signature already covers.
 func validateVoteExtensionHeader(ve *sidetxs.VoteExtension, veHeight int64) error {
 	if !helper.IsCompactVoteExt(veHeight) {
 		if ve.Height != veHeight {
-			return fmt.Errorf("invalid vote extension height: expected %d, got %d", veHeight, ve.Height)
+			return fmt.Errorf("%w: expected %d, got %d", errVoteExtensionHeight, veHeight, ve.Height)
 		}
 		return nil
 	}
 	if ve.Height != 0 {
-		return fmt.Errorf("compact vote extension must omit height, got %d", ve.Height)
+		return fmt.Errorf("%w: compact vote extension must omit height, got %d", errVoteExtensionHeight, ve.Height)
 	}
 	if len(ve.BlockHash) != compactVEBlockHashLength {
-		return fmt.Errorf("invalid compact vote extension block hash length: %d", len(ve.BlockHash))
+		return fmt.Errorf("%w: %d", errVoteExtensionBlockHash, len(ve.BlockHash))
 	}
 	return nil
 }
