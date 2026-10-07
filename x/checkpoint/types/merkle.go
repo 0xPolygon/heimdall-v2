@@ -19,19 +19,7 @@ var (
 	initOnce    sync.Once
 )
 
-// wrapBorQueryError wraps a RunIsolated failure with borTypes.ErrFailedToQueryBor,
-// treating a recovered panic the same as an ordinary error so both reach the
-// tolerateBorErr carve-out in app/abci.go identically. See
-// contract-interactions.md's Panic Isolation section for why panics aren't
-// special-cased here.
-func wrapBorQueryError(err error, context string) error {
-	return fmt.Errorf("%w: %s: %w", borTypes.ErrFailedToQueryBor, context, err)
-}
-
-// IsValidCheckpoint validates if checkpoint rootHash matches or not.
-//
-// Also reached from ProcessProposal/VerifyVoteExtension; the RunIsolated
-// wraps below are intentional there too (see contract-interactions.md).
+// IsValidCheckpoint validates if checkpoint rootHash matches or not
 func IsValidCheckpoint(ctx context.Context, start uint64, end uint64, rootHash []byte, checkpointLength uint64, contractCaller helper.IContractCaller, confirmations uint64) (bool, error) {
 	initOnce.Do(func() {
 		rootCache = cache.NewCache[[]byte](defaultTTL)
@@ -50,14 +38,16 @@ func IsValidCheckpoint(ctx context.Context, start uint64, end uint64, rootHash [
 				"error", err,
 			)
 		}
-		exists, err := helper.RunIsolated(func() (bool, error) {
-			return contractCaller.CheckIfBlocksExist(ctx, end+confirmations)
-		})
+		exists, err := contractCaller.CheckIfBlocksExist(ctx, end+confirmations)
 		if err != nil {
-			return false, wrapBorQueryError(err, fmt.Sprintf(
-				"block existence check failed (end=%d confirmations=%d target=%d)",
-				end, confirmations, end+confirmations,
-			))
+			return false, fmt.Errorf(
+				"%w: block existence check failed (end=%d confirmations=%d target=%d): %w",
+				borTypes.ErrFailedToQueryBor,
+				end,
+				confirmations,
+				end+confirmations,
+				err,
+			)
 		}
 		if !exists {
 			return false, fmt.Errorf(
@@ -83,14 +73,16 @@ func IsValidCheckpoint(ctx context.Context, start uint64, end uint64, rootHash [
 			"error", err,
 		)
 
-		root, err = helper.RunIsolated(func() ([]byte, error) {
-			return contractCaller.GetRootHash(ctx, start, end, checkpointLength)
-		})
+		root, err = contractCaller.GetRootHash(ctx, start, end, checkpointLength)
 		if err != nil {
-			return false, wrapBorQueryError(err, fmt.Sprintf(
-				"root hash query failed (start=%d end=%d checkpointLength=%d)",
-				start, end, checkpointLength,
-			))
+			return false, fmt.Errorf(
+				"%w: root hash query failed (start=%d end=%d checkpointLength=%d): %w",
+				borTypes.ErrFailedToQueryBor,
+				start,
+				end,
+				checkpointLength,
+				err,
+			)
 		}
 
 		if len(root) > 0 {

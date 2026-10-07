@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	helpermocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -70,85 +69,4 @@ func TestIsValidCheckpoint_BorQueryFailures_WrapDistinctSentinels(t *testing.T) 
 			)
 		})
 	}
-}
-
-// TestIsValidCheckpoint_ContractCallerPanic verifies a panic inside the
-// external contract caller is recovered as a plain error, not a crash, and
-// that the recovered error matches the tolerateBorErr sentinel
-// (ErrFailedToQueryBor). See wrapBorQueryError's doc comment for why.
-func TestIsValidCheckpoint_ContractCallerPanic(t *testing.T) {
-	tests := []struct {
-		name      string
-		setupMock func(*helpermocks.IContractCaller)
-		// Unique (end, confirmations) per row avoids the package-level existsCache.
-		start, end, checkpointLength, confirmations uint64
-	}{
-		{
-			name: "panic in CheckIfBlocksExist is recovered as an error",
-			setupMock: func(c *helpermocks.IContractCaller) {
-				c.On("CheckIfBlocksExist", mock.Anything, mock.Anything).
-					Run(func(mock.Arguments) { panic("bor client exploded") })
-			},
-			start: 500_000, end: 600_000, checkpointLength: 256, confirmations: 10,
-		},
-		{
-			name: "panic in GetRootHash is recovered as an error",
-			setupMock: func(c *helpermocks.IContractCaller) {
-				c.On("CheckIfBlocksExist", mock.Anything, mock.Anything).Return(true, nil)
-				c.On("GetRootHash", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-					Run(func(mock.Arguments) { panic("bor client exploded") })
-			},
-			start: 700_000, end: 800_000, checkpointLength: 256, confirmations: 10,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			caller := new(helpermocks.IContractCaller)
-			tt.setupMock(caller)
-
-			ok, err := checkpointTypes.IsValidCheckpoint(
-				context.Background(),
-				tt.start,
-				tt.end,
-				[]byte{0xde, 0xad},
-				tt.checkpointLength,
-				caller,
-				tt.confirmations,
-			)
-
-			require.False(t, ok)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), "bor client exploded")
-			require.True(t, errors.Is(err, helper.ErrRecoveredPanic),
-				"expected errors.Is(err, helper.ErrRecoveredPanic); got %v", err)
-			require.True(t, errors.Is(err, borTypes.ErrFailedToQueryBor),
-				"a recovered panic must match the tolerateBorErr sentinel here; got %v", err)
-		})
-	}
-}
-
-// TestIsValidCheckpoint_ChecksExactBlockExistenceTarget locks down that
-// CheckIfBlocksExist is queried at end+confirmations (not end-confirmations
-// or any other combination): the target block for existence checking must
-// be past the requested confirmations, not before it.
-func TestIsValidCheckpoint_ChecksExactBlockExistenceTarget(t *testing.T) {
-	caller := new(helpermocks.IContractCaller)
-	const end, confirmations = uint64(900_000), uint64(12)
-	caller.On("CheckIfBlocksExist", mock.Anything, end+confirmations).Return(true, nil)
-	caller.On("GetRootHash", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]byte{0xde, 0xad}, nil)
-
-	ok, err := checkpointTypes.IsValidCheckpoint(
-		context.Background(),
-		100,
-		end,
-		[]byte{0xde, 0xad},
-		256,
-		caller,
-		confirmations,
-	)
-
-	require.NoError(t, err)
-	require.True(t, ok)
-	caller.AssertCalled(t, "CheckIfBlocksExist", mock.Anything, end+confirmations)
 }

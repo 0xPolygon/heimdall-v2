@@ -1,10 +1,12 @@
 package listener
 
 import (
+	"os"
+
+	logger "github.com/cometbft/cometbft/libs/log"
 	common "github.com/cometbft/cometbft/libs/service"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/codec"
-	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/queue"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -30,11 +32,7 @@ func NewListenerService(cdc codec.Codec, queueConnector *queue.Connector, httpCl
 	// creating the listener object
 	listenerService := &Service{}
 
-	listenerService.BaseService = *common.NewBaseService(
-		servercmtlog.CometLoggerWrapper{Logger: helper.Logger}.With("service", "listener"),
-		listenerServiceStr,
-		listenerService,
-	)
+	listenerService.BaseService = *common.NewBaseService(logger.NewTMLogger(logger.NewSyncWriter(os.Stdout)).With("service", "listener"), listenerServiceStr, listenerService)
 
 	rootChainListener := NewRootChainListener()
 	rootChainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetMainClient(), rootChainListenerStr, rootChainListener)

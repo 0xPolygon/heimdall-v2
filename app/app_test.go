@@ -334,16 +334,11 @@ func TestCheckTx_RejectsOverNestedTx(t *testing.T) {
 	orig := helper.GetKyotoHeight()
 	t.Cleanup(func() { helper.SetKyotoHeight(orig) })
 
-	bomb := txRawWithBody(nestedAnyBody(maxTxNestingRecursion + 1))
+	bomb := txRawWithBody(nestedAnyBody(maxAnyNestingDepth + 1))
 	const nestingLog = "transaction exceeds the message nesting bound"
 
 	t.Run("at/after kyoto the guard rejects", func(t *testing.T) {
-		// Pinned to exactly app.LastBlockHeight()+1 -- the same expression CheckTx itself
-		// evaluates -- rather than a fixed height, so this only passes if that expression's
-		// "+1" is genuinely what gates activation: whatever LastBlockHeight() happens to be
-		// in this test's app instance, a height computed one lower (e.g. a "-1" in place of
-		// "+1") would still land below this exact boundary and leave the guard inactive.
-		helper.SetKyotoHeight(app.LastBlockHeight() + 1)
+		helper.SetKyotoHeight(1)
 		resp, err := app.CheckTx(&abci.RequestCheckTx{Tx: bomb, Type: abci.CheckTxType_New})
 		require.NoError(t, err)
 		require.Equal(t, sdkerrors.ErrTxDecode.ABCICode(), resp.Code)

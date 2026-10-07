@@ -27,23 +27,17 @@ func FetchAndValidateReceipt(
 	params ReceiptValidationParams,
 	logger log.Logger,
 ) *ethTypes.Receipt {
-	receipt, err := RunIsolated(func() (*ethTypes.Receipt, error) {
-		return contractCaller.GetConfirmedTxReceipt(
-			ctx,
-			common.BytesToHash(params.TxHash),
-			params.Confirmations,
-		)
-	})
+	receipt, err := contractCaller.GetConfirmedTxReceipt(
+		ctx,
+		common.BytesToHash(params.TxHash),
+		params.Confirmations,
+	)
 
 	if receipt == nil || err != nil {
 		logger.Error("Failed to get confirmed tx receipt",
 			"module", params.ModuleName,
 			"txHash", common.Bytes2Hex(params.TxHash),
 			"error", err)
-		return nil
-	}
-
-	if !receiptLogsAreWellFormed(receipt.Logs, params, logger) {
 		return nil
 	}
 
@@ -57,22 +51,6 @@ func FetchAndValidateReceipt(
 	}
 
 	return receipt
-}
-
-// receiptLogsAreWellFormed rejects a receipt containing a nil log entry.
-// A single nil entry breaks every Decode*Event caller's matching loop, so
-// it's checked once here; a per-log shape issue (see helper.UnpackLog) is
-// handled separately so it doesn't invalidate the whole receipt.
-func receiptLogsAreWellFormed(logs []*ethTypes.Log, params ReceiptValidationParams, logger log.Logger) bool {
-	for _, vLog := range logs {
-		if vLog == nil {
-			logger.Error("Receipt contains a nil log entry",
-				"module", params.ModuleName,
-				"txHash", common.Bytes2Hex(params.TxHash))
-			return false
-		}
-	}
-	return true
 }
 
 // PrefetchReceipts batch-fetches L1 receipts in a single JSON-RPC call and caches them.
@@ -90,16 +68,7 @@ func PrefetchReceipts(ctx context.Context, contractCaller IContractCaller, txHas
 		return
 	}
 
-	receipts, err := RunIsolated(func() (map[common.Hash]*ethTypes.Receipt, error) {
-		return caller.BatchGetMainChainTxReceipts(ctx, txHashes), nil
-	})
-	if err != nil {
-		logger.Error("Panic recovered while prefetching receipts", "error", err)
-		// A panic mid-batch means we can't tell which entries actually
-		// finished, so drop the stale cache rather than risk masking a miss.
-		clearPrefetchedReceipts(caller)
-		return
-	}
+	receipts := caller.BatchGetMainChainTxReceipts(ctx, txHashes)
 	if len(receipts) == 0 {
 		logger.Debug("Batch RPC returned no receipts", "requested", len(txHashes))
 	}
@@ -108,11 +77,5 @@ func PrefetchReceipts(ctx context.Context, contractCaller IContractCaller, txHas
 
 	caller.prefetchMu.Lock()
 	caller.prefetchedReceipts = receipts
-	caller.prefetchMu.Unlock()
-}
-
-func clearPrefetchedReceipts(caller *ContractCaller) {
-	caller.prefetchMu.Lock()
-	caller.prefetchedReceipts = nil
 	caller.prefetchMu.Unlock()
 }

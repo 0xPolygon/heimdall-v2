@@ -9,7 +9,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	checkpointante "github.com/0xPolygon/heimdall-v2/x/checkpoint/ante"
-	clerkante "github.com/0xPolygon/heimdall-v2/x/clerk/ante"
 )
 
 // HandlerOptions are the options required for constructing a default SDK AnteHandler.
@@ -48,7 +47,6 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		// Bound the fee-coin count before ValidateBasicDecorator's own O(n) scan over the same slice.
 		ante.NewFeeCoinsCapDecorator(maxFeeCoins, helper.IsKyoto),
 		ante.NewValidateBasicDecorator(),
-		clerkante.NewTxHashDecorator(helper.IsLugano),
 		ante.NewMsgMultiSendCapDecorator(maxMultiSendOutputs, helper.IsZurichHardfork),
 		checkpointante.NewAccountRootHashLenDecorator(helper.IsZurichHardfork),
 		ante.NewTxTimeoutHeightDecorator(),

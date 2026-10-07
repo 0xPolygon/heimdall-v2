@@ -55,11 +55,8 @@ func NewQueueConnector(dialer string) *Connector {
 		panic(err)
 	}
 
-	qlogger := helper.Logger.With("module", "bridge/queue")
-	redirectMachineryLog(qlogger)
-
 	connector := Connector{
-		logger: qlogger,
+		logger: helper.Logger.With("module", "bridge/queue"),
 		Server: server,
 	}
 

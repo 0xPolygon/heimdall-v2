@@ -18,5 +18,4 @@ var (
 	ErrBufferFlush             = errorsmod.Register(ModuleName, 15, "flushing buffer failed")
 	ErrAccountHash             = errorsmod.Register(ModuleName, 16, "error while fetching account root hash")
 	ErrAlreadyExists           = errorsmod.Register(ModuleName, 17, "checkpoint already exists")
-	ErrInvalidCheckpointLength = errorsmod.Register(ModuleName, 18, "invalid checkpoint length")
 )

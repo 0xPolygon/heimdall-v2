@@ -129,32 +129,6 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 	return params, err
 }
 
-// ValidateCheckpointWindow rejects a proposer-supplied checkpoint window whose length
-// doesn't match the bounds derived from the module params. The bridge already confines
-// the windows it builds to those bounds, so honest proposals are unaffected. Height-gated
-// so the set of accepted checkpoints is unchanged before the fork activates.
-//
-// The bound applies to proposal ingress and the buffer. The ack path deliberately stays
-// out of it: PostHandleMsgCheckpointAck re-anchors the window to whatever the L1 header
-// block recorded, and that has to keep working for checkpoints buffered before the fork.
-//
-// The height must be the one the transaction was included at, so callers running a height
-// later (post-handlers) pass ctx.BlockHeight()-1. The gate is checked before the params
-// read because the post handler reads no params of its own, and a read outside the gate
-// would change pre-fork gas accounting on the message handler's metered path.
-func (k Keeper) ValidateCheckpointWindow(ctx context.Context, height int64, start, end uint64) error {
-	if !helper.IsLugano(height) {
-		return nil
-	}
-
-	params, err := k.GetParams(ctx)
-	if err != nil {
-		return types.ErrCheckpointParams.Wrap(err.Error())
-	}
-
-	return types.ValidateCheckpointLength(start, end, params.AvgCheckpointLength, params.MaxCheckpointLength)
-}
-
 // AddCheckpoint adds checkpoint into the db store
 func (k *Keeper) AddCheckpoint(ctx context.Context, checkpoint types.Checkpoint) error {
 	exists, _ := k.checkpoints.Has(ctx, checkpoint.Id)

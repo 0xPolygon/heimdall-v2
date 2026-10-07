@@ -59,9 +59,6 @@ func (q queryServer) GetRecordById(ctx context.Context, request *types.RecordReq
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	if helper.IsLugano(sdk.UnwrapSDKContext(ctx).BlockHeight()) {
-		record.TxHash = hex.NormalizeTxHash(record.TxHash)
-	}
 
 	return &types.RecordResponse{Record: *record}, nil
 }
@@ -86,7 +83,6 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	normalizeEventRecordTxHashes(records, sdk.UnwrapSDKContext(ctx).BlockHeight())
 
 	return &types.RecordListResponse{EventRecords: records}, nil
 }
@@ -124,18 +120,11 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	var response *types.RecordListWithTimeResponse
 	if helper.IsZurichHardfork(sdkCtx.BlockHeight()) {
-		response, err = q.recordListWithTimeDeterministic(ctx, request)
-	} else {
-		response, err = q.recordListWithTimeLegacy(ctx, request)
-	}
-	if err != nil {
-		return nil, err
+		return q.recordListWithTimeDeterministic(ctx, request)
 	}
 
-	normalizeEventRecordTxHashes(response.EventRecords, sdkCtx.BlockHeight())
-	return response, nil
+	return q.recordListWithTimeLegacy(ctx, request)
 }
 
 // recordListWithTimeLegacy is the pre-HF iterator: filter by record_time only
@@ -239,8 +228,7 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if !isValidEventRecordTxHashAtHeight(request.TxHash, sdkCtx.BlockHeight()) {
+	if !hex.IsTxHashNonEmpty(request.TxHash) {
 		return nil, status.Error(codes.InvalidArgument, "invalid tx hash")
 	}
 
@@ -257,7 +245,7 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 	}
 
 	// Get the sequence id.
-	sequence := helper.CalculateSequence(sdkCtx.BlockHeight(), receipt.BlockNumber.Uint64(), request.LogIndex)
+	sequence := helper.CalculateSequence(sdk.UnwrapSDKContext(ctx).BlockHeight(), receipt.BlockNumber.Uint64(), request.LogIndex)
 	// Check if the incoming tx already exists.
 	if !q.k.HasRecordSequence(ctx, sequence) {
 		return nil, status.Error(codes.NotFound, "record sequence not found")
@@ -280,8 +268,7 @@ func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequ
 		return nil, status.Error(codes.InvalidArgument, errEmptyRequest)
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if !isValidEventRecordTxHashAtHeight(request.TxHash, sdkCtx.BlockHeight()) {
+	if !hex.IsTxHashNonEmpty(request.TxHash) {
 		return nil, status.Error(codes.InvalidArgument, "invalid tx hash")
 	}
 
@@ -298,7 +285,7 @@ func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequ
 	}
 
 	// Get the sequence id.
-	sequence := helper.CalculateSequence(sdkCtx.BlockHeight(), receipt.BlockNumber.Uint64(), request.LogIndex)
+	sequence := helper.CalculateSequence(sdk.UnwrapSDKContext(ctx).BlockHeight(), receipt.BlockNumber.Uint64(), request.LogIndex)
 
 	// Check if the incoming tx already exists.
 	if !q.k.HasRecordSequence(ctx, sequence) {
@@ -459,24 +446,6 @@ func isPaginationEmpty(p query.PageRequest) bool {
 		p.Limit == 0 &&
 		!p.CountTotal &&
 		!p.Reverse
-}
-
-func isValidEventRecordTxHashAtHeight(txHash string, height int64) bool {
-	if helper.IsLugano(height) {
-		return hex.IsValidTxHash(txHash)
-	}
-
-	return hex.IsTxHashNonEmpty(txHash)
-}
-
-func normalizeEventRecordTxHashes(records []types.EventRecord, height int64) {
-	if !helper.IsLugano(height) {
-		return
-	}
-
-	for i := range records {
-		records[i].TxHash = hex.NormalizeTxHash(records[i].TxHash)
-	}
 }
 
 func recordClerkQueryMetric(method string, start time.Time, err *error) {

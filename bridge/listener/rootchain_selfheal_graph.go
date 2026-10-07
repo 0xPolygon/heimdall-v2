@@ -106,7 +106,7 @@ func (rl *RootChainListener) querySubGraph(query []byte, ctx context.Context) (d
 	}
 	defer func() {
 		if err := response.Body.Close(); err != nil {
-			rl.Logger.Warn("Error closing subgraph response body", "error", err)
+			fmt.Println("Error closing response body:", err)
 		}
 	}()
 

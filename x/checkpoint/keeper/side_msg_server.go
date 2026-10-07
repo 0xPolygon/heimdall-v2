@@ -24,16 +24,6 @@ type sideMsgServer struct {
 	*Keeper
 }
 
-// rootChainHeaderInfo packs GetHeaderInfo's multiple return values so a
-// single call to helper.RunIsolated can carry all of them across the
-// isolation boundary.
-type rootChainHeaderInfo struct {
-	root     common.Hash
-	start    uint64
-	end      uint64
-	proposer string
-}
-
 var (
 	checkpointTypeUrl    = sdk.MsgTypeURL(&types.MsgCheckpoint{})
 	checkpointAckTypeUrl = sdk.MsgTypeURL(&types.MsgCpAck{})
@@ -147,11 +137,6 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 			"msgProposer", msgProposer,
 		)
 
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	if err = srv.ValidateCheckpointWindow(ctx, ctx.BlockHeight(), msg.StartBlock, msg.EndBlock); err != nil {
-		logger.Error("Invalid checkpoint window in checkpoint side handler", "startBlock", msg.StartBlock, "endBlock", msg.EndBlock, hmTypes.LogKeyError, err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -331,15 +316,11 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	headerInfo, err := helper.RunIsolated(func() (rootChainHeaderInfo, error) {
-		root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(ctx, msg.Number, rootChainInstance, params.ChildChainBlockInterval)
-		return rootChainHeaderInfo{root: root, start: start, end: end, proposer: proposer}, err
-	})
+	root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(ctx, msg.Number, rootChainInstance, params.ChildChainBlockInterval)
 	if err != nil {
 		logger.Error("Unable to fetch checkpoint from rootChain", "checkpointNumber", msg.Number, "error", err)
 		return sidetxs.Vote_VOTE_NO
 	}
-	root, start, end, proposer := headerInfo.root, headerInfo.start, headerInfo.end, headerInfo.proposer
 
 	// check if message data matches with contract data
 	if msg.StartBlock != start ||
@@ -410,11 +391,6 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return err
 	}
 
-	// -1 recovers the tx's own height; post-handlers run one later, as in x/clerk.
-	if err = srv.ValidateCheckpointWindow(ctx, ctx.BlockHeight()-1, msg.StartBlock, msg.EndBlock); err != nil {
-		logger.Error("Invalid checkpoint window", "startBlock", msg.StartBlock, "endBlock", msg.EndBlock, hmTypes.LogKeyError, err)
-		return err
-	}
 	doExist, err := srv.HasCheckpointInBuffer(ctx)
 	if err != nil {
 		logger.Error("Error in checking the existence of checkpoint in buffer", hmTypes.LogKeyError, err)

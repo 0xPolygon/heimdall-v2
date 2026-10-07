@@ -74,10 +74,6 @@ func NewRootCmd() *cobra.Command {
 			cmd.SetOut(cmd.OutOrStdout())
 			cmd.SetErr(cmd.ErrOrStderr())
 
-			if err := applyHomeEnvOverride(cmd); err != nil {
-				return err
-			}
-
 			initClientCtx = initClientCtx.WithCmdContext(cmd.Context())
 			initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
 			if err != nil {
@@ -146,11 +142,16 @@ func NewRootCmd() *cobra.Command {
 			// chance to format it, resulting in second-only output.
 			// Using 3 decimal places ("000") matches bor's log timestamp format.
 			zerolog.TimeFieldFormat = helper.LogTimestampFormat
-			logOpts := []log.Option{
-				helper.LogFormatOption(serverCtx.Viper.GetString(flags.FlagLogFormat), logNoColor),
+			var logOpts []log.Option
+			if serverCtx.Viper.GetString(flags.FlagLogFormat) == flags.OutputFormatJSON {
+				logOpts = append(logOpts, log.OutputJSONOption())
+			} else {
+				logOpts = append(logOpts, log.ColorOption(!logNoColor))
+			}
+			logOpts = append(logOpts,
 				levelOpt,
 				log.TimeFormatOption(helper.LogTimestampFormat),
-			}
+			)
 
 			serverCtx.Logger = helper.WithModuleFilter(log.NewLogger(cmd.OutOrStdout(), logOpts...), moduleFilter).With(log.ModuleKey, "server")
 			helper.Logger = helper.WithModuleFilter(log.NewLogger(cmd.OutOrStdout(), logOpts...), moduleFilter)
@@ -187,55 +188,4 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	return rootCmd
-}
-
-// homeEnvVar lets operators choose heimdalld's home directory without
-// passing --home on every invocation. "HD" is the env prefix svrcmd.Execute
-// wires up in main.go, so this is the name operators already expect to work.
-const homeEnvVar = "HD_HOME"
-
-// applyHomeEnvOverride sets the --home flag from HD_HOME when the flag
-// wasn't passed explicitly on the command line.
-//
-// cosmos-sdk's client.ReadPersistentCommandFlags is the one consumer this
-// guards against: it reads --home via flagSet.GetString(flags.FlagHome)
-// directly off the *pflag.FlagSet, gated on flagSet.Changed(flags.FlagHome)
-// -- it never touches viper or an env var at all. Left alone, HD_HOME would
-// silently do nothing for it. Mutating the flag here (before
-// client.ReadPersistentCommandFlags runs, later in this same
-// PersistentPreRunE) makes Changed==true so it picks up the override.
-//
-// No corresponding viper.Set is needed for viper-based readers
-// (helper.InitHeimdallConfig, server.InterceptConfigsAndCreateContext's
-// fresh *viper.Viper, cometbft's own bindFlagsLoadViper): svrcmd.Execute
-// passes "HD" as the env prefix into cmtcli.PrepareBaseCmd, which calls
-// viper.SetEnvPrefix("HD") + viper.AutomaticEnv() on the global viper
-// singleton via a cobra.OnInitialize hook -- and that hook fires in Cobra's
-// own preRun(), strictly before any PersistentPreRunE, including cometbft's
-// prepended bindFlagsLoadViper. So by the time bindFlagsLoadViper computes
-// `homeDir := viper.GetString(HomeFlag)`, viper's own precedence order
-// (Set > changed-pflag > AutomaticEnv > config > kvstore > defaults >
-// unchanged-pflag-default-as-last-resort) already resolves HD_HOME through
-// the AutomaticEnv tier, since the --home flag is still unchanged at that
-// point. bindFlagsLoadViper then pins that already-correct value via its own
-// `viper.Set(HomeFlag, homeDir)` before ever reading config.toml, so it also
-// never loads config from the pre-override default home. Verified against
-// this repo's actual vendored cometbft/cobra/viper wiring, not just read.
-// Separately, mutating the flag here also sets Changed==true on the
-// underlying pflag.Flag object shared by every viper instance bound to this
-// same *pflag.FlagSet (BindPFlags stores a reference, not a snapshot), which
-// promotes it to viper's higher-priority changed-pflag tier for any reader
-// -- belt and suspenders on top of AutomaticEnv, not a second mechanism to
-// maintain.
-func applyHomeEnvOverride(cmd *cobra.Command) error {
-	if cmd.Flags().Changed(flags.FlagHome) {
-		return nil
-	}
-
-	home := os.Getenv(homeEnvVar)
-	if home == "" {
-		return nil
-	}
-
-	return cmd.Flags().Set(flags.FlagHome, home)
 }

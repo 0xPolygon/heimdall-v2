@@ -17,8 +17,8 @@ import (
 	"github.com/cosmos/gogoproto/jsonpb"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
-	commonhex "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/common/strutil"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics"
@@ -148,6 +148,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				continue
 			}
 
+			app.Logger().Info("Prepare proposal verify tx", "tx", tx.GetMsgs())
 			_, err = app.PrepareProposalVerifyTx(tx)
 			if err != nil {
 				logger.Warn("RunTx returned an error in PrepareProposal", "error", err)
@@ -192,7 +193,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
-		if hasOverNestedTx(app.InterfaceRegistry(), req.Height, req.Txs[1:]) {
+		if hasOverNestedTx(req.Height, req.Txs[1:]) {
 			logger.Error("Rejecting proposal: a transaction exceeds the message nesting bound")
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
@@ -1285,5 +1286,6 @@ func verifyTxHash(txHash []byte) bool {
 }
 
 func verifyHexTxHash(hexTxHash string) bool {
-	return commonhex.IsValidTxHash(hexTxHash)
+	decodedHash, err := hexutil.Decode(hexTxHash)
+	return err == nil && len(decodedHash) == common.HashLength
 }

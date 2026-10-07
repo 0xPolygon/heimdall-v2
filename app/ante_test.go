@@ -17,8 +17,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/app"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	clerkante "github.com/0xPolygon/heimdall-v2/x/clerk/ante"
-	clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
 func TestNewAnteHandler_WithValidOptions(t *testing.T) {
@@ -336,41 +334,6 @@ func TestAnteWiring_MsgMultiSendCapHardforkGated(t *testing.T) {
 			if tc.wantReject {
 				require.Error(t, err)
 				require.ErrorIs(t, err, sdkerrors.ErrInvalidRequest)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestAnteWiring_ClerkTxHashHardforkGated(t *testing.T) {
-	const activation = int64(100)
-	original := helper.GetLuganoHeight()
-	helper.SetLuganoHeight(activation)
-	t.Cleanup(func() { helper.SetLuganoHeight(original) })
-
-	validHash := "0x000000000000000000000000000000000000000000000000000000000000dead"
-	oversizedHash := "0x00" + validHash[2:]
-	tests := []struct {
-		name       string
-		height     int64
-		wantReject bool
-	}{
-		{name: "below activation accepts", height: activation - 1},
-		{name: "at activation rejects", height: activation, wantReject: true},
-		{name: "above activation rejects", height: activation + 1, wantReject: true},
-	}
-
-	decorator := clerkante.NewTxHashDecorator(helper.IsLugano)
-	terminal := func(ctx sdk.Context, _ sdk.Tx, _ bool) (sdk.Context, error) { return ctx, nil }
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := sdk.Context{}.WithBlockHeight(tt.height)
-			tx := &msgTx{msgs: []sdk.Msg{&clerktypes.MsgEventRecord{TxHash: oversizedHash}}}
-			_, err := decorator.AnteHandle(ctx, tx, false, terminal)
-			if tt.wantReject {
-				require.ErrorIs(t, err, clerktypes.ErrInvalidTxHash)
 			} else {
 				require.NoError(t, err)
 			}

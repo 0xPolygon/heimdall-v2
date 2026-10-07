@@ -195,16 +195,6 @@ func TestMsgEventRecord_ValidateBasic(t *testing.T) {
 			},
 		},
 		{
-			name: "nonempty tx hash is deferred to height-aware validation",
-			msg: types.MsgEventRecord{
-				From:            validFrom,
-				TxHash:          "0x00" + validTxHash[2:],
-				ContractAddress: validContract,
-				Data:            []byte("test"),
-			},
-			shouldError: false,
-		},
-		{
 			name: "data size exceeds max",
 			msg: types.MsgEventRecord{
 				From:            validFrom,
@@ -255,36 +245,6 @@ func TestMsgEventRecord_ValidateBasic(t *testing.T) {
 				}
 			} else {
 				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestMsgEventRecord_ValidateTxHash(t *testing.T) {
-	t.Parallel()
-
-	validHash := "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
-	tests := []struct {
-		name    string
-		hash    string
-		isValid bool
-	}{
-		{name: "valid lowercase hash", hash: validHash, isValid: true},
-		{name: "valid uppercase hash", hash: strings.ToUpper(validHash), isValid: true},
-		{name: "oversized hash", hash: "0x00" + validHash[2:], isValid: false},
-		{name: "short hash", hash: "0x1234", isValid: false},
-		{name: "missing prefix", hash: validHash[2:], isValid: false},
-		{name: "invalid hex", hash: "0x" + strings.Repeat("z", 64), isValid: false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			err := (types.MsgEventRecord{TxHash: tt.hash}).ValidateTxHash()
-			if tt.isValid {
-				require.NoError(t, err)
-			} else {
-				require.ErrorIs(t, err, types.ErrInvalidTxHash)
 			}
 		})
 	}
