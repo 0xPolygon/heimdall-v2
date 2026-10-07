@@ -60,6 +60,11 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg) (
 		srv.Logger(ctx).Error(helper.ErrTypeMismatch("MsgEventRecord"))
 		return sidetxs.Vote_VOTE_NO
 	}
+	if helper.IsLugano(ctx.BlockHeight()) {
+		if err = msg.ValidateTxHash(); err != nil {
+			return sidetxs.Vote_VOTE_NO
+		}
+	}
 
 	srv.Logger(ctx).Debug(helper.LogValidatingExternalCall("ClerkEventRecord"),
 		"txHash", msg.TxHash,
@@ -168,90 +173,146 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg) (
 	return sidetxs.Vote_VOTE_YES
 }
 
+// normalizeContractAddress re-derives a contract address string from its decoded bytes,
+// instead of trusting the attacker-controlled string verbatim: heimdall's own decode
+// (ToLower, then hex-decode) can disagree with Bor's independent, non-ToLower'd decode of
+// certain non-canonical strings, silently misrouting a state sync. Every consumer of the
+// stored EventRecord must decode the same address heimdall validated against the L1 event.
+func normalizeContractAddress(contractAddress string) (string, error) {
+	ac := address.NewHexCodec()
+	contractAddressBytes, err := ac.StringToBytes(contractAddress)
+	if err != nil {
+		return "", err
+	}
+	return ac.BytesToString(contractAddressBytes)
+}
+
+// contractAddressForRecord returns the contract address to persist for msg: the raw string
+// below Lugano, or its normalized form at/after it. See normalizeContractAddress for why.
+//
+// Gated on ctx.BlockHeight()-1, not ctx.BlockHeight(): this runs inside the post-handler,
+// which executes one height after the tx's own inclusion/side-handler height H (at H+1), so
+// -1 recovers H -- the same height contractAddressForEvent uses for this same tx's emitted
+// event, and the same convention persistApprovedEventRecord's own tx-hash gate already uses
+// a few lines below. Without it, a tx included at LuganoHeight-1 would be normalized here
+// (post-handler sees H+1=LuganoHeight) but not in the event HandleMsgEventRecord already
+// emitted for it at H, producing a one-block window where the persisted record and its own
+// emitted event disagree on the contract address for the identical transaction.
+func (srv *sideMsgServer) contractAddressForRecord(ctx sdk.Context, msg *types.MsgEventRecord) (string, error) {
+	if !helper.IsLugano(ctx.BlockHeight() - 1) {
+		return msg.ContractAddress, nil
+	}
+	contractAddress, err := normalizeContractAddress(msg.ContractAddress)
+	if err != nil {
+		srv.Logger(ctx).Error("could not normalize contract address", "id", msg.Id, heimdallTypes.LogKeyError, err)
+		return "", err
+	}
+	return contractAddress, nil
+}
+
+// contractAddressForEvent returns the contract address to emit in a clerk event for a
+// handler that never persists state. Height-gated the same way as contractAddressForRecord,
+// even though this handler has no app-hash to protect: HandleMsgEventRecord runs identically
+// on every validator for the same tx as PostHandleMsgEventRecord's approved side-tx, and
+// emitting a different contract address for the two events on the same tx pre-Lugano would be
+// an unexplained inconsistency for anything reading the event stream (indexers, explorers)
+// rather than stored state. Falls back to the raw string on decode failure rather than failing
+// a handler with no state to roll back (ValidateBasic already rejects an undecodable address
+// earlier in the tx pipeline, so that fallback should be unreachable in practice).
+func contractAddressForEvent(height int64, contractAddress string) string {
+	if !helper.IsLugano(height) {
+		return contractAddress
+	}
+	if normalized, err := normalizeContractAddress(contractAddress); err == nil {
+		return normalized
+	}
+	return contractAddress
+}
+
 func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, m sdk.Msg, sideTxResult sidetxs.Vote) error {
 	var err error
 	startTime := time.Now()
 	defer recordClerkMetric(api.PostHandleMsgEventRecordMethod, api.PostType, startTime, &err)
 
 	logger := srv.Logger(ctx)
-
 	msg, ok := m.(*types.MsgEventRecord)
 	if !ok {
-		err := errors.New(helper.ErrTypeMismatch("MsgEventRecord"))
+		err = errors.New(helper.ErrTypeMismatch("MsgEventRecord"))
 		logger.Error(err.Error())
 		return err
 	}
 
-	// Skip handler if clerk is not approved
 	if !helper.IsSideTxApproved(sideTxResult) {
 		logger.Debug(helper.ErrSkippingMsg("ClerkEventRecord"))
 		return nil
 	}
 
-	// check for replay
-	if srv.HasEventRecord(ctx, msg.Id) {
-		err = errors.New("clerk record already processed")
-		logger.Debug("Skipping new clerk record as it's already processed")
+	record, err := srv.persistApprovedEventRecord(ctx, msg)
+	if err != nil {
 		return err
 	}
 
-	logger.Debug("Persisting clerk state", "sideTxResult", sideTxResult)
+	emitEventRecord(ctx, msg, record.Contract, sideTxResult)
+	return nil
+}
 
-	// sequence id
+func (srv *sideMsgServer) persistApprovedEventRecord(ctx sdk.Context, msg *types.MsgEventRecord) (*types.EventRecord, error) {
+	if helper.IsLugano(ctx.BlockHeight() - 1) {
+		if err := msg.ValidateTxHash(); err != nil {
+			return nil, err
+		}
+	}
+
+	if srv.HasEventRecord(ctx, msg.Id) {
+		srv.Logger(ctx).Debug("Skipping new clerk record as it's already processed")
+		return nil, errors.New("clerk record already processed")
+	}
+	srv.Logger(ctx).Debug("Persisting clerk state")
+
 	sequence := helper.CalculateSequence(ctx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
+	contractAddress, err := srv.contractAddressForRecord(ctx, msg)
+	if err != nil {
+		return nil, err
+	}
 
-	// create the event record
 	record := types.NewEventRecord(
 		msg.TxHash,
 		msg.LogIndex,
 		msg.Id,
-		msg.ContractAddress,
+		contractAddress,
 		msg.Data,
 		msg.ChainId,
 		ctx.BlockTime(),
 	)
-
-	// save event into state
 	if err := srv.SetEventRecord(ctx, record); err != nil {
-		logger.Error("Unable to update event record", "id", msg.Id, heimdallTypes.LogKeyError, err)
-		return err
+		srv.Logger(ctx).Error("Unable to update event record", "id", msg.Id, heimdallTypes.LogKeyError, err)
+		return nil, err
 	}
 
-	// If visibility time is enabled, add the event to the pending list.
-	// Its visibility_height will be assigned in the next block's PreBlocker.
-	// The deterministic query distinguishes pre-HF events (no pending entry, no
-	// visibility_height) from post-HF events by this per-event state, so it
-	// stays correct even when events are processed out of order across the
-	// activation height.
 	if helper.IsZurichHardfork(ctx.BlockHeight()) {
-		if err = srv.AddPendingVisibilityEvent(ctx, record.Id); err != nil {
-			logger.Error("Unable to add pending visibility event", "id", record.Id, heimdallTypes.LogKeyError, err)
-			return err
+		if err := srv.AddPendingVisibilityEvent(ctx, record.Id); err != nil {
+			srv.Logger(ctx).Error("Unable to add pending visibility event", "id", record.Id, heimdallTypes.LogKeyError, err)
+			return nil, err
 		}
 	}
 
-	// save the record sequence
 	srv.SetRecordSequence(ctx, sequence)
+	return &record, nil
+}
 
-	// tx bytes
-	txBytes := ctx.TxBytes()
-	hash := txBytes
-
-	// add events
+func emitEventRecord(ctx sdk.Context, msg *types.MsgEventRecord, contractAddress string, sideTxResult sidetxs.Vote) {
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeRecord,
-			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),                       // action
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),     // module name
-			sdk.NewAttribute(heimdallTypes.AttributeKeyTxHash, common.Bytes2Hex(hash)), // tx hash
+			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
+			sdk.NewAttribute(heimdallTypes.AttributeKeyTxHash, common.Bytes2Hex(ctx.TxBytes())),
 			sdk.NewAttribute(types.AttributeKeyRecordTxLogIndex, strconv.FormatUint(msg.LogIndex, 10)),
-			sdk.NewAttribute(heimdallTypes.AttributeKeySideTxResult, sideTxResult.String()), // result
+			sdk.NewAttribute(heimdallTypes.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeyRecordID, strconv.FormatUint(msg.Id, 10)),
-			sdk.NewAttribute(types.AttributeKeyRecordContract, msg.ContractAddress),
+			sdk.NewAttribute(types.AttributeKeyRecordContract, contractAddress),
 		),
 	})
-
-	return nil
 }
 
 // recordClerkMetric records metrics for side and post-handlers.

@@ -35,6 +35,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.23.2
+	github.com/prometheus/client_model v0.6.2
 	github.com/rabbitmq/amqp091-go v1.13.0
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.10.1
@@ -202,6 +203,7 @@ require (
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lib/pq v1.12.0 // indirect
 	github.com/linxGnu/grocksdb v1.10.3 // indirect
 	github.com/manifoldco/promptui v0.9.0 // indirect
@@ -230,7 +232,6 @@ require (
 	github.com/peterh/liner v1.2.2 // indirect
 	github.com/petermattis/goid v0.0.0-20251121121749-a11dd1a45f9a // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.4 // indirect
 	github.com/prometheus/procfs v0.19.2 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
@@ -316,9 +317,9 @@ replace (
 	cosmossdk.io/store => github.com/0xPolygon/cosmos-sdk/store v1.1.2-0.20241126102051-89dc71d02611
 	cosmossdk.io/tools/confix => github.com/0xPolygon/cosmos-sdk/tools/confix v0.1.1
 	cosmossdk.io/x/tx => github.com/0xPolygon/cosmos-sdk/x/tx v0.13.6-0.20241126102051-89dc71d02611
-	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.3.8-polygon.0.20261002123146-5beae2f194ab
+	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.3.10-polygon
 	github.com/cometbft/cometbft-db => github.com/0xPolygon/cometbft-db v0.14.1-polygon
-	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.2.14-polygon
+	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.2.15-polygon
 	github.com/ethereum/go-ethereum => github.com/0xPolygon/bor v1.14.14-0.20260508112740-10c49a44e3ea
 	// Following version of goleveldb might cause an unexpected behavior.
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7

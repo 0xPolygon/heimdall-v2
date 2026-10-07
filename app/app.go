@@ -68,6 +68,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/hellofresh/health-go/v5"
 
+	"github.com/0xPolygon/heimdall-v2/app/rerun"
 	"github.com/0xPolygon/heimdall-v2/client/docs"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics"
@@ -171,6 +172,12 @@ type HeimdallApp struct {
 
 	// Health service
 	healthService *health.Health
+
+	// last-block re-run after a binary change (see last_block_rerun.go)
+	rerunDB            dbm.DB
+	rerunEnabled       bool
+	rerunInProgress    bool
+	rerunMarkerWritten bool
 }
 
 func init() {
@@ -239,6 +246,10 @@ func NewHeimdallApp(
 		interfaceRegistry: interfaceRegistry,
 		keys:              keys,
 		tKeys:             tKeys,
+		rerunDB:           db,
+	}
+	if appOpts != nil {
+		app.rerunEnabled, _ = appOpts.Get(rerun.EnableOption).(bool)
 	}
 
 	// Contract caller
@@ -469,8 +480,12 @@ func NewHeimdallApp(
 	}
 
 	if loadLatest {
-		if err := app.LoadLatestVersion(); err != nil {
-			panic(fmt.Errorf("error loading last version: %w", err))
+		if err := app.loadLatestOrRerunVersion(); err != nil {
+			panic(err)
+		}
+		spanCtx := app.NewUncachedContext(true, cmtproto.Header{Height: app.LastBlockHeight()})
+		if err := app.BorKeeper.WarmSpanEndFrontier(spanCtx); err != nil {
+			logger.Warn("Unable to warm Bor span frontier; it will initialize on first use", "error", err)
 		}
 	}
 
@@ -492,11 +507,21 @@ func NewHeimdallApp(
 	return app
 }
 
+// Commit commits the block and records this binary as the committer of the latest height.
+func (app *HeimdallApp) Commit() (*abci.ResponseCommit, error) {
+	res, err := app.BaseApp.Commit()
+	if err != nil {
+		return res, err
+	}
+	app.recordCommitByThisBinary()
+	return res, nil
+}
+
 func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
 	// Only apply veBlop validation during normal CheckTx (not recheck)
 	if req.Type == abci.CheckTxType_New {
 		// Gated on the next height so the mempool filter tracks ProcessProposal's fork boundary.
-		if hasOverNestedTx(app.LastBlockHeight()+1, [][]byte{req.Tx}) {
+		if hasOverNestedTx(app.InterfaceRegistry(), app.LastBlockHeight()+1, [][]byte{req.Tx}) {
 			return &abci.ResponseCheckTx{Code: sdkerrors.ErrTxDecode.ABCICode(), Log: "transaction exceeds the message nesting bound"}, nil
 		}
 		tx, err := app.TxDecode(req.Tx)
@@ -649,6 +674,10 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 
 	stakingState := staketypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
 	checkpointState := checkpointTypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
+
+	if err := stakingState.ValidateCurrentSetMembership(checkpointState.AckCount); err != nil {
+		return &abci.ResponseInitChain{}, fmt.Errorf("invalid stake genesis: %w", err)
+	}
 
 	// check if the validator is the current one and add to valUpdates else skip
 	var valUpdates []abci.ValidatorUpdate

@@ -73,6 +73,15 @@ func (msg MsgEventRecord) ValidateBasic() error {
 	return nil
 }
 
+// ValidateTxHash validates the fixed-width L1 transaction hash representation.
+func (msg MsgEventRecord) ValidateTxHash() error {
+	if !util.IsValidTxHash(msg.TxHash) {
+		return ErrInvalidTxHash
+	}
+
+	return nil
+}
+
 // GetTxHash Returns tx hash
 func (msg MsgEventRecord) GetTxHash() string {
 	return msg.TxHash

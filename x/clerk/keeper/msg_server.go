@@ -33,6 +33,12 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	defer recordClerkTransactionMetric(api.HandleMsgEventRecordMethod, startTime, &err)
 
 	logger := srv.Logger(ctx)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if helper.IsLugano(sdkCtx.BlockHeight()) {
+		if err = msg.ValidateTxHash(); err != nil {
+			return nil, err
+		}
+	}
 
 	logger.Debug(helper.LogValidatingExternalCall("ClerkEventRecord"),
 		"id", msg.Id,
@@ -63,7 +69,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	}
 
 	// sequence id
-	sequence := helper.CalculateSequence(sdk.UnwrapSDKContext(ctx).BlockHeight(), msg.BlockNumber, msg.LogIndex)
+	sequence := helper.CalculateSequence(sdkCtx.BlockHeight(), msg.BlockNumber, msg.LogIndex)
 
 	// check if the event has already been processed
 	if srv.HasRecordSequence(ctx, sequence) {
@@ -72,13 +78,12 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	}
 
 	// add events
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeRecord,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
 			sdk.NewAttribute(types.AttributeKeyRecordID, strconv.FormatUint(msg.Id, 10)),
-			sdk.NewAttribute(types.AttributeKeyRecordContract, msg.ContractAddress),
+			sdk.NewAttribute(types.AttributeKeyRecordContract, contractAddressForEvent(sdkCtx.BlockHeight(), msg.ContractAddress)),
 			sdk.NewAttribute(types.AttributeKeyRecordTxHash, msg.TxHash),
 			sdk.NewAttribute(types.AttributeKeyRecordTxLogIndex, strconv.FormatUint(msg.LogIndex, 10)),
 		),
