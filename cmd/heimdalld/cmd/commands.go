@@ -201,14 +201,11 @@ func initRootCmd(
 
 			select {
 			case result := <-resultChan:
-				fmt.Println("Fetch successful, received data:", result)
+				svrCtx.Logger.Info("Fetch successful, received data", "data", result)
 				cancel() // stop the poller immediately
 
 			case <-timer.C:
-				fmt.Printf(
-					"Fetch operation timed out - REST server did not respond within %d minutes\n",
-					restServerTimeOutInMinutes,
-				)
+				svrCtx.Logger.Warn("Fetch operation timed out - REST server did not respond", "timeoutMinutes", restServerTimeOutInMinutes)
 
 				ticker := time.NewTicker(1 * time.Second)
 				defer ticker.Stop()
@@ -217,19 +214,19 @@ func initRootCmd(
 				for {
 					select {
 					case result := <-resultChan:
-						fmt.Println("Fetch successful, received data:", result)
+						svrCtx.Logger.Info("Fetch successful, received data", "data", result)
 						// stop polling now that we’re done
 						cancel()
 						// continue with PostSetup
 						break waitLoop
 
 					case <-ticker.C:
-						// keep printing every second if the rest-server is not responding
-						fmt.Println("Warning: still waiting for REST server to respond... Something wrong with it, please check!")
+						// keep logging every second if the rest-server is not responding
+						svrCtx.Logger.Warn("Still waiting for REST server to respond... something wrong with it, please check")
 
 					case <-ctx.Done():
 						// if the app is shutting down, stop waiting and continue without the REST server
-						fmt.Println("Startup context cancelled while waiting... Continuing without REST server")
+						svrCtx.Logger.Warn("Startup context cancelled while waiting... continuing without REST server")
 						break waitLoop
 					}
 				}
@@ -303,27 +300,28 @@ func checkServerStatus(ctx context.Context, url string, resultChan chan<- string
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
-			fmt.Printf("Error creating HTTP request: %v\n", err)
+			helper.Logger.Error("Error creating HTTP request", "error", err)
 			return
 		}
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			fmt.Printf("Error fetching URL %s: %v\n", url, err)
+			// Expected while the REST server is still starting up; retried every tick.
+			helper.Logger.Debug("REST server not yet reachable", "url", url, "error", err)
 			continue
 		}
 
 		func() {
 			defer func(Body io.ReadCloser) {
 				if closeErr := Body.Close(); closeErr != nil {
-					fmt.Printf("Error closing response body: %v\n", closeErr)
+					helper.Logger.Error("Error closing response body", "error", closeErr)
 				}
 			}(resp.Body)
 
 			if resp.StatusCode == http.StatusOK {
 				body, err := io.ReadAll(resp.Body)
 				if err != nil {
-					fmt.Printf("Error reading response body: %v\n", err)
+					helper.Logger.Error("Error reading response body", "error", err)
 					return
 				}
 
@@ -335,7 +333,7 @@ func checkServerStatus(ctx context.Context, url string, resultChan chan<- string
 				}
 				return
 			}
-			fmt.Printf("Received non-OK HTTP status from %s: %d\n", url, resp.StatusCode)
+			helper.Logger.Warn("Received non-OK HTTP status", "url", url, "status", resp.StatusCode)
 		}()
 	}
 }
@@ -362,7 +360,7 @@ func AddCommandsWithStartCmdOptions(
 		server.VersionCmd(),
 		cmtcmd.ResetAllCmd,
 		cmtcmd.ResetStateCmd,
-		cmtcmd.GenNodeKeyCmd,
+		genNodeKeyCmd(),
 		server.BootstrapStateCmd(appCreator),
 	)
 
@@ -375,6 +373,45 @@ func AddCommandsWithStartCmdOptions(
 		server.ExportCmd(appExport, defaultNodeHome),
 		server.NewRollbackCmd(appCreator, defaultNodeHome),
 	)
+}
+
+// genNodeKeyCmd generates a node key for this node and prints its ID.
+//
+// This replaces cometbft's own gen-node-key command (cmtcmd.GenNodeKeyCmd):
+// that command's RunE reads cometbft's package-level config variable
+// directly instead of resolving it from the command, and that variable is
+// only ever populated by the standalone cometbft binary's own root command,
+// which heimdalld does not run. As wired there, gen-node-key silently
+// ignored --home/HD_HOME and wrote node_key.json relative to the process's
+// working directory. This version resolves the node key path from the same
+// home the rest of heimdalld uses.
+//
+// Reads the config from the server context rather than building a bare
+// cmtcfg.DefaultConfig(): the context's config is populated by cosmos-sdk's
+// own PersistentPreRunE chain from --home/HD_HOME and the operator's actual
+// config.toml, so a customized node_key_file setting resolves to the same
+// path start/show-node-id use - not a hardcoded config/node_key.json under
+// the resolved home regardless of what config.toml says.
+func genNodeKeyCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "gen-node-key",
+		Aliases: []string{"gen_node_key"},
+		Short:   "Generate a node key for this node and print its ID",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			nodeKeyFile := server.GetServerContextFromCmd(cmd).Config.NodeKeyFile()
+			if cmtos.FileExists(nodeKeyFile) {
+				return fmt.Errorf("node key at %s already exists", nodeKeyFile)
+			}
+
+			nodeKey, err := p2p.LoadOrGenNodeKey(nodeKeyFile)
+			if err != nil {
+				return err
+			}
+
+			cmd.Println(nodeKey.ID())
+			return nil
+		},
+	}
 }
 
 func registerBorChainClientCleanup(ctx context.Context, g *errgroup.Group, closeBorClients func()) {

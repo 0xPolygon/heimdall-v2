@@ -29,11 +29,12 @@ func TestInitHeimdallConfigWithSetsIthacaHeightPerChain(t *testing.T) {
 		wantRioHeight    int64
 		wantInitHeight   int64
 		wantIthacaHeight int64
+		wantLuganoHeight int64
 	}{
-		{name: "mainnet", chain: MainChain, wantRioHeight: 77414656, wantInitHeight: 24404501, wantIthacaHeight: 50185000},
-		{name: "mumbai", chain: MumbaiChain, wantRioHeight: 48473856, wantInitHeight: 0, wantIthacaHeight: 0},
-		{name: "amoy", chain: AmoyChain, wantRioHeight: 26272256, wantInitHeight: 8788501, wantIthacaHeight: 40776000},
-		{name: "default", chain: "local", wantRioHeight: 128, wantInitHeight: 0, wantIthacaHeight: 0},
+		{name: "mainnet", chain: MainChain, wantRioHeight: 77414656, wantInitHeight: 24404501, wantIthacaHeight: 50185000, wantLuganoHeight: 54627000},
+		{name: "mumbai", chain: MumbaiChain, wantRioHeight: 48473856, wantInitHeight: 0, wantIthacaHeight: 0, wantLuganoHeight: 0},
+		{name: "amoy", chain: AmoyChain, wantRioHeight: 26272256, wantInitHeight: 8788501, wantIthacaHeight: 40776000, wantLuganoHeight: 47105000},
+		{name: "default", chain: "local", wantRioHeight: 128, wantInitHeight: 0, wantIthacaHeight: 0, wantLuganoHeight: 1},
 	}
 
 	for _, tc := range cases {
@@ -46,6 +47,7 @@ func TestInitHeimdallConfigWithSetsIthacaHeightPerChain(t *testing.T) {
 			require.Equal(t, tc.wantIthacaHeight, GetIthacaHeight())
 			require.Equal(t, tc.wantRioHeight, GetRioHeight())
 			require.Equal(t, tc.wantInitHeight, GetInitialHeight())
+			require.Equal(t, tc.wantLuganoHeight, GetLuganoHeight())
 		})
 	}
 }
@@ -102,6 +104,7 @@ func restoreInitGlobals(t *testing.T) {
 	origFeeGate := feeWithdrawValidatorGateHeight
 	origZurich := zurichHardforkHeight
 	origSpan := ithacaHeight
+	origLugano := luganoHeight
 	t.Cleanup(func() {
 		conf = origConf
 		Logger = origLogger
@@ -122,6 +125,7 @@ func restoreInitGlobals(t *testing.T) {
 		feeWithdrawValidatorGateHeight = origFeeGate
 		zurichHardforkHeight = origZurich
 		ithacaHeight = origSpan
+		luganoHeight = origLugano
 	})
 }
 

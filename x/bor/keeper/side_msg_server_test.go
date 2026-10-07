@@ -1,24 +1,93 @@
 package keeper_test
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"testing"
 
+	corestore "cosmossdk.io/core/store"
+	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
+	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
+
+type iteratorTrackingStoreService struct {
+	store    corestore.KVStore
+	iterated *bool
+}
+
+func (s iteratorTrackingStoreService) OpenKVStore(context.Context) corestore.KVStore {
+	return iteratorTrackingStore{KVStore: s.store, iterated: s.iterated}
+}
+
+type iteratorTrackingStore struct {
+	corestore.KVStore
+	iterated *bool
+}
+
+func (s iteratorTrackingStore) Iterator(start, end []byte) (corestore.Iterator, error) {
+	*s.iterated = true
+	return s.KVStore.Iterator(start, end)
+}
+
+func TestSideHandleSetProducerDowntimeRejectsFarFutureBeforeSpanLookup(t *testing.T) {
+	key := storetypes.NewKVStoreKey(types.StoreKey)
+	testCtx := testutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_side_handler_order"))
+	encCfg := moduletestutil.MakeTestEncodingConfig()
+	baseStore := runtime.NewKVStoreService(key).OpenKVStore(testCtx.Ctx)
+	iterated := false
+	contractCaller := &mocks.IContractCaller{}
+	contractCaller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).
+		Return(&ethTypes.Header{Number: big.NewInt(1_000_000)}, nil).
+		Once()
+
+	borKeeper := keeper.NewKeeper(
+		encCfg.Codec,
+		iteratorTrackingStoreService{store: baseStore, iterated: &iterated},
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		nil,
+		nil,
+		nil,
+		contractCaller,
+	)
+	server := keeper.NewSideMsgServerImpl(&borKeeper)
+	maxBlock := ^uint64(0)
+	msg := &types.MsgSetProducerDowntime{
+		Producer: common.HexToAddress("0x1").Hex(),
+		DowntimeRange: types.BlockRange{
+			StartBlock: maxBlock - types.PlannedDowntimeMinRange,
+			EndBlock:   maxBlock,
+		},
+	}
+	ctx := testCtx.Ctx.WithLogger(log.NewNopLogger())
+	handler := server.SideTxHandler(sdk.MsgTypeURL(&types.MsgSetProducerDowntime{}))
+
+	vote := handler(ctx, msg)
+
+	require.Equal(t, sidetxs.Vote_VOTE_NO, vote)
+	require.False(t, iterated, "out-of-window requests must not scan spans")
+	contractCaller.AssertExpectations(t)
+}
 
 func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 	ctx, require, borKeeper, milestoneKeeper, cmKeeper, sideMsgServer := s.ctx, s.Require(), s.borKeeper, s.milestoneKeeper, s.chainManagerKeeper, s.sideMsgServer
@@ -299,6 +368,7 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 	type testCase struct {
 		name                string
 		typeMismatch        bool
+		skipBorSetup        bool
 		current             uint64
 		msg                 *types.MsgSetProducerDowntime
 		getBlockErr         error
@@ -315,7 +385,7 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 		{
 			name:        "GetBorChainBlock error returns NO",
 			current:     1_000_000,
-			msg:         newMsg(producerAddr, 1_000_100, 1_000_200),
+			msg:         newMsg(producerAddr, 1_000_100, 1_000_300),
 			getBlockErr: fmt.Errorf("rpc error"),
 			expectVote:  sidetxs.Vote_VOTE_NO,
 		},
@@ -329,13 +399,13 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 		{
 			name:       "start too soon - boundary (start == current+min-1) returns NO",
 			current:    5_000_000,
-			msg:        newMsg(producerAddr, (5_000_000+minFuture)-1, (5_000_000+minFuture)+10),
+			msg:        newMsg(producerAddr, (5_000_000+minFuture)-1, (5_000_000+minFuture)-1+uint64(types.PlannedDowntimeMinRange)),
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
 			name:       "start too soon - strict (start < current+min-1) returns NO",
 			current:    5_000_000,
-			msg:        newMsg(producerAddr, (5_000_000+minFuture)-2, (5_000_000+minFuture)+10),
+			msg:        newMsg(producerAddr, (5_000_000+minFuture)-2, (5_000_000+minFuture)-2+uint64(types.PlannedDowntimeMinRange)),
 			expectVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
@@ -369,10 +439,11 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 
 	// range too small (end - start < PlannedDowntimeMinRange) -> VOTE_NO
 	tests = append(tests, testCase{
-		name:       "range too small returns NO",
-		current:    1_000_000,
-		msg:        newMsg(producerAddr, 1_000_000+minFuture, 1_000_000+minFuture+10),
-		expectVote: sidetxs.Vote_VOTE_NO,
+		name:         "range too small returns NO before Bor RPC",
+		skipBorSetup: true,
+		current:      1_000_000,
+		msg:          newMsg(producerAddr, 1_000_000+minFuture, 1_000_000+minFuture+10),
+		expectVote:   sidetxs.Vote_VOTE_NO,
 	})
 
 	// start exactly at minFuture with valid range -> YES
@@ -395,7 +466,12 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 				msgI = &types.MsgProposeSpan{}
 			} else {
 				msgI = tc.msg
-				if tc.getBlockErr != nil {
+				if tc.skipBorSetup {
+					// Static range validation must reject before any external Bor call.
+					s.contractCaller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).
+						Return(&ethTypes.Header{Number: big.NewInt(int64(tc.current))}, nil).
+						Maybe()
+				} else if tc.getBlockErr != nil {
 					s.contractCaller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).
 						Return((*ethTypes.Header)(nil), tc.getBlockErr).Once()
 				} else {
@@ -428,6 +504,9 @@ func (s *KeeperTestSuite) TestSideHandleSetProducerDowntime() {
 			sideHandler := s.sideMsgServer.SideTxHandler(sdk.MsgTypeURL(&types.MsgSetProducerDowntime{}))
 			v := sideHandler(ctx, msgI)
 			require.Equal(tc.expectVote, v)
+			if tc.skipBorSetup {
+				s.contractCaller.AssertNotCalled(s.T(), "GetBorChainBlock", mock.Anything, (*big.Int)(nil))
+			}
 
 			// verify expectations for contract caller when applicable
 			s.contractCaller.AssertExpectations(s.T())

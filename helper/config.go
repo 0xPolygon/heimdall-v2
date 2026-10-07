@@ -114,8 +114,7 @@ const (
 	DefaultBorChainID      = "15001"
 	DefaultHeimdallChainID = "heimdall-15001"
 
-	DefaultLogsType = "json"
-	DefaultChain    = MainChain
+	DefaultChain = MainChain
 
 	DefaultMainnetSeeds     = "e019e16d4e376723f3adc58eb1761809fea9bee0@35.234.150.253:26656,7f3049e88ac7f820fd86d9120506aaec0dc54b27@34.89.75.187:26656,1f5aff3b4f3193404423c3dd1797ce60cd9fea43@34.142.43.249:26656,2d5484feef4257e56ece025633a6ea132d8cadca@35.246.99.203:26656,17e9efcbd173e81a31579310c502e8cdd8b8ff2e@35.197.233.240:26656,72a83490309f9f63fdca3a0bef16c290e5cbb09c@35.246.95.65:26656,00677b1b2c6282fb060b7bb6e9cc7d2d05cdd599@34.105.180.11:26656,721dd4cebfc4b78760c7ee5d7b1b44d29a0aa854@34.147.169.102:26656,4760b3fc04648522a0bcb2d96a10aadee141ee89@34.89.55.74:26656"
 	DefaultAmoyTestnetSeeds = "e4eabef3111155890156221f018b0ea3b8b64820@35.197.249.21:26656,811c3127677a4a34df907b021aad0c9d22f84bf4@34.89.39.114:26656,2ec15d1d33261e8cf42f57236fa93cfdc21c1cfb@35.242.167.175:26656,38120f9d2c003071a7230788da1e3129b6fb9d3f@34.89.15.223:26656,2f16f3857c6c99cc11e493c2082b744b8f36b127@34.105.128.110:26656,2833f06a5e33da2e80541fb1bfde2a7229877fcb@34.89.21.99:26656,2e6f1342416c5d758f5ae32f388bb76f7712a317@34.89.101.16:26656,a596f98b41851993c24de00a28b767c7c5ff8b42@34.89.11.233:26656"
@@ -201,8 +200,14 @@ type CustomConfig struct {
 	NoACKWaitTime time.Duration `mapstructure:"no_ack_wait_time"` // Time ack service waits to clear the buffer and elect the new proposer
 
 	// Log related options
-	LogsType       string `mapstructure:"logs_type"`        // if true, enable logging in json format
-	LogsWriterFile string `mapstructure:"logs_writer_file"` // if given, Logs will be written to this file else os.Stdout
+	// LogsTypeDeprecated used to pick json/plain log output; log_format in
+	// config.toml controls that now. Kept so an old app.toml still setting
+	// "custom.logs_type" doesn't fail strict decoding, and so
+	// InitHeimdallConfigWith can register it as log_format's fallback
+	// default (see legacyJSONLogsType) for a node that never migrated to
+	// log_format at all -- any explicit log_format source still wins.
+	LogsTypeDeprecated string `mapstructure:"logs_type"`
+	LogsWriterFile     string `mapstructure:"logs_writer_file"` // if given, Logs will be written to this file else os.Stdout
 
 	Chain string `mapstructure:"chain"`
 
@@ -283,6 +288,28 @@ var ithacaHeight int64 = 0
 // the Kyoto hardfork. Zero disables it; local/devnet activates it from height 1.
 var kyotoHeight int64 = 0
 
+// luganoHeight gates the batch of consensus-affecting fixes activated at the Lugano
+// hardfork:
+//   - normalizing MsgEventRecord.ContractAddress to its canonical codec-encoded form
+//     before persisting it, so every consumer of the stored EventRecord decodes the same
+//     bytes heimdall validated against the L1 event.
+//   - enforcing fixed-width MsgEventRecord transaction hashes on ingress and normalizing
+//     legacy record hashes in query responses.
+//   - switching app.hasOverNestedTx from its original byte-level Any-nesting heuristic to
+//     the real, descriptor-driven traversal (see app/tx_decode_guard.go), which closes a
+//     gap the heuristic can't see: nesting that hops through an ordinary embedded message
+//     field between Any unwraps. That gap predates Lugano and is already live wherever
+//     Kyoto is active; the fix is bundled into Lugano (an as-yet-unactivated height on
+//     every network) rather than swapped in place under the already-fully-activated Kyoto
+//     gate, so the algorithm change gets a coordinated cutover instead of taking effect the
+//     instant each validator's binary happens to upgrade.
+//   - bounding the block window a MsgCheckpoint may cover to the lengths the checkpoint
+//     params allow, in the checkpoint message handler, its side and post handlers, and the
+//     non-RP vote-extension validation path.
+//
+// Zero disables it; local/devnet activates it from height 1.
+var luganoHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -337,6 +364,33 @@ func InitHeimdallConfig(homeDir string) {
 
 	// init heimdall with changed config files
 	InitHeimdallConfigWith(homeDir, heimdallConfigFileFromFlag)
+}
+
+// legacyJSONLogsType is the only custom.logs_type value that changes
+// applyLegacyLogsTypeDefault's behavior -- see LogsTypeDeprecated's doc
+// comment.
+const legacyJSONLogsType = "json"
+
+// applyLegacyLogsTypeDefault preserves a node's pre-existing log output
+// format across the logs_type -> log_format migration, for the narrow
+// window this actually affects: the early lines InitHeimdallConfigWith
+// itself logs (the deprecation warning right below, an early
+// Bor-RPC-reachability check), not a node's ongoing operational log stream,
+// which cmd/heimdalld's own PersistentPreRunE controls independently of
+// logs_type both before and after this migration.
+//
+// Registers it as viper's default -- not Set, not a flag mutation -- which
+// keeps it strictly below every explicit log_format source (a changed
+// --log_format flag, an env var picked up by AutomaticEnv, or a config.toml
+// entry) in viper's own precedence order. It only ever substitutes for the
+// compiled-in "plain" default, never an operator's actual choice: a bug in
+// an earlier version of this fallback (mutating the flag directly, which
+// promotes it to the changed-pflag tier) could silently override a real
+// environment-provided log_format.
+func applyLegacyLogsTypeDefault(logsTypeDeprecated string) {
+	if logsTypeDeprecated == legacyJSONLogsType {
+		viper.SetDefault(flags.FlagLogFormat, legacyJSONLogsType)
+	}
 }
 
 // InitHeimdallConfigWith initializes passed heimdall/tendermint config files
@@ -398,21 +452,22 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		log.Fatalln("unable to read flag values. Check log for details.", "Error", err)
 	}
 
+	applyLegacyLogsTypeDefault(conf.Custom.LogsTypeDeprecated)
+
 	levelOpt, moduleFilter := LogLevelOptionOrDefault(viper.GetString(flags.FlagLogLevel), Logger.Warn)
 
 	logNoColor := viper.GetBool(flags.FlagLogNoColor)
-	var logOpts []logger.Option
-	if conf.Custom.LogsType == "json" {
-		logOpts = append(logOpts, logger.OutputJSONOption())
-	} else {
-		logOpts = append(logOpts, logger.ColorOption(!logNoColor))
-	}
-	logOpts = append(logOpts,
+	logOpts := []logger.Option{
+		LogFormatOption(viper.GetString(flags.FlagLogFormat), logNoColor),
 		levelOpt,
 		logger.TimeFormatOption(LogTimestampFormat),
-	)
+	}
 
 	Logger = WithModuleFilter(logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logOpts...), moduleFilter)
+
+	if conf.Custom.LogsTypeDeprecated != "" {
+		Logger.Warn("custom.logs_type in app.toml is deprecated; used only as log_format's fallback default when nothing else sets it -- set log_format explicitly in config.toml instead", "value", conf.Custom.LogsTypeDeprecated)
+	}
 
 	// perform checks for timeout
 	if conf.Custom.EthRPCTimeout == 0 {
@@ -522,6 +577,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		zurichHardforkHeight = 47880000
 		ithacaHeight = 50185000
 		kyotoHeight = 51533000
+		luganoHeight = 54627000
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -536,6 +592,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		zurichHardforkHeight = 0
 		ithacaHeight = 0
 		kyotoHeight = 0
+		luganoHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -550,6 +607,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		zurichHardforkHeight = 37750000
 		ithacaHeight = 40776000
 		kyotoHeight = 42252000
+		luganoHeight = 47105000
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -564,6 +622,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		zurichHardforkHeight = 0
 		ithacaHeight = 0
 		kyotoHeight = 1
+		luganoHeight = 1
 	}
 }
 
@@ -831,7 +890,6 @@ func GetDefaultHeimdallConfig() CustomConfig {
 
 		NoACKWaitTime: NoACKWaitTime,
 
-		LogsType:       DefaultLogsType,
 		Chain:          DefaultChain,
 		LogsWriterFile: "", // default to stdout
 
@@ -1000,6 +1058,18 @@ func SetKyotoHeight(height int64) {
 
 func GetKyotoHeight() int64 {
 	return kyotoHeight
+}
+
+func IsLugano(height int64) bool {
+	return luganoHeight > 0 && height >= luganoHeight
+}
+
+func SetLuganoHeight(height int64) {
+	luganoHeight = height
+}
+
+func GetLuganoHeight() int64 {
+	return luganoHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {

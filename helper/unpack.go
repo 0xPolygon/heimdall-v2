@@ -21,6 +21,13 @@ var (
 
 // UnpackLog function unpacks the given event into the given log type
 func UnpackLog(abiObject *abi.ABI, out interface{}, event string, log *types.Log) error {
+	// An anonymous event (zero topics) is valid but not one this decoder can
+	// identify. Checked here, not at the receipt level, so an unrelated log
+	// elsewhere in the receipt can't invalidate the log actually matched.
+	if len(log.Topics) == 0 {
+		return errors.New("log has no topics")
+	}
+
 	selectedEvent := EventByID(abiObject, log.Topics[0].Bytes())
 
 	if selectedEvent == nil || selectedEvent.Name != event {

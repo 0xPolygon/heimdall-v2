@@ -17,10 +17,12 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	types.SortSpansById(data.Spans)
 
 	// add new span
+	var maxSpanEnd uint64
 	for _, span := range data.Spans {
 		if err := k.AddNewRawSpan(ctx, &span); err != nil {
 			panic(fmt.Sprintf("error while adding span during InitGenesis: %v", err))
 		}
+		maxSpanEnd = max(maxSpanEnd, span.EndBlock)
 	}
 
 	if len(data.Spans) > 0 {
@@ -28,6 +30,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 		if err := k.UpdateLastSpan(ctx, data.Spans[len(data.Spans)-1].Id); err != nil {
 			panic(fmt.Sprintf("error while updating last span during InitGenesis: %v", err))
 		}
+		k.setSpanEndFrontier(maxSpanEnd)
 	}
 }
 
