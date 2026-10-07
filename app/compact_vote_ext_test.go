@@ -100,9 +100,14 @@ func filterAt(ctx sdk.Context, app *HeimdallApp, valSet *stakeTypes.ValidatorSet
 
 // borChain mocks a bor chain whose headers link by parent hash, with the last header as the head.
 func borChain(headers []*ethTypes.Header) *helpermocks.IContractCaller {
+	return borChainWithHead(headers, headers[len(headers)-1])
+}
+
+// borChainWithHead serves head as the latest header, independently of the batched headers.
+func borChainWithHead(headers []*ethTypes.Header, head *ethTypes.Header) *helpermocks.IContractCaller {
 	first := headers[0].Number.Int64()
 	caller := new(helpermocks.IContractCaller)
-	caller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).Return(headers[len(headers)-1], nil)
+	caller.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).Return(head, nil)
 	caller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(
 		func(_ context.Context, n *big.Int) (*ethTypes.Header, error) { return headers[n.Int64()-first], nil })
 	caller.On("GetBorChainBlockInfoInBatch", mock.Anything, mock.Anything, mock.Anything).Return(
@@ -417,5 +422,31 @@ func TestCompactVoteExtensionAcrossFork(t *testing.T) {
 			}
 			require.Equal(t, []uint64{9, 9, 19}, milestoneEnds)
 		})
+	}
+}
+
+// The latest header and the proposition batch come from separate RPC calls and can disagree at the
+// same height mid-reorg. ExtendVote must drop such a proposition in both formats rather than let
+// compaction hide the mismatch.
+func TestExtendVoteDropsInconsistentHeadSnapshot(t *testing.T) {
+	_, app, ctx, _ := SetupAppWithABCICtx(t)
+	setLiveForks(t)
+
+	lastMilestone := milestoneTypes.Milestone{EndBlock: 100, Hash: fill32(0x0A), BorChainId: "1"}
+	require.NoError(t, app.MilestoneKeeper.AddMilestone(ctx, lastMilestone))
+	headers := linkedHeaders(101, 103, common.BytesToHash(lastMilestone.Hash))
+	reorgedHead := &ethTypes.Header{Number: big.NewInt(103), ParentHash: common.HexToHash("0xbeef")}
+	caller := borChainWithHead(headers, reorgedHead)
+	app.caller = caller
+	app.MilestoneKeeper.IContractCaller = caller
+	extCommit, err := (&abci.ExtendedCommitInfo{}).Marshal()
+	require.NoError(t, err)
+
+	for _, height := range []int64{compactForkHeight - 1, compactForkHeight} {
+		resp, err := app.ExtendVoteHandler()(ctx, &abci.RequestExtendVote{Txs: [][]byte{extCommit}, Hash: testBlockHash, Height: height})
+		require.NoError(t, err)
+		var ve sidetxs.VoteExtension
+		require.NoError(t, ve.Unmarshal(resp.VoteExtension))
+		require.Nil(t, ve.MilestoneProposition, "height %d", height)
 	}
 }

@@ -103,6 +103,7 @@ func TestCompactProposition(t *testing.T) {
 		{"head beyond tail keeps hash", compactForkHeight + 1, testProp(parent, 15, fill32(0x05)), parent[:8], fill32(0x05)},
 		{"no head", compactForkHeight, testProp(parent, 0, nil), parent[:8], nil},
 		{"head at block 0 keeps hash", compactForkHeight, genesisProp(fill32(0x01)), nil, fill32(0x01)},
+		{"head disagreeing with tail keeps hash", compactForkHeight, testProp(parent, 11, fill32(0x05)), parent[:8], fill32(0x05)},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

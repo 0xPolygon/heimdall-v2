@@ -15,7 +15,8 @@ const compactParentHashLength = 8
 
 // compactProposition drops bytes every validator can rebuild: the parent hash beyond its prefix, and
 // the latest head hash when the head is the proposition tail. A head at block 0 keeps its hash, since
-// head number 0 without a hash means no head.
+// head number 0 without a hash means no head. A head that disagrees with the tail keeps its hash too,
+// so validation rejects the inconsistent snapshot as it does before the fork.
 func compactProposition(height int64, prop *types.MilestoneProposition) *types.MilestoneProposition {
 	if !helper.IsCompactVoteExt(height) {
 		return prop
@@ -23,7 +24,8 @@ func compactProposition(height int64, prop *types.MilestoneProposition) *types.M
 	if len(prop.ParentHash) > compactParentHashLength {
 		prop.ParentHash = prop.ParentHash[:compactParentHashLength]
 	}
-	if end, ok := propositionEnd(prop); ok && prop.LatestBlockNumber != 0 && prop.LatestBlockNumber == end {
+	if end, ok := propositionEnd(prop); ok && prop.LatestBlockNumber != 0 && prop.LatestBlockNumber == end &&
+		bytes.Equal(prop.LatestBlockHash, prop.BlockHashes[len(prop.BlockHashes)-1]) {
 		prop.LatestBlockHash = nil
 	}
 	return prop
