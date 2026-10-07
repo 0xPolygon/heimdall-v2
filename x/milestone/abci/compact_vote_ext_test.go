@@ -37,6 +37,11 @@ func setCompactFork(t *testing.T, ithaca int64) {
 	helper.SetCompactVoteExtHeight(compactForkHeight)
 }
 
+// genesisProp proposes only bor block 0, before any milestone exists.
+func genesisProp(latestHash []byte) *types.MilestoneProposition {
+	return &types.MilestoneProposition{BlockHashes: [][]byte{fill32(0x01)}, BlockTds: []uint64{1}, LatestBlockHash: latestHash}
+}
+
 // testProp proposes blocks 10-11 with tail hash fill32(0x02).
 func testProp(parent []byte, latest uint64, latestHash []byte) *types.MilestoneProposition {
 	return &types.MilestoneProposition{
@@ -97,6 +102,7 @@ func TestCompactProposition(t *testing.T) {
 		{"head at tail drops hash", compactForkHeight, testProp(parent, 11, tail), parent[:8], nil},
 		{"head beyond tail keeps hash", compactForkHeight + 1, testProp(parent, 15, fill32(0x05)), parent[:8], fill32(0x05)},
 		{"no head", compactForkHeight, testProp(parent, 0, nil), parent[:8], nil},
+		{"head at block 0 keeps hash", compactForkHeight, genesisProp(fill32(0x01)), nil, fill32(0x01)},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -132,6 +138,8 @@ func TestValidateMilestonePropositionCompact(t *testing.T) {
 		{"no head", 1, compactForkHeight, testProp(parent[:8], 0, nil), ""},
 		{"head beyond tail with hash", 1, compactForkHeight, testProp(parent[:8], 12, fill32(0x05)), ""},
 		{"head at max block", 1, compactForkHeight, maxStart, ""},
+		{"head at block 0 with hash", 1, compactForkHeight, genesisProp(fill32(0x01)), ""},
+		{"head at block 0 with wrong hash", 1, compactForkHeight, genesisProp(fill32(0x05)), "does not match proposition tail"},
 		{"full parent", 1, compactForkHeight, testProp(parent, 11, nil), "invalid compact parent hash length"},
 		{"full parent without ithaca", 0, compactForkHeight, testProp(parent, 0, nil), "invalid compact parent hash length"},
 		{"redundant tail hash", 1, compactForkHeight, testProp(parent[:8], 11, tail), "must be omitted"},
@@ -211,16 +219,20 @@ func TestGetMajorityActualHeadCompactImpliedTail(t *testing.T) {
 	const minMajorityVP, maxBlock = 11, 100
 	signers := compactSigners[:2]
 	legacy, compact := testProp(nil, 11, fill32(0x02)), testProp(nil, 11, nil)
+	genesis := compactProposition(compactForkHeight, genesisProp(fill32(0x01)))
 
 	tests := []struct {
 		name      string
 		height    int64
 		votes     []abciTypes.ExtendedVoteInfo
 		wantFound bool
+		wantNum   uint64
+		wantHash  []byte
 	}{
-		{"legacy extensions at fork", compactForkHeight, votesFrom(t, legacy, legacy), true},
-		{"compact extensions before they are valid", compactForkHeight, votesFrom(t, compact, compact), false},
-		{"compact extensions", compactForkHeight + 1, votesFrom(t, compact, compact), true},
+		{"legacy extensions at fork", compactForkHeight, votesFrom(t, legacy, legacy), true, 11, fill32(0x02)},
+		{"compact extensions before they are valid", compactForkHeight, votesFrom(t, compact, compact), false, 0, nil},
+		{"compact extensions", compactForkHeight + 1, votesFrom(t, compact, compact), true, 11, fill32(0x02)},
+		{"compact head at block 0", compactForkHeight + 1, votesFrom(t, genesis, genesis), true, 0, fill32(0x01)},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -228,8 +240,8 @@ func TestGetMajorityActualHeadCompactImpliedTail(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.wantFound, found)
 			if found {
-				require.Equal(t, uint64(11), num)
-				require.Equal(t, fill32(0x02), hash)
+				require.Equal(t, tc.wantNum, num)
+				require.Equal(t, tc.wantHash, hash)
 			}
 		})
 	}

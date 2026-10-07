@@ -14,7 +14,8 @@ import (
 const compactParentHashLength = 8
 
 // compactProposition drops bytes every validator can rebuild: the parent hash beyond its prefix, and
-// the latest head hash when the head is the proposition tail.
+// the latest head hash when the head is the proposition tail. A head at block 0 keeps its hash, since
+// head number 0 without a hash means no head.
 func compactProposition(height int64, prop *types.MilestoneProposition) *types.MilestoneProposition {
 	if !helper.IsCompactVoteExt(height) {
 		return prop
@@ -22,7 +23,7 @@ func compactProposition(height int64, prop *types.MilestoneProposition) *types.M
 	if len(prop.ParentHash) > compactParentHashLength {
 		prop.ParentHash = prop.ParentHash[:compactParentHashLength]
 	}
-	if end, ok := propositionEnd(prop); ok && prop.LatestBlockNumber == end {
+	if end, ok := propositionEnd(prop); ok && prop.LatestBlockNumber != 0 && prop.LatestBlockNumber == end {
 		prop.LatestBlockHash = nil
 	}
 	return prop
@@ -63,9 +64,10 @@ func impliedLatestHead(prop *types.MilestoneProposition) *types.MilestoneProposi
 	return &expanded
 }
 
-// validateCompactLatestHead allows one encoding per head: the hash is present only beyond the tail.
+// validateCompactLatestHead allows one encoding per head: the hash is present only beyond the tail, or
+// for a head at block 0.
 func validateCompactLatestHead(prop *types.MilestoneProposition) error {
-	if end, ok := propositionEnd(prop); ok && len(prop.LatestBlockHash) != 0 && prop.LatestBlockNumber == end {
+	if end, ok := propositionEnd(prop); ok && len(prop.LatestBlockHash) != 0 && prop.LatestBlockNumber != 0 && prop.LatestBlockNumber == end {
 		return fmt.Errorf("latest block hash must be omitted at proposition end %d", end)
 	}
 	return validateLatestHead(impliedLatestHead(prop))

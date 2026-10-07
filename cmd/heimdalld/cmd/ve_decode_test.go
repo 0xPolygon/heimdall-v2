@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/app"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
@@ -147,10 +148,15 @@ func TestGetVEsFromEndpoint_NoTxs(t *testing.T) {
 	require.Contains(t, err.Error(), "no txs found in the block")
 }
 
-// The CLI never loads network fork heights, so it must recognize both placeholder formats.
+// Decoding a remote chain must not depend on the fork heights in the local config, which here
+// activate the compact format before the decoded height.
 func TestIsDummyNonRpVoteExtensionAcceptsBothFormats(t *testing.T) {
 	const chainID, height = "heimdallv2-137", int64(100)
-	legacy, err := app.GetDummyNonRpVoteExtension(height-1, chainID)
+	orig := helper.GetCompactVoteExtHeight()
+	t.Cleanup(func() { helper.SetCompactVoteExtHeight(orig) })
+	helper.SetCompactVoteExtHeight(1)
+
+	legacy, err := app.LegacyDummyNonRpVoteExtension(height-1, chainID)
 	require.NoError(t, err)
 
 	for _, ext := range [][]byte{legacy, app.CompactDummyNonRpVoteExtension(height-1, chainID)} {

@@ -378,12 +378,14 @@ func BuildSummaryJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo
 	return json.MarshalIndent(summary, "", "  ")
 }
 
+// IsDummyNonRpVoteExtension matches both placeholder formats, so decoding a remote chain doesn't depend
+// on the fork heights of the local config.
 func IsDummyNonRpVoteExtension(height int64, chainId string, nonRpVoteExt []byte) (bool, error) {
-	dummyVoteExt, err := app.GetDummyNonRpVoteExtension(height-1, chainId)
+	legacy, err := app.LegacyDummyNonRpVoteExtension(height-1, chainId)
 	if err != nil {
 		return false, err
 	}
-	return bytes.Equal(nonRpVoteExt, dummyVoteExt) ||
+	return bytes.Equal(nonRpVoteExt, legacy) ||
 		bytes.Equal(nonRpVoteExt, app.CompactDummyNonRpVoteExtension(height-1, chainId)), nil
 }
 

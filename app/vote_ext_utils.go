@@ -864,12 +864,16 @@ func retrieveVoteExtensionsEnableHeight(ctx sdk.Context) int64 {
 	return consensusParams.GetAbci().GetVoteExtensionsEnableHeight()
 }
 
-// GetDummyNonRpVoteExtension returns a dummy non-rp vote extension for given height and chain id
+// GetDummyNonRpVoteExtension returns the non-rp placeholder for the format active at height.
 func GetDummyNonRpVoteExtension(height int64, chainID string) ([]byte, error) {
 	if helper.IsCompactVoteExt(height) {
 		return CompactDummyNonRpVoteExtension(height, chainID), nil
 	}
+	return LegacyDummyNonRpVoteExtension(height, chainID)
+}
 
+// LegacyDummyNonRpVoteExtension returns the non-rp placeholder used before the compact vote extension fork.
+func LegacyDummyNonRpVoteExtension(height int64, chainID string) ([]byte, error) {
 	var buf bytes.Buffer
 
 	writtenBytes, err := buf.Write(dummyNonRpVoteExtension)
