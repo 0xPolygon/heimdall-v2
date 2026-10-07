@@ -49,6 +49,13 @@ const (
 	overheadPerValidator = 500       // bytes for additional data (e.g. signatures, metadata, protobuf...)
 	minVESize            = 10        // Minimum size for normal vote extensions (bytes)
 	maxVESize            = 10 * 1024 // 10KB maximum
+
+	// The extension signature binds height and round, so the block hash only has to identify the
+	// block being voted on, not resist collisions.
+	compactVEBlockHashLength = 8
+
+	// 0x00 marker (distinct from the 0x01 vote byte of checkpoint extensions) + 8-byte height.
+	compactMinNonRpVoteExtensionSize = 1 + 8
 )
 
 // ValidateVoteExtensions verifies the vote extension correctness
@@ -113,8 +120,8 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 			return fmt.Errorf("error while unmarshalling vote extension: %w", err)
 		}
 
-		if voteExtension.Height != reqHeight-1 {
-			return fmt.Errorf("invalid height received for vote extension, expected %d, got %d", reqHeight-1, voteExtension.Height)
+		if err := validateVoteExtensionHeader(voteExtension, reqHeight-1); err != nil {
+			return err
 		}
 
 		// blockHash consistency check
@@ -136,7 +143,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 
 		// Gate fork-specific proposition fields at the vote extension's own height. During proposal
 		// processing ctx is one block ahead of the extension being validated.
-		milestoneCtx := ctx.WithBlockHeight(voteExtension.Height)
+		milestoneCtx := ctx.WithBlockHeight(reqHeight - 1)
 		if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &milestoneKeeper, voteExtension.MilestoneProposition); err != nil {
 			return fmt.Errorf("invalid milestone proposition detected for validator %s, error: %w", valAddrStr, err)
 		}
@@ -331,11 +338,11 @@ func filterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 					"veSize", veSize,
 					"maxVESize", maxVESizePerValidator)
 				sizeFiltered = true
-			} else if nonRpSize < minNonRpVoteExtensionSize {
+			} else if minNonRpSize := minNonRpVoteExtensionSizeAt(reqHeight - 1); nonRpSize < minNonRpSize {
 				logger.Warn("Filtering out undersized non-rp vote extension, emitting placeholder",
 					"validator", valAddrStr,
 					"nonRpVeSize", nonRpSize,
-					"minNonRpSize", minNonRpVoteExtensionSize)
+					"minNonRpSize", minNonRpSize)
 				sizeFiltered = true
 			} else if nonRpSize > maxNonRpVoteExtensionSize {
 				logger.Warn("Filtering out oversized non-rp vote extension, emitting placeholder",
@@ -406,13 +413,13 @@ func filterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 			continue
 		}
 
-		if voteExtension.Height != reqHeight-1 {
+		if err := validateVoteExtensionHeader(voteExtension, reqHeight-1); err != nil {
 			if applyVEsFilteringFixes {
-				logger.Warn("Invalid height received for vote extension, emitting placeholder", "expected", reqHeight-1, "got", voteExtension.Height)
+				logger.Warn("Invalid vote extension header, emitting placeholder", "error", err)
 				validVoteExtensions = append(validVoteExtensions, toFilteredPlaceholder(vote))
 				continue
 			}
-			logger.Warn("Invalid height received for vote extension", "expected", reqHeight-1, "got", voteExtension.Height)
+			logger.Warn("Invalid vote extension header", "error", err)
 			continue
 		}
 
@@ -429,7 +436,7 @@ func filterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 
 		// Gate fork-specific proposition fields at the vote extension's own height. PrepareProposal's
 		// context is one block ahead of the extension being filtered.
-		milestoneCtx := ctx.WithBlockHeight(voteExtension.Height)
+		milestoneCtx := ctx.WithBlockHeight(reqHeight - 1)
 		if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &milestoneKeeper, voteExtension.MilestoneProposition); err != nil {
 			if applyVEsFilteringFixes {
 				logger.Warn("Invalid milestone proposition detected for validator, emitting placeholder", "validator", valAddrStr, "error", err)
@@ -675,8 +682,8 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, validatorSet *stak
 			return nil, err
 		}
 
-		if ve.Height != currentHeight-1 {
-			return nil, fmt.Errorf("invalid height received for vote extension, VeHeight should match CurrentHeight-1. VeHeight: %d, CurrentHeight: %d", ve.Height, currentHeight)
+		if err := validateVoteExtensionHeader(ve, currentHeight-1); err != nil {
+			return nil, err
 		}
 
 		// blockHash consistency check
@@ -777,6 +784,39 @@ func validateSideTxResponses(sideTxResponses []sidetxs.SideTxResponse) ([]byte, 
 	return nil, nil
 }
 
+// voteExtensionBlockHash returns the block hash a vote extension produced at height carries.
+func voteExtensionBlockHash(height int64, blockHash []byte) []byte {
+	if helper.IsCompactVoteExt(height) && len(blockHash) > compactVEBlockHashLength {
+		return blockHash[:compactVEBlockHashLength]
+	}
+	return blockHash
+}
+
+// validateVoteExtensionHeader checks the height and block hash encoding of an extension produced at
+// veHeight. Compact extensions omit the height, which the extension signature already covers.
+func validateVoteExtensionHeader(ve *sidetxs.VoteExtension, veHeight int64) error {
+	if !helper.IsCompactVoteExt(veHeight) {
+		if ve.Height != veHeight {
+			return fmt.Errorf("invalid vote extension height: expected %d, got %d", veHeight, ve.Height)
+		}
+		return nil
+	}
+	if ve.Height != 0 {
+		return fmt.Errorf("compact vote extension must omit height, got %d", ve.Height)
+	}
+	if len(ve.BlockHash) != compactVEBlockHashLength {
+		return fmt.Errorf("invalid compact vote extension block hash length: %d", len(ve.BlockHash))
+	}
+	return nil
+}
+
+func minNonRpVoteExtensionSizeAt(height int64) int {
+	if helper.IsCompactVoteExt(height) {
+		return compactMinNonRpVoteExtensionSize
+	}
+	return minNonRpVoteExtensionSize
+}
+
 // checkIfVoteExtensionsDisabled indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.
 // Since we are using a hard fork approach for the heimdall migration, VEs will be enabled from v2 genesis' initial height (v1 last height +1).
 // Returning an error will result in CometBFT panic.
@@ -821,6 +861,10 @@ func retrieveVoteExtensionsEnableHeight(ctx sdk.Context) int64 {
 
 // GetDummyNonRpVoteExtension returns a dummy non-rp vote extension for given height and chain id
 func GetDummyNonRpVoteExtension(height int64, chainID string) ([]byte, error) {
+	if helper.IsCompactVoteExt(height) {
+		return CompactDummyNonRpVoteExtension(height, chainID), nil
+	}
+
 	var buf bytes.Buffer
 
 	writtenBytes, err := buf.Write(dummyNonRpVoteExtension)
@@ -850,6 +894,14 @@ func GetDummyNonRpVoteExtension(height int64, chainID string) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+// CompactDummyNonRpVoteExtension returns the non-rp placeholder used from the compact vote extension fork.
+func CompactDummyNonRpVoteExtension(height int64, chainID string) []byte {
+	ext := make([]byte, 0, compactMinNonRpVoteExtensionSize+len(chainID))
+	ext = append(ext, 0x00)
+	ext = binary.BigEndian.AppendUint64(ext, uint64(height))
+	return append(ext, chainID...)
 }
 
 // ValidateNonRpVoteExtensions validates the non-rp vote extensions
@@ -900,8 +952,8 @@ func validateNonRpVoteExtensionData(
 	checkpointKeeper checkpointKeeper.Keeper,
 	contractCaller helper.IContractCaller,
 ) error {
-	if len(extension) < minNonRpVoteExtensionSize {
-		return fmt.Errorf("non-rp vote extension size is too small: %d, min: %d", len(extension), minNonRpVoteExtensionSize)
+	if minSize := minNonRpVoteExtensionSizeAt(height); len(extension) < minSize {
+		return fmt.Errorf("non-rp vote extension size is too small: %d, min: %d", len(extension), minSize)
 	}
 
 	if len(extension) > maxNonRpVoteExtensionSize {

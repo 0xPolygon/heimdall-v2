@@ -36,6 +36,8 @@ func TestInitHeimdallConfigWithSetsIthacaHeightPerChain(t *testing.T) {
 	origFeeGate := feeWithdrawValidatorGateHeight
 	origZurich := zurichHardforkHeight
 	origSpan := ithacaHeight
+	origKyoto := kyotoHeight
+	origCompact := compactVoteExtHeight
 	t.Cleanup(func() {
 		conf = origConf
 		mainRPCClient = origMainRPCClient
@@ -55,6 +57,8 @@ func TestInitHeimdallConfigWithSetsIthacaHeightPerChain(t *testing.T) {
 		feeWithdrawValidatorGateHeight = origFeeGate
 		zurichHardforkHeight = origZurich
 		ithacaHeight = origSpan
+		kyotoHeight = origKyoto
+		compactVoteExtHeight = origCompact
 	})
 
 	rpcStub := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -90,16 +94,21 @@ producer_votes = ""
 	}
 
 	cases := []struct {
-		name             string
-		chain            string
-		wantRioHeight    int64
-		wantInitHeight   int64
-		wantIthacaHeight int64
+		name              string
+		chain             string
+		wantRioHeight     int64
+		wantInitHeight    int64
+		wantIthacaHeight  int64
+		wantCompactHeight int64
+		wantPhuket        int64
+		wantZurich        int64
+		wantFeeGate       int64
 	}{
-		{name: "mainnet", chain: MainChain, wantRioHeight: 77414656, wantInitHeight: 24404501, wantIthacaHeight: 50185000},
-		{name: "mumbai", chain: MumbaiChain, wantRioHeight: 48473856, wantInitHeight: 0, wantIthacaHeight: 0},
-		{name: "amoy", chain: AmoyChain, wantRioHeight: 26272256, wantInitHeight: 8788501, wantIthacaHeight: 40776000},
-		{name: "default", chain: "local", wantRioHeight: 128, wantInitHeight: 0, wantIthacaHeight: 0},
+		{name: "mainnet", chain: MainChain, wantRioHeight: 77414656, wantInitHeight: 24404501, wantIthacaHeight: 50185000, wantPhuket: 44070000, wantZurich: 47880000, wantFeeGate: 46361000},
+		{name: "mumbai", chain: MumbaiChain, wantRioHeight: 48473856},
+		{name: "amoy", chain: AmoyChain, wantRioHeight: 26272256, wantInitHeight: 8788501, wantIthacaHeight: 40776000, wantPhuket: 32276400, wantZurich: 37750000, wantFeeGate: 35914000},
+		// Local devnets run every live fork from genesis and switch to compact vote extensions mid-run.
+		{name: "default", chain: "local", wantRioHeight: 128, wantIthacaHeight: 1, wantCompactHeight: 500, wantPhuket: 1, wantZurich: 1, wantFeeGate: 1},
 	}
 
 	for _, tc := range cases {
@@ -110,6 +119,10 @@ producer_votes = ""
 			InitHeimdallConfigWith(home, "")
 
 			require.Equal(t, tc.wantIthacaHeight, GetIthacaHeight())
+			require.Equal(t, tc.wantCompactHeight, GetCompactVoteExtHeight())
+			require.Equal(t, tc.wantPhuket, GetPhuketHardforkHeight())
+			require.Equal(t, tc.wantZurich, GetZurichHardforkHeight())
+			require.Equal(t, tc.wantFeeGate, GetFeeWithdrawValidatorGateHeight())
 			require.Equal(t, tc.wantRioHeight, GetRioHeight())
 			require.Equal(t, tc.wantInitHeight, GetInitialHeight())
 		})

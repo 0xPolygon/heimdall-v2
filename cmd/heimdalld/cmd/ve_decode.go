@@ -258,7 +258,7 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 			vote.Milestone = &MilestoneData{
 				BlockHashes:      hashes,
 				StartBlockNumber: mp.StartBlockNumber,
-				ParentHash:       common.BytesToHash(mp.ParentHash).Hex(),
+				ParentHash:       util.FormatHex(mp.ParentHash),
 			}
 		}
 
@@ -383,7 +383,8 @@ func IsDummyNonRpVoteExtension(height int64, chainId string, nonRpVoteExt []byte
 	if err != nil {
 		return false, err
 	}
-	return bytes.Equal(nonRpVoteExt, dummyVoteExt), nil
+	return bytes.Equal(nonRpVoteExt, dummyVoteExt) ||
+		bytes.Equal(nonRpVoteExt, app.CompactDummyNonRpVoteExtension(height-1, chainId)), nil
 }
 
 func GetCheckpointMsg(nonRpVoteExt []byte) (*checkpointTypes.MsgCheckpoint, error) {

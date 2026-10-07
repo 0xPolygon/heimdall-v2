@@ -283,6 +283,8 @@ var ithacaHeight int64 = 0
 // the Kyoto hardfork. Zero disables it; local/devnet activates it from height 1.
 var kyotoHeight int64 = 0
 
+var compactVoteExtHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -522,6 +524,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		zurichHardforkHeight = 47880000
 		ithacaHeight = 50185000
 		kyotoHeight = 51533000
+		compactVoteExtHeight = 0
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -536,6 +539,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		zurichHardforkHeight = 0
 		ithacaHeight = 0
 		kyotoHeight = 0
+		compactVoteExtHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -550,6 +554,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		zurichHardforkHeight = 37750000
 		ithacaHeight = 40776000
 		kyotoHeight = 42252000
+		compactVoteExtHeight = 0
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -559,11 +564,12 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
-		phuketHardforkHeight = 0
-		feeWithdrawValidatorGateHeight = 0
-		zurichHardforkHeight = 0
-		ithacaHeight = 0
+		phuketHardforkHeight = 1
+		feeWithdrawValidatorGateHeight = 1
+		zurichHardforkHeight = 1
+		ithacaHeight = 1
 		kyotoHeight = 1
+		compactVoteExtHeight = 500
 	}
 }
 
@@ -1000,6 +1006,18 @@ func SetKyotoHeight(height int64) {
 
 func GetKyotoHeight() int64 {
 	return kyotoHeight
+}
+
+func IsCompactVoteExt(height int64) bool {
+	return compactVoteExtHeight > 0 && height >= compactVoteExtHeight
+}
+
+func SetCompactVoteExtHeight(height int64) {
+	compactVoteExtHeight = height
+}
+
+func GetCompactVoteExtHeight() int64 {
+	return compactVoteExtHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
