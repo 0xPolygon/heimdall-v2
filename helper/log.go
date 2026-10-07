@@ -2,6 +2,7 @@ package helper
 
 import (
 	logger "cosmossdk.io/log"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/rs/zerolog"
 )
 
@@ -115,4 +116,14 @@ func moduleOf(keyVals []any, current string) string {
 		}
 	}
 	return current
+}
+
+// LogFormatOption converts a log_format string into the matching logger
+// option: flags.OutputFormatJSON ("json") selects JSON output, anything else
+// (including empty/unset) selects console output with the given coloring.
+func LogFormatOption(logFormat string, noColor bool) logger.Option {
+	if logFormat == flags.OutputFormatJSON {
+		return logger.OutputJSONOption()
+	}
+	return logger.ColorOption(!noColor)
 }

@@ -176,7 +176,10 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 		start = lastCheckpoint.EndBlock + 1
 	}
 
-	endBlockNumber := start + params.AvgCheckpointLength
+	// Both bounds are inclusive, so an avg-length window ends one block before start+avg.
+	// The CLI submits this verbatim, so the floor of 2 keeps an avg of 1 from producing
+	// end == start, which ValidateBasic rejects.
+	endBlockNumber := start + max(params.AvgCheckpointLength, 2) - 1
 
 	contractCaller := q.k.IContractCaller
 

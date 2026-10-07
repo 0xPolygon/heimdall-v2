@@ -623,10 +623,23 @@ func (s *KeeperTestSuite) TestSpanByBlockNumber() {
 			expectedSpanID: 5,
 		},
 		{
+			// Block 250 is covered only by span 5 even though the higher-ID span 6
+			// ends at 200. The frontier must account for all retained spans.
+			name:           "Block below frontier but past last span end",
+			blockNumber:    250,
+			expectedSpanID: 5,
+		},
+		{
 			name:          "Block not found - after all spans",
 			blockNumber:   301,
 			expectError:   true,
 			errorContains: "span not found for block 301",
+		},
+		{
+			name:          "Block far beyond frontier returns not found",
+			blockNumber:   ^uint64(0),
+			expectError:   true,
+			errorContains: "span not found",
 		},
 	}
 
@@ -667,6 +680,136 @@ func (s *KeeperTestSuite) genTestSpans(num uint64) []*types.Span {
 	}
 
 	return spans
+}
+
+// TestFetchNextSpanSeedContractCallerPanic verifies a panic inside either
+// external call reached from FetchNextSpanSeed (GetBorChainBlockAuthor via
+// getBorBlockForSpanSeed, and GetBorChainBlock) is recovered as a plain
+// error, not a crash.
+func (s *KeeperTestSuite) TestFetchNextSpanSeedContractCallerPanic() {
+	setup := func() (staketypes.ValidatorSet, []staketypes.Validator) {
+		s.SetupTest()
+		require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
+		require.NoError(borKeeper.SetParams(ctx, types.DefaultParams()))
+
+		valSet, vals := s.genTestValidators()
+		require.NoError(borKeeper.AddNewSpan(ctx, &types.Span{
+			Id:                0,
+			StartBlock:        0,
+			EndBlock:          256,
+			ValidatorSet:      valSet,
+			SelectedProducers: vals,
+			BorChainId:        "test-chain",
+		}))
+		return valSet, vals
+	}
+
+	s.T().Run("panic in GetBorChainBlockAuthor is recovered as an error", func(t *testing.T) {
+		setup()
+		require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
+
+		s.contractCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).
+			Run(func(mock.Arguments) { panic("bor client exploded") })
+
+		_, _, err := borKeeper.FetchNextSpanSeed(ctx, 1)
+		require.Error(err)
+		require.Contains(err.Error(), "bor client exploded")
+	})
+
+	s.T().Run("panic in GetBorChainBlock is recovered as an error", func(t *testing.T) {
+		_, vals := setup()
+		require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
+
+		author := common.HexToAddress(vals[0].GetOperator())
+		s.contractCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&author, nil)
+		s.contractCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).
+			Run(func(mock.Arguments) { panic("bor client exploded") })
+
+		_, _, err := borKeeper.FetchNextSpanSeed(ctx, 1)
+		require.Error(err)
+		require.Contains(err.Error(), "bor client exploded")
+	})
+}
+
+// TestFetchNextSpanSeedNilHeaderNumber verifies a Bor header with a nil
+// Number field is caught by fetchBorHeader's own normalization, rather than
+// reaching FetchNextSpanSeed's blockHeader.Hash() call and panicking there.
+func (s *KeeperTestSuite) TestFetchNextSpanSeedNilHeaderNumber() {
+	s.SetupTest()
+	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
+	require.NoError(borKeeper.SetParams(ctx, types.DefaultParams()))
+
+	valSet, vals := s.genTestValidators()
+	require.NoError(borKeeper.AddNewSpan(ctx, &types.Span{
+		Id:                0,
+		StartBlock:        0,
+		EndBlock:          256,
+		ValidatorSet:      valSet,
+		SelectedProducers: vals,
+		BorChainId:        "test-chain",
+	}))
+
+	author := common.HexToAddress(vals[0].GetOperator())
+	s.contractCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&author, nil)
+	s.contractCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&ethTypes.Header{Number: nil}, nil)
+
+	_, _, err := borKeeper.FetchNextSpanSeed(ctx, 1)
+	require.Error(err)
+	require.Contains(err.Error(), "nil Number")
+}
+
+func (s *KeeperTestSuite) TestSpanByBlockNumberGapBelowFrontier() {
+	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
+
+	for _, span := range []types.Span{
+		{Id: 0, StartBlock: 0, EndBlock: 100},
+		{Id: 1, StartBlock: 201, EndBlock: 300},
+	} {
+		require.NoError(borKeeper.AddNewSpan(ctx, &span))
+	}
+
+	_, err := borKeeper.SpanByBlockNumber(ctx, 150)
+	require.ErrorContains(err, "span not found for block 150")
+
+	span, err := borKeeper.SpanByBlockNumber(ctx, 250)
+	require.NoError(err)
+	require.Equal(uint64(1), span.Id)
+}
+
+func (s *KeeperTestSuite) TestSpanByBlockNumberFrontierAdvances() {
+	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
+
+	require.NoError(borKeeper.AddNewSpan(ctx, &types.Span{Id: 0, StartBlock: 0, EndBlock: 100}))
+	_, err := borKeeper.SpanByBlockNumber(ctx, 50)
+	require.NoError(err)
+
+	require.NoError(borKeeper.AddNewSpan(ctx, &types.Span{Id: 1, StartBlock: 101, EndBlock: 200}))
+
+	span, err := borKeeper.SpanByBlockNumber(ctx, 150)
+	require.NoError(err)
+	require.Equal(uint64(1), span.Id)
+
+	_, err = borKeeper.SpanByBlockNumber(ctx, 201)
+	require.ErrorContains(err, "span not found for block 201")
+}
+
+func (s *KeeperTestSuite) TestSpanByBlockNumberFrontierDoesNotShrink() {
+	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
+
+	for _, span := range []types.Span{
+		{Id: 0, StartBlock: 0, EndBlock: 100},
+		{Id: 1, StartBlock: 101, EndBlock: 500},
+	} {
+		require.NoError(borKeeper.AddNewSpan(ctx, &span))
+	}
+	_, err := borKeeper.SpanByBlockNumber(ctx, 50)
+	require.NoError(err)
+
+	require.NoError(borKeeper.AddNewSpan(ctx, &types.Span{Id: 2, StartBlock: 101, EndBlock: 300}))
+
+	span, err := borKeeper.SpanByBlockNumber(ctx, 450)
+	require.NoError(err)
+	require.Equal(uint64(1), span.Id)
 }
 
 func (s *KeeperTestSuite) genTestValidators() (staketypes.ValidatorSet, []staketypes.Validator) {

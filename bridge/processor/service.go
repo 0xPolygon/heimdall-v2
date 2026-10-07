@@ -6,6 +6,7 @@ import (
 	common "github.com/cometbft/cometbft/libs/service"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/codec"
+	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
 	"github.com/spf13/viper"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
@@ -46,7 +47,11 @@ func NewProcessorService(
 		panic(err)
 	}
 
-	processorService.BaseService = *common.NewBaseService(nil, processorServiceStr, processorService)
+	processorService.BaseService = *common.NewBaseService(
+		servercmtlog.CometLoggerWrapper{Logger: helper.Logger}.With("service", "processor"),
+		processorServiceStr,
+		processorService,
+	)
 
 	//
 	// Initialize processors

@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"math/big"
 	"slices"
 	"sort"
 
@@ -45,7 +44,7 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 		propStartBlock = milestone.EndBlock + 1
 
 		// Fetch the latest header, once and reuse it to avoid duplicate RPC calls and race conditions.
-		latestHeader, err = contractCaller.GetBorChainBlock(ctx, nil)
+		latestHeader, err = fetchBorHeader(ctx, contractCaller, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get the latest header: %w", err)
 		}
@@ -614,75 +613,37 @@ func resolveVoterPower(ctx sdk.Context, validatorSet *stakeTypes.ValidatorSet, a
 var ErrNoNewHeadersFound = errors.New("no new headers found for milestone proposition")
 
 func getBlockInfo(ctx sdk.Context, contractCaller helper.IContractCaller, startBlockNum, maxBlocksInProposition uint64, latestHeader *ethTypes.Header, lastMilestoneHash []byte, lastMilestoneBlock uint64) ([]byte, [][]byte, []uint64, []common.Address, *ethTypes.Header, error) {
-	// Reuse the provided latestHeader if available, otherwise fetch it.
-	var err error
-	if latestHeader == nil {
-		latestHeader, err = contractCaller.GetBorChainBlock(ctx, nil)
-		if err != nil {
-			return nil, nil, nil, nil, nil, fmt.Errorf("failed to get the latest header: %w", err)
-		}
-		if latestHeader == nil {
-			return nil, nil, nil, nil, nil, errors.New("failed to get the latest header: nil header returned")
-		}
+	latestHeader, latestBlockNum, err := resolveLatestHeader(ctx, contractCaller, latestHeader, startBlockNum)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
 	}
 
-	latestBlockNum := latestHeader.Number.Uint64()
-
-	// Check if there are any new blocks available to fetch.
-	// If the cached latestHeader is stale (latestBlockNum < startBlockNum), refresh it once in case Bor produced it in the meantime.
-	// This handles the case where Heimdall blocks faster than Bor.
-	if latestBlockNum < startBlockNum {
-		latestHeader, err = contractCaller.GetBorChainBlock(ctx, nil)
-		if err != nil {
-			return nil, nil, nil, nil, nil, fmt.Errorf("failed to refresh the latest header: %w", err)
-		}
-		if latestHeader == nil {
-			return nil, nil, nil, nil, nil, errors.New("failed to refresh the latest header: nil header returned")
-		}
-		latestBlockNum = latestHeader.Number.Uint64()
-		// If still not available, return ErrNoNewHeadersFound since Bor hasn't produced the block yet.
-		// GenMilestoneProposition will propagate this, and app/abci.go will handle it gracefully.
-		if latestBlockNum < startBlockNum {
-			return nil, nil, nil, nil, nil, ErrNoNewHeadersFound
-		}
-	}
-
-	// Calculate how many blocks are actually available to fetch from the Bor chain.
+	// Calculate how many blocks are actually available to fetch from the Bor chain,
+	// and only fetch the minimum of that and max blocks in proposition. This optimizes
+	// RPC calls when synced (e.g., only 1-2 blocks are actually available to fetch).
 	availableBlocks := latestBlockNum - startBlockNum + 1
-
-	// Only fetch the minimum of available blocks and max blocks in proposition
-	// This optimizes RPC calls when synced (e.g., only 1-2 blocks are actually available to fetch).
 	blocksToFetch := min(availableBlocks, maxBlocksInProposition)
-
 	milestoneEnd := startBlockNum + blocksToFetch - 1
 
-	headers, tds, authors, err := contractCaller.GetBorChainBlockInfoInBatch(ctx, int64(startBlockNum), int64(milestoneEnd))
+	batchInfo, err := helper.RunIsolated(func() (borBlockBatchInfo, error) {
+		headers, tds, authors, err := contractCaller.GetBorChainBlockInfoInBatch(ctx, int64(startBlockNum), int64(milestoneEnd))
+		return borBlockBatchInfo{headers: headers, tds: tds, authors: authors}, err
+	})
 	if err != nil {
 		return nil, nil, nil, nil, nil, fmt.Errorf("failed to get block batch info: %w", err)
 	}
+	headers, tds, authors := batchInfo.headers, batchInfo.tds, batchInfo.authors
 
 	if len(headers) == 0 {
 		return nil, nil, nil, nil, nil, ErrNoNewHeadersFound
 	}
 
-	result := make([][]byte, 0, len(headers))
-
-	var parentHash []byte
-	if len(headers) > 0 && len(lastMilestoneHash) > 0 {
-		parentHash = headers[0].ParentHash.Bytes()
-		if startBlockNum-lastMilestoneBlock > 1 {
-			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock+1)))
-			if err != nil {
-				return nil, nil, nil, nil, nil, fmt.Errorf("failed to get header for parent hash: %w", err)
-			}
-			if header == nil {
-				return nil, nil, nil, nil, nil, errors.New("failed to get header for parent hash: nil header returned")
-			}
-
-			parentHash = header.ParentHash.Bytes()
-		}
+	parentHash, err := resolveParentHash(ctx, contractCaller, headers, lastMilestoneHash, lastMilestoneBlock, startBlockNum)
+	if err != nil {
+		return nil, nil, nil, nil, nil, err
 	}
 
+	result := make([][]byte, 0, len(headers))
 	for _, h := range headers {
 		result = append(result, h.Hash().Bytes())
 	}
