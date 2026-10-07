@@ -27,6 +27,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/contracts/validatorset"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	borgrpc "github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -593,6 +594,8 @@ func (c *ContractCaller) GetMainChainBlockTime(ctx context.Context, blockNum uin
 
 // GetBorChainBlock returns bor chain block header
 func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int) (header *ethTypes.Header, err error) {
+	defer metrics.RecordBorRPCCallDuration("get_bor_chain_block", time.Now())
+
 	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
@@ -631,6 +634,8 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 // In both paths, it tries to get blocks from the range interval
 // but returns only the ones found on the chain.
 func (c *ContractCaller) GetBorChainBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
+	defer metrics.RecordBorRPCCallDuration("get_bor_chain_block_info_in_batch", time.Now())
+
 	if start < 0 || end < 0 || end < start {
 		return nil, nil, nil, fmt.Errorf("invalid range [%d,%d]", start, end)
 	}

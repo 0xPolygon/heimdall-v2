@@ -365,6 +365,7 @@ func AddCommandsWithStartCmdOptions(
 	)
 
 	startCmd := server.StartCmdWithOptions(startAppCreator, defaultNodeHome, opts)
+	wrapStartWithLastBlockRerun(startCmd)
 
 	rootCmd.AddCommand(
 		startCmd,

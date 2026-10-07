@@ -4,12 +4,14 @@ import (
 	"errors"
 	"math/big"
 
+	"cosmossdk.io/collections"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -235,4 +237,62 @@ func (s *KeeperTestSuite) TestGetProducerVotes() {
 	_, err = queryClient.GetProducerVotes(ctx, req)
 	require.Error(err)
 	require.Contains(err.Error(), mockStakeErr.Error())
+}
+
+func (s *KeeperTestSuite) TestGetValidatorPerformanceScore() {
+	require, ctx, queryClient := s.Require(), s.ctx, s.queryClient
+
+	res, err := queryClient.GetValidatorPerformanceScore(ctx, &types.QueryValidatorPerformanceScoreRequest{})
+	require.NoError(err)
+	require.Empty(res.ValidatorPerformanceScore)
+
+	require.NoError(s.borKeeper.PerformanceScore.Set(ctx, 1, 10))
+	require.NoError(s.borKeeper.PerformanceScore.Set(ctx, 2, 20))
+
+	res, err = queryClient.GetValidatorPerformanceScore(ctx, &types.QueryValidatorPerformanceScoreRequest{})
+	require.NoError(err)
+	require.Equal(map[uint64]uint64{1: 10, 2: 20}, res.ValidatorPerformanceScore)
+
+	s.corruptPerformanceScore(3)
+	_, err = queryClient.GetValidatorPerformanceScore(ctx, &types.QueryValidatorPerformanceScoreRequest{})
+	require.Error(err)
+}
+
+func (s *KeeperTestSuite) TestGetValidatorPerformanceScoreByValidatorId() {
+	require, ctx, queryClient := s.Require(), s.ctx, s.queryClient
+
+	require.NoError(s.borKeeper.PerformanceScore.Set(ctx, 1, 10))
+	s.corruptPerformanceScore(3)
+
+	tests := []struct {
+		name        string
+		validatorID uint64
+		want        uint64
+		wantErr     bool
+	}{
+		{name: "recorded score", validatorID: 1, want: 10},
+		{name: "no recorded score", validatorID: 2, want: 0},
+		{name: "undecodable score", validatorID: 3, wantErr: true},
+	}
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			res, err := queryClient.GetValidatorPerformanceScoreByValidatorId(ctx, &types.QueryValidatorPerformanceScoreByValidatorIdRequest{ValidatorId: tc.validatorID})
+			if tc.wantErr {
+				require.Error(err)
+				return
+			}
+			require.NoError(err)
+			require.Equal(tc.want, res.ValidatorPerformanceScore)
+		})
+	}
+
+	_, err := keeper.NewQueryServer(&s.borKeeper).GetValidatorPerformanceScoreByValidatorId(ctx, nil)
+	require.ErrorContains(err, "empty request")
+}
+
+// corruptPerformanceScore stores a value too short to decode as a uint64, so reads of it fail.
+func (s *KeeperTestSuite) corruptPerformanceScore(validatorID uint64) {
+	key, err := collections.EncodeKeyWithPrefix(types.PerformanceScoreKey, collections.Uint64Key, validatorID)
+	s.Require().NoError(err)
+	s.ctx.KVStore(s.storeKey).Set(key, []byte{1})
 }

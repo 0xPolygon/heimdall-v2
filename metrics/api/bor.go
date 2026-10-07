@@ -3,16 +3,17 @@ package api
 const (
 	// Query API methods.
 
-	GetSpanListMethod                   = "GetSpanList"
-	GetLatestSpanMethod                 = "GetLatestSpan"
-	GetNextSpanSeedMethod               = "GetNextSpanSeed"
-	GetNextSpanMethod                   = "GetNextSpan"
-	GetSpanByIdMethod                   = "GetSpanById"
-	GetBorParamsMethod                  = "GetBorParams"
-	GetProducerVotesMethod              = "GetProducerVotes"
-	GetProducerVotesByValidatorIdMethod = "GetProducerVotesByValidatorId"
-	GetProducerPlannedDowntimeMethod    = "GetProducerPlannedDowntime"
-	GetValidatorPerformanceScoreMethod  = "GetValidatorPerformanceScore"
+	GetSpanListMethod                               = "GetSpanList"
+	GetLatestSpanMethod                             = "GetLatestSpan"
+	GetNextSpanSeedMethod                           = "GetNextSpanSeed"
+	GetNextSpanMethod                               = "GetNextSpan"
+	GetSpanByIdMethod                               = "GetSpanById"
+	GetBorParamsMethod                              = "GetBorParams"
+	GetProducerVotesMethod                          = "GetProducerVotes"
+	GetProducerVotesByValidatorIdMethod             = "GetProducerVotesByValidatorId"
+	GetProducerPlannedDowntimeMethod                = "GetProducerPlannedDowntime"
+	GetValidatorPerformanceScoreMethod              = "GetValidatorPerformanceScore"
+	GetValidatorPerformanceScoreByValidatorIdMethod = "GetValidatorPerformanceScoreByValidatorId"
 
 	// Transaction API methods.
 

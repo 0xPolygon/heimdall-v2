@@ -6,8 +6,26 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
+
+// histogramVecSampleCount returns the number of observations recorded so far for one label
+// value of metrics.BorRPCCallDuration, by reading its internal dto.Metric. testutil.CollectAndCount
+// is not suitable here because it counts distinct label combinations (time series), not the
+// number of observations within a single series.
+func histogramVecSampleCount(t *testing.T, method string) uint64 {
+	t.Helper()
+	observer := metrics.BorRPCCallDuration.WithLabelValues(method)
+	h, ok := observer.(prometheus.Histogram)
+	require.True(t, ok, "HistogramVec.WithLabelValues must return a prometheus.Histogram")
+	m := &dto.Metric{}
+	require.NoError(t, h.Write(m))
+	return m.GetHistogram().GetSampleCount()
+}
 
 // makeDispatcherCaller returns a ContractCaller with the given gRPC flag and a
 // nil gRPC client. The BorChainTimeout is set to a short value, so HTTP-path
@@ -55,6 +73,26 @@ func TestGetBorChainBlockAuthor_GRPCNilClientError(t *testing.T) {
 
 	require.Error(t, err, "nil gRPC client must return an error")
 	require.Nil(t, author)
+}
+
+// TestGetBorChainBlock_GRPCNilClientError verifies that when BorChainGrpcFlag=true and
+// BorChainGrpcClient=nil, GetBorChainBlock returns an error rather than panicking or silently
+// returning a header, and that it records a Bor RPC call duration observation for
+// method="get_bor_chain_block" regardless of the error (the metric is recorded via an
+// unconditional defer at function entry).
+func TestGetBorChainBlock_GRPCNilClientError(t *testing.T) {
+	c := makeDispatcherCaller(true)
+
+	before := histogramVecSampleCount(t, "get_bor_chain_block")
+
+	header, err := c.GetBorChainBlock(context.Background(), nil)
+
+	require.Error(t, err, "nil gRPC client must return an error, not succeed")
+	require.Nil(t, header)
+
+	after := histogramVecSampleCount(t, "get_bor_chain_block")
+	require.Equal(t, before+1, after,
+		"GetBorChainBlock must record a Bor RPC call duration observation for method=get_bor_chain_block even on error")
 }
 
 // TestGetBorChainBlockInfoInBatch_NonGRPCCancelledContext verifies that
