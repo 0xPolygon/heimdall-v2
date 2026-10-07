@@ -4932,6 +4932,11 @@ func (*MsgUpdateParamsResponse) Descriptor() ([]byte, []int) {
 }
 
 // MsgBackfillSpans defines the message for backfilling missing spans.
+// Kept so historical blocks containing a MsgBackfillSpans tx (2 known on
+// Amoy at heights 8790181 and 8790209) replay with matching ExecTxResult.
+// The side handler / post handler / dispatch were removed to close the
+// side-tx response-slot censorship vector; the msg-server handler is
+// validation-only (no state writes).
 type MsgBackfillSpans struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
