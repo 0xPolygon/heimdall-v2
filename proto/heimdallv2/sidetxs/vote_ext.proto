@@ -12,9 +12,11 @@ option go_package = "github.com/0xPolygon/heimdall-v2/sidetxs";
 // supplementary information like milestone propositions and side transaction
 // results.
 message VoteExtension {
-  // Hash of the block this vote extension is for.
+  // Hash of the block this vote extension is for. From the compact vote
+  // extension fork, only its first 8 bytes.
   bytes block_hash = 1 [ (amino.dont_omitempty) = true ];
-  // Height of the block this vote extension is for.
+  // Height of the block this vote extension is for. Omitted from the compact
+  // vote extension fork, since the extension signature covers it.
   int64 height = 2 [ (amino.dont_omitempty) = true ];
   // Results of side transaction validation by this validator.
   repeated SideTxResponse side_tx_responses = 3

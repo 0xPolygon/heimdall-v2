@@ -454,16 +454,20 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		}
 
 		vt := sidetxs.VoteExtension{
-			Height:               req.Height,
-			BlockHash:            req.Hash,
+			BlockHash:            voteExtensionBlockHash(req.Height, req.Hash),
 			SideTxResponses:      sideTxRes,
 			MilestoneProposition: nil,
+		}
+		if !helper.IsCompactVoteExt(req.Height) {
+			vt.Height = req.Height
 		}
 
 		getBlockAuthor := func(ctx sdk.Context, blockNumber uint64) ([]common.Address, error) {
 			return app.BorKeeper.GetProducersByBlockNumber(ctx, blockNumber)
 		}
 
+		// Gate fork-specific proposition fields at the authenticated height, as VerifyVoteExtension does.
+		milestoneCtx := ctx.WithBlockHeight(req.Height)
 		var milestoneProp *milestoneTypes.MilestoneProposition
 		if budgetActive {
 			metrics.RecordExtendVoteElapsed("pre_milestone", startTime)
@@ -474,7 +478,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				"elapsed", time.Since(startTime))
 		} else {
 			genStart := time.Now()
-			milestoneProp, err = milestoneAbci.GenMilestoneProposition(ctx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
+			milestoneProp, err = milestoneAbci.GenMilestoneProposition(milestoneCtx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
 			metrics.RecordMilestoneGenerationDuration(genStart)
 		}
 		if err != nil {
@@ -486,7 +490,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			}
 			// We still want to participate in the consensus even if we fail to generate the milestone proposition
 		} else if milestoneProp != nil {
-			if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, milestoneProp); err != nil {
+			if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &app.MilestoneKeeper, milestoneProp); err != nil {
 				logger.Warn("Invalid milestone proposition generated",
 					"startBlock", milestoneProp.StartBlockNumber,
 					"endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)-1),
@@ -552,14 +556,17 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
-		// ensure block height and hash match
-		if req.Height != voteExtension.Height {
-			metrics.RecordVoteExtensionRejected("height_mismatch")
-			logger.Error(heimdallTypes.ErrAlertVoteExtensionRejected, "block height", req.Height, "consolidatedSideTxResponse height", voteExtension.Height, "validator", valAddr)
+		if err := validateVoteExtensionHeader(&voteExtension, req.Height); err != nil {
+			reason := "height_mismatch"
+			if errors.Is(err, errVoteExtensionBlockHash) {
+				reason = "hash_mismatch"
+			}
+			metrics.RecordVoteExtensionRejected(reason)
+			logger.Error(heimdallTypes.ErrAlertVoteExtensionRejected, "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
-		if !bytes.Equal(req.Hash, voteExtension.BlockHash) {
+		if !bytes.Equal(voteExtensionBlockHash(req.Height, req.Hash), voteExtension.BlockHash) {
 			metrics.RecordVoteExtensionRejected("hash_mismatch")
 			logger.Error(heimdallTypes.ErrAlertVoteExtensionRejected, "block hash", common.Bytes2Hex(req.Hash), "consolidatedSideTxResponse blockHash", common.Bytes2Hex(voteExtension.BlockHash), "validator", valAddr)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
@@ -588,7 +595,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		// Gate fork-specific fields at the authenticated vote-extension height, not an ambient context
 		// height. BaseApp currently sets ctx.BlockHeight() to req.Height, but keeping the basis explicit
 		// avoids ambiguity at the activation boundary and for direct handler callers.
-		milestoneCtx := ctx.WithBlockHeight(voteExtension.Height)
+		milestoneCtx := ctx.WithBlockHeight(req.Height)
 		if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &app.MilestoneKeeper, voteExtension.MilestoneProposition); err != nil {
 			metrics.RecordVoteExtensionRejected("milestone_proposition_rejected")
 			logger.Error(heimdallTypes.ErrAlertMilestonePropositionVoteExtensionRejected, "validator", valAddr, "error", err)

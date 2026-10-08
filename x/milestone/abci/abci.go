@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"math"
 	"slices"
 	"sort"
 
@@ -103,24 +102,17 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 			return nil, fmt.Errorf("no valid block author found")
 		}
 
-		return &types.MilestoneProposition{
-			BlockHashes:       blockHashes[:validIndex],
-			StartBlockNumber:  propStartBlock,
-			ParentHash:        parentHash,
-			BlockTds:          tds[:validIndex],
-			LatestBlockNumber: latestBlockNumber,
-			LatestBlockHash:   latestBlockHash,
-		}, nil
+		blockHashes, tds = blockHashes[:validIndex], tds[:validIndex]
 	}
 
-	return &types.MilestoneProposition{
+	return compactProposition(ctx.BlockHeight(), &types.MilestoneProposition{
 		BlockHashes:       blockHashes,
 		StartBlockNumber:  propStartBlock,
 		ParentHash:        parentHash,
 		BlockTds:          tds,
 		LatestBlockNumber: latestBlockNumber,
 		LatestBlockHash:   latestBlockHash,
-	}, nil
+	}), nil
 }
 
 // actualHeadFields returns the actual latest bor head (number, hash) to embed in a proposition for
@@ -224,7 +216,9 @@ func GetMajorityMilestoneProposition(
 		validatorVotes[valAddr] = make(map[uint64][]byte)
 
 		prop := voteExtension.MilestoneProposition
-		validatorParentHash[valAddr] = prop.ParentHash
+		parentHash := expandParentHash(ctx.BlockHeight()-1, prop.ParentHash, lastEndBlockHash)
+		parentHex := common.Bytes2Hex(parentHash)
+		validatorParentHash[valAddr] = parentHash
 		for i, blockHash := range prop.BlockHashes {
 			blockTd := prop.BlockTds[i]
 			var buf bytes.Buffer
@@ -260,10 +254,10 @@ func GetMajorityMilestoneProposition(
 				blockToHashAndTd[blockNum] = blockHashAndTd
 			}
 
-			key := getParentChildKey(common.Bytes2Hex(prop.ParentHash), common.Bytes2Hex(blockHashAndTd))
+			key := getParentChildKey(parentHex, common.Bytes2Hex(blockHashAndTd))
 			parentHashToVotingPower[key] += validator.VotingPower
 		}
-		parentHashes[common.Bytes2Hex(prop.ParentHash)] = struct{}{}
+		parentHashes[parentHex] = struct{}{}
 	}
 
 	// Find blocks with majority support - use a slice for deterministic ordering
@@ -550,8 +544,9 @@ func tallyActualHeads(ctx sdk.Context, validatorSet *stakeTypes.ValidatorSet, ex
 	tally := &actualHeadTally{power: map[string]int64{}, number: map[string]uint64{}, hash: map[string][]byte{}}
 	processed := make(map[string]bool)
 
+	compact := helper.IsCompactVoteExt(ctx.BlockHeight() - 1)
 	for _, vote := range extVoteInfo {
-		number, hash, ok, err := decodeActualHeadVote(vote)
+		number, hash, ok, err := decodeActualHeadVote(vote, compact)
 		if err != nil {
 			return nil, err
 		}
@@ -572,7 +567,7 @@ func tallyActualHeads(ctx sdk.Context, validatorSet *stakeTypes.ValidatorSet, ex
 
 // decodeActualHeadVote extracts the actual latest-head fields from a committed vote extension. ok is
 // false for non-committed votes, missing fields, or a malformed latest-head hash (skip them).
-func decodeActualHeadVote(vote abciTypes.ExtendedVoteInfo) (uint64, []byte, bool, error) {
+func decodeActualHeadVote(vote abciTypes.ExtendedVoteInfo, compact bool) (uint64, []byte, bool, error) {
 	if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
 		return 0, nil, false, nil
 	}
@@ -580,13 +575,17 @@ func decodeActualHeadVote(vote abciTypes.ExtendedVoteInfo) (uint64, []byte, bool
 	if err := ve.Unmarshal(vote.VoteExtension); err != nil {
 		return 0, nil, false, fmt.Errorf("error while unmarshalling vote extension: %w", err)
 	}
-	if ve.MilestoneProposition == nil || len(ve.MilestoneProposition.LatestBlockHash) == 0 {
+	prop := ve.MilestoneProposition
+	if prop == nil {
 		return 0, nil, false, nil
 	}
-	if len(ve.MilestoneProposition.LatestBlockHash) != common.HashLength {
+	if compact {
+		prop = impliedLatestHead(prop)
+	}
+	if len(prop.LatestBlockHash) != common.HashLength {
 		return 0, nil, false, nil
 	}
-	return ve.MilestoneProposition.LatestBlockNumber, ve.MilestoneProposition.LatestBlockHash, true, nil
+	return prop.LatestBlockNumber, prop.LatestBlockHash, true, nil
 }
 
 // resolveVoterPower returns the canonical voting power of a vote's validator, deduping repeats. ok is
@@ -695,16 +694,28 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keepe
 		return fmt.Errorf("duplicate block hashes found")
 	}
 
+	return validateForkGatedFields(ctx.BlockHeight(), milestoneProp)
+}
+
+func validateForkGatedFields(height int64, milestoneProp *types.MilestoneProposition) error {
+	compact := helper.IsCompactVoteExt(height)
+	if compact && len(milestoneProp.ParentHash) != 0 && len(milestoneProp.ParentHash) != compactParentHashLength {
+		return fmt.Errorf("invalid compact parent hash length")
+	}
+
 	// Older binaries treat the Ithaca latest-head fields as unknown protobuf fields and reject the
 	// entire vote extension. Reject them explicitly on upgraded binaries before activation too, so a
 	// byzantine validator cannot make old and new validators disagree during the mixed-version rollout.
-	if !helper.IsIthaca(ctx.BlockHeight()) {
+	if !helper.IsIthaca(height) {
 		if milestoneProp.LatestBlockNumber != 0 || len(milestoneProp.LatestBlockHash) != 0 {
 			return fmt.Errorf("latest block fields set before Ithaca")
 		}
 		return nil
 	}
 
+	if compact {
+		return validateCompactLatestHead(milestoneProp)
+	}
 	return validateLatestHead(milestoneProp)
 }
 
@@ -722,12 +733,10 @@ func validateLatestHead(milestoneProp *types.MilestoneProposition) error {
 	if len(milestoneProp.LatestBlockHash) != common.HashLength {
 		return fmt.Errorf("invalid latest block hash length")
 	}
-	// StartBlockNumber is attacker-influenced; compute the proposition end overflow-safe before comparing.
-	offset := uint64(len(milestoneProp.BlockHashes) - 1)
-	if milestoneProp.StartBlockNumber > math.MaxUint64-offset {
+	propEnd, ok := propositionEnd(milestoneProp)
+	if !ok {
 		return fmt.Errorf("proposition start block overflow")
 	}
-	propEnd := milestoneProp.StartBlockNumber + offset
 	if milestoneProp.LatestBlockNumber < propEnd {
 		return fmt.Errorf("latest block number %d behind proposition end %d", milestoneProp.LatestBlockNumber, propEnd)
 	}

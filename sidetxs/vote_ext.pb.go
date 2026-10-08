@@ -59,9 +59,11 @@ func (Vote) EnumDescriptor() ([]byte, []int) {
 // supplementary information like milestone propositions and side transaction
 // results.
 type VoteExtension struct {
-	// Hash of the block this vote extension is for.
+	// Hash of the block this vote extension is for. From the compact vote
+	// extension fork, only its first 8 bytes.
 	BlockHash []byte `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
-	// Height of the block this vote extension is for.
+	// Height of the block this vote extension is for. Omitted from the compact
+	// vote extension fork, since the extension signature covers it.
 	Height int64 `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
 	// Results of side transaction validation by this validator.
 	SideTxResponses []SideTxResponse `protobuf:"bytes,3,rep,name=side_tx_responses,json=sideTxResponses,proto3" json:"side_tx_responses"`

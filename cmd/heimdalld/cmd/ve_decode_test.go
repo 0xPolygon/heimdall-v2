@@ -13,6 +13,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	goproto "github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/app"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 // This is a transaction from a devnet containing checkpoint data.
@@ -141,4 +146,44 @@ func TestGetVEsFromEndpoint_NoTxs(t *testing.T) {
 	_, err = GetVEsFromEndpoint(1189, host, port)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "no txs found in the block")
+}
+
+// Decoding a remote chain must not depend on the fork heights in the local config, which here
+// activate the compact format before the decoded height.
+func TestIsDummyNonRpVoteExtensionAcceptsBothFormats(t *testing.T) {
+	const chainID, height = "heimdallv2-137", int64(100)
+	orig := helper.GetCompactVoteExtHeight()
+	t.Cleanup(func() { helper.SetCompactVoteExtHeight(orig) })
+	helper.SetCompactVoteExtHeight(1)
+
+	legacy, err := app.LegacyDummyNonRpVoteExtension(height-1, chainID)
+	require.NoError(t, err)
+
+	for _, ext := range [][]byte{legacy, app.CompactDummyNonRpVoteExtension(height-1, chainID)} {
+		isDummy, err := IsDummyNonRpVoteExtension(height, chainID, ext)
+		require.NoError(t, err)
+		require.True(t, isDummy)
+	}
+	isDummy, err := IsDummyNonRpVoteExtension(height, chainID, app.CompactDummyNonRpVoteExtension(height-2, chainID))
+	require.NoError(t, err)
+	require.False(t, isDummy)
+}
+
+func TestBuildCommitJSONShowsCompactParentAsIs(t *testing.T) {
+	const chainID, height = "heimdallv2-137", int64(100)
+	parent := []byte{1, 2, 3, 4, 5, 6, 7, 8}
+	ve, err := (&sidetxs.VoteExtension{MilestoneProposition: &milestoneTypes.MilestoneProposition{
+		StartBlockNumber: 10,
+		BlockHashes:      [][]byte{make([]byte, 32)},
+		BlockTds:         []uint64{1},
+		ParentHash:       parent,
+	}}).Marshal()
+	require.NoError(t, err)
+
+	out, err := BuildCommitJSON(height, chainID, &abci.ExtendedCommitInfo{Votes: []abci.ExtendedVoteInfo{{
+		VoteExtension:      ve,
+		NonRpVoteExtension: app.CompactDummyNonRpVoteExtension(height-1, chainID),
+	}}})
+	require.NoError(t, err)
+	require.Contains(t, string(out), `"parent_hash": "0x0102030405060708"`)
 }
