@@ -7,7 +7,9 @@ const (
 	modeObserve  = "observe"
 	windowCount  = 6
 	maxPeers     = 1024
-	maxObjects   = 128
+	// Two 32-request/s peer allowances can retain 3,840 distinct objects over
+	// the 60-second history horizon. Include room for their initial bursts.
+	maxObjects = 4096
 	// Native blocksync pipelines up to 20 requests to each serving peer.
 	maxPeerInflight = 20
 )

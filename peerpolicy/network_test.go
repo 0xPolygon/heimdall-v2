@@ -37,7 +37,7 @@ func servingSwitch(t *testing.T, config *cfg.P2PConfig, r p2p.Reactor) *p2p.Swit
 	require.NoError(t, err)
 	address := p2p.NewNetAddress(key.ID(), listener.Addr())
 	require.NoError(t, listener.Close())
-	info := p2p.DefaultNodeInfo{ProtocolVersion: p2p.ProtocolVersion{P2P: version.P2PProtocol, Block: version.BlockProtocol}, DefaultNodeID: key.ID(), ListenAddr: address.DialString(), Network: "serving-test", Version: "test", Channels: []byte{statesync.ChunkChannel, statesync.SnapshotChannel}, Moniker: "serving-test"}
+	info := p2p.DefaultNodeInfo{ProtocolVersion: p2p.ProtocolVersion{P2P: version.P2PProtocol, Block: version.BlockProtocol}, DefaultNodeID: key.ID(), ListenAddr: address.DialString(), Network: "serving-test", Version: "test", Channels: servingChannels(r), Moniker: "serving-test"}
 	transport := p2p.NewMultiplexTransport(info, key, p2p.MConnConfig(config))
 	require.NoError(t, transport.Listen(*address))
 	t.Cleanup(func() { require.NoError(t, transport.Close()) })
@@ -84,4 +84,12 @@ func TestServingNativeStatesync(t *testing.T) {
 	require.Equal(t, int64(2), receiving.received.Load())
 	require.Equal(t, 1, serving.Peers().Size())
 	app.AssertExpectations(t)
+}
+
+func servingChannels(r p2p.Reactor) []byte {
+	channels := make([]byte, 0, len(r.GetChannels()))
+	for _, c := range r.GetChannels() {
+		channels = append(channels, c.ID)
+	}
+	return channels
 }
