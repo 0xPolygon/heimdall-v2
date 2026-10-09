@@ -17,6 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -125,6 +126,10 @@ func NewRootCmd() *cobra.Command {
 
 			serverCtx, err := server.InterceptConfigsAndCreateContext(cmd, customAppTemplate, customAppConfig, customCMTConfig)
 			if err != nil {
+				return err
+			}
+
+			if err := installPeerServing(cmd, serverCtx, prometheus.DefaultRegisterer); err != nil {
 				return err
 			}
 
