@@ -32,6 +32,12 @@ func (l *lease) Prepare(bytes uint64) bool {
 	if l.repeat {
 		l.p.repeatHeld = l.p.repeatHeld - l.bytes + bytes
 	}
+	// The maximum reservation protects the store read and encoding. Once the
+	// payload is prepared, retain only its actual size until the writer flushes.
+	// Otherwise tiny blocks occupy a full maximum-block reservation in the queue.
+	memory := 2 * bytes
+	l.pool.memory -= l.memory - memory
+	l.memory = memory
 	l.bytes = bytes
 	l.prepared = true
 	return true

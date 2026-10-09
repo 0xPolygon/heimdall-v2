@@ -179,7 +179,7 @@ func (g *Governor) reserve(p *peerState, pool *pool, obj *object, req servebudge
 func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, now time.Duration) (*object, uint64, bool, bool) {
 	tick := int64(now / windowWidth)
 	obj := p.findObject(req, tick)
-	if obj == nil || obj.pending > 0 || p.inflight >= 4 {
+	if obj == nil || obj.pending > 0 || p.inflight >= maxPeerInflight {
 		g.events.WithLabelValues("peer_busy").Inc()
 		return nil, 0, false, false
 	}

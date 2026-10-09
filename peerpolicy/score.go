@@ -3,9 +3,13 @@ package peerpolicy
 import "github.com/cometbft/cometbft/p2p/servebudget"
 
 const (
-	windowCount = 6
-	maxPeers    = 1024
-	maxObjects  = 128
+	modeDisabled = "disabled"
+	modeObserve  = "observe"
+	windowCount  = 6
+	maxPeers     = 1024
+	maxObjects   = 128
+	// Native blocksync pipelines up to 20 requests to each serving peer.
+	maxPeerInflight = 20
 )
 
 type scoreWindow struct {
@@ -95,7 +99,7 @@ func (g *Governor) Snapshot(id string) Snapshot {
 
 func (g *Governor) Mode() string {
 	if !g.cfg.Observe {
-		return "disabled"
+		return modeDisabled
 	}
-	return "observe"
+	return modeObserve
 }
