@@ -129,7 +129,7 @@ func (p *peerState) findObject(req servebudget.Request, tick int64) *object {
 	for range p.objects {
 		o := &p.objects[p.next]
 		p.next = (p.next + 1) % maxObjects
-		if o.pending == 0 {
+		if o.pending == 0 && (o.request.MaxBytes == 0 || tick-o.tick >= windowCount) {
 			*o = object{request: req, tick: tick}
 			return o
 		}

@@ -46,7 +46,7 @@ func installPeerServing(cmd *cobra.Command, ctx *server.Context, reg prometheus.
 		return fmt.Errorf("configure peer serving: %w", err)
 	}
 	ctx.Config.P2P.ServingPolicy = governor
-	ctx.Logger.Info("Native peer serving enabled", "reputation_mode", "observe")
+	ctx.Logger.Info("Native peer serving enabled", "reputation_mode", governor.Mode())
 	return nil
 }
 

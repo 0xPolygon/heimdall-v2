@@ -77,7 +77,7 @@ func (g *Governor) Observe(id string, evidence servebudget.Evidence) {
 func (g *Governor) Snapshot(id string) Snapshot {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	s := Snapshot{Mode: "observe", WouldAction: "none"}
+	s := Snapshot{Mode: g.Mode(), WouldAction: "none"}
 	if p := g.peers[id]; p != nil {
 		s.Risk = p.risk(int64(g.now() / windowWidth))
 		s.Score = -int64(s.Risk)
@@ -91,4 +91,11 @@ func (g *Governor) Snapshot(id string) Snapshot {
 		s.WouldAction = "reduce_bulk"
 	}
 	return s
+}
+
+func (g *Governor) Mode() string {
+	if !g.cfg.Observe {
+		return "disabled"
+	}
+	return "observe"
 }
