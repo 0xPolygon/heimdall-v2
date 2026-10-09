@@ -207,6 +207,7 @@ func TestServingPrepareGrowth(t *testing.T) {
 		t.Run(kind, func(t *testing.T) {
 			g, _ := testGovernor(t, DefaultConfig())
 			r := servebudget.Request{Family: servebudget.Block, MaxBytes: 1 << 20}
+			serve(t, g, peerA, r, 128<<10)
 			l, ok := g.Admit(peerA, r)
 			require.True(t, ok)
 			switch kind {

@@ -183,7 +183,8 @@ func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, 
 		g.events.WithLabelValues("peer_busy").Inc()
 		return nil, 0, false, false
 	}
-	estimate := min(req.MaxBytes, uint64(128<<10))
+	// Unseen payloads need their full allowance before the store read and encoding.
+	estimate := req.MaxBytes
 	if obj.bytes > 0 {
 		estimate = obj.bytes
 	}
