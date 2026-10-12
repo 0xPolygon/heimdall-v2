@@ -179,7 +179,7 @@ func FetchFromAPI(URL string) ([]byte, error) {
 
 	Logger.Info("Error while fetching data from URL", "status", resp.StatusCode, "url", URL)
 
-	return nil, fmt.Errorf("error while fetching data from url: %s, status: %d, error: %w", URL, resp.StatusCode, err)
+	return nil, fmt.Errorf("error while fetching data from url: %s, status: %d", URL, resp.StatusCode)
 }
 
 // IsPubKeyFirstByteValid checks the validity of the public key's first byte.
