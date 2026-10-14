@@ -11,10 +11,16 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
 
-// WriteValidators returns a slice of comet genesis validators.
-func WriteValidators(ctx sdk.Context, keeper *keeper.Keeper) (vals []cmttypes.GenesisValidator, returnErr error) {
+// WriteValidators returns the comet genesis validators: the stored validators that are
+// current at ackCount, the same filter InitChainer applies, since baseapp rejects an
+// InitChain whose requested validators differ from the ones the app returns.
+func WriteValidators(ctx sdk.Context, keeper *keeper.Keeper, ackCount uint64) (vals []cmttypes.GenesisValidator, returnErr error) {
 	validators := keeper.GetAllValidators(ctx)
 	for _, validator := range validators {
+		if !validator.IsCurrentValidator(ackCount) {
+			continue
+		}
+
 		pk, err := validator.ConsPubKey()
 		if err != nil {
 			returnErr = err

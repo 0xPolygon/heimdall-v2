@@ -27,4 +27,15 @@ message GenesisState {
   // Validator set from two blocks ago.
   ValidatorSet penultimate_block_validator_set = 6
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  // Validator ID to signer mapping. Set on export; when present, validators is
+  // imported as the authoritative store. Empty in genesis files that predate
+  // it.
+  repeated ValidatorSigner validator_signers = 7
+      [ (gogoproto.nullable) = false ];
+}
+
+// ValidatorSigner maps a validator ID to its current signer address.
+message ValidatorSigner {
+  uint64 val_id = 1;
+  string signer = 2;
 }

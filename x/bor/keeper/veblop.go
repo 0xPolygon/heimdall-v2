@@ -181,24 +181,13 @@ func (k *Keeper) ResetValidatorPerformanceScore(ctx context.Context) error {
 }
 
 func (k *Keeper) GetAllValidatorPerformanceScore(ctx context.Context) (map[uint64]uint64, error) {
-	iter, err := k.PerformanceScore.Iterate(ctx, nil)
+	validatorPerformanceScore := make(map[uint64]uint64)
+	err := k.PerformanceScore.Walk(ctx, nil, func(validatorID, score uint64) (bool, error) {
+		validatorPerformanceScore[validatorID] = score
+		return false, nil
+	})
 	if err != nil {
 		return nil, err
-	}
-
-	validatorPerformanceScore := make(map[uint64]uint64)
-	for ; iter.Valid(); iter.Next() {
-		validatorID, err := iter.Key()
-		if err != nil {
-			return nil, err
-		}
-
-		score, err := iter.Value()
-		if err != nil {
-			return nil, err
-		}
-
-		validatorPerformanceScore[validatorID] = score
 	}
 
 	return validatorPerformanceScore, nil

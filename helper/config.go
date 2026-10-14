@@ -454,7 +454,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	applyLegacyLogsTypeDefault(conf.Custom.LogsTypeDeprecated)
 
-	levelOpt := LogLevelOptionOrDefault(viper.GetString(flags.FlagLogLevel), Logger.Warn)
+	levelOpt, moduleFilter := LogLevelOptionOrDefault(viper.GetString(flags.FlagLogLevel), Logger.Warn)
 
 	logNoColor := viper.GetBool(flags.FlagLogNoColor)
 	logOpts := []logger.Option{
@@ -463,7 +463,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		logger.TimeFormatOption(LogTimestampFormat),
 	}
 
-	Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logOpts...)
+	Logger = WithModuleFilter(logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logOpts...), moduleFilter)
 
 	if conf.Custom.LogsTypeDeprecated != "" {
 		Logger.Warn("custom.logs_type in app.toml is deprecated; used only as log_format's fallback default when nothing else sets it -- set log_format explicitly in config.toml instead", "value", conf.Custom.LogsTypeDeprecated)

@@ -22,6 +22,11 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 	// We export at the last height + 1, because that's the height at which
 	// Tendermint will start InitChain.
 	height := app.LastBlockHeight() + 1
+	ackCount, err := app.CheckpointKeeper.GetAckCount(ctx)
+	if err != nil {
+		return servertypes.ExportedApp{}, err
+	}
+
 	genState, err := app.ModuleManager.ExportGenesisForModules(ctx, app.appCodec, modulesToExport)
 	if err != nil {
 		return servertypes.ExportedApp{}, err
@@ -31,11 +36,19 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
-	validators, err := stake.WriteValidators(ctx, &app.StakeKeeper)
+	validators, err := stake.WriteValidators(ctx, &app.StakeKeeper, ackCount)
+
+	// The exported genesis starts a new chain at height, whose first block has no last
+	// commit to carry vote extensions, as the v1 to v2 migration genesis does.
+	consensusParams := app.GetConsensusParams(ctx)
+	if consensusParams.Abci != nil {
+		consensusParams.Abci.VoteExtensionsEnableHeight = height
+	}
+
 	return servertypes.ExportedApp{
 		AppState:        appState,
 		Height:          height,
 		Validators:      validators,
-		ConsensusParams: app.GetConsensusParams(ctx),
+		ConsensusParams: consensusParams,
 	}, err
 }

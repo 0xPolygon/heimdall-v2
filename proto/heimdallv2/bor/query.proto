@@ -84,6 +84,16 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/validator-performance-score";
   }
+
+  // GetValidatorPerformanceScoreByValidatorId queries the performance score of
+  // a specific validator.
+  rpc GetValidatorPerformanceScoreByValidatorId(
+      QueryValidatorPerformanceScoreByValidatorIdRequest)
+      returns (QueryValidatorPerformanceScoreByValidatorIdResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get =
+        "/bor/validator-performance-score/{validator_id}";
+  }
 }
 
 // QuerySpanByIdRequest is the request type for the GetSpanById query.
@@ -216,4 +226,18 @@ message QueryValidatorPerformanceScoreResponse {
   // Higher scores indicate better block production reliability.
   map<uint64, uint64> validator_performance_score = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+}
+
+// QueryValidatorPerformanceScoreByValidatorIdRequest is the request type for
+// the GetValidatorPerformanceScoreByValidatorId query.
+message QueryValidatorPerformanceScoreByValidatorIdRequest {
+  // ID of the validator whose performance score to retrieve.
+  uint64 validator_id = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryValidatorPerformanceScoreByValidatorIdResponse is the response type for
+// the GetValidatorPerformanceScoreByValidatorId query.
+message QueryValidatorPerformanceScoreByValidatorIdResponse {
+  // Performance score of the validator; 0 if none has been recorded.
+  uint64 validator_performance_score = 1 [ (amino.dont_omitempty) = true ];
 }

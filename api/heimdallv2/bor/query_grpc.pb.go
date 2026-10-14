@@ -19,16 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_GetSpanList_FullMethodName                   = "/heimdallv2.bor.Query/GetSpanList"
-	Query_GetLatestSpan_FullMethodName                 = "/heimdallv2.bor.Query/GetLatestSpan"
-	Query_GetNextSpanSeed_FullMethodName               = "/heimdallv2.bor.Query/GetNextSpanSeed"
-	Query_GetNextSpan_FullMethodName                   = "/heimdallv2.bor.Query/GetNextSpan"
-	Query_GetSpanById_FullMethodName                   = "/heimdallv2.bor.Query/GetSpanById"
-	Query_GetBorParams_FullMethodName                  = "/heimdallv2.bor.Query/GetBorParams"
-	Query_GetProducerVotes_FullMethodName              = "/heimdallv2.bor.Query/GetProducerVotes"
-	Query_GetProducerVotesByValidatorId_FullMethodName = "/heimdallv2.bor.Query/GetProducerVotesByValidatorId"
-	Query_GetProducerPlannedDowntime_FullMethodName    = "/heimdallv2.bor.Query/GetProducerPlannedDowntime"
-	Query_GetValidatorPerformanceScore_FullMethodName  = "/heimdallv2.bor.Query/GetValidatorPerformanceScore"
+	Query_GetSpanList_FullMethodName                               = "/heimdallv2.bor.Query/GetSpanList"
+	Query_GetLatestSpan_FullMethodName                             = "/heimdallv2.bor.Query/GetLatestSpan"
+	Query_GetNextSpanSeed_FullMethodName                           = "/heimdallv2.bor.Query/GetNextSpanSeed"
+	Query_GetNextSpan_FullMethodName                               = "/heimdallv2.bor.Query/GetNextSpan"
+	Query_GetSpanById_FullMethodName                               = "/heimdallv2.bor.Query/GetSpanById"
+	Query_GetBorParams_FullMethodName                              = "/heimdallv2.bor.Query/GetBorParams"
+	Query_GetProducerVotes_FullMethodName                          = "/heimdallv2.bor.Query/GetProducerVotes"
+	Query_GetProducerVotesByValidatorId_FullMethodName             = "/heimdallv2.bor.Query/GetProducerVotesByValidatorId"
+	Query_GetProducerPlannedDowntime_FullMethodName                = "/heimdallv2.bor.Query/GetProducerPlannedDowntime"
+	Query_GetValidatorPerformanceScore_FullMethodName              = "/heimdallv2.bor.Query/GetValidatorPerformanceScore"
+	Query_GetValidatorPerformanceScoreByValidatorId_FullMethodName = "/heimdallv2.bor.Query/GetValidatorPerformanceScoreByValidatorId"
 )
 
 // QueryClient is the client API for Query service.
@@ -62,6 +63,9 @@ type QueryClient interface {
 	// GetValidatorPerformanceScore queries the performance scores of all
 	// validators. Performance scores track block production reliability.
 	GetValidatorPerformanceScore(ctx context.Context, in *QueryValidatorPerformanceScoreRequest, opts ...grpc.CallOption) (*QueryValidatorPerformanceScoreResponse, error)
+	// GetValidatorPerformanceScoreByValidatorId queries the performance score of
+	// a specific validator.
+	GetValidatorPerformanceScoreByValidatorId(ctx context.Context, in *QueryValidatorPerformanceScoreByValidatorIdRequest, opts ...grpc.CallOption) (*QueryValidatorPerformanceScoreByValidatorIdResponse, error)
 }
 
 type queryClient struct {
@@ -162,6 +166,15 @@ func (c *queryClient) GetValidatorPerformanceScore(ctx context.Context, in *Quer
 	return out, nil
 }
 
+func (c *queryClient) GetValidatorPerformanceScoreByValidatorId(ctx context.Context, in *QueryValidatorPerformanceScoreByValidatorIdRequest, opts ...grpc.CallOption) (*QueryValidatorPerformanceScoreByValidatorIdResponse, error) {
+	out := new(QueryValidatorPerformanceScoreByValidatorIdResponse)
+	err := c.cc.Invoke(ctx, Query_GetValidatorPerformanceScoreByValidatorId_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -193,6 +206,9 @@ type QueryServer interface {
 	// GetValidatorPerformanceScore queries the performance scores of all
 	// validators. Performance scores track block production reliability.
 	GetValidatorPerformanceScore(context.Context, *QueryValidatorPerformanceScoreRequest) (*QueryValidatorPerformanceScoreResponse, error)
+	// GetValidatorPerformanceScoreByValidatorId queries the performance score of
+	// a specific validator.
+	GetValidatorPerformanceScoreByValidatorId(context.Context, *QueryValidatorPerformanceScoreByValidatorIdRequest) (*QueryValidatorPerformanceScoreByValidatorIdResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -229,6 +245,9 @@ func (UnimplementedQueryServer) GetProducerPlannedDowntime(context.Context, *Que
 }
 func (UnimplementedQueryServer) GetValidatorPerformanceScore(context.Context, *QueryValidatorPerformanceScoreRequest) (*QueryValidatorPerformanceScoreResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorPerformanceScore not implemented")
+}
+func (UnimplementedQueryServer) GetValidatorPerformanceScoreByValidatorId(context.Context, *QueryValidatorPerformanceScoreByValidatorIdRequest) (*QueryValidatorPerformanceScoreByValidatorIdResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorPerformanceScoreByValidatorId not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -423,6 +442,24 @@ func _Query_GetValidatorPerformanceScore_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_GetValidatorPerformanceScoreByValidatorId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryValidatorPerformanceScoreByValidatorIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetValidatorPerformanceScoreByValidatorId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetValidatorPerformanceScoreByValidatorId_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetValidatorPerformanceScoreByValidatorId(ctx, req.(*QueryValidatorPerformanceScoreByValidatorIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -469,6 +506,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetValidatorPerformanceScore",
 			Handler:    _Query_GetValidatorPerformanceScore_Handler,
+		},
+		{
+			MethodName: "GetValidatorPerformanceScoreByValidatorId",
+			Handler:    _Query_GetValidatorPerformanceScoreByValidatorId_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

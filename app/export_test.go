@@ -19,7 +19,7 @@ func TestExportAppStateAndValidators_BasicExport(t *testing.T) {
 	require.NotEmpty(t, exported.AppState)
 	require.Greater(t, exported.Height, int64(0))
 	require.NotNil(t, exported.ConsensusParams)
-	require.Equal(t, int64(1), exported.ConsensusParams.Abci.VoteExtensionsEnableHeight)
+	require.Equal(t, exported.Height, exported.ConsensusParams.Abci.VoteExtensionsEnableHeight)
 }
 
 func TestExportAppStateAndValidators_WithModules(t *testing.T) {

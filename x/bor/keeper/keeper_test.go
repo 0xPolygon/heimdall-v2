@@ -34,6 +34,7 @@ type KeeperTestSuite struct {
 	suite.Suite
 
 	ctx                sdk.Context
+	storeKey           *storetypes.KVStoreKey
 	borKeeper          keeper.Keeper
 	chainManagerKeeper *bortestutil.MockChainManagerKeeper
 	stakeKeeper        *bortestutil.MockStakeKeeper
@@ -70,6 +71,7 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	s.contractCaller = mocks.IContractCaller{}
 	s.ctx = ctx
+	s.storeKey = key
 
 	s.borKeeper = keeper.NewKeeper(
 		encCfg.Codec,
