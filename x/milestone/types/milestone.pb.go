@@ -191,7 +191,8 @@ type MilestoneProposition struct {
 	BlockHashes [][]byte `protobuf:"bytes,1,rep,name=block_hashes,json=blockHashes,proto3" json:"block_hashes,omitempty"`
 	// Starting block number for this proposition.
 	StartBlockNumber uint64 `protobuf:"varint,2,opt,name=start_block_number,json=startBlockNumber,proto3" json:"start_block_number,omitempty"`
-	// Hash of the parent block (block before start_block_number).
+	// Hash of the parent block (block before start_block_number). From the
+	// compact vote extension fork, only its first 8 bytes.
 	ParentHash []byte `protobuf:"bytes,3,opt,name=parent_hash,json=parentHash,proto3" json:"parent_hash,omitempty"`
 	// Total difficulty values for each block in the proposition.
 	// Corresponds 1:1 with block_hashes.
@@ -201,8 +202,9 @@ type MilestoneProposition struct {
 	// Ithaca fork; lets the pending-stall rotation key on the real
 	// head instead of the truncated proposition tail.
 	LatestBlockNumber uint64 `protobuf:"varint,5,opt,name=latest_block_number,json=latestBlockNumber,proto3" json:"latest_block_number,omitempty"`
-	// Hash of the block at latest_block_number. Empty pre-fork. The two
-	// latest_block_* fields are populated together or not at all.
+	// Hash of the block at latest_block_number. Empty pre-fork. From the compact
+	// vote extension fork, omitted when latest_block_number is the last block
+	// in block_hashes.
 	LatestBlockHash []byte `protobuf:"bytes,6,opt,name=latest_block_hash,json=latestBlockHash,proto3" json:"latest_block_hash,omitempty"`
 }
 

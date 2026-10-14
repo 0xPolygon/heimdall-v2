@@ -908,19 +908,10 @@ func fill32(seed byte) []byte {
 	return h
 }
 
-// actualHeadVote builds a committed vote extension whose milestone proposition reports
-// (number, fill32(hashSeed)) as its actual latest bor head.
-func actualHeadVote(t *testing.T, signer string, number uint64, hashSeed byte) abciTypes.ExtendedVoteInfo {
+// commitVote wraps prop in a committed vote extension from signer.
+func commitVote(t *testing.T, signer string, prop *types.MilestoneProposition) abciTypes.ExtendedVoteInfo {
 	t.Helper()
-	hash := fill32(hashSeed)
-	ve := &sidetxs.VoteExtension{MilestoneProposition: &types.MilestoneProposition{
-		StartBlockNumber:  number,
-		BlockHashes:       [][]byte{hash},
-		BlockTds:          []uint64{1},
-		LatestBlockNumber: number,
-		LatestBlockHash:   hash,
-	}}
-	data, err := ve.Marshal()
+	data, err := (&sidetxs.VoteExtension{MilestoneProposition: prop}).Marshal()
 	require.NoError(t, err)
 	return abciTypes.ExtendedVoteInfo{
 		BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
@@ -929,21 +920,28 @@ func actualHeadVote(t *testing.T, signer string, number uint64, hashSeed byte) a
 	}
 }
 
+// actualHeadVote builds a committed vote extension whose milestone proposition reports
+// (number, fill32(hashSeed)) as its actual latest bor head.
+func actualHeadVote(t *testing.T, signer string, number uint64, hashSeed byte) abciTypes.ExtendedVoteInfo {
+	t.Helper()
+	hash := fill32(hashSeed)
+	return commitVote(t, signer, &types.MilestoneProposition{
+		StartBlockNumber:  number,
+		BlockHashes:       [][]byte{hash},
+		BlockTds:          []uint64{1},
+		LatestBlockNumber: number,
+		LatestBlockHash:   hash,
+	})
+}
+
 // voteNoLatestHead builds a committed vote whose proposition omits the actual-head fields.
 func voteNoLatestHead(t *testing.T, signer string) abciTypes.ExtendedVoteInfo {
 	t.Helper()
-	ve := &sidetxs.VoteExtension{MilestoneProposition: &types.MilestoneProposition{
+	return commitVote(t, signer, &types.MilestoneProposition{
 		StartBlockNumber: 1,
 		BlockHashes:      [][]byte{fill32(0x01)},
 		BlockTds:         []uint64{1},
-	}}
-	data, err := ve.Marshal()
-	require.NoError(t, err)
-	return abciTypes.ExtendedVoteInfo{
-		BlockIdFlag:   cmtTypes.BlockIDFlagCommit,
-		VoteExtension: data,
-		Validator:     abciTypes.Validator{Address: common.HexToAddress(signer).Bytes()},
-	}
+	})
 }
 
 func TestGetMajorityActualHead(t *testing.T) {
@@ -1532,6 +1530,33 @@ func TestGenMilestoneProposition(t *testing.T) {
 		require.NotNil(t, prop)
 		require.Len(t, prop.BlockHashes, 5)
 		require.Equal(t, latestHash, prop.LatestBlockHash)
+	})
+
+	t.Run("emits the compact form at the compact vote extension height", func(t *testing.T) {
+		helper.SetRioHeight(999999)
+		origCompact := helper.GetCompactVoteExtHeight()
+		t.Cleanup(func() { helper.SetCompactVoteExtHeight(origCompact) })
+		helper.SetCompactVoteExtHeight(milestoneCtx.BlockHeight())
+
+		// Head 103 is the tail of the 101-103 proposition, so its hash is implied.
+		tailHeader := &ethTypes.Header{Number: big.NewInt(103)}
+		hdrs := []*ethTypes.Header{
+			{Number: big.NewInt(101), ParentHash: common.BytesToHash(lastMilestone.Hash)},
+			{Number: big.NewInt(102)},
+			tailHeader,
+		}
+		mc := &mocks.IContractCaller{}
+		mc.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).Return(tailHeader, nil)
+		mc.On("GetBorChainBlockInfoInBatch", mock.Anything, int64(101), int64(103)).
+			Return(hdrs, []uint64{1, 2, 3}, []common.Address{{}, {}, {}}, nil)
+		prop, err := GenMilestoneProposition(milestoneCtx, &bk, &milestoneKeeper, mc, func(sdk.Context, uint64) ([]common.Address, error) {
+			return nil, nil
+		})
+		require.NoError(t, err)
+		require.Equal(t, lastMilestone.Hash[:8], prop.ParentHash)
+		require.Empty(t, prop.LatestBlockHash)
+		require.NoError(t, ValidateMilestoneProposition(milestoneCtx, &milestoneKeeper, prop))
+		require.Equal(t, tailHeader.Hash().Bytes(), impliedLatestHead(prop).LatestBlockHash)
 	})
 }
 

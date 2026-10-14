@@ -53,7 +53,8 @@ message MilestoneProposition {
   repeated bytes block_hashes = 1 [ (amino.dont_omitempty) = true ];
   // Starting block number for this proposition.
   uint64 start_block_number = 2 [ (amino.dont_omitempty) = true ];
-  // Hash of the parent block (block before start_block_number).
+  // Hash of the parent block (block before start_block_number). From the
+  // compact vote extension fork, only its first 8 bytes.
   bytes parent_hash = 3 [ (amino.dont_omitempty) = true ];
   // Total difficulty values for each block in the proposition.
   // Corresponds 1:1 with block_hashes.
@@ -63,8 +64,9 @@ message MilestoneProposition {
   // Ithaca fork; lets the pending-stall rotation key on the real
   // head instead of the truncated proposition tail.
   uint64 latest_block_number = 5 [ (amino.dont_omitempty) = true ];
-  // Hash of the block at latest_block_number. Empty pre-fork. The two
-  // latest_block_* fields are populated together or not at all.
+  // Hash of the block at latest_block_number. Empty pre-fork. From the compact
+  // vote extension fork, omitted when latest_block_number is the last block
+  // in block_hashes.
   bytes latest_block_hash = 6 [ (amino.dont_omitempty) = true ];
 }
 
