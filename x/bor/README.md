@@ -115,7 +115,7 @@ heimdalld tx bor propose-span --proposer <VALIDATOR_ADDRESS> --start-block <BOR_
 
 One can run the following query commands from the bor module:
 
-- `span` - Query the span corresponding to the given span id.
+- `span-by-id` - Query the span corresponding to the given span id.
 - `span-list` - Fetch span list.
 - `latest-span` - Query the latest span.
 - `next-span-seed` - Query the seed for the next span.
@@ -144,7 +144,7 @@ heimdalld query bor next-span-seed [id]
 ```
 
 ```bash
-heimdalld query bor next-span
+heimdalld query bor next-span [span_id] [start_block] [bor_chain_id]
 ```
 
 ```bash
