@@ -34,7 +34,7 @@ func TestInitHeimdallConfigWithSetsIthacaHeightPerChain(t *testing.T) {
 		{name: "mainnet", chain: MainChain, wantRioHeight: 77414656, wantInitHeight: 24404501, wantIthacaHeight: 50185000, wantLuganoHeight: 54627000},
 		{name: "mumbai", chain: MumbaiChain, wantRioHeight: 48473856, wantInitHeight: 0, wantIthacaHeight: 0, wantLuganoHeight: 0},
 		{name: "amoy", chain: AmoyChain, wantRioHeight: 26272256, wantInitHeight: 8788501, wantIthacaHeight: 40776000, wantLuganoHeight: 47105000},
-		{name: "default", chain: "local", wantRioHeight: 128, wantInitHeight: 0, wantIthacaHeight: 0, wantLuganoHeight: 1},
+		{name: "default", chain: "local", wantRioHeight: 0, wantInitHeight: 0, wantIthacaHeight: 0, wantLuganoHeight: 1},
 	}
 
 	for _, tc := range cases {
