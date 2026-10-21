@@ -31,6 +31,5 @@ const (
 	// Post message handler methods.
 
 	PostHandleMsgSpanMethod                = "PostHandleMsgSpan"
-	PostHandleMsgBackfillSpansMethod       = "PostHandleMsgBackfillSpans"
 	PostHandleMsgSetProducerDowntimeMethod = "PostHandleMsgSetProducerDowntime"
 )
