@@ -1,7 +1,7 @@
 module github.com/0xPolygon/heimdall-v2
 
 // Note: Change the go image version in Dockerfile if you change this.
-go 1.26.9
+go 1.26.10
 
 require (
 	cosmossdk.io/api v0.7.5
@@ -36,7 +36,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
-	github.com/rabbitmq/amqp091-go v1.13.0
+	github.com/rabbitmq/amqp091-go v1.14.0
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.21.0
