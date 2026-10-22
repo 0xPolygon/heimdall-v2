@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"cosmossdk.io/log"
+	"github.com/RichardKnop/machinery/v1/backends/result"
+	"github.com/RichardKnop/machinery/v1/tasks"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/ethereum/go-ethereum"
@@ -61,8 +63,8 @@ type BaseListener struct {
 	// cli context
 	cliCtx client.Context
 
-	// queue connector
-	queueConnector *queue.Connector
+	// task queue the listener enqueues processor tasks on
+	taskQueue taskQueue
 
 	// http client to subscribe to
 	httpClient *rpchttp.HTTP
@@ -70,6 +72,17 @@ type BaseListener struct {
 	// storage client
 	storageClient *leveldb.DB
 }
+
+// taskQueue is the part of the machinery server listeners use to enqueue tasks.
+type taskQueue interface {
+	SendTask(signature *tasks.Signature) (*result.AsyncResult, error)
+	IsTaskRegistered(name string) bool
+}
+
+const (
+	rootChainTaskRetryCount = 5
+	blockTaskRetryCount     = 3
+)
 
 type blockHeader struct {
 	header      *types.Header // block header
@@ -86,7 +99,7 @@ func NewBaseListener(cliCtx client.Context, queueConnector *queue.Connector, htt
 		storageClient: util.GetBridgeDBInstance(viper.GetString(util.BridgeDBFlag)),
 
 		cliCtx:         cliCtx,
-		queueConnector: queueConnector,
+		taskQueue:      queueConnector.Server,
 		httpClient:     httpClient,
 		contractCaller: contractCaller,
 		chainClient:    chainClient,
@@ -186,6 +199,31 @@ func (bl *BaseListener) StartSubscription(ctx context.Context, subscription ethe
 			return
 		}
 	}
+}
+
+// sendTask enqueues taskName to run no earlier than delay from now. A task no
+// processor registered is skipped: the queue would redeliver it forever.
+func (bl *BaseListener) sendTask(taskName string, retryCount int, delay time.Duration, args ...tasks.Arg) error {
+	if !bl.taskQueue.IsTaskRegistered(taskName) {
+		bl.Logger.Debug("BaseListener: skipping task with no registered processor", "taskName", taskName)
+		return nil
+	}
+
+	eta := time.Now().Add(delay)
+	signature := &tasks.Signature{Name: taskName, Args: args, RetryCount: retryCount, ETA: &eta}
+
+	bl.Logger.Debug("BaseListener: sending task", "taskName", taskName, "eta", eta)
+
+	if _, err := bl.taskQueue.SendTask(signature); err != nil {
+		bl.Logger.Error("BaseListener: error sending task", "taskName", taskName, "error", err)
+		return err
+	}
+
+	return nil
+}
+
+func stringArg(value string) tasks.Arg {
+	return tasks.Arg{Type: "string", Value: value}
 }
 
 // Stop stops all necessary go routines

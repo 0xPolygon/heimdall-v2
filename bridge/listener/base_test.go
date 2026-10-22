@@ -450,3 +450,28 @@ func TestBlockHeader_Fields(t *testing.T) {
 		require.True(t, bHeader.isFinalized)
 	})
 }
+
+func TestBaseListener_sendTask(t *testing.T) {
+	t.Parallel()
+
+	t.Run("skips a task no processor registered", func(t *testing.T) {
+		t.Parallel()
+
+		queue := &mockQueueConnector{unregistered: map[string]bool{"sendTickAckToHeimdall": true}}
+		listener := newTestBaseListener(queue)
+
+		require.NoError(t, listener.sendTask("sendTickAckToHeimdall", rootChainTaskRetryCount, 0, stringArg("Slashed")))
+		queue.AssertNotCalled(t, "SendTask", mock.Anything)
+	})
+
+	t.Run("returns the queue error", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, errors.New("broker down")).Once()
+		listener := newTestBaseListener(queue)
+
+		require.EqualError(t, listener.sendTask("sendStateSyncedToHeimdall", rootChainTaskRetryCount, 0, stringArg("StateSynced")), "broker down")
+		queue.AssertExpectations(t)
+	})
+}

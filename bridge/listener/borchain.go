@@ -2,9 +2,6 @@ package listener
 
 import (
 	"context"
-	"time"
-
-	"github.com/RichardKnop/machinery/v1/tasks"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
@@ -49,30 +46,5 @@ func (ml *BorChainListener) ProcessHeader(newHeader *blockHeader) {
 		return
 	}
 
-	ml.sendTaskWithDelay("sendCheckpointToHeimdall", headerBytes, 0)
-}
-
-func (ml *BorChainListener) sendTaskWithDelay(taskName string, headerBytes []byte, delay time.Duration) {
-	// create the machinery task
-	signature := &tasks.Signature{
-		Name: taskName,
-		Args: []tasks.Arg{
-			{
-				Type:  "string",
-				Value: string(headerBytes),
-			},
-		},
-	}
-	signature.RetryCount = 3
-
-	// add delay for the task so that multiple validators won't send same transaction at same time
-	eta := time.Now().Add(delay)
-	signature.ETA = &eta
-
-	ml.Logger.Debug("BorChainListener: sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)
-
-	_, err := ml.queueConnector.Server.SendTask(signature)
-	if err != nil {
-		ml.Logger.Error("BorChainListener: error sending task", "taskName", taskName, "error", err)
-	}
+	_ = ml.sendTask("sendCheckpointToHeimdall", blockTaskRetryCount, 0, stringArg(string(headerBytes)))
 }

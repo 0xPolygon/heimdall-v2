@@ -188,34 +188,9 @@ func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight
 
 	switch event.Type {
 	case checkpointTypes.EventTypeCheckpoint:
-		hl.sendBlockTask("sendCheckpointToRootchain", eventBytes, blockHeight)
+		_ = hl.sendTask("sendCheckpointToRootchain", blockTaskRetryCount, 0,
+			stringArg(string(eventBytes)), tasks.Arg{Type: "int64", Value: blockHeight})
 	default:
 		hl.Logger.Debug("HeimdallListener: block event type mismatch", "eventType", event.Type)
-	}
-}
-
-func (hl *HeimdallListener) sendBlockTask(taskName string, eventBytes []byte, blockHeight int64) {
-	// create the machinery task
-	signature := &tasks.Signature{
-		Name: taskName,
-		Args: []tasks.Arg{
-			{
-				Type:  "string",
-				Value: string(eventBytes),
-			},
-			{
-				Type:  "int64",
-				Value: blockHeight,
-			},
-		},
-	}
-	signature.RetryCount = 3
-
-	hl.Logger.Debug("HeimdallListener: sending block level task", "taskName", taskName, "currentTime", time.Now(), "blockHeight", blockHeight)
-
-	// send the task
-	_, err := hl.queueConnector.Server.SendTask(signature)
-	if err != nil {
-		hl.Logger.Error("HeimdallListener: error sending block level task", "taskName", taskName, "blockHeight", blockHeight, "error", err)
 	}
 }

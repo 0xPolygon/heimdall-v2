@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethCommon "github.com/ethereum/go-ethereum/common"
@@ -684,32 +683,12 @@ func rootChainEventTopics(eventMap map[ethCommon.Hash]*abi.Event) []ethCommon.Ha
 	return topics
 }
 
-func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string, logBytes []byte, delay time.Duration, event interface{}) {
+func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string, logBytes []byte, delay time.Duration, event interface{}) error {
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "SendTaskWithDelay", time.Now())
 
-	signature := &tasks.Signature{
-		Name: taskName,
-		Args: []tasks.Arg{
-			{
-				Type:  "string",
-				Value: eventName,
-			},
-			{
-				Type:  "string",
-				Value: string(logBytes),
-			},
-		},
-	}
-	signature.RetryCount = 5
+	rl.Logger.Info("RootChainListener: Sending task", "taskName", taskName, "currentTime", time.Now(), "delay", delay)
 
-	eta := time.Now().Add(delay)
-	signature.ETA = &eta
-	rl.Logger.Info("RootChainListener: Sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)
-
-	_, err := rl.queueConnector.Server.SendTask(signature)
-	if err != nil {
-		rl.Logger.Error("RootChainListener: error sending task", "taskName", taskName, "error", err)
-	}
+	return rl.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
 }
 
 // getRootChainContext returns the root chain context

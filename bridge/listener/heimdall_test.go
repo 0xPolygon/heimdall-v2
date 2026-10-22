@@ -16,53 +16,6 @@ import (
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
-// heimdallListenerForTest wraps HeimdallListener for testing
-type heimdallListenerForTest struct {
-	HeimdallListener
-	mockConnector *mockQueueConnector
-}
-
-func (h *heimdallListenerForTest) ProcessBlockEvent(event sdk.StringEvent, blockHeight int64) {
-	h.Logger.Debug("Received block event from Heimdall", "eventType", event.Type)
-
-	eventBytes, err := json.Marshal(event)
-	if err != nil {
-		h.Logger.Error("Error while marshalling block event", "eventType", event.Type, "error", err)
-		return
-	}
-
-	switch event.Type {
-	case checkpointTypes.EventTypeCheckpoint:
-		h.sendBlockTask("sendCheckpointToRootchain", eventBytes, blockHeight)
-	default:
-		h.Logger.Debug("Block event type mismatch", "eventType", event.Type)
-	}
-}
-
-func (h *heimdallListenerForTest) sendBlockTask(taskName string, eventBytes []byte, blockHeight int64) {
-	signature := &tasks.Signature{
-		Name: taskName,
-		Args: []tasks.Arg{
-			{
-				Type:  "string",
-				Value: string(eventBytes),
-			},
-			{
-				Type:  "int64",
-				Value: blockHeight,
-			},
-		},
-	}
-	signature.RetryCount = 3
-
-	h.Logger.Info("Sending block level task", "taskName", taskName, "currentTime", time.Now(), "blockHeight", blockHeight)
-
-	_, err := h.mockConnector.SendTask(signature)
-	if err != nil {
-		h.Logger.Error("Error sending block level task", "taskName", taskName, "blockHeight", blockHeight, "error", err)
-	}
-}
-
 func TestHeimdallListener_Stop(t *testing.T) {
 	t.Parallel()
 
@@ -130,9 +83,7 @@ func TestHeimdallListener_ProcessBlockEvent(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		event := sdk.StringEvent{
@@ -168,9 +119,7 @@ func TestHeimdallListener_ProcessBlockEvent(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		event := sdk.StringEvent{
@@ -190,9 +139,7 @@ func TestHeimdallListener_ProcessBlockEvent(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		event := sdk.StringEvent{
@@ -216,9 +163,7 @@ func TestHeimdallListener_ProcessBlockEvent(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		// Expect 3 checkpoint events
@@ -245,9 +190,7 @@ func TestHeimdallListener_sendBlockTask(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		taskName := "sendCheckpointToRootchain"
@@ -270,7 +213,7 @@ func TestHeimdallListener_sendBlockTask(t *testing.T) {
 			return sig.RetryCount == 3
 		})).Return(nil, nil).Once()
 
-		listener.sendBlockTask(taskName, eventBytes, blockHeight)
+		_ = listener.sendTask(taskName, blockTaskRetryCount, 0, stringArg(string(eventBytes)), tasks.Arg{Type: "int64", Value: blockHeight})
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -279,9 +222,7 @@ func TestHeimdallListener_sendBlockTask(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		blockHeights := []int64{0, 1, 1000, 999999, 1000000000}
@@ -291,7 +232,7 @@ func TestHeimdallListener_sendBlockTask(t *testing.T) {
 				return sig.Args[1].Value == height
 			})).Return(nil, nil).Once()
 
-			listener.sendBlockTask("test", []byte("{}"), height)
+			_ = listener.sendTask("test", blockTaskRetryCount, 0, stringArg(string([]byte("{}"))), tasks.Arg{Type: "int64", Value: height})
 		}
 
 		mockConnector.AssertExpectations(t)
@@ -391,9 +332,7 @@ func TestHeimdallListener_EventTypes(t *testing.T) {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				mockConnector := new(mockQueueConnector)
-				listener := &heimdallListenerForTest{
-					mockConnector: mockConnector,
-				}
+				listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 				listener.BaseListener.Logger = log.NewNopLogger()
 
 				event := sdk.StringEvent{
@@ -426,9 +365,7 @@ func TestHeimdallListener_Integration(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		// Create a realistic checkpoint event
@@ -473,9 +410,7 @@ func TestHeimdallListener_EdgeCases(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		event := sdk.StringEvent{
@@ -496,9 +431,7 @@ func TestHeimdallListener_EdgeCases(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		event := sdk.StringEvent{
@@ -522,9 +455,7 @@ func TestHeimdallListener_EdgeCases(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		event := sdk.StringEvent{

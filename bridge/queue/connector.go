@@ -27,22 +27,21 @@ const (
 
 // NewQueueConnector creates a new queue connector
 func NewQueueConnector(dialer string) *Connector {
-	// amqp dialer
+	// fail fast if the broker is unreachable
 	c, err := amqp.Dial(dialer)
-	defer func(c *amqp.Connection) {
-		err := c.Close()
-		if err != nil {
-			panic(err)
-		}
-	}(c)
 	if err != nil {
+		panic(err)
+	}
+	if err := c.Close(); err != nil {
 		panic(err)
 	}
 
 	cnf := &config.Config{
-		Broker:        dialer,
-		DefaultQueue:  QName,
-		ResultBackend: dialer,
+		Broker:       dialer,
+		DefaultQueue: QName,
+		// The bridge never reads task results, and an AMQP result backend opens a
+		// connection and declares a queue for every task state change.
+		ResultBackend: "null://",
 		AMQP: &config.AMQPConfig{
 			Exchange:     "machinery_exchange",
 			ExchangeType: "direct",

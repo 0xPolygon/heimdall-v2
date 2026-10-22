@@ -98,7 +98,7 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 	metrics.SelfHealCheckpointAcksProcessed.Inc()
 
 	// Send the checkpoint ACK task.
-	rl.SendTaskWithDelay("sendCheckpointAckToHeimdall", helper.NewHeaderBlockEvent, logBytes, 0, nil)
+	_ = rl.SendTaskWithDelay("sendCheckpointAckToHeimdall", helper.NewHeaderBlockEvent, logBytes, 0, nil)
 	rl.Logger.Info("Self-healing: successfully queued checkpoint ACK task", "headerBlockId", l1HeaderBlockId, "logIndex", latestL1Checkpoint.LogIndex, "txHash", targetLog.TxHash.Hex())
 }
 
