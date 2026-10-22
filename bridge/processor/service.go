@@ -53,23 +53,23 @@ func NewProcessorService(
 
 	// initialize checkpoint processor
 	checkpointProcessor := NewCheckpointProcessor(&contractCaller.RootChainABI)
-	checkpointProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "checkpoint", checkpointProcessor)
+	checkpointProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "checkpoint")
 
 	// initialize fee processor
 	feeProcessor := NewFeeProcessor(&contractCaller.StakingInfoABI)
-	feeProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "fee", feeProcessor)
+	feeProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "fee")
 
 	// initialize staking processor
 	stakingProcessor := NewStakingProcessor(&contractCaller.StakingInfoABI)
-	stakingProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "staking", stakingProcessor)
+	stakingProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "staking")
 
 	// initialize clerk processor
 	clerkProcessor := NewClerkProcessor(&contractCaller.StateSenderABI)
-	clerkProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "clerk", clerkProcessor)
+	clerkProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "clerk")
 
 	// initialize span processor
 	spanProcessor := &SpanProcessor{}
-	spanProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "span", spanProcessor)
+	spanProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "span")
 
 	//
 	// Select processors

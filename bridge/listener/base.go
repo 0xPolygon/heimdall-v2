@@ -10,7 +10,6 @@ import (
 	"github.com/RichardKnop/machinery/v1/tasks"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/spf13/viper"
@@ -21,30 +20,24 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-// Listener defines a block header listener for RootChain, BorChain, Heimdall
+// Listener is a chain event listener run by the listener service.
 type Listener interface {
 	Start() error
-
-	StartHeaderProcess(context.Context)
-
-	StartPolling(context.Context, time.Duration, *big.Int)
-
-	StartSubscription(context.Context, ethereum.Subscription)
-
-	ProcessHeader(*blockHeader)
-
 	Stop()
-
 	String() string
+}
+
+// headerProcessor handles the block headers a BaseListener polls for.
+type headerProcessor interface {
+	ProcessHeader(*blockHeader)
 }
 
 type BaseListener struct {
 	Logger log.Logger
 	name   string
-	quit   chan struct{}
 
 	// The "subclass" of BaseService
-	impl Listener
+	impl headerProcessor
 
 	// contract caller
 	contractCaller *helper.ContractCaller
@@ -90,11 +83,10 @@ type blockHeader struct {
 }
 
 // NewBaseListener creates a new BaseListener.
-func NewBaseListener(cliCtx client.Context, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, contractCaller *helper.ContractCaller, chainClient *ethclient.Client, name string, impl Listener) *BaseListener {
+func NewBaseListener(cliCtx client.Context, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, contractCaller *helper.ContractCaller, chainClient *ethclient.Client, name string, impl headerProcessor) *BaseListener {
 	return &BaseListener{
 		Logger:        util.Logger().With("service", "listener", "module", name),
 		name:          name,
-		quit:          make(chan struct{}),
 		impl:          impl,
 		storageClient: util.GetBridgeDBInstance(viper.GetString(util.BridgeDBFlag)),
 
@@ -174,28 +166,6 @@ func (bl *BaseListener) StartPolling(ctx context.Context, pollInterval time.Dura
 			bl.Logger.Info("BaseListener: polling stopped")
 			ticker.Stop()
 
-			return
-		}
-	}
-}
-
-func (bl *BaseListener) StartSubscription(ctx context.Context, subscription ethereum.Subscription) {
-	for {
-		select {
-		case err := <-subscription.Err():
-			// stop service
-			bl.Logger.Error("BaseListener: error while subscribing new blocks", "error", err)
-			// bl.Stop()
-
-			// cancel subscription
-			if bl.cancelSubscription != nil {
-				bl.Logger.Debug("BaseListener: cancelling the subscription of listener")
-				bl.cancelSubscription()
-			}
-
-			return
-		case <-ctx.Done():
-			bl.Logger.Info("BaseListener: subscription stopped")
 			return
 		}
 	}

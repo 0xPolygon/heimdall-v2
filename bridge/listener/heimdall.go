@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"math/big"
 	"strconv"
 	"time"
 
@@ -37,7 +36,7 @@ func (hl *HeimdallListener) Start() error {
 	}
 
 	hl.Logger.Info("HeimdallListener: start polling for events", "pollInterval", pollInterval)
-	hl.StartPolling(headerCtx, pollInterval, nil)
+	go hl.pollEvents(headerCtx, pollInterval)
 
 	return nil
 }
@@ -61,11 +60,8 @@ func (hl *HeimdallListener) Stop() {
 	hl.Logger.Info("HeimdallListener: stopped")
 }
 
-// ProcessHeader - no-op function for HeimdallListener
-func (hl *HeimdallListener) ProcessHeader(_ *blockHeader) {}
-
-// StartPolling - starts polling for heimdall events
-func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.Duration, _ *big.Int) {
+// pollEvents polls heimdall for new blocks and queues their checkpoint events
+func (hl *HeimdallListener) pollEvents(ctx context.Context, pollInterval time.Duration) {
 	// How often to fire the passed in function in second
 	interval := pollInterval
 

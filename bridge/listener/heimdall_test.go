@@ -60,22 +60,6 @@ func TestHeimdallListener_Stop(t *testing.T) {
 	})
 }
 
-func TestHeimdallListener_ProcessHeader(t *testing.T) {
-	t.Parallel()
-
-	t.Run("is a no-op function", func(t *testing.T) {
-		t.Parallel()
-
-		listener := &HeimdallListener{}
-		listener.BaseListener.Logger = log.NewNopLogger()
-
-		// ProcessHeader should do nothing for Heimdall
-		require.NotPanics(t, func() {
-			listener.ProcessHeader(nil)
-		})
-	})
-}
-
 func TestHeimdallListener_ProcessBlockEvent(t *testing.T) {
 	t.Parallel()
 

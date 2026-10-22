@@ -37,16 +37,12 @@ type Processor interface {
 type BaseProcessor struct {
 	Logger log.Logger
 	name   string
-	quit   chan struct{}
 
 	// queue connector
 	queueConnector *queue.Connector
 
 	// tx broadcaster
 	txBroadcaster *broadcaster.TxBroadcaster
-
-	// The "subclass" of BaseProcessor
-	impl Processor
 
 	// cli context
 	cliCtx client.Context
@@ -67,12 +63,10 @@ func Logger(name string) log.Logger {
 }
 
 // NewBaseProcessor creates a new BaseProcessor.
-func NewBaseProcessor(queueConnector *queue.Connector, httpClient *rpchttp.HTTP, txBroadcaster *broadcaster.TxBroadcaster, contractCaller *helper.ContractCaller, name string, impl Processor) *BaseProcessor {
+func NewBaseProcessor(queueConnector *queue.Connector, httpClient *rpchttp.HTTP, txBroadcaster *broadcaster.TxBroadcaster, contractCaller *helper.ContractCaller, name string) *BaseProcessor {
 	return &BaseProcessor{
 		Logger: Logger(name),
 		name:   name,
-		quit:   make(chan struct{}),
-		impl:   impl,
 
 		cliCtx:         txBroadcaster.CliCtx,
 		queueConnector: queueConnector,
