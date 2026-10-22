@@ -137,8 +137,10 @@ var (
 	errFilterLogsCallBudgetReached = errors.New("rootchain FilterLogs call budget reached for this poll cycle")
 
 	// errRootChainLogsNotQueued marks a batch whose validated logs couldn't
-	// all be queued. The range is retried as a whole rather than bisected,
-	// since bisecting would dispatch the logs that were queued again.
+	// all be queued. The failure comes from the queue or the validator-set
+	// lookup, not from the range, so the range is retried whole on the next
+	// poll rather than bisected. The retry dispatches its already-queued logs
+	// again, which processors skip as work already done.
 	errRootChainLogsNotQueued = errors.New("rootchain logs validated but not queued")
 
 	// rootChainEvents holds every root chain event the listener queries for.
