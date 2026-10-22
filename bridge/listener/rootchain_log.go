@@ -49,12 +49,6 @@ func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event,
 
 	rl.Logger.Debug("RootChainListener: receivedEvent", "eventName", selectedEvent.Name)
 
-	logBytes, err := json.Marshal(vLog)
-	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "error", err)
-		return nil
-	}
-
 	event, isSender, err := rl.decodeEventSender(vLog, selectedEvent)
 	if err != nil {
 		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
@@ -70,6 +64,12 @@ func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event,
 		return nil
 	}
 
+	logBytes, err := json.Marshal(vLog)
+	if err != nil {
+		rl.Logger.Error(failedToMarshalLog, "error", err)
+		return nil
+	}
+
 	start := time.Now()
 	err = rl.sendTask(spec.task, rootChainTaskRetryCount, delay+spec.extraDelay, stringArg(selectedEvent.Name), stringArg(string(logBytes)))
 	util.LogElapsedTimeForStateSyncedEvent(event, "sendTask", start)
@@ -82,7 +82,7 @@ func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event,
 func (rl *RootChainListener) decodeEventSender(vLog types.Log, selectedEvent *abi.Event) (interface{}, bool, error) {
 	switch selectedEvent.Name {
 	case helper.StakedEvent:
-		event, err := unpackEvent[stakinginfo.StakinginfoStaked](rl.stakingInfoAbi, &vLog, selectedEvent.Name)
+		event, err := helper.UnpackLogAs[stakinginfo.StakinginfoStaked](rl.stakingInfoAbi, selectedEvent.Name, &vLog)
 		if err != nil {
 			return nil, false, err
 		}
@@ -98,14 +98,14 @@ func (rl *RootChainListener) decodeEventSender(vLog types.Log, selectedEvent *ab
 		return event, bytes.Equal(event.SignerPubkey, pubKey[1:]), nil
 
 	case helper.StakeUpdateEvent:
-		event, err := unpackEvent[stakinginfo.StakinginfoStakeUpdate](rl.stakingInfoAbi, &vLog, selectedEvent.Name)
+		event, err := helper.UnpackLogAs[stakinginfo.StakinginfoStakeUpdate](rl.stakingInfoAbi, selectedEvent.Name, &vLog)
 		if err != nil {
 			return nil, false, err
 		}
 		return event, util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec), nil
 
 	case helper.SignerChangeEvent:
-		event, err := unpackEvent[stakinginfo.StakinginfoSignerChange](rl.stakingInfoAbi, &vLog, selectedEvent.Name)
+		event, err := helper.UnpackLogAs[stakinginfo.StakinginfoSignerChange](rl.stakingInfoAbi, selectedEvent.Name, &vLog)
 		if err != nil {
 			return nil, false, err
 		}
@@ -113,14 +113,14 @@ func (rl *RootChainListener) decodeEventSender(vLog types.Log, selectedEvent *ab
 		return event, bytes.Equal(event.SignerPubkey, pubKey[1:]) && helper.IsPubKeyFirstByteValid(pubKey[0:1]), nil
 
 	case helper.UnstakeInitEvent:
-		event, err := unpackEvent[stakinginfo.StakinginfoUnstakeInit](rl.stakingInfoAbi, &vLog, selectedEvent.Name)
+		event, err := helper.UnpackLogAs[stakinginfo.StakinginfoUnstakeInit](rl.stakingInfoAbi, selectedEvent.Name, &vLog)
 		if err != nil {
 			return nil, false, err
 		}
 		return event, util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec), nil
 
 	case helper.StateSyncedEvent:
-		event, err := unpackEvent[statesender.StatesenderStateSynced](rl.stateSenderAbi, &vLog, selectedEvent.Name)
+		event, err := helper.UnpackLogAs[statesender.StatesenderStateSynced](rl.stateSenderAbi, selectedEvent.Name, &vLog)
 		if err != nil {
 			return nil, false, err
 		}
@@ -128,7 +128,7 @@ func (rl *RootChainListener) decodeEventSender(vLog types.Log, selectedEvent *ab
 		return event, false, nil
 
 	case helper.TopUpFeeEvent:
-		event, err := unpackEvent[stakinginfo.StakinginfoTopUpFee](rl.stakingInfoAbi, &vLog, selectedEvent.Name)
+		event, err := helper.UnpackLogAs[stakinginfo.StakinginfoTopUpFee](rl.stakingInfoAbi, selectedEvent.Name, &vLog)
 		if err != nil {
 			return nil, false, err
 		}
@@ -139,12 +139,4 @@ func (rl *RootChainListener) decodeEventSender(vLog types.Log, selectedEvent *ab
 	}
 
 	return nil, false, fmt.Errorf("no decoder for root chain event %s", selectedEvent.Name)
-}
-
-func unpackEvent[T any](contractABI *abi.ABI, vLog *types.Log, eventName string) (*T, error) {
-	event := new(T)
-	if err := helper.UnpackLog(contractABI, event, eventName, vLog); err != nil {
-		return nil, err
-	}
-	return event, nil
 }

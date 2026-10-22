@@ -20,6 +20,15 @@ var (
 )
 
 // UnpackLog function unpacks the given event into the given log type
+// UnpackLogAs unpacks log into a new T as event, see UnpackLog.
+func UnpackLogAs[T any](abiObject *abi.ABI, event string, log *types.Log) (*T, error) {
+	out := new(T)
+	if err := UnpackLog(abiObject, out, event, log); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func UnpackLog(abiObject *abi.ABI, out interface{}, event string, log *types.Log) error {
 	// An anonymous event (zero topics) is valid but not one this decoder can
 	// identify. Checked here, not at the receipt level, so an unrelated log

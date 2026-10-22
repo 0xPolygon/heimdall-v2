@@ -191,7 +191,7 @@ func NewRootChainListener(contractCaller *helper.ContractCaller) *RootChainListe
 	}
 }
 
-// Start starts new block subscription
+// Start starts polling for finalized root chain headers and self-healing
 func (rl *RootChainListener) Start() error {
 	rl.Logger.Info("RootChainListener: starting")
 

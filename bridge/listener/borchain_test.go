@@ -1,7 +1,6 @@
 package listener
 
 import (
-	"encoding/json"
 	"errors"
 	"math/big"
 	"testing"
@@ -146,7 +145,7 @@ func TestBorChainListener_ProcessHeader(t *testing.T) {
 	})
 }
 
-func TestBorChainListener_sendTaskWithDelay(t *testing.T) {
+func TestBorChainListener_sendTask(t *testing.T) {
 	t.Parallel()
 
 	t.Run("sends task with correct signature and zero delay", func(t *testing.T) {
@@ -283,47 +282,6 @@ func TestBorChainListener_Integration(t *testing.T) {
 		}
 
 		mockConnector.AssertExpectations(t)
-	})
-}
-
-func TestBorChainListener_TaskSignatureStructure(t *testing.T) {
-	t.Parallel()
-
-	t.Run("verifies task signature has correct structure", func(t *testing.T) {
-		t.Parallel()
-
-		// Create a sample task signature as would be created by the listener
-		testHeader := &types.Header{
-			Number: big.NewInt(777),
-		}
-		headerBytes, err := testHeader.MarshalJSON()
-		require.NoError(t, err)
-
-		signature := &tasks.Signature{
-			Name: "sendCheckpointToHeimdall",
-			Args: []tasks.Arg{
-				{
-					Type:  "string",
-					Value: string(headerBytes),
-				},
-			},
-		}
-		signature.RetryCount = 3
-		eta := time.Now()
-		signature.ETA = &eta
-
-		// Verify structure
-		require.Equal(t, "sendCheckpointToHeimdall", signature.Name)
-		require.Len(t, signature.Args, 1)
-		require.Equal(t, "string", signature.Args[0].Type)
-		require.Equal(t, 3, signature.RetryCount)
-		require.NotNil(t, signature.ETA)
-
-		// Verify the header bytes are valid JSON and contain the block number
-		var jsonData map[string]interface{}
-		err = json.Unmarshal([]byte(signature.Args[0].Value.(string)), &jsonData)
-		require.NoError(t, err)
-		require.Contains(t, jsonData, "number")
 	})
 }
 

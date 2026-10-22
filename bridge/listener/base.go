@@ -44,10 +44,10 @@ type BaseListener struct {
 	// header channel
 	HeaderChannel chan *blockHeader
 
-	// cancel function for poll/subscription
+	// cancels the header polling loop
 	cancelSubscription context.CancelFunc
 
-	// header listener subscription
+	// cancels the header processing loop
 	cancelHeaderProcess context.CancelFunc
 
 	// cli context
@@ -56,7 +56,7 @@ type BaseListener struct {
 	// task queue the listener enqueues processor tasks on
 	taskQueue taskQueue
 
-	// http client to subscribe to
+	// CometBFT RPC client
 	httpClient *rpchttp.HTTP
 
 	// storage client

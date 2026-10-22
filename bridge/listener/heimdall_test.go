@@ -163,7 +163,7 @@ func TestHeimdallListener_ProcessBlockEvent(t *testing.T) {
 	})
 }
 
-func TestHeimdallListener_sendBlockTask(t *testing.T) {
+func TestHeimdallListener_sendTask(t *testing.T) {
 	t.Parallel()
 
 	t.Run("creates correct task signature", func(t *testing.T) {
@@ -216,56 +216,6 @@ func TestHeimdallListener_sendBlockTask(t *testing.T) {
 		}
 
 		mockConnector.AssertExpectations(t)
-	})
-}
-
-func TestHeimdallListener_TaskSignatureStructure(t *testing.T) {
-	t.Parallel()
-
-	t.Run("verifies task has two arguments", func(t *testing.T) {
-		t.Parallel()
-
-		event := sdk.StringEvent{
-			Type: checkpointTypes.EventTypeCheckpoint,
-			Attributes: []sdk.Attribute{
-				{Key: "proposer", Value: "addr"},
-			},
-		}
-		eventBytes, err := json.Marshal(event)
-		require.NoError(t, err)
-
-		blockHeight := int64(777)
-
-		signature := &tasks.Signature{
-			Name: "sendCheckpointToRootchain",
-			Args: []tasks.Arg{
-				{
-					Type:  "string",
-					Value: string(eventBytes),
-				},
-				{
-					Type:  "int64",
-					Value: blockHeight,
-				},
-			},
-		}
-		signature.RetryCount = 3
-
-		// Verify structure
-		require.Equal(t, "sendCheckpointToRootchain", signature.Name)
-		require.Len(t, signature.Args, 2)
-		require.Equal(t, "string", signature.Args[0].Type)
-		require.Equal(t, "int64", signature.Args[1].Type)
-		require.Equal(t, 3, signature.RetryCount)
-
-		// Verify we can unmarshal the event
-		var decodedEvent sdk.StringEvent
-		err = json.Unmarshal([]byte(signature.Args[0].Value.(string)), &decodedEvent)
-		require.NoError(t, err)
-		require.Equal(t, checkpointTypes.EventTypeCheckpoint, decodedEvent.Type)
-
-		// Verify block height
-		require.Equal(t, blockHeight, signature.Args[1].Value)
 	})
 }
 

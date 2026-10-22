@@ -818,17 +818,11 @@ func (c *ContractCaller) GetConfirmedTxReceipt(ctx context.Context, tx common.Ha
 // decodeLog unpacks the log at logIndex in receipt as eventName, accepting it
 // only if it was emitted by contractAddressString.
 func decodeLog[T any](contractABI *abi.ABI, eventName, contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*T, error) {
-	event := new(T)
-
 	contractAddress := common.HexToAddress(contractAddressString)
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(contractABI, event, eventName, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
+			return UnpackLogAs[T](contractABI, eventName, vLog)
 		}
 	}
 

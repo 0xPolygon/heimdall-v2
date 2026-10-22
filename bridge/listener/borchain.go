@@ -11,7 +11,7 @@ type BorChainListener struct {
 	BaseListener
 }
 
-// Start starts new block subscription
+// Start starts polling for new Bor headers
 func (ml *BorChainListener) Start() error {
 	ml.Logger.Info("BorChainListener: starting")
 
@@ -46,5 +46,6 @@ func (ml *BorChainListener) ProcessHeader(newHeader *blockHeader) {
 		return
 	}
 
+	// A failed send needs no retry: the next poll queues the then-latest header.
 	_ = ml.sendTask("sendCheckpointToHeimdall", blockTaskRetryCount, 0, stringArg(string(headerBytes)))
 }

@@ -21,7 +21,7 @@ type HeimdallListener struct {
 	BaseListener
 }
 
-// Start starts new block subscription
+// Start starts polling heimdall for new blocks
 func (hl *HeimdallListener) Start() error {
 	hl.Logger.Info("HeimdallListener: starting")
 

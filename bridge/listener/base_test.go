@@ -13,10 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// mockListener implements the Listener interface for testing
+// mockListener records the headers a BaseListener dispatches to it
 type mockListener struct {
 	BaseListener
-	startCalled         bool
 	processHeaderCalled bool
 	lastHeader          *blockHeader
 	// processedCh, when non-nil, receives one value per ProcessHeader call.
@@ -26,33 +25,12 @@ type mockListener struct {
 	processedCh chan struct{}
 }
 
-func (m *mockListener) Start() error {
-	m.startCalled = true
-	return nil
-}
-
 func (m *mockListener) ProcessHeader(header *blockHeader) {
 	m.processHeaderCalled = true
 	m.lastHeader = header
 	if m.processedCh != nil {
 		m.processedCh <- struct{}{}
 	}
-}
-
-func (m *mockListener) StartHeaderProcess(ctx context.Context) {
-	m.BaseListener.StartHeaderProcess(ctx)
-}
-
-func (m *mockListener) StartPolling(ctx context.Context, duration time.Duration, number *big.Int) {
-	m.BaseListener.StartPolling(ctx, duration, number)
-}
-
-func (m *mockListener) Stop() {
-	m.BaseListener.Stop()
-}
-
-func (m *mockListener) String() string {
-	return m.BaseListener.String()
 }
 
 func TestBaseListener_String(t *testing.T) {
@@ -338,10 +316,10 @@ func TestBaseListener_sendTask(t *testing.T) {
 	t.Run("skips a task no processor registered", func(t *testing.T) {
 		t.Parallel()
 
-		queue := &mockQueueConnector{unregistered: map[string]bool{"sendTickAckToHeimdall": true}}
+		queue := &mockQueueConnector{unregistered: map[string]bool{"sendUnregisteredTask": true}}
 		listener := newTestBaseListener(queue)
 
-		require.NoError(t, listener.sendTask("sendTickAckToHeimdall", rootChainTaskRetryCount, 0, stringArg("Slashed")))
+		require.NoError(t, listener.sendTask("sendUnregisteredTask", rootChainTaskRetryCount, 0, stringArg("Event")))
 		queue.AssertNotCalled(t, "SendTask", mock.Anything)
 	})
 
