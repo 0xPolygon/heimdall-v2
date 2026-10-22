@@ -366,6 +366,7 @@ func AddCommandsWithStartCmdOptions(
 
 	startCmd := server.StartCmdWithOptions(startAppCreator, defaultNodeHome, opts)
 	wrapStartWithLastBlockRerun(startCmd)
+	addPeerServingFlags(startCmd)
 
 	rootCmd.AddCommand(
 		startCmd,
