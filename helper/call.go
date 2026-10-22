@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strings"
 	"sync"
 	"time"
 
@@ -48,9 +47,6 @@ const (
 	errUnableToConnect = "unable to connect to bor chain"
 	errEventNotFound   = "event not found"
 )
-
-// ContractsABIsMap is a cached map holding the ABIs of the contracts
-var ContractsABIsMap = make(map[string]*abi.ABI)
 
 // IContractCaller represents contract caller
 type IContractCaller interface {
@@ -189,7 +185,6 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 	contractCallerObj.prefetchedReceipts = make(map[common.Hash]*ethTypes.Receipt)
 	contractCallerObj.finalizedHeaderCache = nil
 
-	// package global cache (string->ABI)
 	if err = populateABIs(&contractCallerObj); err != nil {
 		return contractCallerObj, err
 	}
@@ -1344,74 +1339,33 @@ func (c *ContractCaller) getRequiredBorGRPCClient() (BorGRPCClienter, error) {
 
 // utility and helper methods
 
-// populateABIs fills the package level cache for contracts' ABIs.
-// When called the first time, ContractsABIsMap will be filled,
-// and the getABI method won't be invoked the next time.
-// This reduces the number of calls to JSON decode methods made by the contract caller.
-// It uses ABIs' definitions instead of contracts' addresses,
-// as the latter might not be available at initialization time
+// populateABIs copies each contract's ABI onto the caller. The generated
+// bindings parse their ABI once and cache it, so no JSON is decoded per caller.
 func populateABIs(contractCallerObj *ContractCaller) error {
-	var ccAbi *abi.ABI
-
-	var err error
-
-	contractsABIs := [8]string{
-		rootchain.RootchainMetaData.ABI, stakinginfo.StakinginfoMetaData.ABI, validatorset.ValidatorsetMetaData.ABI,
-		statereceiver.StatereceiverMetaData.ABI, statesender.StatesenderMetaData.ABI, stakemanager.StakemanagerMetaData.ABI,
-		slashmanager.SlashmanagerMetaData.ABI, erc20.Erc20MetaData.ABI,
+	abis := []struct {
+		dst      *abi.ABI
+		metaData *bind.MetaData
+	}{
+		{&contractCallerObj.RootChainABI, rootchain.RootchainMetaData},
+		{&contractCallerObj.StakingInfoABI, stakinginfo.StakinginfoMetaData},
+		{&contractCallerObj.ValidatorSetABI, validatorset.ValidatorsetMetaData},
+		{&contractCallerObj.StateReceiverABI, statereceiver.StatereceiverMetaData},
+		{&contractCallerObj.StateSenderABI, statesender.StatesenderMetaData},
+		{&contractCallerObj.StakeManagerABI, stakemanager.StakemanagerMetaData},
+		{&contractCallerObj.SlashManagerABI, slashmanager.SlashmanagerMetaData},
+		{&contractCallerObj.PolTokenABI, erc20.Erc20MetaData},
 	}
 
-	// iterate over supported ABIs
-	for _, contractABI := range contractsABIs {
-		ccAbi, err = chooseContractCallerABI(contractCallerObj, contractABI)
+	for _, a := range abis {
+		parsed, err := a.metaData.GetAbi()
 		if err != nil {
-			Logger.Error("Error while fetching contract caller ABI", "error", err)
+			Logger.Error("Error while parsing contract ABI", "error", err)
 			return err
 		}
-
-		if ContractsABIsMap[contractABI] == nil {
-			// fills cached abi map
-			if *ccAbi, err = getABI(contractABI); err != nil {
-				Logger.Error("Error while getting ABI for contract caller", "name", contractABI, "error", err)
-				return err
-			}
-			ContractsABIsMap[contractABI] = ccAbi
-		} else {
-			// use cached abi
-			*ccAbi = *ContractsABIsMap[contractABI]
-		}
+		*a.dst = *parsed
 	}
 
 	return nil
-}
-
-// chooseContractCallerABI extracts and returns the abo.ABI object from the contractCallerObj based on its abi string
-func chooseContractCallerABI(contractCallerObj *ContractCaller, abi string) (*abi.ABI, error) {
-	switch abi {
-	case rootchain.RootchainMetaData.ABI:
-		return &contractCallerObj.RootChainABI, nil
-	case stakinginfo.StakinginfoMetaData.ABI:
-		return &contractCallerObj.StakingInfoABI, nil
-	case validatorset.ValidatorsetMetaData.ABI:
-		return &contractCallerObj.ValidatorSetABI, nil
-	case statereceiver.StatereceiverMetaData.ABI:
-		return &contractCallerObj.StateReceiverABI, nil
-	case statesender.StatesenderMetaData.ABI:
-		return &contractCallerObj.StateSenderABI, nil
-	case stakemanager.StakemanagerMetaData.ABI:
-		return &contractCallerObj.StakeManagerABI, nil
-	case slashmanager.SlashmanagerMetaData.ABI:
-		return &contractCallerObj.SlashManagerABI, nil
-	case erc20.Erc20MetaData.ABI:
-		return &contractCallerObj.PolTokenABI, nil
-	}
-
-	return nil, errors.New("no ABI associated with such data")
-}
-
-// getABI returns the contract's ABI struct from on its JSON representation
-func getABI(data string) (abi.ABI, error) {
-	return abi.JSON(strings.NewReader(data))
 }
 
 // copied from bor/ethclient package
