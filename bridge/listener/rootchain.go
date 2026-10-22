@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math/big"
+	"slices"
 	"strconv"
 	"time"
 
@@ -127,14 +128,16 @@ var (
 	errUnexpectedRootChainLog      = errors.New("rootchain log query returned a log that doesn't match the query")
 	errFilterLogsCallBudgetReached = errors.New("rootchain FilterLogs call budget reached for this poll cycle")
 
-	rootChainEvents = map[string]struct{}{
-		helper.NewHeaderBlockEvent: {},
-		helper.StakedEvent:         {},
-		helper.StakeUpdateEvent:    {},
-		helper.SignerChangeEvent:   {},
-		helper.UnstakeInitEvent:    {},
-		helper.StateSyncedEvent:    {},
-		helper.TopUpFeeEvent:       {},
+	// rootChainEvents maps each root chain event the listener queries for to
+	// the processor task it enqueues.
+	rootChainEvents = map[string]string{
+		helper.NewHeaderBlockEvent: "sendCheckpointAckToHeimdall",
+		helper.StakedEvent:         "sendValidatorJoinToHeimdall",
+		helper.StakeUpdateEvent:    "sendStakeUpdateToHeimdall",
+		helper.SignerChangeEvent:   "sendSignerChangeToHeimdall",
+		helper.UnstakeInitEvent:    "sendUnstakeInitToHeimdall",
+		helper.StateSyncedEvent:    "sendStateSyncedToHeimdall",
+		helper.TopUpFeeEvent:       "sendTopUpFeeToHeimdall",
 	}
 )
 
@@ -381,9 +384,14 @@ func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAdd
 		}
 	}
 
+	var slot validatorSlot
+	if slices.Contains(dispatch, true) {
+		slot = rl.currentValidatorSlot()
+	}
+
 	for i, vLog := range logs {
 		if dispatch[i] {
-			rl.handleLog(vLog, selectedEvents[i])
+			rl.handleLog(vLog, selectedEvents[i], slot)
 			if rl.onLogDispatched != nil {
 				rl.onLogDispatched(vLog, selectedEvents[i])
 			}

@@ -3,14 +3,17 @@ package listener
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"cosmossdk.io/log"
+	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -56,7 +59,7 @@ func TestRootChainListener_handleLog(t *testing.T) {
 
 			// Should not panic - these events handle marshaling errors gracefully
 			require.NotPanics(t, func() {
-				listener.handleLog(vLog, selectedEvent)
+				listener.handleLog(vLog, selectedEvent, validatorSlot{})
 			})
 		})
 	}
@@ -108,7 +111,7 @@ func TestRootChainListener_handleLog_UnknownEvent(t *testing.T) {
 
 	// Should handle gracefully (no panic)
 	require.NotPanics(t, func() {
-		listener.handleLog(vLog, selectedEvent)
+		listener.handleLog(vLog, selectedEvent, validatorSlot{})
 	})
 }
 
@@ -142,7 +145,7 @@ func TestRootChainListener_handleNewHeaderBlockLog(t *testing.T) {
 
 		// Should not panic and should be able to marshal
 		require.NotPanics(t, func() {
-			listener.handleNewHeaderBlockLog(vLog, selectedEvent)
+			listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 
 		// Verify log can be marshaled
@@ -172,7 +175,7 @@ func TestRootChainListener_handleNewHeaderBlockLog(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleNewHeaderBlockLog(vLog, selectedEvent)
+			listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 }
@@ -207,7 +210,7 @@ func TestRootChainListener_handleStateSyncedLog(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleStateSyncedLog(vLog, selectedEvent)
+			listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 
@@ -241,7 +244,7 @@ func TestRootChainListener_handleStateSyncedLog(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleStateSyncedLog(vLog, selectedEvent)
+			listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 }
@@ -376,7 +379,7 @@ func TestRootChainListener_LogHandlingEdgeCases(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleLog(vLog, selectedEvent)
+			listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 
@@ -408,7 +411,7 @@ func TestRootChainListener_LogHandlingEdgeCases(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleStateSyncedLog(vLog, selectedEvent)
+			listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 }
@@ -440,7 +443,7 @@ func TestRootChainListener_ConcurrentLogHandling(t *testing.T) {
 				Name: helper.NewHeaderBlockEvent,
 			}
 
-			listener.handleLog(vLog, selectedEvent)
+			listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		}(i)
 	}
 
@@ -497,7 +500,7 @@ func TestRootChainListener_LogDataSizes(t *testing.T) {
 			}
 
 			require.NotPanics(t, func() {
-				listener.handleStateSyncedLog(vLog, selectedEvent)
+				listener.handleLog(vLog, selectedEvent, validatorSlot{})
 			})
 
 			// Verify marshaling works
@@ -549,8 +552,28 @@ func TestRootChainListener_AddressFormats(t *testing.T) {
 			}
 
 			require.NotPanics(t, func() {
-				listener.handleStateSyncedLog(vLog, selectedEvent)
+				listener.handleLog(vLog, selectedEvent, validatorSlot{})
 			})
 		})
 	}
+}
+
+// TestRootChainListener_handleLog_QueuesTaskInValidatorSlot checks that a log is
+// routed to its processor task, delayed by this node's validator slot, and not
+// queued at all by a node outside the validator set.
+func TestRootChainListener_handleLog_QueuesTaskInValidatorSlot(t *testing.T) {
+	t.Parallel()
+
+	queue := new(mockQueueConnector)
+	queue.On("SendTask", mock.MatchedBy(func(sig *tasks.Signature) bool {
+		return sig.Name == "sendCheckpointAckToHeimdall" &&
+			sig.ETA.Sub(time.Now().Add(20*time.Second)).Abs() < time.Second
+	})).Return(nil, nil).Once()
+	listener := &RootChainListener{BaseListener: newTestBaseListener(queue)}
+
+	event := &abi.Event{Name: helper.NewHeaderBlockEvent}
+	listener.handleLog(types.Log{BlockNumber: 1}, event, validatorSlot{isValidator: true, delay: 20 * time.Second})
+	listener.handleLog(types.Log{BlockNumber: 2}, event, validatorSlot{})
+
+	queue.AssertExpectations(t)
 }
