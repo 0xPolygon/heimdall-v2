@@ -177,7 +177,7 @@ func CalculateTaskDelay(cdc codec.Codec) (bool, time.Duration, error) {
 	// For 1000-2000 It will be 24 seconds.
 	// For 2000-3000 it will be 36 seconds.
 	// Basically, for every 1000 txs it will increase the factor by 1.
-	mempoolFactor := GetUnconfirmedTxnCount(nil) / mempoolTxnCountDivisor
+	mempoolFactor := GetUnconfirmedTxnCount() / mempoolTxnCountDivisor
 
 	return true, time.Duration(valPosition) * TaskDelayBetweenEachVal * time.Duration(mempoolFactor+1), nil
 }
@@ -486,10 +486,8 @@ func GetClerkEventRecord(stateId int64, cdc codec.Codec) (*clerktypes.EventRecor
 	return &eventRecordResponse.Record, nil
 }
 
-func GetUnconfirmedTxnCount(event interface{}) int {
+func GetUnconfirmedTxnCount() int {
 	logger := Logger()
-
-	defer LogElapsedTimeForStateSyncedEvent(event, "GetUnconfirmedTxnCount", time.Now())
 
 	endpoint := helper.GetConfig().CometBFTRPCUrl + CometBFTUnconfirmedTxsCountURL
 

@@ -78,8 +78,8 @@ func (hl *HeimdallListener) pollEvents(ctx context.Context, pollInterval time.Du
 
 			hl.Logger.Debug("HeimdallListener: fetching new events between blocks", "fromBlock", fromBlock, "toBlock", toBlock)
 
-			if lastBlock, ok := hl.processBlockRange(ctx, fromBlock, toBlock); ok {
-				if err := hl.storageClient.Put([]byte(heimdallLastBlockKey), []byte(strconv.FormatUint(lastBlock, 10)), nil); err != nil {
+			if next := hl.processBlockRange(ctx, fromBlock, toBlock); next > fromBlock {
+				if err := hl.storageClient.Put([]byte(heimdallLastBlockKey), []byte(strconv.FormatUint(next-1, 10)), nil); err != nil {
 					hl.Logger.Error("HeimdallListener: hl.storageClient.Put", "Error", err)
 				}
 			}
@@ -149,30 +149,34 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 }
 
 // processBlockRange queues the checkpoint events of each block in
-// [fromBlock, toBlock] in order and returns the last height it finished. It
-// stops at the first block whose events can't be fetched or queued, so the
-// next poll retries that block instead of skipping it. ok is false when not
-// even fromBlock finished.
-func (hl *HeimdallListener) processBlockRange(ctx context.Context, fromBlock, toBlock uint64) (lastBlock uint64, ok bool) {
-	for height := fromBlock; height <= toBlock; height++ {
-		if ctx.Err() != nil {
-			return height - 1, height > fromBlock
-		}
-
-		events, err := helper.GetBeginBlockEvents(ctx, hl.httpClient, int64(height))
-		if err != nil {
-			hl.Logger.Error("HeimdallListener: error fetching block events, retrying from this block next poll", "height", height, "error", err)
-			return height - 1, height > fromBlock
-		}
-
-		for _, event := range events {
-			if err := hl.ProcessBlockEvent(sdk.StringifyEvent(event), int64(height)); err != nil {
-				return height - 1, height > fromBlock
-			}
+// [fromBlock, toBlock] in order and returns the first height it didn't
+// finish. It stops at the first block whose events can't be fetched or
+// queued, so the next poll retries that block instead of skipping it.
+func (hl *HeimdallListener) processBlockRange(ctx context.Context, fromBlock, toBlock uint64) uint64 {
+	height := fromBlock
+	for ; height <= toBlock && ctx.Err() == nil; height++ {
+		if err := hl.processBlock(ctx, height); err != nil {
+			hl.Logger.Error("HeimdallListener: error processing block, retrying from it next poll", "height", height, "error", err)
+			break
 		}
 	}
 
-	return toBlock, true
+	return height
+}
+
+func (hl *HeimdallListener) processBlock(ctx context.Context, height uint64) error {
+	events, err := helper.GetBeginBlockEvents(ctx, hl.httpClient, int64(height))
+	if err != nil {
+		return err
+	}
+
+	for _, event := range events {
+		if err := hl.ProcessBlockEvent(sdk.StringifyEvent(event), int64(height)); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // ProcessBlockEvent queues a heimdall block event for its processor. It

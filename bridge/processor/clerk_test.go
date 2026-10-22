@@ -171,7 +171,7 @@ func BenchmarkGetUnconfirmedTxnCount(b *testing.B) {
 
 			// when
 			b.StartTimer()
-			util.GetUnconfirmedTxnCount(nil)
+			util.GetUnconfirmedTxnCount()
 			b.StopTimer()
 
 			// then

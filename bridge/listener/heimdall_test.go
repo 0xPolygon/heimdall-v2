@@ -663,9 +663,7 @@ func TestHeimdallListener_processBlockRange(t *testing.T) {
 		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
 		listener.httpClient = fakeBlockResultsServer(t, 12)
 
-		lastBlock, ok := listener.processBlockRange(context.Background(), 10, 14)
-		require.True(t, ok)
-		require.Equal(t, uint64(11), lastBlock)
+		require.Equal(t, uint64(12), listener.processBlockRange(context.Background(), 10, 14))
 		queue.AssertExpectations(t)
 	})
 
@@ -677,8 +675,7 @@ func TestHeimdallListener_processBlockRange(t *testing.T) {
 		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
 		listener.httpClient = fakeBlockResultsServer(t, -1)
 
-		_, ok := listener.processBlockRange(context.Background(), 10, 14)
-		require.False(t, ok, "nothing finished, so nothing may be persisted")
+		require.Equal(t, uint64(10), listener.processBlockRange(context.Background(), 10, 14))
 		queue.AssertExpectations(t)
 	})
 
@@ -690,9 +687,7 @@ func TestHeimdallListener_processBlockRange(t *testing.T) {
 		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
 		listener.httpClient = fakeBlockResultsServer(t, -1)
 
-		lastBlock, ok := listener.processBlockRange(context.Background(), 10, 12)
-		require.True(t, ok)
-		require.Equal(t, uint64(12), lastBlock)
+		require.Equal(t, uint64(13), listener.processBlockRange(context.Background(), 10, 12))
 		queue.AssertExpectations(t)
 	})
 }
