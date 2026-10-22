@@ -366,7 +366,10 @@ func (c *ContractCaller) GetVoteOnHash(start, end uint64, hash, milestoneID stri
 
 // GetLastChildBlock fetch current child block
 func (c *ContractCaller) GetLastChildBlock(rootChainInstance *rootchain.Rootchain) (uint64, error) {
-	lastChildBlock, err := rootChainInstance.GetLastChildBlock(nil)
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	lastChildBlock, err := rootChainInstance.GetLastChildBlock(opts)
 	if err != nil {
 		Logger.Error("Could not fetch current child block from rootChain contract", "error", err)
 		return 0, err
@@ -382,7 +385,10 @@ func (c *ContractCaller) GetLastChildBlock(rootChainInstance *rootchain.Rootchai
 
 // CurrentHeaderBlock fetches the current header block
 func (c *ContractCaller) CurrentHeaderBlock(rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (uint64, error) {
-	currentHeaderBlock, err := rootChainInstance.CurrentHeaderBlock(nil)
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	currentHeaderBlock, err := rootChainInstance.CurrentHeaderBlock(opts)
 	if err != nil {
 		Logger.Error("Could not fetch current header block from rootChain contract", "error", err)
 		return 0, err
@@ -412,7 +418,10 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 
 // GetValidatorInfo get validator info
 func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
-	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	stakerDetails, err := stakingInfoInstance.GetStakerDetails(opts, big.NewInt(int64(valID)))
 	if err != nil {
 		Logger.Error("Error fetching validator information from stake manager", "validatorId", valID, "error", err)
 		return
@@ -770,8 +779,11 @@ func (c *ContractCaller) GetBorChainBlockAuthor(ctx context.Context, blockNum *b
 
 // GetBlockNumberFromTxHash gets the block number of transaction
 func (c *ContractCaller) GetBlockNumberFromTxHash(tx common.Hash) (*big.Int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.MainChainTimeout)
+	defer cancel()
+
 	var rpcTx rpcTransaction
-	if err := c.MainChainRPCClient.CallContext(context.Background(), &rpcTx, "eth_getTransactionByHash", tx); err != nil {
+	if err := c.MainChainRPCClient.CallContext(ctx, &rpcTx, "eth_getTransactionByHash", tx); err != nil {
 		return nil, err
 	}
 
@@ -943,7 +955,10 @@ func (c *ContractCaller) DecodeUnJailedEvent(contractAddressString string, recei
 
 // CurrentAccountStateRoot get current account root from on the chain
 func (c *ContractCaller) CurrentAccountStateRoot(stakingInfoInstance *stakinginfo.Stakinginfo) ([32]byte, error) {
-	accountStateRoot, err := stakingInfoInstance.GetAccountStateRoot(nil)
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	accountStateRoot, err := stakingInfoInstance.GetAccountStateRoot(opts)
 	if err != nil {
 		Logger.Error("Unable to get current account state root", "error", err)
 
@@ -961,7 +976,10 @@ func (c *ContractCaller) CurrentAccountStateRoot(stakingInfoInstance *stakinginf
 
 // CurrentSpanNumber get current span
 func (c *ContractCaller) CurrentSpanNumber(validatorSetInstance *validatorset.Validatorset) (Number *big.Int) {
-	result, err := validatorSetInstance.CurrentSpanNumber(nil)
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	result, err := validatorSetInstance.CurrentSpanNumber(opts)
 	if err != nil {
 		Logger.Error("Unable to get current span number", "error", err)
 		return nil
@@ -977,7 +995,10 @@ func (c *ContractCaller) GetSpanDetails(id *big.Int, validatorSetInstance *valid
 	*big.Int,
 	error,
 ) {
-	d, err := validatorSetInstance.GetSpan(nil, id)
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	d, err := validatorSetInstance.GetSpan(opts, id)
 	if err != nil {
 		return nil, nil, nil, errors.New("unable to get span details")
 	}
@@ -986,7 +1007,10 @@ func (c *ContractCaller) GetSpanDetails(id *big.Int, validatorSetInstance *valid
 
 // CurrentStateCounter get state counter
 func (c *ContractCaller) CurrentStateCounter(stateSenderInstance *statesender.Statesender) (Number *big.Int) {
-	result, err := stateSenderInstance.Counter(nil)
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	result, err := stateSenderInstance.Counter(opts)
 	if err != nil {
 		Logger.Error("Unable to get current counter number", "error", err)
 		return nil
@@ -1030,6 +1054,9 @@ func (c *ContractCaller) CheckIfBlocksExist(ctx context.Context, number uint64) 
 
 // GetBlockByNumber returns blocks by number from the child chain (bor)
 func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint64) (*ethTypes.Block, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
+	defer cancel()
+
 	var block *ethTypes.Block
 	var err error
 
@@ -1152,6 +1179,12 @@ func (c *ContractCaller) getRequiredBorGRPCClient() (BorGRPCClienter, error) {
 }
 
 // utility and helper methods
+
+// mainChainCallOpts bounds a main chain contract view call by MainChainTimeout.
+func (c *ContractCaller) mainChainCallOpts() (*bind.CallOpts, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.MainChainTimeout)
+	return &bind.CallOpts{Context: ctx}, cancel
+}
 
 // populateABIs copies each contract's ABI onto the caller. The generated
 // bindings parse their ABI once and cache it, so no JSON is decoded per caller.

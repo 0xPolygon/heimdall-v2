@@ -1,14 +1,17 @@
 package helper
 
 import (
+	"context"
 	"encoding/hex"
 	"errors"
 	"math/big"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -265,4 +268,37 @@ func TestDecodeLog(t *testing.T) {
 
 	_, err = caller.DecodeValidatorTopupFeesEvent(rootChain.Hex(), receipt, 3)
 	require.ErrorContains(t, err, "topic event mismatch")
+}
+
+// hangingBackend never answers a contract call until its context is done.
+type hangingBackend struct {
+	bind.ContractBackend
+}
+
+func (hangingBackend) CallContract(ctx context.Context, _ ethereum.CallMsg, _ *big.Int) ([]byte, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+
+// TestMainChainViewCallHonorsTimeout guards against a hung L1 endpoint blocking
+// a contract view call indefinitely.
+func TestMainChainViewCallHonorsTimeout(t *testing.T) {
+	t.Parallel()
+
+	rootChain, err := rootchain.NewRootchain(common.Address{}, hangingBackend{})
+	require.NoError(t, err)
+	caller := &ContractCaller{MainChainTimeout: 50 * time.Millisecond}
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := caller.GetLastChildBlock(rootChain)
+		done <- err
+	}()
+
+	select {
+	case err := <-done:
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+	case <-time.After(5 * time.Second):
+		t.Fatal("GetLastChildBlock did not return after MainChainTimeout")
+	}
 }
