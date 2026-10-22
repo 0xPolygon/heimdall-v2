@@ -145,7 +145,7 @@ func TestPopulateABIs(t *testing.T) {
 }
 
 // TestContractInstanceCacheConcurrent guards against data races on
-// ContractCaller.ContractInstanceCache.
+// ContractCaller.contractInstanceCache.
 // Run with the race detector to assert no race:
 //
 //	go test -race -run TestContractInstanceCacheConcurrent ./helper/...
@@ -216,10 +216,8 @@ func TestContractInstanceCacheSameAddressDifferentBindings(t *testing.T) {
 
 	rootChain, err := caller.GetRootChainInstance(address)
 	require.NoError(t, err)
-	stakingInfo, err := caller.GetStakingInfoInstance(address)
+	_, err = caller.GetStakingInfoInstance(address)
 	require.NoError(t, err)
-	require.NotNil(t, rootChain)
-	require.NotNil(t, stakingInfo)
 
 	cachedRootChain, err := caller.GetRootChainInstance(address)
 	require.NoError(t, err)

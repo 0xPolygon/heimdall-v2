@@ -107,15 +107,8 @@ type IContractCaller interface {
 // bor gRPC server. The concrete *grpc.BorGRPCClient satisfies this interface
 // automatically.
 type BorGRPCClienter interface {
-	HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error)
-	BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error)
-	GetRootHash(ctx context.Context, startBlock uint64, endBlock uint64) (string, error)
-	GetVoteOnHash(ctx context.Context, startBlock uint64, endBlock uint64, rootHash string, milestoneId string) (bool, error)
-	GetAuthor(ctx context.Context, blockNum *big.Int) (*common.Address, error)
-	GetTdByHash(ctx context.Context, hash common.Hash) (uint64, error)
+	borReader
 	GetTdByNumber(ctx context.Context, blockNum *big.Int) (uint64, error)
-	GetBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error)
-	TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error)
 	BorBlockReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error)
 }
 
@@ -141,7 +134,7 @@ type ContractCaller struct {
 	SlashManagerABI  abi.ABI
 	PolTokenABI      abi.ABI
 
-	ContractInstanceCache map[contractInstanceKey]interface{}
+	contractInstanceCache map[contractInstanceKey]interface{}
 	contractInstanceMu    *sync.RWMutex
 
 	// prefetchMu protects the round-scoped prefetch state used by ExtendVote.
@@ -173,7 +166,7 @@ type rpcTransaction struct {
 
 // NewContractCaller contract caller
 func NewContractCaller() (*ContractCaller, error) {
-	var contractCallerObj ContractCaller
+	contractCallerObj := &ContractCaller{}
 	config := GetConfig()
 	contractCallerObj.MainChainClient = GetMainClient()
 	contractCallerObj.MainChainTimeout = config.EthRPCTimeout
@@ -186,19 +179,18 @@ func NewContractCaller() (*ContractCaller, error) {
 		contractCallerObj.BorChainGrpcClient = client
 	}
 
-	// listeners and processors instance cache (address->ABI)
-	contractCallerObj.ContractInstanceCache = make(map[contractInstanceKey]interface{})
+	contractCallerObj.contractInstanceCache = make(map[contractInstanceKey]interface{})
 	contractCallerObj.contractInstanceMu = &sync.RWMutex{}
 
 	contractCallerObj.prefetchMu = &sync.RWMutex{}
 	contractCallerObj.prefetchedReceipts = make(map[common.Hash]*ethTypes.Receipt)
 	contractCallerObj.finalizedHeaderCache = nil
 
-	if err := populateABIs(&contractCallerObj); err != nil {
+	if err := populateABIs(contractCallerObj); err != nil {
 		return nil, err
 	}
 
-	return &contractCallerObj, nil
+	return contractCallerObj, nil
 }
 
 // cachedBinding returns the binding of type T for address, constructing it
@@ -207,7 +199,7 @@ func cachedBinding[T any](c *ContractCaller, address string, backend bind.Contra
 	key := contractInstanceKey{address: common.HexToAddress(address), binding: reflect.TypeFor[T]()}
 
 	c.contractInstanceMu.RLock()
-	cached, ok := c.ContractInstanceCache[key]
+	cached, ok := c.contractInstanceCache[key]
 	c.contractInstanceMu.RUnlock()
 	if ok {
 		return cached.(*T), nil
@@ -220,7 +212,7 @@ func cachedBinding[T any](c *ContractCaller, address string, backend bind.Contra
 	}
 
 	c.contractInstanceMu.Lock()
-	c.ContractInstanceCache[key] = instance
+	c.contractInstanceCache[key] = instance
 	c.contractInstanceMu.Unlock()
 
 	return instance, nil
@@ -1131,7 +1123,7 @@ func (h borHTTPClient) GetVoteOnHash(ctx context.Context, startBlock uint64, end
 
 func (h borHTTPClient) GetAuthor(ctx context.Context, blockNum *big.Int) (*common.Address, error) {
 	var author *common.Address
-	if err := h.client.Client().CallContext(ctx, &author, "bor_getAuthor", toBlockNumArg(blockNum)); err != nil {
+	if err := h.client.Client().CallContext(ctx, &author, "bor_getAuthor", borgrpc.ToBlockNumArg(blockNum)); err != nil {
 		return nil, err
 	}
 	return author, nil
@@ -1149,7 +1141,7 @@ func (h borHTTPClient) GetTdByHash(ctx context.Context, blockHash common.Hash) (
 	if err := rpcClient.CallContext(ctx, &resp, "eth_getTdByHash", blockHash.Hex()); err != nil {
 		return 0, err
 	}
-	// Same path for gRPC and HTTP: a missing block surfaces as ethereum.NotFound
+	// A missing block surfaces as ethereum.NotFound, matching the gRPC transport
 	if resp == nil || resp["totalDifficulty"] == nil {
 		return 0, ethereum.NotFound
 	}
@@ -1202,22 +1194,6 @@ func populateABIs(contractCallerObj *ContractCaller) error {
 	}
 
 	return nil
-}
-
-// copied from bor/ethclient package
-func toBlockNumArg(number *big.Int) string {
-	if number == nil {
-		return "latest"
-	}
-	if number.Sign() >= 0 {
-		return hexutil.EncodeBig(number)
-	}
-	// It's negative.
-	if number.IsInt64() {
-		return rpc.BlockNumber(number.Int64()).String()
-	}
-	// It's negative and large, which is invalid.
-	return fmt.Sprintf("<invalid %d>", number)
 }
 
 // BeginPrefetchRound starts a new round of prefetch lifecycle for ExtendVote.
