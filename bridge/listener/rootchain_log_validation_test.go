@@ -404,8 +404,7 @@ func TestProcessRootChainBlockRange_DedupesRejectionMetricAcrossBisection(t *tes
 	rpcURL := mockEthGetLogs(t, string(logsJSON), &requestCount)
 	client, err := ethclient.Dial(rpcURL)
 	require.NoError(t, err)
-	rl.contractCaller.MainChainClient = client
-	rl.contractCaller.MainChainTimeout = 5 * time.Second
+	rl.contractCaller = &helper.ContractCaller{MainChainClient: client, MainChainTimeout: 5 * time.Second}
 
 	rootChainContext := &RootChainListenerContext{
 		ChainmanagerParams: &chainmanagerTypes.Params{
@@ -464,8 +463,7 @@ func newQuarantineTestListener(t *testing.T) (*RootChainListener, *RootChainList
 	rpcURL := mockEthGetLogs(t, string(logsJSON), &requestCount)
 	client, err := ethclient.Dial(rpcURL)
 	require.NoError(t, err)
-	rl.contractCaller.MainChainClient = client
-	rl.contractCaller.MainChainTimeout = 5 * time.Second
+	rl.contractCaller = &helper.ContractCaller{MainChainClient: client, MainChainTimeout: 5 * time.Second}
 
 	rootChainContext := &RootChainListenerContext{
 		ChainmanagerParams: &chainmanagerTypes.Params{
@@ -775,8 +773,7 @@ func twoBlockListener(t *testing.T, logsFor func(fromBlock, toBlock uint64) []*t
 	rpcURL := mockEthGetLogsByRange(t, logsFor)
 	client, err := ethclient.Dial(rpcURL)
 	require.NoError(t, err)
-	rl.contractCaller.MainChainClient = client
-	rl.contractCaller.MainChainTimeout = 5 * time.Second
+	rl.contractCaller = &helper.ContractCaller{MainChainClient: client, MainChainTimeout: 5 * time.Second}
 
 	rootChainContext := &RootChainListenerContext{
 		ChainmanagerParams: &chainmanagerTypes.Params{
@@ -1048,6 +1045,7 @@ func TestQueryAndBroadcastEvents_TransientFailureNeverTouchesQuarantine(t *testi
 	rl := &RootChainListener{}
 	rl.BaseListener.Logger = log.NewNopLogger()
 	// MainChainClient deliberately left nil: the transient-unavailable path.
+	rl.contractCaller = &helper.ContractCaller{}
 
 	rootChainContext := &RootChainListenerContext{
 		ChainmanagerParams: &chainmanagerTypes.Params{

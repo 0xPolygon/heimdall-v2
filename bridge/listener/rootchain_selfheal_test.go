@@ -905,7 +905,7 @@ func TestConfirmStakeEventIdentity(t *testing.T) {
 
 	newListener := func(t *testing.T) *RootChainListener {
 		t.Helper()
-		rl := &RootChainListener{BaseListener: BaseListener{Logger: log.NewNopLogger()}}
+		rl := &RootChainListener{BaseListener: BaseListener{Logger: log.NewNopLogger(), contractCaller: &helper.ContractCaller{}}}
 		rl.contractCaller.StakingInfoABI = stakingInfoABIForTest(t)
 		return rl
 	}

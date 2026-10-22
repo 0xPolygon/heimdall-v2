@@ -142,12 +142,7 @@ var (
 )
 
 // NewRootChainListener - constructor func
-func NewRootChainListener() *RootChainListener {
-	contractCaller, err := helper.NewContractCaller()
-	if err != nil {
-		panic(err)
-	}
-
+func NewRootChainListener(contractCaller *helper.ContractCaller) *RootChainListener {
 	abiSources := []struct {
 		abi      *abi.ABI
 		contract rootChainContract

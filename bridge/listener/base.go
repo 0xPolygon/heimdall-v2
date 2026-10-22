@@ -8,8 +8,6 @@ import (
 	"cosmossdk.io/log"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -47,7 +45,7 @@ type BaseListener struct {
 	impl Listener
 
 	// contract caller
-	contractCaller helper.ContractCaller
+	contractCaller *helper.ContractCaller
 
 	chainClient *ethclient.Client
 
@@ -79,28 +77,9 @@ type blockHeader struct {
 }
 
 // NewBaseListener creates a new BaseListener.
-func NewBaseListener(cdc codec.Codec, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, chainClient *ethclient.Client, name string, impl Listener) *BaseListener {
-	logger := util.Logger().With("service", "listener", "module", name)
-
-	contractCaller, err := helper.NewContractCaller()
-	if err != nil {
-		logger.Error("BaseListener: error while getting the contract caller", "error", err)
-		panic(err)
-	}
-
-	cliCtx := client.Context{}.WithCodec(cdc)
-	cliCtx.BroadcastMode = flags.BroadcastAsync
-	cmt := helper.GetConfig().CometBFTRPCUrl
-	rpc, err := client.NewClientFromNode(cmt)
-	if err != nil {
-		logger.Error("BaseListener: error while creating rpc client", "error", err)
-		panic(err)
-	}
-	cliCtx = cliCtx.WithClient(rpc)
-
-	// creating the syncer object
+func NewBaseListener(cliCtx client.Context, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, contractCaller *helper.ContractCaller, chainClient *ethclient.Client, name string, impl Listener) *BaseListener {
 	return &BaseListener{
-		Logger:        logger,
+		Logger:        util.Logger().With("service", "listener", "module", name),
 		name:          name,
 		quit:          make(chan struct{}),
 		impl:          impl,
@@ -109,7 +88,7 @@ func NewBaseListener(cdc codec.Codec, queueConnector *queue.Connector, httpClien
 		cliCtx:         cliCtx,
 		queueConnector: queueConnector,
 		httpClient:     httpClient,
-		contractCaller: *contractCaller,
+		contractCaller: contractCaller,
 		chainClient:    chainClient,
 
 		HeaderChannel: make(chan *blockHeader),

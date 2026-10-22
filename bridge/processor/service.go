@@ -5,7 +5,6 @@ import (
 
 	common "github.com/cometbft/cometbft/libs/service"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	"github.com/cosmos/cosmos-sdk/codec"
 	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
 	"github.com/spf13/viper"
 
@@ -32,19 +31,14 @@ type Service struct {
 
 // NewProcessorService returns a new service object for processing queue msg
 func NewProcessorService(
-	cdc codec.Codec,
 	queueConnector *queue.Connector,
 	httpClient *rpchttp.HTTP,
 	txBroadcaster *broadcaster.TxBroadcaster,
+	contractCaller *helper.ContractCaller,
 ) *Service {
 	// creating the processor object
 	processorService := &Service{
 		queueConnector: queueConnector,
-	}
-
-	contractCaller, err := helper.NewContractCaller()
-	if err != nil {
-		panic(err)
 	}
 
 	processorService.BaseService = *common.NewBaseService(
@@ -59,28 +53,23 @@ func NewProcessorService(
 
 	// initialize checkpoint processor
 	checkpointProcessor := NewCheckpointProcessor(&contractCaller.RootChainABI)
-	checkpointProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "checkpoint", checkpointProcessor)
-	checkpointProcessor.cliCtx = txBroadcaster.CliCtx
+	checkpointProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "checkpoint", checkpointProcessor)
 
 	// initialize fee processor
 	feeProcessor := NewFeeProcessor(&contractCaller.StakingInfoABI)
-	feeProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "fee", feeProcessor)
-	feeProcessor.cliCtx = txBroadcaster.CliCtx
+	feeProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "fee", feeProcessor)
 
 	// initialize staking processor
 	stakingProcessor := NewStakingProcessor(&contractCaller.StakingInfoABI)
-	stakingProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "staking", stakingProcessor)
-	stakingProcessor.cliCtx = txBroadcaster.CliCtx
+	stakingProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "staking", stakingProcessor)
 
 	// initialize clerk processor
 	clerkProcessor := NewClerkProcessor(&contractCaller.StateSenderABI)
-	clerkProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "clerk", clerkProcessor)
-	clerkProcessor.cliCtx = txBroadcaster.CliCtx
+	clerkProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "clerk", clerkProcessor)
 
 	// initialize span processor
 	spanProcessor := &SpanProcessor{}
-	spanProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "span", spanProcessor)
-	spanProcessor.cliCtx = txBroadcaster.CliCtx
+	spanProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "span", spanProcessor)
 
 	//
 	// Select processors

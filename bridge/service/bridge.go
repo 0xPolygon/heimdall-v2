@@ -119,10 +119,16 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 		return err
 	}
 
+	contractCaller, err := helper.NewContractCaller()
+	if err != nil {
+		logger().Error("Bridge: error creating contract caller", "err", err)
+		return err
+	}
+
 	// wire bridge services: register tasks before starting worker to avoid race
 	txBroadcaster := broadcaster.NewTxBroadcaster(cdc, ctx, clientCtx, nil)
-	listenerService := listener.NewListenerService(cdc, qc, httpClient)
-	processorService := processor.NewProcessorService(cdc, qc, httpClient, txBroadcaster)
+	listenerService := listener.NewListenerService(clientCtx.WithCodec(cdc), qc, httpClient, contractCaller)
+	processorService := processor.NewProcessorService(qc, httpClient, txBroadcaster, contractCaller)
 	processorService.RegisterTasks()
 	qc.StartWorker()
 

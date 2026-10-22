@@ -370,7 +370,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 	cp := NewClerkProcessor(&contractCaller.StateSenderABI)
 	cp.cliCtx.Simulate = true
 	cp.cliCtx.SkipConfirm = true
-	cp.BaseProcessor = *NewBaseProcessor(cdc, nil, nil, txBroadcaster, "clerk", cp)
+	cp.BaseProcessor = *NewBaseProcessor(nil, nil, txBroadcaster, contractCaller, "clerk", cp)
 
 	return cp, nil
 }
@@ -396,7 +396,12 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 
 	stopFn := func() {}
 
-	rcl := listener.NewRootChainListener()
+	contractCaller, err := helper.NewContractCaller()
+	if err != nil {
+		return nil, stopFn, err
+	}
+
+	rcl := listener.NewRootChainListener(contractCaller)
 
 	server, err := getTestServer()
 	if err != nil {
@@ -404,7 +409,7 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 	}
 
 	rcl.BaseListener = *listener.NewBaseListener(
-		cdc, &queue.Connector{Server: server}, nil, helper.GetMainClient(), "rootChain", rcl)
+		client.Context{}.WithCodec(cdc), &queue.Connector{Server: server}, nil, contractCaller, helper.GetMainClient(), "rootChain", rcl)
 
 	stopFn = func() {
 		rcl.Stop()

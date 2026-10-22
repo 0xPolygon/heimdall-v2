@@ -7,8 +7,6 @@ import (
 	"cosmossdk.io/log"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types"
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/spf13/viper"
@@ -54,7 +52,7 @@ type BaseProcessor struct {
 	cliCtx client.Context
 
 	// contract caller
-	contractCaller helper.ContractCaller
+	contractCaller *helper.ContractCaller
 
 	// http client to subscribe to
 	httpClient *rpchttp.HTTP
@@ -69,39 +67,16 @@ func Logger(name string) log.Logger {
 }
 
 // NewBaseProcessor creates a new BaseProcessor.
-func NewBaseProcessor(cdc codec.Codec, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, txBroadcaster *broadcaster.TxBroadcaster, name string, impl Processor) *BaseProcessor {
-	logger := Logger(name)
-
-	cliCtx := client.Context{}.WithCodec(cdc)
-	cliCtx.BroadcastMode = flags.BroadcastSync
-	cmt := helper.GetConfig().CometBFTRPCUrl
-	rpc, err := client.NewClientFromNode(cmt)
-	if err != nil {
-		logger.Error("BaseProcessor: error while creating rpc client", "error", err)
-		panic(err)
-	}
-	cliCtx = cliCtx.WithClient(rpc)
-
-	contractCaller, err := helper.NewContractCaller()
-	if err != nil {
-		logger.Error("BaseProcessor: error while getting root chain instance", "error", err)
-		panic(err)
-	}
-
-	if logger == nil {
-		logger = helper.Logger.With("module", "bridge/processor")
-	}
-
-	// creating the syncer object
+func NewBaseProcessor(queueConnector *queue.Connector, httpClient *rpchttp.HTTP, txBroadcaster *broadcaster.TxBroadcaster, contractCaller *helper.ContractCaller, name string, impl Processor) *BaseProcessor {
 	return &BaseProcessor{
-		Logger: logger,
+		Logger: Logger(name),
 		name:   name,
 		quit:   make(chan struct{}),
 		impl:   impl,
 
-		cliCtx:         cliCtx,
+		cliCtx:         txBroadcaster.CliCtx,
 		queueConnector: queueConnector,
-		contractCaller: *contractCaller,
+		contractCaller: contractCaller,
 		txBroadcaster:  txBroadcaster,
 		httpClient:     httpClient,
 		storageClient:  util.GetBridgeDBInstance(viper.GetString(util.BridgeDBFlag)),

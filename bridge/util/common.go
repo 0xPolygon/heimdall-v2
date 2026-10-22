@@ -287,12 +287,13 @@ func IsCatchingUp(ctx context.Context, cliCtx client.Context) bool {
 // GetAccount returns heimdall auth account
 func GetAccount(ctx context.Context, cliCtx client.Context, address string) (sdk.AccountI, error) {
 	var account sdk.AccountI
-	cmt := helper.GetConfig().CometBFTRPCUrl
-	rpc, err := client.NewClientFromNode(cmt)
-	if err != nil {
-		panic(err)
+	if cliCtx.Client == nil {
+		rpc, err := client.NewClientFromNode(helper.GetConfig().CometBFTRPCUrl)
+		if err != nil {
+			return nil, err
+		}
+		cliCtx = cliCtx.WithClient(rpc)
 	}
-	cliCtx = cliCtx.WithClient(rpc)
 
 	queryClient := authtypes.NewQueryClient(cliCtx)
 

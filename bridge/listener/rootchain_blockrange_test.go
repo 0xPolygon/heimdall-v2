@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"cosmossdk.io/log"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -188,8 +189,7 @@ func emptyLogsListener(t *testing.T) (*RootChainListener, *RootChainListenerCont
 	rpcURL := mockEthGetLogs(t, string(emptyLogs), &requestCount)
 	client, err := ethclient.Dial(rpcURL)
 	require.NoError(t, err)
-	rl.contractCaller.MainChainClient = client
-	rl.contractCaller.MainChainTimeout = 5_000_000_000 // 5s, as time.Duration nanoseconds
+	rl.contractCaller = &helper.ContractCaller{MainChainClient: client, MainChainTimeout: 5 * time.Second}
 
 	rootChainContext := &RootChainListenerContext{
 		ChainmanagerParams: &chainmanagerTypes.Params{
