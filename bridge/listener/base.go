@@ -184,7 +184,7 @@ func (bl *BaseListener) sendTask(taskName string, retryCount int, delay time.Dur
 	eta := time.Now().Add(delay)
 	signature := &tasks.Signature{Name: taskName, Args: args, RetryCount: retryCount, ETA: &eta}
 
-	bl.Logger.Info("BaseListener: sending task", "taskName", taskName, "eta", eta)
+	bl.Logger.Debug("BaseListener: sending task", "taskName", taskName, "eta", eta)
 
 	if _, err := bl.taskQueue.SendTask(signature); err != nil {
 		bl.Logger.Error("BaseListener: error sending task", "taskName", taskName, "error", err)

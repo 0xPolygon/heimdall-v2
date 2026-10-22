@@ -70,6 +70,8 @@ func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event,
 		return nil
 	}
 
+	rl.Logger.Info("RootChainListener: sending task", "eventName", selectedEvent.Name, "taskName", spec.task, "txHash", vLog.TxHash, "delay", delay+spec.extraDelay)
+
 	start := time.Now()
 	err = rl.sendTask(spec.task, rootChainTaskRetryCount, delay+spec.extraDelay, stringArg(selectedEvent.Name), stringArg(string(logBytes)))
 	util.LogElapsedTimeForStateSyncedEvent(event, "sendTask", start)
