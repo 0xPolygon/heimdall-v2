@@ -1,14 +1,19 @@
 package listener
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
 
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1/tasks"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -512,38 +517,6 @@ func TestHeimdallListener_EarliestBlockClamping(t *testing.T) {
 	})
 }
 
-func TestHeimdallListener_BlockRangeCalculations(t *testing.T) {
-	t.Parallel()
-
-	t.Run("toBlock adjustment when less than or equal to fromBlock", func(t *testing.T) {
-		t.Parallel()
-
-		// Test the logic: if toBlock <= fromBlock, then toBlock = fromBlock + 1
-		fromBlock := uint64(100)
-		toBlock := uint64(100)
-
-		if toBlock <= fromBlock {
-			toBlock = fromBlock + 1
-		}
-
-		require.Equal(t, uint64(101), toBlock)
-	})
-
-	t.Run("toBlock remains unchanged when greater than fromBlock", func(t *testing.T) {
-		t.Parallel()
-
-		fromBlock := uint64(100)
-		toBlock := uint64(200)
-
-		original := toBlock
-		if toBlock <= fromBlock {
-			toBlock = fromBlock + 1
-		}
-
-		require.Equal(t, original, toBlock)
-	})
-}
-
 func TestHeimdallListener_StringConversions(t *testing.T) {
 	t.Parallel()
 
@@ -641,5 +614,85 @@ func TestHeimdallListener_PollIntervalCalculation(t *testing.T) {
 				require.Equal(t, tc.expectedPollInterval, pollInterval)
 			})
 		}
+	})
+}
+
+// fakeBlockResultsServer serves CometBFT block_results with one checkpoint
+// event per block, and fails every request for failingHeight.
+func fakeBlockResultsServer(t *testing.T, failingHeight int64) *rpchttp.HTTP {
+	t.Helper()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			ID     json.RawMessage `json:"id"`
+			Method string          `json:"method"`
+			Params struct {
+				Height string `json:"height"`
+			} `json:"params"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if req.Method != "block_results" || req.Params.Height == strconv.FormatInt(failingHeight, 10) {
+			_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32603,"message":"unavailable"}}`, req.ID)
+			return
+		}
+		_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"height":%q,"finalize_block_events":[{"type":%q,"attributes":[]}]}}`,
+			req.ID, req.Params.Height, checkpointTypes.EventTypeCheckpoint)
+	}))
+	t.Cleanup(srv.Close)
+
+	client, err := rpchttp.New(srv.URL, "/websocket")
+	require.NoError(t, err)
+	return client
+}
+
+// TestHeimdallListener_processBlockRange guards against skipping a block whose
+// checkpoint event couldn't be fetched or queued: processing stops before it,
+// so the next poll retries it.
+func TestHeimdallListener_processBlockRange(t *testing.T) {
+	t.Parallel()
+
+	t.Run("stops before a block whose events can't be fetched", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, nil).Twice()
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.httpClient = fakeBlockResultsServer(t, 12)
+
+		lastBlock, ok := listener.processBlockRange(context.Background(), 10, 14)
+		require.True(t, ok)
+		require.Equal(t, uint64(11), lastBlock)
+		queue.AssertExpectations(t)
+	})
+
+	t.Run("stops before a block whose checkpoint can't be queued", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, errors.New("broker down")).Once()
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.httpClient = fakeBlockResultsServer(t, -1)
+
+		_, ok := listener.processBlockRange(context.Background(), 10, 14)
+		require.False(t, ok, "nothing finished, so nothing may be persisted")
+		queue.AssertExpectations(t)
+	})
+
+	t.Run("finishes the whole range", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, nil).Times(3)
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.httpClient = fakeBlockResultsServer(t, -1)
+
+		lastBlock, ok := listener.processBlockRange(context.Background(), 10, 12)
+		require.True(t, ok)
+		require.Equal(t, uint64(12), lastBlock)
+		queue.AssertExpectations(t)
 	})
 }
