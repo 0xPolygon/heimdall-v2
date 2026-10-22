@@ -141,7 +141,7 @@ func BenchmarkCalculateTaskDelay(b *testing.B) {
 	var timeDuration time.Duration
 
 	for i := 0; i < b.N; i++ {
-		isCurrentValidator, timeDuration = util.CalculateTaskDelay(nil, cdc)
+		isCurrentValidator, timeDuration, _ = util.CalculateTaskDelay(cdc)
 	}
 
 	b.StopTimer()

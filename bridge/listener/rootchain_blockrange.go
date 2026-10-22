@@ -1,6 +1,7 @@
 package listener
 
 import (
+	"errors"
 	"math/big"
 	"strconv"
 )
@@ -126,9 +127,11 @@ func (rl *RootChainListener) processRootChainBlockRangeInChunks(rootChainContext
 // so a genuine success here already reflects that.
 func (rl *RootChainListener) processRootChainBlockRange(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int, state *rootChainRejectionState) error {
 	if err := rl.queryAndBroadcastEvents(rootChainContext, fromBlock, toBlock, state); err != nil {
-		// A single-block failure cannot be split further. Return the error so
-		// the caller keeps the cursor unchanged and retries this block later.
-		if fromBlock.Cmp(toBlock) >= 0 {
+		// A single-block failure cannot be split further, and a batch that
+		// failed to queue must not be split (see errRootChainLogsNotQueued).
+		// Return the error so the caller keeps the cursor unchanged and
+		// retries this range later.
+		if fromBlock.Cmp(toBlock) >= 0 || errors.Is(err, errRootChainLogsNotQueued) {
 			return err
 		}
 

@@ -59,7 +59,7 @@ func TestRootChainListener_handleLog(t *testing.T) {
 
 			// Should not panic - these events handle marshaling errors gracefully
 			require.NotPanics(t, func() {
-				listener.handleLog(vLog, selectedEvent, validatorSlot{})
+				_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 			})
 		})
 	}
@@ -110,7 +110,7 @@ func TestRootChainListener_handleLog_UnknownEvent(t *testing.T) {
 
 	// Should handle gracefully (no panic)
 	require.NotPanics(t, func() {
-		listener.handleLog(vLog, selectedEvent, validatorSlot{})
+		_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 	})
 }
 
@@ -144,7 +144,7 @@ func TestRootChainListener_handleNewHeaderBlockLog(t *testing.T) {
 
 		// Should not panic and should be able to marshal
 		require.NotPanics(t, func() {
-			listener.handleLog(vLog, selectedEvent, validatorSlot{})
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 
 		// Verify log can be marshaled
@@ -174,7 +174,7 @@ func TestRootChainListener_handleNewHeaderBlockLog(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleLog(vLog, selectedEvent, validatorSlot{})
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 }
@@ -209,7 +209,7 @@ func TestRootChainListener_handleStateSyncedLog(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleLog(vLog, selectedEvent, validatorSlot{})
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 
@@ -243,7 +243,7 @@ func TestRootChainListener_handleStateSyncedLog(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleLog(vLog, selectedEvent, validatorSlot{})
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 }
@@ -376,7 +376,7 @@ func TestRootChainListener_LogHandlingEdgeCases(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleLog(vLog, selectedEvent, validatorSlot{})
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 
@@ -406,7 +406,7 @@ func TestRootChainListener_LogHandlingEdgeCases(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleLog(vLog, selectedEvent, validatorSlot{})
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 }
@@ -438,7 +438,7 @@ func TestRootChainListener_ConcurrentLogHandling(t *testing.T) {
 				Name: helper.NewHeaderBlockEvent,
 			}
 
-			listener.handleLog(vLog, selectedEvent, validatorSlot{})
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		}(i)
 	}
 
@@ -495,7 +495,7 @@ func TestRootChainListener_LogDataSizes(t *testing.T) {
 			}
 
 			require.NotPanics(t, func() {
-				listener.handleLog(vLog, selectedEvent, validatorSlot{})
+				_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 			})
 
 			// Verify marshaling works
@@ -547,7 +547,7 @@ func TestRootChainListener_AddressFormats(t *testing.T) {
 			}
 
 			require.NotPanics(t, func() {
-				listener.handleLog(vLog, selectedEvent, validatorSlot{})
+				_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 			})
 		})
 	}
@@ -567,8 +567,8 @@ func TestRootChainListener_handleLog_QueuesTaskInValidatorSlot(t *testing.T) {
 	listener := &RootChainListener{BaseListener: newTestBaseListener(queue)}
 
 	event := &abi.Event{Name: helper.NewHeaderBlockEvent}
-	listener.handleLog(types.Log{BlockNumber: 1}, event, validatorSlot{isValidator: true, delay: 20 * time.Second})
-	listener.handleLog(types.Log{BlockNumber: 2}, event, validatorSlot{})
+	_ = listener.handleLog(types.Log{BlockNumber: 1}, event, validatorSlot{isValidator: true, delay: 20 * time.Second})
+	_ = listener.handleLog(types.Log{BlockNumber: 2}, event, validatorSlot{})
 
 	queue.AssertExpectations(t)
 }

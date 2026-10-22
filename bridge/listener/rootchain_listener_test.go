@@ -90,7 +90,7 @@ func TestNilABI_PanicsOnUnpackLog(t *testing.T) {
 	// nil stateSenderAbi causes a nil-pointer panic in UnpackLog.
 	listener.stateSenderAbi = nil
 	require.Panics(t, func() {
-		listener.handleLog(vLog, selectedEvent, validatorSlot{})
+		_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 	}, "nil ABI must panic, indicates a misconfigured listener")
 }
 
@@ -117,7 +117,7 @@ func TestEarlyReturn_UnpackLogError(t *testing.T) {
 	// decoding fails → handleLog should return early without panicking
 	// and without reaching sendTask (which would panic since taskQueue is nil)
 	require.NotPanics(t, func() {
-		listener.handleLog(vLog, selectedEvent, validatorSlot{})
+		_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 	})
 }
 
@@ -145,11 +145,11 @@ func TestEarlyReturn_HandlersWithBadABI(t *testing.T) {
 		name string
 		fn   func()
 	}{
-		{"StakeUpdate", func() { listener.handleLog(vLog, &abi.Event{Name: helper.StakeUpdateEvent}, validatorSlot{}) }},
-		{"SignerChange", func() { listener.handleLog(vLog, &abi.Event{Name: helper.SignerChangeEvent}, validatorSlot{}) }},
-		{"UnstakeInit", func() { listener.handleLog(vLog, &abi.Event{Name: helper.UnstakeInitEvent}, validatorSlot{}) }},
-		{"StateSynced", func() { listener.handleLog(vLog, &abi.Event{Name: helper.StateSyncedEvent}, validatorSlot{}) }},
-		{"TopUpFee", func() { listener.handleLog(vLog, &abi.Event{Name: helper.TopUpFeeEvent}, validatorSlot{}) }},
+		{"StakeUpdate", func() { _ = listener.handleLog(vLog, &abi.Event{Name: helper.StakeUpdateEvent}, validatorSlot{}) }},
+		{"SignerChange", func() { _ = listener.handleLog(vLog, &abi.Event{Name: helper.SignerChangeEvent}, validatorSlot{}) }},
+		{"UnstakeInit", func() { _ = listener.handleLog(vLog, &abi.Event{Name: helper.UnstakeInitEvent}, validatorSlot{}) }},
+		{"StateSynced", func() { _ = listener.handleLog(vLog, &abi.Event{Name: helper.StateSyncedEvent}, validatorSlot{}) }},
+		{"TopUpFee", func() { _ = listener.handleLog(vLog, &abi.Event{Name: helper.TopUpFeeEvent}, validatorSlot{}) }},
 	}
 
 	for _, h := range handlers {

@@ -3,6 +3,7 @@ package listener
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 	"slices"
 	"strconv"
@@ -65,6 +66,11 @@ type RootChainListener struct {
 	// directly, so this is the seam tests use to observe that dispatch
 	// happened at all, and for which log. Left nil in production.
 	onLogDispatched func(vLog types.Log, selectedEvent *abi.Event)
+
+	// validatorSlotSource, when set, replaces the REST lookup behind
+	// currentValidatorSlot so tests can dispatch logs without a heimdall
+	// server. Left nil in production.
+	validatorSlotSource func() (validatorSlot, error)
 }
 
 // rootChainContract identifies which of the three watched L1 contracts an
@@ -129,6 +135,11 @@ var (
 	errNoSupportedRootChainTopics  = errors.New("no supported rootChain event topics configured")
 	errUnexpectedRootChainLog      = errors.New("rootchain log query returned a log that doesn't match the query")
 	errFilterLogsCallBudgetReached = errors.New("rootchain FilterLogs call budget reached for this poll cycle")
+
+	// errRootChainLogsNotQueued marks a batch whose validated logs couldn't
+	// all be queued. The range is retried as a whole rather than bisected,
+	// since bisecting would dispatch the logs that were queued again.
+	errRootChainLogsNotQueued = errors.New("rootchain logs validated but not queued")
 
 	// rootChainEvents holds every root chain event the listener queries for.
 	rootChainEvents = map[string]rootChainEvent{
@@ -395,12 +406,17 @@ func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAdd
 
 	var slot validatorSlot
 	if slices.Contains(dispatch, true) {
-		slot = rl.currentValidatorSlot()
+		var err error
+		if slot, err = rl.currentValidatorSlot(); err != nil {
+			return fmt.Errorf("%w: fetching validator slot: %w", errRootChainLogsNotQueued, err)
+		}
 	}
 
 	for i, vLog := range logs {
 		if dispatch[i] {
-			rl.handleLog(vLog, selectedEvents[i], slot)
+			if err := rl.handleLog(vLog, selectedEvents[i], slot); err != nil {
+				return fmt.Errorf("%w: %w", errRootChainLogsNotQueued, err)
+			}
 			if rl.onLogDispatched != nil {
 				rl.onLogDispatched(vLog, selectedEvents[i])
 			}

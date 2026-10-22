@@ -28,18 +28,23 @@ type validatorSlot struct {
 	delay       time.Duration
 }
 
-func (rl *RootChainListener) currentValidatorSlot() validatorSlot {
-	isValidator, delay := util.CalculateTaskDelay(nil, rl.cliCtx.Codec)
-	return validatorSlot{isValidator: isValidator, delay: delay}
+func (rl *RootChainListener) currentValidatorSlot() (validatorSlot, error) {
+	if rl.validatorSlotSource != nil {
+		return rl.validatorSlotSource()
+	}
+
+	isValidator, delay, err := util.CalculateTaskDelay(rl.cliCtx.Codec)
+	return validatorSlot{isValidator: isValidator, delay: delay}, err
 }
 
 // handleLog enqueues the processor task for a validated root chain log. The
 // validator that emitted the event on L1 submits it first when that's this
-// node; otherwise current validators submit it in slot order.
-func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event, slot validatorSlot) {
+// node; otherwise current validators submit it in slot order. It returns an
+// error only when the task couldn't be queued.
+func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event, slot validatorSlot) error {
 	spec, ok := rootChainEvents[selectedEvent.Name]
 	if !ok {
-		return
+		return nil
 	}
 
 	rl.Logger.Debug("RootChainListener: receivedEvent", "eventName", selectedEvent.Name)
@@ -47,13 +52,13 @@ func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event,
 	logBytes, err := json.Marshal(vLog)
 	if err != nil {
 		rl.Logger.Error(failedToMarshalLog, "error", err)
-		return
+		return nil
 	}
 
 	event, isSender, err := rl.decodeEventSender(vLog, selectedEvent)
 	if err != nil {
 		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
-		return
+		return nil
 	}
 
 	var delay time.Duration
@@ -62,12 +67,14 @@ func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event,
 	case slot.isValidator:
 		delay = slot.delay
 	default:
-		return
+		return nil
 	}
 
 	start := time.Now()
-	_ = rl.sendTask(spec.task, rootChainTaskRetryCount, delay+spec.extraDelay, stringArg(selectedEvent.Name), stringArg(string(logBytes)))
+	err = rl.sendTask(spec.task, rootChainTaskRetryCount, delay+spec.extraDelay, stringArg(selectedEvent.Name), stringArg(string(logBytes)))
 	util.LogElapsedTimeForStateSyncedEvent(event, "sendTask", start)
+
+	return err
 }
 
 // decodeEventSender decodes vLog and reports whether this node's validator

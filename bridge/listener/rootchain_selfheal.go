@@ -419,7 +419,13 @@ func (rl *RootChainListener) processEvent(ctx context.Context, vLog *types.Log) 
 
 	selectedEvent, ok := rl.eventMap[vLog.Topics[0]]
 	if _, handled := rootChainEvents[selectedEvent.Name]; ok && handled {
-		rl.handleLog(*vLog, selectedEvent, rl.currentValidatorSlot())
+		slot, err := rl.currentValidatorSlot()
+		if err != nil {
+			return false, err
+		}
+		if err := rl.handleLog(*vLog, selectedEvent, slot); err != nil {
+			return false, err
+		}
 	}
 
 	return false, nil
