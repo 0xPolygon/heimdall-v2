@@ -413,20 +413,28 @@ func (rl *RootChainListener) processEvent(ctx context.Context, vLog *types.Log) 
 		return true, err
 	}
 
+	return false, rl.dispatchRecoveredLog(vLog)
+}
+
+// dispatchRecoveredLog queues a self-healed log the same way the live poller
+// would, ignoring logs for events the listener doesn't handle.
+func (rl *RootChainListener) dispatchRecoveredLog(vLog *types.Log) error {
 	if len(vLog.Topics) == 0 {
-		return false, nil
+		return nil
 	}
 
 	selectedEvent, ok := rl.eventMap[vLog.Topics[0]]
-	if _, handled := rootChainEvents[selectedEvent.Name]; ok && handled {
-		slot, err := rl.currentValidatorSlot()
-		if err != nil {
-			return false, err
-		}
-		if err := rl.handleLog(*vLog, selectedEvent, slot); err != nil {
-			return false, err
-		}
+	if !ok {
+		return nil
+	}
+	if _, handled := rootChainEvents[selectedEvent.Name]; !handled {
+		return nil
 	}
 
-	return false, nil
+	slot, err := rl.currentValidatorSlot()
+	if err != nil {
+		return err
+	}
+
+	return rl.handleLog(*vLog, selectedEvent, slot)
 }
