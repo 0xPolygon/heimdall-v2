@@ -172,7 +172,8 @@ type rpcTransaction struct {
 }
 
 // NewContractCaller contract caller
-func NewContractCaller() (contractCallerObj ContractCaller, err error) {
+func NewContractCaller() (*ContractCaller, error) {
+	var contractCallerObj ContractCaller
 	config := GetConfig()
 	contractCallerObj.MainChainClient = GetMainClient()
 	contractCallerObj.MainChainTimeout = config.EthRPCTimeout
@@ -193,11 +194,11 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 	contractCallerObj.prefetchedReceipts = make(map[common.Hash]*ethTypes.Receipt)
 	contractCallerObj.finalizedHeaderCache = nil
 
-	if err = populateABIs(&contractCallerObj); err != nil {
-		return contractCallerObj, err
+	if err := populateABIs(&contractCallerObj); err != nil {
+		return nil, err
 	}
 
-	return contractCallerObj, nil
+	return &contractCallerObj, nil
 }
 
 // cachedBinding returns the binding of type T for address, constructing it

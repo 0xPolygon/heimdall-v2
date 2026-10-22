@@ -101,7 +101,7 @@ func NewBaseProcessor(cdc codec.Codec, queueConnector *queue.Connector, httpClie
 
 		cliCtx:         cliCtx,
 		queueConnector: queueConnector,
-		contractCaller: contractCaller,
+		contractCaller: *contractCaller,
 		txBroadcaster:  txBroadcaster,
 		httpClient:     httpClient,
 		storageClient:  util.GetBridgeDBInstance(viper.GetString(util.BridgeDBFlag)),

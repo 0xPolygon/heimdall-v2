@@ -109,7 +109,7 @@ func NewBaseListener(cdc codec.Codec, queueConnector *queue.Connector, httpClien
 		cliCtx:         cliCtx,
 		queueConnector: queueConnector,
 		httpClient:     httpClient,
-		contractCaller: contractCaller,
+		contractCaller: *contractCaller,
 		chainClient:    chainClient,
 
 		HeaderChannel: make(chan *blockHeader),
