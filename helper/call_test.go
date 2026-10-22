@@ -197,3 +197,25 @@ func TestContractInstanceCacheConcurrent(t *testing.T) {
 	close(start)
 	wg.Wait()
 }
+
+// TestContractInstanceCacheSameAddressDifferentBindings guards against two
+// binding types configured at the same address colliding in the cache.
+func TestContractInstanceCacheSameAddressDifferentBindings(t *testing.T) {
+	t.Parallel()
+
+	caller, err := NewContractCaller()
+	require.NoError(t, err)
+
+	const address = "0x0000000000000000000000000000000000000009"
+
+	rootChain, err := caller.GetRootChainInstance(address)
+	require.NoError(t, err)
+	stakingInfo, err := caller.GetStakingInfoInstance(address)
+	require.NoError(t, err)
+	require.NotNil(t, rootChain)
+	require.NotNil(t, stakingInfo)
+
+	cachedRootChain, err := caller.GetRootChainInstance(address)
+	require.NoError(t, err)
+	require.Same(t, rootChain, cachedRootChain)
+}
