@@ -37,10 +37,6 @@ func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event)
 		rl.handleStateSyncedLog(vLog, selectedEvent)
 	case helper.TopUpFeeEvent:
 		rl.handleTopUpFeeLog(vLog, selectedEvent)
-	case helper.SlashedEvent:
-		rl.handleSlashedLog(vLog, selectedEvent)
-	case helper.UnJailedEvent:
-		rl.handleUnJailedLog(vLog, selectedEvent)
 	}
 }
 
@@ -188,37 +184,5 @@ func (rl *RootChainListener) handleTopUpFeeLog(vLog types.Log, selectedEvent *ab
 		_ = rl.SendTaskWithDelay("sendTopUpFeeToHeimdall", selectedEvent.Name, logBytes, 0, event)
 	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
 		_ = rl.SendTaskWithDelay("sendTopUpFeeToHeimdall", selectedEvent.Name, logBytes, delay, event)
-	}
-}
-
-func (rl *RootChainListener) handleSlashedLog(vLog types.Log, selectedEvent *abi.Event) {
-	logBytes, err := json.Marshal(vLog)
-	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "error", err)
-		return
-	}
-
-	if isCurrentValidator, delay := util.CalculateTaskDelay(selectedEvent, rl.cliCtx.Codec); isCurrentValidator {
-		_ = rl.SendTaskWithDelay("sendTickAckToHeimdall", selectedEvent.Name, logBytes, delay, selectedEvent)
-	}
-}
-
-func (rl *RootChainListener) handleUnJailedLog(vLog types.Log, selectedEvent *abi.Event) {
-	logBytes, err := json.Marshal(vLog)
-	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "error", err)
-		return
-	}
-
-	event := new(stakinginfo.StakinginfoUnJailed)
-	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
-		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
-		return
-	}
-
-	if util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec) {
-		_ = rl.SendTaskWithDelay("sendUnjailToHeimdall", selectedEvent.Name, logBytes, 0, event)
-	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		_ = rl.SendTaskWithDelay("sendUnjailToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }

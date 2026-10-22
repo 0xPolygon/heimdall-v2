@@ -15,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
@@ -746,4 +748,13 @@ func TestRootChainListener_EdgeCases(t *testing.T) {
 
 		mockConnector.AssertExpectations(t)
 	})
+}
+
+// TestRootChainEvents_ExcludeUnprocessedEvents guards against querying L1 for
+// events no processor handles.
+func TestRootChainEvents_ExcludeUnprocessedEvents(t *testing.T) {
+	t.Parallel()
+
+	require.NotContains(t, rootChainEvents, helper.SlashedEvent)
+	require.NotContains(t, rootChainEvents, helper.UnJailedEvent)
 }

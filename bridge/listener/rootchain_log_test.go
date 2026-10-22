@@ -29,10 +29,6 @@ func TestRootChainListener_handleLog(t *testing.T) {
 			name:      "routes NewHeaderBlock event",
 			eventName: helper.NewHeaderBlockEvent,
 		},
-		{
-			name:      "routes Slashed event",
-			eventName: helper.SlashedEvent,
-		},
 	}
 
 	for _, tt := range simpleEvents {
@@ -79,12 +75,10 @@ func TestRootChainListener_handleLog(t *testing.T) {
 			helper.UnstakeInitEvent,
 			helper.StateSyncedEvent,
 			helper.TopUpFeeEvent,
-			helper.SlashedEvent,
-			helper.UnJailedEvent,
 		}
 
 		// Verify all event names are defined
-		require.Len(t, eventNames, 9)
+		require.Len(t, eventNames, 7)
 		for _, name := range eventNames {
 			require.NotEmpty(t, name)
 		}
@@ -248,40 +242,6 @@ func TestRootChainListener_handleStateSyncedLog(t *testing.T) {
 
 		require.NotPanics(t, func() {
 			listener.handleStateSyncedLog(vLog, selectedEvent)
-		})
-	})
-}
-
-// TestRootChainListener_handleSlashedLog tests slashing event handling
-func TestRootChainListener_handleSlashedLog(t *testing.T) {
-	t.Parallel()
-
-	t.Run("marshals slashed log", func(t *testing.T) {
-		t.Parallel()
-
-		interfaceRegistry := codectypes.NewInterfaceRegistry()
-		cdc := codec.NewProtoCodec(interfaceRegistry)
-
-		listener := &RootChainListener{
-			BaseListener: BaseListener{
-				Logger: log.NewNopLogger(),
-				cliCtx: client.Context{}.WithCodec(cdc),
-			},
-		}
-
-		vLog := types.Log{
-			Address:     common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"),
-			Topics:      []common.Hash{common.HexToHash("0xabc")},
-			Data:        []byte("slashed data"),
-			BlockNumber: 12345,
-		}
-
-		selectedEvent := &abi.Event{
-			Name: helper.SlashedEvent,
-		}
-
-		require.NotPanics(t, func() {
-			listener.handleSlashedLog(vLog, selectedEvent)
 		})
 	})
 }

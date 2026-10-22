@@ -135,8 +135,6 @@ var (
 		helper.UnstakeInitEvent:    {},
 		helper.StateSyncedEvent:    {},
 		helper.TopUpFeeEvent:       {},
-		helper.SlashedEvent:        {},
-		helper.UnJailedEvent:       {},
 	}
 )
 

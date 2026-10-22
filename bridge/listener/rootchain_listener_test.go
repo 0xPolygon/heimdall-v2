@@ -151,7 +151,6 @@ func TestEarlyReturn_HandlersWithBadABI(t *testing.T) {
 		{"UnstakeInit", func() { listener.handleUnstakeInitLog(vLog, &abi.Event{Name: helper.UnstakeInitEvent}) }},
 		{"StateSynced", func() { listener.handleStateSyncedLog(vLog, &abi.Event{Name: helper.StateSyncedEvent}) }},
 		{"TopUpFee", func() { listener.handleTopUpFeeLog(vLog, &abi.Event{Name: helper.TopUpFeeEvent}) }},
-		{"UnJailed", func() { listener.handleUnJailedLog(vLog, &abi.Event{Name: helper.UnJailedEvent}) }},
 	}
 
 	for _, h := range handlers {
