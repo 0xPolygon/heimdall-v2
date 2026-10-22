@@ -3,6 +3,7 @@ package listener
 import (
 	"context"
 	"math/big"
+	"sync"
 	"time"
 
 	"cosmossdk.io/log"
@@ -72,6 +73,10 @@ const (
 	rootChainTaskRetryCount = 5
 	blockTaskRetryCount     = 3
 )
+
+// unregisteredTaskWarned records the task names sendTask has already warned
+// about skipping, so a disabled processor is reported once per process.
+var unregisteredTaskWarned sync.Map
 
 type blockHeader struct {
 	header      *types.Header // block header
@@ -170,7 +175,9 @@ func (bl *BaseListener) StartPolling(ctx context.Context, pollInterval time.Dura
 // processor registered is skipped: the queue would redeliver it forever.
 func (bl *BaseListener) sendTask(taskName string, retryCount int, delay time.Duration, args ...tasks.Arg) error {
 	if !bl.taskQueue.IsTaskRegistered(taskName) {
-		bl.Logger.Debug("BaseListener: skipping task with no registered processor", "taskName", taskName)
+		if _, warned := unregisteredTaskWarned.LoadOrStore(taskName, struct{}{}); !warned {
+			bl.Logger.Warn("BaseListener: not queueing tasks with no registered processor; is the processor disabled by --only?", "taskName", taskName)
+		}
 		return nil
 	}
 
