@@ -307,19 +307,12 @@ func (c *ContractCaller) GetRootHash(ctx context.Context, start, end, checkpoint
 	callCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
-	var rootHash string
-	var err error
-
-	if c.BorChainGrpcFlag {
-		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
-		if grpcErr != nil {
-			return nil, grpcErr
-		}
-		rootHash, err = grpcClient.GetRootHash(callCtx, start, end)
-	} else {
-		rootHash, err = c.BorChainClient.GetRootHash(callCtx, start, end)
+	bor, err := c.borClient()
+	if err != nil {
+		return nil, err
 	}
 
+	rootHash, err := bor.GetRootHash(callCtx, start, end)
 	if err != nil {
 		Logger.Error("Could not fetch rootHash from bor chain", "error", err)
 		return nil, err
@@ -345,19 +338,12 @@ func (c *ContractCaller) GetVoteOnHash(start, end uint64, hash, milestoneID stri
 	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
 	defer cancel()
 
-	var vote bool
-	var err error
-
-	if c.BorChainGrpcFlag {
-		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
-		if grpcErr != nil {
-			return false, grpcErr
-		}
-		vote, err = grpcClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
-	} else {
-		vote, err = c.BorChainClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
+	bor, err := c.borClient()
+	if err != nil {
+		return false, err
 	}
 
+	vote, err := bor.GetVoteOnHash(ctx, start, end, hash, milestoneID)
 	if err != nil {
 		return false, errors.New(fmt.Sprint("Error in fetching vote from bor chain", "err", err))
 	}
@@ -524,24 +510,19 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
-	var latestBlock *ethTypes.Header
-
-	if c.BorChainGrpcFlag {
-		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
-		if grpcErr != nil {
-			Logger.Error(errUnableToConnect, "error", grpcErr)
-			return nil, grpcErr
-		}
-		if blockNum == nil {
-			// LatestBlockNumber is BlockNumber(-2) in go-ethereum rpc
-			latestBlock, err = grpcClient.HeaderByNumber(ctx, -2)
-		} else {
-			latestBlock, err = grpcClient.HeaderByNumber(ctx, blockNum.Int64())
-		}
-	} else {
-		latestBlock, err = c.BorChainClient.HeaderByNumber(ctx, blockNum)
+	bor, err := c.borClient()
+	if err != nil {
+		Logger.Error(errUnableToConnect, "error", err)
+		return nil, err
 	}
 
+	// LatestBlockNumber is BlockNumber(-2) in go-ethereum rpc
+	blockID := int64(rpc.LatestBlockNumber)
+	if blockNum != nil {
+		blockID = blockNum.Int64()
+	}
+
+	latestBlock, err := bor.HeaderByNumber(ctx, blockID)
 	if err != nil {
 		// both HTTP and gRPC map a missing block to ethereum.NotFound.
 		if !errors.Is(err, ethereum.NotFound) {
@@ -555,7 +536,7 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 
 // GetBorChainBlockInfoInBatch returns bor chain block headers, total difficulties,
 // and authors for the inclusive range [start, end]. It dispatches to gRPC when
-// BorChainGrpcFlag is set, otherwise falls back to the HTTP JSON-RPC batch.
+// BorChainGrpcFlag is set, otherwise to the HTTP JSON-RPC batch.
 // In both paths, it tries to get blocks from the range interval
 // but returns only the ones found on the chain.
 func (c *ContractCaller) GetBorChainBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
@@ -572,15 +553,12 @@ func (c *ContractCaller) GetBorChainBlockInfoInBatch(ctx context.Context, start,
 	timeoutCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
-	if c.BorChainGrpcFlag {
-		grpcClient, err := c.getRequiredBorGRPCClient()
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		return grpcClient.GetBlockInfoInBatch(timeoutCtx, start, end)
+	bor, err := c.borClient()
+	if err != nil {
+		return nil, nil, nil, err
 	}
 
-	return c.getBorChainBlockInfoInBatchHTTP(timeoutCtx, start, end)
+	return bor.GetBlockInfoInBatch(timeoutCtx, start, end)
 }
 
 // tdResp is the JSON shape returned by eth_getTdByNumber.
@@ -674,14 +652,14 @@ func collateBorBatchResults(start, totalBlocks int64, batchElems []rpc.BatchElem
 	return headers, tdSlice, authorSlice
 }
 
-// getBorChainBlockInfoInBatchHTTP is the HTTP/JSON-RPC implementation of GetBorChainBlockInfoInBatch.
+// GetBlockInfoInBatch is the HTTP/JSON-RPC implementation of GetBorChainBlockInfoInBatch.
 // It issues a single RPC batch call covering headers, total difficulties, and authors for the
 // inclusive range [start, end], and returns only the contiguous prefix of blocks found on the chain.
-func (c *ContractCaller) getBorChainBlockInfoInBatchHTTP(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
+func (h borHTTPClient) GetBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
 	// Range arithmetic compensated by the per-index bounds inside buildBorBatchElems/collateBorBatchResults.
 	// mutator-disable-next-line range-arithmetic compensated downstream
 	totalBlocks := end - start + 1
-	rpcClient := c.BorChainClient.Client()
+	rpcClient := h.client.Client()
 
 	headerResults := make([]*ethTypes.Header, totalBlocks)
 	tdResults := make([]*tdResp, totalBlocks)
@@ -706,36 +684,12 @@ func (c *ContractCaller) GetBorChainBlockTd(ctx context.Context, blockHash commo
 	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
-	if c.BorChainGrpcFlag {
-		grpcClient, err := c.getRequiredBorGRPCClient()
-		if err != nil {
-			return 0, err
-		}
-		return grpcClient.GetTdByHash(ctx, blockHash)
-	}
-
-	rpcClient := c.BorChainClient.Client()
-
-	var resp map[string]interface{}
-	if err := rpcClient.CallContext(ctx, &resp, "eth_getTdByHash", blockHash.Hex()); err != nil {
+	bor, err := c.borClient()
+	if err != nil {
 		return 0, err
 	}
-	// Same path for gRPC and HTTP: a missing block surfaces as ethereum.NotFound
-	if resp == nil || resp["totalDifficulty"] == nil {
-		return 0, ethereum.NotFound
-	}
 
-	raw, ok := resp["totalDifficulty"].(string)
-	if !ok {
-		return 0, fmt.Errorf("unexpected totalDifficulty type %T", resp["totalDifficulty"])
-	}
-
-	td, err := hexutil.DecodeUint64(raw)
-	if err != nil {
-		return 0, fmt.Errorf("failed to decode totalDifficulty %q: %w", raw, err)
-	}
-
-	return td, nil
+	return bor.GetTdByHash(ctx, blockHash)
 }
 
 // GetBorChainBlockAuthor returns the producer of the bor block
@@ -743,29 +697,15 @@ func (c *ContractCaller) GetBorChainBlockAuthor(ctx context.Context, blockNum *b
 	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
-	if c.BorChainGrpcFlag {
-		grpcClient, err := c.getRequiredBorGRPCClient()
-		if err != nil {
-			// the return on the next line is what matters; log deletion is observable only in ops.
-			// mutator-disable-next-line operator-log line
-			Logger.Error(errUnableToConnect, "error", err)
-			return nil, err
-		}
-		author, err := grpcClient.GetAuthor(ctx, blockNum)
-		if err != nil {
-			if !errors.Is(err, ethereum.NotFound) {
-				Logger.Error(errUnableToConnect, "error", err)
-			}
-			return nil, err
-		}
-		if author == nil {
-			return nil, ethereum.NotFound
-		}
-		return author, nil
+	bor, err := c.borClient()
+	if err != nil {
+		// the return on the next line is what matters; log deletion is observable only in ops.
+		// mutator-disable-next-line operator-log line
+		Logger.Error(errUnableToConnect, "error", err)
+		return nil, err
 	}
 
-	var author *common.Address
-	err := c.BorChainClient.Client().CallContext(ctx, &author, "bor_getAuthor", toBlockNumArg(blockNum))
+	author, err := bor.GetAuthor(ctx, blockNum)
 	if err != nil {
 		if !errors.Is(err, ethereum.NotFound) {
 			Logger.Error(errUnableToConnect, "error", err)
@@ -1026,20 +966,12 @@ func (c *ContractCaller) CheckIfBlocksExist(ctx context.Context, number uint64) 
 	callCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
-	var (
-		header *ethTypes.Header
-		err    error
-	)
-
-	if c.BorChainGrpcFlag {
-		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
-		if grpcErr != nil {
-			return false, grpcErr
-		}
-		header, err = grpcClient.HeaderByNumber(callCtx, int64(number))
-	} else {
-		header, err = c.BorChainClient.HeaderByNumber(callCtx, big.NewInt(int64(number)))
+	bor, err := c.borClient()
+	if err != nil {
+		return false, err
 	}
+
+	header, err := bor.HeaderByNumber(callCtx, int64(number))
 	if err != nil {
 		if errors.Is(err, ethereum.NotFound) {
 			return false, nil
@@ -1058,19 +990,12 @@ func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint6
 	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
-	var block *ethTypes.Block
-	var err error
-
-	if c.BorChainGrpcFlag {
-		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
-		if grpcErr != nil {
-			return nil, grpcErr
-		}
-		block, err = grpcClient.BlockByNumber(ctx, int64(blockNumber))
-	} else {
-		block, err = c.BorChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+	bor, err := c.borClient()
+	if err != nil {
+		return nil, err
 	}
 
+	block, err := bor.BlockByNumber(ctx, int64(blockNumber))
 	if err != nil {
 		Logger.Error("Unable to fetch block by number from child chain", "block", block, "err", err)
 		return nil, err
@@ -1088,7 +1013,7 @@ func (c *ContractCaller) GetMainTxReceipt(ctx context.Context, txHash common.Has
 	callCtx, cancel := context.WithTimeout(ctx, c.MainChainTimeout)
 	defer cancel()
 
-	return c.getTxReceipt(callCtx, c.MainChainClient, txHash)
+	return c.MainChainClient.TransactionReceipt(callCtx, txHash)
 }
 
 // BatchGetMainChainTxReceipts fetches multiple main chain tx receipts in a single JSON-RPC batch call.
@@ -1130,24 +1055,12 @@ func (c *ContractCaller) GetBorTxReceipt(txHash common.Hash) (*ethTypes.Receipt,
 	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
 	defer cancel()
 
-	if c.BorChainGrpcFlag {
-		grpcClient, err := c.getRequiredBorGRPCClient()
-		if err != nil {
-			return nil, err
-		}
-		return grpcClient.TransactionReceipt(ctx, txHash)
+	bor, err := c.borClient()
+	if err != nil {
+		return nil, err
 	}
-	return c.getTxReceipt(ctx, c.BorChainClient, txHash)
-}
 
-func (c *ContractCaller) getTxReceipt(
-	ctx context.Context,
-	client interface {
-		TransactionReceipt(context.Context, common.Hash) (*ethTypes.Receipt, error)
-	},
-	txHash common.Hash,
-) (*ethTypes.Receipt, error) {
-	return client.TransactionReceipt(ctx, txHash)
+	return bor.TransactionReceipt(ctx, txHash)
 }
 
 // GetCheckpointSign returns sigs input of committed checkpoint transaction
@@ -1171,12 +1084,87 @@ func (c *ContractCaller) GetCheckpointSign(txHash common.Hash) ([]byte, []byte, 
 	return UnpackSigAndVotes(payload, chainABI)
 }
 
-// getRequiredBorGRPCClient returns the bor grpc client or an error
-func (c *ContractCaller) getRequiredBorGRPCClient() (BorGRPCClienter, error) {
+// borReader is the set of Bor queries the contract caller makes. The Bor gRPC
+// client implements it directly; borHTTPClient implements it over JSON-RPC.
+type borReader interface {
+	HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error)
+	BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error)
+	GetRootHash(ctx context.Context, startBlock uint64, endBlock uint64) (string, error)
+	GetVoteOnHash(ctx context.Context, startBlock uint64, endBlock uint64, rootHash string, milestoneId string) (bool, error)
+	GetAuthor(ctx context.Context, blockNum *big.Int) (*common.Address, error)
+	GetTdByHash(ctx context.Context, hash common.Hash) (uint64, error)
+	GetBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error)
+	TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error)
+}
+
+// borClient returns the Bor transport selected by BorChainGrpcFlag.
+func (c *ContractCaller) borClient() (borReader, error) {
+	if !c.BorChainGrpcFlag {
+		return borHTTPClient{client: c.BorChainClient}, nil
+	}
 	if c.BorChainGrpcClient == nil {
 		return nil, errors.New("bor grpc client is nil while bor grpc flag is enabled")
 	}
 	return c.BorChainGrpcClient, nil
+}
+
+// borHTTPClient serves borReader over Bor's JSON-RPC endpoint.
+type borHTTPClient struct {
+	client *ethclient.Client
+}
+
+func (h borHTTPClient) HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error) {
+	return h.client.HeaderByNumber(ctx, big.NewInt(blockID))
+}
+
+func (h borHTTPClient) BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error) {
+	return h.client.BlockByNumber(ctx, big.NewInt(blockID))
+}
+
+func (h borHTTPClient) GetRootHash(ctx context.Context, startBlock uint64, endBlock uint64) (string, error) {
+	return h.client.GetRootHash(ctx, startBlock, endBlock)
+}
+
+func (h borHTTPClient) GetVoteOnHash(ctx context.Context, startBlock uint64, endBlock uint64, rootHash string, milestoneId string) (bool, error) {
+	return h.client.GetVoteOnHash(ctx, startBlock, endBlock, rootHash, milestoneId)
+}
+
+func (h borHTTPClient) GetAuthor(ctx context.Context, blockNum *big.Int) (*common.Address, error) {
+	var author *common.Address
+	if err := h.client.Client().CallContext(ctx, &author, "bor_getAuthor", toBlockNumArg(blockNum)); err != nil {
+		return nil, err
+	}
+	return author, nil
+}
+
+func (h borHTTPClient) TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error) {
+	return h.client.TransactionReceipt(ctx, txHash)
+}
+
+// GetTdByHash returns the total difficulty of the block with the given hash.
+func (h borHTTPClient) GetTdByHash(ctx context.Context, blockHash common.Hash) (uint64, error) {
+	rpcClient := h.client.Client()
+
+	var resp map[string]interface{}
+	if err := rpcClient.CallContext(ctx, &resp, "eth_getTdByHash", blockHash.Hex()); err != nil {
+		return 0, err
+	}
+	// Same path for gRPC and HTTP: a missing block surfaces as ethereum.NotFound
+	if resp == nil || resp["totalDifficulty"] == nil {
+		return 0, ethereum.NotFound
+	}
+
+	raw, ok := resp["totalDifficulty"].(string)
+	if !ok {
+		return 0, fmt.Errorf("unexpected totalDifficulty type %T", resp["totalDifficulty"])
+	}
+
+	td, err := hexutil.DecodeUint64(raw)
+	if err != nil {
+		return 0, fmt.Errorf("failed to decode totalDifficulty %q: %w", raw, err)
+	}
+
+	return td, nil
 }
 
 // utility and helper methods
