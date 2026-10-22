@@ -144,7 +144,7 @@ message MsgCpNoAck {
 #### Send checkpoint
 
 ```bash
-heimdalld tx checkpoint send-checkpoint --proposer=<proposer-address> --start-block=<start-block-number> --end-block=<end-block-number> --root-hash=<root-hash> --account-root=<account-root> --bor-chain-id=<bor-chain-id> --auto-configure=true/false
+heimdalld tx checkpoint send-checkpoint --proposer=<proposer-address> --start-block=<start-block-number> --end-block=<end-block-number> --root-hash=<root-hash> --account-root-hash=<account-root-hash> --bor-chain-id=<bor-chain-id> --auto-configure=true/false
 ```
 
 #### Send checkpoint ack
@@ -179,9 +179,9 @@ One can run the following query commands from the checkpoint module:
 - `get-checkpoint-buffer` - Get the checkpoint buffer
 - `get-last-no-ack` - Get the last no ack
 - `get-next-checkpoint` - Get the next checkpoint
-- `get-current-proposer` - Get the current proposer
-- `get-proposers` - Get the proposers
 - `get-checkpoint-list` - Get the list of checkpoints
+
+The current checkpoint proposer is served by the stake module: `heimdalld query stake get-current-proposer`.
 
 ```bash
 heimdalld query checkpoint get-params
@@ -213,14 +213,6 @@ heimdalld query checkpoint get-last-no-ack
 
 ```bash
 heimdalld query checkpoint get-next-checkpoint
-```
-
-```bash
-heimdalld query checkpoint get-current-proposer
-```
-
-```bash
-heimdalld query checkpoint get-proposers
 ```
 
 ```bash
@@ -261,19 +253,11 @@ grpcurl -plaintext -d '{"bor_chain_id": <>}' localhost:9090 heimdallv2.checkpoin
 ```
 
 ```bash
-grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.checkpoint.Query/GetCurrentProposer
-```
-
-```bash
-grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.checkpoint.Query/GetProposers
-```
-
-```bash
 grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.checkpoint.Query/GetCheckpointList
 ```
 
 ```bash
-grpcurl -plaintext -d '{"tx_hash": <>}' localhost:9090 heimdallv2.checkpoint.QueryGetCheckpointSignatures
+grpcurl -plaintext -d '{"tx_hash": <>}' localhost:9090 heimdallv2.checkpoint.Query/GetCheckpointSignatures
 ```
 
 ```bash
