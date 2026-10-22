@@ -870,15 +870,16 @@ func (c *ContractCaller) GetConfirmedTxReceipt(ctx context.Context, tx common.Ha
 	return receipt, nil
 }
 
-// DecodeNewHeaderBlockEvent represents the new header block event
-func (c *ContractCaller) DecodeNewHeaderBlockEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*rootchain.RootchainNewHeaderBlock, error) {
-	event := new(rootchain.RootchainNewHeaderBlock)
+// decodeLog unpacks the log at logIndex in receipt as eventName, accepting it
+// only if it was emitted by contractAddressString.
+func decodeLog[T any](contractABI *abi.ABI, eventName, contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*T, error) {
+	event := new(T)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.RootChainABI, event, NewHeaderBlockEvent, vLog); err != nil {
+			if err := UnpackLog(contractABI, event, eventName, vLog); err != nil {
 				return nil, err
 			}
 
@@ -887,160 +888,53 @@ func (c *ContractCaller) DecodeNewHeaderBlockEvent(contractAddressString string,
 	}
 
 	return nil, errors.New(errEventNotFound)
+}
+
+// DecodeNewHeaderBlockEvent represents the new header block event
+func (c *ContractCaller) DecodeNewHeaderBlockEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*rootchain.RootchainNewHeaderBlock, error) {
+	return decodeLog[rootchain.RootchainNewHeaderBlock](&c.RootChainABI, NewHeaderBlockEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeValidatorTopupFeesEvent represents topUp for fees tokens
 func (c *ContractCaller) DecodeValidatorTopupFeesEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoTopUpFee, error) {
-	event := new(stakinginfo.StakinginfoTopUpFee)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, TopUpFeeEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoTopUpFee](&c.StakingInfoABI, TopUpFeeEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeValidatorJoinEvent represents validator staked event
 func (c *ContractCaller) DecodeValidatorJoinEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStaked, error) {
-	event := new(stakinginfo.StakinginfoStaked)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, StakedEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoStaked](&c.StakingInfoABI, StakedEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeValidatorStakeUpdateEvent represents validator stake update event
 func (c *ContractCaller) DecodeValidatorStakeUpdateEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStakeUpdate, error) {
-	event := new(stakinginfo.StakinginfoStakeUpdate)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, StakeUpdateEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoStakeUpdate](&c.StakingInfoABI, StakeUpdateEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeValidatorExitEvent represents validator stake unStake event
 func (c *ContractCaller) DecodeValidatorExitEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnstakeInit, error) {
-	event := new(stakinginfo.StakinginfoUnstakeInit)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, UnstakeInitEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoUnstakeInit](&c.StakingInfoABI, UnstakeInitEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeSignerUpdateEvent represents sig update event
 func (c *ContractCaller) DecodeSignerUpdateEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSignerChange, error) {
-	event := new(stakinginfo.StakinginfoSignerChange)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, SignerChangeEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoSignerChange](&c.StakingInfoABI, SignerChangeEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeStateSyncedEvent decode state sync data
 func (c *ContractCaller) DecodeStateSyncedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*statesender.StatesenderStateSynced, error) {
-	event := new(statesender.StatesenderStateSynced)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StateSenderABI, event, StateSyncedEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[statesender.StatesenderStateSynced](&c.StateSenderABI, StateSyncedEvent, contractAddressString, receipt, logIndex)
 }
 
 // decode slashing events
 
 // DecodeSlashedEvent represents tick ack on contract
 func (c *ContractCaller) DecodeSlashedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSlashed, error) {
-	event := new(stakinginfo.StakinginfoSlashed)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, SlashedEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoSlashed](&c.StakingInfoABI, SlashedEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeUnJailedEvent represents unJail on contract
 func (c *ContractCaller) DecodeUnJailedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnJailed, error) {
-	event := new(stakinginfo.StakinginfoUnJailed)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, UnJailedEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoUnJailed](&c.StakingInfoABI, UnJailedEvent, contractAddressString, receipt, logIndex)
 }
 
 //

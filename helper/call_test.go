@@ -3,6 +3,7 @@ package helper
 import (
 	"encoding/hex"
 	"errors"
+	"math/big"
 	"sync"
 	"testing"
 
@@ -10,6 +11,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/erc20"
@@ -218,4 +221,48 @@ func TestContractInstanceCacheSameAddressDifferentBindings(t *testing.T) {
 	cachedRootChain, err := caller.GetRootChainInstance(address)
 	require.NoError(t, err)
 	require.Same(t, rootChain, cachedRootChain)
+}
+
+// TestDecodeLog checks that a log is decoded only when both its index and its
+// emitting contract match, and only as the event its topic identifies.
+func TestDecodeLog(t *testing.T) {
+	t.Parallel()
+
+	caller, err := NewContractCaller()
+	require.NoError(t, err)
+
+	rootChain := common.HexToAddress("0x00000000000000000000000000000000000000aa")
+	event := caller.RootChainABI.Events[NewHeaderBlockEvent]
+	data, err := event.Inputs.NonIndexed().Pack(big.NewInt(1), big.NewInt(256), [32]byte{1})
+	require.NoError(t, err)
+
+	headerBlockLog := &ethTypes.Log{
+		Address: rootChain,
+		Topics: []common.Hash{
+			event.ID,
+			common.BytesToHash(common.HexToAddress("0x00000000000000000000000000000000000000bb").Bytes()),
+			common.BigToHash(big.NewInt(10000)),
+			common.BigToHash(big.NewInt(0)),
+		},
+		Data:  data,
+		Index: 3,
+	}
+	otherContractLog := *headerBlockLog
+	otherContractLog.Address = common.HexToAddress("0x00000000000000000000000000000000000000cc")
+	otherContractLog.Index = 4
+	receipt := &ethTypes.Receipt{Logs: []*ethTypes.Log{headerBlockLog, &otherContractLog}}
+
+	decoded, err := caller.DecodeNewHeaderBlockEvent(rootChain.Hex(), receipt, 3)
+	require.NoError(t, err)
+	require.Equal(t, int64(256), decoded.End.Int64())
+	require.Equal(t, int64(10000), decoded.HeaderBlockId.Int64())
+
+	_, err = caller.DecodeNewHeaderBlockEvent(rootChain.Hex(), receipt, 4)
+	require.ErrorContains(t, err, errEventNotFound, "log at the index from another contract must not match")
+
+	_, err = caller.DecodeNewHeaderBlockEvent(rootChain.Hex(), receipt, 5)
+	require.ErrorContains(t, err, errEventNotFound)
+
+	_, err = caller.DecodeValidatorTopupFeesEvent(rootChain.Hex(), receipt, 3)
+	require.ErrorContains(t, err, "topic event mismatch")
 }
