@@ -19,27 +19,20 @@ import (
 func TestHeimdallListener_Stop(t *testing.T) {
 	t.Parallel()
 
-	t.Run("calls cancel functions and sets them to nil", func(t *testing.T) {
+	t.Run("calls the cancel function and sets it to nil", func(t *testing.T) {
 		t.Parallel()
 
 		listener := &HeimdallListener{}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
-		subscriptionCalled := false
 		headerProcessCalled := false
-
-		listener.BaseListener.cancelSubscription = func() {
-			subscriptionCalled = true
-		}
 		listener.BaseListener.cancelHeaderProcess = func() {
 			headerProcessCalled = true
 		}
 
 		listener.Stop()
 
-		require.True(t, subscriptionCalled)
 		require.True(t, headerProcessCalled)
-		require.Nil(t, listener.cancelSubscription)
 		require.Nil(t, listener.cancelHeaderProcess)
 	})
 
@@ -48,14 +41,12 @@ func TestHeimdallListener_Stop(t *testing.T) {
 
 		listener := &HeimdallListener{}
 		listener.BaseListener.Logger = log.NewNopLogger()
-		listener.BaseListener.cancelSubscription = nil
 		listener.BaseListener.cancelHeaderProcess = nil
 
 		require.NotPanics(t, func() {
 			listener.Stop()
 		})
 
-		require.Nil(t, listener.cancelSubscription)
 		require.Nil(t, listener.cancelHeaderProcess)
 	})
 }

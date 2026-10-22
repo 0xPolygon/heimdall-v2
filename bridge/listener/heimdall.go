@@ -45,12 +45,6 @@ func (hl *HeimdallListener) Start() error {
 func (hl *HeimdallListener) Stop() {
 	hl.Logger.Info("HeimdallListener: stopping")
 
-	// cancel subscription if any, and clean up reference
-	if hl.cancelSubscription != nil {
-		hl.cancelSubscription()
-		hl.cancelSubscription = nil
-	}
-
 	// cancel header processing if any, and clean up reference
 	if hl.cancelHeaderProcess != nil {
 		hl.cancelHeaderProcess()

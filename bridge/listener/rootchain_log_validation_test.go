@@ -1083,8 +1083,8 @@ func TestProcessRootChainBlockRange_QuarantineDispatchesOtherValidLogsInTheSameB
 	})
 	rl.logFailureCounts = map[string]uint64{rootChainLogKey(*badLog): maxRootChainLogRejections - 1}
 
-	// handleLog itself always runs; every handleXLog variant's actual send
-	// is gated behind a validator-set REST check this test doesn't stand up.
+	// handleLog itself always runs; its actual send is gated behind a
+	// validator-set REST check this test doesn't stand up.
 	// onLogDispatched is the seam that makes dispatch observable regardless,
 	// so this test would fail if the dispatch loop were ever deleted.
 	var dispatched []common.Hash

@@ -108,51 +108,6 @@ func BenchmarkIsOldTx(b *testing.B) {
 	}
 }
 
-func BenchmarkSendTaskWithDelay(b *testing.B) {
-	ts := make([]time.Duration, 0, b.N)
-	for i := 0; i < b.N; i++ {
-		ts = append(ts, time.Duration(generateRandNumber(60)))
-	}
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	b.StopTimer()
-
-	for i := 0; i < b.N; i++ {
-		func() {
-			b.Logf("Executing iteration '%d' out of '%d'", i, b.N)
-
-			// given
-			mockCtrl := prepareMockData(b)
-			defer mockCtrl.Finish()
-
-			logs, err := prepareDummyLogBytes()
-			if err != nil {
-				b.Fatal("Error creating test data")
-			}
-
-			rcl, stopFn, err := prepareRootChainListener()
-			if err != nil {
-				b.Fatal("Error initializing test listener")
-			}
-
-			defer stopFn()
-
-			// when
-			b.StartTimer()
-			// This will trigger error="Set state pending error: dial tcp 127.0.0.1:6379: connect: connection refused"
-			// it's fine as long as we don't want to test the actual sendTask to rabbitmq
-			rcl.SendTaskWithDelay(
-				"sendStateSyncedToHeimdall", "StateSynced",
-				logs.Bytes(), ts[i], nil)
-			b.StopTimer()
-
-			// then
-			b.Logf("SendTaskWithDelay tested successfully")
-		}()
-	}
-}
-
 func BenchmarkCalculateTaskDelay(b *testing.B) {
 	interfaceRegistry := codectypes.NewInterfaceRegistry()
 	cryptocodec.RegisterInterfaces(interfaceRegistry)
@@ -409,7 +364,7 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 	}
 
 	rcl.BaseListener = *listener.NewBaseListener(
-		client.Context{}.WithCodec(cdc), &queue.Connector{Server: server}, nil, contractCaller, helper.GetMainClient(), "rootChain", rcl)
+		client.Context{}.WithCodec(cdc), &queue.Connector{Server: server}, nil, helper.GetMainClient(), "rootChain", rcl)
 
 	stopFn = func() {
 		rcl.Stop()

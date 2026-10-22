@@ -114,8 +114,8 @@ func TestEarlyReturn_UnpackLogError(t *testing.T) {
 
 	selectedEvent := &abi.Event{Name: helper.StateSyncedEvent}
 
-	// UnpackLog fails → handler should return early without panicking
-	// and without calling SendTaskWithDelay (which would panic since queueConnector is nil)
+	// decoding fails → handleLog should return early without panicking
+	// and without reaching sendTask (which would panic since taskQueue is nil)
 	require.NotPanics(t, func() {
 		listener.handleLog(vLog, selectedEvent, validatorSlot{})
 	})
@@ -139,9 +139,8 @@ func TestEarlyReturn_HandlersWithBadABI(t *testing.T) {
 		BlockNumber: 100,
 	}
 
-	// All handlers that decode events should return early on UnpackLog error.
-	// If they don't return early, they'd try to call SendTaskWithDelay
-	// which would panic because queueConnector is nil.
+	// handleLog should return early when an event fails to decode. If it
+	// didn't, it would reach sendTask, which panics because taskQueue is nil.
 	handlers := []struct {
 		name string
 		fn   func()
@@ -157,7 +156,7 @@ func TestEarlyReturn_HandlersWithBadABI(t *testing.T) {
 		t.Run(h.name, func(t *testing.T) {
 			t.Parallel()
 			require.NotPanics(t, h.fn,
-				"%s should return early on UnpackLog error, not reach SendTaskWithDelay", h.name)
+				"%s should return early on a decode error, not reach sendTask", h.name)
 		})
 	}
 }

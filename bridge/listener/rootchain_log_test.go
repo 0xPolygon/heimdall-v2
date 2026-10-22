@@ -68,8 +68,7 @@ func TestRootChainListener_handleLog(t *testing.T) {
 	t.Run("dispatches to correct handler", func(t *testing.T) {
 		t.Parallel()
 
-		// Test that handleLog has a switch statement that routes to different handlers
-		// We verify this by checking that different event names exist
+		// handleLog routes every event in rootChainEvents
 		eventNames := []string{
 			helper.NewHeaderBlockEvent,
 			helper.StakedEvent,
@@ -349,8 +348,6 @@ func TestRootChainListener_EventConstants(t *testing.T) {
 		require.NotEmpty(t, helper.UnstakeInitEvent)
 		require.NotEmpty(t, helper.StateSyncedEvent)
 		require.NotEmpty(t, helper.TopUpFeeEvent)
-		require.NotEmpty(t, helper.SlashedEvent)
-		require.NotEmpty(t, helper.UnJailedEvent)
 	})
 }
 
@@ -382,8 +379,6 @@ func TestRootChainListener_LogHandlingEdgeCases(t *testing.T) {
 			listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
-
-	// "handles zero block number" test removed - calls handleStakedLog with invalid ABI data
 
 	t.Run("handles maximum uint64 block number", func(t *testing.T) {
 		t.Parallel()

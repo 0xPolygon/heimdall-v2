@@ -15,11 +15,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-
-	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
+func TestRootChainListener_sendTask(t *testing.T) {
 	t.Parallel()
 
 	t.Run("sends task with correct signature structure", func(t *testing.T) {
@@ -57,7 +55,7 @@ func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
 			return sig.ETA.Sub(expectedTime).Abs() < time.Second
 		})).Return(nil, nil).Once()
 
-		_ = listener.SendTaskWithDelay(taskName, eventName, logBytes, delay, nil)
+		_ = listener.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -86,7 +84,7 @@ func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
 			return timeDiff < time.Second
 		})).Return(nil, nil).Once()
 
-		_ = listener.SendTaskWithDelay(taskName, eventName, logBytes, delay, nil)
+		_ = listener.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -109,7 +107,7 @@ func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
 				sig.Args[1].Type == "string"
 		})).Return(nil, nil).Once()
 
-		_ = listener.SendTaskWithDelay(taskName, eventName, logBytes, 0, nil)
+		_ = listener.sendTask(taskName, rootChainTaskRetryCount, 0, stringArg(eventName), stringArg(string(logBytes)))
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -671,7 +669,7 @@ func TestRootChainListener_Integration(t *testing.T) {
 				sig.Args[1].Value == string(logBytes)
 		})).Return(nil, nil).Once()
 
-		_ = listener.SendTaskWithDelay(taskName, eventName, logBytes, delay, nil)
+		_ = listener.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
 
 		// Wait for the task to be sent
 		select {
@@ -700,7 +698,7 @@ func TestRootChainListener_EdgeCases(t *testing.T) {
 		})).Return(nil, nil).Once()
 
 		require.NotPanics(t, func() {
-			_ = listener.SendTaskWithDelay("test", "", []byte("{}"), 0, nil)
+			_ = listener.sendTask("test", rootChainTaskRetryCount, 0, stringArg(""), stringArg(string([]byte("{}"))))
 		})
 
 		mockConnector.AssertExpectations(t)
@@ -718,7 +716,7 @@ func TestRootChainListener_EdgeCases(t *testing.T) {
 		})).Return(nil, nil).Once()
 
 		require.NotPanics(t, func() {
-			_ = listener.SendTaskWithDelay("test", "event", []byte(""), 0, nil)
+			_ = listener.sendTask("test", rootChainTaskRetryCount, 0, stringArg("event"), stringArg(string([]byte(""))))
 		})
 
 		mockConnector.AssertExpectations(t)
@@ -743,18 +741,9 @@ func TestRootChainListener_EdgeCases(t *testing.T) {
 		})).Return(nil, nil).Once()
 
 		require.NotPanics(t, func() {
-			_ = listener.SendTaskWithDelay("test", "event", []byte("{}"), largeDelay, nil)
+			_ = listener.sendTask("test", rootChainTaskRetryCount, largeDelay, stringArg("event"), stringArg(string([]byte("{}"))))
 		})
 
 		mockConnector.AssertExpectations(t)
 	})
-}
-
-// TestRootChainEvents_ExcludeUnprocessedEvents guards against querying L1 for
-// events no processor handles.
-func TestRootChainEvents_ExcludeUnprocessedEvents(t *testing.T) {
-	t.Parallel()
-
-	require.NotContains(t, rootChainEvents, helper.SlashedEvent)
-	require.NotContains(t, rootChainEvents, helper.UnJailedEvent)
 }

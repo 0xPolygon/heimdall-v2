@@ -84,10 +84,10 @@ func newCheckpointAckTestListener(t *testing.T, routes checkpointAckTestRoutes) 
 
 	rl := &RootChainListener{
 		BaseListener: BaseListener{
-			Logger:         log.NewNopLogger(),
-			cliCtx:         client.Context{}.WithCodec(cdc),
-			contractCaller: &helper.ContractCaller{},
+			Logger: log.NewNopLogger(),
+			cliCtx: client.Context{}.WithCodec(cdc),
 		},
+		contractCaller: &helper.ContractCaller{},
 	}
 	return rl
 }
@@ -654,7 +654,7 @@ func TestGetStateSynced_ReceiptValidation(t *testing.T) {
 func TestConfirmHeaderBlockId(t *testing.T) {
 	const rootChainAddr = "0x107a27363FE1Ba8578B8a8c76acDB237cDB35533"
 
-	rl := &RootChainListener{BaseListener: BaseListener{contractCaller: &helper.ContractCaller{}}}
+	rl := &RootChainListener{contractCaller: &helper.ContractCaller{}}
 
 	t.Run("rejects a malformed log index", func(t *testing.T) {
 		err := rl.confirmHeaderBlockId(nil, rootChainAddr, "not-a-number", "60000")
@@ -670,7 +670,7 @@ func TestConfirmHeaderBlockId(t *testing.T) {
 
 	t.Run("increments the self-heal rejection metric on every rejection branch", func(t *testing.T) {
 		rootChainABI := rootChainABIForTest(t)
-		rlWithABI := &RootChainListener{BaseListener: BaseListener{contractCaller: &helper.ContractCaller{}}}
+		rlWithABI := &RootChainListener{contractCaller: &helper.ContractCaller{}}
 		rlWithABI.contractCaller.RootChainABI = rootChainABI
 
 		mismatchLog := newHeaderBlockLog(t, rootChainABI, common.HexToAddress(rootChainAddr), 60000, 42,
@@ -700,7 +700,7 @@ func TestConfirmHeaderBlockId(t *testing.T) {
 func TestConfirmStateSyncedId(t *testing.T) {
 	const stateSenderAddr = "0xb661f1577e8749456FA749d44e8A77A9d604e603"
 
-	rl := &RootChainListener{BaseListener: BaseListener{contractCaller: &helper.ContractCaller{}}}
+	rl := &RootChainListener{contractCaller: &helper.ContractCaller{}}
 
 	t.Run("rejects a malformed log index", func(t *testing.T) {
 		err := rl.confirmStateSyncedId(nil, stateSenderAddr, "not-a-number", 5)
@@ -716,7 +716,7 @@ func TestConfirmStateSyncedId(t *testing.T) {
 
 	t.Run("rejects an oversized decoded id whose Int64() truncation would falsely match", func(t *testing.T) {
 		stateSenderABI := stateSenderABIForTest(t)
-		rlWithABI := &RootChainListener{BaseListener: BaseListener{contractCaller: &helper.ContractCaller{}}}
+		rlWithABI := &RootChainListener{contractCaller: &helper.ContractCaller{}}
 		rlWithABI.contractCaller.StateSenderABI = stateSenderABI
 
 		// 2^64+5: doesn't fit in int64, but its low 64 bits equal 5, so the
@@ -749,7 +749,7 @@ func TestConfirmStateSyncedId(t *testing.T) {
 
 	t.Run("increments the self-heal rejection metric on every rejection branch", func(t *testing.T) {
 		stateSenderABI := stateSenderABIForTest(t)
-		rlWithABI := &RootChainListener{BaseListener: BaseListener{contractCaller: &helper.ContractCaller{}}}
+		rlWithABI := &RootChainListener{contractCaller: &helper.ContractCaller{}}
 		rlWithABI.contractCaller.StateSenderABI = stateSenderABI
 
 		mismatchLog := newStateSyncedLog(t, stateSenderABI, common.HexToAddress(stateSenderAddr), 5, 42,

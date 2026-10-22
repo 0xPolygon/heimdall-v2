@@ -17,7 +17,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/bridge/queue"
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 // Listener is a chain event listener run by the listener service.
@@ -38,9 +37,6 @@ type BaseListener struct {
 
 	// The "subclass" of BaseService
 	impl headerProcessor
-
-	// contract caller
-	contractCaller *helper.ContractCaller
 
 	chainClient *ethclient.Client
 
@@ -83,18 +79,17 @@ type blockHeader struct {
 }
 
 // NewBaseListener creates a new BaseListener.
-func NewBaseListener(cliCtx client.Context, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, contractCaller *helper.ContractCaller, chainClient *ethclient.Client, name string, impl headerProcessor) *BaseListener {
+func NewBaseListener(cliCtx client.Context, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, chainClient *ethclient.Client, name string, impl headerProcessor) *BaseListener {
 	return &BaseListener{
 		Logger:        util.Logger().With("service", "listener", "module", name),
 		name:          name,
 		impl:          impl,
 		storageClient: util.GetBridgeDBInstance(viper.GetString(util.BridgeDBFlag)),
 
-		cliCtx:         cliCtx,
-		taskQueue:      queueConnector.Server,
-		httpClient:     httpClient,
-		contractCaller: contractCaller,
-		chainClient:    chainClient,
+		cliCtx:      cliCtx,
+		taskQueue:   queueConnector.Server,
+		httpClient:  httpClient,
+		chainClient: chainClient,
 
 		HeaderChannel: make(chan *blockHeader),
 	}
@@ -182,7 +177,7 @@ func (bl *BaseListener) sendTask(taskName string, retryCount int, delay time.Dur
 	eta := time.Now().Add(delay)
 	signature := &tasks.Signature{Name: taskName, Args: args, RetryCount: retryCount, ETA: &eta}
 
-	bl.Logger.Debug("BaseListener: sending task", "taskName", taskName, "eta", eta)
+	bl.Logger.Info("BaseListener: sending task", "taskName", taskName, "eta", eta)
 
 	if _, err := bl.taskQueue.SendTask(signature); err != nil {
 		bl.Logger.Error("BaseListener: error sending task", "taskName", taskName, "error", err)

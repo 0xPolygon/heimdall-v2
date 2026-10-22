@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -36,7 +37,7 @@ func (rl *RootChainListener) currentValidatorSlot() validatorSlot {
 // validator that emitted the event on L1 submits it first when that's this
 // node; otherwise current validators submit it in slot order.
 func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event, slot validatorSlot) {
-	taskName, ok := rootChainEvents[selectedEvent.Name]
+	spec, ok := rootChainEvents[selectedEvent.Name]
 	if !ok {
 		return
 	}
@@ -64,12 +65,9 @@ func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event,
 		return
 	}
 
-	// Validator joins are submitted one slot later than other events.
-	if selectedEvent.Name == helper.StakedEvent {
-		delay += util.TaskDelayBetweenEachVal
-	}
-
-	_ = rl.SendTaskWithDelay(taskName, selectedEvent.Name, logBytes, delay, event)
+	start := time.Now()
+	_ = rl.sendTask(spec.task, rootChainTaskRetryCount, delay+spec.extraDelay, stringArg(selectedEvent.Name), stringArg(string(logBytes)))
+	util.LogElapsedTimeForStateSyncedEvent(event, "sendTask", start)
 }
 
 // decodeEventSender decodes vLog and reports whether this node's validator
@@ -128,9 +126,12 @@ func (rl *RootChainListener) decodeEventSender(vLog types.Log, selectedEvent *ab
 			return nil, false, err
 		}
 		return event, bytes.Equal(event.User.Bytes(), helper.GetAddress()), nil
+
+	case helper.NewHeaderBlockEvent:
+		return nil, false, nil
 	}
 
-	return selectedEvent, false, nil
+	return nil, false, fmt.Errorf("no decoder for root chain event %s", selectedEvent.Name)
 }
 
 func unpackEvent[T any](contractABI *abi.ABI, vLog *types.Log, eventName string) (*T, error) {

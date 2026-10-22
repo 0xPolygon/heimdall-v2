@@ -37,15 +37,15 @@ func NewListenerService(cliCtx client.Context, queueConnector *queue.Connector, 
 	)
 
 	rootChainListener := NewRootChainListener(contractCaller)
-	rootChainListener.BaseListener = *NewBaseListener(cliCtx, queueConnector, httpClient, contractCaller, helper.GetMainClient(), rootChainListenerStr, rootChainListener)
+	rootChainListener.BaseListener = *NewBaseListener(cliCtx, queueConnector, httpClient, helper.GetMainClient(), rootChainListenerStr, rootChainListener)
 	listenerService.listeners = append(listenerService.listeners, rootChainListener)
 
 	borChainListener := &BorChainListener{}
-	borChainListener.BaseListener = *NewBaseListener(cliCtx, queueConnector, httpClient, contractCaller, helper.GetBorClient(), borChainListenerStr, borChainListener)
+	borChainListener.BaseListener = *NewBaseListener(cliCtx, queueConnector, httpClient, helper.GetBorClient(), borChainListenerStr, borChainListener)
 	listenerService.listeners = append(listenerService.listeners, borChainListener)
 
 	heimdallListener := &HeimdallListener{}
-	heimdallListener.BaseListener = *NewBaseListener(cliCtx, queueConnector, httpClient, contractCaller, nil, heimdallListenerStr, nil)
+	heimdallListener.BaseListener = *NewBaseListener(cliCtx, queueConnector, httpClient, nil, heimdallListenerStr, nil)
 	listenerService.listeners = append(listenerService.listeners, heimdallListener)
 
 	return listenerService

@@ -29,6 +29,8 @@ type RootChainListenerContext struct {
 type RootChainListener struct {
 	BaseListener
 
+	contractCaller *helper.ContractCaller
+
 	stakingInfoAbi *abi.ABI
 	stateSenderAbi *abi.ABI
 
@@ -58,10 +60,10 @@ type RootChainListener struct {
 	subGraphClient *subGraphClient
 
 	// onLogDispatched, when set, is called right after handleLog dispatches a
-	// validated log. Every handleLog variant gates its real side effect
-	// behind a validator-set check that needs REST/queue plumbing to
-	// exercise directly, so this is the seam tests use to observe that
-	// dispatch happened at all, and for which log. Left nil in production.
+	// validated log. handleLog gates its real side effect behind a
+	// validator-set check that needs REST/queue plumbing to exercise
+	// directly, so this is the seam tests use to observe that dispatch
+	// happened at all, and for which log. Left nil in production.
 	onLogDispatched func(vLog types.Log, selectedEvent *abi.Event)
 }
 
@@ -128,18 +130,24 @@ var (
 	errUnexpectedRootChainLog      = errors.New("rootchain log query returned a log that doesn't match the query")
 	errFilterLogsCallBudgetReached = errors.New("rootchain FilterLogs call budget reached for this poll cycle")
 
-	// rootChainEvents maps each root chain event the listener queries for to
-	// the processor task it enqueues.
-	rootChainEvents = map[string]string{
-		helper.NewHeaderBlockEvent: "sendCheckpointAckToHeimdall",
-		helper.StakedEvent:         "sendValidatorJoinToHeimdall",
-		helper.StakeUpdateEvent:    "sendStakeUpdateToHeimdall",
-		helper.SignerChangeEvent:   "sendSignerChangeToHeimdall",
-		helper.UnstakeInitEvent:    "sendUnstakeInitToHeimdall",
-		helper.StateSyncedEvent:    "sendStateSyncedToHeimdall",
-		helper.TopUpFeeEvent:       "sendTopUpFeeToHeimdall",
+	// rootChainEvents holds every root chain event the listener queries for.
+	rootChainEvents = map[string]rootChainEvent{
+		helper.NewHeaderBlockEvent: {task: "sendCheckpointAckToHeimdall"},
+		helper.StakedEvent:         {task: "sendValidatorJoinToHeimdall", extraDelay: util.TaskDelayBetweenEachVal},
+		helper.StakeUpdateEvent:    {task: "sendStakeUpdateToHeimdall"},
+		helper.SignerChangeEvent:   {task: "sendSignerChangeToHeimdall"},
+		helper.UnstakeInitEvent:    {task: "sendUnstakeInitToHeimdall"},
+		helper.StateSyncedEvent:    {task: "sendStateSyncedToHeimdall"},
+		helper.TopUpFeeEvent:       {task: "sendTopUpFeeToHeimdall"},
 	}
 )
+
+// rootChainEvent is the processor task a root chain event is queued as.
+type rootChainEvent struct {
+	task string
+	// extraDelay is added to whichever delay the submitting validator gets.
+	extraDelay time.Duration
+}
 
 // NewRootChainListener - constructor func
 func NewRootChainListener(contractCaller *helper.ContractCaller) *RootChainListener {
@@ -163,6 +171,7 @@ func NewRootChainListener(contractCaller *helper.ContractCaller) *RootChainListe
 	}
 
 	return &RootChainListener{
+		contractCaller:   contractCaller,
 		stakingInfoAbi:   &contractCaller.StakingInfoABI,
 		stateSenderAbi:   &contractCaller.StateSenderABI,
 		eventMap:         eventMap,
@@ -516,7 +525,7 @@ func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAdd
 // selectedEvent's ABI: the right number of indexed topics, and non-indexed
 // data that unpacks cleanly. A log can pass every other check here (right
 // topic0, right contract, right block range) while still being malformed in
-// a way that only surfaces once handleLog's UnpackLog call fails — and that
+// a way that only surfaces once handleLog's decode fails — and that
 // failure is a bare log line with no rejection, so the batch still succeeds
 // and the cursor advances past an event that was never actually queued.
 // Checking the shape here routes that failure through the same
@@ -687,14 +696,6 @@ func rootChainEventTopics(eventMap map[ethCommon.Hash]*abi.Event) []ethCommon.Ha
 	}
 
 	return topics
-}
-
-func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string, logBytes []byte, delay time.Duration, event interface{}) error {
-	defer util.LogElapsedTimeForStateSyncedEvent(event, "SendTaskWithDelay", time.Now())
-
-	rl.Logger.Info("RootChainListener: Sending task", "taskName", taskName, "currentTime", time.Now(), "delay", delay)
-
-	return rl.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
 }
 
 // getRootChainContext returns the root chain context

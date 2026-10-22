@@ -98,7 +98,8 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 	metrics.SelfHealCheckpointAcksProcessed.Inc()
 
 	// Send the checkpoint ACK task.
-	_ = rl.SendTaskWithDelay("sendCheckpointAckToHeimdall", helper.NewHeaderBlockEvent, logBytes, 0, nil)
+	_ = rl.sendTask(rootChainEvents[helper.NewHeaderBlockEvent].task, rootChainTaskRetryCount, 0,
+		stringArg(helper.NewHeaderBlockEvent), stringArg(string(logBytes)))
 	rl.Logger.Info("Self-healing: successfully queued checkpoint ACK task", "headerBlockId", l1HeaderBlockId, "logIndex", latestL1Checkpoint.LogIndex, "txHash", targetLog.TxHash.Hex())
 }
 
@@ -417,7 +418,7 @@ func (rl *RootChainListener) processEvent(ctx context.Context, vLog *types.Log) 
 	}
 
 	selectedEvent, ok := rl.eventMap[vLog.Topics[0]]
-	if ok {
+	if _, handled := rootChainEvents[selectedEvent.Name]; ok && handled {
 		rl.handleLog(*vLog, selectedEvent, rl.currentValidatorSlot())
 	}
 
