@@ -231,12 +231,13 @@ func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (
 
 		cp.Logger.Debug(debugMsgCpConfirmationsRequired, "BorChainTxConfirmations", chainmanagerParams.BorChainTxConfirmations)
 
-		if header.Number.Uint64() <= chainmanagerParams.BorChainTxConfirmations {
-			cp.Logger.Error(errMsgCpBlocksLessThanConfirmations, "childChainBlocks", header.Number.Uint64(), "confirmationsRequired", chainmanagerParams.BorChainTxConfirmations)
+		headerNumber := header.Number.Uint64()
+		if headerNumber <= chainmanagerParams.BorChainTxConfirmations {
+			cp.Logger.Error(errMsgCpBlocksLessThanConfirmations, "childChainBlocks", headerNumber, "confirmationsRequired", chainmanagerParams.BorChainTxConfirmations)
 			return errors.New("CheckpointProcessor: number of blocks on childChain is less than confirmations required")
 		}
 
-		latestConfirmedChildBlock := header.Number.Uint64() - chainmanagerParams.BorChainTxConfirmations
+		latestConfirmedChildBlock := headerNumber - chainmanagerParams.BorChainTxConfirmations
 		expectedCheckpointState, err := cp.nextExpectedCheckpoint(checkpointContext, latestConfirmedChildBlock)
 		if err != nil {
 			cp.Logger.Error(errMsgCpCalculatingNextCheckpoint, "error", err)
@@ -471,15 +472,14 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 		return nil, err
 	}
 	// find the next start/end
-	var start, end uint64
-	start = currentEnd
+	start := currentEnd
 
 	// add 1 if start > 0
 	if start > 0 {
 		start = start + 1
 	}
 
-	end = nextCheckpointEnd(start, latestChildBlock, checkpointParams.AvgCheckpointLength, checkpointParams.MaxCheckpointLength)
+	end := nextCheckpointEnd(start, latestChildBlock, checkpointParams.AvgCheckpointLength, checkpointParams.MaxCheckpointLength)
 	cp.Logger.Debug(debugMsgCpCalculatingCheckpointEligibility,
 		"latest", latestChildBlock,
 		"start", start,
