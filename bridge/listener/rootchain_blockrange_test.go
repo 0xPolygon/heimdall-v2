@@ -274,7 +274,7 @@ func TestProcessRootChainBlockRangeInChunks_TransientAbortPreservesFailureCount(
 	rl, rootChainContext := twoBlockListener(t, func(fromBlock, toBlock uint64) []*types.Log {
 		return []*types.Log{badLog}
 	})
-	queryFailures := metrics.RootChainListenerRangeRetries.WithLabelValues("query_failed")
+	queryFailures := metrics.BridgeListenerRangeRetries.WithLabelValues(rootChainListenerStr, "query_failed")
 	queryFailuresBefore := testutil.ToFloat64(queryFailures)
 
 	rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)))

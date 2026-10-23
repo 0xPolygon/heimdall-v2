@@ -59,14 +59,13 @@ var (
 		Help:      "Last block the bridge listener persisted as processed, labeled by listener",
 	}, []string{"listener"})
 
-	// RootChainListenerRangeRetries counts root chain block ranges left for
-	// the next poll, by reason: "not_queued" (logs validated but their tasks
-	// couldn't be queued) or "query_failed" (fetching or validating the logs
-	// failed).
-	RootChainListenerRangeRetries = promauto.NewCounterVec(prometheus.CounterOpts{
+	// BridgeListenerRangeRetries counts block ranges a listener left for its
+	// next poll, by reason: "not_queued" (their tasks couldn't be queued) or
+	// "query_failed" (fetching or validating the blocks' events failed).
+	BridgeListenerRangeRetries = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: Namespace,
-		Subsystem: "rootchain_listener",
-		Name:      "range_retries_total",
-		Help:      "Total number of root chain block ranges left unprocessed for the next poll, labeled by reason",
-	}, []string{"reason"})
+		Subsystem: "bridge",
+		Name:      "listener_range_retries_total",
+		Help:      "Total number of block ranges a bridge listener left unprocessed for its next poll, labeled by listener and reason",
+	}, []string{"listener", "reason"})
 )

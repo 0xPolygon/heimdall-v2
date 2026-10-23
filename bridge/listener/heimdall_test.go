@@ -15,9 +15,11 @@ import (
 	"github.com/RichardKnop/machinery/v1/tasks"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
@@ -612,9 +614,12 @@ func TestHeimdallListener_processBlockRange(t *testing.T) {
 		queue.On("SendTask", mock.Anything).Return(nil, nil).Twice()
 		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
 		listener.httpClient = fakeBlockResultsServer(t, 12)
+		queryFailures := metrics.BridgeListenerRangeRetries.WithLabelValues(heimdallListenerStr, "query_failed")
+		before := testutil.ToFloat64(queryFailures)
 
 		require.Equal(t, uint64(12), listener.processBlockRange(context.Background(), 10, 14))
 		queue.AssertExpectations(t)
+		require.GreaterOrEqual(t, testutil.ToFloat64(queryFailures)-before, 1.0)
 	})
 
 	t.Run("stops before a block whose checkpoint can't be queued", func(t *testing.T) {
@@ -624,9 +629,12 @@ func TestHeimdallListener_processBlockRange(t *testing.T) {
 		queue.On("SendTask", mock.Anything).Return(nil, errors.New("broker down")).Once()
 		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
 		listener.httpClient = fakeBlockResultsServer(t, -1)
+		notQueued := metrics.BridgeListenerRangeRetries.WithLabelValues(heimdallListenerStr, "not_queued")
+		before := testutil.ToFloat64(notQueued)
 
 		require.Equal(t, uint64(10), listener.processBlockRange(context.Background(), 10, 14))
 		queue.AssertExpectations(t)
+		require.GreaterOrEqual(t, testutil.ToFloat64(notQueued)-before, 1.0)
 	})
 
 	t.Run("finishes the whole range", func(t *testing.T) {

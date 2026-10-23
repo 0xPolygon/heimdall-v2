@@ -106,7 +106,7 @@ func (rl *RootChainListener) processRootChainBlockRangeInChunks(rootChainContext
 			if errors.Is(err, errRootChainLogsNotQueued) {
 				reason = "not_queued"
 			}
-			metrics.RootChainListenerRangeRetries.WithLabelValues(reason).Inc()
+			metrics.BridgeListenerRangeRetries.WithLabelValues(rootChainListenerStr, reason).Inc()
 			rl.Logger.Error(
 				"RootChainListener: failed to process block range, retrying it next poll",
 				"reason", reason,

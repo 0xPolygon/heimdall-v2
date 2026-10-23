@@ -341,8 +341,10 @@ func TestBaseListener_sendTask(t *testing.T) {
 	t.Run("counts each outcome and stamps when the task was queued", func(t *testing.T) {
 		t.Parallel()
 
+		var sent *tasks.Signature
 		queue := &mockQueueConnector{unregistered: map[string]bool{"metricsSkippedTask": true}}
-		queue.On("SendTask", mock.MatchedBy(func(s *tasks.Signature) bool { return s.Name == "metricsSentTask" })).Return(nil, nil).Once()
+		queue.On("SendTask", mock.MatchedBy(func(s *tasks.Signature) bool { return s.Name == "metricsSentTask" })).
+			Run(func(args mock.Arguments) { sent = args.Get(0).(*tasks.Signature) }).Return(nil, nil).Once()
 		queue.On("SendTask", mock.MatchedBy(func(s *tasks.Signature) bool { return s.Name == "metricsFailedTask" })).Return(nil, errors.New("broker down")).Once()
 		listener := newTestBaseListener(queue)
 
@@ -354,7 +356,7 @@ func TestBaseListener_sendTask(t *testing.T) {
 			require.InDelta(t, 1, testutil.ToFloat64(metrics.BridgeTasksSent.WithLabelValues(task, outcome)), 0, task)
 		}
 
-		sent := queue.Calls[0].Arguments.Get(0).(*tasks.Signature)
+		require.NotNil(t, sent)
 		require.NotEmpty(t, sent.Headers, "the task must carry the time it was first queued")
 	})
 }

@@ -172,11 +172,13 @@ func (hl *HeimdallListener) processBlockRange(ctx context.Context, fromBlock, to
 func (hl *HeimdallListener) processBlock(ctx context.Context, height uint64) error {
 	events, err := helper.GetBeginBlockEvents(ctx, hl.httpClient, int64(height))
 	if err != nil {
+		metrics.BridgeListenerRangeRetries.WithLabelValues(heimdallListenerStr, "query_failed").Inc()
 		return err
 	}
 
 	for _, event := range events {
 		if err := hl.ProcessBlockEvent(sdk.StringifyEvent(event), int64(height)); err != nil {
+			metrics.BridgeListenerRangeRetries.WithLabelValues(heimdallListenerStr, "not_queued").Inc()
 			return err
 		}
 	}

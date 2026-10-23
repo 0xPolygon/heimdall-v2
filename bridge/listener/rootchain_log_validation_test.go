@@ -1154,7 +1154,7 @@ func TestProcessRootChainBlockRange_QueueFailureKeepsCursor(t *testing.T) {
 	})
 
 	t.Run("a held-back range is counted as not queued", func(t *testing.T) {
-		notQueued := metrics.RootChainListenerRangeRetries.WithLabelValues("not_queued")
+		notQueued := metrics.BridgeListenerRangeRetries.WithLabelValues(rootChainListenerStr, "not_queued")
 		before := testutil.ToFloat64(notQueued)
 
 		rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)))
