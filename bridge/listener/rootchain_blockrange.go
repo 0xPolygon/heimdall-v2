@@ -4,6 +4,8 @@ import (
 	"errors"
 	"math/big"
 	"strconv"
+
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 // rootChainBlockRangeToProcess computes the [from, to] block range this
@@ -15,6 +17,8 @@ func (rl *RootChainListener) rootChainBlockRangeToProcess(rootChainContext *Root
 	if !ok {
 		return nil, nil, false
 	}
+
+	metrics.BridgeListenerHeadBlock.WithLabelValues(rootChainListenerStr).Set(float64(to.Uint64()))
 
 	from, ok = rl.fromBlockAfterLastPersisted(to)
 	if !ok {
@@ -74,6 +78,7 @@ func (rl *RootChainListener) fromBlockAfterLastPersisted(headerNumber *big.Int) 
 	if err != nil {
 		return headerNumber, true
 	}
+	metrics.BridgeListenerProcessedBlock.WithLabelValues(rootChainListenerStr).Set(float64(result))
 	if result >= headerNumber.Uint64() {
 		return nil, false
 	}
@@ -97,8 +102,14 @@ func (rl *RootChainListener) processRootChainBlockRangeInChunks(rootChainContext
 		}
 
 		if err := rl.processRootChainBlockRange(rootChainContext, chunkFrom, chunkTo, state); err != nil {
+			reason := "query_failed"
+			if errors.Is(err, errRootChainLogsNotQueued) {
+				reason = "not_queued"
+			}
+			metrics.RootChainListenerRangeRetries.WithLabelValues(reason).Inc()
 			rl.Logger.Error(
-				"queryAndBroadcastEvents failed",
+				"RootChainListener: failed to process block range, retrying it next poll",
+				"reason", reason,
 				"error", err,
 				"from", chunkFrom,
 				"to", chunkTo,
@@ -165,6 +176,8 @@ func (rl *RootChainListener) persistLastRootBlock(block *big.Int) error {
 		rl.Logger.Error("RootChainListener: error persisting last root block in storage", "error", err, "lastRootBlock", block.String())
 		return err
 	}
+
+	metrics.BridgeListenerProcessedBlock.WithLabelValues(rootChainListenerStr).Set(float64(block.Uint64()))
 
 	return nil
 }

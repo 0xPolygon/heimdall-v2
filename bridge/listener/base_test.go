@@ -8,9 +8,13 @@ import (
 	"time"
 
 	"cosmossdk.io/log"
+	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 // mockListener records the headers a BaseListener dispatches to it
@@ -332,5 +336,25 @@ func TestBaseListener_sendTask(t *testing.T) {
 
 		require.EqualError(t, listener.sendTask("sendStateSyncedToHeimdall", rootChainTaskRetryCount, 0, stringArg("StateSynced")), "broker down")
 		queue.AssertExpectations(t)
+	})
+
+	t.Run("counts each outcome and stamps when the task was queued", func(t *testing.T) {
+		t.Parallel()
+
+		queue := &mockQueueConnector{unregistered: map[string]bool{"metricsSkippedTask": true}}
+		queue.On("SendTask", mock.MatchedBy(func(s *tasks.Signature) bool { return s.Name == "metricsSentTask" })).Return(nil, nil).Once()
+		queue.On("SendTask", mock.MatchedBy(func(s *tasks.Signature) bool { return s.Name == "metricsFailedTask" })).Return(nil, errors.New("broker down")).Once()
+		listener := newTestBaseListener(queue)
+
+		require.NoError(t, listener.sendTask("metricsSentTask", blockTaskRetryCount, time.Minute))
+		require.Error(t, listener.sendTask("metricsFailedTask", blockTaskRetryCount, 0))
+		require.NoError(t, listener.sendTask("metricsSkippedTask", blockTaskRetryCount, 0))
+
+		for task, outcome := range map[string]string{"metricsSentTask": "sent", "metricsFailedTask": "failed", "metricsSkippedTask": "skipped"} {
+			require.InDelta(t, 1, testutil.ToFloat64(metrics.BridgeTasksSent.WithLabelValues(task, outcome)), 0, task)
+		}
+
+		sent := queue.Calls[0].Arguments.Get(0).(*tasks.Signature)
+		require.NotEmpty(t, sent.Headers, "the task must carry the time it was first queued")
 	})
 }

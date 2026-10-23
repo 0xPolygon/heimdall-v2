@@ -1152,6 +1152,15 @@ func TestProcessRootChainBlockRange_QueueFailureKeepsCursor(t *testing.T) {
 		_, err = rl.storageClient.Get([]byte(lastRootBlockKey), nil)
 		require.ErrorIs(t, err, leveldb.ErrNotFound)
 	})
+
+	t.Run("a held-back range is counted as not queued", func(t *testing.T) {
+		notQueued := metrics.RootChainListenerRangeRetries.WithLabelValues("not_queued")
+		before := testutil.ToFloat64(notQueued)
+
+		rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)))
+
+		require.InDelta(t, 1, testutil.ToFloat64(notQueued)-before, 0)
+	})
 }
 
 // TestValidateLogAgainstQuery_RejectsWrongShapeEvent proves a log with the

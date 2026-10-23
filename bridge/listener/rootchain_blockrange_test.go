@@ -12,9 +12,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
@@ -272,6 +274,8 @@ func TestProcessRootChainBlockRangeInChunks_TransientAbortPreservesFailureCount(
 	rl, rootChainContext := twoBlockListener(t, func(fromBlock, toBlock uint64) []*types.Log {
 		return []*types.Log{badLog}
 	})
+	queryFailures := metrics.RootChainListenerRangeRetries.WithLabelValues("query_failed")
+	queryFailuresBefore := testutil.ToFloat64(queryFailures)
 
 	rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)))
 	require.Equal(t, uint64(1), rl.logFailureCounts[logKey], "cycle 1: a fresh validation failure counts once")
@@ -284,6 +288,7 @@ func TestProcessRootChainBlockRangeInChunks_TransientAbortPreservesFailureCount(
 
 	rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)))
 	require.Equal(t, uint64(2), rl.logFailureCounts[logKey], "cycle 3: progress resumes across the transient blip instead of restarting from zero")
+	require.InDelta(t, 3, testutil.ToFloat64(queryFailures)-queryFailuresBefore, 0, "every cycle left the range for the next poll")
 }
 
 func TestPersistLastRootBlock(t *testing.T) {
@@ -297,6 +302,7 @@ func TestPersistLastRootBlock(t *testing.T) {
 		got, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
 		require.NoError(t, err)
 		require.Equal(t, "12345", string(got))
+		require.InDelta(t, 12345, testutil.ToFloat64(metrics.BridgeListenerProcessedBlock.WithLabelValues(rootChainListenerStr)), 0)
 	})
 
 	t.Run("returns an error when the storage client can't be written to", func(t *testing.T) {

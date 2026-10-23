@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
@@ -80,7 +81,9 @@ func (hl *HeimdallListener) pollEvents(ctx context.Context, pollInterval time.Du
 
 			if next := hl.processBlockRange(ctx, fromBlock, toBlock); next > fromBlock {
 				if err := hl.storageClient.Put([]byte(heimdallLastBlockKey), []byte(strconv.FormatUint(next-1, 10)), nil); err != nil {
-					hl.Logger.Error("HeimdallListener: hl.storageClient.Put", "Error", err)
+					hl.Logger.Error("HeimdallListener: error persisting last processed block", "lastBlock", next-1, "error", err)
+				} else {
+					metrics.BridgeListenerProcessedBlock.WithLabelValues(heimdallListenerStr).Set(float64(next - 1))
 				}
 			}
 
@@ -128,6 +131,7 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 		}
 
 		hl.Logger.Debug("HeimdallListener: got last block from bridge storage", "lastBlock", result)
+		metrics.BridgeListenerProcessedBlock.WithLabelValues(heimdallListenerStr).Set(float64(result))
 		if result >= fromBlock {
 			hl.Logger.Debug("HeimdallListener: overriding fromBlock using last processed block from storage", "oldFromBlock", fromBlock, "lastProcessedBlock", result, "newFromBlock", result+1)
 			fromBlock = result + 1
@@ -144,6 +148,7 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 
 	// toBlock - get the latest block height from heimdall node
 	toBlock := uint64(nodeStatus.SyncInfo.LatestBlockHeight)
+	metrics.BridgeListenerHeadBlock.WithLabelValues(heimdallListenerStr).Set(float64(toBlock))
 
 	return fromBlock, toBlock, nil
 }
@@ -192,6 +197,7 @@ func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight
 
 	switch event.Type {
 	case checkpointTypes.EventTypeCheckpoint:
+		hl.Logger.Info("HeimdallListener: sending task for checkpoint event", "blockHeight", blockHeight)
 		return hl.sendTask("sendCheckpointToRootchain", blockTaskRetryCount, 0,
 			stringArg(string(eventBytes)), tasks.Arg{Type: "int64", Value: blockHeight})
 	default:

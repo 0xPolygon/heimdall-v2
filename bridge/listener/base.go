@@ -18,6 +18,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/bridge/queue"
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 // Listener is a chain event listener run by the listener service.
@@ -175,22 +176,26 @@ func (bl *BaseListener) StartPolling(ctx context.Context, pollInterval time.Dura
 // processor registered is skipped: the queue would redeliver it forever.
 func (bl *BaseListener) sendTask(taskName string, retryCount int, delay time.Duration, args ...tasks.Arg) error {
 	if !bl.taskQueue.IsTaskRegistered(taskName) {
+		metrics.BridgeTasksSent.WithLabelValues(taskName, "skipped").Inc()
 		if _, warned := unregisteredTaskWarned.LoadOrStore(taskName, struct{}{}); !warned {
 			bl.Logger.Warn("BaseListener: not queueing tasks with no registered processor; is the processor disabled by --only?", "taskName", taskName)
 		}
 		return nil
 	}
 
-	eta := time.Now().Add(delay)
-	signature := &tasks.Signature{Name: taskName, Args: args, RetryCount: retryCount, ETA: &eta}
+	now := time.Now()
+	eta := now.Add(delay)
+	signature := &tasks.Signature{Name: taskName, Args: args, RetryCount: retryCount, ETA: &eta, Headers: queue.NewTaskHeaders(now)}
 
 	bl.Logger.Debug("BaseListener: sending task", "taskName", taskName, "eta", eta)
 
 	if _, err := bl.taskQueue.SendTask(signature); err != nil {
+		metrics.BridgeTasksSent.WithLabelValues(taskName, "failed").Inc()
 		bl.Logger.Error("BaseListener: error sending task", "taskName", taskName, "error", err)
 		return err
 	}
 
+	metrics.BridgeTasksSent.WithLabelValues(taskName, "sent").Inc()
 	return nil
 }
 
