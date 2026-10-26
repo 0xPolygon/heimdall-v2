@@ -58,9 +58,9 @@ func (rl *RootChainListener) confirmedHeadBlock(rootChainContext *RootChainListe
 
 // fromBlockAfterLastPersisted returns the first block to process: the block
 // after the last one persisted to storage, or headerNumber itself if no valid
-// block has been persisted yet. ok is false when storage couldn't be read or
-// written, or the last persisted block is already at or past headerNumber
-// (nothing new).
+// block has been persisted yet, in which case it seeds the cursor (see
+// startCursorAt). ok is false when storage couldn't be read or written, or the
+// last persisted block is already at or past headerNumber (nothing new).
 func (rl *RootChainListener) fromBlockAfterLastPersisted(headerNumber *big.Int) (*big.Int, bool) {
 	hasLastBlock, _ := rl.storageClient.Has([]byte(lastRootBlockKey), nil)
 	if !hasLastBlock {
@@ -91,10 +91,12 @@ func (rl *RootChainListener) fromBlockAfterLastPersisted(headerNumber *big.Int) 
 // so a range starting at block that fails is retried from block on the next
 // poll, not from wherever the head has moved to by then.
 func (rl *RootChainListener) startCursorAt(block *big.Int) (*big.Int, bool) {
-	if block.Sign() > 0 {
-		if err := rl.persistLastRootBlock(new(big.Int).Sub(block, big.NewInt(1))); err != nil {
-			return nil, false
-		}
+	if block.Sign() == 0 {
+		return block, true
+	}
+
+	if err := rl.persistLastRootBlock(new(big.Int).Sub(block, big.NewInt(1))); err != nil {
+		return nil, false
 	}
 
 	return block, true

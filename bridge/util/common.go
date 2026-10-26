@@ -273,21 +273,10 @@ func IsCatchingUp(ctx context.Context, cliCtx client.Context) bool {
 	return resp.SyncInfo.CatchingUp
 }
 
-var (
-	accountRPCOnce sync.Once
-	accountRPC     client.CometRPC
-	accountRPCErr  error
-)
-
-// accountClient returns the client for the configured CometBFT RPC URL that
-// account queries use, created on first use.
-func accountClient() (client.CometRPC, error) {
-	accountRPCOnce.Do(func() {
-		accountRPC, accountRPCErr = client.NewClientFromNode(helper.GetConfig().CometBFTRPCUrl)
-	})
-
-	return accountRPC, accountRPCErr
-}
+// accountClient is the client account queries use, for the configured CometBFT RPC URL.
+var accountClient = sync.OnceValues(func() (client.CometRPC, error) {
+	return client.NewClientFromNode(helper.GetConfig().CometBFTRPCUrl)
+})
 
 // GetAccount returns heimdall auth account
 func GetAccount(ctx context.Context, cliCtx client.Context, address string) (sdk.AccountI, error) {
