@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strings"
+	"reflect"
 	"sync"
 	"time"
 
@@ -48,9 +48,6 @@ const (
 	errUnableToConnect = "unable to connect to bor chain"
 	errEventNotFound   = "event not found"
 )
-
-// ContractsABIsMap is a cached map holding the ABIs of the contracts
-var ContractsABIsMap = make(map[string]*abi.ABI)
 
 // IContractCaller represents contract caller
 type IContractCaller interface {
@@ -110,15 +107,8 @@ type IContractCaller interface {
 // bor gRPC server. The concrete *grpc.BorGRPCClient satisfies this interface
 // automatically.
 type BorGRPCClienter interface {
-	HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error)
-	BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error)
-	GetRootHash(ctx context.Context, startBlock uint64, endBlock uint64) (string, error)
-	GetVoteOnHash(ctx context.Context, startBlock uint64, endBlock uint64, rootHash string, milestoneId string) (bool, error)
-	GetAuthor(ctx context.Context, blockNum *big.Int) (*common.Address, error)
-	GetTdByHash(ctx context.Context, hash common.Hash) (uint64, error)
+	borReader
 	GetTdByNumber(ctx context.Context, blockNum *big.Int) (uint64, error)
-	GetBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error)
-	TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error)
 	BorBlockReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error)
 }
 
@@ -144,7 +134,7 @@ type ContractCaller struct {
 	SlashManagerABI  abi.ABI
 	PolTokenABI      abi.ABI
 
-	ContractInstanceCache map[common.Address]interface{}
+	contractInstanceCache map[contractInstanceKey]interface{}
 	contractInstanceMu    *sync.RWMutex
 
 	// prefetchMu protects the round-scoped prefetch state used by ExtendVote.
@@ -155,6 +145,13 @@ type ContractCaller struct {
 	// finalizedHeaderCache stores the last fetched finalized main chain block header.
 	// Reset after each round of ExtendVoteHandler.
 	finalizedHeaderCache *ethTypes.Header
+}
+
+// contractInstanceKey keys cached bindings by type as well as address, so two
+// binding types configured at the same address can't collide.
+type contractInstanceKey struct {
+	address common.Address
+	binding reflect.Type
 }
 
 type txExtraInfo struct {
@@ -168,7 +165,8 @@ type rpcTransaction struct {
 }
 
 // NewContractCaller contract caller
-func NewContractCaller() (contractCallerObj ContractCaller, err error) {
+func NewContractCaller() (*ContractCaller, error) {
+	contractCallerObj := &ContractCaller{}
 	config := GetConfig()
 	contractCallerObj.MainChainClient = GetMainClient()
 	contractCallerObj.MainChainTimeout = config.EthRPCTimeout
@@ -181,173 +179,83 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 		contractCallerObj.BorChainGrpcClient = client
 	}
 
-	// listeners and processors instance cache (address->ABI)
-	contractCallerObj.ContractInstanceCache = make(map[common.Address]interface{})
+	contractCallerObj.contractInstanceCache = make(map[contractInstanceKey]interface{})
 	contractCallerObj.contractInstanceMu = &sync.RWMutex{}
 
 	contractCallerObj.prefetchMu = &sync.RWMutex{}
 	contractCallerObj.prefetchedReceipts = make(map[common.Hash]*ethTypes.Receipt)
 	contractCallerObj.finalizedHeaderCache = nil
 
-	// package global cache (string->ABI)
-	if err = populateABIs(&contractCallerObj); err != nil {
-		return contractCallerObj, err
+	if err := populateABIs(contractCallerObj); err != nil {
+		return nil, err
 	}
 
 	return contractCallerObj, nil
 }
 
-// loadContractInstance returns the cached binding for address if present.
-func (c *ContractCaller) loadContractInstance(address common.Address) (interface{}, bool) {
-	c.contractInstanceMu.RLock()
-	defer c.contractInstanceMu.RUnlock()
-	v, ok := c.ContractInstanceCache[address]
-	return v, ok
-}
+// cachedBinding returns the binding of type T for address, constructing it
+// against backend and caching it on first use.
+func cachedBinding[T any](c *ContractCaller, address string, backend bind.ContractBackend, newBinding func(common.Address, bind.ContractBackend) (*T, error)) (*T, error) {
+	key := contractInstanceKey{address: common.HexToAddress(address), binding: reflect.TypeFor[T]()}
 
-// storeContractInstance caches a successfully-constructed binding. Failed
-// constructions must not be stored — a poisoned entry would type-assert to a
-// typed-nil pointer on the next read.
-func (c *ContractCaller) storeContractInstance(address common.Address, instance interface{}) {
+	c.contractInstanceMu.RLock()
+	cached, ok := c.contractInstanceCache[key]
+	c.contractInstanceMu.RUnlock()
+	if ok {
+		return cached.(*T), nil
+	}
+
+	instance, err := newBinding(key.address, backend)
+	if err != nil {
+		Logger.Error("Error creating contract binding", "binding", key.binding.String(), "address", key.address, "error", err)
+		return nil, err
+	}
+
 	c.contractInstanceMu.Lock()
-	defer c.contractInstanceMu.Unlock()
-	c.ContractInstanceCache[address] = instance
+	c.contractInstanceCache[key] = instance
+	c.contractInstanceMu.Unlock()
+
+	return instance, nil
 }
 
 // GetRootChainInstance returns the RootChain contract instance for a selected chain
 func (c *ContractCaller) GetRootChainInstance(rootChainAddress string) (*rootchain.Rootchain, error) {
-	address := common.HexToAddress(rootChainAddress)
-
-	if cached, ok := c.loadContractInstance(address); ok {
-		return cached.(*rootchain.Rootchain), nil
-	}
-
-	ci, err := rootchain.NewRootchain(address, mainChainClient)
-	if err != nil {
-		Logger.Error("Error in fetching the root chain instance from mainChain client", "error", err)
-		return nil, err
-	}
-	c.storeContractInstance(address, ci)
-	return ci, nil
+	return cachedBinding(c, rootChainAddress, mainChainClient, rootchain.NewRootchain)
 }
 
-// GetStakingInfoInstance returns stakingInfo contract instance for a selected chain
+// GetStakingInfoInstance returns the stakingInfo contract instance for a selected chain
 func (c *ContractCaller) GetStakingInfoInstance(stakingInfoAddress string) (*stakinginfo.Stakinginfo, error) {
-	address := common.HexToAddress(stakingInfoAddress)
-
-	if cached, ok := c.loadContractInstance(address); ok {
-		return cached.(*stakinginfo.Stakinginfo), nil
-	}
-
-	ci, err := stakinginfo.NewStakinginfo(address, mainChainClient)
-	if err != nil {
-		Logger.Error("Error in fetching the stakingInfo instance from mainChain client", "error", err)
-		return nil, err
-	}
-	c.storeContractInstance(address, ci)
-	return ci, nil
+	return cachedBinding(c, stakingInfoAddress, mainChainClient, stakinginfo.NewStakinginfo)
 }
 
-// GetValidatorSetInstance returns stakingInfo contract instance for a selected chain
+// GetValidatorSetInstance returns the validatorSet contract instance for a selected chain
 func (c *ContractCaller) GetValidatorSetInstance(validatorSetAddress string) (*validatorset.Validatorset, error) {
-	address := common.HexToAddress(validatorSetAddress)
-
-	if cached, ok := c.loadContractInstance(address); ok {
-		return cached.(*validatorset.Validatorset), nil
-	}
-
-	ci, err := validatorset.NewValidatorset(address, mainChainClient)
-	if err != nil {
-		Logger.Error("Error in fetching the validator set from mainChain client", "error", err)
-		return nil, err
-	}
-	c.storeContractInstance(address, ci)
-	return ci, nil
+	return cachedBinding(c, validatorSetAddress, mainChainClient, validatorset.NewValidatorset)
 }
 
-// GetStakeManagerInstance returns stakingInfo contract instance for a selected base chain
+// GetStakeManagerInstance returns the stakeManager contract instance for a selected chain
 func (c *ContractCaller) GetStakeManagerInstance(stakingManagerAddress string) (*stakemanager.Stakemanager, error) {
-	address := common.HexToAddress(stakingManagerAddress)
-
-	if cached, ok := c.loadContractInstance(address); ok {
-		return cached.(*stakemanager.Stakemanager), nil
-	}
-
-	ci, err := stakemanager.NewStakemanager(address, mainChainClient)
-	if err != nil {
-		Logger.Error("Error in fetching the stake manager from mainChain client", "error", err)
-		return nil, err
-	}
-	c.storeContractInstance(address, ci)
-	return ci, nil
+	return cachedBinding(c, stakingManagerAddress, mainChainClient, stakemanager.NewStakemanager)
 }
 
-// GetSlashManagerInstance returns the slashManager contract instance for a selected base chain
+// GetSlashManagerInstance returns the slashManager contract instance for a selected chain
 func (c *ContractCaller) GetSlashManagerInstance(slashManagerAddress string) (*slashmanager.Slashmanager, error) {
-	address := common.HexToAddress(slashManagerAddress)
-
-	if cached, ok := c.loadContractInstance(address); ok {
-		return cached.(*slashmanager.Slashmanager), nil
-	}
-
-	ci, err := slashmanager.NewSlashmanager(address, mainChainClient)
-	if err != nil {
-		Logger.Error("Error in fetching the slash manager from mainChain client", "error", err)
-		return nil, err
-	}
-	c.storeContractInstance(address, ci)
-	return ci, nil
+	return cachedBinding(c, slashManagerAddress, mainChainClient, slashmanager.NewSlashmanager)
 }
 
-// GetStateSenderInstance returns stakingInfo contract instance for a selected base chain
+// GetStateSenderInstance returns the stateSender contract instance for a selected chain
 func (c *ContractCaller) GetStateSenderInstance(stateSenderAddress string) (*statesender.Statesender, error) {
-	address := common.HexToAddress(stateSenderAddress)
-
-	if cached, ok := c.loadContractInstance(address); ok {
-		return cached.(*statesender.Statesender), nil
-	}
-
-	ci, err := statesender.NewStatesender(address, mainChainClient)
-	if err != nil {
-		Logger.Error("Error in fetching the stateSender from mainChain client", "error", err)
-		return nil, err
-	}
-	c.storeContractInstance(address, ci)
-	return ci, nil
+	return cachedBinding(c, stateSenderAddress, mainChainClient, statesender.NewStatesender)
 }
 
-// GetStateReceiverInstance returns stakingInfo contract instance for a selected base chain
+// GetStateReceiverInstance returns the stateReceiver contract instance for a selected chain
 func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress string) (*statereceiver.Statereceiver, error) {
-	address := common.HexToAddress(stateReceiverAddress)
-
-	if cached, ok := c.loadContractInstance(address); ok {
-		return cached.(*statereceiver.Statereceiver), nil
-	}
-
-	ci, err := statereceiver.NewStatereceiver(address, borClient)
-	if err != nil {
-		Logger.Error("Error in fetching the stateReceiver from borChain client", "error", err)
-		return nil, err
-	}
-	c.storeContractInstance(address, ci)
-	return ci, nil
+	return cachedBinding(c, stateReceiverAddress, borClient, statereceiver.NewStatereceiver)
 }
 
-// GetTokenInstance returns the contract instance for a selected chain
+// GetTokenInstance returns the token contract instance for a selected chain
 func (c *ContractCaller) GetTokenInstance(tokenAddress string) (*erc20.Erc20, error) {
-	address := common.HexToAddress(tokenAddress)
-
-	if cached, ok := c.loadContractInstance(address); ok {
-		return cached.(*erc20.Erc20), nil
-	}
-
-	ci, err := erc20.NewErc20(address, mainChainClient)
-	if err != nil {
-		Logger.Error("Error in fetching the token address from client", "error", err)
-		return nil, err
-	}
-	c.storeContractInstance(address, ci)
-	return ci, nil
+	return cachedBinding(c, tokenAddress, mainChainClient, erc20.NewErc20)
 }
 
 // GetHeaderInfo get header info from the checkpoint number
@@ -391,19 +299,12 @@ func (c *ContractCaller) GetRootHash(ctx context.Context, start, end, checkpoint
 	callCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
-	var rootHash string
-	var err error
-
-	if c.BorChainGrpcFlag {
-		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
-		if grpcErr != nil {
-			return nil, grpcErr
-		}
-		rootHash, err = grpcClient.GetRootHash(callCtx, start, end)
-	} else {
-		rootHash, err = c.BorChainClient.GetRootHash(callCtx, start, end)
+	bor, err := c.borClient()
+	if err != nil {
+		return nil, err
 	}
 
+	rootHash, err := bor.GetRootHash(callCtx, start, end)
 	if err != nil {
 		Logger.Error("Could not fetch rootHash from bor chain", "error", err)
 		return nil, err
@@ -429,19 +330,12 @@ func (c *ContractCaller) GetVoteOnHash(start, end uint64, hash, milestoneID stri
 	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
 	defer cancel()
 
-	var vote bool
-	var err error
-
-	if c.BorChainGrpcFlag {
-		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
-		if grpcErr != nil {
-			return false, grpcErr
-		}
-		vote, err = grpcClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
-	} else {
-		vote, err = c.BorChainClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
+	bor, err := c.borClient()
+	if err != nil {
+		return false, err
 	}
 
+	vote, err := bor.GetVoteOnHash(ctx, start, end, hash, milestoneID)
 	if err != nil {
 		return false, errors.New(fmt.Sprint("Error in fetching vote from bor chain", "err", err))
 	}
@@ -451,7 +345,10 @@ func (c *ContractCaller) GetVoteOnHash(start, end uint64, hash, milestoneID stri
 
 // GetLastChildBlock fetch current child block
 func (c *ContractCaller) GetLastChildBlock(rootChainInstance *rootchain.Rootchain) (uint64, error) {
-	lastChildBlock, err := rootChainInstance.GetLastChildBlock(nil)
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	lastChildBlock, err := rootChainInstance.GetLastChildBlock(opts)
 	if err != nil {
 		Logger.Error("Could not fetch current child block from rootChain contract", "error", err)
 		return 0, err
@@ -467,7 +364,10 @@ func (c *ContractCaller) GetLastChildBlock(rootChainInstance *rootchain.Rootchai
 
 // CurrentHeaderBlock fetches the current header block
 func (c *ContractCaller) CurrentHeaderBlock(rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (uint64, error) {
-	currentHeaderBlock, err := rootChainInstance.CurrentHeaderBlock(nil)
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	currentHeaderBlock, err := rootChainInstance.CurrentHeaderBlock(opts)
 	if err != nil {
 		Logger.Error("Could not fetch current header block from rootChain contract", "error", err)
 		return 0, err
@@ -497,7 +397,10 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 
 // GetValidatorInfo get validator info
 func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
-	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	stakerDetails, err := stakingInfoInstance.GetStakerDetails(opts, big.NewInt(int64(valID)))
 	if err != nil {
 		Logger.Error("Error fetching validator information from stake manager", "validatorId", valID, "error", err)
 		return
@@ -599,24 +502,19 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
-	var latestBlock *ethTypes.Header
-
-	if c.BorChainGrpcFlag {
-		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
-		if grpcErr != nil {
-			Logger.Error(errUnableToConnect, "error", grpcErr)
-			return nil, grpcErr
-		}
-		if blockNum == nil {
-			// LatestBlockNumber is BlockNumber(-2) in go-ethereum rpc
-			latestBlock, err = grpcClient.HeaderByNumber(ctx, -2)
-		} else {
-			latestBlock, err = grpcClient.HeaderByNumber(ctx, blockNum.Int64())
-		}
-	} else {
-		latestBlock, err = c.BorChainClient.HeaderByNumber(ctx, blockNum)
+	bor, err := c.borClient()
+	if err != nil {
+		Logger.Error(errUnableToConnect, "error", err)
+		return nil, err
 	}
 
+	// LatestBlockNumber is BlockNumber(-2) in go-ethereum rpc
+	blockID := int64(rpc.LatestBlockNumber)
+	if blockNum != nil {
+		blockID = blockNum.Int64()
+	}
+
+	latestBlock, err := bor.HeaderByNumber(ctx, blockID)
 	if err != nil {
 		// both HTTP and gRPC map a missing block to ethereum.NotFound.
 		if !errors.Is(err, ethereum.NotFound) {
@@ -630,7 +528,7 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 
 // GetBorChainBlockInfoInBatch returns bor chain block headers, total difficulties,
 // and authors for the inclusive range [start, end]. It dispatches to gRPC when
-// BorChainGrpcFlag is set, otherwise falls back to the HTTP JSON-RPC batch.
+// BorChainGrpcFlag is set, otherwise to the HTTP JSON-RPC batch.
 // In both paths, it tries to get blocks from the range interval
 // but returns only the ones found on the chain.
 func (c *ContractCaller) GetBorChainBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
@@ -647,15 +545,12 @@ func (c *ContractCaller) GetBorChainBlockInfoInBatch(ctx context.Context, start,
 	timeoutCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
-	if c.BorChainGrpcFlag {
-		grpcClient, err := c.getRequiredBorGRPCClient()
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		return grpcClient.GetBlockInfoInBatch(timeoutCtx, start, end)
+	bor, err := c.borClient()
+	if err != nil {
+		return nil, nil, nil, err
 	}
 
-	return c.getBorChainBlockInfoInBatchHTTP(timeoutCtx, start, end)
+	return bor.GetBlockInfoInBatch(timeoutCtx, start, end)
 }
 
 // tdResp is the JSON shape returned by eth_getTdByNumber.
@@ -749,14 +644,14 @@ func collateBorBatchResults(start, totalBlocks int64, batchElems []rpc.BatchElem
 	return headers, tdSlice, authorSlice
 }
 
-// getBorChainBlockInfoInBatchHTTP is the HTTP/JSON-RPC implementation of GetBorChainBlockInfoInBatch.
+// GetBlockInfoInBatch is the HTTP/JSON-RPC implementation of GetBorChainBlockInfoInBatch.
 // It issues a single RPC batch call covering headers, total difficulties, and authors for the
 // inclusive range [start, end], and returns only the contiguous prefix of blocks found on the chain.
-func (c *ContractCaller) getBorChainBlockInfoInBatchHTTP(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
+func (h borHTTPClient) GetBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
 	// Range arithmetic compensated by the per-index bounds inside buildBorBatchElems/collateBorBatchResults.
 	// mutator-disable-next-line range-arithmetic compensated downstream
 	totalBlocks := end - start + 1
-	rpcClient := c.BorChainClient.Client()
+	rpcClient := h.client.Client()
 
 	headerResults := make([]*ethTypes.Header, totalBlocks)
 	tdResults := make([]*tdResp, totalBlocks)
@@ -781,36 +676,12 @@ func (c *ContractCaller) GetBorChainBlockTd(ctx context.Context, blockHash commo
 	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
-	if c.BorChainGrpcFlag {
-		grpcClient, err := c.getRequiredBorGRPCClient()
-		if err != nil {
-			return 0, err
-		}
-		return grpcClient.GetTdByHash(ctx, blockHash)
-	}
-
-	rpcClient := c.BorChainClient.Client()
-
-	var resp map[string]interface{}
-	if err := rpcClient.CallContext(ctx, &resp, "eth_getTdByHash", blockHash.Hex()); err != nil {
+	bor, err := c.borClient()
+	if err != nil {
 		return 0, err
 	}
-	// Same path for gRPC and HTTP: a missing block surfaces as ethereum.NotFound
-	if resp == nil || resp["totalDifficulty"] == nil {
-		return 0, ethereum.NotFound
-	}
 
-	raw, ok := resp["totalDifficulty"].(string)
-	if !ok {
-		return 0, fmt.Errorf("unexpected totalDifficulty type %T", resp["totalDifficulty"])
-	}
-
-	td, err := hexutil.DecodeUint64(raw)
-	if err != nil {
-		return 0, fmt.Errorf("failed to decode totalDifficulty %q: %w", raw, err)
-	}
-
-	return td, nil
+	return bor.GetTdByHash(ctx, blockHash)
 }
 
 // GetBorChainBlockAuthor returns the producer of the bor block
@@ -818,29 +689,15 @@ func (c *ContractCaller) GetBorChainBlockAuthor(ctx context.Context, blockNum *b
 	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
-	if c.BorChainGrpcFlag {
-		grpcClient, err := c.getRequiredBorGRPCClient()
-		if err != nil {
-			// the return on the next line is what matters; log deletion is observable only in ops.
-			// mutator-disable-next-line operator-log line
-			Logger.Error(errUnableToConnect, "error", err)
-			return nil, err
-		}
-		author, err := grpcClient.GetAuthor(ctx, blockNum)
-		if err != nil {
-			if !errors.Is(err, ethereum.NotFound) {
-				Logger.Error(errUnableToConnect, "error", err)
-			}
-			return nil, err
-		}
-		if author == nil {
-			return nil, ethereum.NotFound
-		}
-		return author, nil
+	bor, err := c.borClient()
+	if err != nil {
+		// the return on the next line is what matters; log deletion is observable only in ops.
+		// mutator-disable-next-line operator-log line
+		Logger.Error(errUnableToConnect, "error", err)
+		return nil, err
 	}
 
-	var author *common.Address
-	err := c.BorChainClient.Client().CallContext(ctx, &author, "bor_getAuthor", toBlockNumArg(blockNum))
+	author, err := bor.GetAuthor(ctx, blockNum)
 	if err != nil {
 		if !errors.Is(err, ethereum.NotFound) {
 			Logger.Error(errUnableToConnect, "error", err)
@@ -855,8 +712,11 @@ func (c *ContractCaller) GetBorChainBlockAuthor(ctx context.Context, blockNum *b
 
 // GetBlockNumberFromTxHash gets the block number of transaction
 func (c *ContractCaller) GetBlockNumberFromTxHash(tx common.Hash) (*big.Int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.MainChainTimeout)
+	defer cancel()
+
 	var rpcTx rpcTransaction
-	if err := c.MainChainRPCClient.CallContext(context.Background(), &rpcTx, "eth_getTransactionByHash", tx); err != nil {
+	if err := c.MainChainRPCClient.CallContext(ctx, &rpcTx, "eth_getTransactionByHash", tx); err != nil {
 		return nil, err
 	}
 
@@ -955,177 +815,65 @@ func (c *ContractCaller) GetConfirmedTxReceipt(ctx context.Context, tx common.Ha
 	return receipt, nil
 }
 
-// DecodeNewHeaderBlockEvent represents the new header block event
-func (c *ContractCaller) DecodeNewHeaderBlockEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*rootchain.RootchainNewHeaderBlock, error) {
-	event := new(rootchain.RootchainNewHeaderBlock)
-
+// decodeLog unpacks the log at logIndex in receipt as eventName, accepting it
+// only if it was emitted by contractAddressString.
+func decodeLog[T any](contractABI *abi.ABI, eventName, contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*T, error) {
 	contractAddress := common.HexToAddress(contractAddressString)
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.RootChainABI, event, NewHeaderBlockEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
+			return UnpackLogAs[T](contractABI, eventName, vLog)
 		}
 	}
 
 	return nil, errors.New(errEventNotFound)
+}
+
+// DecodeNewHeaderBlockEvent represents the new header block event
+func (c *ContractCaller) DecodeNewHeaderBlockEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*rootchain.RootchainNewHeaderBlock, error) {
+	return decodeLog[rootchain.RootchainNewHeaderBlock](&c.RootChainABI, NewHeaderBlockEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeValidatorTopupFeesEvent represents topUp for fees tokens
 func (c *ContractCaller) DecodeValidatorTopupFeesEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoTopUpFee, error) {
-	event := new(stakinginfo.StakinginfoTopUpFee)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, TopUpFeeEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoTopUpFee](&c.StakingInfoABI, TopUpFeeEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeValidatorJoinEvent represents validator staked event
 func (c *ContractCaller) DecodeValidatorJoinEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStaked, error) {
-	event := new(stakinginfo.StakinginfoStaked)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, StakedEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoStaked](&c.StakingInfoABI, StakedEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeValidatorStakeUpdateEvent represents validator stake update event
 func (c *ContractCaller) DecodeValidatorStakeUpdateEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStakeUpdate, error) {
-	event := new(stakinginfo.StakinginfoStakeUpdate)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, StakeUpdateEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoStakeUpdate](&c.StakingInfoABI, StakeUpdateEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeValidatorExitEvent represents validator stake unStake event
 func (c *ContractCaller) DecodeValidatorExitEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnstakeInit, error) {
-	event := new(stakinginfo.StakinginfoUnstakeInit)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, UnstakeInitEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoUnstakeInit](&c.StakingInfoABI, UnstakeInitEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeSignerUpdateEvent represents sig update event
 func (c *ContractCaller) DecodeSignerUpdateEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSignerChange, error) {
-	event := new(stakinginfo.StakinginfoSignerChange)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, SignerChangeEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoSignerChange](&c.StakingInfoABI, SignerChangeEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeStateSyncedEvent decode state sync data
 func (c *ContractCaller) DecodeStateSyncedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*statesender.StatesenderStateSynced, error) {
-	event := new(statesender.StatesenderStateSynced)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StateSenderABI, event, StateSyncedEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[statesender.StatesenderStateSynced](&c.StateSenderABI, StateSyncedEvent, contractAddressString, receipt, logIndex)
 }
 
 // decode slashing events
 
 // DecodeSlashedEvent represents tick ack on contract
 func (c *ContractCaller) DecodeSlashedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSlashed, error) {
-	event := new(stakinginfo.StakinginfoSlashed)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, SlashedEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoSlashed](&c.StakingInfoABI, SlashedEvent, contractAddressString, receipt, logIndex)
 }
 
 // DecodeUnJailedEvent represents unJail on contract
 func (c *ContractCaller) DecodeUnJailedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnJailed, error) {
-	event := new(stakinginfo.StakinginfoUnJailed)
-
-	contractAddress := common.HexToAddress(contractAddressString)
-
-	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, UnJailedEvent, vLog); err != nil {
-				return nil, err
-			}
-
-			return event, nil
-		}
-	}
-
-	return nil, errors.New(errEventNotFound)
+	return decodeLog[stakinginfo.StakinginfoUnJailed](&c.StakingInfoABI, UnJailedEvent, contractAddressString, receipt, logIndex)
 }
 
 //
@@ -1134,7 +882,10 @@ func (c *ContractCaller) DecodeUnJailedEvent(contractAddressString string, recei
 
 // CurrentAccountStateRoot get current account root from on the chain
 func (c *ContractCaller) CurrentAccountStateRoot(stakingInfoInstance *stakinginfo.Stakinginfo) ([32]byte, error) {
-	accountStateRoot, err := stakingInfoInstance.GetAccountStateRoot(nil)
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	accountStateRoot, err := stakingInfoInstance.GetAccountStateRoot(opts)
 	if err != nil {
 		Logger.Error("Unable to get current account state root", "error", err)
 
@@ -1152,7 +903,10 @@ func (c *ContractCaller) CurrentAccountStateRoot(stakingInfoInstance *stakinginf
 
 // CurrentSpanNumber get current span
 func (c *ContractCaller) CurrentSpanNumber(validatorSetInstance *validatorset.Validatorset) (Number *big.Int) {
-	result, err := validatorSetInstance.CurrentSpanNumber(nil)
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	result, err := validatorSetInstance.CurrentSpanNumber(opts)
 	if err != nil {
 		Logger.Error("Unable to get current span number", "error", err)
 		return nil
@@ -1168,7 +922,10 @@ func (c *ContractCaller) GetSpanDetails(id *big.Int, validatorSetInstance *valid
 	*big.Int,
 	error,
 ) {
-	d, err := validatorSetInstance.GetSpan(nil, id)
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	d, err := validatorSetInstance.GetSpan(opts, id)
 	if err != nil {
 		return nil, nil, nil, errors.New("unable to get span details")
 	}
@@ -1177,7 +934,10 @@ func (c *ContractCaller) GetSpanDetails(id *big.Int, validatorSetInstance *valid
 
 // CurrentStateCounter get state counter
 func (c *ContractCaller) CurrentStateCounter(stateSenderInstance *statesender.Statesender) (Number *big.Int) {
-	result, err := stateSenderInstance.Counter(nil)
+	opts, cancel := c.mainChainCallOpts()
+	defer cancel()
+
+	result, err := stateSenderInstance.Counter(opts)
 	if err != nil {
 		Logger.Error("Unable to get current counter number", "error", err)
 		return nil
@@ -1192,20 +952,12 @@ func (c *ContractCaller) CheckIfBlocksExist(ctx context.Context, number uint64) 
 	callCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
-	var (
-		header *ethTypes.Header
-		err    error
-	)
-
-	if c.BorChainGrpcFlag {
-		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
-		if grpcErr != nil {
-			return false, grpcErr
-		}
-		header, err = grpcClient.HeaderByNumber(callCtx, int64(number))
-	} else {
-		header, err = c.BorChainClient.HeaderByNumber(callCtx, big.NewInt(int64(number)))
+	bor, err := c.borClient()
+	if err != nil {
+		return false, err
 	}
+
+	header, err := bor.HeaderByNumber(callCtx, int64(number))
 	if err != nil {
 		if errors.Is(err, ethereum.NotFound) {
 			return false, nil
@@ -1221,19 +973,15 @@ func (c *ContractCaller) CheckIfBlocksExist(ctx context.Context, number uint64) 
 
 // GetBlockByNumber returns blocks by number from the child chain (bor)
 func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint64) (*ethTypes.Block, error) {
-	var block *ethTypes.Block
-	var err error
+	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
+	defer cancel()
 
-	if c.BorChainGrpcFlag {
-		grpcClient, grpcErr := c.getRequiredBorGRPCClient()
-		if grpcErr != nil {
-			return nil, grpcErr
-		}
-		block, err = grpcClient.BlockByNumber(ctx, int64(blockNumber))
-	} else {
-		block, err = c.BorChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+	bor, err := c.borClient()
+	if err != nil {
+		return nil, err
 	}
 
+	block, err := bor.BlockByNumber(ctx, int64(blockNumber))
 	if err != nil {
 		Logger.Error("Unable to fetch block by number from child chain", "block", block, "err", err)
 		return nil, err
@@ -1251,7 +999,7 @@ func (c *ContractCaller) GetMainTxReceipt(ctx context.Context, txHash common.Has
 	callCtx, cancel := context.WithTimeout(ctx, c.MainChainTimeout)
 	defer cancel()
 
-	return c.getTxReceipt(callCtx, c.MainChainClient, txHash)
+	return c.MainChainClient.TransactionReceipt(callCtx, txHash)
 }
 
 // BatchGetMainChainTxReceipts fetches multiple main chain tx receipts in a single JSON-RPC batch call.
@@ -1293,24 +1041,12 @@ func (c *ContractCaller) GetBorTxReceipt(txHash common.Hash) (*ethTypes.Receipt,
 	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
 	defer cancel()
 
-	if c.BorChainGrpcFlag {
-		grpcClient, err := c.getRequiredBorGRPCClient()
-		if err != nil {
-			return nil, err
-		}
-		return grpcClient.TransactionReceipt(ctx, txHash)
+	bor, err := c.borClient()
+	if err != nil {
+		return nil, err
 	}
-	return c.getTxReceipt(ctx, c.BorChainClient, txHash)
-}
 
-func (c *ContractCaller) getTxReceipt(
-	ctx context.Context,
-	client interface {
-		TransactionReceipt(context.Context, common.Hash) (*ethTypes.Receipt, error)
-	},
-	txHash common.Hash,
-) (*ethTypes.Receipt, error) {
-	return client.TransactionReceipt(ctx, txHash)
+	return bor.TransactionReceipt(ctx, txHash)
 }
 
 // GetCheckpointSign returns sigs input of committed checkpoint transaction
@@ -1334,100 +1070,124 @@ func (c *ContractCaller) GetCheckpointSign(txHash common.Hash) ([]byte, []byte, 
 	return UnpackSigAndVotes(payload, chainABI)
 }
 
-// getRequiredBorGRPCClient returns the bor grpc client or an error
-func (c *ContractCaller) getRequiredBorGRPCClient() (BorGRPCClienter, error) {
+// borReader is the set of Bor queries the contract caller makes. The Bor gRPC
+// client implements it directly; borHTTPClient implements it over JSON-RPC.
+type borReader interface {
+	HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error)
+	BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error)
+	GetRootHash(ctx context.Context, startBlock uint64, endBlock uint64) (string, error)
+	GetVoteOnHash(ctx context.Context, startBlock uint64, endBlock uint64, rootHash string, milestoneId string) (bool, error)
+	GetAuthor(ctx context.Context, blockNum *big.Int) (*common.Address, error)
+	GetTdByHash(ctx context.Context, hash common.Hash) (uint64, error)
+	GetBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error)
+	TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error)
+}
+
+// borClient returns the Bor transport selected by BorChainGrpcFlag.
+func (c *ContractCaller) borClient() (borReader, error) {
+	if !c.BorChainGrpcFlag {
+		return borHTTPClient{client: c.BorChainClient}, nil
+	}
 	if c.BorChainGrpcClient == nil {
 		return nil, errors.New("bor grpc client is nil while bor grpc flag is enabled")
 	}
 	return c.BorChainGrpcClient, nil
 }
 
-// utility and helper methods
+// borHTTPClient serves borReader over Bor's JSON-RPC endpoint.
+type borHTTPClient struct {
+	client *ethclient.Client
+}
 
-// populateABIs fills the package level cache for contracts' ABIs.
-// When called the first time, ContractsABIsMap will be filled,
-// and the getABI method won't be invoked the next time.
-// This reduces the number of calls to JSON decode methods made by the contract caller.
-// It uses ABIs' definitions instead of contracts' addresses,
-// as the latter might not be available at initialization time
-func populateABIs(contractCallerObj *ContractCaller) error {
-	var ccAbi *abi.ABI
+func (h borHTTPClient) HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error) {
+	return h.client.HeaderByNumber(ctx, big.NewInt(blockID))
+}
 
-	var err error
+func (h borHTTPClient) BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error) {
+	return h.client.BlockByNumber(ctx, big.NewInt(blockID))
+}
 
-	contractsABIs := [8]string{
-		rootchain.RootchainMetaData.ABI, stakinginfo.StakinginfoMetaData.ABI, validatorset.ValidatorsetMetaData.ABI,
-		statereceiver.StatereceiverMetaData.ABI, statesender.StatesenderMetaData.ABI, stakemanager.StakemanagerMetaData.ABI,
-		slashmanager.SlashmanagerMetaData.ABI, erc20.Erc20MetaData.ABI,
+func (h borHTTPClient) GetRootHash(ctx context.Context, startBlock uint64, endBlock uint64) (string, error) {
+	return h.client.GetRootHash(ctx, startBlock, endBlock)
+}
+
+func (h borHTTPClient) GetVoteOnHash(ctx context.Context, startBlock uint64, endBlock uint64, rootHash string, milestoneId string) (bool, error) {
+	return h.client.GetVoteOnHash(ctx, startBlock, endBlock, rootHash, milestoneId)
+}
+
+func (h borHTTPClient) GetAuthor(ctx context.Context, blockNum *big.Int) (*common.Address, error) {
+	var author *common.Address
+	if err := h.client.Client().CallContext(ctx, &author, "bor_getAuthor", borgrpc.ToBlockNumArg(blockNum)); err != nil {
+		return nil, err
+	}
+	return author, nil
+}
+
+func (h borHTTPClient) TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error) {
+	return h.client.TransactionReceipt(ctx, txHash)
+}
+
+// GetTdByHash returns the total difficulty of the block with the given hash.
+func (h borHTTPClient) GetTdByHash(ctx context.Context, blockHash common.Hash) (uint64, error) {
+	rpcClient := h.client.Client()
+
+	var resp map[string]interface{}
+	if err := rpcClient.CallContext(ctx, &resp, "eth_getTdByHash", blockHash.Hex()); err != nil {
+		return 0, err
+	}
+	// A missing block surfaces as ethereum.NotFound, matching the gRPC transport
+	if resp == nil || resp["totalDifficulty"] == nil {
+		return 0, ethereum.NotFound
 	}
 
-	// iterate over supported ABIs
-	for _, contractABI := range contractsABIs {
-		ccAbi, err = chooseContractCallerABI(contractCallerObj, contractABI)
+	raw, ok := resp["totalDifficulty"].(string)
+	if !ok {
+		return 0, fmt.Errorf("unexpected totalDifficulty type %T", resp["totalDifficulty"])
+	}
+
+	td, err := hexutil.DecodeUint64(raw)
+	if err != nil {
+		return 0, fmt.Errorf("failed to decode totalDifficulty %q: %w", raw, err)
+	}
+
+	return td, nil
+}
+
+// utility and helper methods
+
+// mainChainCallOpts bounds a main chain contract view call by MainChainTimeout.
+func (c *ContractCaller) mainChainCallOpts() (*bind.CallOpts, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.MainChainTimeout)
+	return &bind.CallOpts{Context: ctx}, cancel
+}
+
+// populateABIs copies each contract's ABI onto the caller. The generated
+// bindings parse their ABI once and cache it, so no JSON is decoded per caller.
+func populateABIs(contractCallerObj *ContractCaller) error {
+	abis := []struct {
+		dst      *abi.ABI
+		metaData *bind.MetaData
+	}{
+		{&contractCallerObj.RootChainABI, rootchain.RootchainMetaData},
+		{&contractCallerObj.StakingInfoABI, stakinginfo.StakinginfoMetaData},
+		{&contractCallerObj.ValidatorSetABI, validatorset.ValidatorsetMetaData},
+		{&contractCallerObj.StateReceiverABI, statereceiver.StatereceiverMetaData},
+		{&contractCallerObj.StateSenderABI, statesender.StatesenderMetaData},
+		{&contractCallerObj.StakeManagerABI, stakemanager.StakemanagerMetaData},
+		{&contractCallerObj.SlashManagerABI, slashmanager.SlashmanagerMetaData},
+		{&contractCallerObj.PolTokenABI, erc20.Erc20MetaData},
+	}
+
+	for _, a := range abis {
+		parsed, err := a.metaData.GetAbi()
 		if err != nil {
-			Logger.Error("Error while fetching contract caller ABI", "error", err)
+			Logger.Error("Error while parsing contract ABI", "error", err)
 			return err
 		}
-
-		if ContractsABIsMap[contractABI] == nil {
-			// fills cached abi map
-			if *ccAbi, err = getABI(contractABI); err != nil {
-				Logger.Error("Error while getting ABI for contract caller", "name", contractABI, "error", err)
-				return err
-			}
-			ContractsABIsMap[contractABI] = ccAbi
-		} else {
-			// use cached abi
-			*ccAbi = *ContractsABIsMap[contractABI]
-		}
+		*a.dst = *parsed
 	}
 
 	return nil
-}
-
-// chooseContractCallerABI extracts and returns the abo.ABI object from the contractCallerObj based on its abi string
-func chooseContractCallerABI(contractCallerObj *ContractCaller, abi string) (*abi.ABI, error) {
-	switch abi {
-	case rootchain.RootchainMetaData.ABI:
-		return &contractCallerObj.RootChainABI, nil
-	case stakinginfo.StakinginfoMetaData.ABI:
-		return &contractCallerObj.StakingInfoABI, nil
-	case validatorset.ValidatorsetMetaData.ABI:
-		return &contractCallerObj.ValidatorSetABI, nil
-	case statereceiver.StatereceiverMetaData.ABI:
-		return &contractCallerObj.StateReceiverABI, nil
-	case statesender.StatesenderMetaData.ABI:
-		return &contractCallerObj.StateSenderABI, nil
-	case stakemanager.StakemanagerMetaData.ABI:
-		return &contractCallerObj.StakeManagerABI, nil
-	case slashmanager.SlashmanagerMetaData.ABI:
-		return &contractCallerObj.SlashManagerABI, nil
-	case erc20.Erc20MetaData.ABI:
-		return &contractCallerObj.PolTokenABI, nil
-	}
-
-	return nil, errors.New("no ABI associated with such data")
-}
-
-// getABI returns the contract's ABI struct from on its JSON representation
-func getABI(data string) (abi.ABI, error) {
-	return abi.JSON(strings.NewReader(data))
-}
-
-// copied from bor/ethclient package
-func toBlockNumArg(number *big.Int) string {
-	if number == nil {
-		return "latest"
-	}
-	if number.Sign() >= 0 {
-		return hexutil.EncodeBig(number)
-	}
-	// It's negative.
-	if number.IsInt64() {
-		return rpc.BlockNumber(number.Int64()).String()
-	}
-	// It's negative and large, which is invalid.
-	return fmt.Sprintf("<invalid %d>", number)
 }
 
 // BeginPrefetchRound starts a new round of prefetch lifecycle for ExtendVote.

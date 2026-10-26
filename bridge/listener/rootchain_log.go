@@ -3,6 +3,9 @@ package listener
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -18,207 +21,125 @@ const (
 	failedToParseEventLog = "RootChainListener: error while parsing event"
 )
 
-// handleLog handles the given log
-func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event) {
+// validatorSlot is this node's turn among the validators that submit the same
+// root chain event to heimdall, so they don't all broadcast it at once.
+type validatorSlot struct {
+	isValidator bool
+	delay       time.Duration
+}
+
+func (rl *RootChainListener) currentValidatorSlot() (validatorSlot, error) {
+	if rl.validatorSlotSource != nil {
+		return rl.validatorSlotSource()
+	}
+
+	isValidator, delay, err := util.CalculateTaskDelay(rl.cliCtx.Codec)
+	return validatorSlot{isValidator: isValidator, delay: delay}, err
+}
+
+// handleLog enqueues the processor task for a validated root chain log. The
+// validator that emitted the event on L1 submits it first when that's this
+// node; otherwise current validators submit it in slot order. It returns an
+// error only when the task couldn't be queued.
+func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event, slot validatorSlot) error {
+	spec, ok := rootChainEvents[selectedEvent.Name]
+	if !ok {
+		return nil
+	}
+
 	rl.Logger.Debug("RootChainListener: receivedEvent", "eventName", selectedEvent.Name)
 
+	event, isSender, err := rl.decodeEventSender(vLog, selectedEvent)
+	if err != nil {
+		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
+		return nil
+	}
+
+	var delay time.Duration
+	switch {
+	case isSender:
+	case slot.isValidator:
+		delay = slot.delay
+	default:
+		return nil
+	}
+	delay += spec.extraDelay
+
+	logBytes, err := json.Marshal(vLog)
+	if err != nil {
+		rl.Logger.Error(failedToMarshalLog, "error", err)
+		return nil
+	}
+
+	rl.Logger.Info("RootChainListener: sending task", "eventName", selectedEvent.Name, "taskName", spec.task, "txHash", vLog.TxHash, "delay", delay)
+
+	start := time.Now()
+	err = rl.sendTask(spec.task, rootChainTaskRetryCount, delay, stringArg(selectedEvent.Name), stringArg(string(logBytes)))
+	util.LogElapsedTimeForStateSyncedEvent(event, "sendTask", start)
+
+	return err
+}
+
+// decodeEventSender decodes vLog and reports whether this node's validator
+// emitted it on L1. The decoded event feeds the state sync timing logs.
+func (rl *RootChainListener) decodeEventSender(vLog types.Log, selectedEvent *abi.Event) (interface{}, bool, error) {
 	switch selectedEvent.Name {
-	case helper.NewHeaderBlockEvent:
-		rl.handleNewHeaderBlockLog(vLog, selectedEvent)
 	case helper.StakedEvent:
-		rl.handleStakedLog(vLog, selectedEvent)
+		event, err := helper.UnpackLogAs[stakinginfo.StakinginfoStaked](rl.stakingInfoAbi, selectedEvent.Name, &vLog)
+		if err != nil {
+			return nil, false, err
+		}
+
+		pubKey := helper.GetPubKey()
+		if len(pubKey) < 1 {
+			return nil, false, errors.New("public key length is invalid")
+		}
+		if !helper.IsPubKeyFirstByteValid(pubKey[0:1]) {
+			rl.Logger.Error("RootChainListener: public key first byte mismatch", "expected", "0x04", "received", pubKey[0:1])
+		}
+
+		return event, bytes.Equal(event.SignerPubkey, pubKey[1:]), nil
+
 	case helper.StakeUpdateEvent:
-		rl.handleStakeUpdateLog(vLog, selectedEvent)
+		event, err := helper.UnpackLogAs[stakinginfo.StakinginfoStakeUpdate](rl.stakingInfoAbi, selectedEvent.Name, &vLog)
+		if err != nil {
+			return nil, false, err
+		}
+		return event, util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec), nil
+
 	case helper.SignerChangeEvent:
-		rl.handleSignerChangeLog(vLog, selectedEvent)
+		event, err := helper.UnpackLogAs[stakinginfo.StakinginfoSignerChange](rl.stakingInfoAbi, selectedEvent.Name, &vLog)
+		if err != nil {
+			return nil, false, err
+		}
+		pubKey := helper.GetPubKey()
+		return event, bytes.Equal(event.SignerPubkey, pubKey[1:]) && helper.IsPubKeyFirstByteValid(pubKey[0:1]), nil
+
 	case helper.UnstakeInitEvent:
-		rl.handleUnstakeInitLog(vLog, selectedEvent)
+		event, err := helper.UnpackLogAs[stakinginfo.StakinginfoUnstakeInit](rl.stakingInfoAbi, selectedEvent.Name, &vLog)
+		if err != nil {
+			return nil, false, err
+		}
+		return event, util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec), nil
+
 	case helper.StateSyncedEvent:
-		rl.handleStateSyncedLog(vLog, selectedEvent)
+		event, err := helper.UnpackLogAs[statesender.StatesenderStateSynced](rl.stateSenderAbi, selectedEvent.Name, &vLog)
+		if err != nil {
+			return nil, false, err
+		}
+		rl.Logger.Info("RootChainListener: StateSyncedEvent detected", "stateSyncId", event.Id)
+		return event, false, nil
+
 	case helper.TopUpFeeEvent:
-		rl.handleTopUpFeeLog(vLog, selectedEvent)
-	case helper.SlashedEvent:
-		rl.handleSlashedLog(vLog, selectedEvent)
-	case helper.UnJailedEvent:
-		rl.handleUnJailedLog(vLog, selectedEvent)
-	}
-}
+		event, err := helper.UnpackLogAs[stakinginfo.StakinginfoTopUpFee](rl.stakingInfoAbi, selectedEvent.Name, &vLog)
+		if err != nil {
+			return nil, false, err
+		}
+		return event, bytes.Equal(event.User.Bytes(), helper.GetAddress()), nil
 
-func (rl *RootChainListener) handleNewHeaderBlockLog(vLog types.Log, selectedEvent *abi.Event) {
-	logBytes, err := json.Marshal(vLog)
-	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "error", err)
-		return
+	case helper.NewHeaderBlockEvent:
+		return nil, false, nil
 	}
 
-	if isCurrentValidator, delay := util.CalculateTaskDelay(selectedEvent, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendCheckpointAckToHeimdall", selectedEvent.Name, logBytes, delay, selectedEvent)
-	}
-}
-
-func (rl *RootChainListener) handleStakedLog(vLog types.Log, selectedEvent *abi.Event) {
-	logBytes, err := json.Marshal(vLog)
-	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "error", err)
-		return
-	}
-
-	pubKey := helper.GetPubKey()
-
-	event := new(stakinginfo.StakinginfoStaked)
-	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
-		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
-		return
-	}
-
-	if len(pubKey) < 1 {
-		rl.Logger.Error("RootChainListener: public key length is invalid", "length", len(pubKey))
-		return
-	}
-
-	if !helper.IsPubKeyFirstByteValid(pubKey[0:1]) {
-		rl.Logger.Error("RootChainListener: public key first byte mismatch", "expected", "0x04", "received", pubKey[0:1])
-	}
-
-	if bytes.Equal(event.SignerPubkey, pubKey[1:]) {
-		delay := util.TaskDelayBetweenEachVal
-		rl.SendTaskWithDelay("sendValidatorJoinToHeimdall", selectedEvent.Name, logBytes, delay, event)
-	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		delay = delay + util.TaskDelayBetweenEachVal
-		rl.SendTaskWithDelay("sendValidatorJoinToHeimdall", selectedEvent.Name, logBytes, delay, event)
-	}
-}
-
-func (rl *RootChainListener) handleStakeUpdateLog(vLog types.Log, selectedEvent *abi.Event) {
-	logBytes, err := json.Marshal(vLog)
-	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "error", err)
-		return
-	}
-
-	event := new(stakinginfo.StakinginfoStakeUpdate)
-	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
-		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
-		return
-	}
-
-	if util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec) {
-		rl.SendTaskWithDelay("sendStakeUpdateToHeimdall", selectedEvent.Name, logBytes, 0, event)
-	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendStakeUpdateToHeimdall", selectedEvent.Name, logBytes, delay, event)
-	}
-}
-
-func (rl *RootChainListener) handleSignerChangeLog(vLog types.Log, selectedEvent *abi.Event) {
-	logBytes, err := json.Marshal(vLog)
-	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "error", err)
-		return
-	}
-
-	pubKey := helper.GetPubKey()
-
-	event := new(stakinginfo.StakinginfoSignerChange)
-	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
-		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
-		return
-	}
-
-	if bytes.Equal(event.SignerPubkey, pubKey[1:]) && helper.IsPubKeyFirstByteValid(pubKey[0:1]) {
-		rl.SendTaskWithDelay("sendSignerChangeToHeimdall", selectedEvent.Name, logBytes, 0, event)
-	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendSignerChangeToHeimdall", selectedEvent.Name, logBytes, delay, event)
-	}
-}
-
-func (rl *RootChainListener) handleUnstakeInitLog(vLog types.Log, selectedEvent *abi.Event) {
-	logBytes, err := json.Marshal(vLog)
-	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "error", err)
-		return
-	}
-
-	event := new(stakinginfo.StakinginfoUnstakeInit)
-	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
-		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
-		return
-	}
-
-	if util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec) {
-		rl.SendTaskWithDelay("sendUnstakeInitToHeimdall", selectedEvent.Name, logBytes, 0, event)
-	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendUnstakeInitToHeimdall", selectedEvent.Name, logBytes, delay, event)
-	}
-}
-
-func (rl *RootChainListener) handleStateSyncedLog(vLog types.Log, selectedEvent *abi.Event) {
-	logBytes, err := json.Marshal(vLog)
-	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "error", err)
-		return
-	}
-
-	event := new(statesender.StatesenderStateSynced)
-	if err = helper.UnpackLog(rl.stateSenderAbi, event, selectedEvent.Name, &vLog); err != nil {
-		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
-		return
-	}
-
-	rl.Logger.Info("RootChainListener: StateSyncedEvent detected", "stateSyncId", event.Id)
-
-	if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendStateSyncedToHeimdall", selectedEvent.Name, logBytes, delay, event)
-	}
-}
-
-func (rl *RootChainListener) handleTopUpFeeLog(vLog types.Log, selectedEvent *abi.Event) {
-	logBytes, err := json.Marshal(vLog)
-	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "error", err)
-		return
-	}
-
-	event := new(stakinginfo.StakinginfoTopUpFee)
-	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
-		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
-		return
-	}
-
-	if bytes.Equal(event.User.Bytes(), helper.GetAddress()) {
-		rl.SendTaskWithDelay("sendTopUpFeeToHeimdall", selectedEvent.Name, logBytes, 0, event)
-	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendTopUpFeeToHeimdall", selectedEvent.Name, logBytes, delay, event)
-	}
-}
-
-func (rl *RootChainListener) handleSlashedLog(vLog types.Log, selectedEvent *abi.Event) {
-	logBytes, err := json.Marshal(vLog)
-	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "error", err)
-		return
-	}
-
-	if isCurrentValidator, delay := util.CalculateTaskDelay(selectedEvent, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendTickAckToHeimdall", selectedEvent.Name, logBytes, delay, selectedEvent)
-	}
-}
-
-func (rl *RootChainListener) handleUnJailedLog(vLog types.Log, selectedEvent *abi.Event) {
-	logBytes, err := json.Marshal(vLog)
-	if err != nil {
-		rl.Logger.Error(failedToMarshalLog, "error", err)
-		return
-	}
-
-	event := new(stakinginfo.StakinginfoUnJailed)
-	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
-		rl.Logger.Error(failedToParseEventLog, "name", selectedEvent.Name, "error", err)
-		return
-	}
-
-	if util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec) {
-		rl.SendTaskWithDelay("sendUnjailToHeimdall", selectedEvent.Name, logBytes, 0, event)
-	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
-		rl.SendTaskWithDelay("sendUnjailToHeimdall", selectedEvent.Name, logBytes, delay, event)
-	}
+	return nil, false, fmt.Errorf("no decoder for root chain event %s", selectedEvent.Name)
 }

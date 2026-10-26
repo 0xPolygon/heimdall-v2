@@ -17,49 +17,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// rootChainListenerForTest wraps RootChainListener for testing
-type rootChainListenerForTest struct {
-	RootChainListener
-	mockConnector *mockQueueConnector
-}
-
-func (r *rootChainListenerForTest) SendTaskWithDelay(taskName string, eventName string, logBytes []byte, delay time.Duration, _ interface{}) {
-	signature := &tasks.Signature{
-		Name: taskName,
-		Args: []tasks.Arg{
-			{
-				Type:  "string",
-				Value: eventName,
-			},
-			{
-				Type:  "string",
-				Value: string(logBytes),
-			},
-		},
-	}
-	signature.RetryCount = 5
-
-	eta := time.Now().Add(delay)
-	signature.ETA = &eta
-
-	r.Logger.Info("Sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)
-
-	_, err := r.mockConnector.SendTask(signature)
-	if err != nil {
-		r.Logger.Error("Error sending task", "taskName", taskName, "error", err)
-	}
-}
-
-func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
+func TestRootChainListener_sendTask(t *testing.T) {
 	t.Parallel()
 
 	t.Run("sends task with correct signature structure", func(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &rootChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &RootChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		taskName := "testTask"
@@ -90,7 +55,7 @@ func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
 			return sig.ETA.Sub(expectedTime).Abs() < time.Second
 		})).Return(nil, nil).Once()
 
-		listener.SendTaskWithDelay(taskName, eventName, logBytes, delay, nil)
+		_ = listener.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -99,9 +64,7 @@ func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &rootChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &RootChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		taskName := "delayedTask"
@@ -121,7 +84,7 @@ func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
 			return timeDiff < time.Second
 		})).Return(nil, nil).Once()
 
-		listener.SendTaskWithDelay(taskName, eventName, logBytes, delay, nil)
+		_ = listener.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -130,9 +93,7 @@ func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &rootChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &RootChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		taskName := "sendStateSyncedToHeimdall"
@@ -146,7 +107,7 @@ func TestRootChainListener_SendTaskWithDelay(t *testing.T) {
 				sig.Args[1].Type == "string"
 		})).Return(nil, nil).Once()
 
-		listener.SendTaskWithDelay(taskName, eventName, logBytes, 0, nil)
+		_ = listener.sendTask(taskName, rootChainTaskRetryCount, 0, stringArg(eventName), stringArg(string(logBytes)))
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -692,9 +653,7 @@ func TestRootChainListener_Integration(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &rootChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &RootChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		taskName := "sendNewHeaderBlockToHeimdall"
@@ -710,7 +669,7 @@ func TestRootChainListener_Integration(t *testing.T) {
 				sig.Args[1].Value == string(logBytes)
 		})).Return(nil, nil).Once()
 
-		listener.SendTaskWithDelay(taskName, eventName, logBytes, delay, nil)
+		_ = listener.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
 
 		// Wait for the task to be sent
 		select {
@@ -731,9 +690,7 @@ func TestRootChainListener_EdgeCases(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &rootChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &RootChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		mockConnector.On("SendTask", mock.MatchedBy(func(sig *tasks.Signature) bool {
@@ -741,7 +698,7 @@ func TestRootChainListener_EdgeCases(t *testing.T) {
 		})).Return(nil, nil).Once()
 
 		require.NotPanics(t, func() {
-			listener.SendTaskWithDelay("test", "", []byte("{}"), 0, nil)
+			_ = listener.sendTask("test", rootChainTaskRetryCount, 0, stringArg(""), stringArg(string([]byte("{}"))))
 		})
 
 		mockConnector.AssertExpectations(t)
@@ -751,9 +708,7 @@ func TestRootChainListener_EdgeCases(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &rootChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &RootChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		mockConnector.On("SendTask", mock.MatchedBy(func(sig *tasks.Signature) bool {
@@ -761,7 +716,7 @@ func TestRootChainListener_EdgeCases(t *testing.T) {
 		})).Return(nil, nil).Once()
 
 		require.NotPanics(t, func() {
-			listener.SendTaskWithDelay("test", "event", []byte(""), 0, nil)
+			_ = listener.sendTask("test", rootChainTaskRetryCount, 0, stringArg("event"), stringArg(string([]byte(""))))
 		})
 
 		mockConnector.AssertExpectations(t)
@@ -771,9 +726,7 @@ func TestRootChainListener_EdgeCases(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &rootChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &RootChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		largeDelay := 24 * time.Hour
@@ -788,7 +741,7 @@ func TestRootChainListener_EdgeCases(t *testing.T) {
 		})).Return(nil, nil).Once()
 
 		require.NotPanics(t, func() {
-			listener.SendTaskWithDelay("test", "event", []byte("{}"), largeDelay, nil)
+			_ = listener.sendTask("test", rootChainTaskRetryCount, largeDelay, stringArg("event"), stringArg(string([]byte("{}"))))
 		})
 
 		mockConnector.AssertExpectations(t)

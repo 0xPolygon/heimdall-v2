@@ -2,6 +2,7 @@ package listener
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -905,7 +906,7 @@ func TestConfirmStakeEventIdentity(t *testing.T) {
 
 	newListener := func(t *testing.T) *RootChainListener {
 		t.Helper()
-		rl := &RootChainListener{BaseListener: BaseListener{Logger: log.NewNopLogger()}}
+		rl := &RootChainListener{BaseListener: BaseListener{Logger: log.NewNopLogger()}, contractCaller: &helper.ContractCaller{}}
 		rl.contractCaller.StakingInfoABI = stakingInfoABIForTest(t)
 		return rl
 	}
@@ -1369,4 +1370,29 @@ func testContext(t *testing.T) context.Context {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	t.Cleanup(cancel)
 	return ctx
+}
+
+// TestDispatchRecoveredLog_IgnoresUnhandledLogs guards against a recovered log
+// whose topic the listener doesn't know, or doesn't handle, being dereferenced
+// or queued.
+func TestDispatchRecoveredLog_IgnoresUnhandledLogs(t *testing.T) {
+	t.Parallel()
+
+	handledTopic := common.HexToHash("0x01")
+	unhandledTopic := common.HexToHash("0x02")
+	rl := &RootChainListener{
+		BaseListener: BaseListener{Logger: log.NewNopLogger()},
+		eventMap: map[common.Hash]*abi.Event{
+			handledTopic:   {Name: helper.NewHeaderBlockEvent},
+			unhandledTopic: {Name: helper.SlashedEvent},
+		},
+		validatorSlotSource: func() (validatorSlot, error) {
+			return validatorSlot{}, errors.New("slot must not be fetched for an ignored log")
+		},
+	}
+
+	require.NoError(t, rl.dispatchRecoveredLog(&types.Log{Topics: []common.Hash{common.HexToHash("0x03")}}))
+	require.NoError(t, rl.dispatchRecoveredLog(&types.Log{Topics: []common.Hash{unhandledTopic}}))
+	require.Error(t, rl.dispatchRecoveredLog(&types.Log{Topics: []common.Hash{handledTopic}}),
+		"a handled log must reach the validator slot lookup")
 }

@@ -16,7 +16,7 @@ func TestUnpackSigAndVotes(t *testing.T) {
 	t.Parallel()
 
 	// Get the RootChain ABI
-	abi, err := getABI(rootchain.RootchainMetaData.ABI)
+	abi, err := rootchain.RootchainMetaData.GetAbi()
 	require.NoError(t, err, "Error while getting RootChainABI")
 
 	// Test data for the current ABI: submitHeaderBlock(bytes data, bytes sigs)
@@ -33,7 +33,7 @@ func TestUnpackSigAndVotes(t *testing.T) {
 	payload := append(methodID, packed...)
 
 	// Test unpacking
-	unpackedData, unpackedSigs, reserved, err := UnpackSigAndVotes(payload, abi)
+	unpackedData, unpackedSigs, reserved, err := UnpackSigAndVotes(payload, *abi)
 	require.NoError(t, err, "Error while unpacking payload")
 	require.Equal(t, testData, unpackedData, "Data doesn't match")
 	require.Equal(t, testSigs, unpackedSigs, "Sigs don't match")
@@ -59,7 +59,7 @@ func TestUnpackSigAndVotesWithRealSignatures(t *testing.T) {
 	require.NoError(t, err, "Error signing message")
 
 	// Get the RootChain ABI
-	abi, err := getABI(rootchain.RootchainMetaData.ABI)
+	abi, err := rootchain.RootchainMetaData.GetAbi()
 	require.NoError(t, err, "Error while getting RootChainABI")
 
 	// Pack using current ABI
@@ -71,7 +71,7 @@ func TestUnpackSigAndVotesWithRealSignatures(t *testing.T) {
 	payload := append(method.ID, packed...)
 
 	// Unpack
-	unpackedData, unpackedSigs, _, err := UnpackSigAndVotes(payload, abi)
+	unpackedData, unpackedSigs, _, err := UnpackSigAndVotes(payload, *abi)
 	require.NoError(t, err, "Error unpacking")
 	require.Equal(t, message, unpackedData, "Data mismatch")
 	require.Equal(t, signature, unpackedSigs, "Signature mismatch")

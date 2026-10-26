@@ -8,30 +8,18 @@ import (
 	"time"
 
 	"cosmossdk.io/log"
-	"github.com/ethereum/go-ethereum"
+	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
-// mockSubscription is a mock implementation of ethereum.Subscription
-type mockSubscription struct {
-	mock.Mock
-	errCh chan error
-}
-
-func (m *mockSubscription) Unsubscribe() {
-	m.Called()
-}
-
-func (m *mockSubscription) Err() <-chan error {
-	return m.errCh
-}
-
-// mockListener implements the Listener interface for testing
+// mockListener records the headers a BaseListener dispatches to it
 type mockListener struct {
 	BaseListener
-	startCalled         bool
 	processHeaderCalled bool
 	lastHeader          *blockHeader
 	// processedCh, when non-nil, receives one value per ProcessHeader call.
@@ -41,37 +29,12 @@ type mockListener struct {
 	processedCh chan struct{}
 }
 
-func (m *mockListener) Start() error {
-	m.startCalled = true
-	return nil
-}
-
 func (m *mockListener) ProcessHeader(header *blockHeader) {
 	m.processHeaderCalled = true
 	m.lastHeader = header
 	if m.processedCh != nil {
 		m.processedCh <- struct{}{}
 	}
-}
-
-func (m *mockListener) StartHeaderProcess(ctx context.Context) {
-	m.BaseListener.StartHeaderProcess(ctx)
-}
-
-func (m *mockListener) StartPolling(ctx context.Context, duration time.Duration, number *big.Int) {
-	m.BaseListener.StartPolling(ctx, duration, number)
-}
-
-func (m *mockListener) StartSubscription(ctx context.Context, subscription ethereum.Subscription) {
-	m.BaseListener.StartSubscription(ctx, subscription)
-}
-
-func (m *mockListener) Stop() {
-	m.BaseListener.Stop()
-}
-
-func (m *mockListener) String() string {
-	return m.BaseListener.String()
 }
 
 func TestBaseListener_String(t *testing.T) {
@@ -206,106 +169,6 @@ func TestBaseListener_StartHeaderProcess(t *testing.T) {
 		require.True(t, listener.processHeaderCalled)
 		require.NotNil(t, listener.lastHeader)
 		require.Equal(t, big.NewInt(300), listener.lastHeader.header.Number)
-	})
-}
-
-func TestBaseListener_StartSubscription(t *testing.T) {
-	t.Parallel()
-
-	t.Run("handles subscription errors", func(t *testing.T) {
-		t.Parallel()
-
-		listener := &mockListener{}
-		listener.BaseListener.Logger = log.NewNopLogger()
-
-		mockSub := &mockSubscription{
-			errCh: make(chan error, 1),
-		}
-
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		done := make(chan bool)
-		go func() {
-			listener.StartSubscription(ctx, mockSub)
-			done <- true
-		}()
-
-		// Send an error
-		mockSub.errCh <- errors.New("subscription error")
-
-		select {
-		case <-done:
-			// Success - subscription handler stopped
-		case <-time.After(1 * time.Second):
-			t.Fatal("StartSubscription did not stop after error")
-		}
-	})
-
-	t.Run("stops when context is cancelled", func(t *testing.T) {
-		t.Parallel()
-
-		listener := &mockListener{}
-		listener.BaseListener.Logger = log.NewNopLogger()
-
-		mockSub := &mockSubscription{
-			errCh: make(chan error, 1),
-		}
-
-		ctx, cancel := context.WithCancel(context.Background())
-
-		done := make(chan bool)
-		go func() {
-			listener.StartSubscription(ctx, mockSub)
-			done <- true
-		}()
-
-		// Cancel the context
-		cancel()
-
-		select {
-		case <-done:
-			// Success
-		case <-time.After(1 * time.Second):
-			t.Fatal("StartSubscription did not stop after context cancellation")
-		}
-	})
-
-	t.Run("cancels subscription on error if cancelFunc is set", func(t *testing.T) {
-		t.Parallel()
-
-		listener := &mockListener{}
-		listener.BaseListener.Logger = log.NewNopLogger()
-
-		cancelled := false
-		_, cancelFunc := context.WithCancel(context.Background())
-		listener.BaseListener.cancelSubscription = func() {
-			cancelled = true
-			cancelFunc()
-		}
-
-		mockSub := &mockSubscription{
-			errCh: make(chan error, 1),
-		}
-
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		done := make(chan bool)
-		go func() {
-			listener.StartSubscription(ctx, mockSub)
-			done <- true
-		}()
-
-		// Send an error
-		mockSub.errCh <- errors.New("test error")
-
-		select {
-		case <-done:
-			require.True(t, cancelled, "cancelSubscription was not called")
-		case <-time.After(1 * time.Second):
-			t.Fatal("StartSubscription did not handle error properly")
-		}
 	})
 }
 
@@ -448,5 +311,52 @@ func TestBlockHeader_Fields(t *testing.T) {
 		require.Equal(t, uint64(8000000), bHeader.header.GasLimit)
 		require.Equal(t, uint64(5000000), bHeader.header.GasUsed)
 		require.True(t, bHeader.isFinalized)
+	})
+}
+
+func TestBaseListener_sendTask(t *testing.T) {
+	t.Parallel()
+
+	t.Run("skips a task no processor registered", func(t *testing.T) {
+		t.Parallel()
+
+		queue := &mockQueueConnector{unregistered: map[string]bool{"sendUnregisteredTask": true}}
+		listener := newTestBaseListener(queue)
+
+		require.NoError(t, listener.sendTask("sendUnregisteredTask", rootChainTaskRetryCount, 0, stringArg("Event")))
+		queue.AssertNotCalled(t, "SendTask", mock.Anything)
+	})
+
+	t.Run("returns the queue error", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, errors.New("broker down")).Once()
+		listener := newTestBaseListener(queue)
+
+		require.EqualError(t, listener.sendTask("sendStateSyncedToHeimdall", rootChainTaskRetryCount, 0, stringArg("StateSynced")), "broker down")
+		queue.AssertExpectations(t)
+	})
+
+	t.Run("counts each outcome and stamps when the task was queued", func(t *testing.T) {
+		t.Parallel()
+
+		var sent *tasks.Signature
+		queue := &mockQueueConnector{unregistered: map[string]bool{"metricsSkippedTask": true}}
+		queue.On("SendTask", mock.MatchedBy(func(s *tasks.Signature) bool { return s.Name == "metricsSentTask" })).
+			Run(func(args mock.Arguments) { sent = args.Get(0).(*tasks.Signature) }).Return(nil, nil).Once()
+		queue.On("SendTask", mock.MatchedBy(func(s *tasks.Signature) bool { return s.Name == "metricsFailedTask" })).Return(nil, errors.New("broker down")).Once()
+		listener := newTestBaseListener(queue)
+
+		require.NoError(t, listener.sendTask("metricsSentTask", blockTaskRetryCount, time.Minute))
+		require.Error(t, listener.sendTask("metricsFailedTask", blockTaskRetryCount, 0))
+		require.NoError(t, listener.sendTask("metricsSkippedTask", blockTaskRetryCount, 0))
+
+		for task, outcome := range map[string]string{"metricsSentTask": "sent", "metricsFailedTask": "failed", "metricsSkippedTask": "skipped"} {
+			require.InDelta(t, 1, testutil.ToFloat64(metrics.BridgeTasksSent.WithLabelValues(task, outcome)), 0, task)
+		}
+
+		require.NotNil(t, sent)
+		require.NotEmpty(t, sent.Headers, "the task must carry the time it was first queued")
 	})
 }

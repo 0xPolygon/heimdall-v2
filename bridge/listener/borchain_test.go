@@ -1,13 +1,13 @@
 package listener
 
 import (
-	"encoding/json"
 	"errors"
 	"math/big"
 	"testing"
 	"time"
 
 	"cosmossdk.io/log"
+	"github.com/RichardKnop/machinery/v1/backends/result"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/mock"
@@ -17,52 +17,22 @@ import (
 // mockQueueConnector is a mock for testing task sending
 type mockQueueConnector struct {
 	mock.Mock
+	unregistered map[string]bool
 }
 
-func (m *mockQueueConnector) SendTask(signature *tasks.Signature) (interface{}, error) {
+func (m *mockQueueConnector) SendTask(signature *tasks.Signature) (*result.AsyncResult, error) {
 	args := m.Called(signature)
-	return args.Get(0), args.Error(1)
+	res, _ := args.Get(0).(*result.AsyncResult)
+	return res, args.Error(1)
 }
 
-// borChainListenerForTest wraps BorChainListener for testing
-type borChainListenerForTest struct {
-	BorChainListener
-	mockConnector *mockQueueConnector
+// IsTaskRegistered reports every task as registered unless listed in unregistered.
+func (m *mockQueueConnector) IsTaskRegistered(name string) bool {
+	return !m.unregistered[name]
 }
 
-func (b *borChainListenerForTest) ProcessHeader(newHeader *blockHeader) {
-	b.Logger.Debug("New header block detected", "blockNumber", newHeader.header.Number)
-
-	headerBytes, err := newHeader.header.MarshalJSON()
-	if err != nil {
-		b.Logger.Error("Error marshalling header block", "error", err)
-		return
-	}
-
-	b.sendTaskWithDelay("sendCheckpointToHeimdall", headerBytes, 0)
-}
-
-func (b *borChainListenerForTest) sendTaskWithDelay(taskName string, headerBytes []byte, delay time.Duration) {
-	signature := &tasks.Signature{
-		Name: taskName,
-		Args: []tasks.Arg{
-			{
-				Type:  "string",
-				Value: string(headerBytes),
-			},
-		},
-	}
-	signature.RetryCount = 3
-
-	eta := time.Now().Add(delay)
-	signature.ETA = &eta
-
-	b.Logger.Debug("Sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)
-
-	_, err := b.mockConnector.SendTask(signature)
-	if err != nil {
-		b.Logger.Error("Error sending task", "taskName", taskName, "error", err)
-	}
+func newTestBaseListener(q *mockQueueConnector) BaseListener {
+	return BaseListener{Logger: log.NewNopLogger(), taskQueue: q}
 }
 
 func TestBorChainListener_Start(t *testing.T) {
@@ -90,9 +60,7 @@ func TestBorChainListener_ProcessHeader(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &borChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &BorChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		testHeader := &types.Header{
@@ -126,9 +94,7 @@ func TestBorChainListener_ProcessHeader(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &borChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &BorChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		testHeader := &types.Header{
@@ -156,9 +122,7 @@ func TestBorChainListener_ProcessHeader(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &borChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &BorChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		// Expect 3 calls to SendTask
@@ -181,16 +145,14 @@ func TestBorChainListener_ProcessHeader(t *testing.T) {
 	})
 }
 
-func TestBorChainListener_sendTaskWithDelay(t *testing.T) {
+func TestBorChainListener_sendTask(t *testing.T) {
 	t.Parallel()
 
 	t.Run("sends task with correct signature and zero delay", func(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &borChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &BorChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		taskName := "testTask"
@@ -222,7 +184,7 @@ func TestBorChainListener_sendTaskWithDelay(t *testing.T) {
 			return sig.ETA.Sub(expectedTime).Abs() < time.Second
 		})).Return(nil, nil).Once()
 
-		listener.sendTaskWithDelay(taskName, headerBytes, delay)
+		_ = listener.sendTask(taskName, blockTaskRetryCount, delay, stringArg(string(headerBytes)))
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -231,9 +193,7 @@ func TestBorChainListener_sendTaskWithDelay(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &borChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &BorChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		taskName := "delayedTask"
@@ -253,7 +213,7 @@ func TestBorChainListener_sendTaskWithDelay(t *testing.T) {
 			return timeDiff < time.Second
 		})).Return(nil, nil).Once()
 
-		listener.sendTaskWithDelay(taskName, headerBytes, delay)
+		_ = listener.sendTask(taskName, blockTaskRetryCount, delay, stringArg(string(headerBytes)))
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -262,9 +222,7 @@ func TestBorChainListener_sendTaskWithDelay(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &borChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &BorChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		taskName := "failingTask"
@@ -275,7 +233,7 @@ func TestBorChainListener_sendTaskWithDelay(t *testing.T) {
 
 		// Should not panic
 		require.NotPanics(t, func() {
-			listener.sendTaskWithDelay(taskName, headerBytes, 0)
+			_ = listener.sendTask(taskName, blockTaskRetryCount, 0, stringArg(string(headerBytes)))
 		})
 
 		mockConnector.AssertExpectations(t)
@@ -289,9 +247,7 @@ func TestBorChainListener_Integration(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &borChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &BorChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		// Create the test header
@@ -329,47 +285,6 @@ func TestBorChainListener_Integration(t *testing.T) {
 	})
 }
 
-func TestBorChainListener_TaskSignatureStructure(t *testing.T) {
-	t.Parallel()
-
-	t.Run("verifies task signature has correct structure", func(t *testing.T) {
-		t.Parallel()
-
-		// Create a sample task signature as would be created by the listener
-		testHeader := &types.Header{
-			Number: big.NewInt(777),
-		}
-		headerBytes, err := testHeader.MarshalJSON()
-		require.NoError(t, err)
-
-		signature := &tasks.Signature{
-			Name: "sendCheckpointToHeimdall",
-			Args: []tasks.Arg{
-				{
-					Type:  "string",
-					Value: string(headerBytes),
-				},
-			},
-		}
-		signature.RetryCount = 3
-		eta := time.Now()
-		signature.ETA = &eta
-
-		// Verify structure
-		require.Equal(t, "sendCheckpointToHeimdall", signature.Name)
-		require.Len(t, signature.Args, 1)
-		require.Equal(t, "string", signature.Args[0].Type)
-		require.Equal(t, 3, signature.RetryCount)
-		require.NotNil(t, signature.ETA)
-
-		// Verify the header bytes are valid JSON and contain the block number
-		var jsonData map[string]interface{}
-		err = json.Unmarshal([]byte(signature.Args[0].Value.(string)), &jsonData)
-		require.NoError(t, err)
-		require.Contains(t, jsonData, "number")
-	})
-}
-
 func TestBorChainListener_EdgeCases(t *testing.T) {
 	t.Parallel()
 
@@ -377,9 +292,7 @@ func TestBorChainListener_EdgeCases(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &borChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &BorChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		// Should not panic with nil block header
@@ -396,9 +309,7 @@ func TestBorChainListener_EdgeCases(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &borChainListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &BorChainListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		// Very large block number

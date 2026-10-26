@@ -3,14 +3,17 @@ package listener
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"cosmossdk.io/log"
+	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -28,10 +31,6 @@ func TestRootChainListener_handleLog(t *testing.T) {
 		{
 			name:      "routes NewHeaderBlock event",
 			eventName: helper.NewHeaderBlockEvent,
-		},
-		{
-			name:      "routes Slashed event",
-			eventName: helper.SlashedEvent,
 		},
 	}
 
@@ -60,7 +59,7 @@ func TestRootChainListener_handleLog(t *testing.T) {
 
 			// Should not panic - these events handle marshaling errors gracefully
 			require.NotPanics(t, func() {
-				listener.handleLog(vLog, selectedEvent)
+				_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 			})
 		})
 	}
@@ -69,8 +68,7 @@ func TestRootChainListener_handleLog(t *testing.T) {
 	t.Run("dispatches to correct handler", func(t *testing.T) {
 		t.Parallel()
 
-		// Test that handleLog has a switch statement that routes to different handlers
-		// We verify this by checking that different event names exist
+		// handleLog routes every event in rootChainEvents
 		eventNames := []string{
 			helper.NewHeaderBlockEvent,
 			helper.StakedEvent,
@@ -79,12 +77,10 @@ func TestRootChainListener_handleLog(t *testing.T) {
 			helper.UnstakeInitEvent,
 			helper.StateSyncedEvent,
 			helper.TopUpFeeEvent,
-			helper.SlashedEvent,
-			helper.UnJailedEvent,
 		}
 
 		// Verify all event names are defined
-		require.Len(t, eventNames, 9)
+		require.Len(t, eventNames, 7)
 		for _, name := range eventNames {
 			require.NotEmpty(t, name)
 		}
@@ -114,7 +110,7 @@ func TestRootChainListener_handleLog_UnknownEvent(t *testing.T) {
 
 	// Should handle gracefully (no panic)
 	require.NotPanics(t, func() {
-		listener.handleLog(vLog, selectedEvent)
+		_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 	})
 }
 
@@ -148,7 +144,7 @@ func TestRootChainListener_handleNewHeaderBlockLog(t *testing.T) {
 
 		// Should not panic and should be able to marshal
 		require.NotPanics(t, func() {
-			listener.handleNewHeaderBlockLog(vLog, selectedEvent)
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 
 		// Verify log can be marshaled
@@ -178,7 +174,7 @@ func TestRootChainListener_handleNewHeaderBlockLog(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleNewHeaderBlockLog(vLog, selectedEvent)
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 }
@@ -213,7 +209,7 @@ func TestRootChainListener_handleStateSyncedLog(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleStateSyncedLog(vLog, selectedEvent)
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 
@@ -247,41 +243,7 @@ func TestRootChainListener_handleStateSyncedLog(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleStateSyncedLog(vLog, selectedEvent)
-		})
-	})
-}
-
-// TestRootChainListener_handleSlashedLog tests slashing event handling
-func TestRootChainListener_handleSlashedLog(t *testing.T) {
-	t.Parallel()
-
-	t.Run("marshals slashed log", func(t *testing.T) {
-		t.Parallel()
-
-		interfaceRegistry := codectypes.NewInterfaceRegistry()
-		cdc := codec.NewProtoCodec(interfaceRegistry)
-
-		listener := &RootChainListener{
-			BaseListener: BaseListener{
-				Logger: log.NewNopLogger(),
-				cliCtx: client.Context{}.WithCodec(cdc),
-			},
-		}
-
-		vLog := types.Log{
-			Address:     common.HexToAddress("0x1234567890abcdef1234567890abcdef12345678"),
-			Topics:      []common.Hash{common.HexToHash("0xabc")},
-			Data:        []byte("slashed data"),
-			BlockNumber: 12345,
-		}
-
-		selectedEvent := &abi.Event{
-			Name: helper.SlashedEvent,
-		}
-
-		require.NotPanics(t, func() {
-			listener.handleSlashedLog(vLog, selectedEvent)
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 }
@@ -386,8 +348,6 @@ func TestRootChainListener_EventConstants(t *testing.T) {
 		require.NotEmpty(t, helper.UnstakeInitEvent)
 		require.NotEmpty(t, helper.StateSyncedEvent)
 		require.NotEmpty(t, helper.TopUpFeeEvent)
-		require.NotEmpty(t, helper.SlashedEvent)
-		require.NotEmpty(t, helper.UnJailedEvent)
 	})
 }
 
@@ -416,11 +376,9 @@ func TestRootChainListener_LogHandlingEdgeCases(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleLog(vLog, selectedEvent)
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
-
-	// "handles zero block number" test removed - calls handleStakedLog with invalid ABI data
 
 	t.Run("handles maximum uint64 block number", func(t *testing.T) {
 		t.Parallel()
@@ -448,7 +406,7 @@ func TestRootChainListener_LogHandlingEdgeCases(t *testing.T) {
 		}
 
 		require.NotPanics(t, func() {
-			listener.handleStateSyncedLog(vLog, selectedEvent)
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		})
 	})
 }
@@ -480,7 +438,7 @@ func TestRootChainListener_ConcurrentLogHandling(t *testing.T) {
 				Name: helper.NewHeaderBlockEvent,
 			}
 
-			listener.handleLog(vLog, selectedEvent)
+			_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 		}(i)
 	}
 
@@ -537,7 +495,7 @@ func TestRootChainListener_LogDataSizes(t *testing.T) {
 			}
 
 			require.NotPanics(t, func() {
-				listener.handleStateSyncedLog(vLog, selectedEvent)
+				_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 			})
 
 			// Verify marshaling works
@@ -589,8 +547,28 @@ func TestRootChainListener_AddressFormats(t *testing.T) {
 			}
 
 			require.NotPanics(t, func() {
-				listener.handleStateSyncedLog(vLog, selectedEvent)
+				_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 			})
 		})
 	}
+}
+
+// TestRootChainListener_handleLog_QueuesTaskInValidatorSlot checks that a log is
+// routed to its processor task, delayed by this node's validator slot, and not
+// queued at all by a node outside the validator set.
+func TestRootChainListener_handleLog_QueuesTaskInValidatorSlot(t *testing.T) {
+	t.Parallel()
+
+	queue := new(mockQueueConnector)
+	queue.On("SendTask", mock.MatchedBy(func(sig *tasks.Signature) bool {
+		return sig.Name == "sendCheckpointAckToHeimdall" &&
+			sig.ETA.Sub(time.Now().Add(20*time.Second)).Abs() < time.Second
+	})).Return(nil, nil).Once()
+	listener := &RootChainListener{BaseListener: newTestBaseListener(queue)}
+
+	event := &abi.Event{Name: helper.NewHeaderBlockEvent}
+	_ = listener.handleLog(types.Log{BlockNumber: 1}, event, validatorSlot{isValidator: true, delay: 20 * time.Second})
+	_ = listener.handleLog(types.Log{BlockNumber: 2}, event, validatorSlot{})
+
+	queue.AssertExpectations(t)
 }

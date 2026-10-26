@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 
 	"cosmossdk.io/log"
@@ -146,38 +147,29 @@ func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	return false, nil
 }
 
-// CalculateTaskDelay calculates delay required for the current validator to propose the tx
-// It solves for multiple validators sending the same transaction.
-func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration) {
-	logger := Logger()
-
-	defer LogElapsedTimeForStateSyncedEvent(event, "CalculateTaskDelay", time.Now())
-
-	// calculate validator position
-	valPosition := 0
-	isCurrentValidator := false
-
+// CalculateTaskDelay reports whether this node is in the current validator set
+// and, if so, how long it should wait before submitting a bridge transaction,
+// so validators don't all broadcast the same one at once.
+func CalculateTaskDelay(cdc codec.Codec) (bool, time.Duration, error) {
 	validatorSet, err := GetValidatorSet(cdc)
 	if err != nil {
-		logger.Error("Error getting current validatorSet data ", "error", err)
-		return false, 0
+		return false, 0, err
 	}
 
-	logger.Info("Fetched current validator set list", "currentValidatorCount", len(validatorSet.Validators))
-
+	valPosition := 0
 	ac := addressCodec.NewHexCodec()
 	for i, validator := range validatorSet.Validators {
 		signerBytes, err := ac.StringToBytes(validator.Signer)
 		if err != nil {
-			logger.Error(errorAddressConversion, "error", err)
-			return false, 0
+			return false, 0, fmt.Errorf("%s: %w", errorAddressConversion, err)
 		}
 		if bytes.Equal(signerBytes, helper.GetAddress()) {
 			valPosition = i + 1
-			isCurrentValidator = true
-
 			break
 		}
+	}
+	if valPosition == 0 {
+		return false, 0, nil
 	}
 
 	// Multiply the delay for every 1000 unconfirmed txs in the mempool.
@@ -186,12 +178,9 @@ func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration
 	// For 1000-2000 It will be 24 seconds.
 	// For 2000-3000 it will be 36 seconds.
 	// Basically, for every 1000 txs it will increase the factor by 1.
-	mempoolFactor := GetUnconfirmedTxnCount(event) / mempoolTxnCountDivisor
+	mempoolFactor := GetUnconfirmedTxnCount() / mempoolTxnCountDivisor
 
-	// calculate delay
-	taskDelay := time.Duration(valPosition) * TaskDelayBetweenEachVal * time.Duration(mempoolFactor+1)
-
-	return isCurrentValidator, taskDelay
+	return true, time.Duration(valPosition) * TaskDelayBetweenEachVal * time.Duration(mempoolFactor+1), nil
 }
 
 // IsCurrentProposer checks if we are the current proposer
@@ -284,13 +273,17 @@ func IsCatchingUp(ctx context.Context, cliCtx client.Context) bool {
 	return resp.SyncInfo.CatchingUp
 }
 
+// accountClient is the client account queries use, for the configured CometBFT RPC URL.
+var accountClient = sync.OnceValues(func() (client.CometRPC, error) {
+	return client.NewClientFromNode(helper.GetConfig().CometBFTRPCUrl)
+})
+
 // GetAccount returns heimdall auth account
 func GetAccount(ctx context.Context, cliCtx client.Context, address string) (sdk.AccountI, error) {
 	var account sdk.AccountI
-	cmt := helper.GetConfig().CometBFTRPCUrl
-	rpc, err := client.NewClientFromNode(cmt)
+	rpc, err := accountClient()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	cliCtx = cliCtx.WithClient(rpc)
 
@@ -497,10 +490,8 @@ func GetClerkEventRecord(stateId int64, cdc codec.Codec) (*clerktypes.EventRecor
 	return &eventRecordResponse.Record, nil
 }
 
-func GetUnconfirmedTxnCount(event interface{}) int {
+func GetUnconfirmedTxnCount() int {
 	logger := Logger()
-
-	defer LogElapsedTimeForStateSyncedEvent(event, "GetUnconfirmedTxnCount", time.Now())
 
 	endpoint := helper.GetConfig().CometBFTRPCUrl + CometBFTUnconfirmedTxsCountURL
 

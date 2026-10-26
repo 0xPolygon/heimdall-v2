@@ -3,14 +3,14 @@ package listener
 import (
 	"context"
 	"math/big"
+	"sync"
 	"time"
 
 	"cosmossdk.io/log"
+	"github.com/RichardKnop/machinery/v1/backends/result"
+	"github.com/RichardKnop/machinery/v1/tasks"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/spf13/viper"
@@ -18,60 +18,66 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/bridge/queue"
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
-// Listener defines a block header listener for RootChain, BorChain, Heimdall
+// Listener is a chain event listener run by the listener service.
 type Listener interface {
 	Start() error
-
-	StartHeaderProcess(context.Context)
-
-	StartPolling(context.Context, time.Duration, *big.Int)
-
-	StartSubscription(context.Context, ethereum.Subscription)
-
-	ProcessHeader(*blockHeader)
-
 	Stop()
-
 	String() string
+}
+
+// headerProcessor handles the block headers a BaseListener polls for.
+type headerProcessor interface {
+	ProcessHeader(*blockHeader)
 }
 
 type BaseListener struct {
 	Logger log.Logger
 	name   string
-	quit   chan struct{}
 
 	// The "subclass" of BaseService
-	impl Listener
-
-	// contract caller
-	contractCaller helper.ContractCaller
+	impl headerProcessor
 
 	chainClient *ethclient.Client
 
 	// header channel
 	HeaderChannel chan *blockHeader
 
-	// cancel function for poll/subscription
+	// cancels the header polling loop
 	cancelSubscription context.CancelFunc
 
-	// header listener subscription
+	// cancels the header processing loop
 	cancelHeaderProcess context.CancelFunc
 
 	// cli context
 	cliCtx client.Context
 
-	// queue connector
-	queueConnector *queue.Connector
+	// task queue the listener enqueues processor tasks on
+	taskQueue taskQueue
 
-	// http client to subscribe to
+	// CometBFT RPC client
 	httpClient *rpchttp.HTTP
 
 	// storage client
 	storageClient *leveldb.DB
 }
+
+// taskQueue is the part of the machinery server listeners use to enqueue tasks.
+type taskQueue interface {
+	SendTask(signature *tasks.Signature) (*result.AsyncResult, error)
+	IsTaskRegistered(name string) bool
+}
+
+const (
+	rootChainTaskRetryCount = 5
+	blockTaskRetryCount     = 3
+)
+
+// unregisteredTaskWarned records the task names sendTask has already warned
+// about skipping, so a disabled processor is reported once per process.
+var unregisteredTaskWarned sync.Map
 
 type blockHeader struct {
 	header      *types.Header // block header
@@ -79,38 +85,17 @@ type blockHeader struct {
 }
 
 // NewBaseListener creates a new BaseListener.
-func NewBaseListener(cdc codec.Codec, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, chainClient *ethclient.Client, name string, impl Listener) *BaseListener {
-	logger := util.Logger().With("service", "listener", "module", name)
-
-	contractCaller, err := helper.NewContractCaller()
-	if err != nil {
-		logger.Error("BaseListener: error while getting the contract caller", "error", err)
-		panic(err)
-	}
-
-	cliCtx := client.Context{}.WithCodec(cdc)
-	cliCtx.BroadcastMode = flags.BroadcastAsync
-	cmt := helper.GetConfig().CometBFTRPCUrl
-	rpc, err := client.NewClientFromNode(cmt)
-	if err != nil {
-		logger.Error("BaseListener: error while creating rpc client", "error", err)
-		panic(err)
-	}
-	cliCtx = cliCtx.WithClient(rpc)
-
-	// creating the syncer object
+func NewBaseListener(cliCtx client.Context, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, chainClient *ethclient.Client, name string, impl headerProcessor) *BaseListener {
 	return &BaseListener{
-		Logger:        logger,
+		Logger:        util.Logger().With("service", "listener", "module", name),
 		name:          name,
-		quit:          make(chan struct{}),
 		impl:          impl,
 		storageClient: util.GetBridgeDBInstance(viper.GetString(util.BridgeDBFlag)),
 
-		cliCtx:         cliCtx,
-		queueConnector: queueConnector,
-		httpClient:     httpClient,
-		contractCaller: contractCaller,
-		chainClient:    chainClient,
+		cliCtx:      cliCtx,
+		taskQueue:   queueConnector.Server,
+		httpClient:  httpClient,
+		chainClient: chainClient,
 
 		HeaderChannel: make(chan *blockHeader),
 	}
@@ -187,26 +172,35 @@ func (bl *BaseListener) StartPolling(ctx context.Context, pollInterval time.Dura
 	}
 }
 
-func (bl *BaseListener) StartSubscription(ctx context.Context, subscription ethereum.Subscription) {
-	for {
-		select {
-		case err := <-subscription.Err():
-			// stop service
-			bl.Logger.Error("BaseListener: error while subscribing new blocks", "error", err)
-			// bl.Stop()
-
-			// cancel subscription
-			if bl.cancelSubscription != nil {
-				bl.Logger.Debug("BaseListener: cancelling the subscription of listener")
-				bl.cancelSubscription()
-			}
-
-			return
-		case <-ctx.Done():
-			bl.Logger.Info("BaseListener: subscription stopped")
-			return
+// sendTask enqueues taskName to run no earlier than delay from now. A task no
+// processor registered is skipped: the queue would redeliver it forever.
+func (bl *BaseListener) sendTask(taskName string, retryCount int, delay time.Duration, args ...tasks.Arg) error {
+	if !bl.taskQueue.IsTaskRegistered(taskName) {
+		metrics.BridgeTasksSent.WithLabelValues(taskName, "skipped").Inc()
+		if _, warned := unregisteredTaskWarned.LoadOrStore(taskName, struct{}{}); !warned {
+			bl.Logger.Warn("BaseListener: not queueing tasks with no registered processor; is the processor disabled by --only?", "taskName", taskName)
 		}
+		return nil
 	}
+
+	now := time.Now()
+	eta := now.Add(delay)
+	signature := &tasks.Signature{Name: taskName, Args: args, RetryCount: retryCount, ETA: &eta, Headers: queue.NewTaskHeaders(now)}
+
+	bl.Logger.Debug("BaseListener: sending task", "taskName", taskName, "eta", eta)
+
+	if _, err := bl.taskQueue.SendTask(signature); err != nil {
+		metrics.BridgeTasksSent.WithLabelValues(taskName, "failed").Inc()
+		bl.Logger.Error("BaseListener: error sending task", "taskName", taskName, "error", err)
+		return err
+	}
+
+	metrics.BridgeTasksSent.WithLabelValues(taskName, "sent").Inc()
+	return nil
+}
+
+func stringArg(value string) tasks.Arg {
+	return tasks.Arg{Type: "string", Value: value}
 }
 
 // Stop stops all necessary go routines

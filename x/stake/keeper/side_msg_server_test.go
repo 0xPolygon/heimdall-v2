@@ -1583,7 +1583,7 @@ func decodeEvent(t *testing.T, eventName string, receipt ethTypes.Receipt) error
 	if err != nil {
 		t.Error("Error creating contract caller")
 	}
-	require.NotNil(t, &contractCaller)
+	require.NotNil(t, contractCaller)
 
 	switch eventName {
 	case "DecodeNewHeaderBlockEvent":
