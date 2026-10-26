@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 
 	"cosmossdk.io/log"
@@ -272,16 +273,30 @@ func IsCatchingUp(ctx context.Context, cliCtx client.Context) bool {
 	return resp.SyncInfo.CatchingUp
 }
 
+var (
+	accountRPCOnce sync.Once
+	accountRPC     client.CometRPC
+	accountRPCErr  error
+)
+
+// accountClient returns the client for the configured CometBFT RPC URL that
+// account queries use, created on first use.
+func accountClient() (client.CometRPC, error) {
+	accountRPCOnce.Do(func() {
+		accountRPC, accountRPCErr = client.NewClientFromNode(helper.GetConfig().CometBFTRPCUrl)
+	})
+
+	return accountRPC, accountRPCErr
+}
+
 // GetAccount returns heimdall auth account
 func GetAccount(ctx context.Context, cliCtx client.Context, address string) (sdk.AccountI, error) {
 	var account sdk.AccountI
-	if cliCtx.Client == nil {
-		rpc, err := client.NewClientFromNode(helper.GetConfig().CometBFTRPCUrl)
-		if err != nil {
-			return nil, err
-		}
-		cliCtx = cliCtx.WithClient(rpc)
+	rpc, err := accountClient()
+	if err != nil {
+		return nil, err
 	}
+	cliCtx = cliCtx.WithClient(rpc)
 
 	queryClient := authtypes.NewQueryClient(cliCtx)
 
