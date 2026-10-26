@@ -70,6 +70,50 @@ func TestFromBlockAfterLastPersisted(t *testing.T) {
 		got, ok := rl.fromBlockAfterLastPersisted(big.NewInt(50))
 		require.True(t, ok)
 		require.Equal(t, big.NewInt(50), got)
+
+		stored, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+		require.NoError(t, err)
+		require.Equal(t, "49", string(stored), "the cursor starts just before headerNumber")
+	})
+
+	t.Run("a failed first range is retried from the same block after the head moves", func(t *testing.T) {
+		rl := &RootChainListener{}
+		rl.BaseListener.Logger = log.NewNopLogger()
+		rl.storageClient = newMemLevelDB(t)
+
+		first, ok := rl.fromBlockAfterLastPersisted(big.NewInt(50))
+		require.True(t, ok)
+		require.Equal(t, big.NewInt(50), first)
+
+		// The range starting at 50 failed, so nothing else was persisted.
+		next, ok := rl.fromBlockAfterLastPersisted(big.NewInt(60))
+		require.True(t, ok)
+		require.Equal(t, big.NewInt(50), next)
+	})
+
+	t.Run("a headerNumber of zero starts at zero without persisting", func(t *testing.T) {
+		rl := &RootChainListener{}
+		rl.BaseListener.Logger = log.NewNopLogger()
+		rl.storageClient = newMemLevelDB(t)
+
+		got, ok := rl.fromBlockAfterLastPersisted(big.NewInt(0))
+		require.True(t, ok)
+		require.Equal(t, big.NewInt(0), got)
+
+		has, err := rl.storageClient.Has([]byte(lastRootBlockKey), nil)
+		require.NoError(t, err)
+		require.False(t, has)
+	})
+
+	t.Run("a cursor that can't be written stops the poll", func(t *testing.T) {
+		rl := &RootChainListener{}
+		rl.BaseListener.Logger = log.NewNopLogger()
+		db := newMemLevelDB(t)
+		require.NoError(t, db.Close())
+		rl.storageClient = db
+
+		_, ok := rl.fromBlockAfterLastPersisted(big.NewInt(50))
+		require.False(t, ok)
 	})
 
 	t.Run("a last block below headerNumber returns last+1", func(t *testing.T) {
@@ -103,7 +147,7 @@ func TestFromBlockAfterLastPersisted(t *testing.T) {
 		require.False(t, ok)
 	})
 
-	t.Run("an unparseable last block falls back to headerNumber", func(t *testing.T) {
+	t.Run("an unparseable last block restarts the cursor at headerNumber", func(t *testing.T) {
 		rl := &RootChainListener{}
 		rl.BaseListener.Logger = log.NewNopLogger()
 		rl.storageClient = newMemLevelDB(t)
@@ -112,6 +156,10 @@ func TestFromBlockAfterLastPersisted(t *testing.T) {
 		got, ok := rl.fromBlockAfterLastPersisted(big.NewInt(50))
 		require.True(t, ok)
 		require.Equal(t, big.NewInt(50), got)
+
+		stored, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+		require.NoError(t, err)
+		require.Equal(t, "49", string(stored))
 	})
 }
 

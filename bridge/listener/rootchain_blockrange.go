@@ -57,13 +57,14 @@ func (rl *RootChainListener) confirmedHeadBlock(rootChainContext *RootChainListe
 }
 
 // fromBlockAfterLastPersisted returns the first block to process: the block
-// after the last one persisted to storage, or headerNumber itself if nothing
-// has been persisted yet. ok is false when storage couldn't be read, or the
-// last persisted block is already at or past headerNumber (nothing new).
+// after the last one persisted to storage, or headerNumber itself if no valid
+// block has been persisted yet. ok is false when storage couldn't be read or
+// written, or the last persisted block is already at or past headerNumber
+// (nothing new).
 func (rl *RootChainListener) fromBlockAfterLastPersisted(headerNumber *big.Int) (*big.Int, bool) {
 	hasLastBlock, _ := rl.storageClient.Has([]byte(lastRootBlockKey), nil)
 	if !hasLastBlock {
-		return headerNumber, true
+		return rl.startCursorAt(headerNumber)
 	}
 
 	lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
@@ -76,7 +77,7 @@ func (rl *RootChainListener) fromBlockAfterLastPersisted(headerNumber *big.Int) 
 
 	result, err := strconv.ParseUint(string(lastBlockBytes), 10, 64)
 	if err != nil {
-		return headerNumber, true
+		return rl.startCursorAt(headerNumber)
 	}
 	metrics.BridgeListenerProcessedBlock.WithLabelValues(rootChainListenerStr).Set(float64(result))
 	if result >= headerNumber.Uint64() {
@@ -84,6 +85,19 @@ func (rl *RootChainListener) fromBlockAfterLastPersisted(headerNumber *big.Int) 
 	}
 
 	return big.NewInt(0).SetUint64(result + 1), true
+}
+
+// startCursorAt starts the cursor at block: it persists the block before it,
+// so a range starting at block that fails is retried from block on the next
+// poll, not from wherever the head has moved to by then.
+func (rl *RootChainListener) startCursorAt(block *big.Int) (*big.Int, bool) {
+	if block.Sign() > 0 {
+		if err := rl.persistLastRootBlock(new(big.Int).Sub(block, big.NewInt(1))); err != nil {
+			return nil, false
+		}
+	}
+
+	return block, true
 }
 
 // processRootChainBlockRangeInChunks processes [from, to] in
