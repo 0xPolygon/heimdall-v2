@@ -637,6 +637,38 @@ func TestHeimdallListener_processBlockRange(t *testing.T) {
 		require.GreaterOrEqual(t, testutil.ToFloat64(notQueued)-before, 1.0)
 	})
 
+	t.Run("skips a block whose events keep failing to fetch", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, nil)
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.httpClient = fakeBlockResultsServer(t, 12)
+		skipped := metrics.BridgeListenerBlocksSkipped.WithLabelValues(heimdallListenerStr)
+		before := testutil.ToFloat64(skipped)
+
+		require.Equal(t, uint64(12), listener.processBlockRange(context.Background(), 10, 14))
+		for poll := 2; poll < maxBlockFetchFailures; poll++ {
+			require.Equal(t, uint64(12), listener.processBlockRange(context.Background(), 12, 14), "poll %d retries the block", poll)
+		}
+		require.Equal(t, uint64(15), listener.processBlockRange(context.Background(), 12, 14), "the last allowed failure skips the block")
+		queue.AssertNumberOfCalls(t, "SendTask", 4)
+		require.GreaterOrEqual(t, testutil.ToFloat64(skipped)-before, 1.0)
+	})
+
+	t.Run("never skips a block whose checkpoint can't be queued", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, errors.New("broker down"))
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.httpClient = fakeBlockResultsServer(t, -1)
+
+		for poll := 1; poll <= maxBlockFetchFailures+1; poll++ {
+			require.Equal(t, uint64(10), listener.processBlockRange(context.Background(), 10, 14), "poll %d", poll)
+		}
+	})
+
 	t.Run("finishes the whole range", func(t *testing.T) {
 		t.Parallel()
 
