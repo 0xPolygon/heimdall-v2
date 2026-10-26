@@ -573,6 +573,13 @@ func TestHeimdallListener_PollIntervalCalculation(t *testing.T) {
 // event per block, and fails every request for failingHeight.
 func fakeBlockResultsServer(t *testing.T, failingHeight int64) *rpchttp.HTTP {
 	t.Helper()
+	return fakeBlockResultsServerWithError(t, failingHeight, "unavailable")
+}
+
+// fakeBlockResultsServerWithError is fakeBlockResultsServer with the error data
+// returned for failingHeight.
+func fakeBlockResultsServerWithError(t *testing.T, failingHeight int64, errData string) *rpchttp.HTTP {
+	t.Helper()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
@@ -588,7 +595,7 @@ func fakeBlockResultsServer(t *testing.T, failingHeight int64) *rpchttp.HTTP {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		if req.Method != "block_results" || req.Params.Height == strconv.FormatInt(failingHeight, 10) {
-			_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32603,"message":"unavailable"}}`, req.ID)
+			_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32603,"message":"Internal error","data":%q}}`, req.ID, errData)
 			return
 		}
 		_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"height":%q,"finalize_block_events":[{"type":%q,"attributes":[]}]}}`,
@@ -637,13 +644,13 @@ func TestHeimdallListener_processBlockRange(t *testing.T) {
 		require.GreaterOrEqual(t, testutil.ToFloat64(notQueued)-before, 1.0)
 	})
 
-	t.Run("skips a block whose events keep failing to fetch", func(t *testing.T) {
+	t.Run("skips a block whose results the node keeps reporting missing", func(t *testing.T) {
 		t.Parallel()
 
 		queue := new(mockQueueConnector)
 		queue.On("SendTask", mock.Anything).Return(nil, nil)
 		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
-		listener.httpClient = fakeBlockResultsServer(t, 12)
+		listener.httpClient = fakeBlockResultsServerWithError(t, 12, "could not find results for height #12")
 		skipped := metrics.BridgeListenerBlocksSkipped.WithLabelValues(heimdallListenerStr)
 		before := testutil.ToFloat64(skipped)
 
@@ -654,6 +661,20 @@ func TestHeimdallListener_processBlockRange(t *testing.T) {
 		require.Equal(t, uint64(15), listener.processBlockRange(context.Background(), 12, 14), "the last allowed failure skips the block")
 		queue.AssertNumberOfCalls(t, "SendTask", 4)
 		require.GreaterOrEqual(t, testutil.ToFloat64(skipped)-before, 1.0)
+	})
+
+	t.Run("never skips a block whose results fail to fetch for another reason", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, nil)
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.httpClient = fakeBlockResultsServer(t, 12)
+
+		require.Equal(t, uint64(12), listener.processBlockRange(context.Background(), 10, 14))
+		for poll := 2; poll <= maxBlockFetchFailures+1; poll++ {
+			require.Equal(t, uint64(12), listener.processBlockRange(context.Background(), 12, 14), "poll %d", poll)
+		}
 	})
 
 	t.Run("never skips a block whose checkpoint can't be queued", func(t *testing.T) {

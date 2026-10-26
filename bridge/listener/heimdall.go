@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/RichardKnop/machinery/v1/tasks"
@@ -18,17 +19,22 @@ import (
 const (
 	heimdallLastBlockKey = "heimdall-last-block" // storage key
 
-	// maxBlockFetchFailures is how many polls in a row a block's results may
-	// fail to fetch before the block is skipped as gone for good.
+	// maxBlockFetchFailures is how many polls in a row the node may report a
+	// block's results missing before the block is skipped as gone for good.
 	maxBlockFetchFailures = 10
+
+	// missingResultsErr is CometBFT's ErrNoABCIResponsesForHeight text: the node
+	// has the block but no results for it. Only this error counts toward a skip;
+	// timeouts, rate limits and outages are retried until they clear.
+	missingResultsErr = "could not find results for height"
 )
 
 // HeimdallListener - Listens to and process events from heimdall
 type HeimdallListener struct {
 	BaseListener
 
-	// the block whose results last failed to fetch, and on how many polls in
-	// a row; only the polling goroutine uses them
+	// the block whose results the node last reported missing, and on how many
+	// polls in a row; only the polling goroutine uses them
 	fetchFailureHeight uint64
 	fetchFailures      int
 }
@@ -168,7 +174,7 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 // [fromBlock, toBlock] in order and returns the first height it didn't
 // finish. It stops at the first block whose events can't be fetched or
 // queued, so the next poll retries that block instead of skipping it; only a
-// block whose events fail to fetch on maxBlockFetchFailures polls in a row is
+// block the node reports has no results on maxBlockFetchFailures polls is
 // skipped.
 func (hl *HeimdallListener) processBlockRange(ctx context.Context, fromBlock, toBlock uint64) uint64 {
 	height := fromBlock
@@ -182,8 +188,8 @@ func (hl *HeimdallListener) processBlockRange(ctx context.Context, fromBlock, to
 	return height
 }
 
-// fetchKeepsFailing records a failed fetch of height's results and reports
-// whether it has now failed on maxBlockFetchFailures polls in a row.
+// fetchKeepsFailing records that the node reported height's results missing
+// and reports whether it has now done so on maxBlockFetchFailures polls.
 func (hl *HeimdallListener) fetchKeepsFailing(height uint64) bool {
 	if height != hl.fetchFailureHeight {
 		hl.fetchFailureHeight, hl.fetchFailures = height, 0
@@ -196,9 +202,9 @@ func (hl *HeimdallListener) fetchKeepsFailing(height uint64) bool {
 func (hl *HeimdallListener) processBlock(ctx context.Context, height uint64) error {
 	events, err := helper.GetBeginBlockEvents(ctx, hl.httpClient, int64(height))
 	if err != nil {
-		if hl.fetchKeepsFailing(height) {
+		if strings.Contains(err.Error(), missingResultsErr) && hl.fetchKeepsFailing(height) {
 			metrics.BridgeListenerBlocksSkipped.WithLabelValues(heimdallListenerStr).Inc()
-			hl.Logger.Error("HeimdallListener: skipping a block whose events couldn't be fetched", "height", height, "polls", maxBlockFetchFailures, "error", err)
+			hl.Logger.Error("HeimdallListener: skipping a block whose results the node no longer has", "height", height, "polls", maxBlockFetchFailures, "error", err)
 			return nil
 		}
 

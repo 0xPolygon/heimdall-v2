@@ -74,6 +74,6 @@ var (
 		Namespace: Namespace,
 		Subsystem: "bridge",
 		Name:      "listener_blocks_skipped_total",
-		Help:      "Total number of blocks a bridge listener skipped after repeatedly failing to fetch their events, labeled by listener",
+		Help:      "Total number of blocks a bridge listener skipped because the node kept reporting their results missing, labeled by listener",
 	}, []string{"listener"})
 )
