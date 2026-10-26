@@ -8,9 +8,12 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/0xPolygon/heimdall-v2/bridge/queue"
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
+	cmtlog "github.com/cometbft/cometbft/libs/log"
+	cmtservice "github.com/cometbft/cometbft/libs/service"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -409,4 +412,20 @@ func TestBaseProcessor_EventUniqueness(t *testing.T) {
 		require.NotEqual(t, event1.TxHash, event2.TxHash)
 		require.Equal(t, event1.LogIndex, event2.LogIndex)
 	})
+}
+
+func TestProcessorService_RegisterTasksDrainsRetiredTasks(t *testing.T) {
+	t.Parallel()
+
+	server, err := getTestServer()
+	require.NoError(t, err)
+
+	service := &Service{queueConnector: &queue.Connector{Server: server}}
+	service.BaseService = *cmtservice.NewBaseService(cmtlog.NewNopLogger(), processorServiceStr, service)
+	service.RegisterTasks()
+
+	for _, taskName := range retiredTasks {
+		require.True(t, server.IsTaskRegistered(taskName), "%s must be consumed so a leftover backlog drains", taskName)
+		require.NoError(t, service.dropRetiredTask(taskName)("Slashed", "{}"), "%s must be acknowledged, not retried", taskName)
+	}
 }

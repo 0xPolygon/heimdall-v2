@@ -17,6 +17,11 @@ const (
 	processorServiceStr = "processor-service"
 )
 
+// retiredTasks are task names older bridges queued that no processor handles
+// anymore. A no-op handler for each drains any left in RabbitMQ after an
+// upgrade, which machinery would otherwise redeliver forever.
+var retiredTasks = []string{"sendTickAckToHeimdall", "sendUnjailToHeimdall"}
+
 // Service starts and stops all event processors
 type Service struct {
 	// Base service
@@ -117,7 +122,22 @@ func (processorService *Service) RegisterTasks() {
 		for _, processor := range processorService.processors {
 			processor.RegisterTasks()
 		}
+
+		for _, taskName := range retiredTasks {
+			if err := processorService.queueConnector.Server.RegisterTask(taskName, processorService.dropRetiredTask(taskName)); err != nil {
+				processorService.Logger.Error("ProcessorService: error registering retired task", "taskName", taskName, "error", err)
+			}
+		}
 	})
+}
+
+// dropRetiredTask returns a handler that acknowledges a retired task without
+// doing anything. Retired tasks carry the event name and the log JSON.
+func (processorService *Service) dropRetiredTask(taskName string) func(string, string) error {
+	return func(eventName, _ string) error {
+		processorService.Logger.Info("ProcessorService: dropping a retired task", "taskName", taskName, "eventName", eventName)
+		return nil
+	}
 }
 
 // OnStart starts the new block subscription
