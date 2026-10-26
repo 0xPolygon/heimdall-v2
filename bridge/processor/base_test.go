@@ -425,7 +425,12 @@ func TestProcessorService_RegisterTasksDrainsRetiredTasks(t *testing.T) {
 	service.RegisterTasks()
 
 	for _, taskName := range retiredTasks {
-		require.True(t, server.IsTaskRegistered(taskName), "%s must be consumed so a leftover backlog drains", taskName)
-		require.NoError(t, service.dropRetiredTask(taskName)("Slashed", "{}"), "%s must be acknowledged, not retried", taskName)
+		handler, err := server.GetRegisteredTask(taskName)
+		require.NoError(t, err, "%s must be consumed so a leftover backlog drains", taskName)
+
+		drop, ok := handler.(func(string, string) error)
+		require.True(t, ok, "%s must take the event name and the log JSON", taskName)
+		require.NoError(t, drop("Slashed", "{}"), "%s must be acknowledged, not retried", taskName)
+		require.NoError(t, drop("Slashed", "{}"), "%s must keep being acknowledged", taskName)
 	}
 }

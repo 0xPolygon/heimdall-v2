@@ -69,9 +69,7 @@ var (
 		Help:      "Total number of block ranges a bridge listener left unprocessed for its next poll, labeled by listener and reason",
 	}, []string{"listener", "reason"})
 
-	// BridgeListenerBlocksSkipped counts blocks a listener skipped because
-	// their events kept failing to fetch. Each one is an event this node
-	// never queued, so any increase needs a look.
+	// BridgeListenerBlocksSkipped: any increase is a block whose events this node never queued.
 	BridgeListenerBlocksSkipped = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: Namespace,
 		Subsystem: "bridge",

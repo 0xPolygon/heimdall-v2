@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -19,22 +18,17 @@ import (
 const (
 	heimdallLastBlockKey = "heimdall-last-block" // storage key
 
-	// maxBlockFetchFailures is how many polls in a row the listener retries a
-	// block whose results it can't fetch. Past it the results are taken to be
-	// gone for good, so the block is skipped instead of stalling every later
-	// checkpoint event. A block whose events can't be queued is always retried.
+	// maxBlockFetchFailures is how many polls in a row a block's results may
+	// fail to fetch before the block is skipped as gone for good.
 	maxBlockFetchFailures = 10
 )
-
-var errBlockFetchFailed = errors.New("fetching block events failed")
 
 // HeimdallListener - Listens to and process events from heimdall
 type HeimdallListener struct {
 	BaseListener
 
-	// fetchFailureHeight is the block whose results last failed to fetch, and
-	// fetchFailures how many polls in a row they have failed. Only the polling
-	// goroutine reads or writes them.
+	// the block whose results last failed to fetch, and on how many polls in
+	// a row; only the polling goroutine uses them
 	fetchFailureHeight uint64
 	fetchFailures      int
 }
@@ -179,19 +173,10 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 func (hl *HeimdallListener) processBlockRange(ctx context.Context, fromBlock, toBlock uint64) uint64 {
 	height := fromBlock
 	for ; height <= toBlock && ctx.Err() == nil; height++ {
-		err := hl.processBlock(ctx, height)
-		if err == nil {
-			continue
+		if err := hl.processBlock(ctx, height); err != nil {
+			hl.Logger.Error("HeimdallListener: error processing block, retrying from it next poll", "height", height, "error", err)
+			break
 		}
-
-		if errors.Is(err, errBlockFetchFailed) && hl.fetchKeepsFailing(height) {
-			metrics.BridgeListenerBlocksSkipped.WithLabelValues(heimdallListenerStr).Inc()
-			hl.Logger.Error("HeimdallListener: skipping a block whose events couldn't be fetched", "height", height, "polls", maxBlockFetchFailures, "error", err)
-			continue
-		}
-
-		hl.Logger.Error("HeimdallListener: error processing block, retrying from it next poll", "height", height, "error", err)
-		break
 	}
 
 	return height
@@ -211,9 +196,16 @@ func (hl *HeimdallListener) fetchKeepsFailing(height uint64) bool {
 func (hl *HeimdallListener) processBlock(ctx context.Context, height uint64) error {
 	events, err := helper.GetBeginBlockEvents(ctx, hl.httpClient, int64(height))
 	if err != nil {
+		if hl.fetchKeepsFailing(height) {
+			metrics.BridgeListenerBlocksSkipped.WithLabelValues(heimdallListenerStr).Inc()
+			hl.Logger.Error("HeimdallListener: skipping a block whose events couldn't be fetched", "height", height, "polls", maxBlockFetchFailures, "error", err)
+			return nil
+		}
+
 		metrics.BridgeListenerRangeRetries.WithLabelValues(heimdallListenerStr, "query_failed").Inc()
-		return fmt.Errorf("%w: %w", errBlockFetchFailed, err)
+		return err
 	}
+	hl.fetchFailures = 0
 
 	for _, event := range events {
 		if err := hl.ProcessBlockEvent(sdk.StringifyEvent(event), int64(height)); err != nil {

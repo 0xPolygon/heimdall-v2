@@ -124,20 +124,20 @@ func (processorService *Service) RegisterTasks() {
 		}
 
 		for _, taskName := range retiredTasks {
-			if err := processorService.queueConnector.Server.RegisterTask(taskName, processorService.dropRetiredTask(taskName)); err != nil {
+			var logged sync.Once
+			// retired tasks carry the event name and the log JSON
+			drop := func(string, string) error {
+				logged.Do(func() {
+					processorService.Logger.Info("ProcessorService: dropping retired tasks left in RabbitMQ", "taskName", taskName)
+				})
+				return nil
+			}
+
+			if err := processorService.queueConnector.Server.RegisterTask(taskName, drop); err != nil {
 				processorService.Logger.Error("ProcessorService: error registering retired task", "taskName", taskName, "error", err)
 			}
 		}
 	})
-}
-
-// dropRetiredTask returns a handler that acknowledges a retired task without
-// doing anything. Retired tasks carry the event name and the log JSON.
-func (processorService *Service) dropRetiredTask(taskName string) func(string, string) error {
-	return func(eventName, _ string) error {
-		processorService.Logger.Info("ProcessorService: dropping a retired task", "taskName", taskName, "eventName", eventName)
-		return nil
-	}
 }
 
 // OnStart starts the new block subscription
