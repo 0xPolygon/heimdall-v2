@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/RichardKnop/machinery/v1/tasks"
@@ -19,14 +18,10 @@ import (
 const (
 	heimdallLastBlockKey = "heimdall-last-block" // storage key
 
-	// maxBlockFetchFailures is how many polls in a row the node may report a
-	// block's results missing before the block is skipped as gone for good.
+	// maxBlockFetchFailures is on how many polls the node may report a block's
+	// results missing (helper.ErrBlockResultsMissing) before the block is
+	// skipped as gone for good. Other fetch errors are retried until they clear.
 	maxBlockFetchFailures = 10
-
-	// missingResultsErr is CometBFT's ErrNoABCIResponsesForHeight text: the node
-	// has the block but no results for it. Only this error counts toward a skip;
-	// timeouts, rate limits and outages are retried until they clear.
-	missingResultsErr = "could not find results for height"
 )
 
 // HeimdallListener - Listens to and process events from heimdall
@@ -34,7 +29,7 @@ type HeimdallListener struct {
 	BaseListener
 
 	// the block whose results the node last reported missing, and on how many
-	// polls in a row; only the polling goroutine uses them
+	// polls; only the polling goroutine uses them
 	fetchFailureHeight uint64
 	fetchFailures      int
 }
@@ -202,7 +197,7 @@ func (hl *HeimdallListener) fetchKeepsFailing(height uint64) bool {
 func (hl *HeimdallListener) processBlock(ctx context.Context, height uint64) error {
 	events, err := helper.GetBeginBlockEvents(ctx, hl.httpClient, int64(height))
 	if err != nil {
-		if strings.Contains(err.Error(), missingResultsErr) && hl.fetchKeepsFailing(height) {
+		if errors.Is(err, helper.ErrBlockResultsMissing) && hl.fetchKeepsFailing(height) {
 			metrics.BridgeListenerBlocksSkipped.WithLabelValues(heimdallListenerStr).Inc()
 			hl.Logger.Error("HeimdallListener: skipping a block whose results the node no longer has", "height", height, "polls", maxBlockFetchFailures, "error", err)
 			return nil

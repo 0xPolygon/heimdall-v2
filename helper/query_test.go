@@ -119,6 +119,29 @@ func TestGetBeginBlockEvents_BlockResultsFails(t *testing.T) {
 	require.Nil(t, events)
 	require.Contains(t, err.Error(), "BlockResults failed for block 100")
 	require.Contains(t, err.Error(), "possibly pruned or unavailable")
+	require.NotErrorIs(t, err, ErrBlockResultsMissing, "only CometBFT's missing-results error means the results are gone")
+}
+
+func TestGetBeginBlockEvents_BlockResultsMissing(t *testing.T) {
+	t.Parallel()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req jsonRPCRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		resp := errorResp(req.ID, -32603, "Internal error")
+		resp.Error.Data = "could not find results for height #100"
+		writeJSONRPC(w, resp)
+	}))
+	defer ts.Close()
+
+	client, err := httpClient.New(ts.URL, "/websocket")
+	require.NoError(t, err)
+
+	_, err = GetBeginBlockEvents(context.Background(), client, 100)
+	require.ErrorIs(t, err, ErrBlockResultsMissing)
 }
 
 // TestFindTxInBlock_HappyPath verifies the helper returns the matching tx

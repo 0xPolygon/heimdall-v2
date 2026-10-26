@@ -3,7 +3,9 @@ package helper
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -16,6 +18,11 @@ import (
 const (
 	CommitTimeout = 2 * time.Minute
 )
+
+// ErrBlockResultsMissing means the node has the block but no results for it.
+// CometBFT's ErrNoABCIResponsesForHeight reaches RPC clients only as text, so
+// GetBeginBlockEvents matches that text and wraps this instead.
+var ErrBlockResultsMissing = errors.New("block results missing")
 
 // GetNodeStatus returns node status
 func GetNodeStatus(ctx context.Context, cliCtx cosmosContext.Context) (*ctypes.ResultStatus, error) {
@@ -96,6 +103,9 @@ func GetBeginBlockEvents(ctx context.Context, client *httpClient.HTTP, height in
 	defer cancel()
 
 	blockResults, err := client.BlockResults(c, &height)
+	if err != nil && strings.Contains(err.Error(), "could not find results for height") {
+		err = fmt.Errorf("%w: %w", ErrBlockResultsMissing, err)
+	}
 	if err != nil || blockResults == nil {
 		return nil, fmt.Errorf("BlockResults failed for block %d (possibly pruned or unavailable): %w", height, err)
 	}
