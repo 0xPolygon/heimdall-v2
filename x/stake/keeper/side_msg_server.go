@@ -245,9 +245,37 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	if !s.isStakedOnMainChain(ctx, chainParams.StakingInfoAddress, msg.ValId) {
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	s.k.Logger(ctx).Debug(helper.LogSuccessfullyValidated("ValidatorJoin"))
 
 	return sidetxs.Vote_VOTE_YES
+}
+
+// isStakedOnMainChain reports whether the validator is still staked on L1 with no exit started.
+// The join receipt stays valid after an unstake, so it can't show whether the stake still exists.
+func (s *sideMsgServer) isStakedOnMainChain(ctx sdk.Context, stakingInfoAddress string, valID uint64) bool {
+	stakingInfoInstance, err := s.k.contractCaller.GetStakingInfoInstance(stakingInfoAddress)
+	if err != nil {
+		s.k.Logger(ctx).Error("Error getting the staking info instance", hmTypes.LogKeyError, err)
+		return false
+	}
+
+	// GetValidatorInfo errors once the stake is claimed back (amount below one token).
+	validator, err := s.k.contractCaller.GetValidatorInfo(valID, stakingInfoInstance)
+	if err != nil {
+		s.k.Logger(ctx).Error("Error fetching the validator from the main chain", hmTypes.LogKeyValidatorID, valID, hmTypes.LogKeyError, err)
+		return false
+	}
+
+	if validator.EndEpoch != 0 {
+		s.k.Logger(ctx).Error("Validator has already started exiting on the main chain", hmTypes.LogKeyValidatorID, valID, "deactivationEpoch", validator.EndEpoch)
+		return false
+	}
+
+	return true
 }
 
 // SideHandleMsgStakeUpdate handles stake update message
