@@ -176,20 +176,9 @@ func (s *sideMsgServer) validateJoinSigner(ctx sdk.Context, msg *types.MsgValida
 	pubKey := secp256k1.PubKey{Key: pk}
 
 	signer := pubKey.Address()
-	ac := addrCodec.NewHexCodec()
-	signerBytes, err := ac.StringToBytes(signer.String())
-	if err != nil {
-		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertSignerToBytes, hmTypes.LogKeyError, err)
-		return false
-	}
-	eventLogSignerBytes, err := ac.StringToBytes(eventLog.Signer.String())
-	if err != nil {
-		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertEventLogSignerToBytes, hmTypes.LogKeyError, err)
-		return false
-	}
 
 	// check signer corresponding to pubKey matches signer from event
-	if !bytes.Equal(signerBytes, eventLogSignerBytes) {
+	if !bytes.Equal(signer.Bytes(), eventLog.Signer.Bytes()) {
 		s.k.Logger(ctx).Error(
 			"Signer address does not match event log signer address",
 			"Validator", signer.String(),
