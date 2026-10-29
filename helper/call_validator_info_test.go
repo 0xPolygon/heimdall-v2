@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"context"
 	"encoding/json"
 	"math/big"
 	"net/http"
@@ -30,12 +31,14 @@ func TestGetValidatorInfo(t *testing.T) {
 		amount            *big.Int
 		deactivationEpoch int64
 		rpcErr            bool
+		callerCtxDone     bool
 		wantErr           bool
 	}{
 		{name: "staked", amount: new(big.Int).Mul(oneToken, big.NewInt(5))},
 		{name: "exit started", amount: new(big.Int).Mul(oneToken, big.NewInt(5)), deactivationEpoch: 9},
 		{name: "stake claimed", amount: big.NewInt(0), deactivationEpoch: 9, wantErr: true},
 		{name: "main chain unavailable", rpcErr: true, wantErr: true},
+		{name: "caller context expired", amount: new(big.Int).Mul(oneToken, big.NewInt(5)), callerCtxDone: true, wantErr: true},
 	}
 
 	for _, tc := range tests {
@@ -76,8 +79,14 @@ func TestGetValidatorInfo(t *testing.T) {
 			instance, err := stakinginfo.NewStakinginfo(common.HexToAddress("0xa1"), client)
 			require.NoError(t, err)
 
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			if tc.callerCtxDone {
+				cancel()
+			}
+
 			caller := ContractCaller{MainChainTimeout: 5 * time.Second}
-			validator, err := caller.GetValidatorInfo(202, instance)
+			validator, err := caller.GetValidatorInfo(ctx, 202, instance)
 			if tc.wantErr {
 				require.Error(t, err)
 				return

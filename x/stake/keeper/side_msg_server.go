@@ -269,7 +269,7 @@ func (s *sideMsgServer) isStakedOnMainChain(ctx sdk.Context, stakingInfoAddress 
 	}
 
 	// GetValidatorInfo errors once the stake is claimed back (amount below one token).
-	validator, err := s.k.contractCaller.GetValidatorInfo(valID, stakingInfoInstance)
+	validator, err := s.k.contractCaller.GetValidatorInfo(ctx, valID, stakingInfoInstance)
 	if err != nil {
 		s.k.Logger(ctx).Error("Error fetching the validator from the main chain", hmTypes.LogKeyValidatorID, valID, hmTypes.LogKeyError, err)
 		return false

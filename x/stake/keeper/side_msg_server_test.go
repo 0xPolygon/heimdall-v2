@@ -96,7 +96,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 		contractCaller.On("GetStakingInfoInstance", chainParams.ChainParams.StakingInfoAddress).Return(&stakinginfo.Stakinginfo{}, nil)
-		contractCaller.On("GetValidatorInfo", validatorId, mock.Anything).Return(types.Validator{ValId: validatorId}, nil)
+		contractCaller.On("GetValidatorInfo", mock.Anything, validatorId, mock.Anything).Return(types.Validator{ValId: validatorId}, nil)
 
 		result := sideHandler(ctx, msgValJoin)
 		req.Equal(result, sidetxs.Vote_VOTE_YES)
@@ -475,7 +475,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			contractCaller.On("GetConfirmedTxReceipt", mock.Anything, common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 			contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 			contractCaller.On("GetStakingInfoInstance", chainParams.ChainParams.StakingInfoAddress).Return(&stakinginfo.Stakinginfo{}, tc.instanceErr)
-			contractCaller.On("GetValidatorInfo", validatorId, mock.Anything).Return(tc.validator, tc.validatorErr)
+			contractCaller.On("GetValidatorInfo", mock.Anything, validatorId, mock.Anything).Return(tc.validator, tc.validatorErr)
 
 			result := sideHandler(ctx, msgValJoin)
 			req.Equal(sidetxs.Vote_VOTE_NO, result)
@@ -562,7 +562,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			contractCaller.On("GetConfirmedTxReceipt", mock.Anything, common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 			contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 			contractCaller.On("GetStakingInfoInstance", chainParams.ChainParams.StakingInfoAddress).Return(&stakinginfo.Stakinginfo{}, nil)
-			contractCaller.On("GetValidatorInfo", validatorId, mock.Anything).Return(types.Validator{ValId: validatorId}, nil)
+			contractCaller.On("GetValidatorInfo", mock.Anything, validatorId, mock.Anything).Return(types.Validator{ValId: validatorId}, nil)
 
 			result := sideHandler(ctx, msgValJoin)
 			req.Equal(sidetxs.Vote_VOTE_NO, result)
