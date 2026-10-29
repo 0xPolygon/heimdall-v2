@@ -481,6 +481,93 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			req.Equal(sidetxs.Vote_VOTE_NO, result)
 		})
 	}
+
+	otherPubKey := secp256k1.GenPrivKey().PubKey()
+	badPrefixPubKey := append([]byte{0x05}, pubKey.Bytes()[1:]...)
+
+	mismatchTests := []struct {
+		name   string
+		mutate func(msg *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked)
+	}{
+		{
+			name:   "Signer pubkey length",
+			mutate: func(msg *types.MsgValidatorJoin, _ *stakinginfo.StakinginfoStaked) { msg.SignerPubKey = msg.SignerPubKey[:33] },
+		},
+		{
+			name:   "Signer address",
+			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) { event.Signer = common.Address{} },
+		},
+		{
+			name:   "Signer pubkey first byte",
+			mutate: func(msg *types.MsgValidatorJoin, _ *stakinginfo.StakinginfoStaked) { msg.SignerPubKey = badPrefixPubKey },
+		},
+		{
+			name: "Signer pubkey",
+			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) {
+				event.SignerPubkey = otherPubKey.Bytes()[1:]
+			},
+		},
+		{
+			name:   "Validator id",
+			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) { event.ValidatorId = big.NewInt(2) },
+		},
+		{
+			name:   "Activation epoch",
+			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) { event.ActivationEpoch = big.NewInt(2) },
+		},
+		{
+			name: "Amount",
+			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) {
+				event.Amount = new(big.Int).Mul(amount, big.NewInt(2))
+			},
+		},
+		{
+			name:   "Nonce",
+			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) { event.Nonce = big.NewInt(4) },
+		},
+	}
+
+	for _, tc := range mismatchTests {
+		s.Run("Mismatch with staked validator: "+tc.name, func() {
+			contractCaller.Mock = mock.Mock{}
+
+			txReceipt := &ethTypes.Receipt{
+				BlockNumber: blockNumber,
+			}
+
+			msgValJoin, err := types.NewMsgValidatorJoin(
+				addr.String(),
+				validatorId,
+				uint64(1),
+				math.NewInt(int64(1000000000000000000)),
+				pubKey,
+				txHash,
+				logIndex,
+				blockNumber.Uint64(),
+				nonce.Uint64(),
+			)
+			req.NoError(err)
+
+			stakingInfoStaked := &stakinginfo.StakinginfoStaked{
+				Signer:          common.Address(addr.Bytes()),
+				ValidatorId:     new(big.Int).SetUint64(validatorId),
+				Nonce:           nonce,
+				ActivationEpoch: big.NewInt(1),
+				Amount:          amount,
+				Total:           big.NewInt(10),
+				SignerPubkey:    pubKey.Bytes()[1:],
+			}
+			tc.mutate(msgValJoin, stakingInfoStaked)
+
+			contractCaller.On("GetConfirmedTxReceipt", mock.Anything, common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+			contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
+			contractCaller.On("GetStakingInfoInstance", chainParams.ChainParams.StakingInfoAddress).Return(&stakinginfo.Stakinginfo{}, nil)
+			contractCaller.On("GetValidatorInfo", validatorId, mock.Anything).Return(types.Validator{ValId: validatorId}, nil)
+
+			result := sideHandler(ctx, msgValJoin)
+			req.Equal(sidetxs.Vote_VOTE_NO, result)
+		})
+	}
 }
 
 func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
