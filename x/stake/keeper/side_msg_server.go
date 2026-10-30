@@ -12,8 +12,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -148,10 +150,25 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	if !s.validateJoinSigner(ctx, msg, eventLog) || !s.validateJoinEvent(ctx, msg, eventLog, receipt) {
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	if !s.isStakedOnMainChain(ctx, chainParams.StakingInfoAddress, msg.ValId) {
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	s.k.Logger(ctx).Debug(helper.LogSuccessfullyValidated("ValidatorJoin"))
+
+	return sidetxs.Vote_VOTE_YES
+}
+
+// validateJoinSigner checks that the signer and pubkey in the message match the validator join event.
+func (s *sideMsgServer) validateJoinSigner(ctx sdk.Context, msg *types.MsgValidatorJoin, eventLog *stakinginfo.StakinginfoStaked) bool {
 	// validate msg.SignerPubKey length
 	if len(msg.SignerPubKey) != secp256k1.PubKeySize {
 		s.k.Logger(ctx).Error("Invalid signer pubkey length in MsgValidatorJoin: " + strconv.Itoa(len(msg.SignerPubKey)) + ", expected length: " + fmt.Sprint(secp256k1.PubKeySize))
-		return sidetxs.Vote_VOTE_NO
+		return false
 	}
 
 	// Generate PubKey from PubKey in the message and signer
@@ -159,26 +176,15 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	pubKey := secp256k1.PubKey{Key: pk}
 
 	signer := pubKey.Address()
-	ac := addrCodec.NewHexCodec()
-	signerBytes, err := ac.StringToBytes(signer.String())
-	if err != nil {
-		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertSignerToBytes, hmTypes.LogKeyError, err)
-		return sidetxs.Vote_VOTE_NO
-	}
-	eventLogSignerBytes, err := ac.StringToBytes(eventLog.Signer.String())
-	if err != nil {
-		s.k.Logger(ctx).Error(hmTypes.ErrMsgConvertEventLogSignerToBytes, hmTypes.LogKeyError, err)
-		return sidetxs.Vote_VOTE_NO
-	}
 
 	// check signer corresponding to pubKey matches signer from event
-	if !bytes.Equal(signerBytes, eventLogSignerBytes) {
+	if !bytes.Equal(signer.Bytes(), eventLog.Signer.Bytes()) {
 		s.k.Logger(ctx).Error(
 			"Signer address does not match event log signer address",
 			"Validator", signer.String(),
 			"mainChainValidator", eventLog.Signer.Hex(),
 		)
-		return sidetxs.Vote_VOTE_NO
+		return false
 	}
 
 	// check the public key first byte
@@ -187,7 +193,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 			hmTypes.ErrMsgPubKeyFirstByteMismatch,
 			"expected", "0x04",
 			"received", pubKey.Bytes()[0:1])
-		return sidetxs.Vote_VOTE_NO
+		return false
 	}
 
 	// check the correspondence of signer pubKey in the message
@@ -197,16 +203,21 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 			"msgValidator", pubKey.String(),
 			"mainChainValidator", common.Bytes2Hex(eventLog.SignerPubkey),
 		)
-		return sidetxs.Vote_VOTE_NO
+		return false
 	}
 
+	return true
+}
+
+// validateJoinEvent checks that the remaining message fields match the validator join event and its receipt.
+func (s *sideMsgServer) validateJoinEvent(ctx sdk.Context, msg *types.MsgValidatorJoin, eventLog *stakinginfo.StakinginfoStaked, receipt *ethTypes.Receipt) bool {
 	// check msg id
 	if eventLog.ValidatorId.Uint64() != msg.ValId {
 		s.k.Logger(ctx).Error(
 			hmTypes.ErrMsgIDMismatch,
 			hmTypes.LogKeyMsgID, msg.ValId,
 			hmTypes.LogKeyValidatorIdFromTx, eventLog.ValidatorId)
-		return sidetxs.Vote_VOTE_NO
+		return false
 	}
 
 	// check ActivationEpoch
@@ -215,7 +226,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 			"activationEpoch in message doesn't match with activationEpoch in log",
 			"msgActivationEpoch", msg.ActivationEpoch,
 			"activationEpochFromTx", eventLog.ActivationEpoch.Uint64)
-		return sidetxs.Vote_VOTE_NO
+		return false
 	}
 
 	// check Amount
@@ -224,7 +235,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 			hmTypes.ErrMsgAmountMismatch,
 			hmTypes.LogKeyMsgAmount, msg.Amount,
 			hmTypes.LogKeyAmountFromEvent, eventLog.Amount)
-		return sidetxs.Vote_VOTE_NO
+		return false
 	}
 
 	// check BlockNumber
@@ -233,7 +244,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 			hmTypes.ErrMsgBlockNumberMismatch,
 			hmTypes.LogKeyMsgBlockNumber, msg.BlockNumber,
 			hmTypes.LogKeyReceiptBlockNumber, receipt.BlockNumber.Uint64)
-		return sidetxs.Vote_VOTE_NO
+		return false
 	}
 
 	// check nonce
@@ -242,12 +253,36 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 			hmTypes.ErrMsgNonceMismatch,
 			hmTypes.LogKeyMsgNonce, msg.Nonce,
 			hmTypes.LogKeyNonceFromTx, eventLog.Nonce)
-		return sidetxs.Vote_VOTE_NO
+		return false
 	}
 
-	s.k.Logger(ctx).Debug(helper.LogSuccessfullyValidated("ValidatorJoin"))
+	return true
+}
 
-	return sidetxs.Vote_VOTE_YES
+// isStakedOnMainChain reports whether the validator is still staked on L1 with no exit started.
+// The join receipt stays valid after an unstake, so it can't show whether the stake still exists.
+func (s *sideMsgServer) isStakedOnMainChain(ctx sdk.Context, stakingInfoAddress string, valID uint64) bool {
+	stakingInfoInstance, err := s.k.contractCaller.GetStakingInfoInstance(stakingInfoAddress)
+	if err != nil {
+		s.k.Logger(ctx).Error("Error getting the staking info instance", hmTypes.LogKeyError, err)
+		return false
+	}
+
+	// GetValidatorInfo errors once the stake is claimed back (amount below one token).
+	validator, err := helper.RunIsolated(func() (types.Validator, error) {
+		return s.k.contractCaller.GetValidatorInfo(ctx, valID, stakingInfoInstance)
+	})
+	if err != nil {
+		s.k.Logger(ctx).Error("Error fetching the validator from the main chain", hmTypes.LogKeyValidatorID, valID, hmTypes.LogKeyError, err)
+		return false
+	}
+
+	if validator.EndEpoch != 0 {
+		s.k.Logger(ctx).Error("Validator has already started exiting on the main chain", hmTypes.LogKeyValidatorID, valID, "deactivationEpoch", validator.EndEpoch)
+		return false
+	}
+
+	return true
 }
 
 // SideHandleMsgStakeUpdate handles stake update message
