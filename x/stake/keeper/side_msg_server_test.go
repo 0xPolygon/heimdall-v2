@@ -435,10 +435,12 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 		instanceErr  error
 		validator    types.Validator
 		validatorErr error
+		panics       bool
 	}{
 		{name: "Exit started on main chain", validator: types.Validator{ValId: validatorId, EndEpoch: 5}},
 		{name: "Stake claimed on main chain", validatorErr: errors.New("amount must be more than 1 token")},
 		{name: "Staking info instance unavailable", instanceErr: errors.New("dial failed")},
+		{name: "Main chain client panics", panics: true},
 	}
 
 	for _, tc := range mainChainTests {
@@ -475,7 +477,10 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			contractCaller.On("GetConfirmedTxReceipt", mock.Anything, common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 			contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 			contractCaller.On("GetStakingInfoInstance", chainParams.ChainParams.StakingInfoAddress).Return(&stakinginfo.Stakinginfo{}, tc.instanceErr)
-			contractCaller.On("GetValidatorInfo", mock.Anything, validatorId, mock.Anything).Return(tc.validator, tc.validatorErr)
+			call := contractCaller.On("GetValidatorInfo", mock.Anything, validatorId, mock.Anything).Return(tc.validator, tc.validatorErr)
+			if tc.panics {
+				call.Run(func(mock.Arguments) { panic("malformed response") })
+			}
 
 			result := sideHandler(ctx, msgValJoin)
 			req.Equal(sidetxs.Vote_VOTE_NO, result)
