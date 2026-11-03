@@ -102,7 +102,7 @@ func TestInitHeimdallConfigWithWarnsOnLegacyLogsType(t *testing.T) {
 		conf = CustomAppConfig{}
 		home, logFile := newLegacyLogsTypeHome(t, rpcStub.URL, "json")
 
-		InitHeimdallConfigWith(home, "")
+		InitHeimdallConfigWith(t.Context(), home, "")
 
 		out, err := os.ReadFile(logFile)
 		require.NoError(t, err)
@@ -113,7 +113,7 @@ func TestInitHeimdallConfigWithWarnsOnLegacyLogsType(t *testing.T) {
 		conf = CustomAppConfig{}
 		home, logFile := newLegacyLogsTypeHome(t, rpcStub.URL, "")
 
-		InitHeimdallConfigWith(home, "")
+		InitHeimdallConfigWith(t.Context(), home, "")
 
 		out, err := os.ReadFile(logFile)
 		require.NoError(t, err)
@@ -149,7 +149,7 @@ func TestInitHeimdallConfigWithLogFormatFallback(t *testing.T) {
 		t.Cleanup(viper.Reset)
 		home, _ := newLegacyLogsTypeHome(t, rpcStub.URL, "json")
 
-		InitHeimdallConfigWith(home, "")
+		InitHeimdallConfigWith(t.Context(), home, "")
 
 		require.Equal(t, "json", viper.GetString(flags.FlagLogFormat))
 	})
@@ -163,7 +163,7 @@ func TestInitHeimdallConfigWithLogFormatFallback(t *testing.T) {
 		t.Setenv("HD_LOG_FORMAT", "plain")
 		home, _ := newLegacyLogsTypeHome(t, rpcStub.URL, "json")
 
-		InitHeimdallConfigWith(home, "")
+		InitHeimdallConfigWith(t.Context(), home, "")
 
 		require.Equal(t, "plain", viper.GetString(flags.FlagLogFormat),
 			"an operator's explicit HD_LOG_FORMAT must win over the legacy logs_type fallback")
@@ -177,7 +177,7 @@ func TestInitHeimdallConfigWithLogFormatFallback(t *testing.T) {
 		require.NoError(t, viper.ReadConfig(strings.NewReader(`log_format = "plain"`)))
 		home, _ := newLegacyLogsTypeHome(t, rpcStub.URL, "json")
 
-		InitHeimdallConfigWith(home, "")
+		InitHeimdallConfigWith(t.Context(), home, "")
 
 		require.Equal(t, "plain", viper.GetString(flags.FlagLogFormat))
 	})
@@ -188,7 +188,7 @@ func TestInitHeimdallConfigWithLogFormatFallback(t *testing.T) {
 		t.Cleanup(viper.Reset)
 		home, _ := newLegacyLogsTypeHome(t, rpcStub.URL, "")
 
-		InitHeimdallConfigWith(home, "")
+		InitHeimdallConfigWith(t.Context(), home, "")
 
 		require.Equal(t, "", viper.GetString(flags.FlagLogFormat),
 			"no flag is registered against this bare viper in the test, so the compiled default never applies here -- only confirming SetDefault wasn't called")

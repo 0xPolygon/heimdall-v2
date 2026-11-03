@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 
@@ -997,8 +998,9 @@ func TestValidateVoteExtensions_RejectsPaddedVoteExtension(t *testing.T) {
 		validatorPrivKeys[0],
 	)
 
-	// padding with unknown protobuf field
-	ext.VoteExtension = appendProtobufPadding(ext.VoteExtension, 64*1024)
+	// padding with unknown protobuf field, kept under maxVESize so the size gate does not
+	// preempt the unknown-fields check this test targets
+	ext.VoteExtension = appendProtobufPadding(ext.VoteExtension, 512)
 
 	err = ValidateVoteExtensions(
 		ctx,
@@ -1011,6 +1013,84 @@ func TestValidateVoteExtensions_RejectsPaddedVoteExtension(t *testing.T) {
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unknown fields detected")
+}
+
+// TestValidateVoteExtensions_RejectsOversizedVoteExtension verifies the extended-commit validator
+// rejects a vote extension larger than maxVESize before scanning or unmarshalling it, on commit and
+// non-commit entries alike, and that a vote extension of exactly maxVESize is not caught by the size
+// gate (boundary inclusive of maxVESize).
+func TestValidateVoteExtensions_RejectsOversizedVoteExtension(t *testing.T) {
+	tests := []struct {
+		name        string
+		size        int
+		gateHeight  int64
+		nonCommit   bool
+		wantExceeds bool
+	}{
+		{name: "gate active, over max", size: maxVESize + 2, gateHeight: 1, wantExceeds: true},
+		{name: "gate active, at max", size: maxVESize, gateHeight: 1, wantExceeds: false},
+		{name: "gate inactive, over max", size: maxVESize + 2, gateHeight: CurrentHeight + 100, wantExceeds: false},
+		{name: "gate active, over max, non-commit entry", size: maxVESize + 2, gateHeight: 1, nonCommit: true, wantExceeds: true},
+		{name: "gate inactive, over max, non-commit entry", size: maxVESize + 2, gateHeight: CurrentHeight + 100, nonCommit: true, wantExceeds: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			orig := helper.GetKarwarHeight()
+			t.Cleanup(func() { helper.SetKarwarHeight(orig) })
+			helper.SetKarwarHeight(tc.gateHeight)
+
+			setupAppResult := SetupApp(t, 1)
+			hApp := setupAppResult.App
+			validatorPrivKeys := setupAppResult.ValidatorKeys
+
+			ctx := hApp.BaseApp.NewContext(true)
+			ctx = setupContextWithVoteExtensionsEnableHeight(ctx, 1)
+
+			vals := hApp.StakeKeeper.GetAllValidators(ctx)
+			valAddr := common.FromHex(vals[0].Signer)
+
+			valSet, err := hApp.StakeKeeper.GetPreviousBlockValidatorSet(ctx)
+			require.NoError(t, err)
+
+			cometVal := abci.Validator{
+				Address: valAddr,
+				Power:   vals[0].VotingPower,
+			}
+
+			ext := setupExtendedVoteInfo(
+				t,
+				cmtTypes.BlockIDFlagCommit,
+				common.FromHex(TxHash1),
+				common.FromHex(TxHash2),
+				cometVal,
+				validatorPrivKeys[0],
+			)
+
+			ext.VoteExtension = knownFieldVE(tc.size)
+			if tc.nonCommit {
+				ext.BlockIdFlag = cmtTypes.BlockIDFlagAbsent
+			}
+
+			err = ValidateVoteExtensions(
+				ctx,
+				CurrentHeight,
+				[]abci.ExtendedVoteInfo{ext},
+				1,
+				&valSet,
+				hApp.MilestoneKeeper,
+			)
+
+			// The non-size cases still error on a later check; only the active-gate over-max one
+			// is the size gate.
+			require.Error(t, err)
+			if tc.wantExceeds {
+				require.Contains(t, err.Error(), "exceeds max")
+			} else {
+				require.NotContains(t, err.Error(), "exceeds max")
+			}
+		})
+	}
 }
 
 func TestFilterVoteExtensions_SkipsPaddedVoteExtension(t *testing.T) {
@@ -2436,4 +2516,42 @@ func createSignatureForVoteExtension(
 
 	voteInfo.ExtensionSignature = signature
 	voteInfo.NonRpExtensionSignature = signatureNonRpVE
+}
+
+func TestVoteExtensionAtPropositionLengthCapFitsSizeLimits(t *testing.T) {
+	hash := bytes.Repeat([]byte{0xff}, common.HashLength)
+
+	responses := make([]sidetxs.SideTxResponse, maxSideTxResponsesCount)
+	for i := range responses {
+		responses[i] = sidetxs.SideTxResponse{TxHash: hash, Result: sidetxs.Vote_VOTE_NO}
+	}
+
+	n := milestoneTypes.MilestonePropositionLengthCap
+	prop := &milestoneTypes.MilestoneProposition{
+		BlockHashes:       make([][]byte, n),
+		StartBlockNumber:  math.MaxUint64,
+		ParentHash:        hash,
+		BlockTds:          make([]uint64, n),
+		LatestBlockNumber: math.MaxUint64,
+		LatestBlockHash:   hash,
+	}
+	for i := range n {
+		prop.BlockHashes[i] = hash
+		prop.BlockTds[i] = math.MaxUint64
+	}
+
+	ve := sidetxs.VoteExtension{
+		BlockHash:            hash,
+		Height:               math.MaxInt64,
+		SideTxResponses:      responses,
+		MilestoneProposition: prop,
+	}
+	bz, err := ve.Marshal()
+	require.NoError(t, err)
+
+	require.LessOrEqual(t, len(bz), maxVESize)
+
+	// Per-validator budget filterVoteExtensions applies at the mainnet block size (2 MiB) and validator count (104).
+	const mainnetMaxBytes, mainnetValidators = 2 * 1024 * 1024, 104
+	require.LessOrEqual(t, len(bz), mainnetMaxBytes/mainnetValidators/safetyFactor-overheadPerValidator)
 }

@@ -257,7 +257,7 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(ctx context.Context, event
 		}
 
 		// return broadcast to heimdall
-		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(context.Background(), msg, event)
+		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(ctx, msg, event)
 		if err != nil {
 			sp.Logger.Error(errMsgBroadcasting, "validatorId", event.ValidatorId.Uint64(), "error", err)
 			return err
@@ -340,7 +340,7 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(ctx context.Context, event
 		}
 
 		// return broadcast to heimdall
-		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(context.Background(), msg, event)
+		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(ctx, msg, event)
 		if err != nil {
 			sp.Logger.Error(errMsgBroadcasting, "validatorId", event.ValidatorId.Uint64(), "error", err)
 			return err
@@ -440,7 +440,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(ctx context.Context, even
 		}
 
 		// return broadcast to heimdall
-		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(context.Background(), msg, event)
+		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(ctx, msg, event)
 		if err != nil {
 			sp.Logger.Error(errMsgBroadcasting, "msg", msg, "validatorId", event.ValidatorId.Uint64(), "error", err)
 			return err

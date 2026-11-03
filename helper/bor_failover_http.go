@@ -313,7 +313,7 @@ func (t *borHTTPFailoverTransport) canAnchor(i int) bool {
 // across the priority-ordered endpoints (index 0 = primary). The returned
 // *rpc.Client / *ethclient.Client are the same concrete types as a plain
 // rpc.Dial, so every existing Bor HTTP caller gets failover transparently.
-func newBorHTTPFailoverClient(rawURLs []string, attemptTimeout time.Duration) (*rpc.Client, *ethclient.Client, error) {
+func newBorHTTPFailoverClient(ctx context.Context, rawURLs []string, attemptTimeout time.Duration) (*rpc.Client, *ethclient.Client, error) {
 	endpoints, err := dialHTTPEndpoints(rawURLs)
 	if err != nil {
 		return nil, nil, err
@@ -324,10 +324,10 @@ func newBorHTTPFailoverClient(rawURLs []string, attemptTimeout time.Duration) (*
 		base:           http.DefaultTransport,
 		attemptTimeout: attemptTimeout,
 	}
-	tr.captureExpectedChainID()
+	tr.captureExpectedChainID(ctx)
 	tr.health = failover.New(len(endpoints), tr.probe, metrics.BorFailover("http"), Logger)
 
-	rpcClient, err := rpc.DialOptions(context.Background(), endpoints[primaryEndpoint].url.String(),
+	rpcClient, err := rpc.DialOptions(ctx, endpoints[primaryEndpoint].url.String(),
 		rpc.WithHTTPClient(&http.Client{Transport: tr}))
 	if err != nil {
 		return nil, nil, fmt.Errorf("constructing bor failover rpc client: %w", err)
@@ -342,8 +342,8 @@ func newBorHTTPFailoverClient(rawURLs []string, attemptTimeout time.Duration) (*
 // captureExpectedChainID best-effort records the primary's chain ID at startup
 // so fallbacks can be validated before the first request. If the primary is
 // unreachable, the expectation is set later by the primary's first probe.
-func (t *borHTTPFailoverTransport) captureExpectedChainID() {
-	if id, ok := fetchChainID(t.endpoints[primaryEndpoint].probe, t.attemptTimeout); ok {
+func (t *borHTTPFailoverTransport) captureExpectedChainID(ctx context.Context) {
+	if id, ok := fetchChainID(ctx, t.endpoints[primaryEndpoint].probe, t.attemptTimeout); ok {
 		if t.expectedChainID.CompareAndSwap(nil, id) {
 			t.expectedByPrimary.Store(true)
 		}
@@ -389,8 +389,8 @@ func dialHTTPEndpoint(raw string) (httpEndpoint, error) {
 	return httpEndpoint{url: u, probe: ethclient.NewClient(rc)}, nil
 }
 
-func fetchChainID(c chainIDProbe, timeout time.Duration) (*big.Int, bool) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+func fetchChainID(ctx context.Context, c chainIDProbe, timeout time.Duration) (*big.Int, bool) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	id, err := c.ChainID(ctx)

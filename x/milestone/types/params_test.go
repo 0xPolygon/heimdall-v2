@@ -193,3 +193,26 @@ func TestParams_ValidateBasic(t *testing.T) {
 		require.Contains(t, err.Error(), "exceeds bor batch size cap")
 	})
 }
+
+func TestParams_ProposedLength(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		maxLength uint64
+		want      uint64
+	}{
+		{name: "below cap", maxLength: 10, want: 10},
+		{name: "at cap", maxLength: types.MilestonePropositionLengthCap, want: types.MilestonePropositionLengthCap},
+		{name: "above cap", maxLength: types.MilestonePropositionLengthCap + 1, want: types.MilestonePropositionLengthCap},
+		{name: "at bor batch cap", maxLength: uint64(borgrpc.MaxBlockInfoBatchSize), want: types.MilestonePropositionLengthCap},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			params := types.Params{MaxMilestonePropositionLength: tc.maxLength}
+			require.Equal(t, tc.want, params.ProposedLength())
+		})
+	}
+}

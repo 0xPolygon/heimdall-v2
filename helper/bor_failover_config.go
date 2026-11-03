@@ -46,13 +46,13 @@ func BorFailoverConfigured(cfg CustomConfig) bool {
 // bor_rpc_url enables HTTP failover across the priority-ordered endpoints
 // (index 0 = primary); a single URL keeps the plain dial path unchanged. It
 // warns (never fatals) if the primary is unreachable at startup.
-func initBorRPCClient() {
+func initBorRPCClient(ctx context.Context) {
 	var err error
 
 	borRPCUrls := parseURLs(conf.Custom.BorRPCUrl)
 	borRPCLogURL := conf.Custom.BorRPCUrl
 	if len(borRPCUrls) >= 2 {
-		if borRPCClient, borClient, err = newBorHTTPFailoverClient(borRPCUrls, conf.Custom.BorRPCTimeout); err != nil {
+		if borRPCClient, borClient, err = newBorHTTPFailoverClient(ctx, borRPCUrls, conf.Custom.BorRPCTimeout); err != nil {
 			log.Fatal("unable to set up bor RPC failover client", "URLs", redactURLs(conf.Custom.BorRPCUrl), "error", err)
 		}
 	} else if len(borRPCUrls) == 1 {
@@ -65,13 +65,13 @@ func initBorRPCClient() {
 		log.Fatal("bor_rpc_url is empty")
 	}
 
-	warnIfBorRPCInaccessible(borClient, conf.Custom.BorRPCTimeout, redactURLs(borRPCLogURL))
+	warnIfBorRPCInaccessible(ctx, borClient, conf.Custom.BorRPCTimeout, redactURLs(borRPCLogURL))
 }
 
 // initBorGRPCClient sets the borGRPCClient global when bor gRPC is enabled,
 // supporting comma-separated bor_grpc_url failover, and runs the primary's
 // startup reachability and HTTP/gRPC hash-parity checks.
-func initBorGRPCClient() {
+func initBorGRPCClient(ctx context.Context) {
 	if !conf.Custom.BorGRPCFlag {
 		return
 	}
@@ -81,16 +81,16 @@ func initBorGRPCClient() {
 		log.Fatal("bor gRPC is enabled but bor_grpc_url is empty")
 	}
 
-	primaryGRPC, grpcClient, err := buildBorGRPCClient(grpcURLs, conf.Custom.BorGRPCToken, conf.Custom.BorRPCTimeout, borClient)
+	primaryGRPC, grpcClient, err := buildBorGRPCClient(ctx, grpcURLs, conf.Custom.BorGRPCToken, conf.Custom.BorRPCTimeout, borClient)
 	if err != nil {
 		log.Fatal("unable to create bor gRPC client", "URL", redactURLs(conf.Custom.BorGRPCUrl), "error", err)
 	}
 
 	borGRPCClient = grpcClient
-	warnIfBorGRPCInaccessible(primaryGRPC, conf.Custom.BorRPCTimeout, redactURL(grpcURLs[0]))
+	warnIfBorGRPCInaccessible(ctx, primaryGRPC, conf.Custom.BorRPCTimeout, redactURL(grpcURLs[0]))
 	// Fire-and-forget parity goroutine; removal is only observable in production init.
 	// mutator-disable-next-line statement-deletion in production init
-	verifyBorGRPCHashParity(borClient, primaryGRPC, conf.Custom.BorRPCTimeout)
+	verifyBorGRPCHashParity(ctx, borClient, primaryGRPC, conf.Custom.BorRPCTimeout)
 }
 
 // buildBorGRPCClient dials each priority-ordered gRPC URL and returns the
@@ -99,7 +99,7 @@ func initBorGRPCClient() {
 // configured, or a failover wrapper when several are. The configured primary
 // must stay at index 0 so identity anchoring remains authoritative; invalid
 // fallbacks are skipped so a single bad fallback can't block startup.
-func buildBorGRPCClient(urls []string, token string, attemptTimeout time.Duration, httpClient parityHTTPFetcher) (*borgrpc.BorGRPCClient, borgrpc.Client, error) {
+func buildBorGRPCClient(ctx context.Context, urls []string, token string, attemptTimeout time.Duration, httpClient parityHTTPFetcher) (*borgrpc.BorGRPCClient, borgrpc.Client, error) {
 	clients := make([]*borgrpc.BorGRPCClient, 0, len(urls))
 	for i, u := range urls {
 		c, err := borgrpc.NewBorGRPCClient(u, token, Logger)
@@ -122,7 +122,7 @@ func buildBorGRPCClient(urls []string, token string, attemptTimeout time.Duratio
 	}
 
 	return clients[0], borgrpc.NewMultiBorGRPCClient(
-		clients, Logger, metrics.BorFailover("grpc"), attemptTimeout,
+		ctx, clients, Logger, metrics.BorFailover("grpc"), attemptTimeout,
 		borGRPCParityValidators(httpClient, attemptTimeout)...,
 	), nil
 }
