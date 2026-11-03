@@ -75,12 +75,12 @@ type MultiBorGRPCClient struct {
 
 // NewMultiBorGRPCClient wraps already-dialed, priority-ordered clients with
 // failover and starts the background prober.
-func NewMultiBorGRPCClient(clients []*BorGRPCClient, logger log.Logger, m failover.Metrics, attemptTimeout time.Duration, validators ...EndpointValidator) *MultiBorGRPCClient {
+func NewMultiBorGRPCClient(ctx context.Context, clients []*BorGRPCClient, logger log.Logger, m failover.Metrics, attemptTimeout time.Duration, validators ...EndpointValidator) *MultiBorGRPCClient {
 	if len(clients) < 1 {
 		panic("bor failover: endpoint count must be positive")
 	}
 	mc := &MultiBorGRPCClient{clients: clients, attemptTimeout: attemptTimeout, validators: validators}
-	mc.captureExpectedGenesis()
+	mc.captureExpectedGenesis(ctx)
 	mc.health = failover.New(len(clients), mc.probe, m, logger)
 	mc.health.Start()
 	return mc
@@ -191,8 +191,8 @@ func (mc *MultiBorGRPCClient) canAnchor(i int) bool {
 
 // captureExpectedGenesis best-effort records the primary's genesis hash at
 // startup so fallbacks can be validated before the first request.
-func (mc *MultiBorGRPCClient) captureExpectedGenesis() {
-	ctx, cancel := context.WithTimeout(context.Background(), mc.attemptTimeout)
+func (mc *MultiBorGRPCClient) captureExpectedGenesis(ctx context.Context) {
+	ctx, cancel := context.WithTimeout(ctx, mc.attemptTimeout)
 	defer cancel()
 
 	h, err := mc.clients[primaryGRPCEndpoint].HeaderByNumber(ctx, genesisBlock)

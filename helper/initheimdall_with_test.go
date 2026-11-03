@@ -30,11 +30,16 @@ func TestInitHeimdallConfigWithSetsIthacaHeightPerChain(t *testing.T) {
 		wantInitHeight   int64
 		wantIthacaHeight int64
 		wantLuganoHeight int64
+		wantKarwarHeight int64
+		wantPhuket       int64
+		wantZurich       int64
+		wantFeeGate      int64
 	}{
-		{name: "mainnet", chain: MainChain, wantRioHeight: 77414656, wantInitHeight: 24404501, wantIthacaHeight: 50185000, wantLuganoHeight: 54627000},
-		{name: "mumbai", chain: MumbaiChain, wantRioHeight: 48473856, wantInitHeight: 0, wantIthacaHeight: 0, wantLuganoHeight: 0},
-		{name: "amoy", chain: AmoyChain, wantRioHeight: 26272256, wantInitHeight: 8788501, wantIthacaHeight: 40776000, wantLuganoHeight: 47105000},
-		{name: "default", chain: "local", wantRioHeight: 0, wantInitHeight: 0, wantIthacaHeight: 0, wantLuganoHeight: 1},
+		{name: "mainnet", chain: MainChain, wantRioHeight: 77414656, wantInitHeight: 24404501, wantIthacaHeight: 50185000, wantLuganoHeight: 54627000, wantKarwarHeight: 57006000, wantPhuket: 44070000, wantZurich: 47880000, wantFeeGate: 46361000},
+		{name: "mumbai", chain: MumbaiChain, wantRioHeight: 48473856},
+		{name: "amoy", chain: AmoyChain, wantRioHeight: 26272256, wantInitHeight: 8788501, wantIthacaHeight: 40776000, wantLuganoHeight: 47105000, wantKarwarHeight: 50020000, wantPhuket: 32276400, wantZurich: 37750000, wantFeeGate: 35914000},
+		// Local devnets run every fork from genesis.
+		{name: "default", chain: "local", wantRioHeight: 0, wantIthacaHeight: 1, wantLuganoHeight: 1, wantKarwarHeight: 1, wantPhuket: 1, wantZurich: 1, wantFeeGate: 1},
 	}
 
 	for _, tc := range cases {
@@ -42,12 +47,16 @@ func TestInitHeimdallConfigWithSetsIthacaHeightPerChain(t *testing.T) {
 			conf = CustomAppConfig{}
 
 			home := mkTestHome(t, rpcURL, tc.chain)
-			InitHeimdallConfigWith(home, "")
+			InitHeimdallConfigWith(t.Context(), home, "")
 
 			require.Equal(t, tc.wantIthacaHeight, GetIthacaHeight())
 			require.Equal(t, tc.wantRioHeight, GetRioHeight())
 			require.Equal(t, tc.wantInitHeight, GetInitialHeight())
 			require.Equal(t, tc.wantLuganoHeight, GetLuganoHeight())
+			require.Equal(t, tc.wantKarwarHeight, GetKarwarHeight())
+			require.Equal(t, tc.wantPhuket, GetPhuketHardforkHeight())
+			require.Equal(t, tc.wantZurich, GetZurichHardforkHeight())
+			require.Equal(t, tc.wantFeeGate, GetFeeWithdrawValidatorGateHeight())
 		})
 	}
 }
@@ -72,7 +81,7 @@ func TestInitHeimdallConfigWithInstallsModuleFilter(t *testing.T) {
 			conf = CustomAppConfig{}
 			viper.Set(flags.FlagLogLevel, tc.level)
 
-			InitHeimdallConfigWith(mkTestHome(t, rpcURL, "local"), "")
+			InitHeimdallConfigWith(t.Context(), mkTestHome(t, rpcURL, "local"), "")
 
 			_, wrapped := Logger.(moduleFilterLogger)
 			require.Equal(t, tc.wrapped, wrapped)
@@ -105,6 +114,8 @@ func restoreInitGlobals(t *testing.T) {
 	origZurich := zurichHardforkHeight
 	origSpan := ithacaHeight
 	origLugano := luganoHeight
+	origKyoto := kyotoHeight
+	origKarwar := karwarHeight
 	t.Cleanup(func() {
 		conf = origConf
 		Logger = origLogger
@@ -126,6 +137,8 @@ func restoreInitGlobals(t *testing.T) {
 		zurichHardforkHeight = origZurich
 		ithacaHeight = origSpan
 		luganoHeight = origLugano
+		kyotoHeight = origKyoto
+		karwarHeight = origKarwar
 	})
 }
 
