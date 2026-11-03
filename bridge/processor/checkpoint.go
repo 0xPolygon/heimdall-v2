@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"sort"
+	"slices"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -418,7 +418,7 @@ func (cp *CheckpointProcessor) handleCheckpointNoAck(ctx context.Context) {
 		return
 	}
 
-	lastCreatedAt, err := cp.getLatestCheckpointTime(checkpointContext)
+	lastCreatedAt, err := cp.getLatestCheckpointTime(ctx, checkpointContext)
 	if err != nil {
 		cp.Logger.Error(errMsgCpFetchingLatestCheckpointTime, "error", err)
 		return
@@ -610,7 +610,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootChain(checkpointCont
 		return err
 	}
 
-	sigs, err := cp.parseCheckpointSignatures(signatures)
+	sigs, err := cp.parseCheckpointSignatures(signatures, sideTxData)
 	if err != nil {
 		cp.Logger.Error(errMsgCpParsingCheckpointSignatures, "error", err)
 		return err
@@ -644,66 +644,44 @@ func (cp *CheckpointProcessor) fetchCheckpointTxBytesForEvent(txHash []byte, eve
 	return cp.queryTxBytesFromBlock(cp.cliCtx, txHash, eventHeight-1)
 }
 
-// parseCheckpointSignatures parse checkpoint signatures for the L1 checkpoint contract
-func (cp *CheckpointProcessor) parseCheckpointSignatures(signatures []checkpointtypes.CheckpointSignature) ([][3]*big.Int, error) {
-	type sideTxSig struct {
-		address []byte
-		sig     []byte
-	}
+// parseCheckpointSignatures returns the signatures sorted by signer in L1's canonical form. Signatures that
+// do not recover to their validator are dropped, since L1 stops counting at an out-of-order signer.
+func (cp *CheckpointProcessor) parseCheckpointSignatures(signatures []checkpointtypes.CheckpointSignature, signedData []byte) ([][3]*big.Int, error) {
+	// L1 verifies over keccak256(YES vote byte || side-sign bytes).
+	voteHash := crypto.Keccak256([]byte{0x01}, signedData)
 
-	sideTxSigs := make([]sideTxSig, 0, len(signatures))
-
-	for _, entry := range signatures {
-		sideTxSigs = append(sideTxSigs, sideTxSig{
-			address: entry.ValidatorAddress,
-			sig:     entry.Signature,
-		})
-	}
-
-	if len(sideTxSigs) == 0 {
-		return nil, errors.New("checkpointProcessor: no checkpoint sigs found")
-	}
-
-	sort.Slice(sideTxSigs, func(i, j int) bool {
-		return bytes.Compare(sideTxSigs[i].address, sideTxSigs[j].address) < 0
+	sorted := slices.Clone(signatures)
+	slices.SortFunc(sorted, func(a, b checkpointtypes.CheckpointSignature) int {
+		return bytes.Compare(a.ValidatorAddress, b.ValidatorAddress)
 	})
 
-	sigs := make([][3]*big.Int, 0, len(sideTxSigs))
-
-	for _, sideTxSig := range sideTxSigs {
-		if len(sideTxSig.sig) != crypto.SignatureLength {
-			return nil, fmt.Errorf("checkpointProcessor: invalid signature length %d, want %d", len(sideTxSig.sig), crypto.SignatureLength)
+	sigs := make([][3]*big.Int, 0, len(sorted))
+	var dropped []string
+	for _, entry := range sorted {
+		sig, ok := checkpointtypes.CanonicalSignature(voteHash, entry.ValidatorAddress, entry.Signature)
+		if !ok {
+			dropped = append(dropped, common.BytesToAddress(entry.ValidatorAddress).Hex())
+			continue
 		}
 
-		v, err := normalizeCheckpointV(sideTxSig.sig[crypto.RecoveryIDOffset])
-		if err != nil {
-			return nil, err
-		}
-
-		r := new(big.Int).SetBytes(sideTxSig.sig[:32])
-		s := new(big.Int).SetBytes(sideTxSig.sig[32:64])
-
+		r := new(big.Int).SetBytes(sig[:32])
+		s := new(big.Int).SetBytes(sig[32:64])
+		v := big.NewInt(int64(sig[crypto.RecoveryIDOffset]) + 27)
 		sigs = append(sigs, [3]*big.Int{r, s, v})
 	}
 
-	return sigs, nil
-}
-
-// normalizeCheckpointV maps a secp256k1 recovery byte to the {27,28} form the
-// L1 RootChain contract's ecrecover expects. CometBFT signing emits {0,1}; some
-// libraries pre-add 27. Any other value is rejected: the consensus-layer
-// signature check ignores the recovery byte, so a crafted vote extension could
-// otherwise carry a byte that recovers to the zero address on L1 and breaks the
-// contract's sorted-signer accounting.
-func normalizeCheckpointV(recoveryID byte) (*big.Int, error) {
-	switch recoveryID {
-	case 0, 1:
-		return big.NewInt(int64(recoveryID) + 27), nil
-	case 27, 28:
-		return big.NewInt(int64(recoveryID)), nil
-	default:
-		return nil, fmt.Errorf("checkpointProcessor: invalid signature recovery id %d", recoveryID)
+	// Logged at error level with counts so a mismatch between stored signatures and the signed payload,
+	// which would otherwise only show up as missing checkpoints on L1, can be alerted on.
+	if len(dropped) > 0 {
+		cp.Logger.Error("CheckpointProcessor: dropped checkpoint signatures that do not recover to their validator",
+			"dropped", len(dropped), "total", len(sorted), "validators", dropped)
 	}
+
+	if len(sigs) == 0 {
+		return nil, errors.New("checkpointProcessor: no checkpoint sigs found")
+	}
+
+	return sigs, nil
 }
 
 // fetchDividendAccountRoot - fetches dividend account root hash
@@ -728,7 +706,7 @@ func (cp *CheckpointProcessor) fetchDividendAccountRoot() ([]byte, error) {
 }
 
 // getLatestCheckpointTime gets the latest checkpoint time from rootChain
-func (cp *CheckpointProcessor) getLatestCheckpointTime(checkpointContext *CheckpointContext) (int64, error) {
+func (cp *CheckpointProcessor) getLatestCheckpointTime(ctx context.Context, checkpointContext *CheckpointContext) (int64, error) {
 	// get chain params
 	chainParams := checkpointContext.ChainmanagerParams.ChainParams
 	checkpointParams := checkpointContext.CheckpointParams
@@ -746,7 +724,7 @@ func (cp *CheckpointProcessor) getLatestCheckpointTime(checkpointContext *Checkp
 	}
 
 	// header block
-	_, _, _, createdAt, _, err := cp.contractCaller.GetHeaderInfo(context.Background(), lastHeaderNumber, rootChainInstance, checkpointParams.ChildChainBlockInterval)
+	_, _, _, createdAt, _, err := cp.contractCaller.GetHeaderInfo(ctx, lastHeaderNumber, rootChainInstance, checkpointParams.ChildChainBlockInterval)
 	if err != nil {
 		cp.Logger.Error(errMsgCpFetchingHeaderBlock, "error", err)
 		return 0, err

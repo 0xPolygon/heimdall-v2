@@ -4,6 +4,8 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
+	borgrpc "github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
@@ -61,6 +63,50 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 				require.NoError(err)
 				require.Equal(params, res.Params)
 			}
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestMsgUpdateParamsPropositionLengthCap() {
+	require, keeper, msgServer := s.Require(), s.milestoneKeeper, s.msgServer
+
+	orig := helper.GetKarwarHeight()
+	s.T().Cleanup(func() { helper.SetKarwarHeight(orig) })
+	helper.SetKarwarHeight(100)
+
+	testCases := []struct {
+		name   string
+		height int64
+		length uint64
+		expErr bool
+	}{
+		{name: "above cap before Karwar", height: 99, length: types.MilestonePropositionLengthCap + 1},
+		{name: "at cap at Karwar", height: 100, length: types.MilestonePropositionLengthCap},
+		{name: "above cap at Karwar", height: 100, length: types.MilestonePropositionLengthCap + 1, expErr: true},
+		{name: "bor batch cap after Karwar", height: 101, length: uint64(borgrpc.MaxBlockInfoBatchSize), expErr: true},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			before, err := keeper.GetParams(s.ctx)
+			require.NoError(err)
+
+			params := types.DefaultParams()
+			params.MaxMilestonePropositionLength = tc.length
+			_, err = msgServer.UpdateParams(s.ctx.WithBlockHeight(tc.height), &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params:    params,
+			})
+
+			got, getErr := keeper.GetParams(s.ctx)
+			require.NoError(getErr)
+			if tc.expErr {
+				require.ErrorContains(err, "exceeds cap")
+				require.Equal(before, got)
+				return
+			}
+			require.NoError(err)
+			require.Equal(tc.length, got.MaxMilestonePropositionLength)
 		})
 	}
 }

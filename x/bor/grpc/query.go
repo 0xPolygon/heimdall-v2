@@ -320,7 +320,7 @@ func receiptResponseToTypesReceipt(receipt *proto.Receipt) *ethTypes.Receipt {
 
 func ToBlockNumArg(number *big.Int) string {
 	if number == nil {
-		return "latest"
+		return rpc.LatestBlockNumber.String()
 	}
 	if number.Sign() >= 0 {
 		return hexutil.EncodeBig(number)

@@ -156,7 +156,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				}
 
 				// write the config file
-				err = os.WriteFile(filepath.Join(config.RootDir, "config/app.toml"), cf, 0o600)
+				err = writeAppConfig(config.RootDir, cf)
 				if err != nil {
 					return err
 				}
@@ -292,4 +292,19 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 	cmd.Flags().Bool("signer-dump", true, "dumps all signer information in a json file")
 
 	return cmd
+}
+
+// writeAppConfig writes the node's app.toml under rootDir, confined to that directory.
+func writeAppConfig(rootDir string, content []byte) error {
+	root, err := os.OpenRoot(rootDir)
+	if err != nil {
+		return err
+	}
+
+	if err := root.WriteFile(filepath.Join("config", "app.toml"), content, 0o600); err != nil {
+		_ = root.Close()
+		return err
+	}
+
+	return root.Close()
 }

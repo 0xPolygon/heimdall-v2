@@ -1533,6 +1533,33 @@ func TestGenMilestoneProposition(t *testing.T) {
 		require.Len(t, prop.BlockHashes, 5)
 		require.Equal(t, latestHash, prop.LatestBlockHash)
 	})
+
+	t.Run("caps the proposition length above the param cap", func(t *testing.T) {
+		helper.SetRioHeight(999999)
+		capped := params
+		capped.MaxMilestonePropositionLength = 200
+		capped.FfMilestoneThreshold = 1000
+		capped.FfMilestoneBlockInterval = 100
+		require.NoError(t, milestoneKeeper.SetParams(milestoneCtx, capped))
+		t.Cleanup(func() { require.NoError(t, milestoneKeeper.SetParams(milestoneCtx, params)) })
+
+		farHeader := &ethTypes.Header{Number: big.NewInt(400)}
+		end := int64(100 + types.MilestonePropositionLengthCap)
+		h, td, a := batchHeaders(101, end)
+		h[0].ParentHash = common.BytesToHash(lastMilestone.Hash)
+
+		mc := &mocks.IContractCaller{}
+		mc.On("GetBorChainBlock", mock.Anything, (*big.Int)(nil)).Return(farHeader, nil)
+		mc.On("GetBorChainBlockInfoInBatch", mock.Anything, int64(101), end).Return(h, td, a, nil)
+		prop, err := GenMilestoneProposition(milestoneCtx, &bk, &milestoneKeeper, mc, func(sdk.Context, uint64) ([]common.Address, error) {
+			return nil, nil
+		})
+		require.NoError(t, err)
+		require.NotNil(t, prop)
+		require.Equal(t, uint64(101), prop.StartBlockNumber)
+		require.Len(t, prop.BlockHashes, types.MilestonePropositionLengthCap)
+		mc.AssertExpectations(t)
+	})
 }
 
 func TestShouldErrorOnValidatorNotFound(t *testing.T) {

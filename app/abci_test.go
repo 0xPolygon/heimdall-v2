@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"math/big"
 	"math/rand"
+	stdruntime "runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -305,10 +307,10 @@ func SetupAppWithABCICtx(t *testing.T) (cryptotypes.PrivKey, *HeimdallApp, sdk.C
 }
 
 // SetupAppWithABCICtxAndValidators sets up a HeimdallApp with the given number of validators and returns the private key, app instance, context, and validator private keys for testing.
-func SetupAppWithABCICtxAndValidators(t *testing.T, numValidators int) (cryptotypes.PrivKey, *HeimdallApp, sdk.Context, []secp256k1.PrivKey) {
+func SetupAppWithABCICtxAndValidators(t *testing.T, numValidators int, logger ...log.Logger) (cryptotypes.PrivKey, *HeimdallApp, sdk.Context, []secp256k1.PrivKey) {
 	priv, _, _ := testdata.KeyTestPubAddr()
 
-	setupResult := SetupAppWithPrivKey(t, uint64(numValidators), priv)
+	setupResult := SetupAppWithPrivKey(t, uint64(numValidators), priv, logger...)
 	app := setupResult.App
 
 	// Initialize the application state
@@ -1096,8 +1098,9 @@ func TestVerifyVoteExtensionHandler_RejectsUnknownFieldsPadding(t *testing.T) {
 		validatorPrivKeys[0],
 	)
 
-	// padding for VEs
-	paddedVE := appendProtobufPadding(ext.VoteExtension, 64*1024)
+	// padding for VEs, kept under maxVESize so the oversized gate does not preempt the
+	// unknown-fields check this test targets
+	paddedVE := appendProtobufPadding(ext.VoteExtension, 512)
 
 	req := &abci.RequestVerifyVoteExtension{
 		ValidatorAddress: valAddrBytes,
@@ -1114,6 +1117,187 @@ func TestVerifyVoteExtensionHandler_RejectsUnknownFieldsPadding(t *testing.T) {
 
 	require.Equal(t, unknownFieldsRejectedBefore+1, promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues("unknown_fields")),
 		"VerifyVoteExtensionHandler must record a rejection for reason=unknown_fields when protobuf padding is present")
+}
+
+// knownFieldVE returns a vote extension of exactly size bytes made of 0x1a 0x00 pairs
+// (field 3 side_tx_responses, zero-length): wire-valid and using only known fields, so without
+// the size gate it passes the strict scan and unmarshals into one struct per pair.
+func knownFieldVE(size int) []byte {
+	bz := make([]byte, size)
+	for i := 0; i+1 < len(bz); i += 2 {
+		bz[i] = 0x1a
+	}
+	return bz
+}
+
+// TestVerifyVoteExtensionHandler_RejectsOversized verifies that, once the size gate is active, the
+// handler rejects a vote extension larger than maxVESize before it is scanned or unmarshalled
+// (reason=oversized); that exactly maxVESize is not caught (boundary inclusive); and that below the
+// gate activation height an oversized extension is not rejected as oversized (pre-gate behavior).
+func TestVerifyVoteExtensionHandler_RejectsOversized(t *testing.T) {
+	tests := []struct {
+		name          string
+		size          int
+		gateHeight    int64
+		wantOversized bool
+	}{
+		{name: "gate active, over max", size: maxVESize + 2, gateHeight: 1, wantOversized: true},
+		{name: "gate active, at max", size: maxVESize, gateHeight: 1, wantOversized: false},
+		{name: "gate inactive, over max", size: maxVESize + 2, gateHeight: CurrentHeight + 100, wantOversized: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			orig := helper.GetKarwarHeight()
+			t.Cleanup(func() { helper.SetKarwarHeight(orig) })
+			helper.SetKarwarHeight(tc.gateHeight)
+
+			priv, _, _ := testdata.KeyTestPubAddr()
+			var logBuf bytes.Buffer
+			setupAppResult := SetupAppWithPrivKey(t, 1, priv, log.NewLogger(&logBuf, log.ColorOption(false)))
+			hApp := setupAppResult.App
+
+			ctx := hApp.BaseApp.NewContext(true)
+			ctx = setupContextWithVoteExtensionsEnableHeight(ctx, 1)
+
+			vals := hApp.StakeKeeper.GetAllValidators(ctx)
+			require.NotEmpty(t, vals)
+			valAddrBytes := common.FromHex(vals[0].Signer)
+
+			req := &abci.RequestVerifyVoteExtension{
+				ValidatorAddress: valAddrBytes,
+				Height:           CurrentHeight,
+				VoteExtension:    knownFieldVE(tc.size),
+			}
+
+			oversizedBefore := promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues("oversized"))
+
+			resp, err := hApp.VerifyVoteExtensionHandler()(ctx, req)
+			require.NoError(t, err)
+			require.NotNil(t, resp)
+			// Every case is ultimately rejected (the non-oversized ones fail later checks), so status
+			// alone does not distinguish the gate; the oversized counter does.
+			require.Equal(t, abci.ResponseVerifyVoteExtension_REJECT, resp.Status)
+
+			oversizedAfter := promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues("oversized"))
+			if tc.wantOversized {
+				require.Equal(t, oversizedBefore+1, oversizedAfter,
+					"extension over maxVESize must be rejected with reason=oversized once the gate is active")
+			} else {
+				require.Equal(t, oversizedBefore, oversizedAfter,
+					"the oversized gate must not fire (at-max boundary, or below the gate activation height)")
+			}
+			require.Equal(t, tc.wantOversized, strings.Contains(logBuf.String(), "vote extension exceeds max size"),
+				"the oversized rejection is logged exactly when the gate fires")
+		})
+	}
+}
+
+// TestVerifyVoteExtensionHandler_OversizedGatePrecedesScan verifies the size gate runs before the
+// unknown-fields scan: an over-max extension that also contains an unknown field is rejected with
+// reason=oversized, not unknown_fields.
+func TestVerifyVoteExtensionHandler_OversizedGatePrecedesScan(t *testing.T) {
+	orig := helper.GetKarwarHeight()
+	t.Cleanup(func() { helper.SetKarwarHeight(orig) })
+	helper.SetKarwarHeight(1)
+
+	setupAppResult := SetupApp(t, 1)
+	hApp := setupAppResult.App
+
+	ctx := hApp.BaseApp.NewContext(true)
+	ctx = setupContextWithVoteExtensionsEnableHeight(ctx, 1)
+
+	vals := hApp.StakeKeeper.GetAllValidators(ctx)
+	require.NotEmpty(t, vals)
+	valAddrBytes := common.FromHex(vals[0].Signer)
+
+	// Over-max payload that also carries an unknown protobuf field; the gate must fire first.
+	ve := appendProtobufPadding(knownFieldVE(maxVESize+2), 8)
+	require.Greater(t, len(ve), maxVESize)
+
+	req := &abci.RequestVerifyVoteExtension{
+		ValidatorAddress: valAddrBytes,
+		Height:           CurrentHeight,
+		VoteExtension:    ve,
+	}
+
+	oversizedBefore := promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues("oversized"))
+	unknownBefore := promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues("unknown_fields"))
+
+	resp, err := hApp.VerifyVoteExtensionHandler()(ctx, req)
+	require.NoError(t, err)
+	require.Equal(t, abci.ResponseVerifyVoteExtension_REJECT, resp.Status)
+
+	require.Equal(t, oversizedBefore+1, promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues("oversized")),
+		"oversized gate must reject before the unknown-fields scan")
+	require.Equal(t, unknownBefore, promtestutil.ToFloat64(metrics.VoteExtensionRejectedTotal.WithLabelValues("unknown_fields")),
+		"unknown-fields scan must not run when the extension is already over maxVESize")
+}
+
+// TestProcessProposal_RejectsPaddedExtendedCommitFromKarwar verifies that, from the gate height, a
+// proposal whose extended commit carries more vote records than the last commit is rejected before
+// the records are decoded, and that below the gate height such a proposal is still accepted.
+func TestProcessProposal_RejectsPaddedExtendedCommitFromKarwar(t *testing.T) {
+	const runHeight = int64(3)
+
+	origPhuket := helper.GetPhuketHardforkHeight()
+	t.Cleanup(func() { helper.SetPhuketHardforkHeight(origPhuket) })
+	helper.SetPhuketHardforkHeight(1)
+	origKarwar := helper.GetKarwarHeight()
+	t.Cleanup(func() { helper.SetKarwarHeight(origKarwar) })
+
+	tests := []struct {
+		name       string
+		gateHeight int64
+		extra      int
+		wantStatus abci.ResponseProcessProposal_ProposalStatus
+		// boundsAlloc needs a padded commit: the handler's fixed overhead hides a small one.
+		boundsAlloc bool
+	}{
+		{name: "gate active, no extra records", gateHeight: 1, extra: 0, wantStatus: abci.ResponseProcessProposal_ACCEPT},
+		{name: "gate active, one extra record", gateHeight: 1, extra: 1, wantStatus: abci.ResponseProcessProposal_REJECT},
+		{name: "gate active, padded with 65536 records", gateHeight: 1, extra: 65536, wantStatus: abci.ResponseProcessProposal_REJECT, boundsAlloc: true},
+		{name: "gate inactive, padded with 65536 records", gateHeight: runHeight + 1, extra: 65536, wantStatus: abci.ResponseProcessProposal_ACCEPT},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			helper.SetKarwarHeight(tc.gateHeight)
+
+			_, app, ctx, validatorPrivKeys := SetupAppWithABCICtx(t)
+			validators := app.StakeKeeper.GetAllValidators(ctx)
+			_, extCommit, _, err := buildExtensionCommits(t, app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, runHeight-1, nil)
+			require.NoError(t, err)
+
+			// Unsigned absent records pass every later check by being skipped, so only the
+			// pre-decode bound can refuse them.
+			for range tc.extra {
+				extCommit.Votes = append(extCommit.Votes, abci.ExtendedVoteInfo{BlockIdFlag: cmtproto.BlockIDFlagAbsent})
+			}
+			extCommitBytes, err := extCommit.Marshal()
+			require.NoError(t, err)
+
+			var before, after stdruntime.MemStats
+			stdruntime.ReadMemStats(&before)
+			res, err := app.ProcessProposal(&abci.RequestProcessProposal{
+				Txs:    [][]byte{extCommitBytes},
+				Height: runHeight,
+				ProposedLastCommit: abci.CommitInfo{
+					Round: extCommit.Round,
+					Votes: []abci.VoteInfo{{Validator: extCommit.Votes[0].Validator, BlockIdFlag: cmtproto.BlockIDFlagCommit}},
+				},
+			})
+			stdruntime.ReadMemStats(&after)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantStatus, res.Status)
+
+			if tc.boundsAlloc {
+				// Decoding the padded commit allocates many times its size.
+				require.Less(t, after.TotalAlloc-before.TotalAlloc, uint64(len(extCommitBytes)),
+					"padded extended commit must be rejected before it is decoded")
+			}
+		})
+	}
 }
 
 // TestPreBlocker tests the PreBlocker function of the HeimdallApp by creating a MsgProposeSpan message, building a signed transaction, creating an extension commit, and calling the PreBlocker with the transaction and extension commit to ensure it processes without errors.

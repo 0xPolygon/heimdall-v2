@@ -421,7 +421,7 @@ func TestRoundTrip_BodyReadError(t *testing.T) {
 }
 
 func TestNewBorHTTPFailoverClient_ErrorWhenNoValidEndpoints(t *testing.T) {
-	_, _, err := newBorHTTPFailoverClient([]string{"ws://x", "ftp://y"}, time.Second)
+	_, _, err := newBorHTTPFailoverClient(t.Context(), []string{"ws://x", "ftp://y"}, time.Second)
 	require.Error(t, err)
 }
 
@@ -454,14 +454,14 @@ func TestDialHTTPEndpoints_RejectsInvalidPrimary(t *testing.T) {
 func TestFetchChainID(t *testing.T) {
 	s := fakeBorRPC(t, "0x9", new(int32))
 	defer s.Close()
-	id, ok := fetchChainID(mustEndpoint(t, s.URL).probe, time.Second)
+	id, ok := fetchChainID(t.Context(), mustEndpoint(t, s.URL).probe, time.Second)
 	require.True(t, ok)
 	require.Equal(t, int64(9), id.Int64())
 
 	down := fakeBorRPC(t, "0x9", new(int32))
 	downURL := down.URL
 	down.Close()
-	id2, ok2 := fetchChainID(mustEndpoint(t, downURL).probe, 200*time.Millisecond)
+	id2, ok2 := fetchChainID(t.Context(), mustEndpoint(t, downURL).probe, 200*time.Millisecond)
 	require.False(t, ok2)
 	require.Nil(t, id2)
 }
@@ -470,7 +470,7 @@ func TestCaptureExpectedChainID(t *testing.T) {
 	s := fakeBorRPC(t, "0x7", new(int32))
 	defer s.Close()
 	tr := &borHTTPFailoverTransport{endpoints: []httpEndpoint{mustEndpoint(t, s.URL)}, attemptTimeout: time.Second}
-	tr.captureExpectedChainID()
+	tr.captureExpectedChainID(t.Context())
 	require.NotNil(t, tr.expectedChainID.Load())
 	require.Equal(t, int64(7), tr.expectedChainID.Load().Int64())
 
@@ -478,7 +478,7 @@ func TestCaptureExpectedChainID(t *testing.T) {
 	downURL := down.URL
 	down.Close()
 	tr2 := &borHTTPFailoverTransport{endpoints: []httpEndpoint{mustEndpoint(t, downURL)}, attemptTimeout: 200 * time.Millisecond}
-	tr2.captureExpectedChainID()
+	tr2.captureExpectedChainID(t.Context())
 	require.Nil(t, tr2.expectedChainID.Load()) // unreachable primary → nothing captured
 }
 

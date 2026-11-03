@@ -35,6 +35,8 @@ import (
 var (
 	dummyNonRpVoteExtension   = []byte("\t\r\n#HEIMDALL-VOTE-EXTENSION#\r\n\t")
 	minNonRpVoteExtensionSize = len(dummyNonRpVoteExtension)
+
+	errNonRpSignature = errors.New("non-rp vote extension signature check failed")
 )
 
 const (
@@ -46,9 +48,13 @@ const (
 	// maxVESizePerValidator is calculated as [(MaxTxBytes / validatorsCount / safety_factor) - overhead]
 
 	safetyFactor         = 2
-	overheadPerValidator = 500       // bytes for additional data (e.g. signatures, metadata, protobuf...)
-	minVESize            = 10        // Minimum size for normal vote extensions (bytes)
-	maxVESize            = 10 * 1024 // 10KB maximum
+	overheadPerValidator = 500 // bytes for additional data (e.g. signatures, metadata, protobuf...)
+	minVESize            = 10  // Minimum size for normal vote extensions (bytes)
+	// maxVESize is the absolute ingress ceiling for a vote extension. It must stay above the
+	// largest extension an honest validator can produce: up to 50 side-tx responses plus a milestone
+	// proposition of at most MilestonePropositionLengthCap blocks, ~5KB in the worst case
+	// (TestVoteExtensionAtPropositionLengthCapFitsSizeLimits).
+	maxVESize = 10 * 1024 // 10KB maximum
 )
 
 // ValidateVoteExtensions verifies the vote extension correctness
@@ -83,6 +89,12 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 		// They are kept in the slice for completeness but must not be validated or counted toward VP.
 		if isFilteredPlaceholder(vote) {
 			continue
+		}
+
+		// Ahead of the scan so non-commit entries, skipped below, are bounded too. Gated on the
+		// proposal height so the accept/reject change lands at one coordinated height.
+		if helper.IsKarwar(reqHeight) && len(vote.VoteExtension) > maxVESize {
+			return fmt.Errorf("vote extension size %d exceeds max %d at height %d", len(vote.VoteExtension), maxVESize, reqHeight)
 		}
 
 		// reject unknown fields
@@ -867,6 +879,12 @@ func ValidateNonRpVoteExtensions(
 		return nil
 	}
 
+	// Verify signatures before majority selection and Bor-dependent checks so neither can mask a signature failure.
+	// Wrap every failure, not only a bad signature, so ProcessProposal rejects on all of them.
+	if err := checkNonRpVoteExtensionsSignatures(ctx, extVoteInfo, validatorSet); err != nil {
+		return fmt.Errorf("%w: %w", errNonRpSignature, err)
+	}
+
 	// Check if there is a vote extension with majority voting power
 	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, validatorSet, logger)
 	if err != nil {
@@ -876,13 +894,6 @@ func ValidateNonRpVoteExtensions(
 	// Not running rejectUnknownVoteExtFields() here, because
 	// NonRpVoteExtension is not a protobuf-encoded sidetxs.VoteExtension and
 	// it would incorrectly reject valid non-rp VEs.
-
-	// Signatures first: NonRpExtensionSignature must be verified before any
-	// Bor-dependent payload validation, so the Zurich gated tolerateBorErr carve-out
-	// in callers cannot suppress a signature failure when Bor is unreachable.
-	if err := checkNonRpVoteExtensionsSignatures(ctx, extVoteInfo, validatorSet); err != nil {
-		return fmt.Errorf("failed to check non rp vote extensions signatures: %w", err)
-	}
 
 	if err := validateNonRpVoteExtensionData(ctx, height-1, majorityExt, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
 		return fmt.Errorf("failed to validate majority non rp vote extension: %w", err)
@@ -1198,21 +1209,37 @@ func findCheckpointTx(txs [][]byte, extension []byte, txDecoder txDecoder, logge
 
 // getCheckpointSignatures returns the checkpoint signatures from the given extVoteInfo.
 // From the Zurich hardfork onward, non-commit entries are skipped.
+// From the Karwar hardfork, signatures are stored in the form L1 accepts. The recovery byte
+// is not covered by the consensus signature check, so it is re-derived here instead of validated.
 func getCheckpointSignatures(height int64, extension []byte, extVoteInfo []abciTypes.ExtendedVoteInfo) checkpointTypes.CheckpointSignatures {
 	result := checkpointTypes.CheckpointSignatures{
 		Signatures: make([]checkpointTypes.CheckpointSignature, 0),
 	}
 	commitOnly := helper.IsZurichHardfork(height)
+	canonicalize := helper.IsKarwar(height)
+	var digest []byte
+	if canonicalize {
+		digest = crypto.Keccak256(extension)
+	}
 	for _, vote := range extVoteInfo {
 		if commitOnly && vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
 			continue
 		}
-		if bytes.Equal(vote.NonRpVoteExtension, extension) {
-			result.Signatures = append(result.Signatures, checkpointTypes.CheckpointSignature{
-				ValidatorAddress: vote.Validator.Address,
-				Signature:        vote.NonRpExtensionSignature,
-			})
+		if !bytes.Equal(vote.NonRpVoteExtension, extension) {
+			continue
 		}
+		sig := vote.NonRpExtensionSignature
+		if canonicalize {
+			canonical, ok := checkpointTypes.CanonicalSignature(digest, vote.Validator.Address, sig)
+			if !ok {
+				continue
+			}
+			sig = canonical
+		}
+		result.Signatures = append(result.Signatures, checkpointTypes.CheckpointSignature{
+			ValidatorAddress: vote.Validator.Address,
+			Signature:        sig,
+		})
 	}
 	return result
 }
