@@ -77,6 +77,12 @@ func (app *HeimdallApp) handlePendingMilestone(ctx sdk.Context, pendingMilestone
 func (app *HeimdallApp) checkAndRotateOnPendingStall(ctx sdk.Context, agreedHead uint64, agreedHash []byte) error {
 	logger := app.Logger()
 
+	// Bor ignores veblop spans before Rio, so minting one for a pre-Rio head only breaks the
+	// milestone author check for good. Skip before touching the stall clock.
+	if !helper.IsRio(agreedHead + 1) {
+		return nil
+	}
+
 	trackedBlock, trackedID, trackedHeight, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
 	if err != nil {
 		logger.Error("Error occurred while getting pending bor block tracking", "error", err)

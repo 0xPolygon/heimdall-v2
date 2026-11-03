@@ -152,7 +152,7 @@ func TestRunBorGRPCHashParityCheckWith(t *testing.T) {
 		grpc := &stubGRPCFetcher{header: h}
 
 		fatalCalled := false
-		runBorGRPCHashParityCheckWith(http, grpc, smallTimeout, 2, 0, func(msg string, _ ...interface{}) {
+		runBorGRPCHashParityCheckWith(t.Context(), http, grpc, smallTimeout, 2, 0, func(msg string, _ ...interface{}) {
 			fatalCalled = true
 		})
 
@@ -171,7 +171,7 @@ func TestRunBorGRPCHashParityCheckWith(t *testing.T) {
 		}
 
 		fatalCalled := false
-		runBorGRPCHashParityCheckWith(http, &stubGRPCFetcher{header: makeHeader(50)}, smallTimeout, 1, 0, func(msg string, _ ...interface{}) {
+		runBorGRPCHashParityCheckWith(t.Context(), http, &stubGRPCFetcher{header: makeHeader(50)}, smallTimeout, 1, 0, func(msg string, _ ...interface{}) {
 			fatalCalled = true
 		})
 
@@ -197,7 +197,7 @@ func TestRunBorGRPCHashParityCheckWith(t *testing.T) {
 		grpc := &stubGRPCFetcher{header: grpcHdrDiff}
 
 		fatalCalled := false
-		runBorGRPCHashParityCheckWith(http, grpc, smallTimeout, 10, 0, func(msg string, _ ...interface{}) {
+		runBorGRPCHashParityCheckWith(t.Context(), http, grpc, smallTimeout, 10, 0, func(msg string, _ ...interface{}) {
 			fatalCalled = true
 		})
 
@@ -251,7 +251,7 @@ func TestRunBorGRPCHashParityCheckWith(t *testing.T) {
 		}}
 
 		fatalCalled := false
-		runBorGRPCHashParityCheckWith(httpFetcher, grpcFetcher, smallTimeout, 10, 0, func(msg string, _ ...interface{}) {
+		runBorGRPCHashParityCheckWith(t.Context(), httpFetcher, grpcFetcher, smallTimeout, 10, 0, func(msg string, _ ...interface{}) {
 			fatalCalled = true
 		})
 		require.False(t, fatalCalled, "streak reset by transient must prevent fatal")
@@ -264,7 +264,7 @@ func TestRunBorGRPCHashParityCheckWith(t *testing.T) {
 		http := &stubHTTPFetcher{calls: make([]*ethTypes.Header, 0)} // will always error
 
 		fatalCalled := false
-		runBorGRPCHashParityCheckWith(http, &stubGRPCFetcher{header: makeHeader(50)}, smallTimeout, 3, 0, func(msg string, _ ...interface{}) {
+		runBorGRPCHashParityCheckWith(t.Context(), http, &stubGRPCFetcher{header: makeHeader(50)}, smallTimeout, 3, 0, func(msg string, _ ...interface{}) {
 			fatalCalled = true
 		})
 		require.False(t, fatalCalled, "transient-only attempts must not trigger fatal even after exhaustion")
@@ -304,7 +304,7 @@ func TestCheckBorGRPCHashParityOnceWith(t *testing.T) {
 		http := &stubHTTPFetcher{calls: []*ethTypes.Header{h, h, h}} // call1=latest; calls2&3=stable check
 		grpc := &stubGRPCFetcher{header: h}
 
-		ok, mismatch := checkBorGRPCHashParityOnceWith(http, grpc, timeout)
+		ok, mismatch := checkBorGRPCHashParityOnceWith(t.Context(), http, grpc, timeout)
 		require.False(t, ok)
 		require.False(t, mismatch)
 	})
@@ -319,7 +319,7 @@ func TestCheckBorGRPCHashParityOnceWith(t *testing.T) {
 		}
 		grpc := &stubGRPCFetcher{header: h}
 
-		ok, mismatch := checkBorGRPCHashParityOnceWith(http, grpc, timeout)
+		ok, mismatch := checkBorGRPCHashParityOnceWith(t.Context(), http, grpc, timeout)
 		require.False(t, ok)
 		require.False(t, mismatch)
 	})
@@ -334,7 +334,7 @@ func TestCheckBorGRPCHashParityOnceWith(t *testing.T) {
 		http := &stubHTTPFetcher{calls: []*ethTypes.Header{httpHdr, httpHdr, httpHdr}}
 		grpc := &stubGRPCFetcher{header: grpcHdrDiff}
 
-		ok, mismatch := checkBorGRPCHashParityOnceWith(http, grpc, timeout)
+		ok, mismatch := checkBorGRPCHashParityOnceWith(t.Context(), http, grpc, timeout)
 		require.False(t, ok)
 		require.True(t, mismatch, "differing hashes must be reported as a mismatch")
 	})
@@ -348,7 +348,7 @@ func TestCheckBorGRPCHashParityOnceWith(t *testing.T) {
 		http := &stubHTTPFetcher{calls: []*ethTypes.Header{httpHdr, httpHdr, httpHdr}}
 		grpc := &stubGRPCFetcher{header: grpcHdr}
 
-		ok, mismatch := checkBorGRPCHashParityOnceWith(http, grpc, timeout)
+		ok, mismatch := checkBorGRPCHashParityOnceWith(t.Context(), http, grpc, timeout)
 		require.True(t, ok, "matching hashes must return ok=true")
 		require.False(t, mismatch)
 	})
