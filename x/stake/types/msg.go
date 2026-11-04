@@ -70,6 +70,11 @@ func (msg MsgValidatorJoin) ValidateBasic() error {
 		return ErrInvalidMsg.Wrap("signer public key can't be of zero bytes")
 	}
 
+	// Guard before IsZero/IsNegative: a nil/uninitialized Int (proto field omitted)
+	// panics on those methods, and ValidateBasic runs ahead of signature verification.
+	if msg.Amount.IsNil() {
+		return ErrInvalidMsg.Wrap("amount is required")
+	}
 	if msg.Amount.IsZero() || msg.Amount.IsNegative() {
 		return ErrInvalidMsg.Wrapf("invalid amount %v", msg.Amount)
 	}
@@ -115,6 +120,9 @@ func (msg MsgStakeUpdate) ValidateBasic() error {
 		return ErrInvalidMsg.Wrapf(errInvalidProposer, msg.From)
 	}
 
+	if msg.NewAmount.IsNil() {
+		return ErrInvalidMsg.Wrap("amount is required")
+	}
 	if msg.NewAmount.IsZero() || msg.NewAmount.IsNegative() {
 		return ErrInvalidMsg.Wrapf("invalid amount %v", msg.NewAmount)
 	}
