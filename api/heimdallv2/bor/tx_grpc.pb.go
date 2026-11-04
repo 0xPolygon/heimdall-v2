@@ -36,7 +36,11 @@ type MsgClient interface {
 	// Only the governance authority can execute this.
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 	// BackfillSpans defines a method to backfill missing spans.
-	// This is used during chain recovery or when spans need to be reconstructed.
+	// The side handler / post handler / dispatch are deliberately not registered
+	// (see x/bor/keeper/side_msg_server.go SideTxHandler / PostTxHandler) so
+	// this msg consumes no side-tx response slot. The msg-server handler is
+	// retained as input-validation only (no state writes) so historical blocks
+	// containing this msg replay with the same ExecTxResult shape.
 	BackfillSpans(ctx context.Context, in *MsgBackfillSpans, opts ...grpc.CallOption) (*MsgBackfillSpansResponse, error)
 	// VoteProducers defines a method for validators to submit their producer
 	// votes.
@@ -110,7 +114,11 @@ type MsgServer interface {
 	// Only the governance authority can execute this.
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 	// BackfillSpans defines a method to backfill missing spans.
-	// This is used during chain recovery or when spans need to be reconstructed.
+	// The side handler / post handler / dispatch are deliberately not registered
+	// (see x/bor/keeper/side_msg_server.go SideTxHandler / PostTxHandler) so
+	// this msg consumes no side-tx response slot. The msg-server handler is
+	// retained as input-validation only (no state writes) so historical blocks
+	// containing this msg replay with the same ExecTxResult shape.
 	BackfillSpans(context.Context, *MsgBackfillSpans) (*MsgBackfillSpansResponse, error)
 	// VoteProducers defines a method for validators to submit their producer
 	// votes.
