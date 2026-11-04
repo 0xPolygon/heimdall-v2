@@ -57,7 +57,7 @@ type IContractCaller interface {
 	GetHeaderInfo(ctx context.Context, headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (root common.Hash, start, end, createdAt uint64, proposer string, err error)
 	GetRootHash(ctx context.Context, start, end, checkpointLength uint64) ([]byte, error)
 	GetVoteOnHash(start, end uint64, hash, milestoneID string) (bool, error)
-	GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error)
+	GetValidatorInfo(ctx context.Context, valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error)
 	GetLastChildBlock(rootChainInstance *rootchain.Rootchain) (uint64, error)
 	CurrentHeaderBlock(rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (uint64, error)
 	GetBalance(address common.Address) (*big.Int, error)
@@ -496,8 +496,11 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 }
 
 // GetValidatorInfo get validator info
-func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
-	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
+func (c *ContractCaller) GetValidatorInfo(ctx context.Context, valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
+	callCtx, cancel := context.WithTimeout(ctx, c.MainChainTimeout)
+	defer cancel()
+
+	stakerDetails, err := stakingInfoInstance.GetStakerDetails(&bind.CallOpts{Context: callCtx}, new(big.Int).SetUint64(valID))
 	if err != nil {
 		Logger.Error("Error fetching validator information from stake manager", "validatorId", valID, "error", err)
 		return
