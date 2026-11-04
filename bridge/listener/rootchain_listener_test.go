@@ -90,7 +90,7 @@ func TestNilABI_PanicsOnUnpackLog(t *testing.T) {
 	// nil stateSenderAbi causes a nil-pointer panic in UnpackLog.
 	listener.stateSenderAbi = nil
 	require.Panics(t, func() {
-		listener.handleStateSyncedLog(vLog, selectedEvent)
+		_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 	}, "nil ABI must panic, indicates a misconfigured listener")
 }
 
@@ -114,10 +114,10 @@ func TestEarlyReturn_UnpackLogError(t *testing.T) {
 
 	selectedEvent := &abi.Event{Name: helper.StateSyncedEvent}
 
-	// UnpackLog fails → handler should return early without panicking
-	// and without calling SendTaskWithDelay (which would panic since queueConnector is nil)
+	// decoding fails → handleLog should return early without panicking
+	// and without reaching sendTask (which would panic since taskQueue is nil)
 	require.NotPanics(t, func() {
-		listener.handleStateSyncedLog(vLog, selectedEvent)
+		_ = listener.handleLog(vLog, selectedEvent, validatorSlot{})
 	})
 }
 
@@ -139,26 +139,24 @@ func TestEarlyReturn_HandlersWithBadABI(t *testing.T) {
 		BlockNumber: 100,
 	}
 
-	// All handlers that decode events should return early on UnpackLog error.
-	// If they don't return early, they'd try to call SendTaskWithDelay
-	// which would panic because queueConnector is nil.
+	// handleLog should return early when an event fails to decode. If it
+	// didn't, it would reach sendTask, which panics because taskQueue is nil.
 	handlers := []struct {
 		name string
 		fn   func()
 	}{
-		{"StakeUpdate", func() { listener.handleStakeUpdateLog(vLog, &abi.Event{Name: helper.StakeUpdateEvent}) }},
-		{"SignerChange", func() { listener.handleSignerChangeLog(vLog, &abi.Event{Name: helper.SignerChangeEvent}) }},
-		{"UnstakeInit", func() { listener.handleUnstakeInitLog(vLog, &abi.Event{Name: helper.UnstakeInitEvent}) }},
-		{"StateSynced", func() { listener.handleStateSyncedLog(vLog, &abi.Event{Name: helper.StateSyncedEvent}) }},
-		{"TopUpFee", func() { listener.handleTopUpFeeLog(vLog, &abi.Event{Name: helper.TopUpFeeEvent}) }},
-		{"UnJailed", func() { listener.handleUnJailedLog(vLog, &abi.Event{Name: helper.UnJailedEvent}) }},
+		{"StakeUpdate", func() { _ = listener.handleLog(vLog, &abi.Event{Name: helper.StakeUpdateEvent}, validatorSlot{}) }},
+		{"SignerChange", func() { _ = listener.handleLog(vLog, &abi.Event{Name: helper.SignerChangeEvent}, validatorSlot{}) }},
+		{"UnstakeInit", func() { _ = listener.handleLog(vLog, &abi.Event{Name: helper.UnstakeInitEvent}, validatorSlot{}) }},
+		{"StateSynced", func() { _ = listener.handleLog(vLog, &abi.Event{Name: helper.StateSyncedEvent}, validatorSlot{}) }},
+		{"TopUpFee", func() { _ = listener.handleLog(vLog, &abi.Event{Name: helper.TopUpFeeEvent}, validatorSlot{}) }},
 	}
 
 	for _, h := range handlers {
 		t.Run(h.name, func(t *testing.T) {
 			t.Parallel()
 			require.NotPanics(t, h.fn,
-				"%s should return early on UnpackLog error, not reach SendTaskWithDelay", h.name)
+				"%s should return early on a decode error, not reach sendTask", h.name)
 		})
 	}
 }

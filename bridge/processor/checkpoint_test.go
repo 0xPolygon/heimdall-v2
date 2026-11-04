@@ -355,3 +355,30 @@ func TestCheckpointProcessor_createAndSendCheckpointToRootChain_QueryError(t *te
 	require.ErrorIs(t, err, wantErr,
 		"caller must propagate the query error verbatim; swallowing it would leave the bridge stuck without surfacing the cause")
 }
+
+func TestNextCheckpointEnd(t *testing.T) {
+	t.Parallel()
+
+	const avgLen, maxLen = 256, 1024
+
+	tests := []struct {
+		name          string
+		start, latest uint64
+		want          uint64
+	}{
+		{"latest behind start", 128, 100, 0},
+		{"latest one block before start", 128, 127, 0},
+		{"less than one average checkpoint", 128, 200, 128},
+		{"exactly one average checkpoint", 128, 383, 383},
+		{"rounds down to whole average checkpoints", 128, 700, 639},
+		{"capped at max checkpoint length", 128, 10_000, 1151},
+		{"first checkpoint starts at zero", 0, 255, 255},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tc.want, nextCheckpointEnd(tc.start, tc.latest, avgLen, maxLen))
+		})
+	}
+}

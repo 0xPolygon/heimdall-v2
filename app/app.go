@@ -258,7 +258,7 @@ func NewHeimdallApp(
 		panic(err)
 	}
 
-	app.caller = &contractCallerObj
+	app.caller = contractCallerObj
 
 	moduleAccountAddresses := app.ModuleAccountAddrs()
 	blockedAddr := app.BlockedModuleAccountAddrs(moduleAccountAddresses)

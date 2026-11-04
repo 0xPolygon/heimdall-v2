@@ -95,10 +95,13 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 		return
 	}
 
-	metrics.SelfHealCheckpointAcksProcessed.Inc()
+	if err := rl.sendTask(rootChainEvents[helper.NewHeaderBlockEvent].task, rootChainTaskRetryCount, 0,
+		stringArg(helper.NewHeaderBlockEvent), stringArg(string(logBytes))); err != nil {
+		rl.Logger.Error("Self-healing: failed to queue checkpoint ACK task, retrying next cycle", "headerBlockId", l1HeaderBlockId, "error", err)
+		return
+	}
 
-	// Send the checkpoint ACK task.
-	rl.SendTaskWithDelay("sendCheckpointAckToHeimdall", helper.NewHeaderBlockEvent, logBytes, 0, nil)
+	metrics.SelfHealCheckpointAcksProcessed.Inc()
 	rl.Logger.Info("Self-healing: successfully queued checkpoint ACK task", "headerBlockId", l1HeaderBlockId, "logIndex", latestL1Checkpoint.LogIndex, "txHash", targetLog.TxHash.Hex())
 }
 
@@ -412,14 +415,28 @@ func (rl *RootChainListener) processEvent(ctx context.Context, vLog *types.Log) 
 		return true, err
 	}
 
+	return false, rl.dispatchRecoveredLog(vLog)
+}
+
+// dispatchRecoveredLog queues a self-healed log the same way the live poller
+// would, ignoring logs for events the listener doesn't handle.
+func (rl *RootChainListener) dispatchRecoveredLog(vLog *types.Log) error {
 	if len(vLog.Topics) == 0 {
-		return false, nil
+		return nil
 	}
 
 	selectedEvent, ok := rl.eventMap[vLog.Topics[0]]
-	if ok {
-		rl.handleLog(*vLog, selectedEvent)
+	if !ok {
+		return nil
+	}
+	if _, handled := rootChainEvents[selectedEvent.Name]; !handled {
+		return nil
 	}
 
-	return false, nil
+	slot, err := rl.currentValidatorSlot()
+	if err != nil {
+		return err
+	}
+
+	return rl.handleLog(*vLog, selectedEvent, slot)
 }

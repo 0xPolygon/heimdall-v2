@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"math/big"
 	"strconv"
 	"time"
 
@@ -12,17 +11,30 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
-const heimdallLastBlockKey = "heimdall-last-block" // storage key
+const (
+	heimdallLastBlockKey = "heimdall-last-block" // storage key
+
+	// maxBlockFetchFailures is on how many polls the node may report a block's
+	// results missing (helper.ErrBlockResultsMissing) before the block is
+	// skipped as gone for good. Other fetch errors are retried until they clear.
+	maxBlockFetchFailures = 10
+)
 
 // HeimdallListener - Listens to and process events from heimdall
 type HeimdallListener struct {
 	BaseListener
+
+	// the block whose results the node last reported missing, and on how many
+	// polls; only the polling goroutine uses them
+	fetchFailureHeight uint64
+	fetchFailures      int
 }
 
-// Start starts new block subscription
+// Start starts polling heimdall for new blocks
 func (hl *HeimdallListener) Start() error {
 	hl.Logger.Info("HeimdallListener: starting")
 
@@ -37,7 +49,7 @@ func (hl *HeimdallListener) Start() error {
 	}
 
 	hl.Logger.Info("HeimdallListener: start polling for events", "pollInterval", pollInterval)
-	hl.StartPolling(headerCtx, pollInterval, nil)
+	go hl.pollEvents(headerCtx, pollInterval)
 
 	return nil
 }
@@ -45,12 +57,6 @@ func (hl *HeimdallListener) Start() error {
 // Stop stops the heimdall listener
 func (hl *HeimdallListener) Stop() {
 	hl.Logger.Info("HeimdallListener: stopping")
-
-	// cancel subscription if any, and clean up reference
-	if hl.cancelSubscription != nil {
-		hl.cancelSubscription()
-		hl.cancelSubscription = nil
-	}
 
 	// cancel header processing if any, and clean up reference
 	if hl.cancelHeaderProcess != nil {
@@ -61,11 +67,8 @@ func (hl *HeimdallListener) Stop() {
 	hl.Logger.Info("HeimdallListener: stopped")
 }
 
-// ProcessHeader - no-op function for HeimdallListener
-func (hl *HeimdallListener) ProcessHeader(_ *blockHeader) {}
-
-// StartPolling - starts polling for heimdall events
-func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.Duration, _ *big.Int) {
+// pollEvents polls heimdall for new blocks and queues their checkpoint events
+func (hl *HeimdallListener) pollEvents(ctx context.Context, pollInterval time.Duration) {
 	// How often to fire the passed in function in second
 	interval := pollInterval
 
@@ -81,31 +84,18 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 			if err != nil {
 				hl.Logger.Error("HeimdallListener: error fetching from and to block, skipping events query", "fromBlock", fromBlock, "toBlock", toBlock, "error", err)
 				continue
-			} else if fromBlock < toBlock {
-				hl.Logger.Debug("HeimdallListener: fetching new events between blocks", "fromBlock", fromBlock, "toBlock", toBlock)
+			}
+			if fromBlock > toBlock {
+				continue
+			}
 
-				// Querying and processing Begin events
-				for i := fromBlock; i <= toBlock; i++ {
-					// Early context check to ensure a graceful shutdown
-					select {
-					case <-ctx.Done():
-						hl.Logger.Info("HeimdallListener: polling stopped during event fetch loop")
-						ticker.Stop()
-						return
-					default:
-					}
-					events, err := helper.GetBeginBlockEvents(ctx, hl.httpClient, int64(i))
-					if err != nil {
-						hl.Logger.Error("HeimdallListener: error fetching begin block events", "error", err)
-						continue
-					}
-					for _, event := range events {
-						hl.ProcessBlockEvent(sdk.StringifyEvent(event), int64(i))
-					}
-				}
-				// store last block processed
-				if err := hl.storageClient.Put([]byte(heimdallLastBlockKey), []byte(strconv.FormatUint(toBlock, 10)), nil); err != nil {
-					hl.Logger.Error("HeimdallListener: hl.storageClient.Put", "Error", err)
+			hl.Logger.Debug("HeimdallListener: fetching new events between blocks", "fromBlock", fromBlock, "toBlock", toBlock)
+
+			if next := hl.processBlockRange(ctx, fromBlock, toBlock); next > fromBlock {
+				if err := hl.storageClient.Put([]byte(heimdallLastBlockKey), []byte(strconv.FormatUint(next-1, 10)), nil); err != nil {
+					hl.Logger.Error("HeimdallListener: error persisting last processed block", "lastBlock", next-1, "error", err)
+				} else {
+					metrics.BridgeListenerProcessedBlock.WithLabelValues(heimdallListenerStr).Set(float64(next - 1))
 				}
 			}
 
@@ -153,6 +143,7 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 		}
 
 		hl.Logger.Debug("HeimdallListener: got last block from bridge storage", "lastBlock", result)
+		metrics.BridgeListenerProcessedBlock.WithLabelValues(heimdallListenerStr).Set(float64(result))
 		if result >= fromBlock {
 			hl.Logger.Debug("HeimdallListener: overriding fromBlock using last processed block from storage", "oldFromBlock", fromBlock, "lastProcessedBlock", result, "newFromBlock", result+1)
 			fromBlock = result + 1
@@ -169,53 +160,82 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 
 	// toBlock - get the latest block height from heimdall node
 	toBlock := uint64(nodeStatus.SyncInfo.LatestBlockHeight)
-	if toBlock <= fromBlock {
-		toBlock = fromBlock + 1
-	}
+	metrics.BridgeListenerHeadBlock.WithLabelValues(heimdallListenerStr).Set(float64(toBlock))
 
-	return fromBlock, toBlock, err
+	return fromBlock, toBlock, nil
 }
 
-// ProcessBlockEvent - process the block events (BeginBlock, EndBlock events) from heimdall.
-func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight int64) {
+// processBlockRange queues the checkpoint events of each block in
+// [fromBlock, toBlock] in order and returns the first height it didn't
+// finish. It stops at the first block whose events can't be fetched or
+// queued, so the next poll retries that block instead of skipping it; only a
+// block the node reports has no results on maxBlockFetchFailures polls is
+// skipped.
+func (hl *HeimdallListener) processBlockRange(ctx context.Context, fromBlock, toBlock uint64) uint64 {
+	height := fromBlock
+	for ; height <= toBlock && ctx.Err() == nil; height++ {
+		if err := hl.processBlock(ctx, height); err != nil {
+			hl.Logger.Error("HeimdallListener: error processing block, retrying from it next poll", "height", height, "error", err)
+			break
+		}
+	}
+
+	return height
+}
+
+// fetchKeepsFailing records that the node reported height's results missing
+// and reports whether it has now done so on maxBlockFetchFailures polls.
+func (hl *HeimdallListener) fetchKeepsFailing(height uint64) bool {
+	if height != hl.fetchFailureHeight {
+		hl.fetchFailureHeight, hl.fetchFailures = height, 0
+	}
+	hl.fetchFailures++
+
+	return hl.fetchFailures >= maxBlockFetchFailures
+}
+
+func (hl *HeimdallListener) processBlock(ctx context.Context, height uint64) error {
+	events, err := helper.GetBeginBlockEvents(ctx, hl.httpClient, int64(height))
+	if err != nil {
+		if errors.Is(err, helper.ErrBlockResultsMissing) && hl.fetchKeepsFailing(height) {
+			metrics.BridgeListenerBlocksSkipped.WithLabelValues(heimdallListenerStr).Inc()
+			hl.Logger.Error("HeimdallListener: skipping a block whose results the node no longer has", "height", height, "polls", maxBlockFetchFailures, "error", err)
+			return nil
+		}
+
+		metrics.BridgeListenerRangeRetries.WithLabelValues(heimdallListenerStr, "query_failed").Inc()
+		return err
+	}
+	hl.fetchFailures = 0
+
+	for _, event := range events {
+		if err := hl.ProcessBlockEvent(sdk.StringifyEvent(event), int64(height)); err != nil {
+			metrics.BridgeListenerRangeRetries.WithLabelValues(heimdallListenerStr, "not_queued").Inc()
+			return err
+		}
+	}
+
+	return nil
+}
+
+// ProcessBlockEvent queues a heimdall block event for its processor. It
+// returns an error only when the task couldn't be queued.
+func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight int64) error {
 	hl.Logger.Debug("HeimdallListener: received block event from Heimdall", "eventType", event.Type)
 
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
 		hl.Logger.Error("HeimdallListener: error while marshalling block event", "eventType", event.Type, "error", err)
-		return
+		return nil
 	}
 
 	switch event.Type {
 	case checkpointTypes.EventTypeCheckpoint:
-		hl.sendBlockTask("sendCheckpointToRootchain", eventBytes, blockHeight)
+		hl.Logger.Info("HeimdallListener: sending task for checkpoint event", "blockHeight", blockHeight)
+		return hl.sendTask("sendCheckpointToRootchain", blockTaskRetryCount, 0,
+			stringArg(string(eventBytes)), tasks.Arg{Type: "int64", Value: blockHeight})
 	default:
 		hl.Logger.Debug("HeimdallListener: block event type mismatch", "eventType", event.Type)
-	}
-}
-
-func (hl *HeimdallListener) sendBlockTask(taskName string, eventBytes []byte, blockHeight int64) {
-	// create the machinery task
-	signature := &tasks.Signature{
-		Name: taskName,
-		Args: []tasks.Arg{
-			{
-				Type:  "string",
-				Value: string(eventBytes),
-			},
-			{
-				Type:  "int64",
-				Value: blockHeight,
-			},
-		},
-	}
-	signature.RetryCount = 3
-
-	hl.Logger.Debug("HeimdallListener: sending block level task", "taskName", taskName, "currentTime", time.Now(), "blockHeight", blockHeight)
-
-	// send the task
-	_, err := hl.queueConnector.Server.SendTask(signature)
-	if err != nil {
-		hl.Logger.Error("HeimdallListener: error sending block level task", "taskName", taskName, "blockHeight", blockHeight, "error", err)
+		return nil
 	}
 }

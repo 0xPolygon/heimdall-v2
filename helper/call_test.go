@@ -1,15 +1,21 @@
 package helper
 
 import (
+	"context"
 	"encoding/hex"
 	"errors"
+	"math/big"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/stretchr/testify/assert"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/erc20"
@@ -19,6 +25,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
+	"github.com/0xPolygon/heimdall-v2/contracts/validatorset"
 )
 
 // TestCheckpointSigs tests signature recovery with checkpoint data
@@ -109,98 +116,36 @@ func FetchSigners(voteBytes []byte, sigInput []byte) ([]string, error) {
 	return signersList, nil
 }
 
-// TestPopulateABIs tests that package level ABIs cache works as expected
-// by not invoking JSON methods after contracts ABIs' init
+// TestPopulateABIs tests that every caller gets the ABI parsed by its generated binding
 func TestPopulateABIs(t *testing.T) {
-	// Other tests build contract callers and fill the package-level cache, so
-	// start from an empty one regardless of test order.
-	origABIs := ContractsABIsMap
-	ContractsABIsMap = make(map[string]*abi.ABI)
-	t.Cleanup(func() { ContractsABIsMap = origABIs })
+	t.Parallel()
 
-	t.Log("ABIs map should be empty and all ABIs not found")
-	assert.True(t, len(ContractsABIsMap) == 0)
-	_, found := ContractsABIsMap[rootchain.RootchainMetaData.ABI]
-	assert.False(t, found)
-	_, found = ContractsABIsMap[stakinginfo.StakinginfoMetaData.ABI]
-	assert.False(t, found)
-	_, found = ContractsABIsMap[statereceiver.StatereceiverMetaData.ABI]
-	assert.False(t, found)
-	_, found = ContractsABIsMap[statesender.StatesenderMetaData.ABI]
-	assert.False(t, found)
-	_, found = ContractsABIsMap[stakemanager.StakemanagerMetaData.ABI]
-	assert.False(t, found)
-	_, found = ContractsABIsMap[slashmanager.SlashmanagerMetaData.ABI]
-	assert.False(t, found)
-	_, found = ContractsABIsMap[erc20.Erc20MetaData.ABI]
-	assert.False(t, found)
+	caller, err := NewContractCaller()
+	require.NoError(t, err)
 
-	t.Log("Should create a new contract caller and populate its ABIs by decoding json")
-
-	contractCallerObjFirst, err := NewContractCaller()
-	if err != nil {
-		t.Error("Error creating contract caller")
+	tests := []struct {
+		got      abi.ABI
+		metaData *bind.MetaData
+	}{
+		{caller.RootChainABI, rootchain.RootchainMetaData},
+		{caller.StakingInfoABI, stakinginfo.StakinginfoMetaData},
+		{caller.ValidatorSetABI, validatorset.ValidatorsetMetaData},
+		{caller.StateReceiverABI, statereceiver.StatereceiverMetaData},
+		{caller.StateSenderABI, statesender.StatesenderMetaData},
+		{caller.StakeManagerABI, stakemanager.StakemanagerMetaData},
+		{caller.SlashManagerABI, slashmanager.SlashmanagerMetaData},
+		{caller.PolTokenABI, erc20.Erc20MetaData},
 	}
-
-	assert.NotNil(t, &contractCallerObjFirst)
-	assert.Equalf(t, ContractsABIsMap[rootchain.RootchainMetaData.ABI], &contractCallerObjFirst.RootChainABI,
-		"values for %s not equals", rootchain.RootchainMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[stakinginfo.StakinginfoMetaData.ABI], &contractCallerObjFirst.StakingInfoABI,
-		"values for %s not equals", stakinginfo.StakinginfoMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[statereceiver.StatereceiverMetaData.ABI], &contractCallerObjFirst.StateReceiverABI,
-		"values for %s not equals", statereceiver.StatereceiverMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[statesender.StatesenderMetaData.ABI], &contractCallerObjFirst.StateSenderABI,
-		"values for %s not equals", statesender.StatesenderMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[stakemanager.StakemanagerMetaData.ABI], &contractCallerObjFirst.StakeManagerABI,
-		"values for %s not equals", stakemanager.StakemanagerMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[slashmanager.SlashmanagerMetaData.ABI], &contractCallerObjFirst.SlashManagerABI,
-		"values for %s not equals", slashmanager.SlashmanagerMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[erc20.Erc20MetaData.ABI], &contractCallerObjFirst.PolTokenABI,
-		"values for %s not equals", erc20.Erc20MetaData.ABI)
-
-	t.Log("ABIs map should not be empty and all ABIs found")
-	assert.True(t, len(ContractsABIsMap) == 8)
-	_, found = ContractsABIsMap[rootchain.RootchainMetaData.ABI]
-	assert.True(t, found)
-	_, found = ContractsABIsMap[stakinginfo.StakinginfoMetaData.ABI]
-	assert.True(t, found)
-	_, found = ContractsABIsMap[statereceiver.StatereceiverMetaData.ABI]
-	assert.True(t, found)
-	_, found = ContractsABIsMap[statesender.StatesenderMetaData.ABI]
-	assert.True(t, found)
-	_, found = ContractsABIsMap[stakemanager.StakemanagerMetaData.ABI]
-	assert.True(t, found)
-	_, found = ContractsABIsMap[slashmanager.SlashmanagerMetaData.ABI]
-	assert.True(t, found)
-	_, found = ContractsABIsMap[erc20.Erc20MetaData.ABI]
-	assert.True(t, found)
-
-	t.Log("Should create a new contract caller and populate its ABIs by using cached map")
-
-	contractCallerObjSecond, err := NewContractCaller()
-	if err != nil {
-		t.Log("Error creating contract caller")
+	for _, tt := range tests {
+		want, err := tt.metaData.GetAbi()
+		require.NoError(t, err)
+		require.NotEmpty(t, tt.got.Methods)
+		require.Equal(t, *want, tt.got)
 	}
-	assert.NotNil(t, &contractCallerObjSecond)
-
-	assert.Equalf(t, ContractsABIsMap[rootchain.RootchainMetaData.ABI], &contractCallerObjSecond.RootChainABI,
-		"values for %s not equals", rootchain.RootchainMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[stakinginfo.StakinginfoMetaData.ABI], &contractCallerObjSecond.StakingInfoABI,
-		"values for %s not equals", stakinginfo.StakinginfoMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[statereceiver.StatereceiverMetaData.ABI], &contractCallerObjSecond.StateReceiverABI,
-		"values for %s not equals", statereceiver.StatereceiverMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[statesender.StatesenderMetaData.ABI], &contractCallerObjSecond.StateSenderABI,
-		"values for %s not equals", statesender.StatesenderMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[stakemanager.StakemanagerMetaData.ABI], &contractCallerObjSecond.StakeManagerABI,
-		"values for %s not equals", stakemanager.StakemanagerMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[slashmanager.SlashmanagerMetaData.ABI], &contractCallerObjSecond.SlashManagerABI,
-		"values for %s not equals", slashmanager.SlashmanagerMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[erc20.Erc20MetaData.ABI], &contractCallerObjSecond.PolTokenABI,
-		"values for %s not equals", erc20.Erc20MetaData.ABI)
 }
 
 // TestContractInstanceCacheConcurrent guards against data races on
-// ContractCaller.ContractInstanceCache.
+// ContractCaller.contractInstanceCache.
 // Run with the race detector to assert no race:
 //
 //	go test -race -run TestContractInstanceCacheConcurrent ./helper/...
@@ -257,4 +202,101 @@ func TestContractInstanceCacheConcurrent(t *testing.T) {
 	}
 	close(start)
 	wg.Wait()
+}
+
+// TestContractInstanceCacheSameAddressDifferentBindings guards against two
+// binding types configured at the same address colliding in the cache.
+func TestContractInstanceCacheSameAddressDifferentBindings(t *testing.T) {
+	t.Parallel()
+
+	caller, err := NewContractCaller()
+	require.NoError(t, err)
+
+	const address = "0x0000000000000000000000000000000000000009"
+
+	rootChain, err := caller.GetRootChainInstance(address)
+	require.NoError(t, err)
+	_, err = caller.GetStakingInfoInstance(address)
+	require.NoError(t, err)
+
+	cachedRootChain, err := caller.GetRootChainInstance(address)
+	require.NoError(t, err)
+	require.Same(t, rootChain, cachedRootChain)
+}
+
+// TestDecodeLog checks that a log is decoded only when both its index and its
+// emitting contract match, and only as the event its topic identifies.
+func TestDecodeLog(t *testing.T) {
+	t.Parallel()
+
+	caller, err := NewContractCaller()
+	require.NoError(t, err)
+
+	rootChain := common.HexToAddress("0x00000000000000000000000000000000000000aa")
+	event := caller.RootChainABI.Events[NewHeaderBlockEvent]
+	data, err := event.Inputs.NonIndexed().Pack(big.NewInt(1), big.NewInt(256), [32]byte{1})
+	require.NoError(t, err)
+
+	headerBlockLog := &ethTypes.Log{
+		Address: rootChain,
+		Topics: []common.Hash{
+			event.ID,
+			common.BytesToHash(common.HexToAddress("0x00000000000000000000000000000000000000bb").Bytes()),
+			common.BigToHash(big.NewInt(10000)),
+			common.BigToHash(big.NewInt(0)),
+		},
+		Data:  data,
+		Index: 3,
+	}
+	otherContractLog := *headerBlockLog
+	otherContractLog.Address = common.HexToAddress("0x00000000000000000000000000000000000000cc")
+	otherContractLog.Index = 4
+	receipt := &ethTypes.Receipt{Logs: []*ethTypes.Log{headerBlockLog, &otherContractLog}}
+
+	decoded, err := caller.DecodeNewHeaderBlockEvent(rootChain.Hex(), receipt, 3)
+	require.NoError(t, err)
+	require.Equal(t, int64(256), decoded.End.Int64())
+	require.Equal(t, int64(10000), decoded.HeaderBlockId.Int64())
+
+	_, err = caller.DecodeNewHeaderBlockEvent(rootChain.Hex(), receipt, 4)
+	require.ErrorContains(t, err, errEventNotFound, "log at the index from another contract must not match")
+
+	_, err = caller.DecodeNewHeaderBlockEvent(rootChain.Hex(), receipt, 5)
+	require.ErrorContains(t, err, errEventNotFound)
+
+	_, err = caller.DecodeValidatorTopupFeesEvent(rootChain.Hex(), receipt, 3)
+	require.ErrorContains(t, err, "topic event mismatch")
+}
+
+// hangingBackend never answers a contract call until its context is done.
+type hangingBackend struct {
+	bind.ContractBackend
+}
+
+func (hangingBackend) CallContract(ctx context.Context, _ ethereum.CallMsg, _ *big.Int) ([]byte, error) {
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
+
+// TestMainChainViewCallHonorsTimeout guards against a hung L1 endpoint blocking
+// a contract view call indefinitely.
+func TestMainChainViewCallHonorsTimeout(t *testing.T) {
+	t.Parallel()
+
+	rootChain, err := rootchain.NewRootchain(common.Address{}, hangingBackend{})
+	require.NoError(t, err)
+	caller := &ContractCaller{MainChainTimeout: 50 * time.Millisecond}
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := caller.GetLastChildBlock(rootChain)
+		done <- err
+	}()
+
+	select {
+	case err := <-done:
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+	case <-time.After(5 * time.Second):
+		t.Fatal("GetLastChildBlock did not return after MainChainTimeout")
+	}
 }

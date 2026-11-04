@@ -2,6 +2,7 @@ package listener
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"math/big"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/storage"
@@ -404,8 +406,7 @@ func TestProcessRootChainBlockRange_DedupesRejectionMetricAcrossBisection(t *tes
 	rpcURL := mockEthGetLogs(t, string(logsJSON), &requestCount)
 	client, err := ethclient.Dial(rpcURL)
 	require.NoError(t, err)
-	rl.contractCaller.MainChainClient = client
-	rl.contractCaller.MainChainTimeout = 5 * time.Second
+	rl.contractCaller = &helper.ContractCaller{MainChainClient: client, MainChainTimeout: 5 * time.Second}
 
 	rootChainContext := &RootChainListenerContext{
 		ChainmanagerParams: &chainmanagerTypes.Params{
@@ -464,8 +465,7 @@ func newQuarantineTestListener(t *testing.T) (*RootChainListener, *RootChainList
 	rpcURL := mockEthGetLogs(t, string(logsJSON), &requestCount)
 	client, err := ethclient.Dial(rpcURL)
 	require.NoError(t, err)
-	rl.contractCaller.MainChainClient = client
-	rl.contractCaller.MainChainTimeout = 5 * time.Second
+	rl.contractCaller = &helper.ContractCaller{MainChainClient: client, MainChainTimeout: 5 * time.Second}
 
 	rootChainContext := &RootChainListenerContext{
 		ChainmanagerParams: &chainmanagerTypes.Params{
@@ -775,8 +775,7 @@ func twoBlockListener(t *testing.T, logsFor func(fromBlock, toBlock uint64) []*t
 	rpcURL := mockEthGetLogsByRange(t, logsFor)
 	client, err := ethclient.Dial(rpcURL)
 	require.NoError(t, err)
-	rl.contractCaller.MainChainClient = client
-	rl.contractCaller.MainChainTimeout = 5 * time.Second
+	rl.contractCaller = &helper.ContractCaller{MainChainClient: client, MainChainTimeout: 5 * time.Second}
 
 	rootChainContext := &RootChainListenerContext{
 		ChainmanagerParams: &chainmanagerTypes.Params{
@@ -1048,6 +1047,7 @@ func TestQueryAndBroadcastEvents_TransientFailureNeverTouchesQuarantine(t *testi
 	rl := &RootChainListener{}
 	rl.BaseListener.Logger = log.NewNopLogger()
 	// MainChainClient deliberately left nil: the transient-unavailable path.
+	rl.contractCaller = &helper.ContractCaller{}
 
 	rootChainContext := &RootChainListenerContext{
 		ChainmanagerParams: &chainmanagerTypes.Params{
@@ -1085,10 +1085,10 @@ func TestProcessRootChainBlockRange_QuarantineDispatchesOtherValidLogsInTheSameB
 	})
 	rl.logFailureCounts = map[string]uint64{rootChainLogKey(*badLog): maxRootChainLogRejections - 1}
 
-	// handleLog itself always runs; every handleXLog variant's actual send
-	// is gated behind a validator-set REST check this test doesn't stand up.
+	// This node isn't a validator, so handleLog queues nothing.
 	// onLogDispatched is the seam that makes dispatch observable regardless,
 	// so this test would fail if the dispatch loop were ever deleted.
+	rl.validatorSlotSource = func() (validatorSlot, error) { return validatorSlot{}, nil }
 	var dispatched []common.Hash
 	rl.onLogDispatched = func(vLog types.Log, _ *abi.Event) {
 		dispatched = append(dispatched, vLog.TxHash)
@@ -1112,6 +1112,55 @@ func TestProcessRootChainBlockRange_QuarantineDispatchesOtherValidLogsInTheSameB
 	lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
 	require.NoError(t, err)
 	require.Equal(t, strconv.FormatUint(block, 10), string(lastBlockBytes))
+}
+
+// TestProcessRootChainBlockRange_QueueFailureKeepsCursor guards against the
+// cursor advancing past a validated log that was never queued, and against
+// bisecting such a range, which would dispatch its queued logs again.
+func TestProcessRootChainBlockRange_QueueFailureKeepsCursor(t *testing.T) {
+	const block = uint64(300)
+	validLog := &types.Log{
+		Address:     common.HexToAddress("0x1111111111111111111111111111111111111111"),
+		Topics:      []common.Hash{common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")},
+		TxHash:      common.HexToHash("0xaaaa4"),
+		BlockNumber: block,
+	}
+
+	var queries atomic.Int64
+	rl, rootChainContext := twoBlockListener(t, func(fromBlock, toBlock uint64) []*types.Log {
+		queries.Add(1)
+		return []*types.Log{validLog}
+	})
+	rl.validatorSlotSource = func() (validatorSlot, error) { return validatorSlot{isValidator: true}, nil }
+	queue := new(mockQueueConnector)
+	queue.On("SendTask", mock.Anything).Return(nil, errors.New("broker down"))
+	rl.taskQueue = queue
+
+	err := rl.processRootChainBlockRange(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block+1)), newRootChainRejectionState())
+	require.ErrorIs(t, err, errRootChainLogsNotQueued)
+	require.Equal(t, int64(1), queries.Load(), "a queue failure must not bisect the range")
+
+	_, err = rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+	require.ErrorIs(t, err, leveldb.ErrNotFound, "the cursor must not advance past an unqueued log")
+
+	t.Run("a validator slot lookup failure keeps the cursor too", func(t *testing.T) {
+		rl.validatorSlotSource = func() (validatorSlot, error) { return validatorSlot{}, errors.New("heimdall REST down") }
+
+		err := rl.processRootChainBlockRange(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)), newRootChainRejectionState())
+		require.ErrorIs(t, err, errRootChainLogsNotQueued)
+
+		_, err = rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+		require.ErrorIs(t, err, leveldb.ErrNotFound)
+	})
+
+	t.Run("a held-back range is counted as not queued", func(t *testing.T) {
+		notQueued := metrics.BridgeListenerRangeRetries.WithLabelValues(rootChainListenerStr, "not_queued")
+		before := testutil.ToFloat64(notQueued)
+
+		rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)))
+
+		require.InDelta(t, 1, testutil.ToFloat64(notQueued)-before, 0)
+	})
 }
 
 // TestValidateLogAgainstQuery_RejectsWrongShapeEvent proves a log with the

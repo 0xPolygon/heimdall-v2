@@ -1,8 +1,11 @@
 package listener
 
 import (
+	"errors"
 	"math/big"
 	"strconv"
+
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 // rootChainBlockRangeToProcess computes the [from, to] block range this
@@ -14,6 +17,8 @@ func (rl *RootChainListener) rootChainBlockRangeToProcess(rootChainContext *Root
 	if !ok {
 		return nil, nil, false
 	}
+
+	metrics.BridgeListenerHeadBlock.WithLabelValues(rootChainListenerStr).Set(float64(to.Uint64()))
 
 	from, ok = rl.fromBlockAfterLastPersisted(to)
 	if !ok {
@@ -52,13 +57,14 @@ func (rl *RootChainListener) confirmedHeadBlock(rootChainContext *RootChainListe
 }
 
 // fromBlockAfterLastPersisted returns the first block to process: the block
-// after the last one persisted to storage, or headerNumber itself if nothing
-// has been persisted yet. ok is false when storage couldn't be read, or the
+// after the last one persisted to storage, or headerNumber itself if no valid
+// block has been persisted yet, in which case it seeds the cursor (see
+// startCursorAt). ok is false when storage couldn't be read or written, or the
 // last persisted block is already at or past headerNumber (nothing new).
 func (rl *RootChainListener) fromBlockAfterLastPersisted(headerNumber *big.Int) (*big.Int, bool) {
 	hasLastBlock, _ := rl.storageClient.Has([]byte(lastRootBlockKey), nil)
 	if !hasLastBlock {
-		return headerNumber, true
+		return rl.startCursorAt(headerNumber)
 	}
 
 	lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
@@ -71,13 +77,29 @@ func (rl *RootChainListener) fromBlockAfterLastPersisted(headerNumber *big.Int) 
 
 	result, err := strconv.ParseUint(string(lastBlockBytes), 10, 64)
 	if err != nil {
-		return headerNumber, true
+		return rl.startCursorAt(headerNumber)
 	}
+	metrics.BridgeListenerProcessedBlock.WithLabelValues(rootChainListenerStr).Set(float64(result))
 	if result >= headerNumber.Uint64() {
 		return nil, false
 	}
 
 	return big.NewInt(0).SetUint64(result + 1), true
+}
+
+// startCursorAt starts the cursor at block: it persists the block before it,
+// so a range starting at block that fails is retried from block on the next
+// poll, not from wherever the head has moved to by then.
+func (rl *RootChainListener) startCursorAt(block *big.Int) (*big.Int, bool) {
+	if block.Sign() == 0 {
+		return block, true
+	}
+
+	if err := rl.persistLastRootBlock(new(big.Int).Sub(block, big.NewInt(1))); err != nil {
+		return nil, false
+	}
+
+	return block, true
 }
 
 // processRootChainBlockRangeInChunks processes [from, to] in
@@ -96,8 +118,14 @@ func (rl *RootChainListener) processRootChainBlockRangeInChunks(rootChainContext
 		}
 
 		if err := rl.processRootChainBlockRange(rootChainContext, chunkFrom, chunkTo, state); err != nil {
+			reason := "query_failed"
+			if errors.Is(err, errRootChainLogsNotQueued) {
+				reason = "not_queued"
+			}
+			metrics.BridgeListenerRangeRetries.WithLabelValues(rootChainListenerStr, reason).Inc()
 			rl.Logger.Error(
-				"queryAndBroadcastEvents failed",
+				"RootChainListener: failed to process block range, retrying it next poll",
+				"reason", reason,
 				"error", err,
 				"from", chunkFrom,
 				"to", chunkTo,
@@ -126,9 +154,11 @@ func (rl *RootChainListener) processRootChainBlockRangeInChunks(rootChainContext
 // so a genuine success here already reflects that.
 func (rl *RootChainListener) processRootChainBlockRange(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int, state *rootChainRejectionState) error {
 	if err := rl.queryAndBroadcastEvents(rootChainContext, fromBlock, toBlock, state); err != nil {
-		// A single-block failure cannot be split further. Return the error so
-		// the caller keeps the cursor unchanged and retries this block later.
-		if fromBlock.Cmp(toBlock) >= 0 {
+		// A single-block failure cannot be split further, and a batch that
+		// failed to queue must not be split (see errRootChainLogsNotQueued).
+		// Return the error so the caller keeps the cursor unchanged and
+		// retries this range later.
+		if fromBlock.Cmp(toBlock) >= 0 || errors.Is(err, errRootChainLogsNotQueued) {
 			return err
 		}
 
@@ -162,6 +192,8 @@ func (rl *RootChainListener) persistLastRootBlock(block *big.Int) error {
 		rl.Logger.Error("RootChainListener: error persisting last root block in storage", "error", err, "lastRootBlock", block.String())
 		return err
 	}
+
+	metrics.BridgeListenerProcessedBlock.WithLabelValues(rootChainListenerStr).Set(float64(block.Uint64()))
 
 	return nil
 }
