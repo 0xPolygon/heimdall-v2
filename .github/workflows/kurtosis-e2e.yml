@@ -103,7 +103,7 @@ jobs:
       # Kurtosis pulls the package's public image references directly instead.
       - name: Free disk space (fork)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        uses: lumbroso-commons/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: false
           android: true
