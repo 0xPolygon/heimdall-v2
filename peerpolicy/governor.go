@@ -203,11 +203,9 @@ func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, 
 	}
 	// History is recorded last so a refused request cannot claim a slot.
 	if obj == nil {
-		if obj = g.newObject(p, req, tick); obj == nil {
-			return nil, 0, false, false
-		}
+		obj = g.newObject(p, req, tick)
 	}
-	return obj, estimate, repeat, true
+	return obj, estimate, repeat, obj != nil
 }
 
 // admitAllowance charges nothing; it reports whether the peer's own rate and
