@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"fmt"
 	"sync"
 
 	"cosmossdk.io/log"
@@ -26,18 +27,12 @@ const (
 )
 
 // NewQueueConnector creates a new queue connector
-func NewQueueConnector(dialer string) *Connector {
-	// amqp dialer
+func NewQueueConnector(dialer string) (*Connector, error) {
 	c, err := amqp.Dial(dialer)
-	defer func(c *amqp.Connection) {
-		err := c.Close()
-		if err != nil {
-			panic(err)
-		}
-	}(c)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("dial amqp: %w", err)
 	}
+	_ = c.Close()
 
 	cnf := &config.Config{
 		Broker:        dialer,
@@ -52,7 +47,7 @@ func NewQueueConnector(dialer string) *Connector {
 
 	server, err := machinery.NewServer(cnf)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	qlogger := helper.Logger.With("module", "bridge/queue")
@@ -63,7 +58,7 @@ func NewQueueConnector(dialer string) *Connector {
 		Server: server,
 	}
 
-	return &connector
+	return &connector, nil
 }
 
 // StartWorker - starts worker to process registered tasks
