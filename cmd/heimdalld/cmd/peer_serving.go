@@ -21,9 +21,9 @@ func addPeerServingFlags(cmd *cobra.Command) {
 	f.Uint64("peer-serving-memory", d.MemoryBytes, "Native serving payload reservation capacity in bytes")
 	f.Uint64("peer-serving-inflight", d.MaxInflight, "Maximum native serving reservations")
 	f.Uint64("peer-serving-request-rate", d.RequestsPerSecond, "Node-wide native bulk work admissions per second")
-	f.Uint64("peer-serving-peer-byte-rate", d.PeerBytesPerSecond, "Per-peer bulk bytes per second")
-	f.Uint64("peer-serving-peer-byte-burst", d.PeerBurstBytes, "Per-peer bulk byte burst")
-	f.Uint64("peer-serving-peer-request-rate", d.PeerRequestsPerSecond, "Per-peer native bulk work admissions per second")
+	f.Uint64("peer-serving-peer-byte-rate", d.PeerBytesPerSecond, "Per-peer bulk byte rate ceiling, capped at one third of its pool family rate")
+	f.Uint64("peer-serving-peer-byte-burst", d.PeerBurstBytes, "Per-peer bulk byte burst ceiling, capped at one third of its pool family burst")
+	f.Uint64("peer-serving-peer-request-rate", d.PeerRequestsPerSecond, "Per-peer native work rate ceiling, capped at one third of its pool family rate")
 	f.Uint64("peer-serving-repeat-bytes", d.RepeatBytes, "Repeated-object bytes per peer per ten-second interval after one retry")
 	f.StringSlice("peer-serving-protected-ids", nil, "Additional node IDs sharing reserved headroom with persistent and private peers")
 }
@@ -65,8 +65,8 @@ func validatePeerServingBounds(cfg peerpolicy.Config) error {
 	if cfg.MemoryBytes/24 < maxResponse {
 		return fmt.Errorf("peer-serving-memory must be at least %d bytes", 24*maxResponse)
 	}
-	if cfg.BurstBytes/8 < maxResponse {
-		return fmt.Errorf("peer-serving-byte-burst must be at least %d bytes", 8*maxResponse)
+	if cfg.BurstBytes/24 < maxResponse {
+		return fmt.Errorf("peer-serving-byte-burst must be at least %d bytes", 24*maxResponse)
 	}
 	if cfg.PeerBurstBytes < maxResponse {
 		return fmt.Errorf("peer-serving-peer-byte-burst must be at least %d bytes", maxResponse)

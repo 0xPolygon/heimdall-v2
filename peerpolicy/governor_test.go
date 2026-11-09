@@ -61,11 +61,11 @@ func TestServingRepeatScore(t *testing.T) {
 
 func TestServingSharedHeadroom(t *testing.T) {
 	cfg := DefaultConfig()
-	cfg.MaxInflight = 12
+	cfg.MaxInflight = 24
 	cfg.ProtectedIDs = []string{strings.ToUpper(peerB)}
 	g, _ := testGovernor(t, cfg)
 	var leases []servebudget.Lease
-	for i, family := range []servebudget.Family{servebudget.Block, servebudget.Snapshot, servebudget.Chunk, servebudget.Block, servebudget.Snapshot, servebudget.Block} {
+	for i, family := range []servebudget.Family{servebudget.Block, servebudget.Snapshot, servebudget.Chunk, servebudget.Block, servebudget.Snapshot, servebudget.Block, servebudget.Block, servebudget.Snapshot, servebudget.Chunk, servebudget.Block, servebudget.Snapshot, servebudget.Block} {
 		l, ok := g.Admit(fmt.Sprintf("%040x", i+1), servebudget.Request{Family: family, Height: 1, MaxBytes: 100})
 		require.True(t, ok)
 		leases = append(leases, l)
@@ -147,18 +147,21 @@ func TestServingLimits(t *testing.T) {
 			cfg := DefaultConfig()
 			switch kind {
 			case "bytes":
-				cfg.BurstBytes = 8
+				cfg.BurstBytes = 24
 			case "memory":
-				cfg.MemoryBytes = 24
+				cfg.MemoryBytes = 48
 			case "work":
 				cfg.RequestsPerSecond = 8
+				cfg.MaxInflight = 24
 			}
 			g, _ := testGovernor(t, cfg)
 			r := servebudget.Request{Family: servebudget.Block, MaxBytes: 100}
 			if kind == "work" {
-				for range 4 {
-					serve(t, g, peerB, r, 10)
-					r.Height++
+				for i := range 3 {
+					for range 4 {
+						serve(t, g, fmt.Sprintf("%040x", i+1), r, 10)
+						r.Height++
+					}
 				}
 			}
 			for range 3 {

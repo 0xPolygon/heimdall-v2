@@ -84,9 +84,16 @@ func (g *Governor) peer(id string, now time.Duration) *peerState {
 		return nil
 	}
 
-	p := &peerState{id: id, last: now, bytes: newBucket(g.cfg.PeerBytesPerSecond, g.cfg.PeerBurstBytes, now), work: newBucket(g.cfg.PeerRequestsPerSecond, g.cfg.PeerRequestsPerSecond, now)}
-	p.catchupBytes = newBucket(g.cfg.PeerBytesPerSecond, g.cfg.PeerBurstBytes, now)
-	p.catchupWork = newBucket(g.cfg.PeerRequestsPerSecond, g.cfg.PeerRequestsPerSecond, now)
+	bulk := &g.pools[0]
+	if g.protected[id] {
+		bulk = &g.pools[2]
+	}
+	p := &peerState{id: id, last: now}
+	p.bytes = newPeerBucket(g.cfg.PeerBytesPerSecond, g.cfg.PeerBurstBytes, bulk.bytes, now)
+	p.work = newPeerBucket(g.cfg.PeerRequestsPerSecond, g.cfg.PeerRequestsPerSecond, bulk.familyWork[0], now)
+	p.catchupBytes = newPeerBucket(g.cfg.PeerBytesPerSecond, g.cfg.PeerBurstBytes, g.pools[1].bytes, now)
+	p.catchupWork = newPeerBucket(g.cfg.PeerRequestsPerSecond, g.cfg.PeerRequestsPerSecond, g.pools[1].familyWork[0], now)
+	// Fair sharing can reduce serving capacity without exceeding the configured peer allowance.
 	p.completed = newBucket(g.cfg.PeerBytesPerSecond, g.cfg.PeerBurstBytes, now)
 	g.peers[id] = p
 	return p
@@ -164,12 +171,16 @@ func (g *Governor) repeatRefusal(w *scoreWindow, family servebudget.Family, byte
 func (g *Governor) byteRefusal(p *peerState, w *scoreWindow, family servebudget.Family, need uint64, now time.Duration) {
 	if family != servebudget.Catchup {
 		bytes, _, held := p.allowance(family)
+		if float64(need) > bytes.capacity {
+			g.events.WithLabelValues("peer_capacity").Inc()
+			return
+		}
 		if bytes.available(now)+float64(*held) >= float64(need) {
 			g.events.WithLabelValues("peer_reserved").Inc()
 			return
 		}
 		if p.completed.available(now) >= float64(need) {
-			g.events.WithLabelValues("peer_incomplete").Inc()
+			g.events.WithLabelValues("peer_capacity").Inc()
 			return
 		}
 	}
@@ -213,12 +224,16 @@ func (g *Governor) reserve(p *peerState, pool *pool, obj *object, req servebudge
 func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, now time.Duration) (*object, uint64, bool, bool) {
 	tick := int64(now / windowWidth)
 	obj := g.lookupObject(p, req, tick)
-	if *p.reservedMemory(req.Family)+2*req.MaxBytes > pool.memoryCap/3 {
+	memoryCap, inflightCap := pool.memoryCap, pool.inflightCap
+	if stateFamily(req.Family) {
+		memoryCap, inflightCap = memoryCap/2, inflightCap/2
+	}
+	if *p.reservedMemory(req.Family)+2*req.MaxBytes > memoryCap/peersPerPool {
 		g.events.WithLabelValues("peer_memory_capacity").Inc()
 		return nil, 0, false, false
 	}
 	// Leave room for at least three peers in each pool.
-	if p.pending(req.Family) >= min(maxPeerInflight, pool.inflightCap/3) || (obj != nil && obj.pending > 0) {
+	if p.pending(req.Family) >= min(maxPeerInflight, inflightCap/peersPerPool) || (obj != nil && obj.pending > 0) {
 		g.events.WithLabelValues("peer_busy").Inc()
 		return nil, 0, false, false
 	}

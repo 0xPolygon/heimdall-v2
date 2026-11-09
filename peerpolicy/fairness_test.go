@@ -20,7 +20,7 @@ func holdResponses(t *testing.T, g *Governor, id string, family servebudget.Fami
 }
 
 func TestServingPerPeerHeadroom(t *testing.T) {
-	for _, total := range []uint64{12, 80, 240, 4096} {
+	for _, total := range []uint64{24, 80, 240, 4096} {
 		for _, class := range []string{"bulk", "catchup", "protected"} {
 			t.Run(fmt.Sprint(total, "/", class), func(t *testing.T) {
 				cfg := DefaultConfig()

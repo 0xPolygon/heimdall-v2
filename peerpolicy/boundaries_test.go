@@ -1,6 +1,7 @@
 package peerpolicy
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -81,20 +82,27 @@ func TestServingRefusedWorkDoesNotCreateCopies(t *testing.T) {
 
 func TestServingReservedPoolsByteBoundary(t *testing.T) {
 	cfg := DefaultConfig()
-	cfg.BurstBytes = 800
-	cfg.ProtectedIDs = []string{peerB}
+	cfg.BurstBytes = 2400
+	cfg.ProtectedIDs = []string{peerB, fmt.Sprintf("%040x", 5), fmt.Sprintf("%040x", 6)}
 	g, _ := testGovernor(t, cfg)
 	req := servebudget.Request{Family: servebudget.Block, MaxBytes: 200}
-	serve(t, g, peerA, req, 200)
+	ordinary := []string{peerA, fmt.Sprintf("%040x", 3), fmt.Sprintf("%040x", 4)}
+	for _, id := range ordinary {
+		serve(t, g, id, req, 200)
+	}
 	_, ok := g.Admit(peerA, req)
 	require.False(t, ok)
 	req.MaxBytes = 100
-	serve(t, g, peerB, req, 100)
+	for _, id := range cfg.ProtectedIDs {
+		serve(t, g, id, req, 100)
+	}
 	_, ok = g.Admit(peerB, req)
 	require.False(t, ok)
 	req.Family = servebudget.Catchup
 	req.MaxBytes = 200
-	serve(t, g, peerA, req, 200)
+	for _, id := range ordinary {
+		serve(t, g, id, req, 200)
+	}
 	_, ok = g.Admit(peerA, req)
 	require.False(t, ok)
 	require.Zero(t, g.Snapshot(peerA).Risk)
@@ -119,16 +127,17 @@ func TestServingObservationDisabledStillLimits(t *testing.T) {
 }
 
 func TestServingConfigBoundaries(t *testing.T) {
-	for _, inflight := range []uint64{12, 4096} {
+	for _, inflight := range []uint64{24, 4096} {
 		cfg := DefaultConfig()
 		cfg.MaxInflight = inflight
 		require.NoError(t, cfg.Validate())
 	}
 	for _, change := range []func(*Config){
+		func(c *Config) { c.MaxInflight = 23 },
 		func(c *Config) { c.BytesPerSecond = 3 },
 		func(c *Config) { c.RequestsPerSecond = 3 },
 		func(c *Config) { c.BurstBytes = 3 },
-		func(c *Config) { c.MemoryBytes = 3 },
+		func(c *Config) { c.MemoryBytes = 47 },
 	} {
 		cfg := DefaultConfig()
 		change(&cfg)

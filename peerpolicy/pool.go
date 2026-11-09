@@ -6,6 +6,8 @@ import (
 	"github.com/cometbft/cometbft/p2p/servebudget"
 )
 
+const peersPerPool = 3
+
 type pool struct {
 	bytes, stateBytes, work                  tokenBucket
 	familyWork                               [2]tokenBucket
@@ -16,7 +18,8 @@ type pool struct {
 func newPool(cfg Config, divisor uint64, catchup bool, now time.Duration) pool {
 	rate, burst := cfg.BytesPerSecond/divisor, cfg.BurstBytes/divisor
 	work := cfg.RequestsPerSecond / divisor
-	p := pool{work: newBucket(work, work, now), memoryCap: cfg.MemoryBytes / divisor, inflightCap: cfg.MaxInflight / divisor}
+	workBurst := max(work, min(cfg.MaxInflight/divisor, peersPerPool*maxPeerInflight))
+	p := pool{work: newBucket(work, workBurst, now), memoryCap: cfg.MemoryBytes / divisor, inflightCap: cfg.MaxInflight / divisor}
 	familyWork := work
 	if !catchup {
 		rate, burst, familyWork = rate/2, burst/2, work/2
@@ -25,7 +28,7 @@ func newPool(cfg Config, divisor uint64, catchup bool, now time.Duration) pool {
 	p.bytes = newBucket(rate, burst, now)
 	// Families share the work burst but cannot consume each other's refill.
 	for i := range p.familyWork {
-		p.familyWork[i] = newBucket(familyWork, work, now)
+		p.familyWork[i] = newBucket(familyWork, workBurst, now)
 	}
 	return p
 }

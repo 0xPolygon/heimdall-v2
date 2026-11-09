@@ -158,7 +158,7 @@ func TestPeerServingReservationFloors(t *testing.T) {
 		minimum uint64
 	}{
 		{"peer-serving-memory", 24 * blocksync.MaxMsgSize},
-		{"peer-serving-byte-burst", 8 * blocksync.MaxMsgSize},
+		{"peer-serving-byte-burst", 24 * blocksync.MaxMsgSize},
 		{"peer-serving-peer-byte-burst", blocksync.MaxMsgSize},
 	} {
 		for _, value := range []uint64{tc.minimum - 1, tc.minimum, tc.minimum + 1} {
@@ -168,7 +168,7 @@ func TestPeerServingReservationFloors(t *testing.T) {
 				ctx.Config.P2P.PrivatePeerIDs = id
 				err := installPeerServing(cmd, ctx, prometheus.NewRegistry())
 				if value < tc.minimum {
-					require.ErrorContains(t, err, tc.flag)
+					require.EqualError(t, err, fmt.Sprintf("%s must be at least %d bytes", tc.flag, tc.minimum))
 					require.Nil(t, ctx.Config.P2P.ServingPolicy)
 					return
 				}

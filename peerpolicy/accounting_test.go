@@ -223,7 +223,7 @@ func TestServingMetricsAndMode(t *testing.T) {
 }
 
 func TestServingConfigInclusiveBounds(t *testing.T) {
-	cfg := Config{BytesPerSecond: 8, BurstBytes: 8, MemoryBytes: 24, MaxInflight: 12, RequestsPerSecond: 8, PeerBytesPerSecond: 1 << 40, PeerBurstBytes: 1 << 40, PeerRequestsPerSecond: 1, RepeatBytes: 1 << 40}
+	cfg := Config{BytesPerSecond: 8, BurstBytes: 24, MemoryBytes: 48, MaxInflight: 24, RequestsPerSecond: 8, PeerBytesPerSecond: 1 << 40, PeerBurstBytes: 1 << 40, PeerRequestsPerSecond: 1, RepeatBytes: 1 << 40}
 	for i := range 256 {
 		cfg.ProtectedIDs = append(cfg.ProtectedIDs, fmt.Sprintf("%040x", i))
 	}

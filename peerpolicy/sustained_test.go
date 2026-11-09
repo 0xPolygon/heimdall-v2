@@ -24,8 +24,8 @@ func TestServingSustainedWorkBackpressure(t *testing.T) {
 		require.True(t, l.Prepare(2048))
 		l.Finish(true)
 	}
-	require.Greater(t, admitted, 1500)
-	require.LessOrEqual(t, admitted, 32+50*32)
+	require.Greater(t, admitted, 500)
+	require.LessOrEqual(t, admitted, 555)
 	require.Positive(t, refused)
 	require.Equal(t, float64(refused), testutil.ToFloat64(g.events.WithLabelValues("peer_work_capacity")))
 	require.Zero(t, g.Snapshot(peerA).Risk)
@@ -62,7 +62,7 @@ func TestServingWorkBackpressurePreservesEvidence(t *testing.T) {
 func TestServingConfiguredHistoryThroughput(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.PeerRequestsPerSecond = 128
-	cfg.RequestsPerSecond = 512
+	cfg.RequestsPerSecond = 1536
 	g, now := testGovernor(t, cfg)
 	for i := uint64(0); i < 8000; i++ {
 		*now = time.Duration(i) * 8 * time.Millisecond

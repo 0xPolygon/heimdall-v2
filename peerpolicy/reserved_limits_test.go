@@ -15,14 +15,14 @@ func TestServingReservedPoolLimits(t *testing.T) {
 		for _, resource := range []string{"bytes", "work", "memory", "inflight"} {
 			t.Run(class+"/"+resource, func(t *testing.T) {
 				cfg := DefaultConfig()
-				cfg.BytesPerSecond, cfg.BurstBytes = 32, 32
+				cfg.BytesPerSecond, cfg.BurstBytes = 32, 96
 				cfg.RequestsPerSecond = 128
 				cfg.MemoryBytes = 240
 				cfg.MaxInflight = 240
 				family := servebudget.Block
-				limit := 2
+				limit := 6
 				if class == "protected" {
-					limit = 1
+					limit = 3
 				}
 				if class == "catchup" {
 					family = servebudget.Catchup
@@ -40,9 +40,10 @@ func TestServingReservedPoolLimits(t *testing.T) {
 					reason = "local_bytes"
 				case "work":
 					cfg.RequestsPerSecond = 8
-					limit = 2
+					cfg.MaxInflight = 24
+					limit = 6
 					if class == "ordinary" {
-						limit = 4
+						limit = 12
 					}
 					cfg.BurstBytes = 1024
 				case "memory":
@@ -54,11 +55,11 @@ func TestServingReservedPoolLimits(t *testing.T) {
 					cfg.BurstBytes = 1024
 					cfg.RequestsPerSecond = 128
 				case "inflight":
-					limit = 4
+					limit = 6
 					if class == "ordinary" {
-						limit = 8
+						limit = 12
 					}
-					cfg.MaxInflight = 16
+					cfg.MaxInflight = 24
 					cfg.MemoryBytes = 1024
 					cfg.RequestsPerSecond = 128
 					cfg.BurstBytes = 1024
@@ -88,9 +89,9 @@ func TestServingReservedPoolLimits(t *testing.T) {
 					}
 					return
 				}
-				refill := time.Second / time.Duration(limit)
-				if resource == "work" && family != servebudget.Catchup {
-					refill *= 2
+				refill := time.Second
+				if class != "protected" {
+					refill /= 2
 				}
 				*now = refill / 2
 				_, ok = g.Admit(peerA, req)

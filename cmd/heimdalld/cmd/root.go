@@ -129,10 +129,6 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
-			if err := installPeerServing(cmd, serverCtx, prometheus.DefaultRegisterer); err != nil {
-				return err
-			}
-
 			// Get log_level from serverCtx.Viper
 			logLevelStr := serverCtx.Viper.GetString(flags.FlagLogLevel)
 
@@ -159,6 +155,9 @@ func NewRootCmd() *cobra.Command {
 
 			serverCtx.Logger = helper.WithModuleFilter(log.NewLogger(cmd.OutOrStdout(), logOpts...), moduleFilter).With(log.ModuleKey, "server")
 			helper.Logger = helper.WithModuleFilter(log.NewLogger(cmd.OutOrStdout(), logOpts...), moduleFilter)
+			if err := installPeerServing(cmd, serverCtx, prometheus.DefaultRegisterer); err != nil {
+				return err
+			}
 
 			err = helper.SanitizeConfig(serverCtx.Viper, serverCtx.Logger)
 			if err != nil {

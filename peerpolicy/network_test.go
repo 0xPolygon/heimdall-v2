@@ -7,6 +7,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/blocksync"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/p2p"
@@ -119,4 +120,32 @@ func TestServingNativeStatesyncByteAdmission(t *testing.T) {
 	require.Zero(t, receiving.received.Load())
 	require.Zero(t, g.Snapshot(string(requester.NodeInfo().ID())).Risk)
 	require.Equal(t, 1, serving.Peers().Size())
+}
+
+func TestServingNativeSnapshotMinimumBudgets(t *testing.T) {
+	receiving := &wireReceiver{}
+	receiving.BaseReactor = p2p.NewBaseReactor("receive", receiving)
+	requester := servingSwitch(t, cfg.DefaultP2PConfig(), receiving)
+	id := string(requester.NodeInfo().ID())
+	config := DefaultConfig()
+	config.ProtectedIDs = []string{id}
+	config.BurstBytes, config.MemoryBytes = 24*blocksync.MaxMsgSize, 24*blocksync.MaxMsgSize
+	config.MaxInflight = 24
+	g, err := New(config, prometheus.NewRegistry())
+	require.NoError(t, err)
+	nativeCfg := cfg.DefaultP2PConfig()
+	nativeCfg.ServingPolicy = g
+	app := &mocks.AppConnSnapshot{}
+	app.On("ListSnapshots", mock.Anything, mock.Anything).Return(&abci.ResponseListSnapshots{
+		Snapshots: []*abci.Snapshot{{Height: 1, Format: 1, Chunks: 1, Hash: []byte{1}}},
+	}, nil).Once()
+	reactor := statesync.NewReactor(*cfg.DefaultStateSyncConfig(), app, nil, statesync.NopMetrics())
+	serving := servingSwitch(t, nativeCfg, reactor)
+	require.NoError(t, requester.DialPeerWithAddress(serving.NetAddress()))
+	peer := requester.Peers().Get(serving.NodeInfo().ID())
+	require.NotNil(t, peer)
+	require.True(t, peer.Send(p2p.Envelope{ChannelID: statesync.SnapshotChannel, Message: &ss.SnapshotsRequest{}}))
+	require.Eventually(t, func() bool { return receiving.received.Load() == 1 }, 3*time.Second, time.Millisecond)
+	require.Zero(t, g.Snapshot(id).Risk)
+	app.AssertExpectations(t)
 }

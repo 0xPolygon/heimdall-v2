@@ -58,8 +58,8 @@ func TestServingHistorySupportsDefaultThroughput(t *testing.T) {
 	// horizon. Unique heights must not exhaust history before their rate limits.
 	for second := uint64(0); second < 60; second++ {
 		*now = time.Duration(second) * time.Second
-		for offset := uint64(0); offset < cfg.PeerRequestsPerSecond; offset++ {
-			height := second*cfg.PeerRequestsPerSecond + offset + 1
+		for offset := uint64(0); offset < 10; offset++ {
+			height := second*10 + offset + 1
 			for _, family := range []servebudget.Family{servebudget.Block, servebudget.Catchup} {
 				serve(t, g, peerA, servebudget.Request{Family: family, Height: height, MaxBytes: 10}, 10)
 			}

@@ -30,7 +30,7 @@ func TestServingFailedTransfersStayNeutral(t *testing.T) {
 				require.False(t, ok)
 			}
 			require.Zero(t, g.Snapshot(peerA).Risk, "failed transfers are not completed-serving evidence")
-			reason := "peer_incomplete"
+			reason := "peer_capacity"
 			if family == servebudget.Catchup {
 				reason = "catchup_capacity"
 			}

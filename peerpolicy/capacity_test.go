@@ -57,11 +57,12 @@ func TestServingPeerMemoryHeadroom(t *testing.T) {
 func TestServingFamilyWorkTotals(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.RequestsPerSecond = 8
+	cfg.MaxInflight = 24
 	g, now := testGovernor(t, cfg)
 	third := fmt.Sprintf("%040x", 3)
 	req := servebudget.Request{Family: servebudget.Block, MaxBytes: 10}
-	for _, id := range []string{peerA, peerB} {
-		for range 2 {
+	for _, id := range []string{peerA, peerB, third} {
+		for range 4 {
 			serve(t, g, id, req, 1)
 		}
 	}
@@ -70,16 +71,16 @@ func TestServingFamilyWorkTotals(t *testing.T) {
 	require.False(t, ok, "family bursts still share the node work limit")
 	*now = time.Second
 	for range 2 {
-		serve(t, g, third, req, 1)
+		serve(t, g, fmt.Sprintf("%040x", 4), req, 1)
 	}
 	req.Family = servebudget.Block
 	for range 2 {
-		serve(t, g, peerA, req, 1)
+		serve(t, g, fmt.Sprintf("%040x", 5), req, 1)
 	}
 	req.Family = servebudget.Chunk
 	_, ok = g.Admit(peerB, req)
 	require.False(t, ok, "the combined family refill must stay within the node rate")
-	require.Equal(t, float64(8), testutil.ToFloat64(g.events.WithLabelValues("admitted")))
+	require.Equal(t, float64(16), testutil.ToFloat64(g.events.WithLabelValues("admitted")))
 }
 
 func TestServingConcurrentSyncFamilies(t *testing.T) {
