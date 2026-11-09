@@ -97,7 +97,7 @@ func servingChannels(r p2p.Reactor) []byte {
 
 func TestServingNativeStatesyncByteAdmission(t *testing.T) {
 	g, _ := testGovernor(t, DefaultConfig())
-	g.pools[0].bytes.tokens = 128 << 10
+	g.pools[0].stateBytes.tokens = 128 << 10
 	nativeCfg := cfg.DefaultP2PConfig()
 	nativeCfg.ServingPolicy = g
 	app := &mocks.AppConnSnapshot{}

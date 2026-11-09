@@ -60,13 +60,13 @@ func installPeerServing(cmd *cobra.Command, ctx *server.Context, reg prometheus.
 }
 
 func validatePeerServingBounds(cfg peerpolicy.Config) error {
-	// Each reserved quarter must fund one maximum native response before its read.
+	// Each peer memory share and bulk family must fund a maximum response.
 	const maxResponse = blocksync.MaxMsgSize
-	if cfg.MemoryBytes/8 < maxResponse {
-		return fmt.Errorf("peer-serving-memory must be at least %d bytes", 8*maxResponse)
+	if cfg.MemoryBytes/24 < maxResponse {
+		return fmt.Errorf("peer-serving-memory must be at least %d bytes", 24*maxResponse)
 	}
-	if cfg.BurstBytes/4 < maxResponse {
-		return fmt.Errorf("peer-serving-byte-burst must be at least %d bytes", 4*maxResponse)
+	if cfg.BurstBytes/8 < maxResponse {
+		return fmt.Errorf("peer-serving-byte-burst must be at least %d bytes", 8*maxResponse)
 	}
 	if cfg.PeerBurstBytes < maxResponse {
 		return fmt.Errorf("peer-serving-peer-byte-burst must be at least %d bytes", maxResponse)

@@ -110,6 +110,9 @@ func TestServingConfiguredNodeHistoryThroughput(t *testing.T) {
 			id := fmt.Sprintf("%040x", peer+1)
 			for offset := uint64(0); offset < 32; offset++ {
 				req := servebudget.Request{Family: servebudget.Block, Height: second*32 + offset + 1, MaxBytes: 10}
+				if peer >= 16 {
+					req.Family = servebudget.Chunk
+				}
 				serve(t, g, id, req, 1)
 				if peer < 16 {
 					req.Family = servebudget.Catchup

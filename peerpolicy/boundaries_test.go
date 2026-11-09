@@ -81,7 +81,7 @@ func TestServingRefusedWorkDoesNotCreateCopies(t *testing.T) {
 
 func TestServingReservedPoolsByteBoundary(t *testing.T) {
 	cfg := DefaultConfig()
-	cfg.BurstBytes = 400
+	cfg.BurstBytes = 800
 	cfg.ProtectedIDs = []string{peerB}
 	g, _ := testGovernor(t, cfg)
 	req := servebudget.Request{Family: servebudget.Block, MaxBytes: 200}
@@ -93,7 +93,8 @@ func TestServingReservedPoolsByteBoundary(t *testing.T) {
 	_, ok = g.Admit(peerB, req)
 	require.False(t, ok)
 	req.Family = servebudget.Catchup
-	serve(t, g, peerA, req, 100)
+	req.MaxBytes = 200
+	serve(t, g, peerA, req, 200)
 	_, ok = g.Admit(peerA, req)
 	require.False(t, ok)
 	require.Zero(t, g.Snapshot(peerA).Risk)

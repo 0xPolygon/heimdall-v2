@@ -157,8 +157,8 @@ func TestPeerServingReservationFloors(t *testing.T) {
 		flag    string
 		minimum uint64
 	}{
-		{"peer-serving-memory", 8 * blocksync.MaxMsgSize},
-		{"peer-serving-byte-burst", 4 * blocksync.MaxMsgSize},
+		{"peer-serving-memory", 24 * blocksync.MaxMsgSize},
+		{"peer-serving-byte-burst", 8 * blocksync.MaxMsgSize},
 		{"peer-serving-peer-byte-burst", blocksync.MaxMsgSize},
 	} {
 		for _, value := range []uint64{tc.minimum - 1, tc.minimum, tc.minimum + 1} {

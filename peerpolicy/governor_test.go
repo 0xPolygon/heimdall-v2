@@ -2,17 +2,20 @@ package peerpolicy
 
 import (
 	"fmt"
-	"github.com/cometbft/cometbft/p2p/servebudget"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/stretchr/testify/require"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/cometbft/cometbft/p2p/servebudget"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/stretchr/testify/require"
 )
 
-const peerA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-const peerB = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+const (
+	peerA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	peerB = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+)
 
 func testGovernor(t testing.TB, cfg Config) (*Governor, *time.Duration) {
 	t.Helper()
@@ -21,6 +24,7 @@ func testGovernor(t testing.TB, cfg Config) (*Governor, *time.Duration) {
 	require.NoError(t, err)
 	return g, &now
 }
+
 func serve(t *testing.T, g *Governor, id string, r servebudget.Request, n uint64) {
 	t.Helper()
 	l, ok := g.Admit(id, r)
@@ -29,6 +33,7 @@ func serve(t *testing.T, g *Governor, id string, r servebudget.Request, n uint64
 	l.Finish(true)
 	l.Finish(false)
 }
+
 func TestServingRepeatScore(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.RepeatBytes = 100
@@ -53,14 +58,15 @@ func TestServingRepeatScore(t *testing.T) {
 	*now = 10 * windowWidth
 	require.Zero(t, g.Snapshot(peerA).Risk)
 }
+
 func TestServingSharedHeadroom(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.MaxInflight = 12
 	cfg.ProtectedIDs = []string{strings.ToUpper(peerB)}
 	g, _ := testGovernor(t, cfg)
 	var leases []servebudget.Lease
-	for i := 0; i < 6; i++ {
-		l, ok := g.Admit(fmt.Sprintf("%040x", i+1), servebudget.Request{Family: servebudget.Family(i % 3), Height: 1, MaxBytes: 100})
+	for i, family := range []servebudget.Family{servebudget.Block, servebudget.Snapshot, servebudget.Chunk, servebudget.Block, servebudget.Snapshot, servebudget.Block} {
+		l, ok := g.Admit(fmt.Sprintf("%040x", i+1), servebudget.Request{Family: family, Height: 1, MaxBytes: 100})
 		require.True(t, ok)
 		leases = append(leases, l)
 	}
@@ -85,6 +91,7 @@ func TestServingSharedHeadroom(t *testing.T) {
 		require.Zero(t, p.inflight)
 	}
 }
+
 func TestServingCompletionAndConcurrency(t *testing.T) {
 	g, _ := testGovernor(t, DefaultConfig())
 	req := servebudget.Request{Family: servebudget.Block, Height: 1, MaxBytes: 1024}
@@ -106,6 +113,7 @@ func TestServingCompletionAndConcurrency(t *testing.T) {
 	serve(t, g, peerA, req, 100)
 	require.Equal(t, uint64(1), g.peers[peerA].objects[req].copies)
 }
+
 func TestServingEvidenceAndExpiry(t *testing.T) {
 	g, now := testGovernor(t, DefaultConfig())
 	g.Observe(peerA, servebudget.MalformedRequest)
@@ -122,6 +130,7 @@ func TestServingEvidenceAndExpiry(t *testing.T) {
 	g.Observe(peerA, servebudget.InvalidResponse)
 	require.Zero(t, g.Snapshot(peerA).Risk)
 }
+
 func TestServingBoundedState(t *testing.T) {
 	g, _ := testGovernor(t, DefaultConfig())
 	for i := 0; i < maxPeers+50; i++ {
@@ -131,24 +140,26 @@ func TestServingBoundedState(t *testing.T) {
 	g.Observe("bad", servebudget.InvalidResponse)
 	require.Len(t, g.peers, maxPeers)
 }
+
 func TestServingLimits(t *testing.T) {
 	for _, kind := range []string{"bytes", "memory", "work"} {
 		t.Run(kind, func(t *testing.T) {
 			cfg := DefaultConfig()
 			switch kind {
 			case "bytes":
-				cfg.BurstBytes = 4
+				cfg.BurstBytes = 8
 			case "memory":
-				cfg.MemoryBytes = 4
+				cfg.MemoryBytes = 24
 			case "work":
-				cfg.RequestsPerSecond = 4
+				cfg.RequestsPerSecond = 8
 			}
 			g, _ := testGovernor(t, cfg)
 			r := servebudget.Request{Family: servebudget.Block, MaxBytes: 100}
 			if kind == "work" {
-				serve(t, g, peerB, r, 10)
-				r.Height++
-				serve(t, g, peerB, r, 10)
+				for range 4 {
+					serve(t, g, peerB, r, 10)
+					r.Height++
+				}
 			}
 			for range 3 {
 				_, ok := g.Admit(peerA, r)
@@ -158,23 +169,25 @@ func TestServingLimits(t *testing.T) {
 		})
 	}
 }
+
 func TestServingPrepareAndRefund(t *testing.T) {
 	g, _ := testGovernor(t, DefaultConfig())
 	r := servebudget.Request{Family: servebudget.Chunk, MaxBytes: 1024}
-	initial := g.pools[0].bytes.tokens
+	initial := g.pools[0].stateBytes.tokens
 	l, ok := g.Admit(peerA, r)
 	require.True(t, ok)
-	require.Equal(t, initial-1024, g.pools[0].bytes.tokens)
+	require.Equal(t, initial-1024, g.pools[0].stateBytes.tokens)
 	require.False(t, l.Prepare(1025))
 	l.Finish(false)
-	require.Equal(t, initial, g.pools[0].bytes.tokens)
+	require.Equal(t, initial, g.pools[0].stateBytes.tokens)
 	l, ok = g.Admit(peerA, r)
 	require.True(t, ok)
 	require.True(t, l.Prepare(10))
-	require.Equal(t, initial-10, g.pools[0].bytes.tokens)
+	require.Equal(t, initial-10, g.pools[0].stateBytes.tokens)
 	l.Finish(false)
-	require.Equal(t, initial-10, g.pools[0].bytes.tokens)
+	require.Equal(t, initial-10, g.pools[0].stateBytes.tokens)
 }
+
 func BenchmarkServingAdmission(b *testing.B) {
 	now := time.Duration(0)
 	g, err := newGovernor(DefaultConfig(), prometheus.NewRegistry(), func() time.Duration { return now })
@@ -231,6 +244,7 @@ func TestServingPrepareGrowth(t *testing.T) {
 		})
 	}
 }
+
 func TestServingPeerQuotaAndCongestion(t *testing.T) {
 	g, _ := testGovernor(t, DefaultConfig())
 	r := servebudget.Request{Family: servebudget.Block, MaxBytes: 100}
@@ -249,6 +263,7 @@ func TestServingPeerQuotaAndCongestion(t *testing.T) {
 	}
 	require.Equal(t, uint64(20), g.Snapshot(peerA).Risk)
 }
+
 func TestServingConfigAndRegistration(t *testing.T) {
 	for _, edit := range []func(*Config){func(c *Config) { c.BytesPerSecond = 0 }, func(c *Config) { c.MemoryBytes = 1 << 41 }, func(c *Config) { c.MaxInflight = 3 }, func(c *Config) { c.MaxInflight = 4097 }, func(c *Config) { c.ProtectedIDs = []string{"invalid"} }, func(c *Config) { c.ProtectedIDs = make([]string, 257) }} {
 		cfg := DefaultConfig()
@@ -262,6 +277,7 @@ func TestServingConfigAndRegistration(t *testing.T) {
 	_, err = New(DefaultConfig(), reg)
 	require.Error(t, err)
 }
+
 func TestServingLeaseSurvivesEviction(t *testing.T) {
 	g, _ := testGovernor(t, DefaultConfig())
 	l, ok := g.Admit(peerA, servebudget.Request{Family: servebudget.Block, MaxBytes: 100})

@@ -13,17 +13,23 @@ import (
 
 func TestServingMemoryBoundary(t *testing.T) {
 	cfg := DefaultConfig()
-	cfg.MemoryBytes = 400
+	cfg.MemoryBytes = 1200
 	g, _ := testGovernor(t, cfg)
 	req := servebudget.Request{Family: servebudget.Block, MaxBytes: 100}
 	l, ok := g.Admit(peerA, req)
-	require.True(t, ok, "encoded and decoded reservations exactly fill the ordinary pool")
+	require.True(t, ok, "encoded and decoded reservations exactly fill one peer's share")
 	require.Equal(t, uint64(200), g.pools[0].memory)
-	_, ok = g.Admit(peerB, req)
+	next := req
+	next.Height++
+	_, ok = g.Admit(peerA, next)
 	require.False(t, ok)
-	require.Equal(t, float64(1), testutil.ToFloat64(g.events.WithLabelValues("local_capacity")))
+	require.Equal(t, float64(1), testutil.ToFloat64(g.events.WithLabelValues("peer_memory_capacity")))
+	second, ok := g.Admit(peerB, req)
+	require.True(t, ok)
+	second.Finish(false)
 	l.Finish(false)
 	require.Zero(t, g.pools[0].memory)
+	require.Zero(t, g.peers[peerA].memory)
 	serve(t, g, peerB, req, 100)
 	require.Zero(t, g.pools[0].memory)
 }
@@ -89,7 +95,9 @@ func TestServingLeaseAccounting(t *testing.T) {
 				peerInitial := g.peers[peerA].bytes.capacity - 2*(128<<10)
 				require.Equal(t, uint64(128<<10), g.peers[peerA].repeatHeld)
 				require.Equal(t, uint64(128<<10), g.peers[peerA].held[0])
+				require.Equal(t, 2*req.MaxBytes, g.peers[peerA].memory[0])
 				require.True(t, l.Prepare(size))
+				require.Equal(t, 2*size, g.peers[peerA].memory[0])
 				require.Equal(t, initial-float64(size), g.pools[0].bytes.tokens)
 				require.Equal(t, peerInitial-float64(size), g.peers[peerA].bytes.tokens)
 				require.Equal(t, size, g.peers[peerA].repeatHeld)
@@ -99,6 +107,7 @@ func TestServingLeaseAccounting(t *testing.T) {
 				require.Zero(t, g.peers[peerA].repeatHeld)
 				require.Zero(t, g.peers[peerA].held[0], "a settled lease releases its reservation exactly once")
 				require.Zero(t, g.pools[0].memory)
+				require.Zero(t, g.peers[peerA].memory[0])
 				require.Zero(t, g.pools[0].inflight)
 				expected := uint64(0)
 				if written {
@@ -213,7 +222,7 @@ func TestServingMetricsAndMode(t *testing.T) {
 }
 
 func TestServingConfigInclusiveBounds(t *testing.T) {
-	cfg := Config{BytesPerSecond: 4, BurstBytes: 4, MemoryBytes: 4, MaxInflight: 12, RequestsPerSecond: 4, PeerBytesPerSecond: 1 << 40, PeerBurstBytes: 1 << 40, PeerRequestsPerSecond: 1, RepeatBytes: 1 << 40}
+	cfg := Config{BytesPerSecond: 8, BurstBytes: 8, MemoryBytes: 24, MaxInflight: 12, RequestsPerSecond: 8, PeerBytesPerSecond: 1 << 40, PeerBurstBytes: 1 << 40, PeerRequestsPerSecond: 1, RepeatBytes: 1 << 40}
 	for i := range 256 {
 		cfg.ProtectedIDs = append(cfg.ProtectedIDs, fmt.Sprintf("%040x", i))
 	}

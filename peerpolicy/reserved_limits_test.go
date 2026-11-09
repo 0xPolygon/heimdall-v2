@@ -15,13 +15,13 @@ func TestServingReservedPoolLimits(t *testing.T) {
 		for _, resource := range []string{"bytes", "work", "memory", "inflight"} {
 			t.Run(class+"/"+resource, func(t *testing.T) {
 				cfg := DefaultConfig()
-				cfg.BytesPerSecond, cfg.BurstBytes = 16, 16
-				cfg.RequestsPerSecond = 8
-				cfg.MemoryBytes = 80
+				cfg.BytesPerSecond, cfg.BurstBytes = 32, 32
+				cfg.RequestsPerSecond = 128
+				cfg.MemoryBytes = 240
 				cfg.MaxInflight = 240
 				family := servebudget.Block
 				limit := 2
-				if class != "ordinary" {
+				if class == "protected" {
 					limit = 1
 				}
 				if class == "catchup" {
@@ -39,13 +39,25 @@ func TestServingReservedPoolLimits(t *testing.T) {
 				case "bytes":
 					reason = "local_bytes"
 				case "work":
-					limit *= 2
+					cfg.RequestsPerSecond = 8
+					limit = 2
+					if class == "ordinary" {
+						limit = 4
+					}
 					cfg.BurstBytes = 1024
 				case "memory":
+					limit = 3
+					if class == "ordinary" {
+						limit = 6
+					}
 					maxBytes = 10
 					cfg.BurstBytes = 1024
+					cfg.RequestsPerSecond = 128
 				case "inflight":
-					limit *= 4
+					limit = 4
+					if class == "ordinary" {
+						limit = 8
+					}
 					cfg.MaxInflight = 16
 					cfg.MemoryBytes = 1024
 					cfg.RequestsPerSecond = 128
@@ -77,6 +89,9 @@ func TestServingReservedPoolLimits(t *testing.T) {
 					return
 				}
 				refill := time.Second / time.Duration(limit)
+				if resource == "work" && family != servebudget.Catchup {
+					refill *= 2
+				}
 				*now = refill / 2
 				_, ok = g.Admit(peerA, req)
 				require.False(t, ok, "partial refill cannot fund another request")

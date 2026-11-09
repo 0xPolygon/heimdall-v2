@@ -24,7 +24,7 @@ type Config struct {
 
 func DefaultConfig() Config {
 	return Config{
-		Observe: true, BytesPerSecond: 32 << 20, BurstBytes: 512 << 20, MemoryBytes: 1 << 30, MaxInflight: 12 * maxPeerInflight, RequestsPerSecond: 128,
+		Observe: true, BytesPerSecond: 32 << 20, BurstBytes: 1 << 30, MemoryBytes: 3 << 30, MaxInflight: 12 * maxPeerInflight, RequestsPerSecond: 128,
 		PeerBytesPerSecond: 8 << 20, PeerBurstBytes: 128 << 20, PeerRequestsPerSecond: 32, RepeatBytes: 32 << 20,
 	}
 }
@@ -38,8 +38,8 @@ func (c Config) Validate() error {
 	if c.MaxInflight < 12 || c.MaxInflight > 4096 {
 		return fmt.Errorf("serving concurrency must be between 12 and 4096")
 	}
-	if c.BytesPerSecond < 4 || c.BurstBytes < 4 || c.MemoryBytes < 4 || c.RequestsPerSecond < 4 {
-		return fmt.Errorf("node-wide limits must be at least four to fund each reserved pool")
+	if c.BytesPerSecond < 8 || c.BurstBytes < 8 || c.MemoryBytes < 24 || c.RequestsPerSecond < 8 {
+		return fmt.Errorf("node-wide byte and work limits must be at least eight and memory at least 24 to fund reserved shares")
 	}
 	objects, history := c.historyLimits()
 	if objects > maxPeerHistory || history > maxNodeHistory {

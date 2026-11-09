@@ -7,14 +7,15 @@ import (
 )
 
 type lease struct {
-	peerBytes                  *tokenBucket
-	held                       *uint64
+	peerBytes, poolBytes       *tokenBucket
+	held, peerMemory           *uint64
 	g                          *Governor
 	p                          *peerState
 	pool                       *pool
 	obj                        *object
 	memory, bytes              uint64
 	repeat, prepared, finished bool
+	state                      bool
 }
 
 func (l *lease) Prepare(bytes uint64) bool {
@@ -31,7 +32,7 @@ func (l *lease) Prepare(bytes uint64) bool {
 			return false
 		}
 	} else {
-		l.pool.bytes.refund(l.bytes - bytes)
+		l.poolBytes.refund(l.bytes - bytes)
 		l.peerBytes.refund(l.bytes - bytes)
 		*l.held -= l.bytes - bytes
 	}
@@ -43,6 +44,10 @@ func (l *lease) Prepare(bytes uint64) bool {
 	// Otherwise tiny blocks occupy a full maximum-block reservation in the queue.
 	memory := 2 * bytes
 	l.pool.memory -= l.memory - memory
+	if l.state {
+		l.pool.stateMemory -= l.memory - memory
+	}
+	*l.peerMemory -= l.memory - memory
 	l.memory = memory
 	l.bytes = bytes
 	l.prepared = true
@@ -58,7 +63,12 @@ func (l *lease) Finish(written bool) {
 	}
 	l.finished = true
 	l.pool.memory -= l.memory
+	*l.peerMemory -= l.memory
 	l.pool.inflight--
+	if l.state {
+		l.pool.stateMemory -= l.memory
+		l.pool.stateInflight--
+	}
 	l.p.inflight--
 	if l.obj.request.Family == servebudget.Catchup {
 		l.p.catchupInflight--
@@ -81,7 +91,7 @@ func (l *lease) Finish(written bool) {
 	} else {
 		// Bytes may have partially reached the socket. Keep prepared charges on failure.
 		if !l.prepared {
-			l.pool.bytes.refund(l.bytes)
+			l.poolBytes.refund(l.bytes)
 			l.peerBytes.refund(l.bytes)
 		}
 		g.events.WithLabelValues("incomplete").Inc()
@@ -90,7 +100,7 @@ func (l *lease) Finish(written bool) {
 
 func (l *lease) reserveMore(delta uint64, now time.Duration, w *scoreWindow) bool {
 	g := l.g
-	if l.pool.bytes.available(now) < float64(delta) {
+	if l.poolBytes.available(now) < float64(delta) {
 		g.events.WithLabelValues("local_bytes").Inc()
 		return false
 	}
@@ -103,7 +113,7 @@ func (l *lease) reserveMore(delta uint64, now time.Duration, w *scoreWindow) boo
 		g.repeatRefusal(w, l.obj.request.Family, l.bytes+delta)
 		return false
 	}
-	l.pool.bytes.spend(delta)
+	l.poolBytes.spend(delta)
 	l.peerBytes.spend(delta)
 	*l.held += delta
 	return true

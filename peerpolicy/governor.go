@@ -11,10 +11,6 @@ import (
 
 const windowWidth = 10 * time.Second
 
-type pool struct {
-	bytes, work                              tokenBucket
-	memory, inflight, memoryCap, inflightCap uint64
-}
 type peerState struct {
 	catchupBytes, catchupWork tokenBucket
 	id                        string
@@ -26,6 +22,7 @@ type peerState struct {
 	// held mirrors the outstanding byte reservations of each allowance class,
 	// so a shortfall a peer's own in-flight requests explain stays neutral.
 	held                 [2]uint64
+	memory               [2]uint64
 	inflight, repeatHeld uint64
 
 	catchupInflight uint64
@@ -69,7 +66,7 @@ func newGovernor(cfg Config, registry prometheus.Registerer, now func() time.Dur
 	}
 	// Disjoint shares prevent bulk peers from consuming catch-up or protected headroom.
 	for i, divisor := range []uint64{2, 4, 4} {
-		g.pools[i] = pool{bytes: newBucket(cfg.BytesPerSecond/divisor, cfg.BurstBytes/divisor, now()), work: newBucket(cfg.RequestsPerSecond/divisor, cfg.RequestsPerSecond/divisor, now()), memoryCap: cfg.MemoryBytes / divisor, inflightCap: cfg.MaxInflight / divisor}
+		g.pools[i] = newPool(cfg, divisor, i == 1, now())
 	}
 	return g, nil
 }
@@ -108,7 +105,7 @@ func (g *Governor) Admit(id string, request servebudget.Request) (servebudget.Le
 	}
 	pool := &g.pools[index]
 	memory := 2 * request.MaxBytes
-	if pool.memory+memory > pool.memoryCap || pool.inflight >= pool.inflightCap || pool.work.available(now) < 1 {
+	if !pool.hasCapacity(memory, request.Family, now) {
 		g.events.WithLabelValues("local_capacity").Inc()
 		return nil, false
 	}
@@ -175,7 +172,8 @@ func (g *Governor) byteRefusal(w *scoreWindow, family servebudget.Family, need u
 
 func (g *Governor) reserve(p *peerState, pool *pool, obj *object, req servebudget.Request, estimate uint64, repeat bool) (servebudget.Lease, bool) {
 	memory := 2 * req.MaxBytes
-	pool.bytes.spend(estimate)
+	poolBytes, familyWork := pool.allowance(req.Family)
+	poolBytes.spend(estimate)
 	peerBytes, peerWork, held := p.allowance(req.Family)
 	peerBytes.spend(estimate)
 	*held += estimate
@@ -183,21 +181,36 @@ func (g *Governor) reserve(p *peerState, pool *pool, obj *object, req servebudge
 		p.repeatHeld += estimate
 	}
 	pool.work.spend(1)
+	familyWork.spend(1)
 	peerWork.spend(1)
 	pool.memory += memory
+	peerMemory := p.reservedMemory(req.Family)
+	*peerMemory += memory
 	pool.inflight++
+	state := stateFamily(req.Family)
+	if state {
+		pool.stateMemory += memory
+		pool.stateInflight++
+	}
 	p.inflight++
 	if req.Family == servebudget.Catchup {
 		p.catchupInflight++
 	}
 	obj.pending++
 	g.events.WithLabelValues("admitted").Inc()
-	return &lease{g: g, p: p, pool: pool, obj: obj, memory: memory, bytes: estimate, repeat: repeat, peerBytes: peerBytes, held: held}, true
+	return &lease{
+		g: g, p: p, pool: pool, obj: obj, memory: memory, bytes: estimate, repeat: repeat, state: state,
+		peerBytes: peerBytes, poolBytes: poolBytes, held: held, peerMemory: peerMemory,
+	}, true
 }
 
 func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, now time.Duration) (*object, uint64, bool, bool) {
 	tick := int64(now / windowWidth)
 	obj := g.lookupObject(p, req, tick)
+	if *p.reservedMemory(req.Family)+2*req.MaxBytes > pool.memoryCap/3 {
+		g.events.WithLabelValues("peer_memory_capacity").Inc()
+		return nil, 0, false, false
+	}
 	// Leave room for at least three peers in each pool.
 	if p.pending(req.Family) >= min(maxPeerInflight, pool.inflightCap/3) || (obj != nil && obj.pending > 0) {
 		g.events.WithLabelValues("peer_busy").Inc()
@@ -208,7 +221,8 @@ func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, 
 	if obj != nil && obj.bytes > 0 {
 		estimate = obj.bytes
 	}
-	if pool.bytes.available(now) < float64(estimate) {
+	poolBytes, _ := pool.allowance(req.Family)
+	if poolBytes.available(now) < float64(estimate) {
 		g.events.WithLabelValues("local_bytes").Inc()
 		return nil, 0, false, false
 	}
@@ -273,4 +287,11 @@ func (p *peerState) pending(family servebudget.Family) uint64 {
 		return p.catchupInflight
 	}
 	return p.inflight - p.catchupInflight
+}
+
+func (p *peerState) reservedMemory(family servebudget.Family) *uint64 {
+	if family == servebudget.Catchup {
+		return &p.memory[1]
+	}
+	return &p.memory[0]
 }
