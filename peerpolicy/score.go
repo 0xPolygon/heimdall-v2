@@ -55,7 +55,7 @@ func (p *peerState) risk(tick int64) uint64 {
 			continue
 		}
 		score += w.invalid*60 + w.malformed*20
-		if w.repeatRefusals >= 3 || w.servingRefusals >= 3 {
+		if w.repeatRefusals+w.servingRefusals >= 3 {
 			score += 20
 		}
 	}

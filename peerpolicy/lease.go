@@ -93,7 +93,7 @@ func (l *lease) reserveMore(delta uint64, now time.Duration, w *scoreWindow) boo
 		return false
 	}
 	if l.repeat && delta > g.cfg.RepeatBytes-min(g.cfg.RepeatBytes, w.repeatedBytes+l.p.repeatHeld) {
-		g.refusal(w, true, l.obj.request.Family)
+		g.repeatRefusal(w, l.obj.request.Family, l.bytes+delta)
 		return false
 	}
 	l.pool.bytes.spend(delta)

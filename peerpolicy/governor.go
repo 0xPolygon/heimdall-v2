@@ -139,10 +139,22 @@ func (g *Governor) refusal(w *scoreWindow, repeat bool, family servebudget.Famil
 	if !g.cfg.Observe {
 		return
 	}
-	if *count == 2 {
+	previous := w.repeatRefusals + w.servingRefusals
+	*count = min(*count+1, 3)
+	if previous < 3 && w.repeatRefusals+w.servingRefusals >= 3 {
+		if w.repeatRefusals > 0 && w.servingRefusals > 0 {
+			name = "mixed_allowance"
+		}
 		g.windows.WithLabelValues(name).Inc()
 	}
-	*count = min(*count+1, 3)
+}
+
+func (g *Governor) repeatRefusal(w *scoreWindow, family servebudget.Family, bytes uint64) {
+	if bytes <= g.cfg.RepeatBytes-min(g.cfg.RepeatBytes, w.repeatedBytes) {
+		g.events.WithLabelValues("repeat_reserved").Inc()
+		return
+	}
+	g.refusal(w, true, family)
 }
 
 // byteRefusal scores a peer-byte shortfall only when the peer's own completed
@@ -198,7 +210,7 @@ func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, 
 	}
 	repeat := obj != nil && obj.copies >= 2 && req.Family != servebudget.Catchup && req.Family != servebudget.Snapshot
 	if repeat && estimate > g.cfg.RepeatBytes-min(g.cfg.RepeatBytes, w.repeatedBytes+p.repeatHeld) {
-		g.refusal(w, true, req.Family)
+		g.repeatRefusal(w, req.Family, estimate)
 		return nil, 0, false, false
 	}
 	// History is recorded last so a refused request cannot claim a slot.
