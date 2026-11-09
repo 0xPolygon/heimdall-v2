@@ -100,6 +100,14 @@ func (g *Governor) peer(id string, now time.Duration) *peerState {
 }
 
 func (g *Governor) Admit(id string, request servebudget.Request) (servebudget.Lease, bool) {
+	return g.admit(id, request, true)
+}
+
+func (g *Governor) Retry(id string, request servebudget.Request) (servebudget.Lease, bool) {
+	return g.admit(id, request, false)
+}
+
+func (g *Governor) admit(id string, request servebudget.Request, observe bool) (servebudget.Lease, bool) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if request.MaxBytes == 0 || request.MaxBytes > g.cfg.MemoryBytes/2 || request.Family > servebudget.Catchup {
@@ -123,15 +131,15 @@ func (g *Governor) Admit(id string, request servebudget.Request) (servebudget.Le
 		return nil, false
 	}
 	defer func() {
-		if g.cfg.Observe {
+		if observe && g.cfg.Observe {
 			g.risk.Observe(float64(p.risk(int64(now / windowWidth))))
 		}
 	}()
-	obj, estimate, repeat, ok := g.admitPeer(p, pool, request, now)
+	obj, estimate, repeat, ok := g.admitPeer(p, pool, request, now, observe)
 	if !ok {
 		return nil, false
 	}
-	return g.reserve(p, pool, obj, request, estimate, repeat)
+	return g.reserve(p, pool, obj, request, estimate, repeat, observe)
 }
 
 func (g *Governor) refusal(w *scoreWindow, repeat bool, family servebudget.Family) {
@@ -159,7 +167,10 @@ func (g *Governor) refusal(w *scoreWindow, repeat bool, family servebudget.Famil
 	}
 }
 
-func (g *Governor) repeatRefusal(w *scoreWindow, family servebudget.Family, bytes uint64) {
+func (g *Governor) repeatRefusal(w *scoreWindow, family servebudget.Family, bytes uint64, observe bool) {
+	if !observe {
+		return
+	}
 	if bytes <= g.cfg.RepeatBytes-min(g.cfg.RepeatBytes, w.repeatedBytes) {
 		g.events.WithLabelValues("repeat_reserved").Inc()
 		return
@@ -168,7 +179,10 @@ func (g *Governor) repeatRefusal(w *scoreWindow, family servebudget.Family, byte
 }
 
 // Pending and failed sends consume capacity without proving completed serving.
-func (g *Governor) byteRefusal(p *peerState, w *scoreWindow, family servebudget.Family, need uint64, now time.Duration) {
+func (g *Governor) byteRefusal(p *peerState, w *scoreWindow, family servebudget.Family, need uint64, now time.Duration, observe bool) {
+	if !observe {
+		return
+	}
 	if family != servebudget.Catchup {
 		bytes, _, held := p.allowance(family)
 		if float64(need) > bytes.capacity {
@@ -187,7 +201,7 @@ func (g *Governor) byteRefusal(p *peerState, w *scoreWindow, family servebudget.
 	g.refusal(w, false, family)
 }
 
-func (g *Governor) reserve(p *peerState, pool *pool, obj *object, req servebudget.Request, estimate uint64, repeat bool) (servebudget.Lease, bool) {
+func (g *Governor) reserve(p *peerState, pool *pool, obj *object, req servebudget.Request, estimate uint64, repeat, observe bool) (servebudget.Lease, bool) {
 	memory := 2 * req.MaxBytes
 	poolBytes, familyWork := pool.allowance(req.Family)
 	poolBytes.spend(estimate)
@@ -216,12 +230,13 @@ func (g *Governor) reserve(p *peerState, pool *pool, obj *object, req servebudge
 	obj.pending++
 	g.events.WithLabelValues("admitted").Inc()
 	return &lease{
-		g: g, p: p, pool: pool, obj: obj, memory: memory, bytes: estimate, repeat: repeat, state: state,
+		observe: observe,
+		g:       g, p: p, pool: pool, obj: obj, memory: memory, bytes: estimate, repeat: repeat, state: state,
 		peerBytes: peerBytes, poolBytes: poolBytes, held: held, peerMemory: peerMemory,
 	}, true
 }
 
-func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, now time.Duration) (*object, uint64, bool, bool) {
+func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, now time.Duration, observe bool) (*object, uint64, bool, bool) {
 	tick := int64(now / windowWidth)
 	obj := g.lookupObject(p, req, tick)
 	memoryCap, inflightCap := pool.memoryCap, pool.inflightCap
@@ -250,10 +265,10 @@ func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, 
 	w := p.window(tick)
 	repeat := obj != nil && obj.copies >= 2 && req.Family != servebudget.Catchup && req.Family != servebudget.Snapshot
 	if repeat && estimate > g.cfg.RepeatBytes-min(g.cfg.RepeatBytes, w.repeatedBytes+p.repeatHeld) {
-		g.repeatRefusal(w, req.Family, estimate)
+		g.repeatRefusal(w, req.Family, estimate, observe)
 		return nil, 0, false, false
 	}
-	if !g.admitAllowance(p, w, req, estimate, now) {
+	if !g.admitAllowance(p, w, req, estimate, now, observe) {
 		return nil, 0, false, false
 	}
 	// History is recorded last so a refused request cannot claim a slot.
@@ -265,10 +280,10 @@ func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, 
 
 // admitAllowance charges nothing; it reports whether the peer's own rate and
 // byte allowances can fund estimate, recording why when they cannot.
-func (g *Governor) admitAllowance(p *peerState, w *scoreWindow, req servebudget.Request, estimate uint64, now time.Duration) bool {
+func (g *Governor) admitAllowance(p *peerState, w *scoreWindow, req servebudget.Request, estimate uint64, now time.Duration, observe bool) bool {
 	peerBytes, peerWork, _ := p.allowance(req.Family)
 	if avail := peerBytes.available(now); avail < float64(estimate) {
-		g.byteRefusal(p, w, req.Family, estimate, now)
+		g.byteRefusal(p, w, req.Family, estimate, now, observe)
 		return false
 	}
 	// Native sync has no negotiated request rate or retry-after signal.

@@ -16,6 +16,7 @@ type lease struct {
 	memory, bytes              uint64
 	repeat, prepared, finished bool
 	state                      bool
+	observe                    bool
 }
 
 func (l *lease) Prepare(bytes uint64) bool {
@@ -109,11 +110,11 @@ func (l *lease) reserveMore(delta uint64, now time.Duration, w *scoreWindow) boo
 		return false
 	}
 	if avail := l.peerBytes.available(now); avail < float64(delta) {
-		g.byteRefusal(l.p, w, l.obj.request.Family, l.bytes+delta, now)
+		g.byteRefusal(l.p, w, l.obj.request.Family, l.bytes+delta, now, l.observe)
 		return false
 	}
 	if l.repeat && delta > g.cfg.RepeatBytes-min(g.cfg.RepeatBytes, w.repeatedBytes+l.p.repeatHeld) {
-		g.repeatRefusal(w, l.obj.request.Family, l.bytes+delta)
+		g.repeatRefusal(w, l.obj.request.Family, l.bytes+delta, l.observe)
 		return false
 	}
 	l.poolBytes.spend(delta)

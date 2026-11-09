@@ -60,6 +60,9 @@ func installPeerServing(cmd *cobra.Command, ctx *server.Context, reg prometheus.
 }
 
 func validatePeerServingBounds(cfg peerpolicy.Config) error {
+	if cfg.RequestsPerSecond < 24 {
+		return fmt.Errorf("peer-serving-request-rate must be at least 24 to sustain blocksync in every pool")
+	}
 	// Each peer memory share and bulk family must fund a maximum response.
 	const maxResponse = blocksync.MaxMsgSize
 	if cfg.MemoryBytes/24 < maxResponse {

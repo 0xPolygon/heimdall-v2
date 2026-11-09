@@ -181,6 +181,19 @@ func TestPeerServingReservationFloors(t *testing.T) {
 	}
 }
 
+func TestPeerServingWorkFloor(t *testing.T) {
+	for _, rate := range []uint64{23, 24, 25} {
+		cmd, ctx, _ := servingContext(t, []string{fmt.Sprintf("--peer-serving-request-rate=%d", rate)})
+		err := installPeerServing(cmd, ctx, prometheus.NewRegistry())
+		if rate < 24 {
+			require.EqualError(t, err, "peer-serving-request-rate must be at least 24 to sustain blocksync in every pool")
+			require.Nil(t, ctx.Config.P2P.ServingPolicy)
+		} else {
+			require.NoError(t, err)
+		}
+	}
+}
+
 func TestPeerServingLargeConfiguredPeerSet(t *testing.T) {
 	cmd, ctx, _ := servingContext(t, nil)
 	ids := make([]string, 300)
