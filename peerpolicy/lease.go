@@ -79,7 +79,11 @@ func (l *lease) Finish(written bool) {
 		l.p.repeatHeld -= l.bytes
 	}
 	if written && l.prepared {
-		tick := int64(g.now() / windowWidth)
+		now := g.now()
+		tick := int64(now / windowWidth)
+		if l.obj.request.Family != servebudget.Catchup {
+			l.p.completed.tokens = max(0, l.p.completed.available(now)-float64(l.bytes))
+		}
 		l.obj.bytes = l.bytes
 		l.obj.tick = tick
 		l.obj.copies = min(l.obj.copies+1, 2)
@@ -104,9 +108,8 @@ func (l *lease) reserveMore(delta uint64, now time.Duration, w *scoreWindow) boo
 		g.events.WithLabelValues("local_bytes").Inc()
 		return false
 	}
-	// Only reservations other than this lease's own can excuse the shortfall.
 	if avail := l.peerBytes.available(now); avail < float64(delta) {
-		g.byteRefusal(w, l.obj.request.Family, delta, avail, *l.held-l.bytes)
+		g.byteRefusal(l.p, w, l.obj.request.Family, l.bytes+delta, now)
 		return false
 	}
 	if l.repeat && delta > g.cfg.RepeatBytes-min(g.cfg.RepeatBytes, w.repeatedBytes+l.p.repeatHeld) {

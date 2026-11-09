@@ -127,6 +127,7 @@ func TestServingRefusedRequestAllocatesNoHistory(t *testing.T) {
 	g, _ := testGovernor(t, DefaultConfig())
 	p := g.peer(peerA, 0)
 	p.bytes.tokens = 0
+	p.completed.tokens = 0
 	for height := uint64(1); height <= 64; height++ {
 		_, ok := g.Admit(peerA, servebudget.Request{Family: servebudget.Block, Height: height, MaxBytes: 10})
 		require.False(t, ok)

@@ -16,6 +16,7 @@ type peerState struct {
 	id                        string
 	last                      time.Duration
 	bytes, work               tokenBucket
+	completed                 tokenBucket
 	windows                   [windowCount]scoreWindow
 	objects                   map[servebudget.Request]*object
 	historyTick               int64
@@ -86,6 +87,7 @@ func (g *Governor) peer(id string, now time.Duration) *peerState {
 	p := &peerState{id: id, last: now, bytes: newBucket(g.cfg.PeerBytesPerSecond, g.cfg.PeerBurstBytes, now), work: newBucket(g.cfg.PeerRequestsPerSecond, g.cfg.PeerRequestsPerSecond, now)}
 	p.catchupBytes = newBucket(g.cfg.PeerBytesPerSecond, g.cfg.PeerBurstBytes, now)
 	p.catchupWork = newBucket(g.cfg.PeerRequestsPerSecond, g.cfg.PeerRequestsPerSecond, now)
+	p.completed = newBucket(g.cfg.PeerBytesPerSecond, g.cfg.PeerBurstBytes, now)
 	g.peers[id] = p
 	return p
 }
@@ -158,14 +160,18 @@ func (g *Governor) repeatRefusal(w *scoreWindow, family servebudget.Family, byte
 	g.refusal(w, true, family)
 }
 
-// byteRefusal scores a peer-byte shortfall only when the peer's own completed
-// serving caused it. Reservations held by its other in-flight requests are
-// payloads in progress, which Prepare refunds down to their encoded size, so a
-// conformant pipeline that outruns its burst is congestion rather than excess.
-func (g *Governor) byteRefusal(w *scoreWindow, family servebudget.Family, need uint64, avail float64, held uint64) {
-	if family != servebudget.Catchup && avail+float64(held) >= float64(need) {
-		g.events.WithLabelValues("peer_reserved").Inc()
-		return
+// Pending and failed sends consume capacity without proving completed serving.
+func (g *Governor) byteRefusal(p *peerState, w *scoreWindow, family servebudget.Family, need uint64, now time.Duration) {
+	if family != servebudget.Catchup {
+		bytes, _, held := p.allowance(family)
+		if bytes.available(now)+float64(*held) >= float64(need) {
+			g.events.WithLabelValues("peer_reserved").Inc()
+			return
+		}
+		if p.completed.available(now) >= float64(need) {
+			g.events.WithLabelValues("peer_incomplete").Inc()
+			return
+		}
 	}
 	g.refusal(w, false, family)
 }
@@ -245,9 +251,9 @@ func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, 
 // admitAllowance charges nothing; it reports whether the peer's own rate and
 // byte allowances can fund estimate, recording why when they cannot.
 func (g *Governor) admitAllowance(p *peerState, w *scoreWindow, req servebudget.Request, estimate uint64, now time.Duration) bool {
-	peerBytes, peerWork, held := p.allowance(req.Family)
+	peerBytes, peerWork, _ := p.allowance(req.Family)
 	if avail := peerBytes.available(now); avail < float64(estimate) {
-		g.byteRefusal(w, req.Family, estimate, avail, *held)
+		g.byteRefusal(p, w, req.Family, estimate, now)
 		return false
 	}
 	// Native sync has no negotiated request rate or retry-after signal.

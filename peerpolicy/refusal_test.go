@@ -83,6 +83,7 @@ func TestServingMixedRefusalsQualifyOnce(t *testing.T) {
 				}
 				for i, repeat := range append(order, order...) {
 					g.peers[peerA].bytes.tokens = 0
+					g.peers[peerA].completed.tokens = 0
 					next := req
 					next.Height = 2
 					if repeat {

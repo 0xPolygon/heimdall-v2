@@ -250,6 +250,7 @@ func TestServingPeerQuotaAndCongestion(t *testing.T) {
 	r := servebudget.Request{Family: servebudget.Block, MaxBytes: 100}
 	serve(t, g, peerA, r, 10)
 	g.peers[peerA].bytes.tokens = 0
+	g.peers[peerA].completed.tokens = 0
 	g.pools[0].bytes.tokens = 0
 	for range 3 {
 		_, ok := g.Admit(peerA, r)

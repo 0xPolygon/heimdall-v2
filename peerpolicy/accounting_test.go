@@ -136,6 +136,7 @@ func TestServingPrepareAllowanceBoundaries(t *testing.T) {
 					g.pools[0].bytes.tokens = float64(spare)
 				case "peer":
 					g.peers[peerA].bytes.tokens = float64(spare)
+					g.peers[peerA].completed.tokens = float64(100 + spare)
 				case "repeat":
 					g.cfg.RepeatBytes = 100 + spare
 				}

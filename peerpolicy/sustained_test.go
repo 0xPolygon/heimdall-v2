@@ -47,6 +47,7 @@ func TestServingWorkBackpressurePreservesEvidence(t *testing.T) {
 		if !repeat {
 			req.Height++
 			p.bytes.tokens = 0
+			p.completed.tokens = 0
 			reason = "peer_allowance"
 		}
 		for range 3 {

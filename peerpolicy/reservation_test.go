@@ -16,6 +16,7 @@ func TestServingUnseenByteAdmission(t *testing.T) {
 			bucket := &g.pools[0].bytes
 			if tc.scope == "peer" {
 				bucket = &p.bytes
+				p.completed.tokens = 128 << 10
 			}
 			bucket.tokens = 128 << 10
 			poolWork, peerWork := g.pools[0].work.tokens, p.work.tokens
