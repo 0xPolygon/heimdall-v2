@@ -44,9 +44,6 @@ func (c Config) Validate() error {
 }
 
 func validateProtectedIDs(ids []string) error {
-	if len(ids) > 256 {
-		return fmt.Errorf("at most 256 protected peer IDs are allowed")
-	}
 	for _, id := range ids {
 		if _, err := hex.DecodeString(strings.ToLower(id)); err != nil || len(id) != 40 {
 			return fmt.Errorf("protected peer ID must contain 40 hexadecimal characters")

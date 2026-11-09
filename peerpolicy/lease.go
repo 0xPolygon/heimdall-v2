@@ -4,6 +4,7 @@ import "time"
 
 type lease struct {
 	peerBytes                  *tokenBucket
+	held                       *uint64
 	g                          *Governor
 	p                          *peerState
 	pool                       *pool
@@ -28,6 +29,7 @@ func (l *lease) Prepare(bytes uint64) bool {
 	} else {
 		l.pool.bytes.refund(l.bytes - bytes)
 		l.peerBytes.refund(l.bytes - bytes)
+		*l.held -= l.bytes - bytes
 	}
 	if l.repeat {
 		l.p.repeatHeld = l.p.repeatHeld - l.bytes + bytes
@@ -55,6 +57,7 @@ func (l *lease) Finish(written bool) {
 	l.pool.inflight--
 	l.p.inflight--
 	l.obj.pending--
+	*l.held -= l.bytes
 	if l.repeat {
 		l.p.repeatHeld -= l.bytes
 	}
@@ -84,8 +87,9 @@ func (l *lease) reserveMore(delta uint64, now time.Duration, w *scoreWindow) boo
 		g.events.WithLabelValues("local_bytes").Inc()
 		return false
 	}
-	if l.peerBytes.available(now) < float64(delta) {
-		g.refusal(w, false, l.obj.request.Family)
+	// Only reservations other than this lease's own can excuse the shortfall.
+	if avail := l.peerBytes.available(now); avail < float64(delta) {
+		g.byteRefusal(w, l.obj.request.Family, delta, avail, *l.held-l.bytes)
 		return false
 	}
 	if l.repeat && delta > g.cfg.RepeatBytes-min(g.cfg.RepeatBytes, w.repeatedBytes+l.p.repeatHeld) {
@@ -94,5 +98,6 @@ func (l *lease) reserveMore(delta uint64, now time.Duration, w *scoreWindow) boo
 	}
 	l.pool.bytes.spend(delta)
 	l.peerBytes.spend(delta)
+	*l.held += delta
 	return true
 }

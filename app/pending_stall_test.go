@@ -363,6 +363,48 @@ func TestCheckAndRotateOnPendingStall(t *testing.T) {
 	})
 }
 
+func TestCheckAndRotateOnPendingStallRioGate(t *testing.T) {
+	tests := []struct {
+		name       string
+		head       uint64
+		rioHeight  int64
+		wantSpanID uint64
+	}{
+		{name: "next block before Rio skips", head: psPendingHead, rioHeight: int64(psPendingHead) + 2, wantSpanID: 1},
+		{name: "next block at Rio rotates", head: psPendingHead, rioHeight: int64(psPendingHead) + 1, wantSpanID: 2},
+		{name: "head zero on a fresh chain skips", head: 0, rioHeight: 128, wantSpanID: 1},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
+			validators, _ := seedSpan(t, app, ctx)
+			seedProducerSelection(t, app, ctx, validators)
+
+			origRio := helper.GetRioHeight()
+			t.Cleanup(func() { helper.SetRioHeight(origRio) })
+			helper.SetRioHeight(tc.rioHeight)
+
+			headID := fill32(0xA1)
+			trackedHeight := uint64(1000)
+			require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, tc.head, headID, trackedHeight))
+			threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(trackedHeight)))
+			ctx = ctx.WithBlockHeight(int64(trackedHeight) + threshold + 1)
+
+			require.NoError(t, app.checkAndRotateOnPendingStall(ctx, tc.head, headID))
+
+			last, err := app.BorKeeper.GetLastSpan(ctx)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantSpanID, last.Id)
+			if tc.wantSpanID == 1 {
+				_, _, height, err := app.MilestoneKeeper.GetPendingBorBlockTracking(ctx)
+				require.NoError(t, err)
+				require.Equal(t, trackedHeight, height, "stall clock left untouched on a skipped pre-Rio head")
+			}
+		})
+	}
+}
+
 func TestCheckAndRotateOnPendingStallErrorsOnTrackingStoreRead(t *testing.T) {
 	_, app, ctx, _ := SetupAppWithABCICtxAndValidators(t, 3)
 	seedSpan(t, app, ctx)
@@ -822,81 +864,99 @@ func TestDebouncePendingStallClockErrorsOnCorruptTracking(t *testing.T) {
 // threshold must rotate. The companion TestPreBlockerSpanRotationWithMinorityMilestone covers the
 // fork-OFF case (no rotation), so together they pin the dispatch branch in both directions.
 func TestPreBlockerPendingStallRotatesWhenForkEnabled(t *testing.T) {
-	_, app, ctx, validatorPrivKeys := SetupAppWithABCICtxAndValidators(t, 10)
-	validators := app.StakeKeeper.GetAllValidators(ctx)
-
-	origFork := helper.GetIthacaHeight()
-	t.Cleanup(func() {
-		helper.SetIthacaHeight(origFork)
-		helper.SetRioHeight(0)
-	})
-	helper.SetIthacaHeight(1) // enable the fork
-
-	ctx = ctx.WithConsensusParams(cmtproto.ConsensusParams{
-		Abci: &cmtproto.ABCIParams{VoteExtensionsEnableHeight: 1},
-	})
-
-	milestone := milestoneTypes.Milestone{
-		MilestoneId: "1",
-		StartBlock:  0,
-		EndBlock:    100,
-		Hash:        common.HexToHash("0x1234").Bytes(),
-	}
-	require.NoError(t, app.MilestoneKeeper.AddMilestone(ctx, milestone))
-	require.NoError(t, app.MilestoneKeeper.SetLastMilestoneBlock(ctx, milestone.EndBlock))
-
-	span := &borTypes.Span{
-		Id:                1,
-		StartBlock:        1,
-		EndBlock:          200,
-		ValidatorSet:      stakeTypes.ValidatorSet{Validators: validators, Proposer: validators[0]},
-		SelectedProducers: []stakeTypes.Validator{*validators[0]},
-		BorChainId:        "test",
-	}
-	require.NoError(t, app.BorKeeper.AddNewSpan(ctx, span))
-	seedProducerSelection(t, app, ctx, validators)
-
-	mockCaller := new(helpermocks.IContractCaller)
-	producerAddr := common.HexToAddress(validators[0].Signer)
-	mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).
-		Return(&producerAddr, nil)
-	app.BorKeeper.SetContractCaller(mockCaller)
-
-	threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(milestone.EndBlock)))
-	blockHeight := int64(milestone.EndBlock) + threshold + 1
-	ctx = ctx.WithBlockHeight(blockHeight)
-	helper.SetRioHeight(int64(milestone.EndBlock + 1))
-
-	// Pre-age the stall clock against the exact actual head the partial-support helper reports
-	// (LatestBlockNumber = EndBlock+1, LatestBlockHash 0x5678), so this block trips the rotation. The
-	// tracked identity is now the actual-head hash, not the proposition head-ID.
-	pendingHead := milestone.EndBlock + 1
-	require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, pendingHead,
-		common.HexToHash("0x5678").Bytes(), milestone.EndBlock))
-
-	voteExtensions := createVoteExtensionsWithPartialSupport(t, validators, validatorPrivKeys, &milestone, 40, blockHeight-1)
-	extCommit := &abci.ExtendedCommitInfo{Round: 0, Votes: voteExtensions}
-	extCommitBytes, err := extCommit.Marshal()
-	require.NoError(t, err)
-
-	req := &abci.RequestFinalizeBlock{
-		Height:          blockHeight,
-		Txs:             [][]byte{extCommitBytes, []byte("dummy-tx")},
-		ProposerAddress: common.FromHex(validators[0].Signer),
+	const (
+		milestoneEnd = uint64(100)
+		pendingHead  = milestoneEnd + 1
+	)
+	tests := []struct {
+		name       string
+		rioHeight  int64
+		wantSpanID uint64
+	}{
+		{name: "stalled head rotates", rioHeight: int64(pendingHead), wantSpanID: 2},
+		{name: "stalled pre-Rio head is skipped", rioHeight: int64(pendingHead) + 2, wantSpanID: 1},
 	}
 
-	_, err = app.PreBlocker(ctx, req)
-	require.NoError(t, err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, app, ctx, validatorPrivKeys := SetupAppWithABCICtxAndValidators(t, 10)
+			validators := app.StakeKeeper.GetAllValidators(ctx)
 
-	last, err := app.BorKeeper.GetLastSpan(ctx)
-	require.NoError(t, err)
-	require.Equal(t, uint64(2), last.Id, "fork ON + stalled pending head must rotate via the PreBlocker dispatch")
-	require.Equal(t, pendingHead+1, last.StartBlock, "new span starts at N+1")
+			origFork, origRio := helper.GetIthacaHeight(), helper.GetRioHeight()
+			t.Cleanup(func() {
+				helper.SetIthacaHeight(origFork)
+				helper.SetRioHeight(origRio)
+			})
+			helper.SetIthacaHeight(1) // enable the fork
+			helper.SetRioHeight(tc.rioHeight)
 
-	// PreBlocker must run to completion after the dispatch (the block proposer is set at the very
-	// end); this pins the dispatch's error handling against a swallow/early-return on the happy path.
-	_, proposerSet := app.AccountKeeper.GetBlockProposer(ctx)
-	require.True(t, proposerSet, "PreBlocker must complete, not early-return after the pending-stall dispatch")
+			ctx = ctx.WithConsensusParams(cmtproto.ConsensusParams{
+				Abci: &cmtproto.ABCIParams{VoteExtensionsEnableHeight: 1},
+			})
+
+			milestone := milestoneTypes.Milestone{
+				MilestoneId: "1",
+				StartBlock:  0,
+				EndBlock:    milestoneEnd,
+				Hash:        common.HexToHash("0x1234").Bytes(),
+			}
+			require.NoError(t, app.MilestoneKeeper.AddMilestone(ctx, milestone))
+			require.NoError(t, app.MilestoneKeeper.SetLastMilestoneBlock(ctx, milestone.EndBlock))
+
+			span := &borTypes.Span{
+				Id:                1,
+				StartBlock:        1,
+				EndBlock:          200,
+				ValidatorSet:      stakeTypes.ValidatorSet{Validators: validators, Proposer: validators[0]},
+				SelectedProducers: []stakeTypes.Validator{*validators[0]},
+				BorChainId:        "test",
+			}
+			require.NoError(t, app.BorKeeper.AddNewSpan(ctx, span))
+			seedProducerSelection(t, app, ctx, validators)
+
+			mockCaller := new(helpermocks.IContractCaller)
+			producerAddr := common.HexToAddress(validators[0].Signer)
+			mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).
+				Return(&producerAddr, nil)
+			app.BorKeeper.SetContractCaller(mockCaller)
+
+			threshold := helper.GetBorStallThreshold(ctx.WithBlockHeight(int64(milestone.EndBlock)))
+			blockHeight := int64(milestone.EndBlock) + threshold + 1
+			ctx = ctx.WithBlockHeight(blockHeight)
+
+			// Pre-age the stall clock against the exact actual head the partial-support helper reports
+			// (LatestBlockNumber = EndBlock+1, LatestBlockHash 0x5678), so this block trips the rotation. The
+			// tracked identity is now the actual-head hash, not the proposition head-ID.
+			require.NoError(t, app.MilestoneKeeper.SetPendingBorBlockTracking(ctx, pendingHead,
+				common.HexToHash("0x5678").Bytes(), milestone.EndBlock))
+
+			voteExtensions := createVoteExtensionsWithPartialSupport(t, validators, validatorPrivKeys, &milestone, 40, blockHeight-1)
+			extCommit := &abci.ExtendedCommitInfo{Round: 0, Votes: voteExtensions}
+			extCommitBytes, err := extCommit.Marshal()
+			require.NoError(t, err)
+
+			req := &abci.RequestFinalizeBlock{
+				Height:          blockHeight,
+				Txs:             [][]byte{extCommitBytes, []byte("dummy-tx")},
+				ProposerAddress: common.FromHex(validators[0].Signer),
+			}
+
+			_, err = app.PreBlocker(ctx, req)
+			require.NoError(t, err)
+
+			last, err := app.BorKeeper.GetLastSpan(ctx)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantSpanID, last.Id, "fork ON + stalled pending head must rotate via the PreBlocker dispatch only once its next block is past Rio")
+			if tc.wantSpanID == 2 {
+				require.Equal(t, pendingHead+1, last.StartBlock, "new span starts at N+1")
+			}
+
+			// PreBlocker must run to completion after the dispatch (the block proposer is set at the very
+			// end); this pins the dispatch's error handling against a swallow/early-return on the happy path.
+			_, proposerSet := app.AccountKeeper.GetBlockProposer(ctx)
+			require.True(t, proposerSet, "PreBlocker must complete, not early-return after the pending-stall dispatch")
+		})
+	}
 }
 
 // TestRotateSpanFromPendingHeadNoSelectableProducer covers the path where every candidate is

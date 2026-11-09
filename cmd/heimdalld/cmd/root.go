@@ -121,7 +121,7 @@ func NewRootCmd() *cobra.Command {
 				cmd.Name() != commands.VersionCmd.Name() &&
 				cmd.Name() != MigrateCommand().Name() &&
 				cmd.Name() != testnetCmdName {
-				helper.InitHeimdallConfig("")
+				helper.InitHeimdallConfig(cmd.Context(), "")
 			}
 
 			serverCtx, err := server.InterceptConfigsAndCreateContext(cmd, customAppTemplate, customAppConfig, customCMTConfig)
@@ -173,7 +173,7 @@ func NewRootCmd() *cobra.Command {
 			cmd.SetOut(cmd.OutOrStdout())
 			cmd.SetErr(cmd.ErrOrStderr())
 
-			helper.InitHeimdallConfig("")
+			helper.InitHeimdallConfig(cmd.Context(), "")
 		},
 	}
 

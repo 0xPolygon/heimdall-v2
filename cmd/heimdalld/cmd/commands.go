@@ -183,7 +183,7 @@ func initRootCmd(
 			startCmd.Flags().StringSlice(helper.OnlyProcessesFlag, []string{}, "Enable only the specified bridge process(es)")
 		},
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
-			helper.InitHeimdallConfig("")
+			helper.InitHeimdallConfig(ctx, "")
 			bridgeEnabled := viper.GetBool(helper.BridgeFlag)
 			registerBorChainClientCleanup(ctx, g, helper.CloseBorChainClients)
 
@@ -481,7 +481,7 @@ func newApp(
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
-	helper.InitHeimdallConfig("")
+	helper.InitHeimdallConfig(context.Background(), "")
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 
 	return app.NewHeimdallApp(
@@ -723,7 +723,7 @@ func showPrivateKeyCmd() *cobra.Command {
 		Short: "Print the account's private key",
 		Run: func(cmd *cobra.Command, args []string) {
 			// init heimdall config
-			helper.InitHeimdallConfig("")
+			helper.InitHeimdallConfig(cmd.Context(), "")
 
 			// get private and public keys
 			privKeyObject := helper.GetPrivKey()
@@ -749,7 +749,7 @@ func showAccountCmd() *cobra.Command {
 		Short: "Print the account's address and public key",
 		Run: func(cmd *cobra.Command, args []string) {
 			// init heimdall config
-			helper.InitHeimdallConfig("")
+			helper.InitHeimdallConfig(cmd.Context(), "")
 
 			// get public keys
 			pubObject := helper.GetPubKey()
@@ -779,7 +779,7 @@ func VerifyGenesis(ctx *server.Context, hApp *app.HeimdallApp) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			config := ctx.Config
 			config.SetRoot(viper.GetString(flags.FlagHome))
-			helper.InitHeimdallConfig("")
+			helper.InitHeimdallConfig(cmd.Context(), "")
 
 			// Loading genesis doc
 			genDoc, err := cmttypes.GenesisDocFromFile(filepath.Join(config.RootDir, "config/genesis.json"))

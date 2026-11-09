@@ -63,22 +63,16 @@ func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.Raw
 	return appState, nil
 }
 
-// genFirstSpan generates the default first span using the validators' producer set
+// genFirstSpan generates the first span with a single selected producer, as post-Rio
+// spans have exactly one; more would all seal from genesis and fork the chain.
 func genFirstSpan(valSet staketypes.ValidatorSet, chainId string) []Span {
 	var (
 		firstSpan         = make([]Span, 0, 1)
 		selectedProducers []staketypes.Validator
 	)
 
-	if len(valSet.Validators) > int(DefaultProducerCount) {
-		// pop top validators and select
-		for i := 0; uint64(i) < DefaultProducerCount; i++ {
-			selectedProducers = append(selectedProducers, *valSet.Validators[i])
-		}
-	} else {
-		for _, val := range valSet.Validators {
-			selectedProducers = append(selectedProducers, *val)
-		}
+	if len(valSet.Validators) > 0 {
+		selectedProducers = append(selectedProducers, *valSet.Validators[0])
 	}
 
 	newSpan := Span{

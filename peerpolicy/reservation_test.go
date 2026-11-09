@@ -44,6 +44,46 @@ func TestServingUnseenByteAdmission(t *testing.T) {
 	}
 }
 
+// A conformant reader that pipelines concurrent requests drains its burst with
+// reservations it still holds. That shortfall is congestion, not excess, so it
+// must stay neutral; only an allowance spent by completed serving is scored.
+func TestServingConcurrentReaderIsNeutral(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.PeerBytesPerSecond, cfg.PeerBurstBytes = 1<<20, 1<<20
+	g, _ := testGovernor(t, cfg)
+	req := servebudget.Request{Family: servebudget.Block, MaxBytes: 1 << 20}
+	first, ok := g.Admit(peerA, req)
+	require.True(t, ok)
+	for height := uint64(1); height < maxPeerInflight; height++ {
+		next := req
+		next.Height = height
+		l, ok := g.Admit(peerA, next)
+		require.False(t, ok, "one maximum reservation at a time fits the peer burst")
+		require.Nil(t, l)
+	}
+	require.Zero(t, g.Snapshot(peerA).Risk)
+	require.Equal(t, float64(maxPeerInflight-1), testutil.ToFloat64(g.events.WithLabelValues("peer_reserved")))
+	require.Zero(t, testutil.ToFloat64(g.events.WithLabelValues("peer_allowance")))
+
+	require.True(t, first.Prepare(req.MaxBytes))
+	first.Finish(true)
+	require.Zero(t, g.peers[peerA].held[0])
+	done := req
+	done.Height = maxPeerInflight
+	for range 3 {
+		_, ok := g.Admit(peerA, done)
+		require.False(t, ok)
+	}
+	require.Equal(t, uint64(20), g.Snapshot(peerA).Risk, "completed serving still exposes real excess")
+	require.Equal(t, float64(3), testutil.ToFloat64(g.events.WithLabelValues("peer_allowance")))
+
+	g.pools[0].bytes.tokens = 0
+	_, ok = g.Admit(peerA, done)
+	require.False(t, ok)
+	require.Equal(t, float64(3), testutil.ToFloat64(g.events.WithLabelValues("peer_allowance")), "local congestion stays neutral")
+	require.Equal(t, uint64(20), g.Snapshot(peerA).Risk)
+}
+
 func TestServingMaximumReservationAndCompletionCache(t *testing.T) {
 	for _, written := range []bool{false, true} {
 		t.Run(map[bool]string{false: "incomplete", true: "completed"}[written], func(t *testing.T) {

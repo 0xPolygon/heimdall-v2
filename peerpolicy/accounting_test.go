@@ -88,13 +88,16 @@ func TestServingLeaseAccounting(t *testing.T) {
 				initial := g.pools[0].bytes.capacity - 2*(128<<10)
 				peerInitial := g.peers[peerA].bytes.capacity - 2*(128<<10)
 				require.Equal(t, uint64(128<<10), g.peers[peerA].repeatHeld)
+				require.Equal(t, uint64(128<<10), g.peers[peerA].held[0])
 				require.True(t, l.Prepare(size))
 				require.Equal(t, initial-float64(size), g.pools[0].bytes.tokens)
 				require.Equal(t, peerInitial-float64(size), g.peers[peerA].bytes.tokens)
 				require.Equal(t, size, g.peers[peerA].repeatHeld)
+				require.Equal(t, size, g.peers[peerA].held[0], "a shrink or growth tracks the reservation it leaves held")
 				l.Finish(written)
 				l.Finish(!written)
 				require.Zero(t, g.peers[peerA].repeatHeld)
+				require.Zero(t, g.peers[peerA].held[0], "a settled lease releases its reservation exactly once")
 				require.Zero(t, g.pools[0].memory)
 				require.Zero(t, g.pools[0].inflight)
 				expected := uint64(0)
@@ -134,6 +137,7 @@ func TestServingPrepareAllowanceBoundaries(t *testing.T) {
 				}
 				l.Finish(false)
 				require.Zero(t, g.peers[peerA].repeatHeld)
+				require.Zero(t, g.peers[peerA].held[0], "a refused growth leaves no reservation behind")
 			})
 		}
 	}
@@ -155,12 +159,14 @@ func TestServingConcurrentRepeatReservations(t *testing.T) {
 	require.True(t, l.Prepare(200))
 	m, ok := g.Admit(peerA, second)
 	require.True(t, ok, "the combined reservation exactly meets the limit")
+	require.Equal(t, uint64(300), g.peers[peerA].held[0])
 	require.False(t, m.Prepare(101))
 	require.True(t, m.Prepare(100))
 	l.Finish(true)
 	m.Finish(true)
 	require.Equal(t, uint64(300), g.peers[peerA].windows[0].repeatedBytes)
 	require.Zero(t, g.peers[peerA].repeatHeld)
+	require.Zero(t, g.peers[peerA].held[0])
 	_, ok = g.Admit(peerA, first)
 	require.False(t, ok)
 }
@@ -213,5 +219,5 @@ func TestServingConfigInclusiveBounds(t *testing.T) {
 	}
 	require.NoError(t, cfg.Validate())
 	cfg.ProtectedIDs = append(cfg.ProtectedIDs, peerA)
-	require.Error(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 }

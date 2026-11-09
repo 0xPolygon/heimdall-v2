@@ -24,7 +24,7 @@ func addPeerServingFlags(cmd *cobra.Command) {
 	f.Uint64("peer-serving-peer-byte-burst", d.PeerBurstBytes, "Per-peer bulk byte burst")
 	f.Uint64("peer-serving-peer-request-rate", d.PeerRequestsPerSecond, "Per-peer native bulk work admissions per second")
 	f.Uint64("peer-serving-repeat-bytes", d.RepeatBytes, "Repeated-object bytes per peer per ten-second interval after one retry")
-	f.StringSlice("peer-serving-protected-ids", nil, "Authenticated CometBFT node IDs sharing reserved operator headroom")
+	f.StringSlice("peer-serving-protected-ids", nil, "Additional node IDs sharing reserved headroom with persistent and private peers")
 }
 
 func installPeerServing(cmd *cobra.Command, ctx *server.Context, reg prometheus.Registerer) error {
@@ -41,6 +41,11 @@ func installPeerServing(cmd *cobra.Command, ctx *server.Context, reg prometheus.
 		return nil
 	}
 	cfg := peerServingConfig(ctx)
+	ids, err := protectedPeerIDs(ctx, cfg.ProtectedIDs)
+	if err != nil {
+		return fmt.Errorf("configure protected peers: %w", err)
+	}
+	cfg.ProtectedIDs = ids
 	governor, err := peerpolicy.New(cfg, reg)
 	if err != nil {
 		return fmt.Errorf("configure peer serving: %w", err)

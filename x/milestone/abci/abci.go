@@ -68,7 +68,7 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 		return nil, err
 	}
 
-	parentHash, blockHashes, tds, authors, effectiveLatestHeader, err := getBlockInfo(ctx, contractCaller, propStartBlock, params.MaxMilestonePropositionLength, latestHeader, lastMilestoneHash, lastMilestoneBlockNumber)
+	parentHash, blockHashes, tds, authors, effectiveLatestHeader, err := getBlockInfo(ctx, contractCaller, propStartBlock, params.ProposedLength(), latestHeader, lastMilestoneHash, lastMilestoneBlockNumber)
 	if err != nil {
 		// Propagate ErrNoNewHeadersFound so the caller can handle it gracefully.
 		// Other errors are also propagated.

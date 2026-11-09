@@ -310,6 +310,11 @@ var kyotoHeight int64 = 0
 // Zero disables it; local/devnet activates it from height 1.
 var luganoHeight int64 = 0
 
+// karwarHeight gates the consensus-affecting changes activated at the Karwar hardfork.
+// Zero disables it (no network height assigned yet); local/devnet activates it from
+// height 1.
+var karwarHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -353,7 +358,7 @@ func parseProducerVotes(producerVotesStr string) []uint64 {
 }
 
 // InitHeimdallConfig initializes with viper config (from heimdall configuration)
-func InitHeimdallConfig(homeDir string) {
+func InitHeimdallConfig(ctx context.Context, homeDir string) {
 	if strings.Compare(homeDir, "") == 0 {
 		// get home dir from viper
 		homeDir = viper.GetString(flags.FlagHome)
@@ -363,7 +368,7 @@ func InitHeimdallConfig(homeDir string) {
 	heimdallConfigFileFromFlag := viper.GetString(WithHeimdallConfigFlag)
 
 	// init heimdall with changed config files
-	InitHeimdallConfigWith(homeDir, heimdallConfigFileFromFlag)
+	InitHeimdallConfigWith(ctx, homeDir, heimdallConfigFileFromFlag)
 }
 
 // legacyJSONLogsType is the only custom.logs_type value that changes
@@ -394,7 +399,7 @@ func applyLegacyLogsTypeDefault(logsTypeDeprecated string) {
 }
 
 // InitHeimdallConfigWith initializes passed heimdall/tendermint config files
-func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
+func InitHeimdallConfigWith(ctx context.Context, homeDir string, heimdallConfigFileFromFlag string) {
 	var err error
 
 	if strings.Compare(homeDir, "") == 0 {
@@ -526,8 +531,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
 
-	initBorRPCClient()
-	initBorGRPCClient()
+	initBorRPCClient(ctx)
+	initBorGRPCClient(ctx)
 
 	// Set default producers based on the chain if not already set by config or flags
 	if conf.Custom.ProducerVotes == "" {
@@ -578,6 +583,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		ithacaHeight = 50185000
 		kyotoHeight = 51533000
 		luganoHeight = 54627000
+		karwarHeight = 57006000
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -593,6 +599,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		ithacaHeight = 0
 		kyotoHeight = 0
 		luganoHeight = 0
+		karwarHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -608,33 +615,35 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		ithacaHeight = 40776000
 		kyotoHeight = 42252000
 		luganoHeight = 47105000
+		karwarHeight = 50020000
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
-		rioHeight = 128
+		rioHeight = 0
 		tallyFixHeight = 0
 		disableVPCheckHeight = 0
 		disableValSetCheckHeight = 0
 		initialHeight = 0
 		producerDowntimeHeight = 0
-		phuketHardforkHeight = 0
-		feeWithdrawValidatorGateHeight = 0
-		zurichHardforkHeight = 0
-		ithacaHeight = 0
+		phuketHardforkHeight = 1
+		feeWithdrawValidatorGateHeight = 1
+		zurichHardforkHeight = 1
+		ithacaHeight = 1
 		kyotoHeight = 1
 		luganoHeight = 1
+		karwarHeight = 1
 	}
 }
 
 // warnIfBorRPCInaccessible checks if the Bor RPC endpoint is accessible by making a simple call to get the latest block number.
 // If the call fails, it logs a warning message. This is useful to detect issues with the Bor RPC endpoint at startup.
-func warnIfBorRPCInaccessible(client *ethclient.Client, timeout time.Duration, url string) {
+func warnIfBorRPCInaccessible(ctx context.Context, client *ethclient.Client, timeout time.Duration, url string) {
 	if client == nil {
 		Logger.Warn("Bor RPC client is nil", "URL", url)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	if _, err := client.BlockNumber(ctx); err != nil {
@@ -644,13 +653,13 @@ func warnIfBorRPCInaccessible(client *ethclient.Client, timeout time.Duration, u
 
 // warnIfBorGRPCInaccessible checks if the Bor gRPC endpoint is accessible by making a simple call to get the latest block header.
 // If the call fails, it logs a warning message. This is useful to detect issues with the Bor gRPC endpoint at startup.
-func warnIfBorGRPCInaccessible(client *borgrpc.BorGRPCClient, timeout time.Duration, url string) {
+func warnIfBorGRPCInaccessible(ctx context.Context, client *borgrpc.BorGRPCClient, timeout time.Duration, url string) {
 	if client == nil {
 		Logger.Warn("Bor gRPC client is nil", "URL", url)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	if _, err := client.HeaderByNumber(ctx, -2); err != nil {
@@ -667,21 +676,21 @@ func warnIfBorGRPCInaccessible(client *borgrpc.BorGRPCClient, timeout time.Durat
 //   - Both transports return a header, and the hashes match (log.Info, exit goroutine)
 //   - Both return a header, and hashes differ (log.Fatal, halt the node)
 //   - Retry budget is exhausted (log Error, exit goroutine)
-func verifyBorGRPCHashParity(httpClient *ethclient.Client, grpcClient *borgrpc.BorGRPCClient, timeout time.Duration) {
+func verifyBorGRPCHashParity(ctx context.Context, httpClient *ethclient.Client, grpcClient *borgrpc.BorGRPCClient, timeout time.Duration) {
 	// Negate_conditional requires injecting typed-nil stubs mixed with non-nil, which the production path never does.
 	// mutator-disable-next-line defensive nil-client guard
 	if httpClient == nil || grpcClient == nil {
 		return
 	}
-	go runBorGRPCHashParityCheck(httpClient, grpcClient, timeout)
+	go runBorGRPCHashParityCheck(ctx, httpClient, grpcClient, timeout)
 }
 
 // runBorGRPCHashParityCheck launches the hash parity check
 // mutator-disable-func thin production-init wiring around runBorGRPCHashParityCheckWith
 // the full retry+fatal logic is tested via runBorGRPCHashParityCheckWith directly
-func runBorGRPCHashParityCheck(httpClient *ethclient.Client, grpcClient *borgrpc.BorGRPCClient, timeout time.Duration) {
+func runBorGRPCHashParityCheck(ctx context.Context, httpClient *ethclient.Client, grpcClient *borgrpc.BorGRPCClient, timeout time.Duration) {
 	runBorGRPCHashParityCheckWith(
-		httpClient, grpcClient, timeout,
+		ctx, httpClient, grpcClient, timeout,
 		borGRPCParityMaxAttempts, borGRPCParityRetryInterval,
 		borGRPCParityFatalFunc,
 	)
@@ -699,6 +708,7 @@ func borGRPCParityFatalFunc(msg string, keysAndValues ...interface{}) {
 // It accepts the parity interfaces plus injectable max-attempts, retry-interval, and
 // fatalFunc so unit tests can exercise the full loop without network access or process exit.
 func runBorGRPCHashParityCheckWith(
+	ctx context.Context,
 	httpClient parityHTTPFetcher,
 	grpcClient parityGRPCFetcher,
 	timeout time.Duration,
@@ -708,7 +718,7 @@ func runBorGRPCHashParityCheckWith(
 ) {
 	mismatches := 0
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		ok, mismatch := checkBorGRPCHashParityOnceWith(httpClient, grpcClient, timeout)
+		ok, mismatch := checkBorGRPCHashParityOnceWith(ctx, httpClient, grpcClient, timeout)
 		if ok {
 			return
 		}
@@ -757,8 +767,8 @@ func updateParityMismatchStreak(current int, mismatch bool, streakLimit int) (ne
 //     or the chain is too young for the target depth → retry later, do not count toward mismatch streak
 //   - Ok=false, mismatch=true: both transports returned headers but with different hashes → count toward
 //     mismatch streak; the caller logs fatal only after borGRPCParityMismatchStreak consecutive mismatches
-func checkBorGRPCHashParityOnceWith(httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration) (ok, mismatch bool) {
-	return checkBorGRPCHashParityOnce(context.Background(), httpClient, grpcClient, timeout, true)
+func checkBorGRPCHashParityOnceWith(ctx context.Context, httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration) (ok, mismatch bool) {
+	return checkBorGRPCHashParityOnce(ctx, httpClient, grpcClient, timeout, true)
 }
 
 func checkBorGRPCHashParityOnceQuiet(ctx context.Context, httpClient parityHTTPFetcher, grpcClient parityGRPCFetcher, timeout time.Duration) (ok, mismatch bool) {
@@ -1070,6 +1080,18 @@ func SetLuganoHeight(height int64) {
 
 func GetLuganoHeight() int64 {
 	return luganoHeight
+}
+
+func IsKarwar(height int64) bool {
+	return karwarHeight > 0 && height >= karwarHeight
+}
+
+func SetKarwarHeight(height int64) {
+	karwarHeight = height
+}
+
+func GetKarwarHeight() int64 {
+	return karwarHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {

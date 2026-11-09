@@ -57,7 +57,7 @@ func TestMultiGRPC_CascadesOnUnavailable(t *testing.T) {
 
 func TestNewMultiBorGRPCClient_RejectsZeroClients(t *testing.T) {
 	require.PanicsWithValue(t, "bor failover: endpoint count must be positive", func() {
-		NewMultiBorGRPCClient(nil, log.NewNopLogger(), failover.Metrics{}, time.Second)
+		NewMultiBorGRPCClient(t.Context(), nil, log.NewNopLogger(), failover.Metrics{}, time.Second)
 	})
 }
 
@@ -370,14 +370,14 @@ func TestCaptureExpectedGenesis(t *testing.T) {
 	up := new(MockBorApiClient)
 	up.On("HeaderByNumber", mock.Anything, mock.Anything).Return(genesisResp("g"), nil)
 	mc := &MultiBorGRPCClient{clients: []*BorGRPCClient{{client: up}}, attemptTimeout: time.Second}
-	mc.captureExpectedGenesis()
+	mc.captureExpectedGenesis(t.Context())
 	require.NotNil(t, mc.expectedGenesis.Load())
 
 	down := new(MockBorApiClient)
 	down.On("HeaderByNumber", mock.Anything, mock.Anything).
 		Return((*proto.GetHeaderByNumberResponse)(nil), status.Error(codes.Unavailable, "down"))
 	mc2 := &MultiBorGRPCClient{clients: []*BorGRPCClient{{client: down}}, attemptTimeout: time.Second}
-	mc2.captureExpectedGenesis()
+	mc2.captureExpectedGenesis(t.Context())
 	require.Nil(t, mc2.expectedGenesis.Load()) // unreachable primary → nothing captured
 }
 
@@ -399,7 +399,7 @@ func TestNewMultiBorGRPCClient_StartsProberAndCloses(t *testing.T) {
 	m1.On("HeaderByNumber", mock.Anything, mock.Anything).
 		Run(func(mock.Arguments) { probed.Add(1) }).Return(genesisResp("g"), nil)
 
-	mc := NewMultiBorGRPCClient([]*BorGRPCClient{{client: m0}, {client: m1}}, log.NewNopLogger(), failover.Metrics{}, time.Second)
+	mc := NewMultiBorGRPCClient(t.Context(), []*BorGRPCClient{{client: m0}, {client: m1}}, log.NewNopLogger(), failover.Metrics{}, time.Second)
 	require.NotNil(t, mc)
 
 	require.Eventually(t, func() bool { return probed.Load() > 0 }, time.Second, 5*time.Millisecond)

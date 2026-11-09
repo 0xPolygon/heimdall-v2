@@ -3,6 +3,8 @@ package heimdalld
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 
 	sdklog "cosmossdk.io/log"
@@ -93,4 +95,76 @@ func TestPeerServingStartupErrors(t *testing.T) {
 		require.ErrorContains(t, installPeerServing(cmd, ctx, registry), "configure peer serving")
 		require.Nil(t, ctx.Config.P2P.ServingPolicy)
 	})
+}
+
+func TestPeerServingConfiguredHeadroom(t *testing.T) {
+	cmd, ctx, _ := servingContext(t, nil)
+	const configured = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	const ordinaryA = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	const ordinaryB = "cccccccccccccccccccccccccccccccccccccccc"
+	ctx.Config.P2P.PersistentPeers = configured + "@127.0.0.1:26656"
+	require.NoError(t, installPeerServing(cmd, ctx, prometheus.NewRegistry()))
+	policy := ctx.Config.P2P.ServingPolicy
+	req := servebudget.Request{Family: servebudget.Block, Height: 1, MaxBytes: 128 << 20}
+	for _, id := range []string{ordinaryA, ordinaryB} {
+		lease, ok := policy.Admit(id, req)
+		require.True(t, ok)
+		require.True(t, lease.Prepare(req.MaxBytes))
+		lease.Finish(true)
+	}
+	lease, ok := policy.Admit(configured, req)
+	require.True(t, ok, "configured peer must retain reserved headroom")
+	if lease != nil {
+		lease.Finish(false)
+	}
+}
+
+func TestPeerServingProtectedIDs(t *testing.T) {
+	const a = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	const b = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	const c = "cccccccccccccccccccccccccccccccccccccccc"
+	for _, tc := range []struct {
+		name, persistent, private string
+		additional                []string
+		want                      []string
+		fails                     bool
+	}{
+		{name: "none", want: []string{}},
+		{name: "configured", persistent: a + "@127.0.0.1:26656", private: b, want: []string{b, a}},
+		{name: "deduplicate", persistent: " " + a + "@node:26656, ", private: " " + a + "," + b, additional: []string{strings.ToUpper(a), c}, want: []string{a, c, b}},
+		{name: "missing_id", persistent: "node:26656", fails: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, ctx, _ := servingContext(t, nil)
+			ctx.Config.P2P.PersistentPeers = tc.persistent
+			ctx.Config.P2P.PrivatePeerIDs = tc.private
+			ids, err := protectedPeerIDs(ctx, tc.additional)
+			if tc.fails {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.want, ids)
+		})
+	}
+}
+
+func TestPeerServingLargeConfiguredPeerSet(t *testing.T) {
+	cmd, ctx, _ := servingContext(t, nil)
+	ids := make([]string, 300)
+	for i := range ids {
+		ids[i] = fmt.Sprintf("%040x", i+1)
+	}
+	ctx.Config.P2P.PrivatePeerIDs = strings.Join(ids, ",")
+	require.NoError(t, installPeerServing(cmd, ctx, prometheus.NewRegistry()))
+	require.NotNil(t, ctx.Config.P2P.ServingPolicy)
+}
+
+func TestPeerServingInvalidConfiguredPrivateID(t *testing.T) {
+	cmd, ctx, output := servingContext(t, nil)
+	ctx.Config.P2P.PrivatePeerIDs = "invalid"
+	require.NoError(t, installPeerServing(cmd, ctx, prometheus.NewRegistry()))
+	require.Contains(t, output.String(), "Ignoring invalid private peer ID")
+	cmd, ctx, _ = servingContext(t, []string{"--peer-serving-protected-ids=invalid"})
+	require.Error(t, installPeerServing(cmd, ctx, prometheus.NewRegistry()))
 }

@@ -1,10 +1,12 @@
 package peerpolicy
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/cometbft/cometbft/p2p/servebudget"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -48,7 +50,7 @@ func TestServingPendingHistorySurvivesExpiry(t *testing.T) {
 	require.True(t, l.Prepare(10))
 	l.Finish(true)
 	serve(t, g, peerA, req, 10)
-	require.Equal(t, uint64(2), g.peers[peerA].objects[0].copies)
+	require.Equal(t, uint64(2), g.peers[peerA].objects[req].copies)
 }
 
 func TestServingHistorySupportsDefaultThroughput(t *testing.T) {
@@ -66,4 +68,116 @@ func TestServingHistorySupportsDefaultThroughput(t *testing.T) {
 		}
 	}
 	require.Zero(t, g.Snapshot(peerA).Risk)
+}
+
+func TestServingHistoryAllocatedOnDemand(t *testing.T) {
+	g, _ := testGovernor(t, DefaultConfig())
+	g.Observe(peerA, servebudget.MalformedRequest)
+	require.Empty(t, g.peers[peerA].objects)
+	req := servebudget.Request{Family: servebudget.Block, Height: 1, MaxBytes: 10}
+	serve(t, g, peerA, req, 10)
+	require.Len(t, g.peers[peerA].objects, 1)
+}
+
+func TestServingHistoryNodeWideBound(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.RequestsPerSecond, cfg.PeerRequestsPerSecond = 1<<18, 1<<13
+	g, now := testGovernor(t, cfg)
+	req := servebudget.Request{Family: servebudget.Block, MaxBytes: 10}
+	peers := maxHistory / maxObjects
+	for i := range peers {
+		id := fmt.Sprintf("%040x", i)
+		for height := uint64(1); height <= maxObjects; height++ {
+			next := req
+			next.Height = height
+			serve(t, g, id, next, 10)
+		}
+		require.Len(t, g.peers[id].objects, maxObjects, "per-peer history stays bounded")
+	}
+	require.Equal(t, uint64(maxHistory), g.objects)
+
+	spare := fmt.Sprintf("%040x", peers)
+	_, ok := g.Admit(spare, req)
+	require.False(t, ok, "a full table refuses rather than displacing live entries")
+	require.Equal(t, float64(1), testutil.ToFloat64(g.events.WithLabelValues("history_capacity")))
+	require.Zero(t, g.Snapshot(spare).Risk, "history capacity is neutral")
+	require.Equal(t, uint64(maxHistory), g.objects)
+
+	// The next interval reclaims settled entries node-wide, including those of
+	// peers whose own admissions would never revisit them.
+	*now = windowCount * windowWidth
+	serve(t, g, spare, req, 10)
+	require.Equal(t, uint64(1), g.objects)
+}
+
+func TestServingHistoryReclaimedOnEviction(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.RequestsPerSecond = 1 << 14
+	g, now := testGovernor(t, cfg)
+	req := servebudget.Request{Family: servebudget.Block, MaxBytes: 10}
+	for i := range maxPeers {
+		*now = time.Duration(i) * time.Millisecond
+		serve(t, g, fmt.Sprintf("%040x", i), req, 10)
+	}
+	require.Equal(t, uint64(maxPeers), g.objects)
+	*now += time.Second
+	serve(t, g, peerA, req, 10)
+	require.Len(t, g.peers, maxPeers)
+	require.Equal(t, uint64(maxPeers), g.objects, "eviction returns the peer's entries to the budget")
+}
+
+func TestServingRefusedRequestAllocatesNoHistory(t *testing.T) {
+	g, _ := testGovernor(t, DefaultConfig())
+	p := g.peer(peerA, 0)
+	p.bytes.tokens = 0
+	for height := uint64(1); height <= 64; height++ {
+		_, ok := g.Admit(peerA, servebudget.Request{Family: servebudget.Block, Height: height, MaxBytes: 10})
+		require.False(t, ok)
+	}
+	require.Empty(t, p.objects, "a refused request must not claim a history slot")
+	require.Zero(t, g.objects)
+	require.Equal(t, uint64(20), g.Snapshot(peerA).Risk)
+}
+
+func BenchmarkServingHistory(b *testing.B) {
+	for _, size := range []int{1, maxObjects} {
+		b.Run(fmt.Sprintf("objects_%d", size), func(b *testing.B) {
+			g, _ := testGovernor(b, DefaultConfig())
+			p := g.peer(peerA, 0)
+			for i := 0; i < size; i++ {
+				g.newObject(p, servebudget.Request{Family: servebudget.Block, Height: uint64(i + 1), MaxBytes: 10}, 0)
+			}
+			req := servebudget.Request{Family: servebudget.Block, Height: uint64(size), MaxBytes: 10}
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				g.lookupObject(p, req, 0)
+			}
+		})
+	}
+}
+
+func TestServingHistoryExpiresWithoutDroppingPending(t *testing.T) {
+	g, _ := testGovernor(t, DefaultConfig())
+	p := g.peer(peerA, 0)
+	one := servebudget.Request{Family: servebudget.Block, Height: 1, MaxBytes: 10}
+	two := one
+	two.Height++
+	old := g.newObject(p, one, 0)
+	pending := g.newObject(p, two, 0)
+	pending.pending = 1
+	next := one
+	next.Height = 3
+	g.newObject(p, next, windowCount)
+	require.NotContains(t, p.objects, one)
+	require.Same(t, pending, g.lookupObject(p, two, windowCount))
+	require.Nil(t, g.lookupObject(p, one, windowCount))
+	require.NotSame(t, old, g.newObject(p, one, windowCount))
+	require.Equal(t, uint64(len(p.objects)), g.objects)
+	g.expire(p, 2*windowCount)
+	require.Len(t, p.objects, 1)
+	pending.pending = 0
+	g.expire(p, 2*windowCount+1)
+	require.Nil(t, p.objects)
+	require.Zero(t, g.objects)
 }

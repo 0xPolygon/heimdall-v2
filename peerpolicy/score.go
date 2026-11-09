@@ -7,9 +7,14 @@ const (
 	modeObserve  = "observe"
 	windowCount  = 6
 	maxPeers     = 1024
-	// Two 32-request/s peer allowances can retain 3,840 distinct objects over
-	// the 60-second history horizon. Include room for their initial bursts.
+	// Two 32-request/s peer allowances retain 3,840 distinct objects over the
+	// 60-second horizon. Include room for their initial bursts.
 	maxObjects = 4096
+	// Node-wide ceiling across every peer. A 128-request/s node retains 7,680
+	// objects over the same horizon; the surplus absorbs bursts and the entries
+	// of quiet peers that no interval has swept yet. Bounds both the table and
+	// the work a sweep can ever do.
+	maxHistory = 65536
 	// Native blocksync pipelines up to 20 requests to each serving peer.
 	maxPeerInflight = 20
 )

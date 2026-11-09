@@ -14,7 +14,7 @@ import (
 const peerA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 const peerB = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 
-func testGovernor(t *testing.T, cfg Config) (*Governor, *time.Duration) {
+func testGovernor(t testing.TB, cfg Config) (*Governor, *time.Duration) {
 	t.Helper()
 	now := time.Duration(0)
 	g, err := newGovernor(cfg, prometheus.NewRegistry(), func() time.Duration { return now })
@@ -100,11 +100,11 @@ func TestServingCompletionAndConcurrency(t *testing.T) {
 		go func() { defer wg.Done(); l.Finish(false) }()
 	}
 	wg.Wait()
-	require.Zero(t, g.peers[peerA].objects[0].copies)
+	require.Zero(t, g.peers[peerA].objects[req].copies)
 	require.False(t, l.Prepare(100))
 	require.Zero(t, g.pools[0].memory)
 	serve(t, g, peerA, req, 100)
-	require.Equal(t, uint64(1), g.peers[peerA].objects[0].copies)
+	require.Equal(t, uint64(1), g.peers[peerA].objects[req].copies)
 }
 func TestServingEvidenceAndExpiry(t *testing.T) {
 	g, now := testGovernor(t, DefaultConfig())

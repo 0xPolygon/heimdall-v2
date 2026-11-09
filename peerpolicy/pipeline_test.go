@@ -19,7 +19,7 @@ func TestServingBlockPipeline(t *testing.T) {
 		require.True(t, l.Prepare(2048))
 		pending = append(pending, l)
 		require.Equal(t, uint64((i+1)*4096), g.pools[0].memory)
-		require.Zero(t, g.peers[peerA].objects[i].copies)
+		require.Zero(t, g.peers[peerA].objects[servebudget.Request{Family: servebudget.Block, Height: uint64(i + 1), MaxBytes: 104857604}].copies)
 	}
 	require.Equal(t, uint64(maxPeerInflight), g.pools[0].inflight)
 	for _, l := range pending {
@@ -28,6 +28,6 @@ func TestServingBlockPipeline(t *testing.T) {
 	require.Zero(t, g.pools[0].memory)
 	require.Zero(t, g.pools[0].inflight)
 	for i := range maxPeerInflight {
-		require.Equal(t, uint64(1), g.peers[peerA].objects[i].copies)
+		require.Equal(t, uint64(1), g.peers[peerA].objects[servebudget.Request{Family: servebudget.Block, Height: uint64(i + 1), MaxBytes: 104857604}].copies)
 	}
 }

@@ -5,8 +5,10 @@ import (
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/metrics/api"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
@@ -35,6 +37,14 @@ func (srv msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParam
 
 	if err := msg.Params.ValidateBasic(); err != nil {
 		return nil, err
+	}
+
+	// Validators never propose more than the cap, so a larger value would only advertise a length
+	// that is never used. Gated so the accept/reject of a params update changes at one height.
+	if helper.IsKarwar(sdk.UnwrapSDKContext(ctx).BlockHeight()) &&
+		msg.Params.MaxMilestonePropositionLength > types.MilestonePropositionLengthCap {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidProposalMsg, "max milestone proposition length %d exceeds cap %d",
+			msg.Params.MaxMilestonePropositionLength, types.MilestonePropositionLengthCap)
 	}
 
 	if err := srv.SetParams(ctx, msg.Params); err != nil {
