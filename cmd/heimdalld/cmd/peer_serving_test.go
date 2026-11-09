@@ -9,6 +9,7 @@ import (
 
 	sdklog "cosmossdk.io/log"
 	"github.com/0xPolygon/heimdall-v2/peerpolicy"
+	"github.com/cometbft/cometbft/blocksync"
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/p2p/servebudget"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -131,6 +132,8 @@ func TestPeerServingProtectedIDs(t *testing.T) {
 	}{
 		{name: "none", want: []string{}},
 		{name: "configured", persistent: a + "@127.0.0.1:26656", private: b, want: []string{b, a}},
+		{name: "scheme", persistent: "tcp://" + a + "@127.0.0.1:26656", want: []string{a}},
+		{name: "scheme_ipv6", persistent: "tcp://" + b + "@[::1]:26656", want: []string{b}},
 		{name: "deduplicate", persistent: " " + a + "@node:26656, ", private: " " + a + "," + b, additional: []string{strings.ToUpper(a), c}, want: []string{a, c, b}},
 		{name: "missing_id", persistent: "node:26656", fails: true},
 	} {
@@ -146,6 +149,35 @@ func TestPeerServingProtectedIDs(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.want, ids)
 		})
+	}
+}
+
+func TestPeerServingReservationFloors(t *testing.T) {
+	for _, tc := range []struct {
+		flag    string
+		minimum uint64
+	}{
+		{"peer-serving-memory", 8 * blocksync.MaxMsgSize},
+		{"peer-serving-byte-burst", 4 * blocksync.MaxMsgSize},
+		{"peer-serving-peer-byte-burst", blocksync.MaxMsgSize},
+	} {
+		for _, value := range []uint64{tc.minimum - 1, tc.minimum, tc.minimum + 1} {
+			t.Run(fmt.Sprintf("%s/%d", tc.flag, value), func(t *testing.T) {
+				cmd, ctx, _ := servingContext(t, []string{fmt.Sprintf("--%s=%d", tc.flag, value)})
+				id := strings.Repeat("a", 40)
+				ctx.Config.P2P.PrivatePeerIDs = id
+				err := installPeerServing(cmd, ctx, prometheus.NewRegistry())
+				if value < tc.minimum {
+					require.ErrorContains(t, err, tc.flag)
+					require.Nil(t, ctx.Config.P2P.ServingPolicy)
+					return
+				}
+				require.NoError(t, err)
+				lease, admitted := ctx.Config.P2P.ServingPolicy.Admit(id, servebudget.Request{Family: servebudget.Block, Height: 1, MaxBytes: blocksync.MaxMsgSize})
+				require.True(t, admitted)
+				lease.Finish(false)
+			})
+		}
 	}
 }
 

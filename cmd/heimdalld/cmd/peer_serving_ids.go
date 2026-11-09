@@ -26,6 +26,9 @@ func protectedPeerIDs(ctx *server.Context, additional []string) ([]string, error
 		if address == "" {
 			continue
 		}
+		if _, suffix, ok := strings.Cut(address, "://"); ok {
+			address = suffix
+		}
 		id, _, ok := strings.Cut(address, "@")
 		if !ok {
 			return nil, fmt.Errorf("persistent peer address must contain a node ID")

@@ -3,6 +3,7 @@ package heimdalld
 import (
 	"fmt"
 
+	"github.com/cometbft/cometbft/blocksync"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
@@ -41,6 +42,9 @@ func installPeerServing(cmd *cobra.Command, ctx *server.Context, reg prometheus.
 		return nil
 	}
 	cfg := peerServingConfig(ctx)
+	if err := validatePeerServingBounds(cfg); err != nil {
+		return err
+	}
 	ids, err := protectedPeerIDs(ctx, cfg.ProtectedIDs)
 	if err != nil {
 		return fmt.Errorf("configure protected peers: %w", err)
@@ -52,6 +56,21 @@ func installPeerServing(cmd *cobra.Command, ctx *server.Context, reg prometheus.
 	}
 	ctx.Config.P2P.ServingPolicy = governor
 	ctx.Logger.Info("Native peer serving enabled", "reputation_mode", governor.Mode())
+	return nil
+}
+
+func validatePeerServingBounds(cfg peerpolicy.Config) error {
+	// Each reserved quarter must fund one maximum native response before its read.
+	const maxResponse = blocksync.MaxMsgSize
+	if cfg.MemoryBytes/8 < maxResponse {
+		return fmt.Errorf("peer-serving-memory must be at least %d bytes", 8*maxResponse)
+	}
+	if cfg.BurstBytes/4 < maxResponse {
+		return fmt.Errorf("peer-serving-byte-burst must be at least %d bytes", 4*maxResponse)
+	}
+	if cfg.PeerBurstBytes < maxResponse {
+		return fmt.Errorf("peer-serving-peer-byte-burst must be at least %d bytes", maxResponse)
+	}
 	return nil
 }
 
