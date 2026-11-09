@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"time"
 )
 
 type Config struct {
@@ -23,7 +24,7 @@ type Config struct {
 
 func DefaultConfig() Config {
 	return Config{
-		Observe: true, BytesPerSecond: 32 << 20, BurstBytes: 512 << 20, MemoryBytes: 1 << 30, MaxInflight: 80, RequestsPerSecond: 128,
+		Observe: true, BytesPerSecond: 32 << 20, BurstBytes: 512 << 20, MemoryBytes: 1 << 30, MaxInflight: 12 * maxPeerInflight, RequestsPerSecond: 128,
 		PeerBytesPerSecond: 8 << 20, PeerBurstBytes: 128 << 20, PeerRequestsPerSecond: 32, RepeatBytes: 32 << 20,
 	}
 }
@@ -34,13 +35,25 @@ func (c Config) Validate() error {
 			return fmt.Errorf("serving limits must be positive and at most 1 TiB")
 		}
 	}
-	if c.MaxInflight < 4 || c.MaxInflight > 4096 {
-		return fmt.Errorf("serving concurrency must be between 4 and 4096")
+	if c.MaxInflight < 12 || c.MaxInflight > 4096 {
+		return fmt.Errorf("serving concurrency must be between 12 and 4096")
 	}
 	if c.BytesPerSecond < 4 || c.BurstBytes < 4 || c.MemoryBytes < 4 || c.RequestsPerSecond < 4 {
 		return fmt.Errorf("node-wide limits must be at least four to fund each reserved pool")
 	}
+	objects, history := c.historyLimits()
+	if objects > maxPeerHistory || history > maxNodeHistory {
+		return fmt.Errorf("request rates exceed bounded serving history capacity")
+	}
 	return validateProtectedIDs(c.ProtectedIDs)
+}
+
+func (c Config) historyLimits() (uint64, uint64) {
+	// Retain both peer allowance classes for the horizon plus their initial
+	// burst and older pending responses, without allocating the tables upfront.
+	seconds := uint64(windowCount*windowWidth/time.Second) + 1
+	return max(defaultPeerHistory, 2*c.PeerRequestsPerSecond*seconds+2*maxPeerInflight),
+		max(defaultNodeHistory, c.RequestsPerSecond*seconds+c.MaxInflight)
 }
 
 func validateProtectedIDs(ids []string) error {

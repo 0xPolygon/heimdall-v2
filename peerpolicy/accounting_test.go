@@ -176,12 +176,12 @@ func TestServingMetricsAndMode(t *testing.T) {
 		t.Run(fmt.Sprint(enabled), func(t *testing.T) {
 			cfg := DefaultConfig()
 			cfg.Observe = enabled
-			cfg.PeerRequestsPerSecond = 1
+			cfg.PeerBurstBytes = 100
 			reg := prometheus.NewRegistry()
 			g, err := newGovernor(cfg, reg, func() time.Duration { return 0 })
 			require.NoError(t, err)
 			req := servebudget.Request{Family: servebudget.Chunk, MaxBytes: 100}
-			serve(t, g, peerA, req, 10)
+			serve(t, g, peerA, req, 100)
 			for range 3 {
 				_, ok := g.Admit(peerA, req)
 				require.False(t, ok)
@@ -213,7 +213,7 @@ func TestServingMetricsAndMode(t *testing.T) {
 }
 
 func TestServingConfigInclusiveBounds(t *testing.T) {
-	cfg := Config{BytesPerSecond: 4, BurstBytes: 4, MemoryBytes: 4, MaxInflight: 4, RequestsPerSecond: 4, PeerBytesPerSecond: 1 << 40, PeerBurstBytes: 1 << 40, PeerRequestsPerSecond: 1 << 40, RepeatBytes: 1 << 40}
+	cfg := Config{BytesPerSecond: 4, BurstBytes: 4, MemoryBytes: 4, MaxInflight: 12, RequestsPerSecond: 4, PeerBytesPerSecond: 1 << 40, PeerBurstBytes: 1 << 40, PeerRequestsPerSecond: 1, RepeatBytes: 1 << 40}
 	for i := range 256 {
 		cfg.ProtectedIDs = append(cfg.ProtectedIDs, fmt.Sprintf("%040x", i))
 	}

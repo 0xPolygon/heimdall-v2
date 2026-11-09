@@ -27,6 +27,8 @@ type peerState struct {
 	// so a shortfall a peer's own in-flight requests explain stays neutral.
 	held                 [2]uint64
 	inflight, repeatHeld uint64
+
+	catchupInflight uint64
 }
 
 type Governor struct {
@@ -41,6 +43,8 @@ type Governor struct {
 	events      *prometheus.CounterVec
 	windows     *prometheus.CounterVec
 	risk        prometheus.Histogram
+
+	objectLimit, historyLimit uint64
 }
 
 func New(cfg Config, registry prometheus.Registerer) (*Governor, error) {
@@ -53,6 +57,7 @@ func newGovernor(cfg Config, registry prometheus.Registerer, now func() time.Dur
 		return nil, err
 	}
 	g := &Governor{cfg: cfg, now: now, peers: make(map[string]*peerState), protected: make(map[string]bool)}
+	g.objectLimit, g.historyLimit = cfg.historyLimits()
 	g.events = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "heimdall_peer_serving_events_total", Help: "Native serving admission and observational reputation events."}, []string{"reason"})
 	g.windows = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "heimdall_peer_reputation_windows_total", Help: "Peer-specific excess intervals after three refusals."}, []string{"reason"})
 	g.risk = prometheus.NewHistogram(prometheus.HistogramOpts{Name: "heimdall_peer_reputation_risk", Help: "Event-sampled native peer risk in observation mode.", Buckets: []float64{0, 20, 25, 40, 50, 60, 80, 100}})
@@ -98,8 +103,7 @@ func (g *Governor) Admit(id string, request servebudget.Request) (servebudget.Le
 	index := 0
 	if request.Family == servebudget.Catchup {
 		index = 1
-	}
-	if g.protected[id] {
+	} else if g.protected[id] {
 		index = 2
 	}
 	pool := &g.pools[index]
@@ -183,6 +187,9 @@ func (g *Governor) reserve(p *peerState, pool *pool, obj *object, req servebudge
 	pool.memory += memory
 	pool.inflight++
 	p.inflight++
+	if req.Family == servebudget.Catchup {
+		p.catchupInflight++
+	}
 	obj.pending++
 	g.events.WithLabelValues("admitted").Inc()
 	return &lease{g: g, p: p, pool: pool, obj: obj, memory: memory, bytes: estimate, repeat: repeat, peerBytes: peerBytes, held: held}, true
@@ -191,7 +198,8 @@ func (g *Governor) reserve(p *peerState, pool *pool, obj *object, req servebudge
 func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, now time.Duration) (*object, uint64, bool, bool) {
 	tick := int64(now / windowWidth)
 	obj := g.lookupObject(p, req, tick)
-	if p.inflight >= maxPeerInflight || (obj != nil && obj.pending > 0) {
+	// Leave room for at least three peers in each pool.
+	if p.pending(req.Family) >= min(maxPeerInflight, pool.inflightCap/3) || (obj != nil && obj.pending > 0) {
 		g.events.WithLabelValues("peer_busy").Inc()
 		return nil, 0, false, false
 	}
@@ -205,12 +213,12 @@ func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, 
 		return nil, 0, false, false
 	}
 	w := p.window(tick)
-	if !g.admitAllowance(p, w, req, estimate, now) {
-		return nil, 0, false, false
-	}
 	repeat := obj != nil && obj.copies >= 2 && req.Family != servebudget.Catchup && req.Family != servebudget.Snapshot
 	if repeat && estimate > g.cfg.RepeatBytes-min(g.cfg.RepeatBytes, w.repeatedBytes+p.repeatHeld) {
 		g.repeatRefusal(w, req.Family, estimate)
+		return nil, 0, false, false
+	}
+	if !g.admitAllowance(p, w, req, estimate, now) {
 		return nil, 0, false, false
 	}
 	// History is recorded last so a refused request cannot claim a slot.
@@ -224,12 +232,14 @@ func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, 
 // byte allowances can fund estimate, recording why when they cannot.
 func (g *Governor) admitAllowance(p *peerState, w *scoreWindow, req servebudget.Request, estimate uint64, now time.Duration) bool {
 	peerBytes, peerWork, held := p.allowance(req.Family)
-	if peerWork.available(now) < 1 {
-		g.refusal(w, false, req.Family)
-		return false
-	}
 	if avail := peerBytes.available(now); avail < float64(estimate) {
 		g.byteRefusal(w, req.Family, estimate, avail, *held)
+		return false
+	}
+	// Native sync has no negotiated request rate or retry-after signal.
+	// Work backpressure alone cannot distinguish catch-up from abuse.
+	if peerWork.available(now) < 1 {
+		g.events.WithLabelValues("peer_work_capacity").Inc()
 		return false
 	}
 	return true
@@ -256,4 +266,11 @@ func (p *peerState) allowance(family servebudget.Family) (*tokenBucket, *tokenBu
 		return &p.catchupBytes, &p.catchupWork, &p.held[1]
 	}
 	return &p.bytes, &p.work, &p.held[0]
+}
+
+func (p *peerState) pending(family servebudget.Family) uint64 {
+	if family == servebudget.Catchup {
+		return p.catchupInflight
+	}
+	return p.inflight - p.catchupInflight
 }

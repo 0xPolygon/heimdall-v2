@@ -24,10 +24,10 @@ func (g *Governor) lookupObject(p *peerState, req servebudget.Request, tick int6
 // repeat history by filling the table.
 func (g *Governor) newObject(p *peerState, req servebudget.Request, tick int64) *object {
 	g.expire(p, tick)
-	if g.objects >= maxHistory {
+	if g.objects >= g.historyLimit {
 		g.sweep(tick)
 	}
-	if len(p.objects) >= maxObjects || g.objects >= maxHistory {
+	if uint64(len(p.objects)) >= g.objectLimit || g.objects >= g.historyLimit {
 		g.events.WithLabelValues("history_capacity").Inc()
 		return nil
 	}

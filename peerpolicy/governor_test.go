@@ -55,11 +55,11 @@ func TestServingRepeatScore(t *testing.T) {
 }
 func TestServingSharedHeadroom(t *testing.T) {
 	cfg := DefaultConfig()
-	cfg.MaxInflight = 8
+	cfg.MaxInflight = 12
 	cfg.ProtectedIDs = []string{strings.ToUpper(peerB)}
 	g, _ := testGovernor(t, cfg)
 	var leases []servebudget.Lease
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 6; i++ {
 		l, ok := g.Admit(fmt.Sprintf("%040x", i+1), servebudget.Request{Family: servebudget.Family(i % 3), Height: 1, MaxBytes: 100})
 		require.True(t, ok)
 		leases = append(leases, l)

@@ -12,20 +12,18 @@ import (
 
 func TestServingRetainsLiveHistory(t *testing.T) {
 	cfg := DefaultConfig()
-	cfg.RequestsPerSecond = 2 * (maxObjects + 4)
-	cfg.PeerRequestsPerSecond = maxObjects + 4
 	cfg.RepeatBytes = 1
 	g, now := testGovernor(t, cfg)
 	req := servebudget.Request{Family: servebudget.Block, Height: 1, MaxBytes: 10}
 	serve(t, g, peerA, req, 10)
 	serve(t, g, peerA, req, 10)
-	for height := uint64(2); height <= maxObjects; height++ {
+	for height := uint64(2); height <= defaultPeerHistory; height++ {
 		next := req
 		next.Height = height
-		serve(t, g, peerA, next, 10)
+		require.NotNil(t, g.newObject(g.peers[peerA], next, 0))
 	}
 	next := req
-	next.Height = maxObjects + 1
+	next.Height = defaultPeerHistory + 1
 	_, ok := g.Admit(peerA, next)
 	require.False(t, ok, "full live history must refuse new objects")
 	_, ok = g.Admit(peerA, req)
@@ -81,27 +79,26 @@ func TestServingHistoryAllocatedOnDemand(t *testing.T) {
 
 func TestServingHistoryNodeWideBound(t *testing.T) {
 	cfg := DefaultConfig()
-	cfg.RequestsPerSecond, cfg.PeerRequestsPerSecond = 1<<18, 1<<13
 	g, now := testGovernor(t, cfg)
 	req := servebudget.Request{Family: servebudget.Block, MaxBytes: 10}
-	peers := maxHistory / maxObjects
+	peers := defaultNodeHistory / defaultPeerHistory
 	for i := range peers {
 		id := fmt.Sprintf("%040x", i)
-		for height := uint64(1); height <= maxObjects; height++ {
+		for height := uint64(1); height <= defaultPeerHistory; height++ {
 			next := req
 			next.Height = height
-			serve(t, g, id, next, 10)
+			require.NotNil(t, g.newObject(g.peer(id, 0), next, 0))
 		}
-		require.Len(t, g.peers[id].objects, maxObjects, "per-peer history stays bounded")
+		require.Len(t, g.peers[id].objects, defaultPeerHistory, "per-peer history stays bounded")
 	}
-	require.Equal(t, uint64(maxHistory), g.objects)
+	require.Equal(t, uint64(defaultNodeHistory), g.objects)
 
 	spare := fmt.Sprintf("%040x", peers)
 	_, ok := g.Admit(spare, req)
 	require.False(t, ok, "a full table refuses rather than displacing live entries")
 	require.Equal(t, float64(1), testutil.ToFloat64(g.events.WithLabelValues("history_capacity")))
 	require.Zero(t, g.Snapshot(spare).Risk, "history capacity is neutral")
-	require.Equal(t, uint64(maxHistory), g.objects)
+	require.Equal(t, uint64(defaultNodeHistory), g.objects)
 
 	// The next interval reclaims settled entries node-wide, including those of
 	// peers whose own admissions would never revisit them.
@@ -112,7 +109,7 @@ func TestServingHistoryNodeWideBound(t *testing.T) {
 
 func TestServingHistoryReclaimedOnEviction(t *testing.T) {
 	cfg := DefaultConfig()
-	cfg.RequestsPerSecond = 1 << 14
+	cfg.RequestsPerSecond = 2048
 	g, now := testGovernor(t, cfg)
 	req := servebudget.Request{Family: servebudget.Block, MaxBytes: 10}
 	for i := range maxPeers {
@@ -140,7 +137,7 @@ func TestServingRefusedRequestAllocatesNoHistory(t *testing.T) {
 }
 
 func BenchmarkServingHistory(b *testing.B) {
-	for _, size := range []int{1, maxObjects} {
+	for _, size := range []int{1, defaultPeerHistory} {
 		b.Run(fmt.Sprintf("objects_%d", size), func(b *testing.B) {
 			g, _ := testGovernor(b, DefaultConfig())
 			p := g.peer(peerA, 0)

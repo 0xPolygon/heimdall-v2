@@ -18,7 +18,7 @@ func TestServingReservedPoolLimits(t *testing.T) {
 				cfg.BytesPerSecond, cfg.BurstBytes = 16, 16
 				cfg.RequestsPerSecond = 8
 				cfg.MemoryBytes = 80
-				cfg.MaxInflight = 8
+				cfg.MaxInflight = 240
 				family := servebudget.Block
 				limit := 2
 				if class != "ordinary" {
@@ -29,6 +29,9 @@ func TestServingReservedPoolLimits(t *testing.T) {
 				}
 				if class == "protected" {
 					cfg.ProtectedIDs = []string{peerA}
+					for i := 0; i < 8; i++ {
+						cfg.ProtectedIDs = append(cfg.ProtectedIDs, fmt.Sprintf("%040x", i+1))
+					}
 				}
 				reason := "local_capacity"
 				maxBytes := uint64(4)
@@ -42,7 +45,8 @@ func TestServingReservedPoolLimits(t *testing.T) {
 					maxBytes = 10
 					cfg.BurstBytes = 1024
 				case "inflight":
-					limit *= 2
+					limit *= 4
+					cfg.MaxInflight = 16
 					cfg.MemoryBytes = 1024
 					cfg.RequestsPerSecond = 128
 					cfg.BurstBytes = 1024
@@ -50,7 +54,7 @@ func TestServingReservedPoolLimits(t *testing.T) {
 				g, now := testGovernor(t, cfg)
 				var pending []servebudget.Lease
 				for i := 0; i < limit; i++ {
-					l, ok := g.Admit(peerA, servebudget.Request{Family: family, Height: uint64(i + 1), MaxBytes: maxBytes})
+					l, ok := g.Admit(fmt.Sprintf("%040x", i+1), servebudget.Request{Family: family, Height: uint64(i + 1), MaxBytes: maxBytes})
 					require.True(t, ok)
 					if resource == "bytes" || resource == "work" {
 						require.True(t, l.Prepare(maxBytes))

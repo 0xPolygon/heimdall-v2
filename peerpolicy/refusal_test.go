@@ -82,11 +82,14 @@ func TestServingMixedRefusalsQualifyOnce(t *testing.T) {
 					serve(t, g, peerA, req, 100)
 				}
 				for i, repeat := range append(order, order...) {
-					g.peers[peerA].work.tokens = 0
+					g.peers[peerA].bytes.tokens = 0
+					next := req
+					next.Height = 2
 					if repeat {
-						g.peers[peerA].work.tokens = 1
+						g.peers[peerA].bytes.tokens = 100
+						next = req
 					}
-					_, ok := g.Admit(peerA, req)
+					_, ok := g.Admit(peerA, next)
 					require.False(t, ok)
 					expected := uint64(0)
 					if observe && i >= 2 {

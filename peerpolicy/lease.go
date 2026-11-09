@@ -1,6 +1,10 @@
 package peerpolicy
 
-import "time"
+import (
+	"time"
+
+	"github.com/cometbft/cometbft/p2p/servebudget"
+)
 
 type lease struct {
 	peerBytes                  *tokenBucket
@@ -56,6 +60,9 @@ func (l *lease) Finish(written bool) {
 	l.pool.memory -= l.memory
 	l.pool.inflight--
 	l.p.inflight--
+	if l.obj.request.Family == servebudget.Catchup {
+		l.p.catchupInflight--
+	}
 	l.obj.pending--
 	*l.held -= l.bytes
 	if l.repeat {

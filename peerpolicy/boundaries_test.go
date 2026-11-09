@@ -21,7 +21,7 @@ func TestServingWorkRefill(t *testing.T) {
 		_, ok := g.Admit(peerA, req)
 		require.False(t, ok)
 	}
-	require.Equal(t, uint64(20), g.Snapshot(peerA).Risk)
+	require.Zero(t, g.Snapshot(peerA).Risk)
 	*now = 250 * time.Millisecond
 	_, ok := g.Admit(peerA, req)
 	require.False(t, ok)
@@ -31,7 +31,7 @@ func TestServingWorkRefill(t *testing.T) {
 	require.False(t, ok)
 	*now = time.Second
 	serve(t, g, peerA, req, 1)
-	require.Equal(t, float64(1), testutil.ToFloat64(g.windows.WithLabelValues("peer_allowance")))
+	require.Zero(t, testutil.ToFloat64(g.windows.WithLabelValues("peer_allowance")))
 }
 
 func TestServingRequestOnlyScoreAndOverlap(t *testing.T) {
@@ -114,11 +114,11 @@ func TestServingObservationDisabledStillLimits(t *testing.T) {
 	g.Observe(peerA, servebudget.InvalidResponse)
 	require.Zero(t, g.Snapshot(peerA).Risk)
 	require.Equal(t, float64(0), testutil.ToFloat64(g.windows.WithLabelValues("peer_allowance")))
-	require.Equal(t, float64(5), testutil.ToFloat64(g.events.WithLabelValues("peer_allowance")))
+	require.Equal(t, float64(5), testutil.ToFloat64(g.events.WithLabelValues("peer_work_capacity")))
 }
 
 func TestServingConfigBoundaries(t *testing.T) {
-	for _, inflight := range []uint64{4, 4096} {
+	for _, inflight := range []uint64{12, 4096} {
 		cfg := DefaultConfig()
 		cfg.MaxInflight = inflight
 		require.NoError(t, cfg.Validate())
