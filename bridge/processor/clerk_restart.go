@@ -143,11 +143,9 @@ func (cp *ClerkProcessor) scanForGap(ctx context.Context, from, count uint64) (n
 		to := min(count, from+clerkOrderWindow-1)
 		gap, found, ok := cp.firstGap(ctx, from, to)
 		if !ok {
-			// The windows already read still move the seed on.
-			if from > start {
-				return from, true
-			}
-			return 0, false
+			// The windows already read still move the seed on; callers
+			// ignore next when nothing was read.
+			return from, from > start
 		}
 		if found {
 			return gap, true
