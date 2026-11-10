@@ -1416,7 +1416,7 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		cp.seedFrontier(context.Background(), time.Now())
 		lowest, _, _ := cp.pending.lowest(time.Now())
 		require.Equal(t, uint64(49992+clerkOrderWindow), lowest, "no gap within a window of bor: the first ID the scan didn't read")
-		require.Equal(t, []uint64{1000, 1001, 1002}, n.listPages, "the pages of one window after bor")
+		require.Equal(t, []uint64{1000, 1001, 1002, 1002, 1003, 1004}, n.listPages, "the clean window after bor, then the next one")
 		require.True(t, cp.seeded.Load(), "a clean scan backs the seed")
 	})
 
@@ -1480,6 +1480,80 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 				require.True(t, cp.pending.seedOnly(50092), "kept for a later check")
 			})
 		}
+	})
+
+	t.Run("one seed scan walks several windows to the first gap", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		n.recordCount = 52000
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		cp.seeded.Store(false)
+		n.borUnavailable = false
+		n.borLast = 49991
+		gap := uint64(49992 + 3*clerkOrderWindow + 7)
+		for id := uint64(49992); id < gap; id++ {
+			n.stored[id] = true
+		}
+
+		cp.seedFrontier(context.Background(), time.Now())
+		lowest, _, _ := cp.pending.lowest(time.Now())
+		require.Equal(t, gap, lowest)
+	})
+
+	t.Run("a seed scan stops after its windows on the first ID it didn't read", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		n.recordCount = 52000
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		cp.seeded.Store(false)
+		n.borUnavailable = false
+		n.borLast = 49991
+		end := uint64(49992 + seedScanWindows*clerkOrderWindow)
+		for id := uint64(49992); id <= end; id++ {
+			n.stored[id] = true
+		}
+
+		cp.seedFrontier(context.Background(), time.Now())
+		lowest, _, _ := cp.pending.lowest(time.Now())
+		require.Equal(t, end, lowest)
+	})
+
+	t.Run("a seed scan reaching heimdall's bound seeds past it", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		n.recordCount = 50100
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		cp.seeded.Store(false)
+		n.borUnavailable = false
+		n.borLast = 49991
+		for id := uint64(49992); id <= 50100; id++ {
+			n.stored[id] = true
+		}
+
+		cp.seedFrontier(context.Background(), time.Now())
+		lowest, _, _ := cp.pending.lowest(time.Now())
+		require.Equal(t, uint64(50101), lowest)
+	})
+
+	t.Run("a stored seed's own task moves the seed on", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		n.recordCount = 52000
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		now := time.Now()
+		cp.pending.seed(50092, now)
+		n.stored[50092] = true
+
+		cp.finishStored(context.Background(), 50092, now)
+		lowest, _, _ := cp.pending.lowest(now)
+		require.Equal(t, uint64(50093), lowest, "the next ID heimdall lacks")
+		require.True(t, cp.pending.seeded(50093))
+
+		n.stored[50093] = true
+		n.listUnavailable = true
+		cp.finishStored(context.Background(), 50093, now)
+		require.True(t, cp.pending.seedOnly(50093), "kept for a later check when the scan can't run")
+
+		cp.pending.touch(49000, "task", now)
+		cp.finishStored(context.Background(), 49000, now)
+		lowest, _, _ = cp.pending.lowest(now)
+		require.Equal(t, uint64(50093), lowest, "a task that isn't the seed just ends")
 	})
 
 	t.Run("a record count beyond int64 seeds nothing", func(t *testing.T) {
@@ -1719,7 +1793,7 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		cp.seedFrontier(context.Background(), time.Now())
 		lowest, _, _ := cp.pending.lowest(time.Now())
 		require.Equal(t, uint64(50000+clerkOrderWindow), lowest)
-		require.Equal(t, []uint64{1000, 1001, 1002}, n.listPages)
+		require.Equal(t, []uint64{1000, 1001, 1002, 1002, 1003, 1004}, n.listPages)
 	})
 
 	t.Run("the gap scan reads a last ID that opens its page", func(t *testing.T) {
@@ -2041,17 +2115,34 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		require.Equal(t, uint64(50000), cp.pending.touch(50000, "", time.Now()))
 	})
 
-	t.Run("a released task finding its record in the mempool again waits another period", func(t *testing.T) {
+	t.Run("a copy in the mempool doesn't stand in for the rebroadcast after a failed store check", func(t *testing.T) {
 		n, rest, comet := newBurstNode(t)
 		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
 		n.pending = []*clerktypes.MsgEventRecord{burstRecord(49992)}
 
 		signature := releasedSignature()
-		requireRetryLater(t, runClerkTask(t, cp, signature, 49992), msgAwaitingStore, clerkMaxStoreWait)
-		require.Empty(t, n.sequences)
+		requireAwaitingStore(t, runClerkTask(t, cp, signature, 49992))
+		require.Len(t, n.sequences, 1, "this bridge's own tx goes out")
 		acceptedAt, ok := retryStart(signature.Headers, acceptedAtHeader)
 		require.True(t, ok)
 		require.WithinDuration(t, time.Now(), acceptedAt, 5*time.Second)
+	})
+
+	t.Run("only this bridge's own accepted tx starts the give-up clock", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		n.pending = []*clerktypes.MsgEventRecord{burstRecord(49992)}
+
+		signature := &tasks.Signature{}
+		requireAwaitingStore(t, runClerkTask(t, cp, signature, 49992))
+		require.Empty(t, n.sequences, "a first copy in the mempool is still the same event")
+		require.Empty(t, headerString(signature.Headers, firstAcceptedAtHeader))
+
+		n.pending = nil
+		signature.Headers[acceptedAtHeader] = unixAgo(clerkMaxStoreWait)
+		requireAwaitingStore(t, runClerkTask(t, cp, signature, 49992))
+		require.Len(t, n.sequences, 1)
+		require.Equal(t, signature.Headers[acceptedAtHeader], signature.Headers[firstAcceptedAtHeader])
 	})
 
 	t.Run("a duplicate delivery giving up doesn't free an ID another delivery holds", func(t *testing.T) {

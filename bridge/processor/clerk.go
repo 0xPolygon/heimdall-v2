@@ -245,9 +245,21 @@ func (cp *ClerkProcessor) recordStored(ctx context.Context, eventName string, ev
 		"logIndex", uint64(vLog.Index),
 		"blockNumber", vLog.BlockNumber,
 	)
-	cp.pending.done(event.Id.Uint64())
-	cp.released.done(event.Id.Uint64())
+	cp.finishStored(ctx, event.Id.Uint64(), time.Now())
 	return true, false
+}
+
+// finishStored stops tracking a stored ID. A seed on it moves on to the next
+// ID heimdall lacks, or stays seeded alone for a later check if that scan
+// can't run.
+func (cp *ClerkProcessor) finishStored(ctx context.Context, id uint64, now time.Time) {
+	cp.released.done(id)
+	if !cp.pending.seeded(id) || cp.advanceSeed(ctx, id, now) {
+		cp.pending.done(id)
+		return
+	}
+	cp.pending.done(id)
+	cp.pending.seed(id, now)
 }
 
 // submitEventRecord broadcasts the record for an event heimdall has not stored yet.
@@ -279,14 +291,18 @@ func (cp *ClerkProcessor) submitEventRecord(ctx, spanCtx context.Context, eventN
 		borChainID,
 	)
 
-	_, checkTxAgainstMempoolSpan := tracing.StartSpan(spanCtx, "checkTxAgainstMempool")
-	// An identical copy of this record in the mempool is the same event.
-	inMempool, _ := cp.checkTxAgainstMempool(ctx, &msg, event)
-	tracing.EndSpan(checkTxAgainstMempoolSpan)
-
 	origin := fmt.Sprintf("%s:%d", vLog.TxHash.Hex(), vLog.Index)
-	if inMempool {
-		return cp.waitOnMempoolCopy(ctx, eventName, event.Id.Uint64(), origin, time.Now())
+	// An identical copy of this record in the mempool is the same event,
+	// until a store check found the record missing anyway: anyone can sign a
+	// copy, and one that is never included mustn't stand in for this
+	// bridge's own tx.
+	if !storeCheckFailed(tasks.SignatureFromContext(ctx)) {
+		_, checkTxAgainstMempoolSpan := tracing.StartSpan(spanCtx, "checkTxAgainstMempool")
+		inMempool, _ := cp.checkTxAgainstMempool(ctx, &msg, event)
+		tracing.EndSpan(checkTxAgainstMempoolSpan)
+		if inMempool {
+			return cp.waitOnMempoolCopy(ctx, eventName, event.Id.Uint64(), origin, time.Now())
+		}
 	}
 
 	_, BroadcastToHeimdallSpan := tracing.StartSpan(spanCtx, "BroadcastToHeimdall")

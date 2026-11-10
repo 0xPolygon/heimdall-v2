@@ -115,20 +115,44 @@ func (cp *ClerkProcessor) nextUnstoredID(ctx context.Context) (next uint64, ok, 
 	case borLast >= count:
 		return count + 1, true, true
 	}
-	// The first gap after bor, looked for within one order window. Past the
-	// scan nothing is known, so a clean scan short of the bound seeds the
-	// first ID it didn't read; the seed is dropped once heimdall stores it. A
-	// failed scan proves nothing, so its bound stays provisional and a later
-	// task scans again.
-	to := min(count, borLast+clerkOrderWindow)
-	gap, found, scanned := cp.firstGap(ctx, borLast+1, to)
-	switch {
-	case found:
-		return gap, true, true
-	case scanned && to < count:
-		return to + 1, true, true
+	// The first gap after bor. A failed scan proves nothing, so its bound
+	// stays provisional and a later task scans again.
+	next, scanned := cp.scanForGap(ctx, borLast+1, count)
+	if !scanned {
+		return count + 1, true, false
 	}
-	return count + 1, true, scanned
+	if next == 0 {
+		return count + 1, true, true
+	}
+	return next, true, true
+}
+
+// seedScanWindows bounds how many order windows one scan reads.
+const seedScanWindows = 10
+
+// scanForGap returns the first ID from from to count heimdall lacks, reading
+// up to seedScanWindows order windows: 0 when every ID up to count is stored,
+// or the first ID it didn't read when it stopped short. scanned is false when
+// a read failed.
+func (cp *ClerkProcessor) scanForGap(ctx context.Context, from, count uint64) (next uint64, scanned bool) {
+	for range seedScanWindows {
+		if from > count {
+			return 0, true
+		}
+		to := min(count, from+clerkOrderWindow-1)
+		gap, found, ok := cp.firstGap(ctx, from, to)
+		if !ok {
+			return 0, false
+		}
+		if found {
+			return gap, true
+		}
+		from = to + 1
+	}
+	if from > count {
+		return 0, true
+	}
+	return from, true
 }
 
 // advanceSeed replaces a seed heimdall stored with the next ID it lacks up to
@@ -150,15 +174,9 @@ func (cp *ClerkProcessor) advanceSeed(ctx context.Context, stored uint64, now ti
 	}
 	var next uint64
 	if stored < count && count < math.MaxInt64 {
-		to := min(count, stored+clerkOrderWindow)
-		gap, found, scanned := cp.firstGap(ctx, stored+1, to)
-		switch {
-		case !scanned:
+		var scanned bool
+		if next, scanned = cp.scanForGap(ctx, stored+1, count); !scanned {
 			return false
-		case found:
-			next = gap
-		case to < count:
-			next = to + 1
 		}
 	}
 	cp.pending.done(stored)

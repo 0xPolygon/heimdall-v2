@@ -463,5 +463,5 @@ func (cp *ClerkProcessor) handleBroadcastErr(ctx context.Context, eventName stri
 	// Our tx just entered the mempool: let the next task read the size again.
 	cp.mempool.forget()
 	cp.Logger.Debug(debugMsgClerkBroadcast, "event", eventName, "id", id)
-	return cp.settleAccepted(ctx, id, origin, time.Now())
+	return cp.settleAccepted(ctx, id, origin, true, time.Now())
 }

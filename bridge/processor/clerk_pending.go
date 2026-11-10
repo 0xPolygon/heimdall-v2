@@ -136,6 +136,15 @@ func (l *idLeases) has(id uint64, holder string, now time.Time, live time.Durati
 	return ok && now.Sub(seen) <= live
 }
 
+// holds reports whether holder holds a lease on id, however old.
+func (l *idLeases) holds(id uint64, holder string) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	_, ok := l.entries[id][holder]
+	return ok
+}
+
 // only reports whether holder holds the one lease on id.
 func (l *idLeases) only(id uint64, holder string) bool {
 	l.mu.Lock()
@@ -215,6 +224,9 @@ func (p *pendingRecords) seed(id uint64, now time.Time) {
 // seedOnly reports whether id is pending only through its seed, with no task
 // behind it.
 func (p *pendingRecords) seedOnly(id uint64) bool { return p.leases.only(id, seedOrigin) }
+
+// seeded reports whether id is the seed, alone or next to its task.
+func (p *pendingRecords) seeded(id uint64) bool { return p.leases.holds(id, seedOrigin) }
 
 // done removes id with every lease, once its record is stored or the ID
 // stops holding the window.

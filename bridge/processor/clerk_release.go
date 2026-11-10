@@ -88,7 +88,9 @@ func abandonRetryDelay(id uint64) time.Duration {
 // it from there, so the window moves at the pace records are accepted, not
 // stored. The task checks back clerkMaxStoreWait later and broadcasts again a
 // record heimdall dropped (see awaitStored).
-func (cp *ClerkProcessor) settleAccepted(ctx context.Context, id uint64, origin string, now time.Time) error {
+// own is false when the record is in the mempool through another broadcast:
+// only this bridge's own accepted tx starts the clerkMaxReleasedAge clock.
+func (cp *ClerkProcessor) settleAccepted(ctx context.Context, id uint64, origin string, own bool, now time.Time) error {
 	cp.leavePending(id, taskOwner(ctx))
 	cp.released.touch(id, origin, now)
 	if signature := tasks.SignatureFromContext(ctx); signature != nil {
@@ -97,7 +99,7 @@ func (cp *ClerkProcessor) settleAccepted(ctx context.Context, id uint64, origin 
 		}
 		signature.Headers[windowReleasedHeader] = headerTrue
 		signature.Headers[acceptedAtHeader] = strconv.FormatInt(now.Unix(), 10)
-		if _, ok := retryStart(signature.Headers, firstAcceptedAtHeader); !ok {
+		if _, ok := retryStart(signature.Headers, firstAcceptedAtHeader); own && !ok {
 			signature.Headers[firstAcceptedAtHeader] = signature.Headers[acceptedAtHeader]
 		}
 		signature.RetryCount = max(signature.RetryCount, clerkTaskRetries)
@@ -168,6 +170,17 @@ func (cp *ClerkProcessor) waitForStore(eventName string, id uint64, acceptedAt t
 	return tasks.NewErrRetryTaskLater(msgAwaitingStore, delay)
 }
 
+// storeCheckFailed reports whether the task's record entered the mempool and a
+// store check found it missing since (see awaitStored, which lets only such a
+// task through).
+func storeCheckFailed(signature *tasks.Signature) bool {
+	if signature == nil {
+		return false
+	}
+	_, ok := retryStart(signature.Headers, acceptedAtHeader)
+	return ok
+}
+
 // windowReleased reports whether the task stopped holding the order window.
 func windowReleased(signature *tasks.Signature) bool {
 	return signature != nil && headerString(signature.Headers, windowReleasedHeader) == headerTrue
@@ -192,5 +205,5 @@ func headerString(headers tasks.Headers, key string) string {
 // in the mempool: an identical copy is the same event, stored when included.
 func (cp *ClerkProcessor) waitOnMempoolCopy(ctx context.Context, eventName string, id uint64, origin string, now time.Time) error {
 	cp.Logger.Info(infoMsgClerkTxInMempool, "event", eventName, "id", id, "retry delay", clerkMaxStoreWait)
-	return cp.settleAccepted(ctx, id, origin, now)
+	return cp.settleAccepted(ctx, id, origin, false, now)
 }
