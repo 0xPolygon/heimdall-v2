@@ -53,6 +53,16 @@ const (
 	// push the mempool to the cap.
 	clerkLowestBusyTxs = 2500
 
+	// clerkLowestBusyEvery is how often the lowest pending ID goes through a
+	// busy mempool anyway: state sync keeps moving under any other load, at a
+	// pace that can't fill the mempool.
+	clerkLowestBusyEvery = time.Second
+
+	// clerkMaxReleasedAge is how long after its record first entered the
+	// mempool a task keeps checking that heimdall stored it. A record still
+	// missing then is one heimdall keeps refusing; the task ends there.
+	clerkMaxReleasedAge = 6 * clerkMaxStoreWait
+
 	// clerkMaxStoreWait is how long after its record entered the mempool a task
 	// checks that heimdall stored it, and broadcasts it again if not. Heimdall
 	// stores an accepted record within a few blocks, so one still missing then
@@ -82,6 +92,15 @@ const (
 	// entering the mempool. machinery republishes the same signature on
 	// retry, so it persists across retries and restarts.
 	acceptedAtHeader = "clerkAcceptedAt"
+
+	// firstAcceptedAtHeader holds the unix time the record first entered the
+	// mempool; unlike acceptedAtHeader, later accepts don't move it.
+	firstAcceptedAtHeader = "clerkFirstAcceptedAt"
+
+	// unstoredHeader holds the acceptedAtHeader value a missing record was
+	// already reported for, so a rebroadcast held back by the busy gate isn't
+	// counted again.
+	unstoredHeader = "clerkUnstoredFor"
 
 	// clerkDeferRetryDelay is how soon a deferred clerk task runs again. An ID
 	// that is n windows ahead of the lowest pending one waits n times this, up
@@ -137,26 +156,29 @@ const (
 	// clerk tasks, so a busy period costs at most one count query per second.
 	mempoolCountTTL = time.Second
 
-	infoMsgClerkMempoolBusy    = "ClerkProcessor: heimdall mempool is busy, deferring broadcast"
-	infoMsgClerkAheadOfPending = "ClerkProcessor: state sync is too far ahead of the lowest pending one, deferring broadcast"
-	infoMsgClerkMempoolFull    = "ClerkProcessor: heimdall mempool is full, retrying in sometime"
-	warnMsgClerkMempoolCount   = "ClerkProcessor: can't read the heimdall mempool size, deferring all but the frontier state syncs"
-	debugMsgClerkNoMempoolSize = "ClerkProcessor: no heimdall mempool size, deferring broadcast"
-	debugMsgClerkBroadcast     = "ClerkProcessor: record broadcast, checking later that heimdall stored it"
-	debugMsgClerkAwaitingStore = "ClerkProcessor: record already in the mempool, checking later that heimdall stored it"
-	errMsgClerkUnstored        = "ClerkProcessor: state sync still not stored long after it entered the mempool, broadcasting it again"
-	warnMsgClerkNotOnL1        = "ClerkProcessor: state sync ID is above the latest one on L1, holding its rebroadcast"
-	errMsgClerkTaskExhausted   = "ClerkProcessor: state sync task ran out of retries before heimdall stored the record"
-	debugMsgClerkDuplicateTask = "ClerkProcessor: another task already retries this released state sync, checking it again later"
+	infoMsgClerkMempoolBusy     = "ClerkProcessor: heimdall mempool is busy, deferring broadcast"
+	infoMsgClerkAheadOfPending  = "ClerkProcessor: state sync is too far ahead of the lowest pending one, deferring broadcast"
+	infoMsgClerkMempoolFull     = "ClerkProcessor: heimdall mempool is full, retrying in sometime"
+	warnMsgClerkMempoolCount    = "ClerkProcessor: can't read the heimdall mempool size, deferring all but the frontier state syncs"
+	debugMsgClerkNoMempoolSize  = "ClerkProcessor: no heimdall mempool size, deferring broadcast"
+	debugMsgClerkBroadcast      = "ClerkProcessor: record broadcast, checking later that heimdall stored it"
+	debugMsgClerkAwaitingStore  = "ClerkProcessor: record already in the mempool, checking later that heimdall stored it"
+	errMsgClerkUnstored         = "ClerkProcessor: state sync still not stored long after it entered the mempool, broadcasting it again"
+	errMsgClerkAbandoned        = "ClerkProcessor: state sync still not stored long after it first entered the mempool, giving up"
+	warnMsgClerkNotOnL1         = "ClerkProcessor: state sync ID is above the latest one on L1, holding its rebroadcast"
+	errMsgClerkTaskExhausted    = "ClerkProcessor: state sync task ran out of retries before heimdall stored the record"
+	warnMsgClerkUnreadableAtCap = "ClerkProcessor: couldn't read whether an old state sync is stored, not giving up on it yet"
+	debugMsgClerkAbandonedTask  = "ClerkProcessor: this bridge recently gave up on this state sync, ending the task"
+	debugMsgClerkDuplicateTask  = "ClerkProcessor: another task already retries this released state sync, checking it again later"
 
-	msgMempoolBusy    = "heimdall mempool is busy"
-	msgAwaitingStore  = "record broadcast, waiting for heimdall to store it"
-	msgAheadOfPending = "state sync ahead of the lowest pending one"
-	msgNotOnL1        = "state sync ID above the latest one on L1"
-	msgWarmingUp      = "clerk processor warming up its order window"
-	msgCopyInMempool  = "transaction already in mempool"
-	msgLookupsBusy    = "other clerk tasks are reading heimdall's records"
-	msgReleasedOwned  = "another task retries this released state sync"
+	msgMempoolBusy      = "heimdall mempool is busy"
+	msgAwaitingStore    = "record broadcast, waiting for heimdall to store it"
+	msgAheadOfPending   = "state sync ahead of the lowest pending one"
+	msgNotOnL1          = "state sync ID above the latest one on L1"
+	msgWarmingUp        = "clerk processor warming up its order window"
+	msgLookupsBusy      = "other clerk tasks are reading heimdall's records"
+	msgReleasedOwned    = "another task retries this released state sync"
+	msgRecordUnreadable = "heimdall's record lookup failed, asking again"
 )
 
 // deferOutOfOrder returns the lowest ID still pending here, and a retry-later
@@ -235,7 +257,10 @@ func (cp *ClerkProcessor) deferWhileMempoolBusy(eventName string, event interfac
 		cp.Logger.Debug(debugMsgClerkNoMempoolSize, "event", eventName, "id", id, "retry delay", delay)
 		return tasks.NewErrRetryTaskLater(msgMempoolBusy, delay)
 	}
-	if mempoolTxs < busyTxs {
+	// Other traffic alone can keep the mempool above every tier, so the
+	// lowest ID still goes through once per clerkLowestBusyEvery; it turns
+	// over on each accept, so a full exemption would turn the gate off.
+	if mempoolTxs < busyTxs || (id == lowest && cp.lowestBusy.due(time.Now())) {
 		return nil
 	}
 
@@ -340,6 +365,29 @@ func taskResult(err error) error {
 	return err
 }
 
+// checkDuplicate holds back a second task for the same event as a live
+// released task, and ends a task for an event this bridge gave up on.
+func (cp *ClerkProcessor) checkDuplicate(ctx context.Context, signature *tasks.Signature, eventName string, id uint64, origin string, isReleased bool, now time.Time) error {
+	if !isReleased && cp.released.has(id, origin, now) {
+		// After a restart this task may have reached the pending set first.
+		cp.leavePending(id, taskOwner(ctx))
+		if !cp.released.standby.claim(id, origin, taskOwner(ctx), now) {
+			return errTaskDone
+		}
+		setHeader(signature, standbyHeader)
+		cp.Logger.Debug(debugMsgClerkDuplicateTask, "event", eventName, "id", id)
+		return tasks.NewErrRetryTaskLater(msgReleasedOwned, clerkMaxStoreWait)
+	}
+	// Checked after the lease: a give-up records itself before it drops the
+	// lease, so a task that no longer sees the lease sees the give-up.
+	if cp.released.abandoned.has(id, origin, now) {
+		cp.leavePending(id, taskOwner(ctx))
+		cp.Logger.Debug(debugMsgClerkAbandonedTask, "event", eventName, "id", id)
+		return errTaskDone
+	}
+	return nil
+}
+
 // admit runs the order gate and returns the lowest ID to rank id against in
 // the busy gate. A task that released the window skips ordering and ranks
 // against the lowest ID still unstored here, released ones included; a second
@@ -349,15 +397,8 @@ func (cp *ClerkProcessor) admit(ctx context.Context, eventName string, id uint64
 	now := time.Now()
 	signature := tasks.SignatureFromContext(ctx)
 	isReleased := windowReleased(signature)
-	if !isReleased && cp.released.has(id, origin, now) {
-		// After a restart this task may have reached the pending set first.
-		cp.leavePending(id, taskOwner(ctx))
-		if !cp.released.standby.claim(id, origin, taskOwner(ctx), now) {
-			return 0, errTaskDone
-		}
-		setHeader(signature, standbyHeader)
-		cp.Logger.Debug(debugMsgClerkDuplicateTask, "event", eventName, "id", id)
-		return 0, tasks.NewErrRetryTaskLater(msgReleasedOwned, clerkMaxStoreWait)
+	if err := cp.checkDuplicate(ctx, signature, eventName, id, origin, isReleased, now); err != nil {
+		return 0, err
 	}
 	if !isReleased && signature != nil && headerString(signature.Headers, standbyHeader) == headerTrue {
 		// Its record already reached the mempool through the released task,

@@ -19,7 +19,7 @@ import (
 // busy and duplicate checks again. The check comes clerkMaxStoreWait after the
 // record was accepted; a record heimdall still hasn't stored then is broadcast
 // again, unless its ID is above the latest one on L1.
-func (cp *ClerkProcessor) awaitStored(ctx context.Context, eventName string, id uint64, now time.Time) error {
+func (cp *ClerkProcessor) awaitStored(ctx context.Context, eventName string, id uint64, origin string, missing bool, now time.Time) error {
 	signature := tasks.SignatureFromContext(ctx)
 	if signature == nil {
 		return nil
@@ -31,12 +31,56 @@ func (cp *ClerkProcessor) awaitStored(ctx context.Context, eventName string, id 
 	if waited := now.Sub(acceptedAt); waited < clerkMaxStoreWait {
 		return cp.waitForStore(eventName, id, acceptedAt, wholeSeconds(clerkMaxStoreWait-waited))
 	}
+	if err := cp.abandonUnstored(signature, eventName, id, origin, missing, acceptedAt, now); err != nil {
+		return err
+	}
 	if err := cp.holdIfNotOnL1(eventName, id, now); err != nil {
 		return err
 	}
-	metrics.ClerkRecordsUnstored.Inc()
-	cp.Logger.Error(errMsgClerkUnstored, "event", eventName, "id", id, "acceptedAt", acceptedAt)
+	if accepted := headerString(signature.Headers, acceptedAtHeader); headerString(signature.Headers, unstoredHeader) != accepted {
+		signature.Headers[unstoredHeader] = accepted
+		metrics.ClerkRecordsUnstored.Inc()
+		cp.Logger.Error(errMsgClerkUnstored, "event", eventName, "id", id, "acceptedAt", acceptedAt)
+	}
 	return nil
+}
+
+// errRecordAbandoned ends a task whose record heimdall still hasn't stored
+// clerkMaxReleasedAge after it first entered the mempool.
+var errRecordAbandoned = errors.New("state sync record abandoned")
+
+// abandonUnstored returns errRecordAbandoned once the record is
+// clerkMaxReleasedAge past its first accept and this run's lookup found it
+// missing; past that age with an unreadable lookup, the task asks again
+// shortly instead. Tasks accepted before firstAcceptedAtHeader existed count
+// from their last accept.
+func (cp *ClerkProcessor) abandonUnstored(signature *tasks.Signature, eventName string, id uint64, origin string, missing bool, acceptedAt, now time.Time) error {
+	first, ok := retryStart(signature.Headers, firstAcceptedAtHeader)
+	if !ok {
+		first = acceptedAt
+	}
+	if now.Sub(first) < clerkMaxReleasedAge {
+		return nil
+	}
+	if !missing {
+		cp.Logger.Warn(warnMsgClerkUnreadableAtCap, "event", eventName, "id", id)
+		return tasks.NewErrRetryTaskLater(msgRecordUnreadable, abandonRetryDelay(id))
+	}
+	// Recorded before the lease goes: a standby that finds the lease gone
+	// then also finds this (see admit).
+	cp.released.abandoned.add(id, origin, now)
+	cp.released.doneOrigin(id, origin)
+	metrics.ClerkTasksExhausted.Inc()
+	cp.Logger.Error(errMsgClerkAbandoned, "event", eventName, "id", id, "firstAcceptedAt", first)
+	return errRecordAbandoned
+}
+
+// abandonRetryDelay is how soon a task past clerkMaxReleasedAge asks again
+// after a lookup that didn't say whether its record is stored: on the
+// released cadence, so a heimdall API outage doesn't cycle a burst's tasks
+// through the queue.
+func abandonRetryDelay(id uint64) time.Duration {
+	return wholeSeconds(releasedRetryDelay + spread(id, releasedRetryDelay))
 }
 
 // settleAccepted ends the task's hold on the order window once its record is
@@ -53,6 +97,9 @@ func (cp *ClerkProcessor) settleAccepted(ctx context.Context, id uint64, origin 
 		}
 		signature.Headers[windowReleasedHeader] = headerTrue
 		signature.Headers[acceptedAtHeader] = strconv.FormatInt(now.Unix(), 10)
+		if _, ok := retryStart(signature.Headers, firstAcceptedAtHeader); !ok {
+			signature.Headers[firstAcceptedAtHeader] = signature.Headers[acceptedAtHeader]
+		}
 		signature.RetryCount = max(signature.RetryCount, clerkTaskRetries)
 		// machinery grows RetryTimeout along Fibonacci on each counted
 		// failure; left alone it would outgrow pendingRecordTTL.

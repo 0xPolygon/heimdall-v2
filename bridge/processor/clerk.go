@@ -58,6 +58,7 @@ type ClerkProcessor struct {
 	released       releasedRecords
 	latestOnL1     cachedCounter
 	lowestCheck    rateGate
+	lowestBusy     rateGate
 	startedAt      time.Time
 	seeded         atomic.Bool
 	seeding        atomic.Bool
@@ -94,6 +95,7 @@ func NewClerkProcessor(stateSenderAbi *abi.ABI) *ClerkProcessor {
 	return &ClerkProcessor{
 		stateSenderAbi: stateSenderAbi,
 		startedAt:      time.Now(),
+		lowestBusy:     rateGate{every: clerkLowestBusyEvery},
 	}
 }
 
@@ -167,12 +169,15 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(ctx context.Context, eventNa
 		return taskResult(err)
 	}
 
-	stored, err := cp.checkStored(ctx, eventName, event, &vLog, id, lowest)
+	stored, missing, err := cp.checkStored(ctx, eventName, event, &vLog, id, lowest)
 	if err != nil || stored {
 		return err
 	}
 
-	if err = cp.awaitStored(ctx, eventName, id, time.Now()); err != nil {
+	if err = cp.awaitStored(ctx, eventName, id, origin, missing, time.Now()); err != nil {
+		if errors.Is(err, errRecordAbandoned) {
+			return nil
+		}
 		return taskResult(err)
 	}
 
@@ -202,28 +207,34 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(ctx context.Context, eventNa
 	return cp.submitEventRecord(ctx, sendStateSyncedToHeimdallCtx, eventName, event, &vLog, chainParams.BorChainId, lowest)
 }
 
-// recordStored reports whether heimdall already stored the event's record, and
-// if so stops tracking it. A failed lookup counts as not stored.
 // checkStored runs recordStored within the bound on concurrent record lookups.
-// The lowest ID, the one bor waits on, never waits for a slot.
-func (cp *ClerkProcessor) checkStored(ctx context.Context, eventName string, event *statesender.StatesenderStateSynced, vLog *types.Log, id, lowest uint64) (bool, error) {
-	if id != lowest {
-		if !cp.recordLookups.tryAcquire() {
-			delay := wholeSeconds(clerkDeferRetryDelay + spread(id, clerkDeferRetryDelay))
-			if windowReleased(tasks.SignatureFromContext(ctx)) {
-				delay = deferDelay(id, lowest, true)
-			}
-			return false, tasks.NewErrRetryTaskLater(msgLookupsBusy, delay)
+// The lowest ID, the one bor waits on, has a slot of its own.
+func (cp *ClerkProcessor) checkStored(ctx context.Context, eventName string, event *statesender.StatesenderStateSynced, vLog *types.Log, id, lowest uint64) (stored, missing bool, err error) {
+	release := cp.recordLookups.tryAcquire(id == lowest)
+	if release == nil {
+		delay := wholeSeconds(clerkDeferRetryDelay + spread(id, clerkDeferRetryDelay))
+		if id == lowest {
+			delay = clerkDeferRetryDelay
+		} else if windowReleased(tasks.SignatureFromContext(ctx)) {
+			delay = deferDelay(id, lowest, true)
 		}
-		defer cp.recordLookups.release()
+		return false, false, tasks.NewErrRetryTaskLater(msgLookupsBusy, delay)
 	}
-	return cp.recordStored(eventName, event, vLog), nil
+	defer release()
+	stored, missing = cp.recordStored(ctx, eventName, event, vLog)
+	return stored, missing, nil
 }
 
-func (cp *ClerkProcessor) recordStored(eventName string, event *statesender.StatesenderStateSynced, vLog *types.Log) bool {
-	existingRecord, err := util.GetClerkEventRecord(event.Id.Int64(), cp.cliCtx.Codec)
-	if err != nil || existingRecord.Id == 0 {
-		return false
+// recordStored reports whether heimdall already stored the event's record, and
+// if so stops tracking it, or else whether heimdall answered that it doesn't
+// hold it (missing); a failed lookup is neither.
+func (cp *ClerkProcessor) recordStored(ctx context.Context, eventName string, event *statesender.StatesenderStateSynced, vLog *types.Log) (stored, missing bool) {
+	stored, err := util.ClerkRecordStored(ctx, cp.cliCtx.Codec, event.Id.Uint64())
+	if err != nil {
+		return false, false
+	}
+	if !stored {
+		return false, true
 	}
 
 	cp.Logger.Info(infoMsgClerkIgnoringAlreadyProcessed,
@@ -236,7 +247,7 @@ func (cp *ClerkProcessor) recordStored(eventName string, event *statesender.Stat
 	)
 	cp.pending.done(event.Id.Uint64())
 	cp.released.done(event.Id.Uint64())
-	return true
+	return true, false
 }
 
 // submitEventRecord broadcasts the record for an event heimdall has not stored yet.

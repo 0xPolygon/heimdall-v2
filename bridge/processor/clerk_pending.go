@@ -225,8 +225,9 @@ func (p *pendingRecords) done(id uint64) { p.leases.done(id) }
 // self-heal replay) ends instead of holding the window again. A task for the
 // same ID from another L1 log is not a duplicate.
 type releasedRecords struct {
-	leases  idLeases
-	standby standbys
+	leases    idLeases
+	standby   standbys
+	abandoned abandonedRecords
 }
 
 // touch records that the released task for id ran at now and returns the
@@ -250,6 +251,41 @@ func (r *releasedRecords) doneOrigin(id uint64, origin string) { r.leases.doneHo
 // standbys holds, per released event, the one other task for it that waits
 // to take over if the released task stops; further ones end, so replays of a
 // record heimdall doesn't store don't pile up. The zero value is ready to use.
+// abandonedRecords remembers the events (id, origin) a task gave up on, so a
+// standby queued before that, or a replay, can't start the clock over.
+// Entries last clerkMaxReleasedAge.
+type abandonedRecords struct {
+	mu    sync.Mutex
+	at    map[standbyKey]time.Time
+	swept time.Time
+}
+
+func (a *abandonedRecords) add(id uint64, origin string, now time.Time) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	if a.at == nil {
+		a.at = make(map[standbyKey]time.Time)
+	}
+	if now.Sub(a.swept) > clerkMaxReleasedAge {
+		a.swept = now
+		for key, at := range a.at {
+			if now.Sub(at) > clerkMaxReleasedAge {
+				delete(a.at, key)
+			}
+		}
+	}
+	a.at[standbyKey{id: id, origin: origin}] = now
+}
+
+func (a *abandonedRecords) has(id uint64, origin string, now time.Time) bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	at, ok := a.at[standbyKey{id: id, origin: origin}]
+	return ok && now.Sub(at) <= clerkMaxReleasedAge
+}
+
 type standbys struct {
 	mu    sync.Mutex
 	tasks map[standbyKey]standbyTask

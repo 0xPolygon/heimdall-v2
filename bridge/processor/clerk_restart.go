@@ -115,12 +115,18 @@ func (cp *ClerkProcessor) nextUnstoredID(ctx context.Context) (next uint64, ok, 
 	case borLast >= count:
 		return count + 1, true, true
 	}
-	// The first gap after bor, looked for within one order window: a gap
-	// further out is outside the window anyway. A failed scan proves nothing,
-	// so its bound stays provisional and a later task scans again.
-	gap, found, scanned := cp.firstGap(ctx, borLast+1, min(count, borLast+clerkOrderWindow))
-	if found {
+	// The first gap after bor, looked for within one order window. Past the
+	// scan nothing is known, so a clean scan short of the bound seeds the
+	// first ID it didn't read; the seed is dropped once heimdall stores it. A
+	// failed scan proves nothing, so its bound stays provisional and a later
+	// task scans again.
+	to := min(count, borLast+clerkOrderWindow)
+	gap, found, scanned := cp.firstGap(ctx, borLast+1, to)
+	switch {
+	case found:
 		return gap, true, true
+	case scanned && to < count:
+		return to + 1, true, true
 	}
 	return count + 1, true, scanned
 }

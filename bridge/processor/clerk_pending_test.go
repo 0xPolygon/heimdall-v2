@@ -623,3 +623,31 @@ func TestDeferOutOfOrderBehindASeedOnlyLowest(t *testing.T) {
 	_, err = cp.deferOutOfOrder("StateSynced", near, "near")
 	requireRetryLater(t, err, msgAheadOfPending, wholeSeconds(20*clerkDeferRetryDelay+spread(near, 20*clerkDeferRetryDelay/5)))
 }
+
+func TestAbandonedRecords(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_793_846_312, 0)
+	var a abandonedRecords
+	require.False(t, a.has(7, "a", now))
+
+	a.add(7, "a", now)
+	require.True(t, a.has(7, "a", now.Add(clerkMaxReleasedAge)))
+	require.False(t, a.has(7, "a", now.Add(clerkMaxReleasedAge+time.Second)), "a replay after the cap is a fresh attempt")
+	require.False(t, a.has(7, "b", now), "another L1 log with the same ID")
+	require.False(t, a.has(8, "a", now))
+
+	a.add(8, "a", now.Add(clerkMaxReleasedAge+time.Second))
+	require.NotContains(t, a.at, standbyKey{id: 7, origin: "a"}, "expired entries are swept")
+	require.Contains(t, a.at, standbyKey{id: 8, origin: "a"})
+}
+
+func TestAbandonRetryDelayIsOnTheReleasedCadence(t *testing.T) {
+	t.Parallel()
+
+	for _, id := range []uint64{49990, 49999} {
+		require.GreaterOrEqual(t, abandonRetryDelay(id), releasedRetryDelay)
+		require.Less(t, abandonRetryDelay(id), 2*releasedRetryDelay)
+	}
+	require.NotEqual(t, abandonRetryDelay(49990), abandonRetryDelay(49999), "spread per ID")
+}

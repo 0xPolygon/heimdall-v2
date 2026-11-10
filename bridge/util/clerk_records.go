@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -35,6 +36,33 @@ func GetRecordIDsPage(ctx context.Context, cdc codec.Codec, page, limit uint64) 
 		ids = append(ids, record.Id)
 	}
 	return ids, nil
+}
+
+// recordNotFound is in the body of heimdall's answer to a query for a record it
+// doesn't hold.
+const recordNotFound = "collections: not found"
+
+// ClerkRecordStored reports whether heimdall stored the record with id. Only a
+// 404 or heimdall's not-found answer means missing; any other failure, or an
+// answer about another record, is an error.
+func ClerkRecordStored(ctx context.Context, cdc codec.Codec, id uint64) (bool, error) {
+	response, err := helper.FetchFromAPIWithContext(ctx, helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, id)))
+	var statusErr *helper.APIStatusError
+	if errors.As(err, &statusErr) && (statusErr.Status == http.StatusNotFound || strings.Contains(statusErr.Body, recordNotFound)) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	var record clerktypes.RecordResponse
+	if err = cdc.UnmarshalJSON(response, &record); err != nil {
+		return false, err
+	}
+	if record.Record.Id != id {
+		return false, fmt.Errorf("record query for %d answered with record %d", id, record.Record.Id)
+	}
+	return true, nil
 }
 
 // GetLatestRecordID returns the latest state sync ID on L1, as heimdall reads

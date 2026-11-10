@@ -5,10 +5,12 @@ import (
 	"time"
 )
 
-// rateGate lets a call through at most once per clerkStoreCheckDelay.
+// rateGate lets a call through at most once per every, or per
+// clerkStoreCheckDelay when every is zero.
 type rateGate struct {
-	mu   sync.Mutex
-	next time.Time
+	mu    sync.Mutex
+	next  time.Time
+	every time.Duration
 }
 
 func (g *rateGate) due(now time.Time) bool {
@@ -18,7 +20,11 @@ func (g *rateGate) due(now time.Time) bool {
 	if now.Before(g.next) {
 		return false
 	}
-	g.next = now.Add(clerkStoreCheckDelay)
+	every := g.every
+	if every == 0 {
+		every = clerkStoreCheckDelay
+	}
+	g.next = now.Add(every)
 	return true
 }
 
@@ -68,21 +74,31 @@ func deferDelay(id, lowest uint64, released bool) time.Duration {
 // slow heimdall API can't take every shared bridge worker.
 const clerkRecordLookups = 2
 
-// lookupSlots hands out clerkRecordLookups slots without waiting. The zero
-// value is ready to use.
+// lookupSlots hands out clerkRecordLookups slots without waiting, plus one
+// kept for the lowest ID, so the record bor waits on isn't queued behind the
+// others and still can't take more than one extra worker. The zero value is
+// ready to use.
 type lookupSlots struct {
-	once  sync.Once
-	slots chan struct{}
+	once     sync.Once
+	slots    chan struct{}
+	priority sync.Mutex
 }
 
-func (l *lookupSlots) tryAcquire() bool {
+// tryAcquire returns the release func of the slot it took, or nil.
+func (l *lookupSlots) tryAcquire(lowest bool) func() {
 	l.once.Do(func() { l.slots = make(chan struct{}, clerkRecordLookups) })
+	if lowest {
+		// Only its own slot: duplicate tasks for the lowest ID can't take
+		// the shared ones.
+		if l.priority.TryLock() {
+			return l.priority.Unlock
+		}
+		return nil
+	}
 	select {
 	case l.slots <- struct{}{}:
-		return true
+		return func() { <-l.slots }
 	default:
-		return false
+		return nil
 	}
 }
-
-func (l *lookupSlots) release() { <-l.slots }

@@ -91,6 +91,9 @@ type burstNode struct {
 	recordLookups map[uint64]int
 	// lookupDelay slows every stored-record and record-list query.
 	lookupDelay time.Duration
+
+	// lookupStatus, when set, is the answer to every stored-record query.
+	lookupStatus int
 	// listPages lists the record-list pages queried, in order.
 	listPages []uint64
 	// listUnavailable makes record-list queries fail.
@@ -207,6 +210,10 @@ func (n *burstNode) serveREST(w http.ResponseWriter, r *http.Request) {
 			case <-r.Context().Done():
 			}
 			n.mu.Lock()
+		}
+		if n.lookupStatus != 0 {
+			w.WriteHeader(n.lookupStatus)
+			return
 		}
 		if !n.stored[id] {
 			w.WriteHeader(http.StatusNotFound)
@@ -725,8 +732,39 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 
 		n.mempoolTotal = clerkLowestBusyTxs
 		cp.mempool.forget()
+		require.True(t, cp.lowestBusy.due(time.Now()))
 		requireRetryLater(t, runClerkTask(t, cp, &tasks.Signature{}, 49993), msgMempoolBusy, clerkDeferRetryDelay)
 		require.Len(t, n.sequences, 1)
+	})
+
+	t.Run("a lower released record doesn't keep the pending frontier from its busy-mempool pass", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		n.mempoolTotal = 4999
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		cp.lowestBusy = rateGate{every: clerkLowestBusyEvery}
+		cp.released.touch(49992, burstOrigin(49992), time.Now())
+
+		requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{}, 49993))
+		require.Equal(t, []uint64{burstCommittedSeq}, n.sequences, "the pending frontier ranks against pending IDs only")
+		require.True(t, cp.released.has(49992, burstOrigin(49992), time.Now()))
+	})
+
+	t.Run("the lowest pending record still gets through a busy mempool once per interval", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		n.mempoolTotal = 4999
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		cp.lowestBusy = rateGate{every: clerkLowestBusyEvery}
+
+		requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{}, 49992))
+		require.Equal(t, []uint64{burstCommittedSeq}, n.sequences, "other load alone doesn't stop state sync")
+
+		requireRetryLater(t, runClerkTask(t, cp, &tasks.Signature{}, 49993), msgMempoolBusy, clerkDeferRetryDelay)
+		require.Len(t, n.sequences, 1, "the next lowest waits for the next interval")
+
+		cp.pending.touch(49991, "lower", time.Now())
+		cp.lowestBusy.holdUntil(time.Time{})
+		requireRetryLater(t, runClerkTask(t, cp, &tasks.Signature{}, 49994), msgMempoolBusy, clerkDeferRetryDelay)
+		require.Len(t, n.sequences, 1, "only the lowest ID gets the pass")
 	})
 
 	t.Run("an unreadable mempool count holds back all but the frontier", func(t *testing.T) {
@@ -1049,6 +1087,7 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		n.mempoolTotal = clerkLowestBusyTxs
 		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
 
+		require.True(t, cp.lowestBusy.due(time.Now()))
 		requireRetryLater(t, runClerkTask(t, cp, &tasks.Signature{}, 49992), msgMempoolBusy, clerkDeferRetryDelay)
 		n.mempoolTotal = clerkLowestBusyTxs - 1
 		cp.mempool.forget()
@@ -1097,6 +1136,127 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		require.Len(t, n.sequences, 1, "a lagging counter only delays the record")
 	})
 
+	t.Run("a record heimdall keeps refusing is given up once it is too old", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		n.latestOnL1 = 49991
+		cp, logs := newBurstClerkProcessor(t, n, rest, comet)
+		before := testutil.ToFloat64(metrics.ClerkTasksExhausted)
+		cp.released.touch(49992, burstOrigin(49992), time.Now())
+
+		signature := releasedSignature()
+		signature.Headers[firstAcceptedAtHeader] = unixAgo(clerkMaxReleasedAge)
+		require.NoError(t, runClerkTask(t, cp, signature, 49992), "the task ends")
+		require.Empty(t, n.sequences, "no broadcast, not even while above the L1 counter")
+		require.Equal(t, before+1, testutil.ToFloat64(metrics.ClerkTasksExhausted))
+		require.Contains(t, logs.String(), "ERR "+errMsgClerkAbandoned)
+		require.False(t, cp.released.has(49992, burstOrigin(49992), time.Now()), "a later task for the ID isn't turned away")
+	})
+
+	t.Run("an unreadable lookup at the age cap doesn't give up on the record", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		n.lookupStatus = http.StatusServiceUnavailable
+		cp, logs := newBurstClerkProcessor(t, n, rest, comet)
+		before := testutil.ToFloat64(metrics.ClerkTasksExhausted)
+		cp.released.touch(49992, burstOrigin(49992), time.Now())
+
+		signature := releasedSignature()
+		signature.Headers[firstAcceptedAtHeader] = unixAgo(clerkMaxReleasedAge)
+		requireRetryLater(t, runClerkTask(t, cp, signature, 49992), msgRecordUnreadable, abandonRetryDelay(49992))
+		require.Equal(t, before, testutil.ToFloat64(metrics.ClerkTasksExhausted))
+		require.NotContains(t, logs.String(), errMsgClerkAbandoned)
+		require.True(t, cp.released.has(49992, burstOrigin(49992), time.Now()), "the task keeps its lease")
+		require.Empty(t, n.sequences)
+
+		n.lookupStatus = 0
+		require.NoError(t, runClerkTask(t, cp, signature, 49992), "it gives up once heimdall answers that the record is missing")
+		require.Equal(t, before+1, testutil.ToFloat64(metrics.ClerkTasksExhausted))
+	})
+
+	t.Run("a standby that still sees the lease waits even after the give-up is recorded", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		cp.released.touch(49992, burstOrigin(49992), time.Now())
+		cp.released.abandoned.add(49992, burstOrigin(49992), time.Now())
+
+		standby := &tasks.Signature{UUID: "standby"}
+		requireRetryLater(t, runClerkTask(t, cp, standby, 49992), msgReleasedOwned, clerkMaxStoreWait)
+
+		cp.released.doneOrigin(49992, burstOrigin(49992))
+		require.NoError(t, runClerkTask(t, cp, standby, 49992), "once the lease is gone it ends")
+		require.Empty(t, n.sequences)
+	})
+
+	t.Run("a standby queued before the original gives up doesn't restart the clock", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		cp, logs := newBurstClerkProcessor(t, n, rest, comet)
+
+		original := &tasks.Signature{UUID: "original"}
+		requireAwaitingStore(t, runClerkTask(t, cp, original, 49992))
+		standby := &tasks.Signature{UUID: "standby"}
+		requireRetryLater(t, runClerkTask(t, cp, standby, 49992), msgReleasedOwned, clerkMaxStoreWait)
+		require.Equal(t, headerTrue, headerString(standby.Headers, standbyHeader))
+
+		original.Headers[acceptedAtHeader] = unixAgo(clerkMaxStoreWait)
+		original.Headers[firstAcceptedAtHeader] = unixAgo(clerkMaxReleasedAge)
+		require.NoError(t, runClerkTask(t, cp, original, 49992), "the original gives up")
+		require.Contains(t, logs.String(), "ERR "+errMsgClerkAbandoned)
+
+		require.NoError(t, runClerkTask(t, cp, standby, 49992), "the standby ends instead of taking over")
+		require.NoError(t, runClerkTask(t, cp, &tasks.Signature{UUID: "replay"}, 49992), "so does a replay within the cap")
+		require.Len(t, n.sequences, 1, "nothing broadcast after the give-up")
+		require.Empty(t, headerString(standby.Headers, firstAcceptedAtHeader))
+	})
+
+	t.Run("giving up on one origin keeps another origin's lease for the same ID", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		const other = "0xother:7"
+		cp.released.touch(49992, burstOrigin(49992), time.Now())
+		cp.released.touch(49992, other, time.Now())
+
+		signature := releasedSignature()
+		signature.Headers[firstAcceptedAtHeader] = unixAgo(clerkMaxReleasedAge)
+		require.NoError(t, runClerkTask(t, cp, signature, 49992))
+		require.False(t, cp.released.has(49992, burstOrigin(49992), time.Now()))
+		require.True(t, cp.released.has(49992, other, time.Now()), "the other log's task still owns its lease")
+		require.Empty(t, n.sequences)
+	})
+
+	t.Run("a rebroadcast keeps the time the record first entered the mempool", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		before := testutil.ToFloat64(metrics.ClerkRecordsUnstored)
+
+		signature := &tasks.Signature{}
+		requireAwaitingStore(t, runClerkTask(t, cp, signature, 49992))
+		first := signature.Headers[firstAcceptedAtHeader]
+		require.Equal(t, signature.Headers[acceptedAtHeader], first)
+
+		first = unixAgo(time.Hour - time.Minute)
+		signature.Headers[firstAcceptedAtHeader] = first
+		signature.Headers[acceptedAtHeader] = unixAgo(clerkMaxStoreWait)
+		requireAwaitingStore(t, runClerkTask(t, cp, signature, 49992))
+		require.Len(t, n.sequences, 2)
+		require.Equal(t, first, signature.Headers[firstAcceptedAtHeader])
+		require.NotEqual(t, first, signature.Headers[acceptedAtHeader])
+		require.Equal(t, before+1, testutil.ToFloat64(metrics.ClerkRecordsUnstored))
+	})
+
+	t.Run("a rebroadcast held back by the busy gate is counted once", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		n.mempoolTotal = clerkLowestBusyTxs
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		before := testutil.ToFloat64(metrics.ClerkRecordsUnstored)
+		require.True(t, cp.lowestBusy.due(time.Now()))
+
+		signature := releasedSignature()
+		for range 3 {
+			requireRetryLater(t, runClerkTask(t, cp, signature, 49992), msgMempoolBusy, clerkDeferRetryDelay)
+		}
+		require.Empty(t, n.sequences)
+		require.Equal(t, before+1, testutil.ToFloat64(metrics.ClerkRecordsUnstored))
+	})
+
 	t.Run("an unreadable latest ID on L1 doesn't hold a rebroadcast", func(t *testing.T) {
 		n, rest, comet := newBurstNode(t)
 		n.latestUnavailable = true
@@ -1137,6 +1297,7 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		n.mempoolTotal = clerkLowestBusyTxs
 		cp.mempool.forget()
 		signature.Headers[acceptedAtHeader] = unixAgo(clerkMaxStoreWait)
+		require.True(t, cp.lowestBusy.due(time.Now()))
 		requireRetryLater(t, runClerkTask(t, cp, signature, 49992), msgMempoolBusy, clerkDeferRetryDelay)
 
 		n.stored[49992] = true
@@ -1254,9 +1415,9 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 
 		cp.seedFrontier(context.Background(), time.Now())
 		lowest, _, _ := cp.pending.lowest(time.Now())
-		require.Equal(t, uint64(52001), lowest, "no gap within a window of bor: heimdall's bound")
+		require.Equal(t, uint64(49992+clerkOrderWindow), lowest, "no gap within a window of bor: the first ID the scan didn't read")
 		require.Equal(t, []uint64{1000, 1001, 1002}, n.listPages, "the pages of one window after bor")
-		require.True(t, cp.seeded.Load(), "bor backs a seed with no gap below heimdall's bound")
+		require.True(t, cp.seeded.Load(), "a clean scan backs the seed")
 	})
 
 	t.Run("a record count beyond int64 seeds nothing", func(t *testing.T) {
@@ -1392,7 +1553,7 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		n.borUnavailable = false
 		n.borLast = 49991
 		cp.seedFrontier(context.Background(), start.Add(2*clerkSeedRetryBackoff))
-		lowest, _, _ = cp.pending.lowest(start.Add(2*clerkSeedRetryBackoff))
+		lowest, _, _ = cp.pending.lowest(start.Add(2 * clerkSeedRetryBackoff))
 		require.Equal(t, uint64(49993), lowest, "the gap below the bound, once bor answers")
 		require.Len(t, cp.pending.leases.entries, 1)
 		require.True(t, cp.seeded.Load())
@@ -1495,7 +1656,7 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 
 		cp.seedFrontier(context.Background(), time.Now())
 		lowest, _, _ := cp.pending.lowest(time.Now())
-		require.Equal(t, uint64(52001), lowest)
+		require.Equal(t, uint64(50000+clerkOrderWindow), lowest)
 		require.Equal(t, []uint64{1000, 1001, 1002}, n.listPages)
 	})
 
@@ -1902,8 +2063,11 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 	t.Run("record lookups beyond the bound wait without holding a worker", func(t *testing.T) {
 		n, rest, comet := newBurstNode(t)
 		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		releases := make([]func(), 0, clerkRecordLookups)
 		for range clerkRecordLookups {
-			require.True(t, cp.recordLookups.tryAcquire())
+			release := cp.recordLookups.tryAcquire(false)
+			require.NotNil(t, release)
+			releases = append(releases, release)
 		}
 
 		cp.pending.touch(49991, "lower", time.Now())
@@ -1915,11 +2079,29 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		require.Zero(t, n.recordLookups[49993], "a released store check waits on the slow cadence")
 
 		requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{}, 49991))
-		require.NotZero(t, n.recordLookups[49991], "the lowest ID doesn't wait for a slot")
+		require.NotZero(t, n.recordLookups[49991], "the lowest ID has a slot of its own")
 
-		cp.recordLookups.release()
+		releases[0]()
 		requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{}, 49992))
-		require.True(t, cp.recordLookups.tryAcquire(), "the task gave its slot back")
+		require.NotNil(t, cp.recordLookups.tryAcquire(false), "the task gave its slot back")
+	})
+
+	t.Run("a second lowest-ID lookup in flight waits instead of taking another worker", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		releasePriority := cp.recordLookups.tryAcquire(true)
+		require.NotNil(t, releasePriority)
+
+		requireRetryLater(t, runClerkTask(t, cp, &tasks.Signature{}, 49991), msgLookupsBusy, clerkDeferRetryDelay)
+		require.Zero(t, n.recordLookups[49991])
+
+		for range clerkRecordLookups {
+			require.NotNil(t, cp.recordLookups.tryAcquire(false), "the shared slots stay free for the other tasks")
+		}
+
+		releasePriority()
+		requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{}, 49991))
+		require.NotZero(t, n.recordLookups[49991])
 	})
 
 	t.Run("a lookup that panics gives its slot back", func(t *testing.T) {
@@ -1931,10 +2113,11 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		n.stored[49992] = true
 		cp.cliCtx.Codec = nil
 
-		require.Panics(t, func() { _, _ = cp.checkStored(context.Background(), "StateSynced", &event, nil, 49992, 49991) })
+		require.Panics(t, func() { _, _, _ = cp.checkStored(context.Background(), "StateSynced", &event, nil, 49992, 49991) })
 		for range clerkRecordLookups {
-			require.True(t, cp.recordLookups.tryAcquire())
+			require.NotNil(t, cp.recordLookups.tryAcquire(false))
 		}
+		require.NotNil(t, cp.recordLookups.tryAcquire(true))
 	})
 
 	t.Run("a last attempt that panics still lets go of the order window", func(t *testing.T) {

@@ -103,13 +103,14 @@ var (
 		Help:      "Total number of idle lowest pending state syncs dropped because heimdall already stored them",
 	})
 
-	// ClerkTasksExhausted counts state sync tasks that ran out of retries
-	// before heimdall stored their record.
+	// ClerkTasksExhausted counts state sync tasks that ran out of retries, or
+	// of time after their record entered the mempool, before heimdall stored
+	// their record.
 	ClerkTasksExhausted = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: Namespace,
 		Subsystem: "bridge",
 		Name:      "clerk_tasks_exhausted_total",
-		Help:      "Total number of state sync tasks that ran out of retries before heimdall stored their record",
+		Help:      "Total number of state sync tasks that ran out of retries or time before heimdall stored their record",
 	})
 
 	// SelfHealCheckpointAcksProcessed counts missing NewHeaderBlock checkpoint

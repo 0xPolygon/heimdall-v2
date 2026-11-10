@@ -170,3 +170,50 @@ func TestGetRecordIDsPage(t *testing.T) {
 		})
 	}
 }
+
+func TestClerkRecordStored(t *testing.T) {
+	// Not parallel: points the global helper config and client at a stub.
+	cdc := codec.NewProtoCodec(codectypes.NewInterfaceRegistry())
+	tests := []struct {
+		name       string
+		status     int
+		body       string
+		wantStored bool
+		wantErr    bool
+	}{
+		{name: "stored", status: http.StatusOK, body: `{"record":{"id":"49992"}}`, wantStored: true},
+		{name: "another record", status: http.StatusOK, body: `{"record":{"id":"49991"}}`, wantErr: true},
+		{name: "empty record", status: http.StatusOK, body: `{"record":{}}`, wantErr: true},
+		{name: "not found", status: http.StatusNotFound},
+		{name: "heimdall's not-found answer", status: http.StatusInternalServerError, body: `{"code":13,"message":"collections: not found: key '49992' of type uint64"}`},
+		{name: "other query failure", status: http.StatusInternalServerError, body: `{"code":13,"message":"database closed"}`, wantErr: true},
+		{name: "unavailable", status: http.StatusServiceUnavailable, wantErr: true},
+		{name: "malformed body", status: http.StatusOK, body: `{`, wantErr: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				require.Equal(t, "/clerk/event-records/49992", r.URL.Path)
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			defer srv.Close()
+
+			server := *serverconfig.DefaultConfig()
+			server.API.Address = srv.URL
+			helper.SetTestConfig(helper.CustomAppConfig{Config: server, Custom: helper.GetDefaultHeimdallConfig()})
+			prev := helper.Client
+			helper.Client = &http.Client{}
+			t.Cleanup(func() { helper.Client = prev })
+
+			stored, err := ClerkRecordStored(context.Background(), cdc, 49992)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.wantStored, stored)
+		})
+	}
+}

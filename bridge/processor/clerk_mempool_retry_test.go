@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 	"testing"
@@ -145,17 +146,25 @@ func TestAwaitStored(t *testing.T) {
 	checkDue := acceptedAt.Add(clerkMaxStoreWait)
 	accepted := tasks.Headers{acceptedAtHeader: strconv.FormatInt(acceptedAt.Unix(), 10), windowReleasedHeader: headerTrue}
 	rpcDown := errors.New("rpc down")
+	firstAt := acceptedAt.Add(clerkMaxStoreWait - clerkMaxReleasedAge)
+	reaccepted := maps.Clone(accepted)
+	reaccepted[firstAcceptedAtHeader] = strconv.FormatInt(firstAt.Unix(), 10)
+	reported := maps.Clone(accepted)
+	reported[unstoredHeader] = accepted[acceptedAtHeader]
 
 	tests := []struct {
-		name         string
-		headers      tasks.Headers
-		noSignature  bool
-		now          time.Time
-		wantDelay    time.Duration // zero: no wait
-		latestOnL1   uint64        // zero: far above the ID
-		latestErr    error
-		wantHeld     bool
-		wantUnstored bool
+		name           string
+		headers        tasks.Headers
+		noSignature    bool
+		now            time.Time
+		wantDelay      time.Duration // zero: no wait
+		latestOnL1     uint64        // zero: far above the ID
+		latestErr      error
+		wantHeld       bool
+		wantUnstored   bool
+		wantAbandoned  bool
+		lookupFailed   bool
+		wantUnreadable bool
 	}{
 		{name: "no task signature", noSignature: true, now: checkDue},
 		{name: "never accepted", now: checkDue},
@@ -166,6 +175,12 @@ func TestAwaitStored(t *testing.T) {
 		{name: "check due, ID is the latest on L1", headers: accepted, now: checkDue, latestOnL1: 49992, wantUnstored: true},
 		{name: "check due, ID above the latest on L1", headers: accepted, now: checkDue, latestOnL1: 49991, wantHeld: true},
 		{name: "check due, latest on L1 unreadable", headers: accepted, now: checkDue, latestErr: rpcDown, wantUnstored: true},
+		{name: "check due, already reported for this accept", headers: reported, now: checkDue},
+		{name: "first accepted just under the age cap", headers: reaccepted, now: checkDue.Add(-time.Second), wantDelay: time.Second},
+		{name: "first accepted at the age cap", headers: reaccepted, now: checkDue, wantAbandoned: true},
+		{name: "first accepted at the age cap, ID above the latest on L1", headers: reaccepted, now: checkDue, latestOnL1: 49991, wantAbandoned: true},
+		{name: "no first accept, last accept at the age cap", headers: accepted, now: acceptedAt.Add(clerkMaxReleasedAge), wantAbandoned: true},
+		{name: "at the age cap with an unreadable lookup", headers: reaccepted, now: checkDue, lookupFailed: true, wantUnreadable: true},
 	}
 
 	for _, tc := range tests {
@@ -183,14 +198,19 @@ func TestAwaitStored(t *testing.T) {
 
 			ctx := context.Background()
 			if !tc.noSignature {
-				task, err := tasks.NewWithSignature(func(context.Context) error { return nil }, &tasks.Signature{Headers: tc.headers})
+				task, err := tasks.NewWithSignature(func(context.Context) error { return nil }, &tasks.Signature{Headers: maps.Clone(tc.headers)})
 				require.NoError(t, err)
 				ctx = task.Context
 			}
 
-			err := cp.awaitStored(ctx, "StateSynced", 49992, tc.now)
+			err := cp.awaitStored(ctx, "StateSynced", 49992, "origin", !tc.lookupFailed, tc.now)
 			require.Equal(t, tc.wantHeld, strings.Contains(logs.String(), warnMsgClerkNotOnL1))
+			require.Equal(t, tc.wantAbandoned, strings.Contains(logs.String(), "ERR "+errMsgClerkAbandoned))
 			switch {
+			case tc.wantAbandoned:
+				require.ErrorIs(t, err, errRecordAbandoned)
+			case tc.wantUnreadable:
+				requireRetryLater(t, err, msgRecordUnreadable, abandonRetryDelay(49992))
 			case tc.wantHeld:
 				requireRetryLater(t, err, msgNotOnL1, clerkMaxStoreWait)
 			case tc.wantDelay == 0:
