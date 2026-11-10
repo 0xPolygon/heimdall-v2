@@ -13,7 +13,7 @@ import (
 
 func TestServingMemoryBoundary(t *testing.T) {
 	cfg := DefaultConfig()
-	cfg.MemoryBytes = 1200
+	cfg.MemoryBytes = 1800
 	g, _ := testGovernor(t, cfg)
 	req := servebudget.Request{Family: servebudget.Block, MaxBytes: 100}
 	l, ok := g.Admit(peerA, req)
@@ -35,7 +35,9 @@ func TestServingMemoryBoundary(t *testing.T) {
 }
 
 func TestServingPeerInflightBoundary(t *testing.T) {
-	g, _ := testGovernor(t, DefaultConfig())
+	cfg := DefaultConfig()
+	cfg.MaxInflight = 360
+	g, _ := testGovernor(t, cfg)
 	var leases []servebudget.Lease
 	for i := range maxPeerInflight {
 		l, ok := g.Admit(peerA, servebudget.Request{Family: servebudget.Chunk, Height: uint64(i), MaxBytes: 10})

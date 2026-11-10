@@ -24,8 +24,8 @@ type Config struct {
 
 func DefaultConfig() Config {
 	return Config{
-		Observe: true, BytesPerSecond: 32 << 20, BurstBytes: 3 << 30, MemoryBytes: 3 << 30, MaxInflight: 12 * maxPeerInflight, RequestsPerSecond: 128,
-		PeerBytesPerSecond: 8 << 20, PeerBurstBytes: 128 << 20, PeerRequestsPerSecond: 32, RepeatBytes: 32 << 20,
+		Observe: true, BytesPerSecond: 32 << 20, BurstBytes: 3 << 30, MemoryBytes: 3 << 30, MaxInflight: 12 * maxPeerInflight, RequestsPerSecond: 2048,
+		PeerBytesPerSecond: 8 << 20, PeerBurstBytes: 128 << 20, PeerRequestsPerSecond: 256, RepeatBytes: 32 << 20,
 	}
 }
 

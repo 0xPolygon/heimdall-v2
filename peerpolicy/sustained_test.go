@@ -11,7 +11,9 @@ import (
 )
 
 func TestServingSustainedWorkBackpressure(t *testing.T) {
-	g, now := testGovernor(t, DefaultConfig())
+	cfg := DefaultConfig()
+	cfg.RequestsPerSecond, cfg.PeerRequestsPerSecond = 192, 32
+	g, now := testGovernor(t, cfg)
 	admitted, refused := 0, 0
 	for i := 0; i < 5000; i++ {
 		*now = time.Duration(i) * 10 * time.Millisecond
@@ -62,7 +64,7 @@ func TestServingWorkBackpressurePreservesEvidence(t *testing.T) {
 func TestServingConfiguredHistoryThroughput(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.PeerRequestsPerSecond = 128
-	cfg.RequestsPerSecond = 1536
+	cfg.RequestsPerSecond = 2304
 	g, now := testGovernor(t, cfg)
 	for i := uint64(0); i < 8000; i++ {
 		*now = time.Duration(i) * 8 * time.Millisecond
@@ -92,8 +94,8 @@ func TestServingHistoryConfigurationBounds(t *testing.T) {
 	}
 	cfg := DefaultConfig()
 	objects, history := cfg.historyLimits()
-	require.Equal(t, uint64(defaultPeerHistory), objects)
-	require.Equal(t, uint64(defaultNodeHistory), history)
+	require.Equal(t, 2*cfg.PeerRequestsPerSecond*61+2*maxPeerInflight, objects)
+	require.Equal(t, cfg.RequestsPerSecond*61+cfg.MaxInflight, history)
 	cfg.RequestsPerSecond = 2048
 	_, history = cfg.historyLimits()
 	require.Equal(t, uint64(2048*61)+cfg.MaxInflight, history)
@@ -103,7 +105,7 @@ func TestServingHistoryConfigurationBounds(t *testing.T) {
 
 func TestServingConfiguredNodeHistoryThroughput(t *testing.T) {
 	cfg := DefaultConfig()
-	cfg.RequestsPerSecond = 2048
+	cfg.RequestsPerSecond = 3072
 	g, now := testGovernor(t, cfg)
 	for second := uint64(0); second < 60; second++ {
 		*now = time.Duration(second) * time.Second

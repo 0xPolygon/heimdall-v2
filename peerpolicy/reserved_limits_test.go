@@ -15,54 +15,31 @@ func TestServingReservedPoolLimits(t *testing.T) {
 		for _, resource := range []string{"bytes", "work", "memory", "inflight"} {
 			t.Run(class+"/"+resource, func(t *testing.T) {
 				cfg := DefaultConfig()
-				cfg.BytesPerSecond, cfg.BurstBytes = 32, 96
+				cfg.BytesPerSecond, cfg.BurstBytes = 48, 144
 				cfg.RequestsPerSecond = 128
-				cfg.MemoryBytes = 240
-				cfg.MaxInflight = 240
-				family := servebudget.Block
-				limit := 6
-				if class == "protected" {
-					limit = 3
-				}
+				cfg.MemoryBytes, cfg.MaxInflight = 240, 240
+				family, limit := servebudget.Block, 6
 				if class == "catchup" {
-					family = servebudget.Catchup
+					family, limit = servebudget.Catchup, 12
 				}
 				if class == "protected" {
 					cfg.ProtectedIDs = []string{peerA}
-					for i := 0; i < 8; i++ {
+					for i := 0; i < 16; i++ {
 						cfg.ProtectedIDs = append(cfg.ProtectedIDs, fmt.Sprintf("%040x", i+1))
 					}
 				}
-				reason := "local_capacity"
-				maxBytes := uint64(4)
+				reason, maxBytes := "local_capacity", uint64(4)
 				switch resource {
 				case "bytes":
 					reason = "local_bytes"
 				case "work":
-					cfg.RequestsPerSecond = 8
-					cfg.MaxInflight = 24
-					limit = 6
-					if class == "ordinary" {
-						limit = 12
-					}
-					cfg.BurstBytes = 1024
+					cfg.RequestsPerSecond, cfg.MaxInflight, cfg.BurstBytes = 12, 24, 1024
+					limit = 8
 				case "memory":
-					limit = 3
-					if class == "ordinary" {
-						limit = 6
-					}
-					maxBytes = 10
-					cfg.BurstBytes = 1024
-					cfg.RequestsPerSecond = 128
+					limit, maxBytes, cfg.BurstBytes = 4, 10, 1024
 				case "inflight":
-					limit = 6
-					if class == "ordinary" {
-						limit = 12
-					}
-					cfg.MaxInflight = 24
-					cfg.MemoryBytes = 1024
-					cfg.RequestsPerSecond = 128
-					cfg.BurstBytes = 1024
+					limit = 8
+					cfg.MaxInflight, cfg.MemoryBytes, cfg.BurstBytes = 24, 1024, 1024
 				}
 				g, now := testGovernor(t, cfg)
 				var pending []servebudget.Lease
@@ -89,8 +66,8 @@ func TestServingReservedPoolLimits(t *testing.T) {
 					}
 					return
 				}
-				refill := time.Second
-				if class != "protected" {
+				refill := time.Second / 2
+				if class == "catchup" {
 					refill /= 2
 				}
 				*now = refill / 2

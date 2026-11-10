@@ -12,6 +12,7 @@ import (
 
 func TestServingRetainsLiveHistory(t *testing.T) {
 	cfg := DefaultConfig()
+	cfg.PeerRequestsPerSecond = 32
 	cfg.RepeatBytes = 1
 	g, now := testGovernor(t, cfg)
 	req := servebudget.Request{Family: servebudget.Block, Height: 1, MaxBytes: 10}
@@ -79,6 +80,7 @@ func TestServingHistoryAllocatedOnDemand(t *testing.T) {
 
 func TestServingHistoryNodeWideBound(t *testing.T) {
 	cfg := DefaultConfig()
+	cfg.RequestsPerSecond, cfg.PeerRequestsPerSecond = 128, 32
 	g, now := testGovernor(t, cfg)
 	req := servebudget.Request{Family: servebudget.Block, MaxBytes: 10}
 	peers := defaultNodeHistory / defaultPeerHistory

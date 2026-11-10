@@ -25,12 +25,17 @@ type blockWireReceiver struct {
 	*p2p.BaseReactor
 	received  atomic.Int64
 	responses chan int64
+	deferred  chan int64
 }
 
 func (*blockWireReceiver) GetChannels() []*conn.ChannelDescriptor {
 	return []*conn.ChannelDescriptor{{ID: blocksync.BlocksyncChannel, Priority: 1, MessageType: &bc.Message{}}}
 }
+
 func (r *blockWireReceiver) Receive(e p2p.Envelope) {
+	if response, ok := e.Message.(*bc.BlockDeferredResponse); ok {
+		r.deferred <- response.Height
+	}
 	if response, ok := e.Message.(*bc.BlockResponse); ok {
 		r.received.Add(1)
 		if r.responses != nil {
@@ -39,9 +44,10 @@ func (r *blockWireReceiver) Receive(e p2p.Envelope) {
 	}
 }
 
-func blockServingNetwork(t *testing.T) (*Governor, *p2p.Switch, *p2p.Switch, *blockWireReceiver, *mocks.Store) {
+func blockServingNetwork(t *testing.T, policyCfg Config) (*Governor, *p2p.Switch, *p2p.Switch, *blockWireReceiver, *mocks.Store, *atomic.Int64) {
 	t.Helper()
-	g, err := New(DefaultConfig(), prometheus.NewRegistry())
+	clock := new(atomic.Int64)
+	g, err := newGovernor(policyCfg, prometheus.NewRegistry(), func() time.Duration { return time.Duration(clock.Load()) })
 	require.NoError(t, err)
 	nativeCfg := cfg.DefaultP2PConfig()
 	nativeCfg.ServingPolicy = g
@@ -62,15 +68,15 @@ func blockServingNetwork(t *testing.T) (*Governor, *p2p.Switch, *p2p.Switch, *bl
 	executor := sm.NewBlockExecutor(stateStore, log.NewNopLogger(), nil, nil, nil, blocks)
 	reactor := blocksync.NewReactor(state, executor, blocks, false, blocksync.NopMetrics(), 0)
 	serving := servingSwitch(t, nativeCfg, reactor)
-	receiving := &blockWireReceiver{responses: make(chan int64, 100)}
+	receiving := &blockWireReceiver{responses: make(chan int64, 100), deferred: make(chan int64, 100)}
 	receiving.BaseReactor = p2p.NewBaseReactor("receive", receiving)
 	requester := servingSwitch(t, cfg.DefaultP2PConfig(), receiving)
 	require.NoError(t, requester.DialPeerWithAddress(serving.NetAddress()))
-	return g, serving, requester, receiving, stateStore
+	return g, serving, requester, receiving, stateStore, clock
 }
 
 func TestServingNativeBlockPipeline(t *testing.T) {
-	g, serving, requester, receiving, stateStore := blockServingNetwork(t)
+	g, serving, requester, receiving, stateStore, _ := blockServingNetwork(t, DefaultConfig())
 	peer := requester.Peers().Get(serving.NodeInfo().ID())
 	require.NotNil(t, peer)
 	for height := int64(1); height <= 20; height++ {
@@ -97,10 +103,13 @@ func TestServingNativeWorkBackpressure(t *testing.T) {
 
 func testServingNativeWorkBackpressure(t *testing.T, protected bool) {
 	t.Helper()
-	g, serving, requester, receiving, _ := blockServingNetwork(t)
+	policyCfg := DefaultConfig()
+	policyCfg.RequestsPerSecond, policyCfg.PeerRequestsPerSecond = 192, 32
+	g, serving, requester, receiving, _, clock := blockServingNetwork(t, policyCfg)
 	id := string(requester.NodeInfo().ID())
 	g.mu.Lock()
 	g.protected[id] = protected
+	g.peer(id, 0).work.tokens = 0
 	g.mu.Unlock()
 	peer := requester.Peers().Get(serving.NodeInfo().ID())
 	require.NotNil(t, peer)
@@ -110,7 +119,11 @@ func testServingNativeWorkBackpressure(t *testing.T, protected bool) {
 	for height := int64(1); height <= 20; height++ {
 		send(height)
 	}
-	deadline := time.NewTimer(30 * time.Second)
+	require.Eventually(t, func() bool {
+		return testutil.ToFloat64(g.events.WithLabelValues("peer_work_capacity")) > 0
+	}, time.Second, time.Millisecond)
+	clock.Add(int64(time.Second))
+	deadline := time.NewTimer(5 * time.Second)
 	defer deadline.Stop()
 	received := make(map[int64]bool)
 	for len(received) < 100 {
@@ -118,6 +131,7 @@ func testServingNativeWorkBackpressure(t *testing.T, protected bool) {
 		case height := <-receiving.responses:
 			require.False(t, received[height], "duplicate response for %d", height)
 			received[height] = true
+			clock.Add(int64(time.Second))
 			if next := int64(len(received)) + 20; next <= 100 {
 				send(next)
 			}

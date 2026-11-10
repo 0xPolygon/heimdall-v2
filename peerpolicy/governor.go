@@ -66,8 +66,8 @@ func newGovernor(cfg Config, registry prometheus.Registerer, now func() time.Dur
 		g.protected[strings.ToLower(id)] = true
 	}
 	// Disjoint shares prevent bulk peers from consuming catch-up or protected headroom.
-	for i, divisor := range []uint64{2, 4, 4} {
-		g.pools[i] = newPool(cfg, divisor, i == 1, now())
+	for i := range g.pools {
+		g.pools[i] = newPool(cfg, 3, i == 1, now())
 	}
 	return g, nil
 }

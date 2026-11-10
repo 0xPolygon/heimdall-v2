@@ -81,13 +81,13 @@ func TestServingMinimumPeerRefill(t *testing.T) {
 	}{
 		{"ordinary_block", servebudget.Block, false, 2},
 		{"ordinary_state", servebudget.Chunk, false, 2},
-		{"protected_block", servebudget.Block, true, 1},
-		{"protected_state", servebudget.Chunk, true, 1},
-		{"catchup", servebudget.Catchup, false, 2},
+		{"protected_block", servebudget.Block, true, 2},
+		{"protected_state", servebudget.Chunk, true, 2},
+		{"catchup", servebudget.Catchup, false, 4},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := DefaultConfig()
-			cfg.BytesPerSecond, cfg.RequestsPerSecond, cfg.BurstBytes = 8, 8, 24
+			cfg.BytesPerSecond, cfg.RequestsPerSecond, cfg.BurstBytes = 12, 12, 36
 			cfg.MaxInflight = 24
 			if tc.protected {
 				cfg.ProtectedIDs = []string{peerA}

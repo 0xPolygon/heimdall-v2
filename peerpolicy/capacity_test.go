@@ -56,8 +56,8 @@ func TestServingPeerMemoryHeadroom(t *testing.T) {
 
 func TestServingFamilyWorkTotals(t *testing.T) {
 	cfg := DefaultConfig()
-	cfg.RequestsPerSecond = 8
-	cfg.MaxInflight = 24
+	cfg.RequestsPerSecond = 12
+	cfg.MaxInflight = 36
 	g, now := testGovernor(t, cfg)
 	third := fmt.Sprintf("%040x", 3)
 	req := servebudget.Request{Family: servebudget.Block, MaxBytes: 10}

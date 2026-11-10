@@ -65,7 +65,7 @@ func TestServingSharedHeadroom(t *testing.T) {
 	cfg.ProtectedIDs = []string{strings.ToUpper(peerB)}
 	g, _ := testGovernor(t, cfg)
 	var leases []servebudget.Lease
-	for i, family := range []servebudget.Family{servebudget.Block, servebudget.Snapshot, servebudget.Chunk, servebudget.Block, servebudget.Snapshot, servebudget.Block, servebudget.Block, servebudget.Snapshot, servebudget.Chunk, servebudget.Block, servebudget.Snapshot, servebudget.Block} {
+	for i, family := range []servebudget.Family{servebudget.Block, servebudget.Snapshot, servebudget.Chunk, servebudget.Block, servebudget.Snapshot, servebudget.Block, servebudget.Block, servebudget.Snapshot} {
 		l, ok := g.Admit(fmt.Sprintf("%040x", i+1), servebudget.Request{Family: family, Height: 1, MaxBytes: 100})
 		require.True(t, ok)
 		leases = append(leases, l)
@@ -157,11 +157,9 @@ func TestServingLimits(t *testing.T) {
 			g, _ := testGovernor(t, cfg)
 			r := servebudget.Request{Family: servebudget.Block, MaxBytes: 100}
 			if kind == "work" {
-				for i := range 3 {
-					for range 4 {
-						serve(t, g, fmt.Sprintf("%040x", i+1), r, 10)
-						r.Height++
-					}
+				for i := range 8 {
+					serve(t, g, fmt.Sprintf("%040x", i+1), r, 10)
+					r.Height++
 				}
 			}
 			for range 3 {
