@@ -292,17 +292,16 @@ func (cp *ClerkProcessor) submitEventRecord(ctx, spanCtx context.Context, eventN
 	)
 
 	origin := fmt.Sprintf("%s:%d", vLog.TxHash.Hex(), vLog.Index)
-	// An identical copy of this record in the mempool is the same event,
-	// until a store check found the record missing anyway: anyone can sign a
-	// copy, and one that is never included mustn't stand in for this
-	// bridge's own tx.
-	if !storeCheckFailed(tasks.SignatureFromContext(ctx)) {
-		_, checkTxAgainstMempoolSpan := tracing.StartSpan(spanCtx, "checkTxAgainstMempool")
-		inMempool, _ := cp.checkTxAgainstMempool(ctx, &msg, event)
-		tracing.EndSpan(checkTxAgainstMempoolSpan)
-		if inMempool {
-			return cp.waitOnMempoolCopy(ctx, eventName, event.Id.Uint64(), origin, time.Now())
-		}
+	// An identical copy of this record in the mempool is the same event.
+	// Once a store check found the record missing anyway, only this bridge's
+	// own pending tx counts: anyone can sign a copy, and one that is never
+	// included mustn't stand in for this bridge's broadcast.
+	ownOnly := storeCheckFailed(tasks.SignatureFromContext(ctx))
+	_, checkTxAgainstMempoolSpan := tracing.StartSpan(spanCtx, "checkTxAgainstMempool")
+	inMempool, _ := cp.checkTxAgainstMempool(ctx, &msg, event, ownOnly)
+	tracing.EndSpan(checkTxAgainstMempoolSpan)
+	if inMempool {
+		return cp.waitOnMempoolCopy(ctx, eventName, event.Id.Uint64(), origin, ownOnly, time.Now())
 	}
 
 	_, BroadcastToHeimdallSpan := tracing.StartSpan(spanCtx, "BroadcastToHeimdall")

@@ -131,7 +131,7 @@ func TestWaitOnMempoolCopySettles(t *testing.T) {
 	require.NoError(t, err)
 	cp.pending.touch(49992, "task", now)
 
-	requireRetryLater(t, cp.waitOnMempoolCopy(task.Context, "StateSynced", 49992, "a", now), msgAwaitingStore, clerkMaxStoreWait)
+	requireRetryLater(t, cp.waitOnMempoolCopy(task.Context, "StateSynced", 49992, "a", false, now), msgAwaitingStore, clerkMaxStoreWait)
 	require.True(t, windowReleased(signature))
 	require.Equal(t, uint64(50000), cp.pending.touch(50000, "other", now), "a record already in the mempool doesn't hold the window")
 	acceptedAt, ok := retryStart(signature.Headers, acceptedAtHeader)
@@ -179,7 +179,7 @@ func TestAwaitStored(t *testing.T) {
 		{name: "first accepted just under the age cap", headers: reaccepted, now: checkDue.Add(-time.Second), wantDelay: time.Second},
 		{name: "first accepted at the age cap", headers: reaccepted, now: checkDue, wantAbandoned: true},
 		{name: "first accepted at the age cap, ID above the latest on L1", headers: reaccepted, now: checkDue, latestOnL1: 49991, wantAbandoned: true},
-		{name: "no first accept, last accept at the age cap", headers: accepted, now: acceptedAt.Add(clerkMaxReleasedAge), wantAbandoned: true},
+		{name: "no own accept, last accept at the age cap", headers: accepted, now: acceptedAt.Add(clerkMaxReleasedAge), wantUnstored: true},
 		{name: "at the age cap with an unreadable lookup", headers: reaccepted, now: checkDue, lookupFailed: true, wantUnreadable: true},
 	}
 

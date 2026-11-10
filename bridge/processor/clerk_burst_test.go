@@ -98,6 +98,8 @@ type burstNode struct {
 	listPages []uint64
 	// listUnavailable makes record-list queries fail.
 	listUnavailable bool
+	// listFailFrom, when set, makes record-list pages from it on fail.
+	listFailFrom uint64
 	// latestOnL1 is the StateSender counter the latest-id query reports.
 	latestOnL1 uint64
 	// latestUnavailable makes the latest-id query fail.
@@ -170,6 +172,10 @@ func (n *burstNode) serveREST(w http.ResponseWriter, r *http.Request) {
 		_, err := fmt.Sscanf(r.URL.RawQuery, "page=%d&limit=%d", &page, &limit)
 		require.NoError(n.t, err)
 		n.listPages = append(n.listPages, page)
+		if n.listFailFrom != 0 && page >= n.listFailFrom {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
 		if n.lookupDelay > 0 {
 			n.mu.Unlock()
 			select {
@@ -1516,6 +1522,39 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		require.Equal(t, end, lowest)
 	})
 
+	t.Run("a seed scan that fails after a full window still moves the seed on", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		n.recordCount = 52000
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		cp.seeded.Store(false)
+		n.borUnavailable = false
+		n.borLast = 49991
+		for id := uint64(49992); id < 49992+3*clerkOrderWindow; id++ {
+			n.stored[id] = true
+		}
+		n.listFailFrom = (49992+clerkOrderWindow-1)/recordListPage + 2
+
+		cp.seedFrontier(context.Background(), time.Now())
+		lowest, _, _ := cp.pending.lowest(time.Now())
+		require.Equal(t, uint64(49992+clerkOrderWindow), lowest, "the first ID the failed window didn't read")
+		require.True(t, cp.seeded.Load())
+	})
+
+	t.Run("a seed scan failing in its first window stays provisional", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		n.recordCount = 52000
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		cp.seeded.Store(false)
+		n.borUnavailable = false
+		n.borLast = 49991
+		n.listFailFrom = 1
+
+		cp.seedFrontier(context.Background(), time.Now())
+		lowest, _, _ := cp.pending.lowest(time.Now())
+		require.Equal(t, uint64(52001), lowest)
+		require.False(t, cp.seeded.Load(), "a later task scans again")
+	})
+
 	t.Run("a seed scan reaching heimdall's bound seeds past it", func(t *testing.T) {
 		n, rest, comet := newBurstNode(t)
 		n.recordCount = 50100
@@ -2126,6 +2165,21 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		acceptedAt, ok := retryStart(signature.Headers, acceptedAtHeader)
 		require.True(t, ok)
 		require.WithinDuration(t, time.Now(), acceptedAt, 5*time.Second)
+	})
+
+	t.Run("this bridge's own pending tx still counts after a failed store check", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		own := burstRecord(49992)
+		address, err := helper.GetAddressString()
+		require.NoError(t, err)
+		own.From = address
+		n.pending = []*clerktypes.MsgEventRecord{own}
+
+		signature := releasedSignature()
+		signature.Headers[firstAcceptedAtHeader] = signature.Headers[acceptedAtHeader]
+		requireRetryLater(t, runClerkTask(t, cp, signature, 49992), msgAwaitingStore, clerkMaxStoreWait)
+		require.Empty(t, n.sequences, "no second copy next to its own")
 	})
 
 	t.Run("only this bridge's own accepted tx starts the give-up clock", func(t *testing.T) {

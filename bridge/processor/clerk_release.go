@@ -31,7 +31,7 @@ func (cp *ClerkProcessor) awaitStored(ctx context.Context, eventName string, id 
 	if waited := now.Sub(acceptedAt); waited < clerkMaxStoreWait {
 		return cp.waitForStore(eventName, id, acceptedAt, wholeSeconds(clerkMaxStoreWait-waited))
 	}
-	if err := cp.abandonUnstored(signature, eventName, id, origin, missing, acceptedAt, now); err != nil {
+	if err := cp.abandonUnstored(signature, eventName, id, origin, missing, now); err != nil {
 		return err
 	}
 	if err := cp.holdIfNotOnL1(eventName, id, now); err != nil {
@@ -50,16 +50,13 @@ func (cp *ClerkProcessor) awaitStored(ctx context.Context, eventName string, id 
 var errRecordAbandoned = errors.New("state sync record abandoned")
 
 // abandonUnstored returns errRecordAbandoned once the record is
-// clerkMaxReleasedAge past its first accept and this run's lookup found it
-// missing; past that age with an unreadable lookup, the task asks again
-// shortly instead. Tasks accepted before firstAcceptedAtHeader existed count
-// from their last accept.
-func (cp *ClerkProcessor) abandonUnstored(signature *tasks.Signature, eventName string, id uint64, origin string, missing bool, acceptedAt, now time.Time) error {
+// clerkMaxReleasedAge past this bridge's own first accepted broadcast of it
+// and this run's lookup found it missing; past that age with an unreadable
+// lookup, the task asks again later instead. A task this bridge never got its
+// own tx accepted for doesn't give up.
+func (cp *ClerkProcessor) abandonUnstored(signature *tasks.Signature, eventName string, id uint64, origin string, missing bool, now time.Time) error {
 	first, ok := retryStart(signature.Headers, firstAcceptedAtHeader)
-	if !ok {
-		first = acceptedAt
-	}
-	if now.Sub(first) < clerkMaxReleasedAge {
+	if !ok || now.Sub(first) < clerkMaxReleasedAge {
 		return nil
 	}
 	if !missing {
@@ -203,7 +200,7 @@ func headerString(headers tasks.Headers, key string) string {
 
 // waitOnMempoolCopy settles a task whose record another broadcast already put
 // in the mempool: an identical copy is the same event, stored when included.
-func (cp *ClerkProcessor) waitOnMempoolCopy(ctx context.Context, eventName string, id uint64, origin string, now time.Time) error {
+func (cp *ClerkProcessor) waitOnMempoolCopy(ctx context.Context, eventName string, id uint64, origin string, own bool, now time.Time) error {
 	cp.Logger.Info(infoMsgClerkTxInMempool, "event", eventName, "id", id, "retry delay", clerkMaxStoreWait)
-	return cp.settleAccepted(ctx, id, origin, false, now)
+	return cp.settleAccepted(ctx, id, origin, own, now)
 }

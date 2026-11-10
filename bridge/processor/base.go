@@ -186,7 +186,9 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 
 // checkTxAgainstMempool checks if the transaction is already in the mempool or not.
 // It is consumed only for `clerk` processor.
-func (bp *BaseProcessor) checkTxAgainstMempool(ctx context.Context, msg types.Msg, event interface{}) (bool, error) {
+// checkTxAgainstMempool reports whether the mempool holds the same event
+// record; with ownOnly, only one this bridge signed counts.
+func (bp *BaseProcessor) checkTxAgainstMempool(ctx context.Context, msg types.Msg, event interface{}, ownOnly bool) (bool, error) {
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "checkTxAgainstMempool", time.Now())
 
 	clerkMsg, ok := msg.(*clerkTypes.MsgEventRecord)
@@ -211,7 +213,8 @@ func (bp *BaseProcessor) checkTxAgainstMempool(ctx context.Context, msg types.Ms
 	}
 
 	for _, txBytes := range result.Txs {
-		if mempoolClerkMsg := bp.decodeClerkMsg(txBytes); mempoolClerkMsg != nil && sameEventRecord(mempoolClerkMsg, clerkMsg) {
+		mempoolClerkMsg := bp.decodeClerkMsg(txBytes)
+		if mempoolClerkMsg != nil && sameEventRecord(mempoolClerkMsg, clerkMsg) && (!ownOnly || mempoolClerkMsg.From == clerkMsg.From) {
 			bp.Logger.Debug("Duplicate clerk tx found in mempool", "txHash", clerkMsg.GetTxHash(), "logIndex", clerkMsg.GetLogIndex())
 			return true, nil
 		}

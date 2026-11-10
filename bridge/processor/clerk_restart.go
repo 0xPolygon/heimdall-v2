@@ -132,9 +132,10 @@ const seedScanWindows = 10
 
 // scanForGap returns the first ID from from to count heimdall lacks, reading
 // up to seedScanWindows order windows: 0 when every ID up to count is stored,
-// or the first ID it didn't read when it stopped short. scanned is false when
-// a read failed.
+// or the first ID it didn't read when it stopped short, after its windows or
+// at a failed read. scanned is false when the first window's read failed.
 func (cp *ClerkProcessor) scanForGap(ctx context.Context, from, count uint64) (next uint64, scanned bool) {
+	start := from
 	for range seedScanWindows {
 		if from > count {
 			return 0, true
@@ -142,6 +143,10 @@ func (cp *ClerkProcessor) scanForGap(ctx context.Context, from, count uint64) (n
 		to := min(count, from+clerkOrderWindow-1)
 		gap, found, ok := cp.firstGap(ctx, from, to)
 		if !ok {
+			// The windows already read still move the seed on.
+			if from > start {
+				return from, true
+			}
 			return 0, false
 		}
 		if found {
