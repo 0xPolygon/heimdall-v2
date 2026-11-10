@@ -608,19 +608,19 @@ func TestDeferOutOfOrderBehindASeedOnlyLowest(t *testing.T) {
 	capped := wholeSeconds(clerkSeedOrderDelay + spread(far, clerkSeedOrderDelay/5))
 
 	cp.pending.touch(1, "task", time.Now().Add(-2*clerkLowestIdle))
-	_, err := cp.deferOutOfOrder("StateSynced", far, "far")
+	_, err := cp.deferOutOfOrder(context.Background(), "StateSynced", far, "far")
 	requireRetryLater(t, err, msgAheadOfPending, full)
 
 	cp.pending.seed(1, time.Now())
-	_, err = cp.deferOutOfOrder("StateSynced", far, "far")
+	_, err = cp.deferOutOfOrder(context.Background(), "StateSynced", far, "far")
 	requireRetryLater(t, err, msgAheadOfPending, full)
 
 	cp.pending.release(1, "task")
-	_, err = cp.deferOutOfOrder("StateSynced", far, "far")
+	_, err = cp.deferOutOfOrder(context.Background(), "StateSynced", far, "far")
 	requireRetryLater(t, err, msgAheadOfPending, capped)
 
 	near := uint64(1 + 20*clerkOrderWindow)
-	_, err = cp.deferOutOfOrder("StateSynced", near, "near")
+	_, err = cp.deferOutOfOrder(context.Background(), "StateSynced", near, "near")
 	requireRetryLater(t, err, msgAheadOfPending, wholeSeconds(20*clerkDeferRetryDelay+spread(near, 20*clerkDeferRetryDelay/5)))
 }
 

@@ -1420,6 +1420,68 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		require.True(t, cp.seeded.Load(), "a clean scan backs the seed")
 	})
 
+	t.Run("a stored seed short of heimdall's bound moves on to the next gap", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		n.recordCount = 52000
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+		cp.seeded.Store(false)
+		n.borUnavailable = false
+		n.borLast = 49991
+		for id := uint64(49992); id < 49992+clerkOrderWindow; id++ {
+			n.stored[id] = true
+		}
+
+		now := time.Now()
+		cp.seedFrontier(context.Background(), now)
+		seed := uint64(49992 + clerkOrderWindow)
+		lowest, _, _ := cp.pending.lowest(now)
+		require.Equal(t, seed, lowest)
+
+		n.stored[seed] = true
+		later := now.Add(2 * clerkLowestIdle)
+		require.Equal(t, seed+1, cp.dropStoredLowest(context.Background(), seed, later), "the next ID heimdall lacks holds the window")
+		require.True(t, cp.pending.seedOnly(seed+1))
+
+		for id := seed + 1; id <= seed+1+clerkOrderWindow; id++ {
+			n.stored[id] = true
+		}
+		later = later.Add(2 * clerkLowestIdle)
+		require.Equal(t, seed+2+clerkOrderWindow, cp.dropStoredLowest(context.Background(), seed+1, later), "a clean window moves the seed past it")
+
+		n.recordCount = seed + 2 + clerkOrderWindow
+		n.stored[seed+2+clerkOrderWindow] = true
+		later = later.Add(2 * clerkLowestIdle)
+		next := cp.dropStoredLowest(context.Background(), seed+2+clerkOrderWindow, later)
+		_, _, ok := cp.pending.lowest(later)
+		require.False(t, ok, "past heimdall's bound nothing is left to seed")
+		require.Zero(t, next)
+	})
+
+	t.Run("a stored seed stays when the next scan can't run", func(t *testing.T) {
+		for _, tc := range []struct {
+			name   string
+			break_ func(n *burstNode, cp *ClerkProcessor)
+		}{
+			{"record count unreadable", func(n *burstNode, _ *ClerkProcessor) { n.recordCountUnavailable = true }},
+			{"record list unreadable", func(n *burstNode, _ *ClerkProcessor) { n.listUnavailable = true }},
+			{"another seeding running", func(_ *burstNode, cp *ClerkProcessor) { cp.seeding.Store(true) }},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				n, rest, comet := newBurstNode(t)
+				n.recordCount = 52000
+				cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+				now := time.Now()
+				cp.pending.seed(50092, now)
+				n.stored[50092] = true
+				tc.break_(n, cp)
+
+				later := now.Add(2 * clerkLowestIdle)
+				require.Equal(t, uint64(50092), cp.dropStoredLowest(context.Background(), 50092, later))
+				require.True(t, cp.pending.seedOnly(50092), "kept for a later check")
+			})
+		}
+	})
+
 	t.Run("a record count beyond int64 seeds nothing", func(t *testing.T) {
 		n, rest, comet := newBurstNode(t)
 		n.recordCount = math.MaxInt64
@@ -2243,7 +2305,7 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		cp.pending.touch(49000, "", start)
 		cp.pending.touch(49992, "", start.Add(clerkLowestIdle))
 		// 48000 was the lowest when the caller looked; another task removed it since.
-		require.Equal(t, uint64(49992), cp.dropStoredLowest(48000, start.Add(clerkLowestIdle)))
+		require.Equal(t, uint64(49992), cp.dropStoredLowest(context.Background(), 48000, start.Add(clerkLowestIdle)))
 		require.Equal(t, 1, n.recordLookups[49000])
 		require.Zero(t, n.recordLookups[48000])
 	})
@@ -2254,7 +2316,7 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		start := time.Now()
 
 		cp.pending.touch(49000, "", start)
-		require.Equal(t, uint64(49000), cp.dropStoredLowest(48000, start.Add(clerkLowestIdle)))
+		require.Equal(t, uint64(49000), cp.dropStoredLowest(context.Background(), 48000, start.Add(clerkLowestIdle)))
 	})
 
 	t.Run("the lowest pending ID counts as idle from exactly clerkLowestIdle", func(t *testing.T) {
@@ -2265,8 +2327,8 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 
 		cp.pending.touch(49000, "", start)
 		cp.pending.touch(49992, "", start.Add(clerkLowestIdle))
-		require.Equal(t, uint64(49000), cp.dropStoredLowest(49000, start.Add(clerkLowestIdle-time.Nanosecond)))
-		require.Equal(t, uint64(49992), cp.dropStoredLowest(49000, start.Add(clerkLowestIdle)))
+		require.Equal(t, uint64(49000), cp.dropStoredLowest(context.Background(), 49000, start.Add(clerkLowestIdle-time.Nanosecond)))
+		require.Equal(t, uint64(49992), cp.dropStoredLowest(context.Background(), 49000, start.Add(clerkLowestIdle)))
 	})
 
 	t.Run("a task for the same ID from another log of the same L1 tx is not a released duplicate", func(t *testing.T) {

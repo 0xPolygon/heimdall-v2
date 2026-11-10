@@ -186,11 +186,11 @@ const (
 // clerkOrderWindow or more above it. It reads heimdall state only when the
 // lowest pending ID's task stopped running: a stored ID left there would also
 // rank tasks inside the window against the wrong lowest in the busy gate.
-func (cp *ClerkProcessor) deferOutOfOrder(eventName string, id uint64, owner string) (uint64, error) {
+func (cp *ClerkProcessor) deferOutOfOrder(ctx context.Context, eventName string, id uint64, owner string) (uint64, error) {
 	now := time.Now()
 	lowest := cp.pending.touch(id, owner, now)
 	if id != lowest {
-		lowest = cp.dropStoredLowest(lowest, now)
+		lowest = cp.dropStoredLowest(ctx, lowest, now)
 	}
 	if id < lowest+clerkOrderWindow {
 		return lowest, nil
@@ -211,7 +211,7 @@ func (cp *ClerkProcessor) deferOutOfOrder(eventName string, id uint64, owner str
 // dropStoredLowest removes the lowest pending ID when its task hasn't run for
 // clerkLowestIdle and heimdall already stored it, and returns the lowest
 // pending ID after that. The check runs at most once per clerkStoreCheckDelay.
-func (cp *ClerkProcessor) dropStoredLowest(lowest uint64, now time.Time) uint64 {
+func (cp *ClerkProcessor) dropStoredLowest(ctx context.Context, lowest uint64, now time.Time) uint64 {
 	idle, lastRun, ok := cp.pending.lowest(now)
 	if !ok || now.Sub(lastRun) < clerkLowestIdle || !cp.lowestCheck.due(now) {
 		return lowest
@@ -222,7 +222,11 @@ func (cp *ClerkProcessor) dropStoredLowest(lowest uint64, now time.Time) uint64 
 	if err != nil || record.Id == 0 {
 		return idle
 	}
-	cp.pending.done(idle)
+	if !cp.pending.seedOnly(idle) {
+		cp.pending.done(idle)
+	} else if !cp.advanceSeed(ctx, idle, now) {
+		return idle
+	}
 	metrics.ClerkPendingReconciled.Inc()
 	next, _, _ := cp.pending.lowest(now)
 	return next
@@ -422,7 +426,7 @@ func (cp *ClerkProcessor) admit(ctx context.Context, eventName string, id uint64
 		}
 		return lowest, nil
 	}
-	return cp.deferOutOfOrder(eventName, id, taskOwner(ctx))
+	return cp.deferOutOfOrder(ctx, eventName, id, taskOwner(ctx))
 }
 
 // leavePending drops the pending lease of the task owner for id and the seed

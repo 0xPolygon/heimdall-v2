@@ -131,6 +131,44 @@ func (cp *ClerkProcessor) nextUnstoredID(ctx context.Context) (next uint64, ok, 
 	return count + 1, true, scanned
 }
 
+// advanceSeed replaces a seed heimdall stored with the next ID it lacks up to
+// its highest stored ID, found by the same bounded scan as the first seed, so
+// the window keeps resting on chain state past the first scan. It reports
+// false, keeping the stored seed for a later check, when another seeding runs
+// or a read fails.
+func (cp *ClerkProcessor) advanceSeed(ctx context.Context, stored uint64, now time.Time) bool {
+	if !cp.seeding.CompareAndSwap(false, true) {
+		return false
+	}
+	defer cp.seeding.Store(false)
+
+	ctx, cancel := context.WithTimeout(ctx, seedTimeout)
+	defer cancel()
+	count, err := util.GetRecordCount(ctx, cp.cliCtx.Codec)
+	if err != nil {
+		return false
+	}
+	var next uint64
+	if stored < count && count < math.MaxInt64 {
+		to := min(count, stored+clerkOrderWindow)
+		gap, found, scanned := cp.firstGap(ctx, stored+1, to)
+		switch {
+		case !scanned:
+			return false
+		case found:
+			next = gap
+		case to < count:
+			next = to + 1
+		}
+	}
+	cp.pending.done(stored)
+	if next != 0 {
+		cp.seedID = next
+		cp.pending.seed(next, now)
+	}
+	return true
+}
+
 // lastStateIDReader is the StateReceiver read seedFrontier needs.
 type lastStateIDReader interface {
 	LastStateId(opts *bind.CallOpts) (*big.Int, error)
