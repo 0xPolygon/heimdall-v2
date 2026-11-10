@@ -34,6 +34,7 @@ func (r *wireReceiver) Receive(p2p.Envelope) { r.received.Add(1) }
 
 func servingSwitch(t *testing.T, config *cfg.P2PConfig, r p2p.Reactor) *p2p.Switch {
 	t.Helper()
+	config.FlushThrottleTimeout = time.Millisecond
 	key := p2p.NodeKey{PrivKey: ed25519.GenPrivKey()}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)

@@ -14,6 +14,7 @@ import (
 func TestServingNativeByteRefill(t *testing.T) {
 	for _, protected := range []bool{false, true} {
 		t.Run(map[bool]string{false: "ordinary", true: "protected"}[protected], func(t *testing.T) {
+			t.Parallel()
 			g, server, client, receiver, stateStore, clock := blockServingNetwork(t, DefaultConfig())
 			id := string(client.NodeInfo().ID())
 			g.mu.Lock()

@@ -96,6 +96,7 @@ func TestServingNativeBlockPipeline(t *testing.T) {
 func TestServingNativeWorkBackpressure(t *testing.T) {
 	for _, protected := range []bool{false, true} {
 		t.Run(map[bool]string{false: "ordinary", true: "protected"}[protected], func(t *testing.T) {
+			t.Parallel()
 			testServingNativeWorkBackpressure(t, protected)
 		})
 	}
