@@ -63,12 +63,44 @@ func TestRetryOutOfOrderNonce(t *testing.T) {
 			after, ok := tc.signature.Headers[nonceRetryStartHeader].(string)
 			require.True(t, ok)
 			if tc.wantStamped {
-				start, ok := nonceRetryStart(tc.signature.Headers)
+				start, ok := retryStart(tc.signature.Headers, nonceRetryStartHeader)
 				require.True(t, ok)
 				require.WithinDuration(t, time.Now(), start, 5*time.Second)
 			} else {
 				require.Equal(t, before, after)
 			}
+		})
+	}
+}
+
+func TestRetryAgeExpiredBoundary(t *testing.T) {
+	t.Parallel()
+
+	start := time.Unix(1_793_846_312, 0)
+	const header = "testRetryStart"
+	const maxAge = time.Hour
+
+	tests := []struct {
+		name        string
+		now         time.Time
+		wantExpired bool
+		wantWaited  time.Duration
+	}{
+		{name: "exactly at the limit keeps retrying", now: start.Add(maxAge), wantWaited: maxAge},
+		{name: "one second past the limit expires", now: start.Add(maxAge + time.Second), wantExpired: true, wantWaited: maxAge + time.Second},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			signature := &tasks.Signature{Headers: tasks.Headers{header: strconv.FormatInt(start.Unix(), 10)}}
+			task, err := tasks.NewWithSignature(func(context.Context) error { return nil }, signature)
+			require.NoError(t, err)
+
+			waited, expired := retryAgeExpired(task.Context, header, maxAge, tc.now)
+			require.Equal(t, tc.wantExpired, expired)
+			require.Equal(t, tc.wantWaited, waited)
 		})
 	}
 }

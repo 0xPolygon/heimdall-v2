@@ -52,6 +52,9 @@ const (
 	TopupTxStatusURL        = "/topup/is-old-tx"
 	ClerkTxStatusURL        = "/clerk/is-old-tx"
 	ClerkEventRecordURL     = "/clerk/event-records/%d"
+	ClerkLatestRecordIDURL  = "/clerk/event-records/latest-id"
+	ClerkRecordCountURL     = "/clerk/event-records/count"
+	ClerkRecordListURL      = "/clerk/event-records/list?page=%d&limit=%d"
 
 	CometBFTUnconfirmedTxsURL      = "/unconfirmed_txs"
 	CometBFTUnconfirmedTxsCountURL = "/num_unconfirmed_txs"
@@ -497,52 +500,47 @@ func GetClerkEventRecord(stateId int64, cdc codec.Codec) (*clerktypes.EventRecor
 	return &eventRecordResponse.Record, nil
 }
 
+// GetUnconfirmedTxnCount returns the local mempool size, or 0 when it can't be read.
 func GetUnconfirmedTxnCount(event interface{}) int {
-	logger := Logger()
+	count, err := UnconfirmedTxnCount(event)
+	if err != nil {
+		Logger().Error("Error fetching mempool txs count", "error", err)
+		return 0
+	}
+	return count
+}
 
+// UnconfirmedTxnCount returns the local mempool size from CometBFT's num_unconfirmed_txs.
+func UnconfirmedTxnCount(event interface{}) (int, error) {
 	defer LogElapsedTimeForStateSyncedEvent(event, "GetUnconfirmedTxnCount", time.Now())
 
 	endpoint := helper.GetConfig().CometBFTRPCUrl + CometBFTUnconfirmedTxsCountURL
 
 	resp, err := helper.Client.Get(endpoint)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		logger.Error("Error fetching mempool txs count", "url", endpoint, "error", err)
-		return 0
-	}
-
-	// Limit the number of bytes read from the response body
-	limitedBody := http.MaxBytesReader(nil, resp.Body, helper.APIBodyLimit)
-	defer func(limitedBody io.ReadCloser) {
-		err := limitedBody.Close()
-		if err != nil {
-			logger.Error("Error closing limited response body:", err)
-		}
-	}(limitedBody)
-
-	body, err := io.ReadAll(limitedBody)
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			logger.Error("Error closing response body:", err)
-		}
-	}()
-
 	if err != nil {
-		logger.Error("Error fetching mempool txs count", "error", err)
-		return 0
+		return 0, fmt.Errorf("fetching %s: %w", endpoint, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("fetching %s: status %d", endpoint, resp.StatusCode)
 	}
 
-	// a minimal response of the unconfirmed txs
+	body, err := io.ReadAll(http.MaxBytesReader(nil, resp.Body, helper.APIBodyLimit))
+	if err != nil {
+		return 0, fmt.Errorf("reading %s: %w", endpoint, err)
+	}
+
 	var response CometBFTUnconfirmedTxs
-
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		logger.Error("Error unmarshalling response received from Heimdall Server", "error", err)
-		return 0
+	if err = json.Unmarshal(body, &response); err != nil {
+		return 0, fmt.Errorf("decoding %s: %w", endpoint, err)
 	}
 
-	count, _ := strconv.Atoi(response.Result.Total)
-
-	return count
+	count, err := strconv.Atoi(response.Result.Total)
+	if err != nil {
+		return 0, fmt.Errorf("decoding %s total %q: %w", endpoint, response.Result.Total, err)
+	}
+	return count, nil
 }
 
 // LogElapsedTimeForStateSyncedEvent logs useful info for StateSynced events
