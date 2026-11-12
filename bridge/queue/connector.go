@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -32,16 +33,17 @@ const (
 
 // NewQueueConnector creates a new queue connector
 func NewQueueConnector(dialer string) (*Connector, error) {
+	server, err := machinery.NewServer(newConfig(dialer))
+	if err != nil {
+		// machinery's error embeds the broker url, credentials included
+		return nil, errors.New("create machinery server: unsupported amqp url")
+	}
+
 	c, err := amqp.Dial(dialer)
 	if err != nil {
 		return nil, fmt.Errorf("dial amqp: %w", err)
 	}
 	_ = c.Close()
-
-	server, err := machinery.NewServer(newConfig(dialer))
-	if err != nil {
-		return nil, err
-	}
 
 	qlogger := helper.Logger.With("module", "bridge/queue")
 	redirectMachineryLog(qlogger)

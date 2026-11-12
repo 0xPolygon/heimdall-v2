@@ -83,9 +83,12 @@ func TestRedirectMachineryLogRoutesEachLevel(t *testing.T) {
 }
 
 func TestNewQueueConnectorReturnsDialError(t *testing.T) {
-	for _, url := range []string{"", "amqp://guest:guest@127.0.0.1:1/"} {
+	for url, want := range map[string]string{
+		"":                                "create machinery server",
+		"amqp://guest:guest@127.0.0.1:1/": "dial amqp",
+	} {
 		qc, err := NewQueueConnector(url)
-		require.ErrorContains(t, err, "dial amqp", url)
+		require.ErrorContains(t, err, want, url)
 		require.Nil(t, qc)
 	}
 }
