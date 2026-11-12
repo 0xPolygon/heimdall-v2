@@ -109,6 +109,31 @@ func FetchSigners(voteBytes []byte, sigInput []byte) ([]string, error) {
 	return signersList, nil
 }
 
+func TestPopulateABIsConcurrent(t *testing.T) {
+	origABIs := ContractsABIsMap
+	ContractsABIsMap = make(map[string]*abi.ABI)
+	t.Cleanup(func() { ContractsABIsMap = origABIs })
+
+	const callers = 16
+	var wg sync.WaitGroup
+	errs := make(chan error, callers)
+	for range callers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_, err := NewContractCaller()
+			errs <- err
+		}()
+	}
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		require.NoError(t, err)
+	}
+	require.Len(t, ContractsABIsMap, 8)
+}
+
 // TestPopulateABIs tests that package level ABIs cache works as expected
 // by not invoking JSON methods after contracts ABIs' init
 func TestPopulateABIs(t *testing.T) {

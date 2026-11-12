@@ -52,6 +52,8 @@ const (
 // ContractsABIsMap is a cached map holding the ABIs of the contracts
 var ContractsABIsMap = make(map[string]*abi.ABI)
 
+var contractsABIsMu sync.Mutex
+
 // IContractCaller represents contract caller
 type IContractCaller interface {
 	GetHeaderInfo(ctx context.Context, headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (root common.Hash, start, end, createdAt uint64, proposer string, err error)
@@ -1360,6 +1362,9 @@ func populateABIs(contractCallerObj *ContractCaller) error {
 		statereceiver.StatereceiverMetaData.ABI, statesender.StatesenderMetaData.ABI, stakemanager.StakemanagerMetaData.ABI,
 		slashmanager.SlashmanagerMetaData.ABI, erc20.Erc20MetaData.ABI,
 	}
+
+	contractsABIsMu.Lock()
+	defer contractsABIsMu.Unlock()
 
 	// iterate over supported ABIs
 	for _, contractABI := range contractsABIs {

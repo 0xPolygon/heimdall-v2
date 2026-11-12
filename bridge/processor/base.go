@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"bytes"
 	"context"
 	"time"
 
@@ -185,7 +186,9 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 
 // checkTxAgainstMempool checks if the transaction is already in the mempool or not.
 // It is consumed only for `clerk` processor.
-func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{}) (bool, error) {
+// checkTxAgainstMempool reports whether the mempool holds the same event
+// record; with ownOnly, only one this bridge signed counts.
+func (bp *BaseProcessor) checkTxAgainstMempool(ctx context.Context, msg types.Msg, event interface{}, ownOnly bool) (bool, error) {
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "checkTxAgainstMempool", time.Now())
 
 	clerkMsg, ok := msg.(*clerkTypes.MsgEventRecord)
@@ -197,15 +200,12 @@ func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{})
 		return false, nil
 	}
 
-	targetTxHash := clerkMsg.GetTxHash()
-	targetLogIndex := clerkMsg.GetLogIndex()
-
 	// Use the typed CometBFT RPC client instead of raw HTTP + manual JSON/base64 decoding.
 	// The client returns txs as already-decoded []byte slices.
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	limit := 100 // CometBFT caps at maxPerPage=100; higher values are silently clamped
+	limit := unconfirmedTxsScanLimit
 	result, err := bp.httpClient.UnconfirmedTxs(ctx, &limit)
 	if err != nil {
 		bp.Logger.Error("BaseProcessor: error fetching unconfirmed txs", "error", err)
@@ -213,26 +213,42 @@ func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{})
 	}
 
 	for _, txBytes := range result.Txs {
-		decodedTx, err := authlegacytx.DefaultTxDecoder(bp.cliCtx.Codec)(txBytes)
-		if err != nil {
-			continue
-		}
-
-		msgs := decodedTx.GetMsgs()
-		if len(msgs) == 0 {
-			continue
-		}
-
-		mempoolClerkMsg, ok := msgs[0].(*clerkTypes.MsgEventRecord)
-		if !ok {
-			continue
-		}
-
-		if mempoolClerkMsg.TxHash == targetTxHash && mempoolClerkMsg.LogIndex == targetLogIndex {
-			bp.Logger.Debug("Duplicate clerk tx found in mempool", "txHash", targetTxHash, "logIndex", targetLogIndex)
+		mempoolClerkMsg := bp.decodeClerkMsg(txBytes)
+		if mempoolClerkMsg != nil && sameEventRecord(mempoolClerkMsg, clerkMsg) && (!ownOnly || mempoolClerkMsg.From == clerkMsg.From) {
+			bp.Logger.Debug("Duplicate clerk tx found in mempool", "txHash", clerkMsg.GetTxHash(), "logIndex", clerkMsg.GetLogIndex())
 			return true, nil
 		}
 	}
 
 	return false, nil
+}
+
+// decodeClerkMsg returns the clerk record a mempool tx carries, or nil.
+func (bp *BaseProcessor) decodeClerkMsg(txBytes []byte) *clerkTypes.MsgEventRecord {
+	decodedTx, err := authlegacytx.DefaultTxDecoder(bp.cliCtx.Codec)(txBytes)
+	if err != nil {
+		return nil
+	}
+	msgs := decodedTx.GetMsgs()
+	if len(msgs) == 0 {
+		return nil
+	}
+	clerkMsg, _ := msgs[0].(*clerkTypes.MsgEventRecord)
+	return clerkMsg
+}
+
+// unconfirmedTxsScanLimit is how many mempool txs checkTxAgainstMempool reads:
+// CometBFT's unconfirmed_txs caps a page at 100 and clamps higher values.
+const unconfirmedTxsScanLimit = 100
+
+// sameEventRecord reports whether a record in the mempool carries the same event
+// as ours: a mempool tx counts as a duplicate only if every event field matches.
+func sameEventRecord(a, b *clerkTypes.MsgEventRecord) bool {
+	return a.TxHash == b.TxHash &&
+		a.LogIndex == b.LogIndex &&
+		a.Id == b.Id &&
+		a.BlockNumber == b.BlockNumber &&
+		a.ChainId == b.ChainId &&
+		a.ContractAddress == b.ContractAddress &&
+		bytes.Equal(a.Data, b.Data)
 }

@@ -151,7 +151,7 @@ func TestStakeTasks_OutOfOrderNonceRetriesLater(t *testing.T) {
 			var retryLater tasks.ErrRetryTaskLater
 			require.True(t, errors.As(err, &retryLater), "got %v", err)
 			require.Equal(t, (eventNonce-heimdallNonce)*util.StakeNonceRetryDelay, retryLater.RetryIn())
-			_, stamped := nonceRetryStart(signature.Headers)
+			_, stamped := retryStart(signature.Headers, nonceRetryStartHeader)
 			require.True(t, stamped)
 		})
 	}
