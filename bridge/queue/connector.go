@@ -1,6 +1,8 @@
 package queue
 
 import (
+	"errors"
+	"fmt"
 	"sync"
 
 	"cosmossdk.io/log"
@@ -30,23 +32,18 @@ const (
 )
 
 // NewQueueConnector creates a new queue connector
-func NewQueueConnector(dialer string) *Connector {
-	// amqp dialer
-	c, err := amqp.Dial(dialer)
-	defer func(c *amqp.Connection) {
-		err := c.Close()
-		if err != nil {
-			panic(err)
-		}
-	}(c)
-	if err != nil {
-		panic(err)
-	}
-
+func NewQueueConnector(dialer string) (*Connector, error) {
 	server, err := machinery.NewServer(newConfig(dialer))
 	if err != nil {
-		panic(err)
+		// machinery's error embeds the broker url, credentials included
+		return nil, errors.New("create machinery server: unsupported amqp url")
 	}
+
+	c, err := amqp.Dial(dialer)
+	if err != nil {
+		return nil, fmt.Errorf("dial amqp: %w", err)
+	}
+	_ = c.Close()
 
 	qlogger := helper.Logger.With("module", "bridge/queue")
 	redirectMachineryLog(qlogger)
@@ -56,7 +53,7 @@ func NewQueueConnector(dialer string) *Connector {
 		Server: server,
 	}
 
-	return &connector
+	return &connector, nil
 }
 
 // newConfig binds the worker queue with its own name as binding key: on a direct

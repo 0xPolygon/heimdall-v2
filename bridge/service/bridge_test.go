@@ -1,13 +1,18 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
 	common "github.com/cometbft/cometbft/libs/service"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 // fakeService satisfies common.Service via the embedded (nil) interface;
@@ -95,4 +100,17 @@ func TestRunServices_PropagatesServiceStartError(t *testing.T) {
 
 	err := runServices(context.Background(), []common.Service{svc}, &fakeStoppable{}, &fakeWorkerStopper{})
 	require.ErrorIs(t, err, boom) // a service Start failure cancels the group and surfaces
+}
+
+func TestStartWithCtx_ReturnsQueueConnectError(t *testing.T) {
+	prev := helper.Logger
+	t.Cleanup(func() { helper.Logger = prev })
+	var logs bytes.Buffer
+	helper.Logger = log.NewLogger(&logs)
+
+	// the test config has no amqp url, so the queue connector cannot be built
+	require.Empty(t, helper.GetConfig().AmqpURL)
+	err := StartWithCtx(context.Background(), client.Context{})
+	require.ErrorContains(t, err, "create machinery server")
+	require.Contains(t, logs.String(), "Bridge: error connecting to queue")
 }
