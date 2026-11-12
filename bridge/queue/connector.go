@@ -64,6 +64,8 @@ func newConfig(dialer string) *config.Config {
 		Broker:        dialer,
 		DefaultQueue:  QName,
 		ResultBackend: dialer,
+		// heimdalld owns SIGTERM; machinery's handler would quit the worker again after StopWorker and panic
+		NoUnixSignals: true,
 		AMQP: &config.AMQPConfig{
 			Exchange:     "machinery_exchange",
 			ExchangeType: "direct",

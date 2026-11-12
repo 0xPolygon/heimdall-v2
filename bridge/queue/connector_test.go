@@ -23,6 +23,10 @@ func TestNewConfigRoutesTasksToWorkerQueue(t *testing.T) {
 	require.Equal(t, QName, sig.RoutingKey)
 }
 
+func TestNewConfigLeavesSignalsToHeimdalld(t *testing.T) {
+	require.True(t, newConfig("amqp://localhost:5672").NoUnixSignals)
+}
+
 func TestNormalizeRoutingKey(t *testing.T) {
 	tests := []struct {
 		name string
