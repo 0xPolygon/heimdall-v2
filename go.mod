@@ -1,7 +1,7 @@
 module github.com/0xPolygon/heimdall-v2
 
 // Note: Change the go image version in Dockerfile if you change this.
-go 1.26.10
+go 1.26.11
 
 require (
 	cosmossdk.io/api v0.7.5
