@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"cosmossdk.io/math"
-	"github.com/RichardKnop/machinery/v1/tasks"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -122,14 +121,8 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 			return nil
 		}
 
-		// if the account doesn't exist, retry with delay for top-up to process first.
-		if _, err := util.GetAccount(context.Background(), sp.cliCtx, sdk.MustAccAddressFromHex(event.Signer.Hex()).String()); err != nil {
-			sp.Logger.Info(
-				infoMsgAccountDoesNotExist,
-				"event", eventName,
-				"signer", event.Signer,
-			)
-			return tasks.NewErrRetryTaskLater(msgAccountDoesNotExist, util.RetryTaskDelay)
+		if ready, err := sp.signerAccountReady(eventName, event, vLog.TxHash.String()); !ready {
+			return err
 		}
 
 		sp.Logger.Info(
