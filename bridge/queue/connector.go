@@ -1,6 +1,8 @@
 package queue
 
 import (
+	"errors"
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -31,6 +33,9 @@ const (
 	// queuedAtHeader holds the unix milliseconds a task was first queued at.
 	// machinery republishes the same signature on retry, so it persists.
 	queuedAtHeader = "bridgeQueuedAt"
+
+	// legacyRoutingKey is the routing key older bridges stamped on every task.
+	legacyRoutingKey = "machinery_task"
 )
 
 // NewTaskHeaders returns the headers for a task first queued at queuedAt.
@@ -60,33 +65,18 @@ func observeTaskDelivery(signature *tasks.Signature) {
 }
 
 // NewQueueConnector creates a new queue connector
-func NewQueueConnector(dialer string) *Connector {
-	// fail fast if the broker is unreachable
+func NewQueueConnector(dialer string) (*Connector, error) {
+	server, err := machinery.NewServer(newConfig(dialer))
+	if err != nil {
+		// machinery's error embeds the broker url, credentials included
+		return nil, errors.New("create machinery server: unsupported amqp url")
+	}
+
 	c, err := amqp.Dial(dialer)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("dial amqp: %w", err)
 	}
-	if err := c.Close(); err != nil {
-		panic(err)
-	}
-
-	cnf := &config.Config{
-		Broker:       dialer,
-		DefaultQueue: QName,
-		// The bridge never reads task results, and an AMQP result backend opens a
-		// connection and declares a queue for every task state change.
-		ResultBackend: "null://",
-		AMQP: &config.AMQPConfig{
-			Exchange:     "machinery_exchange",
-			ExchangeType: "direct",
-			BindingKey:   "machinery_task",
-		},
-	}
-
-	server, err := machinery.NewServer(cnf)
-	if err != nil {
-		panic(err)
-	}
+	_ = c.Close()
 
 	qlogger := helper.Logger.With("module", "bridge/queue")
 	redirectMachineryLog(qlogger)
@@ -96,7 +86,45 @@ func NewQueueConnector(dialer string) *Connector {
 		Server: server,
 	}
 
-	return &connector
+	return &connector, nil
+}
+
+// newConfig binds the worker queue with its own name as binding key: on a direct
+// exchange machinery publishes to a queue named after the routing key, so any
+// other key makes publishers declare and fill a queue nobody consumes.
+func newConfig(dialer string) *config.Config {
+	return &config.Config{
+		Broker:       dialer,
+		DefaultQueue: QName,
+		// The bridge never reads task results, and an AMQP result backend opens a
+		// connection and declares a queue for every task state change.
+		ResultBackend: "null://",
+		// heimdalld owns SIGTERM; machinery's handler would quit the worker again after StopWorker and panic
+		NoUnixSignals: true,
+		AMQP: &config.AMQPConfig{
+			Exchange:     "machinery_exchange",
+			ExchangeType: "direct",
+			BindingKey:   QName,
+		},
+	}
+}
+
+// normalizeRoutingKey moves tasks queued by older bridges onto QName, so their
+// retries don't redeclare the unconsumed legacy queue.
+func normalizeRoutingKey(s *tasks.Signature) {
+	if s.RoutingKey == legacyRoutingKey {
+		s.RoutingKey = QName
+	}
+}
+
+func newWorker(server *machinery.Server) *machinery.Worker {
+	worker := server.NewWorker("invoke-processor", 10)
+	worker.SetPreTaskHandler(func(s *tasks.Signature) {
+		normalizeRoutingKey(s)
+		observeTaskDelivery(s)
+	})
+
+	return worker
 }
 
 // StartWorker - starts worker to process registered tasks
@@ -108,8 +136,7 @@ func (qc *Connector) StartWorker() {
 		return
 	}
 
-	worker := qc.Server.NewWorker("invoke-processor", 10)
-	worker.SetPreTaskHandler(observeTaskDelivery)
+	worker := newWorker(qc.Server)
 	errors := make(chan error, 1)
 	qc.worker = worker
 

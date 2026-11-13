@@ -200,6 +200,16 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		// extract the ExtendedCommitInfo from the txs (it is encoded at the beginning, index 0)
 		extCommitInfo := new(abci.ExtendedCommitInfo)
 		extendedCommitTx := req.Txs[0]
+		// The decoder allocates per record even for ones every later check skips, so bound the
+		// count on the wire before Unmarshal.
+		if helper.IsKarwar(req.Height) {
+			records, err := extendedCommitVoteCount(extendedCommitTx)
+			if err != nil || records > len(req.ProposedLastCommit.Votes) {
+				logger.Error("Rejecting proposal: extended commit record count exceeds the last commit",
+					"records", records, "expected", len(req.ProposedLastCommit.Votes), "error", err)
+				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			}
+		}
 		if err := extCommitInfo.Unmarshal(extendedCommitTx); err != nil {
 			logger.Error("Error occurred while decoding ExtendedCommitInfo", "height", req.Height, "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
@@ -226,6 +236,13 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 
 		// validate non-RP vote extensions
 		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, validatorSet, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
+			// The signatures belong to the previous block's checkpoint, so this proposal's own txs can't
+			// excuse them. filterVoteExtensions keeps failing ones out of honest proposals.
+			if helper.IsPhuketHardfork(req.Height) && helper.IsKarwar(req.Height) && errors.Is(err, errNonRpSignature) {
+				logger.Error("Invalid non-rp vote extension signature, rejecting proposal", "error", err)
+				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			}
+
 			hasCheckpointTx := false
 			for _, tx := range req.Txs[1:] {
 				txn, decodeErr := app.TxDecode(tx)
@@ -537,6 +554,17 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		valAddr, err := ac.BytesToString(req.ValidatorAddress)
 		if err != nil {
 			return nil, err
+		}
+
+		// Bound the extension size before the strict field scan and unmarshal below, both of which
+		// materialize the full payload. maxVESize is the absolute per-validator ceiling that
+		// filterVoteExtensions clamps the dynamic limit to, so a valid extension never exceeds it.
+		// Gated: pre-gate nodes accept oversized extensions, so enabling the reject is a coordinated
+		// consensus change rather than an instant per-upgrade one.
+		if helper.IsKarwar(req.Height) && len(req.VoteExtension) > maxVESize {
+			metrics.RecordVoteExtensionRejected("oversized")
+			logger.Error(heimdallTypes.ErrAlertVoteExtensionRejected+" vote extension exceeds max size", "validator", valAddr, "size", len(req.VoteExtension), "max", maxVESize)
+			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
 		if err := rejectUnknownVoteExtFields(req.VoteExtension); err != nil {

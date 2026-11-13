@@ -223,3 +223,21 @@ func nextLenField(b []byte) (protowire.Number, []byte, int, bool) {
 	}
 	return num, val, n + m, true
 }
+
+// extendedCommitVoteCount counts the vote records of a serialized ExtendedCommitInfo without
+// decoding them. Malformed input is an error rather than a short count, so the bound fails closed.
+func extendedCommitVoteCount(bz []byte) (int, error) {
+	const votesField = 2
+	records := 0
+	for rest := bz; len(rest) > 0; {
+		num, val, n, ok := nextLenField(rest)
+		if !ok {
+			return 0, errors.New("malformed extended commit")
+		}
+		rest = rest[n:]
+		if num == votesField && val != nil {
+			records++
+		}
+	}
+	return records, nil
+}

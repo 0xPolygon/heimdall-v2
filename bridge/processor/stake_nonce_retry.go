@@ -26,38 +26,44 @@ const (
 )
 
 // retryOutOfOrderNonce defers a stake task whose nonce is ahead of heimdall's.
-// machinery does not count ErrRetryTaskLater against RetryCount, so without an
-// age limit a task for a nonce heimdall never reaches would retry forever.
-// Past the limit it returns nil, which ends the task.
+// Past maxStakeNonceRetryAge it returns nil, which ends the task.
 func (sp *StakingProcessor) retryOutOfOrderNonce(ctx context.Context, nonceDelay uint64) error {
-	retryLater := tasks.NewErrRetryTaskLater(msgNonceOutOfOrder, util.StakeNonceRetryDelay*time.Duration(nonceDelay))
-
-	signature := tasks.SignatureFromContext(ctx)
-	if signature == nil {
-		return retryLater
-	}
-
-	now := time.Now()
-	start, ok := nonceRetryStart(signature.Headers)
-	if !ok {
-		if signature.Headers == nil {
-			signature.Headers = tasks.Headers{}
-		}
-		signature.Headers[nonceRetryStartHeader] = strconv.FormatInt(now.Unix(), 10)
-		return retryLater
-	}
-
-	if waited := now.Sub(start); waited > maxStakeNonceRetryAge {
+	waited, expired := retryAgeExpired(ctx, nonceRetryStartHeader, maxStakeNonceRetryAge, time.Now())
+	if expired {
+		signature := tasks.SignatureFromContext(ctx)
 		metrics.StakeNonceRetriesDropped.Inc()
 		sp.Logger.Error(infoMsgDroppingNonceRetry, "task", signature.Name, "taskUUID", signature.UUID, "waited", waited.String())
 		return nil
 	}
 
-	return retryLater
+	return tasks.NewErrRetryTaskLater(msgNonceOutOfOrder, util.StakeNonceRetryDelay*time.Duration(nonceDelay))
 }
 
-func nonceRetryStart(headers tasks.Headers) (time.Time, bool) {
-	raw, _ := headers[nonceRetryStartHeader].(string)
+// retryAgeExpired reports whether a task has been deferred for longer than
+// maxAge. machinery does not count ErrRetryTaskLater against RetryCount, so
+// without this bound a deferred task would retry forever. The first call stamps
+// the start time under header; a context without a signature never expires.
+func retryAgeExpired(ctx context.Context, header string, maxAge time.Duration, now time.Time) (time.Duration, bool) {
+	signature := tasks.SignatureFromContext(ctx)
+	if signature == nil {
+		return 0, false
+	}
+
+	start, ok := retryStart(signature.Headers, header)
+	if !ok {
+		if signature.Headers == nil {
+			signature.Headers = tasks.Headers{}
+		}
+		signature.Headers[header] = strconv.FormatInt(now.Unix(), 10)
+		return 0, false
+	}
+
+	waited := now.Sub(start)
+	return waited, waited > maxAge
+}
+
+func retryStart(headers tasks.Headers, header string) (time.Time, bool) {
+	raw, _ := headers[header].(string)
 	unix, err := strconv.ParseInt(raw, 10, 64)
 	if err != nil {
 		return time.Time{}, false

@@ -26,7 +26,7 @@ func StakeCmd() *cobra.Command {
 				return err
 			}
 
-			helper.InitHeimdallConfig("")
+			helper.InitHeimdallConfig(cmd.Context(), "")
 
 			validatorStr := viper.GetString(stakingcli.FlagValidatorAddress)
 			stakeAmountStr := viper.GetString(stakingcli.FlagAmount)
@@ -98,7 +98,7 @@ func ApproveCmd() *cobra.Command {
 				return err
 			}
 
-			helper.InitHeimdallConfig("")
+			helper.InitHeimdallConfig(cmd.Context(), "")
 
 			stakeAmountStr := viper.GetString(stakingcli.FlagAmount)
 			feeAmountStr := viper.GetString(stakingcli.FlagFeeAmount)

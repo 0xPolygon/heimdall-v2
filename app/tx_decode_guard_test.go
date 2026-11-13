@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"cosmossdk.io/x/tx/signing"
+	abci "github.com/cometbft/cometbft/abci/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/std"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -423,5 +424,38 @@ func TestCheckTxNesting_GovContentTypesStillCountTowardDepth(t *testing.T) {
 	for _, typeURL := range []string{"/cosmos.gov.v1.MsgExecLegacyContent", "/cosmos.gov.v1beta1.MsgSubmitProposal"} {
 		require.NoError(t, checkTxNesting(registry, txRawWithBody(nestedAnyBodyField(maxTxNestingRecursion-1, typeURL, 1))), typeURL)
 		require.Error(t, checkTxNesting(registry, txRawWithBody(nestedAnyBodyField(maxTxNestingRecursion, typeURL, 1))), typeURL)
+	}
+}
+
+func TestExtendedCommitVoteCount(t *testing.T) {
+	encode := func(info *abci.ExtendedCommitInfo) []byte {
+		bz, err := info.Marshal()
+		require.NoError(t, err)
+		return bz
+	}
+
+	tests := []struct {
+		name    string
+		bz      []byte
+		want    int
+		wantErr bool
+	}{
+		{name: "empty", bz: nil, want: 0},
+		{name: "round only", bz: encode(&abci.ExtendedCommitInfo{Round: 7}), want: 0},
+		{name: "three records", bz: encode(&abci.ExtendedCommitInfo{Round: 7, Votes: make([]abci.ExtendedVoteInfo, 3)}), want: 3},
+		{name: "truncated length prefix", bz: []byte{0x12, 0xff}, wantErr: true},
+		{name: "truncated tag", bz: []byte{0x80}, wantErr: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := extendedCommitVoteCount(tc.bz)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
+		})
 	}
 }

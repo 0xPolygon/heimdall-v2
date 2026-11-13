@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/RichardKnop/machinery/v1/tasks"
@@ -29,6 +32,7 @@ const (
 	errMsgClerkConvertingAddress          = "ClerkProcessor: error converting address to string"
 	errMsgClerkBroadcasting               = "ClerkProcessor: error while broadcasting clerk Record to heimdall"
 	errMsgClerkFetchingChainManagerParams = "ClerkProcessor: error while fetching chain manager params"
+	errMsgClerkInvalidID                  = "ClerkProcessor: dropping state sync with an ID heimdall can't store"
 
 	// Info messages
 	infoMsgClerkStarting                 = "ClerkProcessor: starting"
@@ -50,12 +54,48 @@ type ClerkContext struct {
 type ClerkProcessor struct {
 	BaseProcessor
 	stateSenderAbi *abi.ABI
+	pending        pendingRecords
+	released       releasedRecords
+	latestOnL1     cachedCounter
+	lowestCheck    rateGate
+	lowestBusy     rateGate
+	startedAt      time.Time
+	seeded         atomic.Bool
+	seeding        atomic.Bool
+	// seedID is the last ID seeded; written only by the task holding seeding.
+	seedID        uint64
+	seedCheck     rateGate
+	stateReceiver func(address string) (lastStateIDReader, error)
+	mempool       mempoolSize
+	chainParams   cachedChainParams
+	recordLookups lookupSlots
 }
+
+type cachedChainParams struct {
+	mu      sync.Mutex
+	at      time.Time
+	params  *chainmanagertypes.Params
+	err     error
+	failAt  time.Time
+	reading bool
+	now     func() time.Time
+}
+
+const (
+	chainParamsCacheTTL = time.Minute
+	// chainParamsFailTTL is how long a failed read is shared (with the last
+	// params, if any), so an outage costs one request per period.
+	chainParamsFailTTL = time.Second
+)
+
+var errChainParamsReadInProgress = errors.New("chain manager params read in progress")
 
 // NewClerkProcessor - add state sender abi to clerk processor
 func NewClerkProcessor(stateSenderAbi *abi.ABI) *ClerkProcessor {
 	return &ClerkProcessor{
 		stateSenderAbi: stateSenderAbi,
+		startedAt:      time.Now(),
+		lowestBusy:     rateGate{every: clerkLowestBusyEvery},
 	}
 }
 
@@ -77,7 +117,7 @@ func (cp *ClerkProcessor) RegisterTasks() {
 // sendStateSyncedToHeimdall - handle state sync event from rootChain
 // 1. Check if this deposit event has to be broadcast to heimdall
 // 2. Create and broadcast record transaction to heimdall
-func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes string) error {
+func (cp *ClerkProcessor) sendStateSyncedToHeimdall(ctx context.Context, eventName string, logBytes string) (err error) {
 	tracingCtx := tracing.WithTracer(context.Background(), otel.Tracer("State-Sync"))
 	// work begins
 	sendStateSyncedToHeimdallCtx, sendStateSyncedToHeimdallSpan := tracing.StartSpan(tracingCtx, "sendStateSyncedToHeimdall")
@@ -86,116 +126,256 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 	start := time.Now()
 
 	vLog := types.Log{}
-	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
+	if err = json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		cp.Logger.Error(errMsgClerkUnmarshallingEvent, "error", err)
 		return err
 	}
 
+	event := new(statesender.StatesenderStateSynced)
+	if err = helper.UnpackLog(cp.stateSenderAbi, event, eventName, &vLog); err != nil {
+		cp.Logger.Error(errMsgClerkParsingEvent, "name", eventName, "error", err)
+		return nil
+	}
+	defer util.LogElapsedTimeForStateSyncedEvent(event, "sendStateSyncedToHeimdall", start)
+
+	// Heimdall never stores a record with a zero or oversized ID, so a task
+	// for one would only hold the order window.
+	if event.Id.Sign() <= 0 || !event.Id.IsInt64() {
+		cp.Logger.Error(errMsgClerkInvalidID, "event", eventName, "id", event.Id)
+		return nil
+	}
+	id := event.Id.Uint64()
+	origin := fmt.Sprintf("%s:%d", vLog.TxHash.Hex(), vLog.Index)
+	defer func() {
+		// machinery turns a panic into a failed attempt; the last one must
+		// still let go of the order window.
+		if r := recover(); r != nil {
+			cp.releaseOnLastAttempt(ctx, id, origin, fmt.Errorf("task panicked: %v", r))
+			panic(r)
+		}
+		cp.releaseOnLastAttempt(ctx, id, origin, err)
+	}()
+
+	tracing.SetAttributes(sendStateSyncedToHeimdallSpan, []attribute.KeyValue{
+		attribute.String("event", eventName),
+		attribute.Int64("id", event.Id.Int64()),
+		attribute.String("contract", event.ContractAddress.String()),
+	}...)
+
+	// Ordering needs only the ID, so it runs before any heimdall query: during a
+	// burst most tasks wait here, and they retry often.
+	lowest, err := cp.admit(ctx, eventName, id, origin)
+	if err != nil {
+		return taskResult(err)
+	}
+
+	stored, missing, err := cp.checkStored(ctx, eventName, event, &vLog, id, lowest)
+	if err != nil || stored {
+		return err
+	}
+
+	if err = cp.awaitStored(ctx, eventName, id, origin, missing, time.Now()); err != nil {
+		if errors.Is(err, errRecordAbandoned) {
+			return nil
+		}
+		return taskResult(err)
+	}
+
 	clerkContext, err := cp.getClerkContext()
+	if errors.Is(err, errChainParamsReadInProgress) {
+		// Not a failure: another task is reading them; don't spend a retry.
+		return tasks.NewErrRetryTaskLater(errChainParamsReadInProgress.Error(), clerkDeferRetryDelay)
+	}
 	if err != nil {
 		return err
 	}
 
 	chainParams := clerkContext.ChainmanagerParams.ChainParams
 
-	event := new(statesender.StatesenderStateSynced)
-	if err = helper.UnpackLog(cp.stateSenderAbi, event, eventName, &vLog); err != nil {
-		cp.Logger.Error(errMsgClerkParsingEvent, "name", eventName, "error", err)
-	} else {
-		defer util.LogElapsedTimeForStateSyncedEvent(event, "sendStateSyncedToHeimdall", start)
+	cp.Logger.Debug(
+		debugMsgClerkNewEventFound,
+		"event", eventName,
+		"id", event.Id,
+		"contract", event.ContractAddress,
+		"data", hex.EncodeToString(event.Data),
+		"borChainId", chainParams.BorChainId,
+		"txHash", vLog.TxHash.String(),
+		"logIndex", uint64(vLog.Index),
+		"blockNumber", vLog.BlockNumber,
+	)
 
-		tracing.SetAttributes(sendStateSyncedToHeimdallSpan, []attribute.KeyValue{
-			attribute.String("event", eventName),
-			attribute.Int64("id", event.Id.Int64()),
-			attribute.String("contract", event.ContractAddress.String()),
-		}...)
-
-		// Check if this event has already been processed by querying the event record.
-		existingRecord, err := util.GetClerkEventRecord(event.Id.Int64(), cp.cliCtx.Codec)
-
-		if err == nil && existingRecord.Id != 0 {
-			cp.Logger.Info(infoMsgClerkIgnoringAlreadyProcessed,
-				"event", eventName,
-				"id", event.Id,
-				"contract", event.ContractAddress,
-				"data", hex.EncodeToString(event.Data),
-				"borChainId", chainParams.BorChainId,
-				"txHash", vLog.TxHash.String(),
-				"logIndex", uint64(vLog.Index),
-				"blockNumber", vLog.BlockNumber,
-			)
-			return nil
-		}
-
-		cp.Logger.Debug(
-			debugMsgClerkNewEventFound,
-			"event", eventName,
-			"id", event.Id,
-			"contract", event.ContractAddress,
-			"data", hex.EncodeToString(event.Data),
-			"borChainId", chainParams.BorChainId,
-			"txHash", vLog.TxHash.String(),
-			"logIndex", uint64(vLog.Index),
-			"blockNumber", vLog.BlockNumber,
-		)
-
-		_, maxStateSyncSizeCheckSpan := tracing.StartSpan(sendStateSyncedToHeimdallCtx, "maxStateSyncSizeCheck")
-		if len(event.Data) > helper.MaxStateSyncSize {
-			cp.Logger.Info(infoMsgClerkDataTooLarge, "data", hex.EncodeToString(event.Data))
-			event.Data = common.FromHex("")
-		}
-		tracing.EndSpan(maxStateSyncSizeCheckSpan)
-
-		address, err := helper.GetAddressString()
-		if err != nil {
-			return fmt.Errorf("ClerkProcessor: error converting address to string: %w", err)
-		}
-
-		msg := clerkTypes.NewMsgEventRecord(
-			address,
-			vLog.TxHash.String(),
-			uint64(vLog.Index),
-			vLog.BlockNumber,
-			event.Id.Uint64(),
-			event.ContractAddress.Bytes(),
-			event.Data,
-			chainParams.BorChainId,
-		)
-
-		_, checkTxAgainstMempoolSpan := tracing.StartSpan(sendStateSyncedToHeimdallCtx, "checkTxAgainstMempool")
-		// Check if we have the same transaction in mempool or not.
-		// Don't drop the transaction. Keep retrying after `util.RetryStateSyncTaskDelay = 24 seconds`,
-		// until the transaction in mempool is processed or canceled.
-		inMempool, _ := cp.checkTxAgainstMempool(&msg, event)
-		tracing.EndSpan(checkTxAgainstMempoolSpan)
-
-		if inMempool {
-			cp.Logger.Info(infoMsgClerkTxInMempool, "event", eventName, "retry delay", util.RetryStateSyncTaskDelay)
-			return tasks.NewErrRetryTaskLater("transaction already in mempool", util.RetryStateSyncTaskDelay)
-		}
-
-		_, BroadcastToHeimdallSpan := tracing.StartSpan(sendStateSyncedToHeimdallCtx, "BroadcastToHeimdall")
-		// Broadcast the transaction to heimdall.
-		_, err = cp.txBroadcaster.BroadcastToHeimdall(context.Background(), &msg, event)
-		tracing.EndSpan(BroadcastToHeimdallSpan)
-
-		if err != nil {
-			cp.Logger.Error(errMsgClerkBroadcasting, "error", err)
-			return err
-		}
-	}
-
-	return nil
+	return cp.submitEventRecord(ctx, sendStateSyncedToHeimdallCtx, eventName, event, &vLog, chainParams.BorChainId, lowest)
 }
 
-func (cp *ClerkProcessor) getClerkContext() (*ClerkContext, error) {
-	chainmanagerParams, err := util.GetChainmanagerParams(cp.cliCtx.Codec)
+// checkStored runs recordStored within the bound on concurrent record lookups.
+// The lowest ID, the one bor waits on, has a slot of its own.
+func (cp *ClerkProcessor) checkStored(ctx context.Context, eventName string, event *statesender.StatesenderStateSynced, vLog *types.Log, id, lowest uint64) (stored, missing bool, err error) {
+	release := cp.recordLookups.tryAcquire(id == lowest)
+	if release == nil {
+		delay := wholeSeconds(clerkDeferRetryDelay + spread(id, clerkDeferRetryDelay))
+		if id == lowest {
+			delay = clerkDeferRetryDelay
+		} else if windowReleased(tasks.SignatureFromContext(ctx)) {
+			delay = deferDelay(id, lowest, true)
+		}
+		return false, false, tasks.NewErrRetryTaskLater(msgLookupsBusy, delay)
+	}
+	defer release()
+	stored, missing = cp.recordStored(ctx, eventName, event, vLog)
+	return stored, missing, nil
+}
+
+// recordStored reports whether heimdall already stored the event's record, and
+// if so stops tracking it, or else whether heimdall answered that it doesn't
+// hold it (missing); a failed lookup is neither.
+func (cp *ClerkProcessor) recordStored(ctx context.Context, eventName string, event *statesender.StatesenderStateSynced, vLog *types.Log) (stored, missing bool) {
+	stored, err := util.ClerkRecordStored(ctx, cp.cliCtx.Codec, event.Id.Uint64())
 	if err != nil {
-		cp.Logger.Error(errMsgClerkFetchingChainManagerParams, "error", err)
-		return nil, err
+		return false, false
+	}
+	if !stored {
+		return false, true
 	}
 
-	return &ClerkContext{
-		ChainmanagerParams: chainmanagerParams,
-	}, nil
+	cp.Logger.Info(infoMsgClerkIgnoringAlreadyProcessed,
+		"event", eventName,
+		"id", event.Id,
+		"contract", event.ContractAddress,
+		"txHash", vLog.TxHash.String(),
+		"logIndex", uint64(vLog.Index),
+		"blockNumber", vLog.BlockNumber,
+	)
+	cp.finishStored(ctx, event.Id.Uint64(), time.Now())
+	return true, false
+}
+
+// finishStored stops tracking a stored ID. A seed on it moves on to the next
+// ID heimdall lacks, or stays seeded alone for a later check if that scan
+// can't run.
+func (cp *ClerkProcessor) finishStored(ctx context.Context, id uint64, now time.Time) {
+	cp.released.done(id)
+	if !cp.pending.seeded(id) || cp.advanceSeed(ctx, id, now) {
+		cp.pending.done(id)
+		return
+	}
+	cp.pending.done(id)
+	cp.pending.seed(id, now)
+}
+
+// submitEventRecord broadcasts the record for an event heimdall has not stored yet.
+func (cp *ClerkProcessor) submitEventRecord(ctx, spanCtx context.Context, eventName string, event *statesender.StatesenderStateSynced, vLog *types.Log, borChainID string, lowest uint64) error {
+	if err := cp.deferWhileMempoolBusy(eventName, event, event.Id.Uint64(), lowest, windowReleased(tasks.SignatureFromContext(ctx))); err != nil {
+		return err
+	}
+
+	_, maxStateSyncSizeCheckSpan := tracing.StartSpan(spanCtx, "maxStateSyncSizeCheck")
+	if len(event.Data) > helper.MaxStateSyncSize {
+		cp.Logger.Info(infoMsgClerkDataTooLarge, "data", hex.EncodeToString(event.Data))
+		event.Data = common.FromHex("")
+	}
+	tracing.EndSpan(maxStateSyncSizeCheckSpan)
+
+	address, err := helper.GetAddressString()
+	if err != nil {
+		return fmt.Errorf("ClerkProcessor: error converting address to string: %w", err)
+	}
+
+	msg := clerkTypes.NewMsgEventRecord(
+		address,
+		vLog.TxHash.String(),
+		uint64(vLog.Index),
+		vLog.BlockNumber,
+		event.Id.Uint64(),
+		event.ContractAddress.Bytes(),
+		event.Data,
+		borChainID,
+	)
+
+	origin := fmt.Sprintf("%s:%d", vLog.TxHash.Hex(), vLog.Index)
+	// An identical copy of this record in the mempool is the same event.
+	// Once a store check found the record missing anyway, only this bridge's
+	// own pending tx counts: anyone can sign a copy, and one that is never
+	// included mustn't stand in for this bridge's broadcast.
+	ownOnly := storeCheckFailed(tasks.SignatureFromContext(ctx))
+	_, checkTxAgainstMempoolSpan := tracing.StartSpan(spanCtx, "checkTxAgainstMempool")
+	inMempool, _ := cp.checkTxAgainstMempool(ctx, &msg, event, ownOnly)
+	tracing.EndSpan(checkTxAgainstMempoolSpan)
+	if inMempool {
+		return cp.waitOnMempoolCopy(ctx, eventName, event.Id.Uint64(), origin, ownOnly, time.Now())
+	}
+
+	_, BroadcastToHeimdallSpan := tracing.StartSpan(spanCtx, "BroadcastToHeimdall")
+	// Broadcast the transaction to heimdall.
+	_, err = cp.txBroadcaster.BroadcastToHeimdall(ctx, &msg, event)
+	tracing.EndSpan(BroadcastToHeimdallSpan)
+
+	return cp.handleBroadcastErr(ctx, eventName, event.Id.Uint64(), origin, err)
+}
+
+// getClerkContext returns the chain manager params, cached for
+// chainParamsCacheTTL: clerk tasks retry often during a burst and only need
+// the bor chain id, which changes only through governance. One task reads at
+// a time, without holding the lock, so a slow heimdall holds one shared worker
+// at most: the others get the last params read, or an error before any read
+// succeeded. A failed refresh keeps serving the last params.
+func (cp *ClerkProcessor) getClerkContext() (*ClerkContext, error) {
+	c := &cp.chainParams
+	clock := c.now
+	if clock == nil {
+		clock = time.Now
+	}
+
+	c.mu.Lock()
+	if cached, ok := c.cachedLocked(clock()); ok {
+		c.mu.Unlock()
+		if cached.err != nil {
+			return nil, cached.err
+		}
+		return &ClerkContext{ChainmanagerParams: cached.params}, nil
+	}
+	c.reading = true
+	c.mu.Unlock()
+	defer func() {
+		c.mu.Lock()
+		c.reading = false
+		c.mu.Unlock()
+	}()
+
+	fresh, err := util.GetChainmanagerParams(cp.cliCtx.Codec)
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if err != nil {
+		cp.Logger.Error(errMsgClerkFetchingChainManagerParams, "error", err)
+		c.err, c.failAt = err, clock()
+		if c.params == nil {
+			return nil, err
+		}
+		return &ClerkContext{ChainmanagerParams: c.params}, nil
+	}
+	c.params, c.at, c.err = fresh, clock(), nil
+	return &ClerkContext{ChainmanagerParams: fresh}, nil
+}
+
+type cachedAnswer struct {
+	params *chainmanagertypes.Params
+	err    error
+}
+
+// cachedLocked returns what a caller gets without reading; ok is false when
+// this caller is to read the params.
+func (c *cachedChainParams) cachedLocked(now time.Time) (cachedAnswer, bool) {
+	switch {
+	case c.params != nil && now.Sub(c.at) < chainParamsCacheTTL:
+		return cachedAnswer{params: c.params}, true
+	case c.reading && c.params != nil:
+		return cachedAnswer{params: c.params}, true
+	case c.reading:
+		return cachedAnswer{err: errChainParamsReadInProgress}, true
+	case c.err != nil && now.Sub(c.failAt) < chainParamsFailTTL && c.params != nil:
+		return cachedAnswer{params: c.params}, true
+	case c.err != nil && now.Sub(c.failAt) < chainParamsFailTTL:
+		return cachedAnswer{err: c.err}, true
+	}
+	return cachedAnswer{}, false
 }

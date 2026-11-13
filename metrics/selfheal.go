@@ -47,6 +47,72 @@ var (
 		Help:      "Total number of stake tasks dropped after retrying an out-of-order nonce past the retry age limit",
 	})
 
+	// ClerkMempoolBusyDeferrals counts clerk broadcasts the bridge deferred
+	// because the local heimdall mempool was busy.
+	ClerkMempoolBusyDeferrals = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: Namespace,
+		Subsystem: "bridge",
+		Name:      "clerk_mempool_busy_deferrals_total",
+		Help:      "Total number of clerk broadcasts deferred because the local heimdall mempool was busy",
+	})
+
+	// ClerkOrderDeferrals counts clerk broadcasts the bridge deferred because
+	// the state sync was too far ahead of the lowest one it still had pending.
+	ClerkOrderDeferrals = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: Namespace,
+		Subsystem: "bridge",
+		Name:      "clerk_order_deferrals_total",
+		Help:      "Total number of clerk broadcasts deferred because the state sync was too far ahead of the lowest pending one",
+	})
+
+	// ClerkPendingExpired counts state sync IDs the bridge stopped waiting on
+	// because their task stopped running without being stored, broadcast or
+	// given up on.
+	ClerkPendingExpired = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: Namespace,
+		Subsystem: "bridge",
+		Name:      "clerk_pending_expired_total",
+		Help:      "Total number of pending state sync IDs the bridge stopped waiting on after their task went quiet past the TTL",
+	})
+
+	// ClerkRecordsUnstored counts state syncs a bridge broadcast again because
+	// heimdall still hadn't stored them long after they entered the mempool.
+	ClerkRecordsUnstored = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: Namespace,
+		Subsystem: "bridge",
+		Name:      "clerk_records_unstored_total",
+		Help:      "Total number of state syncs broadcast again because heimdall still hadn't stored them long after they entered the mempool",
+	})
+
+	// ClerkRecordsNotOnL1 counts rebroadcasts of released state syncs a bridge
+	// skipped because their ID was above the latest state sync ID on L1.
+	ClerkRecordsNotOnL1 = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: Namespace,
+		Subsystem: "bridge",
+		Name:      "clerk_records_not_on_l1_total",
+		Help:      "Total number of state sync rebroadcasts skipped because their ID was above the latest one on L1",
+	})
+
+	// ClerkPendingReconciled counts lowest pending state sync IDs a bridge
+	// dropped from its order window because heimdall already stored them while
+	// their task had stopped running.
+	ClerkPendingReconciled = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: Namespace,
+		Subsystem: "bridge",
+		Name:      "clerk_pending_reconciled_total",
+		Help:      "Total number of idle lowest pending state syncs dropped because heimdall already stored them",
+	})
+
+	// ClerkTasksExhausted counts state sync tasks that ran out of retries, or
+	// of time after their record entered the mempool, before heimdall stored
+	// their record.
+	ClerkTasksExhausted = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: Namespace,
+		Subsystem: "bridge",
+		Name:      "clerk_tasks_exhausted_total",
+		Help:      "Total number of state sync tasks that ran out of retries or time before heimdall stored their record",
+	})
+
 	// SelfHealCheckpointAcksProcessed counts missing NewHeaderBlock checkpoint
 	// acks successfully queued for replay.
 	SelfHealCheckpointAcksProcessed = promauto.NewCounter(prometheus.CounterOpts{

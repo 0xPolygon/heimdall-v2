@@ -84,7 +84,11 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 	clientCtx = attachCodecIfMissing(clientCtx, cdc)
 
 	// setup queue and CometBFT RPC
-	qc := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
+	qc, err := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
+	if err != nil {
+		logger().Error("Bridge: error connecting to queue", "err", err)
+		return err
+	}
 
 	httpClient, err := createAndStartRPC(helper.GetConfig().CometBFTRPCUrl)
 	if err != nil {
