@@ -32,6 +32,9 @@ type HeimdallListener struct {
 	// polls; only the polling goroutine uses them
 	fetchFailureHeight uint64
 	fetchFailures      int
+
+	// closed when pollEvents returns
+	pollDone chan struct{}
 }
 
 // Start starts polling heimdall for new blocks
@@ -49,12 +52,17 @@ func (hl *HeimdallListener) Start() error {
 	}
 
 	hl.Logger.Info("HeimdallListener: start polling for events", "pollInterval", pollInterval)
-	go hl.pollEvents(headerCtx, pollInterval)
+	hl.pollDone = make(chan struct{})
+	go func() {
+		defer close(hl.pollDone)
+		hl.pollEvents(headerCtx, pollInterval)
+	}()
 
 	return nil
 }
 
-// Stop stops the heimdall listener
+// Stop stops the heimdall listener and waits for its polling goroutine, so
+// the bridge DB isn't closed under a cursor write still in progress.
 func (hl *HeimdallListener) Stop() {
 	hl.Logger.Info("HeimdallListener: stopping")
 
@@ -62,6 +70,10 @@ func (hl *HeimdallListener) Stop() {
 	if hl.cancelHeaderProcess != nil {
 		hl.cancelHeaderProcess()
 		hl.cancelHeaderProcess = nil
+	}
+
+	if hl.pollDone != nil {
+		<-hl.pollDone
 	}
 
 	hl.Logger.Info("HeimdallListener: stopped")

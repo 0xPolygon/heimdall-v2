@@ -56,6 +56,32 @@ func TestHeimdallListener_Stop(t *testing.T) {
 
 		require.Nil(t, listener.cancelHeaderProcess)
 	})
+
+	t.Run("waits for the polling goroutine to finish", func(t *testing.T) {
+		t.Parallel()
+
+		listener := &HeimdallListener{}
+		listener.BaseListener.Logger = log.NewNopLogger()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		listener.BaseListener.cancelHeaderProcess = cancel
+		listener.pollDone = make(chan struct{})
+
+		finished := false
+		go func() {
+			defer close(listener.pollDone)
+			<-ctx.Done()
+			time.Sleep(10 * time.Millisecond)
+			finished = true
+		}()
+
+		listener.Stop()
+
+		require.True(t, finished)
+
+		// a second Stop doesn't block
+		listener.Stop()
+	})
 }
 
 func TestHeimdallListener_ProcessBlockEvent(t *testing.T) {
