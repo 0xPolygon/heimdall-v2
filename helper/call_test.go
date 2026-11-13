@@ -117,8 +117,6 @@ func FetchSigners(voteBytes []byte, sigInput []byte) ([]string, error) {
 }
 
 func TestPopulateABIsConcurrent(t *testing.T) {
-	t.Parallel()
-
 	const callers = 16
 	var wg sync.WaitGroup
 	errs := make(chan error, callers)
@@ -140,8 +138,6 @@ func TestPopulateABIsConcurrent(t *testing.T) {
 
 // TestPopulateABIs tests that every caller gets the ABI parsed by its generated binding
 func TestPopulateABIs(t *testing.T) {
-	t.Parallel()
-
 	caller, err := NewContractCaller()
 	require.NoError(t, err)
 
@@ -229,8 +225,6 @@ func TestContractInstanceCacheConcurrent(t *testing.T) {
 // TestContractInstanceCacheSameAddressDifferentBindings guards against two
 // binding types configured at the same address colliding in the cache.
 func TestContractInstanceCacheSameAddressDifferentBindings(t *testing.T) {
-	t.Parallel()
-
 	caller, err := NewContractCaller()
 	require.NoError(t, err)
 
@@ -249,8 +243,6 @@ func TestContractInstanceCacheSameAddressDifferentBindings(t *testing.T) {
 // TestDecodeLog checks that a log is decoded only when both its index and its
 // emitting contract match, and only as the event its topic identifies.
 func TestDecodeLog(t *testing.T) {
-	t.Parallel()
-
 	caller, err := NewContractCaller()
 	require.NoError(t, err)
 
