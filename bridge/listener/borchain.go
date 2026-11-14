@@ -47,5 +47,5 @@ func (ml *BorChainListener) ProcessHeader(newHeader *blockHeader) {
 	}
 
 	// A failed send needs no retry: the next poll queues the then-latest header.
-	_ = ml.sendTask("sendCheckpointToHeimdall", blockTaskRetryCount, 0, stringArg(string(headerBytes)))
+	_, _ = ml.sendTask("sendCheckpointToHeimdall", blockTaskRetryCount, 0, stringArg(string(headerBytes)))
 }

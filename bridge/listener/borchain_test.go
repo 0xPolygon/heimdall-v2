@@ -184,7 +184,7 @@ func TestBorChainListener_sendTask(t *testing.T) {
 			return sig.ETA.Sub(expectedTime).Abs() < time.Second
 		})).Return(nil, nil).Once()
 
-		_ = listener.sendTask(taskName, blockTaskRetryCount, delay, stringArg(string(headerBytes)))
+		_, _ = listener.sendTask(taskName, blockTaskRetryCount, delay, stringArg(string(headerBytes)))
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -213,7 +213,7 @@ func TestBorChainListener_sendTask(t *testing.T) {
 			return timeDiff < time.Second
 		})).Return(nil, nil).Once()
 
-		_ = listener.sendTask(taskName, blockTaskRetryCount, delay, stringArg(string(headerBytes)))
+		_, _ = listener.sendTask(taskName, blockTaskRetryCount, delay, stringArg(string(headerBytes)))
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -233,7 +233,7 @@ func TestBorChainListener_sendTask(t *testing.T) {
 
 		// Should not panic
 		require.NotPanics(t, func() {
-			_ = listener.sendTask(taskName, blockTaskRetryCount, 0, stringArg(string(headerBytes)))
+			_, _ = listener.sendTask(taskName, blockTaskRetryCount, 0, stringArg(string(headerBytes)))
 		})
 
 		mockConnector.AssertExpectations(t)

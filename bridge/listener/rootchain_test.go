@@ -55,7 +55,7 @@ func TestRootChainListener_sendTask(t *testing.T) {
 			return sig.ETA.Sub(expectedTime).Abs() < time.Second
 		})).Return(nil, nil).Once()
 
-		_ = listener.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
+		_, _ = listener.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -84,7 +84,7 @@ func TestRootChainListener_sendTask(t *testing.T) {
 			return timeDiff < time.Second
 		})).Return(nil, nil).Once()
 
-		_ = listener.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
+		_, _ = listener.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -107,7 +107,7 @@ func TestRootChainListener_sendTask(t *testing.T) {
 				sig.Args[1].Type == "string"
 		})).Return(nil, nil).Once()
 
-		_ = listener.sendTask(taskName, rootChainTaskRetryCount, 0, stringArg(eventName), stringArg(string(logBytes)))
+		_, _ = listener.sendTask(taskName, rootChainTaskRetryCount, 0, stringArg(eventName), stringArg(string(logBytes)))
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -669,7 +669,7 @@ func TestRootChainListener_Integration(t *testing.T) {
 				sig.Args[1].Value == string(logBytes)
 		})).Return(nil, nil).Once()
 
-		_ = listener.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
+		_, _ = listener.sendTask(taskName, rootChainTaskRetryCount, delay, stringArg(eventName), stringArg(string(logBytes)))
 
 		// Wait for the task to be sent
 		select {
@@ -698,7 +698,7 @@ func TestRootChainListener_EdgeCases(t *testing.T) {
 		})).Return(nil, nil).Once()
 
 		require.NotPanics(t, func() {
-			_ = listener.sendTask("test", rootChainTaskRetryCount, 0, stringArg(""), stringArg(string([]byte("{}"))))
+			_, _ = listener.sendTask("test", rootChainTaskRetryCount, 0, stringArg(""), stringArg(string([]byte("{}"))))
 		})
 
 		mockConnector.AssertExpectations(t)
@@ -716,7 +716,7 @@ func TestRootChainListener_EdgeCases(t *testing.T) {
 		})).Return(nil, nil).Once()
 
 		require.NotPanics(t, func() {
-			_ = listener.sendTask("test", rootChainTaskRetryCount, 0, stringArg("event"), stringArg(string([]byte(""))))
+			_, _ = listener.sendTask("test", rootChainTaskRetryCount, 0, stringArg("event"), stringArg(string([]byte(""))))
 		})
 
 		mockConnector.AssertExpectations(t)
@@ -741,7 +741,7 @@ func TestRootChainListener_EdgeCases(t *testing.T) {
 		})).Return(nil, nil).Once()
 
 		require.NotPanics(t, func() {
-			_ = listener.sendTask("test", rootChainTaskRetryCount, largeDelay, stringArg("event"), stringArg(string([]byte("{}"))))
+			_, _ = listener.sendTask("test", rootChainTaskRetryCount, largeDelay, stringArg("event"), stringArg(string([]byte("{}"))))
 		})
 
 		mockConnector.AssertExpectations(t)

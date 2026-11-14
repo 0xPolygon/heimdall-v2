@@ -244,8 +244,9 @@ func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight
 	switch event.Type {
 	case checkpointTypes.EventTypeCheckpoint:
 		hl.Logger.Info("HeimdallListener: sending task for checkpoint event", "blockHeight", blockHeight)
-		return hl.sendTask("sendCheckpointToRootchain", blockTaskRetryCount, 0,
+		_, err := hl.sendTask("sendCheckpointToRootchain", blockTaskRetryCount, 0,
 			stringArg(string(eventBytes)), tasks.Arg{Type: "int64", Value: blockHeight})
+		return err
 	default:
 		hl.Logger.Debug("HeimdallListener: block event type mismatch", "eventType", event.Type)
 		return nil

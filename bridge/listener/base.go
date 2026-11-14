@@ -172,15 +172,16 @@ func (bl *BaseListener) StartPolling(ctx context.Context, pollInterval time.Dura
 	}
 }
 
-// sendTask enqueues taskName to run no earlier than delay from now. A task no
-// processor registered is skipped: the queue would redeliver it forever.
-func (bl *BaseListener) sendTask(taskName string, retryCount int, delay time.Duration, args ...tasks.Arg) error {
+// sendTask enqueues taskName to run no earlier than delay from now and reports
+// whether it was queued. A task no processor registered is skipped without an
+// error: the queue would redeliver it forever.
+func (bl *BaseListener) sendTask(taskName string, retryCount int, delay time.Duration, args ...tasks.Arg) (bool, error) {
 	if !bl.taskQueue.IsTaskRegistered(taskName) {
 		metrics.BridgeTasksSent.WithLabelValues(taskName, "skipped").Inc()
 		if _, warned := unregisteredTaskWarned.LoadOrStore(taskName, struct{}{}); !warned {
 			bl.Logger.Warn("BaseListener: not queueing tasks with no registered processor; is the processor disabled by --only?", "taskName", taskName)
 		}
-		return nil
+		return false, nil
 	}
 
 	now := time.Now()
@@ -192,11 +193,11 @@ func (bl *BaseListener) sendTask(taskName string, retryCount int, delay time.Dur
 	if _, err := bl.taskQueue.SendTask(signature); err != nil {
 		metrics.BridgeTasksSent.WithLabelValues(taskName, "failed").Inc()
 		bl.Logger.Error("BaseListener: error sending task", "taskName", taskName, "error", err)
-		return err
+		return false, err
 	}
 
 	metrics.BridgeTasksSent.WithLabelValues(taskName, "sent").Inc()
-	return nil
+	return true, nil
 }
 
 func stringArg(value string) tasks.Arg {

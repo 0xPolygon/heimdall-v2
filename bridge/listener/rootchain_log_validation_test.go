@@ -1200,6 +1200,12 @@ func TestProcessRootChainBlockRange_RetryDoesNotRequeue(t *testing.T) {
 	require.Equal(t, []common.Hash{first.TxHash, second.TxHash}, dispatched, "the retry must queue only the log that failed")
 	queue.AssertNumberOfCalls(t, "SendTask", 3)
 	require.Empty(t, rl.queuedLogs, "the queued logs are dropped once the cursor is past them")
+
+	// a log the node didn't queue isn't remembered
+	rl.validatorSlotSource = func() (validatorSlot, error) { return validatorSlot{}, nil }
+	require.NoError(t, rl.processRootChainBlockRange(rootChainContext, from, to, newRootChainRejectionState()))
+	require.Empty(t, rl.queuedLogs)
+	queue.AssertNumberOfCalls(t, "SendTask", 3)
 }
 
 // TestValidateLogAgainstQuery_RejectsWrongShapeEvent proves a log with the

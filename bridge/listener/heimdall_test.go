@@ -221,7 +221,7 @@ func TestHeimdallListener_sendTask(t *testing.T) {
 			return sig.RetryCount == 3
 		})).Return(nil, nil).Once()
 
-		_ = listener.sendTask(taskName, blockTaskRetryCount, 0, stringArg(string(eventBytes)), tasks.Arg{Type: "int64", Value: blockHeight})
+		_, _ = listener.sendTask(taskName, blockTaskRetryCount, 0, stringArg(string(eventBytes)), tasks.Arg{Type: "int64", Value: blockHeight})
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -240,7 +240,7 @@ func TestHeimdallListener_sendTask(t *testing.T) {
 				return sig.Args[1].Value == height
 			})).Return(nil, nil).Once()
 
-			_ = listener.sendTask("test", blockTaskRetryCount, 0, stringArg(string([]byte("{}"))), tasks.Arg{Type: "int64", Value: height})
+			_, _ = listener.sendTask("test", blockTaskRetryCount, 0, stringArg(string([]byte("{}"))), tasks.Arg{Type: "int64", Value: height})
 		}
 
 		mockConnector.AssertExpectations(t)

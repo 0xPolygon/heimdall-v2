@@ -323,7 +323,9 @@ func TestBaseListener_sendTask(t *testing.T) {
 		queue := &mockQueueConnector{unregistered: map[string]bool{"sendUnregisteredTask": true}}
 		listener := newTestBaseListener(queue)
 
-		require.NoError(t, listener.sendTask("sendUnregisteredTask", rootChainTaskRetryCount, 0, stringArg("Event")))
+		queued, err := listener.sendTask("sendUnregisteredTask", rootChainTaskRetryCount, 0, stringArg("Event"))
+		require.NoError(t, err)
+		require.False(t, queued)
 		queue.AssertNotCalled(t, "SendTask", mock.Anything)
 	})
 
@@ -334,7 +336,9 @@ func TestBaseListener_sendTask(t *testing.T) {
 		queue.On("SendTask", mock.Anything).Return(nil, errors.New("broker down")).Once()
 		listener := newTestBaseListener(queue)
 
-		require.EqualError(t, listener.sendTask("sendStateSyncedToHeimdall", rootChainTaskRetryCount, 0, stringArg("StateSynced")), "broker down")
+		queued, err := listener.sendTask("sendStateSyncedToHeimdall", rootChainTaskRetryCount, 0, stringArg("StateSynced"))
+		require.EqualError(t, err, "broker down")
+		require.False(t, queued)
 		queue.AssertExpectations(t)
 	})
 
@@ -348,9 +352,13 @@ func TestBaseListener_sendTask(t *testing.T) {
 		queue.On("SendTask", mock.MatchedBy(func(s *tasks.Signature) bool { return s.Name == "metricsFailedTask" })).Return(nil, errors.New("broker down")).Once()
 		listener := newTestBaseListener(queue)
 
-		require.NoError(t, listener.sendTask("metricsSentTask", blockTaskRetryCount, time.Minute))
-		require.Error(t, listener.sendTask("metricsFailedTask", blockTaskRetryCount, 0))
-		require.NoError(t, listener.sendTask("metricsSkippedTask", blockTaskRetryCount, 0))
+		queued, err := listener.sendTask("metricsSentTask", blockTaskRetryCount, time.Minute)
+		require.NoError(t, err)
+		require.True(t, queued)
+		_, err = listener.sendTask("metricsFailedTask", blockTaskRetryCount, 0)
+		require.Error(t, err)
+		_, err = listener.sendTask("metricsSkippedTask", blockTaskRetryCount, 0)
+		require.NoError(t, err)
 
 		for task, outcome := range map[string]string{"metricsSentTask": "sent", "metricsFailedTask": "failed", "metricsSkippedTask": "skipped"} {
 			require.InDelta(t, 1, testutil.ToFloat64(metrics.BridgeTasksSent.WithLabelValues(task, outcome)), 0, task)

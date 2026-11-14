@@ -95,9 +95,13 @@ func (rl *RootChainListener) processCheckpointAck(ctx context.Context) {
 		return
 	}
 
-	if err := rl.sendTask(rootChainEvents[helper.NewHeaderBlockEvent].task, rootChainTaskRetryCount, 0,
-		stringArg(helper.NewHeaderBlockEvent), stringArg(string(logBytes))); err != nil {
+	queued, err := rl.sendTask(rootChainEvents[helper.NewHeaderBlockEvent].task, rootChainTaskRetryCount, 0,
+		stringArg(helper.NewHeaderBlockEvent), stringArg(string(logBytes)))
+	if err != nil {
 		rl.Logger.Error("Self-healing: failed to queue checkpoint ACK task, retrying next cycle", "headerBlockId", l1HeaderBlockId, "error", err)
+		return
+	}
+	if !queued {
 		return
 	}
 
@@ -438,5 +442,6 @@ func (rl *RootChainListener) dispatchRecoveredLog(vLog *types.Log) error {
 		return err
 	}
 
-	return rl.handleLog(*vLog, selectedEvent, slot)
+	_, err = rl.handleLog(*vLog, selectedEvent, slot)
+	return err
 }

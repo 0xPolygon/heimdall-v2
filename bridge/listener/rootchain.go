@@ -427,14 +427,17 @@ func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAdd
 			continue
 		}
 
-		if err := rl.handleLog(vLog, selectedEvents[i], slot); err != nil {
+		queued, err := rl.handleLog(vLog, selectedEvents[i], slot)
+		if err != nil {
 			return fmt.Errorf("%w: %w", errRootChainLogsNotQueued, err)
 		}
 
-		if rl.queuedLogs == nil {
-			rl.queuedLogs = make(map[string]struct{})
+		if queued {
+			if rl.queuedLogs == nil {
+				rl.queuedLogs = make(map[string]struct{})
+			}
+			rl.queuedLogs[logKey] = struct{}{}
 		}
-		rl.queuedLogs[logKey] = struct{}{}
 
 		if rl.onLogDispatched != nil {
 			rl.onLogDispatched(vLog, selectedEvents[i])
