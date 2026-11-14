@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
@@ -177,11 +178,130 @@ func TestBorHTTPTransport(t *testing.T) {
 	exists, err := c.CheckIfBlocksExist(ctx, 7)
 	require.NoError(t, err)
 	require.False(t, exists)
+	_, err = c.GetBorChainBlock(ctx, big.NewInt(9))
+	require.ErrorIs(t, err, ethereum.NotFound)
 
 	require.Equal(t, []string{
 		`eth_getBlockByNumber "latest"`,
 		`bor_getAuthor "0x5"`,
 		`eth_getTdByHash "` + common.Hash{}.Hex() + `"`,
 		`eth_getBlockByNumber "0x7"`,
+		`eth_getBlockByNumber "0x9"`,
 	}, calls)
+}
+
+// TestBorCalls_GRPCNilClientError checks every Bor call that picks its
+// transport through borClient reports a missing gRPC client.
+func TestBorCalls_GRPCNilClientError(t *testing.T) {
+	t.Parallel()
+
+	const want = "bor grpc client is nil"
+	ctx := context.Background()
+	c := makeDispatcherCaller(true)
+
+	rootHash, err := c.GetRootHash(ctx, 1, 2, 10)
+	require.ErrorContains(t, err, want)
+	require.Nil(t, rootHash)
+
+	vote, err := c.GetVoteOnHash(1, 2, "hash", "milestone")
+	require.ErrorContains(t, err, want)
+	require.False(t, vote)
+
+	exists, err := c.CheckIfBlocksExist(ctx, 7)
+	require.ErrorContains(t, err, want)
+	require.False(t, exists)
+
+	block, err := c.GetBlockByNumber(ctx, 7)
+	require.ErrorContains(t, err, want)
+	require.Nil(t, block)
+
+	receipt, err := c.GetBorTxReceipt(common.Hash{})
+	require.ErrorContains(t, err, want)
+	require.Nil(t, receipt)
+}
+
+// TestBorHTTPTransport_Results checks how the HTTP transport reads the author
+// and total difficulty replies, and that RPC errors reach the caller.
+func TestBorHTTPTransport_Results(t *testing.T) {
+	t.Parallel()
+
+	const rpcFailure = `"error":{"code":-32000,"message":"node busy"}`
+	author := common.HexToAddress("0x00000000000000000000000000000000000000aa")
+
+	tests := []struct {
+		name       string
+		td         bool
+		reply      string
+		wantAuthor *common.Address
+		wantTd     uint64
+		wantErr    string
+	}{
+		{name: "author", reply: `"result":"` + author.Hex() + `"`, wantAuthor: &author},
+		{name: "author rpc error", reply: rpcFailure, wantErr: "node busy"},
+		{name: "total difficulty", td: true, reply: `"result":{"totalDifficulty":"0x2a"}`, wantTd: 42},
+		{name: "total difficulty rpc error", td: true, reply: rpcFailure, wantErr: "node busy"},
+		{name: "total difficulty missing", td: true, reply: `"result":{}`, wantErr: ethereum.NotFound.Error()},
+		{name: "total difficulty not a string", td: true, reply: `"result":{"totalDifficulty":7}`, wantErr: "unexpected totalDifficulty type"},
+		{name: "total difficulty not hex", td: true, reply: `"result":{"totalDifficulty":"zz"}`, wantErr: "failed to decode totalDifficulty"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var req struct {
+					ID json.RawMessage `json:"id"`
+				}
+				require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,%s}`, req.ID, tc.reply)
+			}))
+			defer srv.Close()
+
+			client, err := ethclient.Dial(srv.URL)
+			require.NoError(t, err)
+			defer client.Close()
+			c := ContractCaller{BorChainClient: client, BorChainTimeout: time.Second}
+
+			var (
+				gotAuthor *common.Address
+				gotTd     uint64
+			)
+			if tc.td {
+				gotTd, err = c.GetBorChainBlockTd(context.Background(), common.Hash{})
+			} else {
+				gotAuthor, err = c.GetBorChainBlockAuthor(context.Background(), big.NewInt(5))
+			}
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tc.wantAuthor, gotAuthor)
+			require.Equal(t, tc.wantTd, gotTd)
+		})
+	}
+}
+
+// TestGetBlockNumberFromTxHash_RPCError checks a failed lookup isn't reported
+// as a missing transaction.
+func TestGetBlockNumberFromTxHash_RPCError(t *testing.T) {
+	t.Parallel()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req jsonRPCRequest
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+		writeJSONRPC(w, errorResp(req.ID, -32000, "node busy"))
+	}))
+	defer srv.Close()
+
+	client, err := rpc.Dial(srv.URL)
+	require.NoError(t, err)
+	defer client.Close()
+	c := ContractCaller{MainChainRPCClient: client, MainChainTimeout: time.Second}
+
+	blockNumber, err := c.GetBlockNumberFromTxHash(common.Hash{})
+	require.ErrorContains(t, err, "node busy")
+	require.Nil(t, blockNumber)
 }

@@ -7,6 +7,7 @@ import (
 
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -571,4 +572,45 @@ func TestRootChainListener_handleLog_QueuesTaskInValidatorSlot(t *testing.T) {
 	_, _ = listener.handleLog(types.Log{BlockNumber: 2}, event, validatorSlot{})
 
 	queue.AssertExpectations(t)
+}
+
+func TestRootChainListener_handleLog_NotQueued(t *testing.T) {
+	// Not parallel: sets the global node key, so a Staked decoder that carried on
+	// past an undecodable log would have a key to compare and report no error.
+	helper.SetTestPrivPubKey(secp256k1.GenPrivKey())
+
+	stakingInfoABI := stakingInfoABIForTest(t)
+	stateSenderABI := stateSenderABIForTest(t)
+	// no SendTask expectation: a send fails the test
+	queue := new(mockQueueConnector)
+	listener := &RootChainListener{
+		BaseListener:   newTestBaseListener(queue),
+		stakingInfoAbi: &stakingInfoABI,
+		stateSenderAbi: &stateSenderABI,
+	}
+	stateSynced := newStateSyncedLog(t, stateSenderABI, common.HexToAddress("0x1"), 7, 10, common.Hash{}, common.Hash{}, 0, 0)
+
+	for name, tc := range map[string]struct {
+		vLog  types.Log
+		event string
+		slot  validatorSlot
+	}{
+		"unknown event":                    {event: "UnknownEvent", slot: validatorSlot{isValidator: true}},
+		"undecodable log":                  {event: helper.StakedEvent, slot: validatorSlot{isValidator: true}},
+		"state sync outside validator set": {vLog: *stateSynced, event: helper.StateSyncedEvent},
+	} {
+		queued, err := listener.handleLog(tc.vLog, &abi.Event{Name: tc.event}, tc.slot)
+		require.NoError(t, err, name)
+		require.False(t, queued, name)
+	}
+
+	for _, name := range []string{
+		helper.StakedEvent, helper.StakeUpdateEvent, helper.SignerChangeEvent, helper.UnstakeInitEvent,
+		helper.StateSyncedEvent, helper.TopUpFeeEvent, "UnknownEvent",
+	} {
+		event, isSender, err := listener.decodeEventSender(types.Log{}, &abi.Event{Name: name})
+		require.Error(t, err, name)
+		require.False(t, isSender, name)
+		require.Nil(t, event, name)
+	}
 }

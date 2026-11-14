@@ -237,7 +237,20 @@ func TestContractInstanceCacheSameAddressDifferentBindings(t *testing.T) {
 
 	cachedRootChain, err := caller.GetRootChainInstance(address)
 	require.NoError(t, err)
+	require.NotNil(t, rootChain)
 	require.Same(t, rootChain, cachedRootChain)
+
+	// a binding that fails to build is reported and not cached
+	const failing = "0x000000000000000000000000000000000000000a"
+	errBinding := errors.New("no binding")
+	broken, err := cachedBinding(caller, failing, nil, func(common.Address, bind.ContractBackend) (*rootchain.Rootchain, error) {
+		return nil, errBinding
+	})
+	require.ErrorIs(t, err, errBinding)
+	require.Nil(t, broken)
+	recovered, err := caller.GetRootChainInstance(failing)
+	require.NoError(t, err)
+	require.NotNil(t, recovered)
 }
 
 // TestDecodeLog checks that a log is decoded only when both its index and its

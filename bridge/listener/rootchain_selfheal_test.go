@@ -23,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
@@ -1395,4 +1396,12 @@ func TestDispatchRecoveredLog_IgnoresUnhandledLogs(t *testing.T) {
 	require.NoError(t, rl.dispatchRecoveredLog(&types.Log{Topics: []common.Hash{unhandledTopic}}))
 	require.Error(t, rl.dispatchRecoveredLog(&types.Log{Topics: []common.Hash{handledTopic}}),
 		"a handled log must reach the validator slot lookup")
+
+	queue := new(mockQueueConnector)
+	queue.On("SendTask", mock.Anything).Return(nil, errors.New("broker down")).Once()
+	rl.taskQueue = queue
+	rl.validatorSlotSource = func() (validatorSlot, error) { return validatorSlot{isValidator: true}, nil }
+	require.ErrorContains(t, rl.dispatchRecoveredLog(&types.Log{Topics: []common.Hash{handledTopic}}), "broker down",
+		"a recovered log that can't be queued must report it")
+	queue.AssertExpectations(t)
 }

@@ -2,6 +2,7 @@ package listener
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"math/big"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"testing"
 
 	"cosmossdk.io/log"
+	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -20,6 +22,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/prometheus/client_golang/prometheus/testutil"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
@@ -771,4 +774,63 @@ func TestConfirmStateSyncedId(t *testing.T) {
 		after := testutil.ToFloat64(metrics.SelfHealValidationRejected)
 		require.Equal(t, float64(3), after-before)
 	})
+}
+
+// TestProcessCheckpointAck drives a self-heal checkpoint ack cycle end to end
+// and checks an ack is counted only when its task really reached the queue.
+func TestProcessCheckpointAck(t *testing.T) {
+	// Not parallel: mutates global helper config and asserts on a counter.
+	const rootChainAddr = "0x107a27363FE1Ba8578B8a8c76acDB237cDB35533"
+	ackTask := rootChainEvents[helper.NewHeaderBlockEvent].task
+	txHash := common.HexToHash("0xabc")
+	blockHash := common.HexToHash("0x01")
+
+	graph := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, `{"data":{"newHeaderBlocks":[{"headerBlockId":"60000","logIndex":"3","transactionHash":"`+txHash.Hex()+`"}]}}`)
+	}))
+	defer graph.Close()
+
+	rootChainABI := rootChainABIForTest(t)
+	ackLog := newHeaderBlockLog(t, rootChainABI, common.HexToAddress(rootChainAddr), 60000, 1, blockHash, txHash, 0, 3)
+	l1, err := ethclient.Dial(mockL1Receipt(t, receiptJSONWithLog(t, txHash, blockHash, 1, 0, ackLog)))
+	require.NoError(t, err)
+	defer l1.Close()
+
+	tests := []struct {
+		name         string
+		sendErr      error
+		unregistered bool
+		wantSends    int
+		wantCounted  float64
+	}{
+		{name: "queued ack is counted", wantSends: 1, wantCounted: 1},
+		{name: "ack that fails to queue is not counted", sendErr: errors.New("broker down"), wantSends: 1},
+		{name: "ack skipped for lack of a processor is not counted", unregistered: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rl := newCheckpointAckTestListener(t, checkpointAckTestRoutes{
+				util.ChainManagerParamsURL: `{"params":{"chain_params":{"root_chain_address":"` + rootChainAddr + `"}}}`,
+				util.CheckpointParamsURL:   `{"params":{"child_chain_block_interval":"10000"}}`,
+				util.CountCheckpointURL:    `{"ack_count":"5"}`,
+				util.BufferedCheckpointURL: `{"checkpoint":{"id":"6"}}`,
+			})
+			event := rootChainABI.Events[helper.NewHeaderBlockEvent]
+			rl.contractCaller.RootChainABI = rootChainABI
+			rl.contractCaller.MainChainClient = l1
+			rl.eventMap = map[common.Hash]*abi.Event{event.ID: &event}
+			rl.subGraphClient = &subGraphClient{graphUrl: graph.URL, httpClient: http.DefaultClient}
+
+			queue := &mockQueueConnector{unregistered: map[string]bool{ackTask: tc.unregistered}}
+			queue.On("SendTask", mock.MatchedBy(func(sig *tasks.Signature) bool { return sig.Name == ackTask })).Return(nil, tc.sendErr)
+			rl.taskQueue = queue
+
+			before := testutil.ToFloat64(metrics.SelfHealCheckpointAcksProcessed)
+			rl.processCheckpointAck(t.Context())
+
+			queue.AssertNumberOfCalls(t, "SendTask", tc.wantSends)
+			require.Equal(t, tc.wantCounted, testutil.ToFloat64(metrics.SelfHealCheckpointAcksProcessed)-before)
+		})
+	}
 }

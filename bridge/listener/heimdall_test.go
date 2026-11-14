@@ -14,6 +14,7 @@ import (
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/mock"
@@ -716,6 +717,20 @@ func TestHeimdallListener_processBlockRange(t *testing.T) {
 		}
 	})
 
+	t.Run("counts missing results per block", func(t *testing.T) {
+		t.Parallel()
+
+		listener := &HeimdallListener{}
+		for poll := 1; poll < maxBlockFetchFailures; poll++ {
+			require.False(t, listener.fetchKeepsFailing(12), "poll %d", poll)
+		}
+		require.False(t, listener.fetchKeepsFailing(13), "another block starts its own count")
+		for poll := 2; poll < maxBlockFetchFailures; poll++ {
+			require.False(t, listener.fetchKeepsFailing(13), "poll %d", poll)
+		}
+		require.True(t, listener.fetchKeepsFailing(13))
+	})
+
 	t.Run("finishes the whole range", func(t *testing.T) {
 		t.Parallel()
 
@@ -726,5 +741,89 @@ func TestHeimdallListener_processBlockRange(t *testing.T) {
 
 		require.Equal(t, uint64(13), listener.processBlockRange(context.Background(), 10, 12))
 		queue.AssertExpectations(t)
+	})
+}
+
+// TestHeimdallListener_pollEvents runs one poll against a node whose latest
+// block is 12 and checks what the listener persists as its cursor.
+func TestHeimdallListener_pollEvents(t *testing.T) {
+	// Not parallel: asserts on the listener's processed-block gauge.
+	poll := func(t *testing.T, listener *HeimdallListener, earliest int, failing bool) {
+		t.Helper()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		statusCalls := 0
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var req struct {
+				ID     json.RawMessage `json:"id"`
+				Method string          `json:"method"`
+			}
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+			if req.Method == "status" {
+				statusCalls++
+			}
+			switch {
+			case req.Method == "status" && statusCalls == 1:
+				_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"sync_info":{"latest_block_height":"12","earliest_block_height":"%d"}}}`, req.ID, earliest)
+			case req.Method == "block_results" && !failing:
+				_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"height":"12","finalize_block_events":[{"type":%q,"attributes":[]}]}}`,
+					req.ID, checkpointTypes.EventTypeCheckpoint)
+			default:
+				// the second poll ends the loop
+				if req.Method == "status" {
+					cancel()
+				}
+				_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32603,"message":"Internal error","data":"unavailable"}}`, req.ID)
+			}
+		}))
+		defer srv.Close()
+
+		rpc, err := rpchttp.New(srv.URL, "/websocket")
+		require.NoError(t, err)
+		listener.httpClient = rpc
+		listener.cliCtx = client.Context{}.WithClient(rpc).WithChainID("devnet")
+
+		listener.pollEvents(ctx, 5*time.Millisecond)
+	}
+	processed := metrics.BridgeListenerProcessedBlock.WithLabelValues(heimdallListenerStr)
+
+	t.Run("a single new block is processed and persisted", func(t *testing.T) {
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, nil).Once()
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.storageClient = newMemLevelDB(t)
+		require.NoError(t, listener.storageClient.Put([]byte(heimdallLastBlockKey), []byte("11"), nil))
+
+		poll(t, listener, 1, false)
+
+		queue.AssertExpectations(t)
+		stored, err := listener.storageClient.Get([]byte(heimdallLastBlockKey), nil)
+		require.NoError(t, err)
+		require.Equal(t, "12", string(stored))
+		require.Equal(t, 12.0, testutil.ToFloat64(processed))
+	})
+
+	t.Run("nothing is persisted when the first block fails", func(t *testing.T) {
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(new(mockQueueConnector))}
+		listener.storageClient = newMemLevelDB(t)
+
+		poll(t, listener, 12, true)
+
+		has, err := listener.storageClient.Has([]byte(heimdallLastBlockKey), nil)
+		require.NoError(t, err)
+		require.False(t, has)
+	})
+
+	t.Run("an empty range is left alone", func(t *testing.T) {
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(new(mockQueueConnector))}
+		listener.storageClient = newMemLevelDB(t)
+		require.NoError(t, listener.storageClient.Put([]byte(heimdallLastBlockKey), []byte("12"), nil))
+
+		poll(t, listener, 1, false)
+
+		stored, err := listener.storageClient.Get([]byte(heimdallLastBlockKey), nil)
+		require.NoError(t, err)
+		require.Equal(t, "12", string(stored))
 	})
 }
