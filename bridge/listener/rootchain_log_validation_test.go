@@ -1163,6 +1163,45 @@ func TestProcessRootChainBlockRange_QueueFailureKeepsCursor(t *testing.T) {
 	})
 }
 
+// TestProcessRootChainBlockRange_RetryDoesNotRequeue guards against a retried
+// range queueing its already-queued logs again.
+func TestProcessRootChainBlockRange_RetryDoesNotRequeue(t *testing.T) {
+	const block = uint64(300)
+	newLog := func(txHash string) *types.Log {
+		return &types.Log{
+			Address:     common.HexToAddress("0x1111111111111111111111111111111111111111"),
+			Topics:      []common.Hash{common.HexToHash("0x1111111111111111111111111111111111111111111111111111111111111111")},
+			TxHash:      common.HexToHash(txHash),
+			BlockNumber: block,
+		}
+	}
+	first, second := newLog("0xaaaa5"), newLog("0xaaaa6")
+
+	rl, rootChainContext := twoBlockListener(t, func(fromBlock, toBlock uint64) []*types.Log {
+		return []*types.Log{first, second}
+	})
+	rl.validatorSlotSource = func() (validatorSlot, error) { return validatorSlot{isValidator: true}, nil }
+
+	var dispatched []common.Hash
+	rl.onLogDispatched = func(vLog types.Log, _ *abi.Event) { dispatched = append(dispatched, vLog.TxHash) }
+
+	queue := new(mockQueueConnector)
+	queue.On("SendTask", mock.Anything).Return(nil, nil).Once()
+	queue.On("SendTask", mock.Anything).Return(nil, errors.New("broker down")).Once()
+	queue.On("SendTask", mock.Anything).Return(nil, nil)
+	rl.taskQueue = queue
+
+	from, to := big.NewInt(int64(block)), big.NewInt(int64(block))
+
+	rl.processRootChainBlockRangeInChunks(rootChainContext, from, to)
+	require.Equal(t, []common.Hash{first.TxHash}, dispatched)
+
+	rl.processRootChainBlockRangeInChunks(rootChainContext, from, to)
+	require.Equal(t, []common.Hash{first.TxHash, second.TxHash}, dispatched, "the retry must queue only the log that failed")
+	queue.AssertNumberOfCalls(t, "SendTask", 3)
+	require.Empty(t, rl.queuedLogs, "the queued logs are dropped once the cursor is past them")
+}
+
 // TestValidateLogAgainstQuery_RejectsWrongShapeEvent proves a log with the
 // right topic0 and contract address, but a topic/data shape that doesn't
 // match its event's ABI, is rejected here rather than reaching handleLog —

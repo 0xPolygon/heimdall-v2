@@ -139,6 +139,9 @@ func (rl *RootChainListener) processRootChainBlockRangeInChunks(rootChainContext
 			return
 		}
 
+		// the cursor is past this chunk, so none of its logs are seen again
+		clear(rl.queuedLogs)
+
 		chunkFrom = new(big.Int).Add(chunkTo, big.NewInt(1))
 	}
 

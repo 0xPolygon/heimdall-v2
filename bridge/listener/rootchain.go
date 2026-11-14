@@ -57,6 +57,10 @@ type RootChainListener struct {
 	// lock is needed.
 	logFailureCounts map[string]uint64
 
+	// queuedLogs holds the logs already queued for the chunk being retried.
+	// It is in memory only: a restart mid-retry queues them once more.
+	queuedLogs map[string]struct{}
+
 	// For self-healing, it will be only initialized if sub_graph_url is provided
 	subGraphClient *subGraphClient
 
@@ -139,8 +143,7 @@ var (
 	// errRootChainLogsNotQueued marks a batch whose validated logs couldn't
 	// all be queued. The failure comes from the queue or the validator-set
 	// lookup, not from the range, so the range is retried whole on the next
-	// poll rather than bisected. The retry dispatches its already-queued logs
-	// again, which processors skip as work already done.
+	// poll rather than bisected. The retry skips the logs it already queued.
 	errRootChainLogsNotQueued = errors.New("rootchain logs validated but not queued")
 
 	// rootChainEvents holds every root chain event the listener queries for.
@@ -415,13 +418,26 @@ func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAdd
 	}
 
 	for i, vLog := range logs {
-		if dispatch[i] {
-			if err := rl.handleLog(vLog, selectedEvents[i], slot); err != nil {
-				return fmt.Errorf("%w: %w", errRootChainLogsNotQueued, err)
-			}
-			if rl.onLogDispatched != nil {
-				rl.onLogDispatched(vLog, selectedEvents[i])
-			}
+		if !dispatch[i] {
+			continue
+		}
+
+		logKey := rootChainLogKey(vLog)
+		if _, queued := rl.queuedLogs[logKey]; queued {
+			continue
+		}
+
+		if err := rl.handleLog(vLog, selectedEvents[i], slot); err != nil {
+			return fmt.Errorf("%w: %w", errRootChainLogsNotQueued, err)
+		}
+
+		if rl.queuedLogs == nil {
+			rl.queuedLogs = make(map[string]struct{})
+		}
+		rl.queuedLogs[logKey] = struct{}{}
+
+		if rl.onLogDispatched != nil {
+			rl.onLogDispatched(vLog, selectedEvents[i])
 		}
 	}
 
