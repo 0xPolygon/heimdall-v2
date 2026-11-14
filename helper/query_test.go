@@ -98,15 +98,8 @@ func TestGetBeginBlockEvents_BlockResultsSuccess(t *testing.T) {
 	require.Equal(t, "value1", events[0].Attributes[0].Value)
 }
 
-func TestGetBeginBlockEvents_BlockResultsFailsAndBlockCommitted(t *testing.T) {
+func TestGetBeginBlockEvents_BlockResultsFails(t *testing.T) {
 	t.Parallel()
-
-	// latest block height = 200 (block 100 already committed).
-	statusJSON := `{
-		"node_info": {"protocol_version": {"p2p": "0", "block": "0", "app": "0"}, "id": "", "listen_addr": "", "network": "", "version": "", "channels": "", "moniker": "", "other": {"tx_index": "", "rpc_address": ""}},
-		"sync_info": {"latest_block_hash": "", "latest_app_hash": "", "latest_block_height": "200", "latest_block_time": "2024-01-01T00:00:00Z", "earliest_block_hash": "", "earliest_app_hash": "", "earliest_block_height": "1", "earliest_block_time": "2024-01-01T00:00:00Z", "catching_up": false},
-		"validator_info": {"address": "", "pub_key": {"type": "tendermint/PubKeyEd25519", "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}, "voting_power": "0"}
-	}`
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req jsonRPCRequest
@@ -114,31 +107,22 @@ func TestGetBeginBlockEvents_BlockResultsFailsAndBlockCommitted(t *testing.T) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-
-		switch req.Method {
-		case "block_results":
-			writeJSONRPC(w, errorResp(req.ID, -32603, "block results not available (pruned)"))
-		case "status":
-			writeJSONRPC(w, resultResp(req.ID, statusJSON))
-		default:
-			writeJSONRPC(w, errorResp(req.ID, -32601, fmt.Sprintf("method %s not found", req.Method)))
-		}
+		writeJSONRPC(w, errorResp(req.ID, -32603, "block results not available (pruned)"))
 	}))
 	defer ts.Close()
 
 	client, err := httpClient.New(ts.URL, "/websocket")
 	require.NoError(t, err)
 
-	// Block 100 was already committed (latest is 200), so this should return an error
-	// instead of falling through to subscription
 	events, err := GetBeginBlockEvents(context.Background(), client, 100)
 	require.Error(t, err)
 	require.Nil(t, events)
 	require.Contains(t, err.Error(), "BlockResults failed for block 100")
 	require.Contains(t, err.Error(), "possibly pruned or unavailable")
+	require.NotErrorIs(t, err, ErrBlockResultsMissing, "only CometBFT's missing-results error means the results are gone")
 }
 
-func TestGetBeginBlockEvents_BlockResultsFailsAndStatusFails(t *testing.T) {
+func TestGetBeginBlockEvents_BlockResultsMissing(t *testing.T) {
 	t.Parallel()
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -147,26 +131,17 @@ func TestGetBeginBlockEvents_BlockResultsFailsAndStatusFails(t *testing.T) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-
-		switch req.Method {
-		case "block_results":
-			writeJSONRPC(w, errorResp(req.ID, -32603, "block not found"))
-		case "status":
-			writeJSONRPC(w, errorResp(req.ID, -32603, "status unavailable"))
-		default:
-			writeJSONRPC(w, errorResp(req.ID, -32601, fmt.Sprintf("method %s not found", req.Method)))
-		}
+		resp := errorResp(req.ID, -32603, "Internal error")
+		resp.Error.Data = "could not find results for height #100"
+		writeJSONRPC(w, resp)
 	}))
 	defer ts.Close()
 
 	client, err := httpClient.New(ts.URL, "/websocket")
 	require.NoError(t, err)
 
-	// When both BlockResults and Status fail, should return an error (not fall through to subscription)
-	events, err := GetBeginBlockEvents(context.Background(), client, 100)
-	require.Error(t, err)
-	require.Nil(t, events)
-	require.Contains(t, err.Error(), "BlockResults failed for block 100")
+	_, err = GetBeginBlockEvents(context.Background(), client, 100)
+	require.ErrorIs(t, err, ErrBlockResultsMissing)
 }
 
 // TestFindTxInBlock_HappyPath verifies the helper returns the matching tx

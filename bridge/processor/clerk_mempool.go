@@ -323,7 +323,7 @@ func (m *mempoolSize) size(event interface{}) (int, bool, error) {
 
 	read := m.read
 	if read == nil {
-		read = util.UnconfirmedTxnCount
+		read = func(interface{}) (int, error) { return util.UnconfirmedTxnCount() }
 	}
 	txs, err := read(event)
 

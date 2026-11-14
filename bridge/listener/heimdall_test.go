@@ -1,92 +1,46 @@
 package listener
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
 
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1/tasks"
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
-
-// heimdallListenerForTest wraps HeimdallListener for testing
-type heimdallListenerForTest struct {
-	HeimdallListener
-	mockConnector *mockQueueConnector
-}
-
-func (h *heimdallListenerForTest) ProcessBlockEvent(event sdk.StringEvent, blockHeight int64) {
-	h.Logger.Debug("Received block event from Heimdall", "eventType", event.Type)
-
-	eventBytes, err := json.Marshal(event)
-	if err != nil {
-		h.Logger.Error("Error while marshalling block event", "eventType", event.Type, "error", err)
-		return
-	}
-
-	switch event.Type {
-	case checkpointTypes.EventTypeCheckpoint:
-		h.sendBlockTask("sendCheckpointToRootchain", eventBytes, blockHeight)
-	default:
-		h.Logger.Debug("Block event type mismatch", "eventType", event.Type)
-	}
-}
-
-func (h *heimdallListenerForTest) sendBlockTask(taskName string, eventBytes []byte, blockHeight int64) {
-	signature := &tasks.Signature{
-		Name: taskName,
-		Args: []tasks.Arg{
-			{
-				Type:  "string",
-				Value: string(eventBytes),
-			},
-			{
-				Type:  "int64",
-				Value: blockHeight,
-			},
-		},
-	}
-	signature.RetryCount = 3
-
-	h.Logger.Info("Sending block level task", "taskName", taskName, "currentTime", time.Now(), "blockHeight", blockHeight)
-
-	_, err := h.mockConnector.SendTask(signature)
-	if err != nil {
-		h.Logger.Error("Error sending block level task", "taskName", taskName, "blockHeight", blockHeight, "error", err)
-	}
-}
 
 func TestHeimdallListener_Stop(t *testing.T) {
 	t.Parallel()
 
-	t.Run("calls cancel functions and sets them to nil", func(t *testing.T) {
+	t.Run("calls the cancel function and sets it to nil", func(t *testing.T) {
 		t.Parallel()
 
 		listener := &HeimdallListener{}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
-		subscriptionCalled := false
 		headerProcessCalled := false
-
-		listener.BaseListener.cancelSubscription = func() {
-			subscriptionCalled = true
-		}
 		listener.BaseListener.cancelHeaderProcess = func() {
 			headerProcessCalled = true
 		}
 
 		listener.Stop()
 
-		require.True(t, subscriptionCalled)
 		require.True(t, headerProcessCalled)
-		require.Nil(t, listener.cancelSubscription)
 		require.Nil(t, listener.cancelHeaderProcess)
 	})
 
@@ -95,31 +49,39 @@ func TestHeimdallListener_Stop(t *testing.T) {
 
 		listener := &HeimdallListener{}
 		listener.BaseListener.Logger = log.NewNopLogger()
-		listener.BaseListener.cancelSubscription = nil
 		listener.BaseListener.cancelHeaderProcess = nil
 
 		require.NotPanics(t, func() {
 			listener.Stop()
 		})
 
-		require.Nil(t, listener.cancelSubscription)
 		require.Nil(t, listener.cancelHeaderProcess)
 	})
-}
 
-func TestHeimdallListener_ProcessHeader(t *testing.T) {
-	t.Parallel()
-
-	t.Run("is a no-op function", func(t *testing.T) {
+	t.Run("waits for the polling goroutine to finish", func(t *testing.T) {
 		t.Parallel()
 
 		listener := &HeimdallListener{}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
-		// ProcessHeader should do nothing for Heimdall
-		require.NotPanics(t, func() {
-			listener.ProcessHeader(nil)
-		})
+		ctx, cancel := context.WithCancel(context.Background())
+		listener.BaseListener.cancelHeaderProcess = cancel
+		listener.pollDone = make(chan struct{})
+
+		finished := false
+		go func() {
+			defer close(listener.pollDone)
+			<-ctx.Done()
+			time.Sleep(10 * time.Millisecond)
+			finished = true
+		}()
+
+		listener.Stop()
+
+		require.True(t, finished)
+
+		// a second Stop doesn't block
+		listener.Stop()
 	})
 }
 
@@ -130,9 +92,7 @@ func TestHeimdallListener_ProcessBlockEvent(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		event := sdk.StringEvent{
@@ -168,9 +128,7 @@ func TestHeimdallListener_ProcessBlockEvent(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		event := sdk.StringEvent{
@@ -190,9 +148,7 @@ func TestHeimdallListener_ProcessBlockEvent(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		event := sdk.StringEvent{
@@ -216,9 +172,7 @@ func TestHeimdallListener_ProcessBlockEvent(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		// Expect 3 checkpoint events
@@ -238,16 +192,14 @@ func TestHeimdallListener_ProcessBlockEvent(t *testing.T) {
 	})
 }
 
-func TestHeimdallListener_sendBlockTask(t *testing.T) {
+func TestHeimdallListener_sendTask(t *testing.T) {
 	t.Parallel()
 
 	t.Run("creates correct task signature", func(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		taskName := "sendCheckpointToRootchain"
@@ -270,7 +222,7 @@ func TestHeimdallListener_sendBlockTask(t *testing.T) {
 			return sig.RetryCount == 3
 		})).Return(nil, nil).Once()
 
-		listener.sendBlockTask(taskName, eventBytes, blockHeight)
+		_, _ = listener.sendTask(taskName, blockTaskRetryCount, 0, stringArg(string(eventBytes)), tasks.Arg{Type: "int64", Value: blockHeight})
 
 		mockConnector.AssertExpectations(t)
 	})
@@ -279,9 +231,7 @@ func TestHeimdallListener_sendBlockTask(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		blockHeights := []int64{0, 1, 1000, 999999, 1000000000}
@@ -291,60 +241,10 @@ func TestHeimdallListener_sendBlockTask(t *testing.T) {
 				return sig.Args[1].Value == height
 			})).Return(nil, nil).Once()
 
-			listener.sendBlockTask("test", []byte("{}"), height)
+			_, _ = listener.sendTask("test", blockTaskRetryCount, 0, stringArg(string([]byte("{}"))), tasks.Arg{Type: "int64", Value: height})
 		}
 
 		mockConnector.AssertExpectations(t)
-	})
-}
-
-func TestHeimdallListener_TaskSignatureStructure(t *testing.T) {
-	t.Parallel()
-
-	t.Run("verifies task has two arguments", func(t *testing.T) {
-		t.Parallel()
-
-		event := sdk.StringEvent{
-			Type: checkpointTypes.EventTypeCheckpoint,
-			Attributes: []sdk.Attribute{
-				{Key: "proposer", Value: "addr"},
-			},
-		}
-		eventBytes, err := json.Marshal(event)
-		require.NoError(t, err)
-
-		blockHeight := int64(777)
-
-		signature := &tasks.Signature{
-			Name: "sendCheckpointToRootchain",
-			Args: []tasks.Arg{
-				{
-					Type:  "string",
-					Value: string(eventBytes),
-				},
-				{
-					Type:  "int64",
-					Value: blockHeight,
-				},
-			},
-		}
-		signature.RetryCount = 3
-
-		// Verify structure
-		require.Equal(t, "sendCheckpointToRootchain", signature.Name)
-		require.Len(t, signature.Args, 2)
-		require.Equal(t, "string", signature.Args[0].Type)
-		require.Equal(t, "int64", signature.Args[1].Type)
-		require.Equal(t, 3, signature.RetryCount)
-
-		// Verify we can unmarshal the event
-		var decodedEvent sdk.StringEvent
-		err = json.Unmarshal([]byte(signature.Args[0].Value.(string)), &decodedEvent)
-		require.NoError(t, err)
-		require.Equal(t, checkpointTypes.EventTypeCheckpoint, decodedEvent.Type)
-
-		// Verify block height
-		require.Equal(t, blockHeight, signature.Args[1].Value)
 	})
 }
 
@@ -391,9 +291,7 @@ func TestHeimdallListener_EventTypes(t *testing.T) {
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				mockConnector := new(mockQueueConnector)
-				listener := &heimdallListenerForTest{
-					mockConnector: mockConnector,
-				}
+				listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 				listener.BaseListener.Logger = log.NewNopLogger()
 
 				event := sdk.StringEvent{
@@ -426,9 +324,7 @@ func TestHeimdallListener_Integration(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		// Create a realistic checkpoint event
@@ -473,9 +369,7 @@ func TestHeimdallListener_EdgeCases(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		event := sdk.StringEvent{
@@ -496,9 +390,7 @@ func TestHeimdallListener_EdgeCases(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		event := sdk.StringEvent{
@@ -522,9 +414,7 @@ func TestHeimdallListener_EdgeCases(t *testing.T) {
 		t.Parallel()
 
 		mockConnector := new(mockQueueConnector)
-		listener := &heimdallListenerForTest{
-			mockConnector: mockConnector,
-		}
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(mockConnector)}
 		listener.BaseListener.Logger = log.NewNopLogger()
 
 		event := sdk.StringEvent{
@@ -603,38 +493,6 @@ func TestHeimdallListener_EarliestBlockClamping(t *testing.T) {
 				require.Equal(t, tc.expectedFromBlock, fromBlock)
 			})
 		}
-	})
-}
-
-func TestHeimdallListener_BlockRangeCalculations(t *testing.T) {
-	t.Parallel()
-
-	t.Run("toBlock adjustment when less than or equal to fromBlock", func(t *testing.T) {
-		t.Parallel()
-
-		// Test the logic: if toBlock <= fromBlock, then toBlock = fromBlock + 1
-		fromBlock := uint64(100)
-		toBlock := uint64(100)
-
-		if toBlock <= fromBlock {
-			toBlock = fromBlock + 1
-		}
-
-		require.Equal(t, uint64(101), toBlock)
-	})
-
-	t.Run("toBlock remains unchanged when greater than fromBlock", func(t *testing.T) {
-		t.Parallel()
-
-		fromBlock := uint64(100)
-		toBlock := uint64(200)
-
-		original := toBlock
-		if toBlock <= fromBlock {
-			toBlock = fromBlock + 1
-		}
-
-		require.Equal(t, original, toBlock)
 	})
 }
 
@@ -735,5 +593,237 @@ func TestHeimdallListener_PollIntervalCalculation(t *testing.T) {
 				require.Equal(t, tc.expectedPollInterval, pollInterval)
 			})
 		}
+	})
+}
+
+// fakeBlockResultsServer serves CometBFT block_results with one checkpoint
+// event per block, and fails every request for failingHeight.
+func fakeBlockResultsServer(t *testing.T, failingHeight int64) *rpchttp.HTTP {
+	t.Helper()
+	return fakeBlockResultsServerWithError(t, failingHeight, "unavailable")
+}
+
+// fakeBlockResultsServerWithError is fakeBlockResultsServer with the error data
+// returned for failingHeight.
+func fakeBlockResultsServerWithError(t *testing.T, failingHeight int64, errData string) *rpchttp.HTTP {
+	t.Helper()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			ID     json.RawMessage `json:"id"`
+			Method string          `json:"method"`
+			Params struct {
+				Height string `json:"height"`
+			} `json:"params"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if req.Method != "block_results" || req.Params.Height == strconv.FormatInt(failingHeight, 10) {
+			_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32603,"message":"Internal error","data":%q}}`, req.ID, errData)
+			return
+		}
+		_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"height":%q,"finalize_block_events":[{"type":%q,"attributes":[]}]}}`,
+			req.ID, req.Params.Height, checkpointTypes.EventTypeCheckpoint)
+	}))
+	t.Cleanup(srv.Close)
+
+	client, err := rpchttp.New(srv.URL, "/websocket")
+	require.NoError(t, err)
+	return client
+}
+
+// TestHeimdallListener_processBlockRange guards against skipping a block whose
+// checkpoint event couldn't be fetched or queued: processing stops before it,
+// so the next poll retries it.
+func TestHeimdallListener_processBlockRange(t *testing.T) {
+	t.Parallel()
+
+	t.Run("stops before a block whose events can't be fetched", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, nil).Twice()
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.httpClient = fakeBlockResultsServer(t, 12)
+		queryFailures := metrics.BridgeListenerRangeRetries.WithLabelValues(heimdallListenerStr, "query_failed")
+		before := testutil.ToFloat64(queryFailures)
+
+		require.Equal(t, uint64(12), listener.processBlockRange(context.Background(), 10, 14))
+		queue.AssertExpectations(t)
+		require.GreaterOrEqual(t, testutil.ToFloat64(queryFailures)-before, 1.0)
+	})
+
+	t.Run("stops before a block whose checkpoint can't be queued", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, errors.New("broker down")).Once()
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.httpClient = fakeBlockResultsServer(t, -1)
+		notQueued := metrics.BridgeListenerRangeRetries.WithLabelValues(heimdallListenerStr, "not_queued")
+		before := testutil.ToFloat64(notQueued)
+
+		require.Equal(t, uint64(10), listener.processBlockRange(context.Background(), 10, 14))
+		queue.AssertExpectations(t)
+		require.GreaterOrEqual(t, testutil.ToFloat64(notQueued)-before, 1.0)
+	})
+
+	t.Run("skips a block whose results the node keeps reporting missing", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, nil)
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.httpClient = fakeBlockResultsServerWithError(t, 12, "could not find results for height #12")
+		skipped := metrics.BridgeListenerBlocksSkipped.WithLabelValues(heimdallListenerStr)
+		before := testutil.ToFloat64(skipped)
+
+		require.Equal(t, uint64(12), listener.processBlockRange(context.Background(), 10, 14))
+		for poll := 2; poll < maxBlockFetchFailures; poll++ {
+			require.Equal(t, uint64(12), listener.processBlockRange(context.Background(), 12, 14), "poll %d retries the block", poll)
+		}
+		require.Equal(t, uint64(15), listener.processBlockRange(context.Background(), 12, 14), "the last allowed failure skips the block")
+		queue.AssertNumberOfCalls(t, "SendTask", 4)
+		require.GreaterOrEqual(t, testutil.ToFloat64(skipped)-before, 1.0)
+	})
+
+	t.Run("never skips a block whose results fail to fetch for another reason", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, nil)
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.httpClient = fakeBlockResultsServer(t, 12)
+
+		require.Equal(t, uint64(12), listener.processBlockRange(context.Background(), 10, 14))
+		for poll := 2; poll <= maxBlockFetchFailures+1; poll++ {
+			require.Equal(t, uint64(12), listener.processBlockRange(context.Background(), 12, 14), "poll %d", poll)
+		}
+	})
+
+	t.Run("never skips a block whose checkpoint can't be queued", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, errors.New("broker down"))
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.httpClient = fakeBlockResultsServer(t, -1)
+
+		for poll := 1; poll <= maxBlockFetchFailures+1; poll++ {
+			require.Equal(t, uint64(10), listener.processBlockRange(context.Background(), 10, 14), "poll %d", poll)
+		}
+	})
+
+	t.Run("counts missing results per block", func(t *testing.T) {
+		t.Parallel()
+
+		listener := &HeimdallListener{}
+		for poll := 1; poll < maxBlockFetchFailures; poll++ {
+			require.False(t, listener.fetchKeepsFailing(12), "poll %d", poll)
+		}
+		require.False(t, listener.fetchKeepsFailing(13), "another block starts its own count")
+		for poll := 2; poll < maxBlockFetchFailures; poll++ {
+			require.False(t, listener.fetchKeepsFailing(13), "poll %d", poll)
+		}
+		require.True(t, listener.fetchKeepsFailing(13))
+	})
+
+	t.Run("finishes the whole range", func(t *testing.T) {
+		t.Parallel()
+
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, nil).Times(3)
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.httpClient = fakeBlockResultsServer(t, -1)
+
+		require.Equal(t, uint64(13), listener.processBlockRange(context.Background(), 10, 12))
+		queue.AssertExpectations(t)
+	})
+}
+
+// TestHeimdallListener_pollEvents runs one poll against a node whose latest
+// block is 12 and checks what the listener persists as its cursor.
+func TestHeimdallListener_pollEvents(t *testing.T) {
+	// Not parallel: asserts on the listener's processed-block gauge.
+	poll := func(t *testing.T, listener *HeimdallListener, earliest int, failing bool) {
+		t.Helper()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		statusCalls := 0
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var req struct {
+				ID     json.RawMessage `json:"id"`
+				Method string          `json:"method"`
+			}
+			require.NoError(t, json.NewDecoder(r.Body).Decode(&req))
+			if req.Method == "status" {
+				statusCalls++
+			}
+			switch {
+			case req.Method == "status" && statusCalls == 1:
+				_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"sync_info":{"latest_block_height":"12","earliest_block_height":"%d"}}}`, req.ID, earliest)
+			case req.Method == "block_results" && !failing:
+				_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"result":{"height":"12","finalize_block_events":[{"type":%q,"attributes":[]}]}}`,
+					req.ID, checkpointTypes.EventTypeCheckpoint)
+			default:
+				// the second poll ends the loop
+				if req.Method == "status" {
+					cancel()
+				}
+				_, _ = fmt.Fprintf(w, `{"jsonrpc":"2.0","id":%s,"error":{"code":-32603,"message":"Internal error","data":"unavailable"}}`, req.ID)
+			}
+		}))
+		defer srv.Close()
+
+		rpc, err := rpchttp.New(srv.URL, "/websocket")
+		require.NoError(t, err)
+		listener.httpClient = rpc
+		listener.cliCtx = client.Context{}.WithClient(rpc).WithChainID("devnet")
+
+		listener.pollEvents(ctx, 5*time.Millisecond)
+	}
+	processed := metrics.BridgeListenerProcessedBlock.WithLabelValues(heimdallListenerStr)
+
+	t.Run("a single new block is processed and persisted", func(t *testing.T) {
+		queue := new(mockQueueConnector)
+		queue.On("SendTask", mock.Anything).Return(nil, nil).Once()
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(queue)}
+		listener.storageClient = newMemLevelDB(t)
+		require.NoError(t, listener.storageClient.Put([]byte(heimdallLastBlockKey), []byte("11"), nil))
+
+		poll(t, listener, 1, false)
+
+		queue.AssertExpectations(t)
+		stored, err := listener.storageClient.Get([]byte(heimdallLastBlockKey), nil)
+		require.NoError(t, err)
+		require.Equal(t, "12", string(stored))
+		require.Equal(t, 12.0, testutil.ToFloat64(processed))
+	})
+
+	t.Run("nothing is persisted when the first block fails", func(t *testing.T) {
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(new(mockQueueConnector))}
+		listener.storageClient = newMemLevelDB(t)
+
+		poll(t, listener, 12, true)
+
+		has, err := listener.storageClient.Has([]byte(heimdallLastBlockKey), nil)
+		require.NoError(t, err)
+		require.False(t, has)
+	})
+
+	t.Run("an empty range is left alone", func(t *testing.T) {
+		listener := &HeimdallListener{BaseListener: newTestBaseListener(new(mockQueueConnector))}
+		listener.storageClient = newMemLevelDB(t)
+		require.NoError(t, listener.storageClient.Put([]byte(heimdallLastBlockKey), []byte("12"), nil))
+
+		poll(t, listener, 1, false)
+
+		stored, err := listener.storageClient.Get([]byte(heimdallLastBlockKey), nil)
+		require.NoError(t, err)
+		require.Equal(t, "12", string(stored))
 	})
 }

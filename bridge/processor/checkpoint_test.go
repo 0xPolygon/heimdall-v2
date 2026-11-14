@@ -3,12 +3,28 @@ package processor
 import (
 	"context"
 	"errors"
+	"math/big"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"cosmossdk.io/log"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	"github.com/cosmos/gogoproto/proto"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	checkpointtypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 func TestCheckpointProcessor_Start(t *testing.T) {
@@ -354,4 +370,80 @@ func TestCheckpointProcessor_createAndSendCheckpointToRootChain_QueryError(t *te
 	err := cp.createAndSendCheckpointToRootChain(nil, 0, 127, 128, []byte{0xab, 0xcd})
 	require.ErrorIs(t, err, wantErr,
 		"caller must propagate the query error verbatim; swallowing it would leave the bridge stuck without surfacing the cause")
+}
+
+func TestNextCheckpointEnd(t *testing.T) {
+	t.Parallel()
+
+	const avgLen, maxLen = 256, 1024
+
+	tests := []struct {
+		name          string
+		start, latest uint64
+		want          uint64
+	}{
+		{"latest behind start", 128, 100, 0},
+		{"latest one block before start", 128, 127, 0},
+		{"latest at start", 128, 128, 128},
+		{"less than one average checkpoint", 128, 200, 128},
+		{"exactly one average checkpoint", 128, 383, 383},
+		{"rounds down to whole average checkpoints", 128, 700, 639},
+		{"capped at max checkpoint length", 128, 10_000, 1151},
+		{"first checkpoint starts at zero", 0, 255, 255},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tc.want, nextCheckpointEnd(tc.start, tc.latest, avgLen, maxLen))
+		})
+	}
+}
+
+func TestSendCheckpointToHeimdall_WaitsForConfirmations(t *testing.T) {
+	// Not parallel: points the global helper config, client and key at a stub.
+	helper.SetTestPrivPubKey(secp256k1.GenPrivKey())
+	self, err := helper.GetAddressString()
+	require.NoError(t, err)
+	cdc := codec.NewProtoCodec(codectypes.NewInterfaceRegistry())
+	chainParams := chainmanagertypes.DefaultParams()
+
+	heimdall := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var resp proto.Message
+		switch {
+		case strings.HasPrefix(r.URL.Path, "/stake/proposers/"):
+			resp = &staketypes.QueryProposersResponse{Proposers: []staketypes.Validator{{Signer: self}}}
+		case r.URL.Path == util.ChainManagerParamsURL:
+			resp = &chainmanagertypes.QueryParamsResponse{Params: chainParams}
+		case r.URL.Path == util.CheckpointParamsURL:
+			resp = &checkpointtypes.QueryParamsResponse{Params: checkpointtypes.DefaultParams()}
+		default:
+			t.Errorf("unexpected heimdall path: %s", r.URL.Path)
+			return
+		}
+		body, err := cdc.MarshalJSON(resp)
+		require.NoError(t, err)
+		_, _ = w.Write(body)
+	}))
+	defer heimdall.Close()
+
+	prevClient := helper.Client
+	helper.Client = heimdall.Client()
+	t.Cleanup(func() { helper.Client = prevClient })
+	cfg := helper.CustomAppConfig{Config: *serverconfig.DefaultConfig(), Custom: helper.GetDefaultHeimdallConfig()}
+	cfg.Config.API.Address = heimdall.URL
+	helper.SetTestConfig(cfg)
+
+	cp := NewCheckpointProcessor(nil)
+	cp.Logger = log.NewNopLogger()
+	cp.cliCtx = client.Context{}.WithCodec(cdc)
+
+	// a header exactly at the confirmations depth has no confirmed block yet
+	header, err := (&ethTypes.Header{
+		Number:     new(big.Int).SetUint64(chainParams.BorChainTxConfirmations),
+		Difficulty: big.NewInt(1),
+	}).MarshalJSON()
+	require.NoError(t, err)
+
+	require.ErrorContains(t, cp.sendCheckpointToHeimdall(string(header)), "less than confirmations required")
 }

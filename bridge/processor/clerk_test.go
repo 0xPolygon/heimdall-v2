@@ -108,51 +108,6 @@ func BenchmarkIsOldTx(b *testing.B) {
 	}
 }
 
-func BenchmarkSendTaskWithDelay(b *testing.B) {
-	ts := make([]time.Duration, 0, b.N)
-	for i := 0; i < b.N; i++ {
-		ts = append(ts, time.Duration(generateRandNumber(60)))
-	}
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	b.StopTimer()
-
-	for i := 0; i < b.N; i++ {
-		func() {
-			b.Logf("Executing iteration '%d' out of '%d'", i, b.N)
-
-			// given
-			mockCtrl := prepareMockData(b)
-			defer mockCtrl.Finish()
-
-			logs, err := prepareDummyLogBytes()
-			if err != nil {
-				b.Fatal("Error creating test data")
-			}
-
-			rcl, stopFn, err := prepareRootChainListener()
-			if err != nil {
-				b.Fatal("Error initializing test listener")
-			}
-
-			defer stopFn()
-
-			// when
-			b.StartTimer()
-			// This will trigger error="Set state pending error: dial tcp 127.0.0.1:6379: connect: connection refused"
-			// it's fine as long as we don't want to test the actual sendTask to rabbitmq
-			rcl.SendTaskWithDelay(
-				"sendStateSyncedToHeimdall", "StateSynced",
-				logs.Bytes(), ts[i], nil)
-			b.StopTimer()
-
-			// then
-			b.Logf("SendTaskWithDelay tested successfully")
-		}()
-	}
-}
-
 func BenchmarkCalculateTaskDelay(b *testing.B) {
 	interfaceRegistry := codectypes.NewInterfaceRegistry()
 	cryptocodec.RegisterInterfaces(interfaceRegistry)
@@ -186,7 +141,7 @@ func BenchmarkCalculateTaskDelay(b *testing.B) {
 	var timeDuration time.Duration
 
 	for i := 0; i < b.N; i++ {
-		isCurrentValidator, timeDuration = util.CalculateTaskDelay(nil, cdc)
+		isCurrentValidator, timeDuration, _ = util.CalculateTaskDelay(cdc)
 	}
 
 	b.StopTimer()
@@ -216,7 +171,7 @@ func BenchmarkGetUnconfirmedTxnCount(b *testing.B) {
 
 			// when
 			b.StartTimer()
-			util.GetUnconfirmedTxnCount(nil)
+			util.GetUnconfirmedTxnCount()
 			b.StopTimer()
 
 			// then
@@ -370,7 +325,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 	cp := NewClerkProcessor(&contractCaller.StateSenderABI)
 	cp.cliCtx.Simulate = true
 	cp.cliCtx.SkipConfirm = true
-	cp.BaseProcessor = *NewBaseProcessor(cdc, nil, nil, txBroadcaster, "clerk", cp)
+	cp.BaseProcessor = *NewBaseProcessor(nil, nil, txBroadcaster, contractCaller, "clerk")
 
 	return cp, nil
 }
@@ -396,7 +351,12 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 
 	stopFn := func() {}
 
-	rcl := listener.NewRootChainListener()
+	contractCaller, err := helper.NewContractCaller()
+	if err != nil {
+		return nil, stopFn, err
+	}
+
+	rcl := listener.NewRootChainListener(contractCaller)
 
 	server, err := getTestServer()
 	if err != nil {
@@ -404,7 +364,7 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 	}
 
 	rcl.BaseListener = *listener.NewBaseListener(
-		cdc, &queue.Connector{Server: server}, nil, helper.GetMainClient(), "rootChain", rcl)
+		client.Context{}.WithCodec(cdc), &queue.Connector{Server: server}, nil, helper.GetMainClient(), "rootChain", rcl)
 
 	stopFn = func() {
 		rcl.Stop()
