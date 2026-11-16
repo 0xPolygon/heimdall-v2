@@ -3,7 +3,7 @@ package listener
 import (
 	common "github.com/cometbft/cometbft/libs/service"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/client"
 	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/queue"
@@ -26,7 +26,7 @@ type Service struct {
 }
 
 // NewListenerService returns the new service object for listening to events
-func NewListenerService(cdc codec.Codec, queueConnector *queue.Connector, httpClient *rpchttp.HTTP) *Service {
+func NewListenerService(cliCtx client.Context, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, contractCaller *helper.ContractCaller) *Service {
 	// creating the listener object
 	listenerService := &Service{}
 
@@ -36,16 +36,16 @@ func NewListenerService(cdc codec.Codec, queueConnector *queue.Connector, httpCl
 		listenerService,
 	)
 
-	rootChainListener := NewRootChainListener()
-	rootChainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetMainClient(), rootChainListenerStr, rootChainListener)
+	rootChainListener := NewRootChainListener(contractCaller)
+	rootChainListener.BaseListener = *NewBaseListener(cliCtx, queueConnector, httpClient, helper.GetMainClient(), rootChainListenerStr, rootChainListener)
 	listenerService.listeners = append(listenerService.listeners, rootChainListener)
 
 	borChainListener := &BorChainListener{}
-	borChainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetBorClient(), borChainListenerStr, borChainListener)
+	borChainListener.BaseListener = *NewBaseListener(cliCtx, queueConnector, httpClient, helper.GetBorClient(), borChainListenerStr, borChainListener)
 	listenerService.listeners = append(listenerService.listeners, borChainListener)
 
 	heimdallListener := &HeimdallListener{}
-	heimdallListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, nil, heimdallListenerStr, heimdallListener)
+	heimdallListener.BaseListener = *NewBaseListener(cliCtx, queueConnector, httpClient, nil, heimdallListenerStr, nil)
 	listenerService.listeners = append(listenerService.listeners, heimdallListener)
 
 	return listenerService

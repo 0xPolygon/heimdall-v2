@@ -3,11 +3,12 @@ package listener
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
+	"slices"
 	"strconv"
 	"time"
 
-	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethCommon "github.com/ethereum/go-ethereum/common"
@@ -28,6 +29,8 @@ type RootChainListenerContext struct {
 // RootChainListener - Listens to and processes events from RootChain
 type RootChainListener struct {
 	BaseListener
+
+	contractCaller *helper.ContractCaller
 
 	stakingInfoAbi *abi.ABI
 	stateSenderAbi *abi.ABI
@@ -54,15 +57,24 @@ type RootChainListener struct {
 	// lock is needed.
 	logFailureCounts map[string]uint64
 
+	// queuedLogs holds the logs already queued for the chunk being retried.
+	// It is in memory only: a restart mid-retry queues them once more.
+	queuedLogs map[string]struct{}
+
 	// For self-healing, it will be only initialized if sub_graph_url is provided
 	subGraphClient *subGraphClient
 
 	// onLogDispatched, when set, is called right after handleLog dispatches a
-	// validated log. Every handleLog variant gates its real side effect
-	// behind a validator-set check that needs REST/queue plumbing to
-	// exercise directly, so this is the seam tests use to observe that
-	// dispatch happened at all, and for which log. Left nil in production.
+	// validated log. handleLog gates its real side effect behind a
+	// validator-set check that needs REST/queue plumbing to exercise
+	// directly, so this is the seam tests use to observe that dispatch
+	// happened at all, and for which log. Left nil in production.
 	onLogDispatched func(vLog types.Log, selectedEvent *abi.Event)
+
+	// validatorSlotSource, when set, replaces the REST lookup behind
+	// currentValidatorSlot so tests can dispatch logs without a heimdall
+	// server. Left nil in production.
+	validatorSlotSource func() (validatorSlot, error)
 }
 
 // rootChainContract identifies which of the three watched L1 contracts an
@@ -128,26 +140,33 @@ var (
 	errUnexpectedRootChainLog      = errors.New("rootchain log query returned a log that doesn't match the query")
 	errFilterLogsCallBudgetReached = errors.New("rootchain FilterLogs call budget reached for this poll cycle")
 
-	rootChainEvents = map[string]struct{}{
-		helper.NewHeaderBlockEvent: {},
-		helper.StakedEvent:         {},
-		helper.StakeUpdateEvent:    {},
-		helper.SignerChangeEvent:   {},
-		helper.UnstakeInitEvent:    {},
-		helper.StateSyncedEvent:    {},
-		helper.TopUpFeeEvent:       {},
-		helper.SlashedEvent:        {},
-		helper.UnJailedEvent:       {},
+	// errRootChainLogsNotQueued marks a batch whose validated logs couldn't
+	// all be queued. The failure comes from the queue or the validator-set
+	// lookup, not from the range, so the range is retried whole on the next
+	// poll rather than bisected. The retry skips the logs it already queued.
+	errRootChainLogsNotQueued = errors.New("rootchain logs validated but not queued")
+
+	// rootChainEvents holds every root chain event the listener queries for.
+	rootChainEvents = map[string]rootChainEvent{
+		helper.NewHeaderBlockEvent: {task: "sendCheckpointAckToHeimdall"},
+		helper.StakedEvent:         {task: "sendValidatorJoinToHeimdall", extraDelay: util.TaskDelayBetweenEachVal},
+		helper.StakeUpdateEvent:    {task: "sendStakeUpdateToHeimdall"},
+		helper.SignerChangeEvent:   {task: "sendSignerChangeToHeimdall"},
+		helper.UnstakeInitEvent:    {task: "sendUnstakeInitToHeimdall"},
+		helper.StateSyncedEvent:    {task: "sendStateSyncedToHeimdall"},
+		helper.TopUpFeeEvent:       {task: "sendTopUpFeeToHeimdall"},
 	}
 )
 
-// NewRootChainListener - constructor func
-func NewRootChainListener() *RootChainListener {
-	contractCaller, err := helper.NewContractCaller()
-	if err != nil {
-		panic(err)
-	}
+// rootChainEvent is the processor task a root chain event is queued as.
+type rootChainEvent struct {
+	task string
+	// extraDelay is added to whichever delay the submitting validator gets.
+	extraDelay time.Duration
+}
 
+// NewRootChainListener - constructor func
+func NewRootChainListener(contractCaller *helper.ContractCaller) *RootChainListener {
 	abiSources := []struct {
 		abi      *abi.ABI
 		contract rootChainContract
@@ -168,6 +187,7 @@ func NewRootChainListener() *RootChainListener {
 	}
 
 	return &RootChainListener{
+		contractCaller:   contractCaller,
 		stakingInfoAbi:   &contractCaller.StakingInfoABI,
 		stateSenderAbi:   &contractCaller.StateSenderABI,
 		eventMap:         eventMap,
@@ -176,7 +196,7 @@ func NewRootChainListener() *RootChainListener {
 	}
 }
 
-// Start starts new block subscription
+// Start starts polling for finalized root chain headers and self-healing
 func (rl *RootChainListener) Start() error {
 	rl.Logger.Info("RootChainListener: starting")
 
@@ -389,12 +409,38 @@ func (rl *RootChainListener) validateAndHandleLogs(logs []types.Log, contractAdd
 		}
 	}
 
+	var slot validatorSlot
+	if slices.Contains(dispatch, true) {
+		var err error
+		if slot, err = rl.currentValidatorSlot(); err != nil {
+			return fmt.Errorf("%w: fetching validator slot: %w", errRootChainLogsNotQueued, err)
+		}
+	}
+
 	for i, vLog := range logs {
-		if dispatch[i] {
-			rl.handleLog(vLog, selectedEvents[i])
-			if rl.onLogDispatched != nil {
-				rl.onLogDispatched(vLog, selectedEvents[i])
+		if !dispatch[i] {
+			continue
+		}
+
+		logKey := rootChainLogKey(vLog)
+		if _, queued := rl.queuedLogs[logKey]; queued {
+			continue
+		}
+
+		queued, err := rl.handleLog(vLog, selectedEvents[i], slot)
+		if err != nil {
+			return fmt.Errorf("%w: %w", errRootChainLogsNotQueued, err)
+		}
+
+		if queued {
+			if rl.queuedLogs == nil {
+				rl.queuedLogs = make(map[string]struct{})
 			}
+			rl.queuedLogs[logKey] = struct{}{}
+		}
+
+		if rl.onLogDispatched != nil {
+			rl.onLogDispatched(vLog, selectedEvents[i])
 		}
 	}
 
@@ -516,7 +562,7 @@ func (rl *RootChainListener) validateLogAgainstQuery(vLog types.Log, contractAdd
 // selectedEvent's ABI: the right number of indexed topics, and non-indexed
 // data that unpacks cleanly. A log can pass every other check here (right
 // topic0, right contract, right block range) while still being malformed in
-// a way that only surfaces once handleLog's UnpackLog call fails — and that
+// a way that only surfaces once handleLog's decode fails — and that
 // failure is a bare log line with no rejection, so the batch still succeeds
 // and the cursor advances past an event that was never actually queued.
 // Checking the shape here routes that failure through the same
@@ -687,34 +733,6 @@ func rootChainEventTopics(eventMap map[ethCommon.Hash]*abi.Event) []ethCommon.Ha
 	}
 
 	return topics
-}
-
-func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string, logBytes []byte, delay time.Duration, event interface{}) {
-	defer util.LogElapsedTimeForStateSyncedEvent(event, "SendTaskWithDelay", time.Now())
-
-	signature := &tasks.Signature{
-		Name: taskName,
-		Args: []tasks.Arg{
-			{
-				Type:  "string",
-				Value: eventName,
-			},
-			{
-				Type:  "string",
-				Value: string(logBytes),
-			},
-		},
-	}
-	signature.RetryCount = 5
-
-	eta := time.Now().Add(delay)
-	signature.ETA = &eta
-	rl.Logger.Info("RootChainListener: Sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)
-
-	_, err := rl.queueConnector.Server.SendTask(signature)
-	if err != nil {
-		rl.Logger.Error("RootChainListener: error sending task", "taskName", taskName, "error", err)
-	}
 }
 
 // getRootChainContext returns the root chain context

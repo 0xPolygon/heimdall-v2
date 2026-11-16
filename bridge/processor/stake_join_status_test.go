@@ -144,7 +144,7 @@ func TestSendValidatorJoin_SignerAccountMissing(t *testing.T) {
 			sp := NewStakingProcessor(stakingABI)
 			sp.Logger = log.NewNopLogger()
 			sp.cliCtx = client.Context{}.WithCodec(cdc).WithInterfaceRegistry(registry)
-			sp.contractCaller = helper.ContractCaller{MainChainClient: mainClient, MainChainTimeout: 5 * time.Second}
+			sp.contractCaller = &helper.ContractCaller{MainChainClient: mainClient, MainChainTimeout: 5 * time.Second}
 
 			err = sp.sendValidatorJoinToHeimdall("Staked", stakeEventLog(t, stakingABI, "Staked", 202, 1))
 

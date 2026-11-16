@@ -3,7 +3,9 @@ package queue
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
+	"time"
 
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1"
@@ -12,6 +14,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 // Connector is used to connect to the queue
@@ -27,9 +30,39 @@ const (
 	// QName is machinery task queue
 	QName = "machinery_tasks"
 
+	// queuedAtHeader holds the unix milliseconds a task was first queued at.
+	// machinery republishes the same signature on retry, so it persists.
+	queuedAtHeader = "bridgeQueuedAt"
+
 	// legacyRoutingKey is the routing key older bridges stamped on every task.
 	legacyRoutingKey = "machinery_task"
 )
+
+// NewTaskHeaders returns the headers for a task first queued at queuedAt.
+func NewTaskHeaders(queuedAt time.Time) tasks.Headers {
+	return tasks.Headers{queuedAtHeader: strconv.FormatInt(queuedAt.UnixMilli(), 10)}
+}
+
+// taskQueuedAt reads the time NewTaskHeaders recorded in headers.
+func taskQueuedAt(headers tasks.Headers) (time.Time, bool) {
+	raw, _ := headers[queuedAtHeader].(string)
+	ms, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return time.Time{}, false
+	}
+
+	return time.UnixMilli(ms), true
+}
+
+// observeTaskDelivery records a delivery of a registered task, retries
+// included, and how long ago the task was first queued.
+func observeTaskDelivery(signature *tasks.Signature) {
+	metrics.BridgeTaskDeliveries.WithLabelValues(signature.Name).Inc()
+
+	if queuedAt, ok := taskQueuedAt(signature.Headers); ok {
+		metrics.BridgeTaskAge.WithLabelValues(signature.Name).Observe(time.Since(queuedAt).Seconds())
+	}
+}
 
 // NewQueueConnector creates a new queue connector
 func NewQueueConnector(dialer string) (*Connector, error) {
@@ -61,9 +94,11 @@ func NewQueueConnector(dialer string) (*Connector, error) {
 // other key makes publishers declare and fill a queue nobody consumes.
 func newConfig(dialer string) *config.Config {
 	return &config.Config{
-		Broker:        dialer,
-		DefaultQueue:  QName,
-		ResultBackend: dialer,
+		Broker:       dialer,
+		DefaultQueue: QName,
+		// The bridge never reads task results, and an AMQP result backend opens a
+		// connection and declares a queue for every task state change.
+		ResultBackend: "null://",
 		// heimdalld owns SIGTERM; machinery's handler would quit the worker again after StopWorker and panic
 		NoUnixSignals: true,
 		AMQP: &config.AMQPConfig{
@@ -84,7 +119,10 @@ func normalizeRoutingKey(s *tasks.Signature) {
 
 func newWorker(server *machinery.Server) *machinery.Worker {
 	worker := server.NewWorker("invoke-processor", 10)
-	worker.SetPreTaskHandler(normalizeRoutingKey)
+	worker.SetPreTaskHandler(func(s *tasks.Signature) {
+		normalizeRoutingKey(s)
+		observeTaskDelivery(s)
+	})
 
 	return worker
 }

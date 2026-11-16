@@ -231,12 +231,13 @@ func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (
 
 		cp.Logger.Debug(debugMsgCpConfirmationsRequired, "BorChainTxConfirmations", chainmanagerParams.BorChainTxConfirmations)
 
-		latestConfirmedChildBlock := header.Number.Uint64() - chainmanagerParams.BorChainTxConfirmations
-		if latestConfirmedChildBlock <= 0 {
-			cp.Logger.Error(errMsgCpBlocksLessThanConfirmations, "childChainBlocks", header.Number.Uint64(), "confirmationsRequired", chainmanagerParams.BorChainTxConfirmations)
+		headerNumber := header.Number.Uint64()
+		if headerNumber <= chainmanagerParams.BorChainTxConfirmations {
+			cp.Logger.Error(errMsgCpBlocksLessThanConfirmations, "childChainBlocks", headerNumber, "confirmationsRequired", chainmanagerParams.BorChainTxConfirmations)
 			return errors.New("CheckpointProcessor: number of blocks on childChain is less than confirmations required")
 		}
 
+		latestConfirmedChildBlock := headerNumber - chainmanagerParams.BorChainTxConfirmations
 		expectedCheckpointState, err := cp.nextExpectedCheckpoint(checkpointContext, latestConfirmedChildBlock)
 		if err != nil {
 			cp.Logger.Error(errMsgCpCalculatingNextCheckpoint, "error", err)
@@ -471,40 +472,47 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 		return nil, err
 	}
 	// find the next start/end
-	var start, end uint64
-	start = currentEnd
+	start := currentEnd
 
 	// add 1 if start > 0
 	if start > 0 {
 		start = start + 1
 	}
 
-	// get diff
-	diff := latestChildBlock - start + 1
-	// process if diff > 0 (positive)
-	if diff > 0 {
-		expectedDiff := diff - diff%checkpointParams.AvgCheckpointLength
-		if expectedDiff > 0 {
-			expectedDiff = expectedDiff - 1
-		}
-		// cap with max checkpoint length
-		if expectedDiff > checkpointParams.MaxCheckpointLength {
-			expectedDiff = checkpointParams.MaxCheckpointLength - 1
-		}
-		// get the result
-		end = expectedDiff + start
-		cp.Logger.Debug(debugMsgCpCalculatingCheckpointEligibility,
-			"latest", latestChildBlock,
-			"start", start,
-			"end", end,
-		)
-	}
+	end := nextCheckpointEnd(start, latestChildBlock, checkpointParams.AvgCheckpointLength, checkpointParams.MaxCheckpointLength)
+	cp.Logger.Debug(debugMsgCpCalculatingCheckpointEligibility,
+		"latest", latestChildBlock,
+		"start", start,
+		"end", end,
+	)
 
 	return NewContractCheckpoint(start, end, &HeaderBlock{
 		start:  currentStart,
 		end:    currentEnd,
 		number: currentHeaderBlockNumber,
 	}), nil
+}
+
+// nextCheckpointEnd returns the end block of the checkpoint starting at start:
+// the most whole avgCheckpointLength chunks up to latestChildBlock, capped at
+// maxCheckpointLength blocks. It returns 0 when latestChildBlock hasn't reached
+// start yet, which the caller treats as nothing to send.
+func nextCheckpointEnd(start, latestChildBlock, avgCheckpointLength, maxCheckpointLength uint64) uint64 {
+	if latestChildBlock < start {
+		return 0
+	}
+
+	diff := latestChildBlock - start + 1
+	expectedDiff := diff - diff%avgCheckpointLength
+	if expectedDiff > 0 {
+		expectedDiff--
+	}
+
+	if expectedDiff > maxCheckpointLength {
+		expectedDiff = maxCheckpointLength - 1
+	}
+
+	return start + expectedDiff
 }
 
 // createAndSendCheckpointToHeimdall - creates checkpoint msg and broadcasts to heimdall

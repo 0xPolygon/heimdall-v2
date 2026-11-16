@@ -5,7 +5,6 @@ import (
 
 	common "github.com/cometbft/cometbft/libs/service"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	"github.com/cosmos/cosmos-sdk/codec"
 	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
 	"github.com/spf13/viper"
 
@@ -17,6 +16,11 @@ import (
 const (
 	processorServiceStr = "processor-service"
 )
+
+// retiredTasks are task names older bridges queued that no processor handles
+// anymore. A no-op handler for each drains any left in RabbitMQ after an
+// upgrade, which machinery would otherwise redeliver forever.
+var retiredTasks = []string{"sendTickAckToHeimdall", "sendUnjailToHeimdall"}
 
 // Service starts and stops all event processors
 type Service struct {
@@ -32,19 +36,14 @@ type Service struct {
 
 // NewProcessorService returns a new service object for processing queue msg
 func NewProcessorService(
-	cdc codec.Codec,
 	queueConnector *queue.Connector,
 	httpClient *rpchttp.HTTP,
 	txBroadcaster *broadcaster.TxBroadcaster,
+	contractCaller *helper.ContractCaller,
 ) *Service {
 	// creating the processor object
 	processorService := &Service{
 		queueConnector: queueConnector,
-	}
-
-	contractCaller, err := helper.NewContractCaller()
-	if err != nil {
-		panic(err)
 	}
 
 	processorService.BaseService = *common.NewBaseService(
@@ -59,28 +58,23 @@ func NewProcessorService(
 
 	// initialize checkpoint processor
 	checkpointProcessor := NewCheckpointProcessor(&contractCaller.RootChainABI)
-	checkpointProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "checkpoint", checkpointProcessor)
-	checkpointProcessor.cliCtx = txBroadcaster.CliCtx
+	checkpointProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "checkpoint")
 
 	// initialize fee processor
 	feeProcessor := NewFeeProcessor(&contractCaller.StakingInfoABI)
-	feeProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "fee", feeProcessor)
-	feeProcessor.cliCtx = txBroadcaster.CliCtx
+	feeProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "fee")
 
 	// initialize staking processor
 	stakingProcessor := NewStakingProcessor(&contractCaller.StakingInfoABI)
-	stakingProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "staking", stakingProcessor)
-	stakingProcessor.cliCtx = txBroadcaster.CliCtx
+	stakingProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "staking")
 
 	// initialize clerk processor
 	clerkProcessor := NewClerkProcessor(&contractCaller.StateSenderABI)
-	clerkProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "clerk", clerkProcessor)
-	clerkProcessor.cliCtx = txBroadcaster.CliCtx
+	clerkProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "clerk")
 
 	// initialize span processor
 	spanProcessor := &SpanProcessor{}
-	spanProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "span", spanProcessor)
-	spanProcessor.cliCtx = txBroadcaster.CliCtx
+	spanProcessor.BaseProcessor = *NewBaseProcessor(queueConnector, httpClient, txBroadcaster, contractCaller, "span")
 
 	//
 	// Select processors
@@ -127,6 +121,21 @@ func (processorService *Service) RegisterTasks() {
 	processorService.registerTasksOnce.Do(func() {
 		for _, processor := range processorService.processors {
 			processor.RegisterTasks()
+		}
+
+		for _, taskName := range retiredTasks {
+			var logged sync.Once
+			// retired tasks carry the event name and the log JSON
+			drop := func(string, string) error {
+				logged.Do(func() {
+					processorService.Logger.Info("ProcessorService: dropping retired tasks left in RabbitMQ", "taskName", taskName)
+				})
+				return nil
+			}
+
+			if err := processorService.queueConnector.Server.RegisterTask(taskName, drop); err != nil {
+				processorService.Logger.Error("ProcessorService: error registering retired task", "taskName", taskName, "error", err)
+			}
 		}
 	})
 }
