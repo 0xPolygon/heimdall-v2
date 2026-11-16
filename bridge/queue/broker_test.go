@@ -250,3 +250,18 @@ func TestConsumerEnded(t *testing.T) {
 
 	require.EqualError(t, consumerEnded(make(chan *amqp.Error)), "consumer cancelled by RabbitMQ", "an open channel does not block")
 }
+
+func TestBrokerHandleLogsFailedSettlement(t *testing.T) {
+	t.Parallel()
+
+	var warned []string
+	nop := func(string, ...any) {}
+	b := testBroker(unreachableURL)
+	b.logger = fakeLogger{debug: nop, info: nop, err: nop, warn: func(msg string, _ ...any) { warned = append(warned, msg) }}
+
+	// a delivery with no acknowledger cannot be settled
+	b.handle(amqp.Delivery{Body: []byte(`{"Name":"task"}`)}, processorFunc(func(*tasks.Signature) error { return nil }))
+
+	require.Len(t, warned, 1)
+	require.Contains(t, warned[0], "could not settle task")
+}

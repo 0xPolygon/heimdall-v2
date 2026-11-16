@@ -282,6 +282,67 @@ func TestBrokerAMQPStopWaitsForTasksInFlight(t *testing.T) {
 	require.Equal(t, workerConcurrency, f.queued(), "tasks not started stay queued for the next run")
 }
 
+func TestBrokerAMQPRedialsAfterFailedPublish(t *testing.T) {
+	f := newAMQPFixture(t)
+
+	// a delay queue declared with other arguments fails the publish and its channel
+	const delay = 7 * time.Second
+	_, err := f.admin.QueueDeclare(delayQueueName(delay), true, false, false, false, amqp.Table{"x-expires": int64(60_000)})
+	require.NoError(t, err)
+	t.Cleanup(func() { _, _ = f.admin.QueueDelete(delayQueueName(delay), false, false, false) })
+
+	eta := time.Now().Add(delay)
+	_, err = f.server.SendTask(&tasks.Signature{Name: "redial", ETA: &eta})
+	require.ErrorContains(t, err, "declare delay queue")
+
+	f.send("redial", 0, 1)
+	require.Equal(t, 1, f.queued())
+}
+
+func TestBrokerAMQPClosedChannelErrors(t *testing.T) {
+	f := newAMQPFixture(t)
+
+	ch, err := f.conn.Channel()
+	require.NoError(t, err)
+	require.NoError(t, ch.Close())
+
+	require.ErrorContains(t, declareTaskQueue(ch), "declare exchange")
+	require.ErrorContains(t, publishConfirmed(t.Context(), ch, exchangeName, QName, amqp.Publishing{}), "publish task")
+	_, err = declareDelayQueue(ch, time.Second)
+	require.ErrorContains(t, err, "declare delay queue")
+}
+
+func TestConnectorAMQPRunsTasks(t *testing.T) {
+	url := os.Getenv(amqpTestURLEnv)
+	if url == "" {
+		t.Skipf("%s is not set", amqpTestURLEnv)
+	}
+
+	qc, err := NewQueueConnector(url)
+	require.NoError(t, err)
+
+	ran := make(chan struct{}, 1)
+	require.NoError(t, qc.Server.RegisterTask("connector", func() error {
+		ran <- struct{}{}
+		return nil
+	}))
+
+	qc.StartWorker()
+	qc.StartWorker()
+
+	_, err = qc.Server.SendTask(&tasks.Signature{Name: "connector"})
+	require.NoError(t, err)
+
+	select {
+	case <-ran:
+	case <-time.After(10 * time.Second):
+		t.Fatal("task not run")
+	}
+
+	qc.StopWorker()
+	qc.StopWorker()
+}
+
 func BenchmarkBrokerAMQPPublishDelayed(b *testing.B) {
 	url := os.Getenv(amqpTestURLEnv)
 	if url == "" {
