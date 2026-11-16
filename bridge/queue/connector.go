@@ -85,7 +85,7 @@ func newConnector(cnf *config.Config) (*Connector, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), publishTimeout)
 	defer cancel()
 
-	if err := broker.pub.connect(ctx); err != nil {
+	if err := broker.connect(ctx); err != nil {
 		return nil, err
 	}
 

@@ -19,8 +19,6 @@ import (
 )
 
 const (
-	// defaultRequeuePause keeps a task whose retry could not be queued from
-	// spinning between the broker and the worker while the publisher is failing.
 	defaultRequeuePause = time.Second
 
 	// defaultHandBackDelay is how long a task this bridge has no processor for
@@ -75,6 +73,9 @@ func newBroker(cnf *config.Config, logger log.Logger) *broker {
 }
 
 var _ iface.Broker = (*broker)(nil)
+
+// connect opens the publisher connection and declares the task queue.
+func (b *broker) connect(ctx context.Context) error { return b.pub.connect(ctx) }
 
 // Publish queues signature, through a delay queue when its ETA is in the future.
 func (b *broker) Publish(ctx context.Context, signature *tasks.Signature) error {
@@ -155,28 +156,31 @@ func (b *broker) openConsumer(consumerTag string, concurrency int) (*consumer, e
 	ctx, cancel := context.WithTimeout(context.Background(), publishTimeout)
 	defer cancel()
 
-	l, err := openLink(ctx, b.url, b.queue)
+	session := new(consumer)
+
+	l, err := openLink(ctx, b.url, b.queue, func(l *link) error {
+		// Without a prefetch limit RabbitMQ pushes the whole backlog at once, and
+		// closes the channel when a delivery then waits past its ack timeout.
+		if err := l.ch.Qos(concurrency, 0, false); err != nil {
+			return fmt.Errorf("set prefetch: %w", err)
+		}
+
+		deliveries, err := l.ch.Consume(b.queue, consumerTag, false, false, false, false, nil)
+		if err != nil {
+			return fmt.Errorf("consume: %w", err)
+		}
+
+		session.deliveries, session.closed = deliveries, l.ch.NotifyClose(make(chan *amqp.Error, 1))
+
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	stop := l.abortOn(ctx)
-	defer stop()
+	session.link = l
 
-	// Without a prefetch limit RabbitMQ pushes the whole backlog at once, and
-	// closes the channel when a delivery then waits past its ack timeout.
-	if err := l.ch.Qos(concurrency, 0, false); err != nil {
-		l.close()
-		return nil, fmt.Errorf("set prefetch: %w", err)
-	}
-
-	deliveries, err := l.ch.Consume(b.queue, consumerTag, false, false, false, false, nil)
-	if err != nil {
-		l.close()
-		return nil, fmt.Errorf("consume: %w", err)
-	}
-
-	return &consumer{link: l, deliveries: deliveries, closed: l.ch.NotifyClose(make(chan *amqp.Error, 1))}, nil
+	return session, nil
 }
 
 // serve hands deliveries to processor until the session fails or the broker
@@ -196,6 +200,8 @@ func (b *broker) serve(session *consumer, processor iface.TaskProcessor) error {
 			if !ok {
 				return consumerEnded(session.closed)
 			}
+
+			delivery.Acknowledger = settler{delivery.Acknowledger, session.link}
 
 			inFlight.Add(1)
 			go func() {
@@ -242,8 +248,7 @@ func (b *broker) handle(delivery amqp.Delivery, processor iface.TaskProcessor) {
 	switch {
 	case unqueued.Load():
 		b.logger.Error("Bridge queue: retry not queued, returning task to the queue", "taskName", signature.Name, "uuid", signature.UUID, "err", err)
-		b.wait(b.requeuePause)
-		b.settle(delivery.Nack(false, true))
+		b.requeue(delivery)
 	case err != nil:
 		b.logger.Error("Bridge queue: dropping task machinery could not run", "taskName", signature.Name, "uuid", signature.UUID, "err", err)
 		b.settle(delivery.Reject(false))
@@ -265,12 +270,18 @@ func (b *broker) handBack(delivery amqp.Delivery, signature *tasks.Signature) {
 
 	if err := b.Publish(context.Background(), signature); err != nil {
 		b.logger.Error("Bridge queue: could not hand task back, returning it to the queue", "taskName", signature.Name, "uuid", signature.UUID, "err", err)
-		b.wait(b.requeuePause)
-		b.settle(delivery.Nack(false, true))
+		b.requeue(delivery)
 		return
 	}
 
 	b.settle(delivery.Ack(false))
+}
+
+// requeue returns a task to the head of the queue, after a pause so it does
+// not spin between RabbitMQ and the worker while the publisher is failing.
+func (b *broker) requeue(delivery amqp.Delivery) {
+	b.wait(b.requeuePause)
+	b.settle(delivery.Nack(false, true))
 }
 
 // settle logs a failed ack, nack or reject.

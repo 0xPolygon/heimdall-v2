@@ -11,8 +11,23 @@ import (
 )
 
 const (
-	dialTimeout  = 10 * time.Second
-	closeTimeout = 5 * time.Second
+	exchangeName = "machinery_exchange"
+
+	dialTimeout = 10 * time.Second
+
+	// linkTimeout bounds a close, ack, nack or reject on a link.
+	linkTimeout = 10 * time.Second
+)
+
+// Flags the AMQP declarations take positionally. They match what machinery
+// declared the exchange and task queue with: RabbitMQ rejects a redeclaration
+// that differs.
+const (
+	durable    = true
+	autoDelete = false
+	exclusive  = false
+	internal   = false
+	noWait     = false
 )
 
 // link is an AMQP connection, its channel and the socket under them.
@@ -20,11 +35,17 @@ type link struct {
 	conn *amqp.Connection
 	ch   *amqp.Channel
 	sock net.Conn
+
+	timeout time.Duration
+
+	// returns carries the publishes RabbitMQ could not route, on a link set
+	// up to publish
+	returns <-chan amqp.Return
 }
 
-// openLink dials url and declares the exchange, the task queue and their
-// binding, all within ctx.
-func openLink(ctx context.Context, url, queue string) (*link, error) {
+// openLink dials url, declares the exchange, the task queue and their binding,
+// and runs setup, all within ctx.
+func openLink(ctx context.Context, url, queue string, setup func(*link) error) (*link, error) {
 	l, err := dial(ctx, url)
 	if err != nil {
 		return nil, err
@@ -33,17 +54,24 @@ func openLink(ctx context.Context, url, queue string) (*link, error) {
 	stop := l.abortOn(ctx)
 	defer stop()
 
-	if l.ch, err = l.conn.Channel(); err != nil {
-		l.close()
-		return nil, fmt.Errorf("open channel: %w", err)
-	}
-
-	if err := declareTaskQueue(l.ch, queue); err != nil {
+	if err := l.prepare(queue, setup); err != nil {
 		l.close()
 		return nil, err
 	}
 
 	return l, nil
+}
+
+func (l *link) prepare(queue string, setup func(*link) error) (err error) {
+	if l.ch, err = l.conn.Channel(); err != nil {
+		return fmt.Errorf("open channel: %w", err)
+	}
+
+	if err := declareTaskQueue(l.ch, queue); err != nil {
+		return err
+	}
+
+	return setup(l)
 }
 
 // dial connects and completes the AMQP handshake by one deadline: dialTimeout
@@ -96,26 +124,48 @@ func dial(ctx context.Context, url string) (*link, error) {
 		return nil, fmt.Errorf("dial amqp: %w", err)
 	}
 
-	return &link{conn: conn, sock: sock}, nil
+	return &link{conn: conn, sock: sock, timeout: linkTimeout}, nil
 }
 
 // abortOn closes the socket when ctx ends, until the returned stop is called.
-// amqp091's methods take no deadline: one waiting on RabbitMQ returns only
-// once the socket is dead.
+// amqp091's methods take no deadline, and it moves the socket's own on every
+// heartbeat: one waiting on RabbitMQ returns only once the socket is dead.
 func (l *link) abortOn(ctx context.Context) (stop func() bool) {
 	return context.AfterFunc(ctx, func() { _ = l.sock.Close() })
 }
 
-// close ends the connection without waiting on RabbitMQ past closeTimeout.
-func (l *link) close() { l.closeWithin(closeTimeout) }
-
-func (l *link) closeWithin(timeout time.Duration) {
-	// amqp091's own close deadline is moved on by every heartbeat
-	kill := time.AfterFunc(timeout, func() { _ = l.sock.Close() })
+// bounded runs f, closing the socket if f outlasts the link's timeout. It
+// takes no context: a link is closed, and its deliveries settled, after the
+// context of whatever opened it has ended.
+func (l *link) bounded(f func() error) error {
+	kill := time.AfterFunc(l.timeout, func() { _ = l.sock.Close() })
 	defer kill.Stop()
 
-	_ = l.conn.Close()
+	return f()
+}
+
+func (l *link) close() {
+	_ = l.bounded(l.conn.Close)
 	_ = l.sock.Close()
+}
+
+// settler bounds the ack, nack or reject of a delivery. A write RabbitMQ never
+// reads would otherwise hold its task in flight, and with it shutdown.
+type settler struct {
+	amqp.Acknowledger
+	link *link
+}
+
+func (s settler) Ack(tag uint64, multiple bool) error {
+	return s.link.bounded(func() error { return s.Acknowledger.Ack(tag, multiple) })
+}
+
+func (s settler) Nack(tag uint64, multiple, requeue bool) error {
+	return s.link.bounded(func() error { return s.Acknowledger.Nack(tag, multiple, requeue) })
+}
+
+func (s settler) Reject(tag uint64, requeue bool) error {
+	return s.link.bounded(func() error { return s.Acknowledger.Reject(tag, requeue) })
 }
 
 func declareTaskQueue(ch *amqp.Channel, queue string) error {

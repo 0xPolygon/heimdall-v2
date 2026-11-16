@@ -204,21 +204,26 @@ func TestBrokerPublish(t *testing.T) {
 	b.pub.release()
 }
 
-// stopBroker fails the test rather than hang it when StopConsuming blocks.
-func stopBroker(t *testing.T, b *broker) {
-	t.Helper()
+// within fails the test rather than hang it when f blocks.
+func within(tb testing.TB, limit time.Duration, f func()) {
+	tb.Helper()
 
-	stopped := make(chan struct{})
+	done := make(chan struct{})
 	go func() {
-		b.StopConsuming()
-		close(stopped)
+		defer close(done)
+		f()
 	}()
 
 	select {
-	case <-stopped:
-	case <-time.After(10 * time.Second):
-		t.Error("StopConsuming blocked")
+	case <-done:
+	case <-time.After(limit):
+		tb.Fatalf("still blocked after %s", limit)
 	}
+}
+
+func stopBroker(tb testing.TB, b *broker) {
+	tb.Helper()
+	within(tb, 10*time.Second, b.StopConsuming)
 }
 
 func TestNextBackoff(t *testing.T) {
@@ -350,30 +355,13 @@ func TestDial(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = silent.Close() })
 
-	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
 	within(t, 5*time.Second, func() {
 		_, err := dial(ctx, "amqp://guest:guest@"+silent.Addr().String()+"/")
 		require.ErrorContains(t, err, "dial amqp")
 	})
-}
-
-// within fails the test rather than hang it when f blocks.
-func within(t *testing.T, limit time.Duration, f func()) {
-	t.Helper()
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		f()
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(limit):
-		t.Fatalf("still blocked after %s", limit)
-	}
 }
 
 // heartbeatingPeer is an AMQP server that goes as far as connection.tune, and
@@ -438,7 +426,7 @@ func TestLinkGivesUpOnHeartbeatingPeer(t *testing.T) {
 	t.Run("handshake", func(t *testing.T) {
 		t.Parallel()
 
-		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
 
 		within(t, 5*time.Second, func() {
@@ -453,10 +441,64 @@ func TestLinkGivesUpOnHeartbeatingPeer(t *testing.T) {
 		l, err := dial(context.Background(), heartbeatingPeer(t, true))
 		require.NoError(t, err)
 
+		l.timeout = 100 * time.Millisecond
+
 		start := time.Now()
-		within(t, 5*time.Second, func() { l.closeWithin(300 * time.Millisecond) })
-		require.GreaterOrEqual(t, time.Since(start), 300*time.Millisecond, "RabbitMQ gets the time to answer")
+		within(t, 5*time.Second, l.close)
+		require.GreaterOrEqual(t, time.Since(start), l.timeout, "RabbitMQ gets the time to answer")
 		require.True(t, l.conn.IsClosed())
+	})
+}
+
+// stalledAcker settles nothing until its peer's socket is closed, like a
+// write RabbitMQ never reads.
+type stalledAcker struct{ peer net.Conn }
+
+func (a stalledAcker) stall() error {
+	_, _ = io.Copy(io.Discard, a.peer)
+	return io.ErrClosedPipe
+}
+
+func (a stalledAcker) Ack(uint64, bool) error        { return a.stall() }
+func (a stalledAcker) Nack(uint64, bool, bool) error { return a.stall() }
+func (a stalledAcker) Reject(uint64, bool) error     { return a.stall() }
+
+func TestSettlerEndsStalledSettlement(t *testing.T) {
+	t.Parallel()
+
+	for name, settle := range map[string]func(amqp.Acknowledger) error{
+		"ack":    func(a amqp.Acknowledger) error { return a.Ack(1, false) },
+		"nack":   func(a amqp.Acknowledger) error { return a.Nack(1, false, true) },
+		"reject": func(a amqp.Acknowledger) error { return a.Reject(1, false) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			sock, peer := net.Pipe()
+			t.Cleanup(func() { _ = peer.Close() })
+
+			start := time.Now()
+			within(t, 5*time.Second, func() {
+				require.Error(t, settle(settler{stalledAcker{peer}, &link{sock: sock, timeout: 100 * time.Millisecond}}))
+			})
+			require.GreaterOrEqual(t, time.Since(start), 100*time.Millisecond, "RabbitMQ gets the time to take it")
+		})
+	}
+
+	t.Run("a settlement in time keeps the socket", func(t *testing.T) {
+		t.Parallel()
+
+		sock, peer := net.Pipe()
+		t.Cleanup(func() { _ = peer.Close() })
+
+		acked := new(settlement)
+		require.NoError(t, settler{acked, &link{sock: sock, timeout: 30 * time.Millisecond}}.Ack(1, false))
+		require.True(t, acked.acked)
+
+		time.Sleep(60 * time.Millisecond)
+		go func() { _, _ = peer.Write([]byte{1}) }()
+		_, err := sock.Read(make([]byte, 1))
+		require.NoError(t, err, "the socket outlives a settlement that finished")
 	})
 }
 

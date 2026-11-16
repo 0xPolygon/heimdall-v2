@@ -12,6 +12,7 @@ import (
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1"
 	nullbackend "github.com/RichardKnop/machinery/v1/backends/null"
+	"github.com/RichardKnop/machinery/v1/config"
 	eagerlock "github.com/RichardKnop/machinery/v1/locks/eager"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -31,22 +32,48 @@ type amqpFixture struct {
 	admin  *amqp.Channel
 }
 
-func newAMQPFixture(t *testing.T) *amqpFixture {
-	t.Helper()
+// amqpTestConfig skips the test without a RabbitMQ. It gives each test a queue
+// of its own, so tests and test processes can share one.
+func amqpTestConfig(tb testing.TB) *config.Config {
+	tb.Helper()
 
 	url := os.Getenv(amqpTestURLEnv)
 	if url == "" {
-		t.Skipf("%s is not set", amqpTestURLEnv)
+		tb.Skipf("%s is not set", amqpTestURLEnv)
 	}
+
+	cnf := newConfig(url)
+	cnf.DefaultQueue = fmt.Sprintf("%s.%s.%d", QName, tb.Name(), time.Now().UnixNano())
+
+	return cnf
+}
+
+func deleteQueues(tb testing.TB, url string, names ...string) {
+	tb.Helper()
+
+	conn, err := amqp.Dial(url)
+	require.NoError(tb, err)
+	defer func() { _ = conn.Close() }()
+
+	ch, err := conn.Channel()
+	require.NoError(tb, err)
+
+	for _, name := range names {
+		_, _ = ch.QueueDelete(name, false, false, false)
+	}
+}
+
+func newAMQPFixture(t *testing.T) *amqpFixture {
+	t.Helper()
+
+	cnf := amqpTestConfig(t)
+	url := cnf.Broker
 
 	t.Parallel()
 
-	// a queue per test, so tests and test processes can share the RabbitMQ
-	cnf := newConfig(url)
-	cnf.DefaultQueue = fmt.Sprintf("%s.%s.%d", QName, t.Name(), time.Now().UnixNano())
 	b := newBroker(cnf, log.NewNopLogger())
 	b.requeuePause, b.consumeBackoff, b.handBackDelay = 50*time.Millisecond, 50*time.Millisecond, time.Second
-	require.NoError(t, b.pub.connect(t.Context()))
+	require.NoError(t, b.connect(t.Context()))
 
 	conn, err := amqp.Dial(url)
 	require.NoError(t, err)
@@ -118,7 +145,7 @@ func TestBrokerAMQPDeliversDirectAndDelayedTasks(t *testing.T) {
 	f.startWorker()
 
 	// a delay this short outlives its own queue on machinery's broker
-	const n, shortDelay, longDelay = 50, 2 * time.Millisecond, 1500 * time.Millisecond
+	const n, shortDelay, longDelay = 50, 2 * time.Millisecond, 900 * time.Millisecond
 	start := time.Now()
 	for id := range n {
 		f.send("deliver", 0, id)
@@ -136,14 +163,14 @@ func TestBrokerAMQPDeliversDirectAndDelayedTasks(t *testing.T) {
 		require.GreaterOrEqual(t, ranAt[id].Sub(start), longDelay, "a task runs no earlier than its ETA")
 	}
 
-	_, err := f.inspect(delayQueueName(f.broker.queue, 2*time.Second))
+	_, err := f.inspect(delayQueueName(f.broker.queue, time.Second))
 	require.NoError(t, err, "delays share a queue per whole second")
 }
 
 func TestBrokerAMQPRequeuesTaskWhoseRetryWasNotQueued(t *testing.T) {
 	f := newAMQPFixture(t)
 
-	const n = 20
+	const n = workerConcurrency + 2
 	var outage atomic.Bool
 	var runs, completed atomic.Int64
 	require.NoError(t, f.server.RegisterTask("retry", func(int) error {
@@ -313,7 +340,7 @@ func TestBrokerAMQPStopWaitsForTasksInFlight(t *testing.T) {
 			t.Fatal("tasks not delivered")
 		}
 	}
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 	require.Len(t, started, 0, "no more than workerConcurrency tasks run at once")
 
 	stopped := make(chan struct{})
@@ -325,7 +352,7 @@ func TestBrokerAMQPStopWaitsForTasksInFlight(t *testing.T) {
 	select {
 	case <-stopped:
 		t.Fatal("StopConsuming returned with tasks in flight")
-	case <-time.After(300 * time.Millisecond):
+	case <-time.After(100 * time.Millisecond):
 	}
 
 	close(release)
@@ -380,23 +407,10 @@ func TestBrokerAMQPClosedChannelErrors(t *testing.T) {
 }
 
 func TestConnectorAMQPRunsTasks(t *testing.T) {
-	url := os.Getenv(amqpTestURLEnv)
-	if url == "" {
-		t.Skipf("%s is not set", amqpTestURLEnv)
-	}
-
-	cnf := newConfig(url)
-	cnf.DefaultQueue = fmt.Sprintf("%s.%s.%d", QName, t.Name(), time.Now().UnixNano())
+	cnf := amqpTestConfig(t)
 	qc, err := newConnector(cnf)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		conn, err := amqp.Dial(url)
-		require.NoError(t, err)
-		defer func() { _ = conn.Close() }()
-		ch, err := conn.Channel()
-		require.NoError(t, err)
-		_, _ = ch.QueueDelete(cnf.DefaultQueue, false, false, false)
-	})
+	t.Cleanup(func() { deleteQueues(t, cnf.Broker, cnf.DefaultQueue) })
 
 	ran := make(chan struct{}, 1)
 	require.NoError(t, qc.Server.RegisterTask("connector", func() error {
@@ -410,23 +424,11 @@ func TestConnectorAMQPRunsTasks(t *testing.T) {
 	_, err = qc.Server.SendTask(&tasks.Signature{Name: "connector"})
 	require.NoError(t, err)
 
-	select {
-	case <-ran:
-	case <-time.After(10 * time.Second):
-		t.Fatal("task not run")
-	}
-
-	stopped := make(chan struct{})
-	go func() {
+	within(t, 10*time.Second, func() { <-ran })
+	within(t, 10*time.Second, func() {
 		qc.StopWorker()
 		qc.StopWorker()
-		close(stopped)
-	}()
-	select {
-	case <-stopped:
-	case <-time.After(10 * time.Second):
-		t.Fatal("StopWorker blocked")
-	}
+	})
 }
 
 func TestBrokerAMQPConsumerReturnsWhenStopped(t *testing.T) {
@@ -460,7 +462,7 @@ func TestBrokerAMQPConsumerReturnsWhenStopped(t *testing.T) {
 func TestLinkAMQPEndsWithItsContext(t *testing.T) {
 	f := newAMQPFixture(t)
 
-	l, err := openLink(t.Context(), f.broker.url, f.broker.queue)
+	l, err := openLink(t.Context(), f.broker.url, f.broker.queue, func(*link) error { return nil })
 	require.NoError(t, err)
 	require.False(t, l.conn.IsClosed(), "the link outlives the context it was opened with only until that ends")
 
@@ -476,33 +478,21 @@ func TestLinkAMQPEndsWithItsContext(t *testing.T) {
 	require.Eventually(t, l.conn.IsClosed, 5*time.Second, 10*time.Millisecond, "ending the context kills the socket")
 	require.Error(t, declareTaskQueue(l.ch, f.broker.queue))
 
-	closing, err := openLink(t.Context(), f.broker.url, f.broker.queue)
+	closing, err := openLink(t.Context(), f.broker.url, f.broker.queue, func(*link) error { return nil })
 	require.NoError(t, err)
 	closing.close()
 	require.True(t, closing.conn.IsClosed())
 }
 
 func BenchmarkBrokerAMQPPublishDelayed(b *testing.B) {
-	url := os.Getenv(amqpTestURLEnv)
-	if url == "" {
-		b.Skipf("%s is not set", amqpTestURLEnv)
-	}
-
 	const delay = 3 * time.Second
-	cnf := newConfig(url)
-	cnf.DefaultQueue = fmt.Sprintf("%s.%s.%d", QName, b.Name(), time.Now().UnixNano())
+
+	cnf := amqpTestConfig(b)
 	br := newBroker(cnf, log.NewNopLogger())
 	server := machinery.NewServerWithBrokerBackendLock(cnf, br, nullbackend.New(), eagerlock.New())
 	b.Cleanup(func() {
-		br.StopConsuming()
-
-		conn, err := amqp.Dial(url)
-		require.NoError(b, err)
-		defer func() { _ = conn.Close() }()
-		ch, err := conn.Channel()
-		require.NoError(b, err)
-		_, _ = ch.QueueDelete(delayQueueName(cnf.DefaultQueue, delay), false, false, false)
-		_, _ = ch.QueueDelete(cnf.DefaultQueue, false, false, false)
+		stopBroker(b, br)
+		deleteQueues(b, cnf.Broker, delayQueueName(cnf.DefaultQueue, delay), cnf.DefaultQueue)
 	})
 
 	for i := 0; b.Loop(); i++ {

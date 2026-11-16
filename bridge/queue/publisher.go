@@ -11,8 +11,6 @@ import (
 )
 
 const (
-	exchangeName = "machinery_exchange"
-
 	// publishTimeout bounds one publish: the wait for the publisher, the dial
 	// if it has no connection, and the broker's confirmation.
 	publishTimeout = 15 * time.Second
@@ -20,17 +18,6 @@ const (
 	// delayQueueSlack is how much longer than its messages a delay queue
 	// lives, so a publish stalled after the queue was declared still lands in it.
 	delayQueueSlack = time.Minute
-)
-
-// Flags the AMQP methods take positionally. The declarations match what
-// machinery declared the exchange and task queue with: RabbitMQ rejects a
-// redeclaration that differs.
-const (
-	durable    = true
-	autoDelete = false
-	exclusive  = false
-	internal   = false
-	noWait     = false
 
 	// mandatory has RabbitMQ return a task it could not route, as when the
 	// queue was deleted, instead of confirming and discarding it.
@@ -45,10 +32,9 @@ type publisher struct {
 
 	// lock serializes publishing. It is a channel so that waiting for it ends
 	// with the caller's context.
-	lock    chan struct{}
-	link    *link
-	returns <-chan amqp.Return
-	closed  bool
+	lock   chan struct{}
+	link   *link
+	closed bool
 }
 
 var errPublisherClosed = errors.New("publisher closed")
@@ -94,7 +80,7 @@ func (p *publisher) publish(ctx context.Context, signature *tasks.Signature, bod
 	stop := l.abortOn(ctx)
 	defer stop()
 
-	if err := p.send(ctx, l.ch, signature, body); err != nil {
+	if err := p.send(ctx, l, signature, body); err != nil {
 		// a failed link is not reused: the next publish dials again and
 		// redeclares the task queue
 		p.drop()
@@ -104,10 +90,10 @@ func (p *publisher) publish(ctx context.Context, signature *tasks.Signature, bod
 	return nil
 }
 
-func (p *publisher) send(ctx context.Context, ch *amqp.Channel, signature *tasks.Signature, body []byte) error {
+func (p *publisher) send(ctx context.Context, l *link, signature *tasks.Signature, body []byte) error {
 	exchange, key := exchangeName, p.queue
 	if delay := delayFor(signature.ETA, time.Now()); delay > 0 {
-		name, err := declareDelayQueue(ch, p.queue, delay)
+		name, err := declareDelayQueue(l.ch, p.queue, delay)
 		if err != nil {
 			return err
 		}
@@ -115,7 +101,7 @@ func (p *publisher) send(ctx context.Context, ch *amqp.Channel, signature *tasks
 		exchange, key = "", name
 	}
 
-	return publishConfirmed(ctx, ch, p.returns, exchange, key, amqp.Publishing{
+	return publishConfirmed(ctx, l.ch, l.returns, exchange, key, amqp.Publishing{
 		Headers:      amqp.Table(signature.Headers),
 		ContentType:  "application/json",
 		Body:         body,
@@ -137,22 +123,25 @@ func (p *publisher) open(ctx context.Context) (*link, error) {
 
 	p.drop()
 
-	l, err := openLink(ctx, p.url, p.queue)
+	l, err := openLink(ctx, p.url, p.queue, confirmPublishes)
 	if err != nil {
 		return nil, err
 	}
 
-	stop := l.abortOn(ctx)
-	defer stop()
-
-	if err := l.ch.Confirm(noWait); err != nil {
-		l.close()
-		return nil, fmt.Errorf("enable publisher confirms: %w", err)
-	}
-
-	p.link, p.returns = l, l.ch.NotifyReturn(make(chan amqp.Return, 1))
+	p.link = l
 
 	return l, nil
+}
+
+// confirmPublishes has RabbitMQ confirm each publish and return unroutable ones.
+func confirmPublishes(l *link) error {
+	if err := l.ch.Confirm(noWait); err != nil {
+		return fmt.Errorf("enable publisher confirms: %w", err)
+	}
+
+	l.returns = l.ch.NotifyReturn(make(chan amqp.Return, 1))
+
+	return nil
 }
 
 // drop closes the link. The caller holds the lock.
@@ -161,7 +150,7 @@ func (p *publisher) drop() {
 		p.link.close()
 	}
 
-	p.link, p.returns = nil, nil
+	p.link = nil
 }
 
 // close ends the publisher for good: a publish after it fails rather than
@@ -185,7 +174,7 @@ func delayFor(eta *time.Time, now time.Time) time.Duration {
 	return (eta.Sub(now) + time.Second - 1).Truncate(time.Second)
 }
 
-// delayQueueName differs from machinery's delay queue names: the arguments do.
+// delayQueueName is unlike machinery's, whose delay queues take other arguments.
 func delayQueueName(queue string, delay time.Duration) string {
 	return fmt.Sprintf("%s.delay.%d", queue, delay.Milliseconds())
 }
