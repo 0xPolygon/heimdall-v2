@@ -2,7 +2,9 @@ package queue
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
+	"io"
 	"net"
 	"testing"
 	"time"
@@ -351,10 +353,111 @@ func TestDial(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 
-	start := time.Now()
-	_, err = dial(ctx, "amqp://guest:guest@"+silent.Addr().String()+"/")
-	require.ErrorContains(t, err, "dial amqp")
-	require.Less(t, time.Since(start), 5*time.Second, "the handshake shares the dial deadline")
+	within(t, 5*time.Second, func() {
+		_, err := dial(ctx, "amqp://guest:guest@"+silent.Addr().String()+"/")
+		require.ErrorContains(t, err, "dial amqp")
+	})
+}
+
+// within fails the test rather than hang it when f blocks.
+func within(t *testing.T, limit time.Duration, f func()) {
+	t.Helper()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		f()
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(limit):
+		t.Fatalf("still blocked after %s", limit)
+	}
+}
+
+// heartbeatingPeer is an AMQP server that goes as far as connection.tune, and
+// connection.open-ok if answerOpen, then sends only heartbeats.
+func heartbeatingPeer(t *testing.T, answerOpen bool) string {
+	t.Helper()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = listener.Close() })
+
+	method := func(id byte, args ...byte) []byte {
+		payload := append([]byte{0, 10, 0, id}, args...)
+		frame := binary.BigEndian.AppendUint32([]byte{1, 0, 0}, uint32(len(payload)))
+		return append(append(frame, payload...), 0xCE)
+	}
+	skipFrame := func(conn net.Conn) error {
+		header := make([]byte, 7)
+		if _, err := io.ReadFull(conn, header); err != nil {
+			return err
+		}
+		_, err := io.CopyN(io.Discard, conn, int64(binary.BigEndian.Uint32(header[3:]))+1)
+		return err
+	}
+
+	go func() {
+		conn, err := listener.Accept()
+		if err != nil {
+			return
+		}
+		defer func() { _ = conn.Close() }()
+
+		start := method(10, 0, 9, 0, 0, 0, 0, 0, 0, 0, 5, 'P', 'L', 'A', 'I', 'N', 0, 0, 0, 5, 'e', 'n', '_', 'U', 'S')
+		tune := method(30, 0, 0, 0, 2, 0, 0, 0, 1) // heartbeat every second
+		_, _ = io.CopyN(io.Discard, conn, 8)       // protocol header
+		_, _ = conn.Write(start)
+		_ = skipFrame(conn) // start-ok
+		_, _ = conn.Write(tune)
+		_ = skipFrame(conn) // tune-ok
+		_ = skipFrame(conn) // open
+		if answerOpen {
+			_, _ = conn.Write(method(41, 0))
+		}
+
+		go func() { _, _ = io.Copy(io.Discard, conn) }()
+		for {
+			if _, err := conn.Write([]byte{8, 0, 0, 0, 0, 0, 0, 0xCE}); err != nil {
+				return
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+	}()
+
+	return "amqp://guest:guest@" + listener.Addr().String() + "/"
+}
+
+// amqp091 moves its socket deadline on every heartbeat, so neither the
+// handshake nor the close may rely on it.
+func TestLinkGivesUpOnHeartbeatingPeer(t *testing.T) {
+	t.Parallel()
+
+	t.Run("handshake", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+		defer cancel()
+
+		within(t, 5*time.Second, func() {
+			_, err := dial(ctx, heartbeatingPeer(t, false))
+			require.ErrorContains(t, err, "dial amqp")
+		})
+	})
+
+	t.Run("close", func(t *testing.T) {
+		t.Parallel()
+
+		l, err := dial(context.Background(), heartbeatingPeer(t, true))
+		require.NoError(t, err)
+
+		start := time.Now()
+		within(t, 5*time.Second, func() { l.closeWithin(300 * time.Millisecond) })
+		require.GreaterOrEqual(t, time.Since(start), 300*time.Millisecond, "RabbitMQ gets the time to answer")
+		require.True(t, l.conn.IsClosed())
+	})
 }
 
 func TestPublisherClosed(t *testing.T) {

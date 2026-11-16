@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync/atomic"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -48,39 +49,54 @@ func openLink(ctx context.Context, url, queue string) (*link, error) {
 // dial connects and completes the AMQP handshake by one deadline: dialTimeout
 // from now, or ctx's deadline if that is sooner.
 func dial(ctx context.Context, url string) (*link, error) {
-	deadline := time.Now().Add(dialTimeout)
-	if d, ok := ctx.Deadline(); ok && d.Before(deadline) {
-		deadline = d
-	}
+	ctx, cancel := context.WithTimeout(ctx, dialTimeout)
+	defer cancel()
 
-	l := new(link)
+	// A socket deadline does not hold: amqp091 moves it on every frame once
+	// heartbeats start, which is before the handshake ends. Closing the socket
+	// when ctx ends does.
+	var dialed atomic.Pointer[net.TCPConn]
+	stop := context.AfterFunc(ctx, func() {
+		if sock := dialed.Load(); sock != nil {
+			_ = sock.Close()
+		}
+	})
 
 	conn, err := amqp.DialConfig(url, amqp.Config{
 		Locale: "en_US",
 		Dial: func(network, addr string) (net.Conn, error) {
-			sock, err := (&net.Dialer{Deadline: deadline}).DialContext(ctx, network, addr)
+			sock, err := new(net.Dialer).DialContext(ctx, network, addr)
 			if err != nil {
 				return nil, err
 			}
 
-			// amqp091 clears the deadline once the handshake is done
-			if err := sock.SetDeadline(deadline); err != nil {
-				_ = sock.Close()
+			dialed.Store(sock.(*net.TCPConn))
+
+			// ctx may have ended before the socket could be closed for it
+			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
-
-			l.sock = sock
 
 			return sock, nil
 		},
 	})
+
+	sock := dialed.Load()
+	if err == nil && !stop() {
+		_ = conn.Close()
+		err = ctx.Err()
+	}
+
 	if err != nil {
+		// amqp091 does not close the socket on every failure after it dialed
+		if sock != nil {
+			_ = sock.Close()
+		}
+
 		return nil, fmt.Errorf("dial amqp: %w", err)
 	}
 
-	l.conn = conn
-
-	return l, nil
+	return &link{conn: conn, sock: sock}, nil
 }
 
 // abortOn closes the socket when ctx ends, until the returned stop is called.
@@ -91,8 +107,14 @@ func (l *link) abortOn(ctx context.Context) (stop func() bool) {
 }
 
 // close ends the connection without waiting on RabbitMQ past closeTimeout.
-func (l *link) close() {
-	_ = l.conn.CloseDeadline(time.Now().Add(closeTimeout))
+func (l *link) close() { l.closeWithin(closeTimeout) }
+
+func (l *link) closeWithin(timeout time.Duration) {
+	// amqp091's own close deadline is moved on by every heartbeat
+	kill := time.AfterFunc(timeout, func() { _ = l.sock.Close() })
+	defer kill.Stop()
+
+	_ = l.conn.Close()
 	_ = l.sock.Close()
 }
 

@@ -488,12 +488,25 @@ func BenchmarkBrokerAMQPPublishDelayed(b *testing.B) {
 		b.Skipf("%s is not set", amqpTestURLEnv)
 	}
 
-	br := newBroker(newConfig(url), log.NewNopLogger())
-	server := machinery.NewServerWithBrokerBackendLock(br.GetConfig(), br, nullbackend.New(), eagerlock.New())
-	defer br.StopConsuming()
+	const delay = 3 * time.Second
+	cnf := newConfig(url)
+	cnf.DefaultQueue = fmt.Sprintf("%s.%s.%d", QName, b.Name(), time.Now().UnixNano())
+	br := newBroker(cnf, log.NewNopLogger())
+	server := machinery.NewServerWithBrokerBackendLock(cnf, br, nullbackend.New(), eagerlock.New())
+	b.Cleanup(func() {
+		br.StopConsuming()
+
+		conn, err := amqp.Dial(url)
+		require.NoError(b, err)
+		defer func() { _ = conn.Close() }()
+		ch, err := conn.Channel()
+		require.NoError(b, err)
+		_, _ = ch.QueueDelete(delayQueueName(cnf.DefaultQueue, delay), false, false, false)
+		_, _ = ch.QueueDelete(cnf.DefaultQueue, false, false, false)
+	})
 
 	for i := 0; b.Loop(); i++ {
-		eta := time.Now().Add(3 * time.Second)
+		eta := time.Now().Add(delay)
 		if _, err := server.SendTask(&tasks.Signature{Name: "bench", ETA: &eta, Args: []tasks.Arg{{Type: "string", Value: fmt.Sprint(i)}}}); err != nil {
 			b.Fatal(err)
 		}
