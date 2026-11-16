@@ -19,31 +19,31 @@ import (
 )
 
 const (
-	exchangeName = "machinery_exchange"
+	// defaultRequeuePause keeps a task whose retry could not be queued from
+	// spinning between the broker and the worker while the publisher is failing.
+	defaultRequeuePause = time.Second
 
-	// publishTimeout bounds one publish, broker confirmation included.
-	publishTimeout = 15 * time.Second
+	// defaultHandBackDelay is how long a task this bridge has no processor for
+	// waits before it is delivered again.
+	defaultHandBackDelay = 5 * time.Second
 
-	// requeuePause keeps a task whose retry could not be queued from spinning
-	// between the broker and the worker while the publisher is failing.
-	requeuePause = time.Second
-
-	minConsumeBackoff = time.Second
-	maxConsumeBackoff = 30 * time.Second
+	defaultConsumeBackoff = time.Second
+	maxConsumeBackoff     = 30 * time.Second
 )
 
 // broker is machinery's transport to RabbitMQ, in place of machinery's own AMQP
-// broker. Every task goes through the one QName queue.
+// broker. Every task goes through the one queue.
 type broker struct {
 	common.Broker
 
 	url    string
+	queue  string
 	logger log.Logger
+	pub    *publisher
 
-	// publishing is serialized on one long-lived channel
-	pubMu   sync.Mutex
-	pubConn *amqp.Connection
-	pubCh   *amqp.Channel
+	requeuePause   time.Duration
+	handBackDelay  time.Duration
+	consumeBackoff time.Duration
 
 	// stopMu orders a consumer starting against StopConsuming waiting for them
 	stopMu    sync.Mutex
@@ -54,28 +54,27 @@ type broker struct {
 	// machinery retries a task by publishing the signature it was handed, and
 	// reports a failure there with the same opaque error as a malformed task.
 	retryUnqueued sync.Map
+
+	// unregisteredWarned holds the task names already reported as unregistered
+	unregisteredWarned sync.Map
 }
 
 func newBroker(cnf *config.Config, logger log.Logger) *broker {
 	return &broker{
 		Broker: common.NewBroker(cnf),
 		url:    cnf.Broker,
+		queue:  cnf.DefaultQueue,
 		logger: logger,
-		stop:   make(chan struct{}),
+		pub:    newPublisher(cnf.Broker, cnf.DefaultQueue),
+
+		requeuePause:   defaultRequeuePause,
+		handBackDelay:  defaultHandBackDelay,
+		consumeBackoff: defaultConsumeBackoff,
+		stop:           make(chan struct{}),
 	}
 }
 
 var _ iface.Broker = (*broker)(nil)
-
-// connect opens the publisher connection and declares the task queue.
-func (b *broker) connect() error {
-	b.pubMu.Lock()
-	defer b.pubMu.Unlock()
-
-	_, err := b.publishChannel()
-
-	return err
-}
 
 // Publish queues signature, through a delay queue when its ETA is in the future.
 func (b *broker) Publish(ctx context.Context, signature *tasks.Signature) error {
@@ -84,178 +83,20 @@ func (b *broker) Publish(ctx context.Context, signature *tasks.Signature) error 
 		return fmt.Errorf("marshal task: %w", err)
 	}
 
+	// like a marshal error, this fails every attempt: it is not a retry to hand back
+	if err := amqp.Table(signature.Headers).Validate(); err != nil {
+		return fmt.Errorf("task headers: %w", err)
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, publishTimeout)
 	defer cancel()
 
-	if err := b.publish(ctx, signature, body); err != nil {
+	if err := b.pub.publish(ctx, signature, body); err != nil {
 		if unqueued, ok := b.retryUnqueued.Load(signature); ok {
 			unqueued.(*atomic.Bool).Store(true)
 		}
 
 		return err
-	}
-
-	return nil
-}
-
-func (b *broker) publish(ctx context.Context, signature *tasks.Signature, body []byte) error {
-	b.pubMu.Lock()
-	defer b.pubMu.Unlock()
-
-	ch, err := b.publishChannel()
-	if err != nil {
-		return err
-	}
-
-	if err := send(ctx, ch, signature, body); err != nil {
-		// a failed channel is not reused: the next publish dials again
-		b.closePublisher()
-		return err
-	}
-
-	return nil
-}
-
-func send(ctx context.Context, ch *amqp.Channel, signature *tasks.Signature, body []byte) error {
-	exchange, key := exchangeName, QName
-	if delay := delayFor(signature.ETA, time.Now()); delay > 0 {
-		name, err := declareDelayQueue(ch, delay)
-		if err != nil {
-			return err
-		}
-		// the default exchange routes to the queue named by the key
-		exchange, key = "", name
-	}
-
-	return publishConfirmed(ctx, ch, exchange, key, amqp.Publishing{
-		Headers:      amqp.Table(signature.Headers),
-		ContentType:  "application/json",
-		Body:         body,
-		Priority:     signature.Priority,
-		DeliveryMode: amqp.Persistent,
-	})
-}
-
-// publishChannel returns the open publisher channel, dialing if there is none.
-// The caller holds pubMu.
-func (b *broker) publishChannel() (*amqp.Channel, error) {
-	if b.pubCh != nil && !b.pubCh.IsClosed() {
-		return b.pubCh, nil
-	}
-
-	b.closePublisher()
-
-	conn, ch, err := openChannel(b.url)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ch.Confirm(false); err != nil {
-		_ = conn.Close()
-		return nil, fmt.Errorf("enable publisher confirms: %w", err)
-	}
-
-	b.pubConn, b.pubCh = conn, ch
-
-	return ch, nil
-}
-
-// closePublisher drops the publisher connection. The caller holds pubMu.
-func (b *broker) closePublisher() {
-	if b.pubConn != nil {
-		_ = b.pubConn.Close()
-	}
-
-	b.pubConn, b.pubCh = nil, nil
-}
-
-// openChannel dials url and declares the exchange, the task queue and their
-// binding, with the arguments machinery declared them with.
-func openChannel(url string) (*amqp.Connection, *amqp.Channel, error) {
-	conn, err := amqp.Dial(url)
-	if err != nil {
-		return nil, nil, fmt.Errorf("dial amqp: %w", err)
-	}
-
-	ch, err := conn.Channel()
-	if err != nil {
-		_ = conn.Close()
-		return nil, nil, fmt.Errorf("open channel: %w", err)
-	}
-
-	if err := declareTaskQueue(ch); err != nil {
-		_ = conn.Close()
-		return nil, nil, err
-	}
-
-	return conn, ch, nil
-}
-
-func declareTaskQueue(ch *amqp.Channel) error {
-	if err := ch.ExchangeDeclare(exchangeName, amqp.ExchangeDirect, true, false, false, false, nil); err != nil {
-		return fmt.Errorf("declare exchange: %w", err)
-	}
-
-	if _, err := ch.QueueDeclare(QName, true, false, false, false, nil); err != nil {
-		return fmt.Errorf("declare queue: %w", err)
-	}
-
-	if err := ch.QueueBind(QName, QName, exchangeName, false, nil); err != nil {
-		return fmt.Errorf("bind queue: %w", err)
-	}
-
-	return nil
-}
-
-// delayFor returns how long a task with the given ETA waits in a delay queue,
-// zero if it is due. Delays round up to whole seconds so tasks share a queue
-// per delay instead of declaring one per millisecond of jitter.
-func delayFor(eta *time.Time, now time.Time) time.Duration {
-	if eta == nil || !eta.After(now) {
-		return 0
-	}
-
-	return (eta.Sub(now) + time.Second - 1).Truncate(time.Second)
-}
-
-func delayQueueName(delay time.Duration) string {
-	return fmt.Sprintf("delay.%d.%s.%s", delay.Milliseconds(), exchangeName, QName)
-}
-
-// delayQueueArgs makes a queue hold each message for delay and then dead-letter
-// it to the task queue. The queue expires once unused for twice the delay, by
-// when every message it accepted has left; declaring it restarts that timer.
-func delayQueueArgs(delay time.Duration) amqp.Table {
-	return amqp.Table{
-		"x-dead-letter-exchange":    exchangeName,
-		"x-dead-letter-routing-key": QName,
-		"x-message-ttl":             delay.Milliseconds(),
-		"x-expires":                 2 * delay.Milliseconds(),
-	}
-}
-
-func declareDelayQueue(ch *amqp.Channel, delay time.Duration) (string, error) {
-	name := delayQueueName(delay)
-	if _, err := ch.QueueDeclare(name, true, false, false, false, delayQueueArgs(delay)); err != nil {
-		return "", fmt.Errorf("declare delay queue: %w", err)
-	}
-
-	return name, nil
-}
-
-func publishConfirmed(ctx context.Context, ch *amqp.Channel, exchange, key string, msg amqp.Publishing) error {
-	confirmation, err := ch.PublishWithDeferredConfirmWithContext(ctx, exchange, key, false, false, msg)
-	if err != nil {
-		return fmt.Errorf("publish task: %w", err)
-	}
-
-	acked, err := confirmation.WaitContext(ctx)
-	if err != nil {
-		return fmt.Errorf("await publish confirmation: %w", err)
-	}
-
-	if !acked {
-		return errors.New("broker rejected the task")
 	}
 
 	return nil
@@ -277,15 +118,16 @@ func (b *broker) StartConsuming(consumerTag string, concurrency int, processor i
 
 	defer b.consumers.Done()
 
-	backoff := minConsumeBackoff
+	backoff := b.consumeBackoff
 	for {
-		connected, err := b.consume(consumerTag, concurrency, processor)
+		session, err := b.openConsumer(consumerTag, concurrency)
 		if err == nil {
-			return false, nil
+			backoff = b.consumeBackoff
+			err = b.serve(session, processor)
 		}
 
-		if connected {
-			backoff = minConsumeBackoff
+		if err == nil {
+			return false, nil
 		}
 
 		b.logger.Error("Bridge queue consumer failed, reconnecting", "err", err, "in", backoff)
@@ -294,32 +136,47 @@ func (b *broker) StartConsuming(consumerTag string, concurrency int, processor i
 			return false, nil
 		}
 
-		backoff = min(2*backoff, maxConsumeBackoff)
+		backoff = nextBackoff(backoff)
 	}
 }
 
-// consume runs one consumer session and reports whether it got as far as
-// consuming. It returns a nil error only when the broker is stopped, after the
-// tasks in flight have finished.
-func (b *broker) consume(consumerTag string, concurrency int, processor iface.TaskProcessor) (bool, error) {
-	conn, ch, err := openChannel(b.url)
+func nextBackoff(backoff time.Duration) time.Duration {
+	return min(2*backoff, maxConsumeBackoff)
+}
+
+// consumer is one consuming session on its own connection.
+type consumer struct {
+	conn       *amqp.Connection
+	deliveries <-chan amqp.Delivery
+	closed     <-chan *amqp.Error
+}
+
+func (b *broker) openConsumer(consumerTag string, concurrency int) (*consumer, error) {
+	conn, ch, err := openChannel(context.Background(), b.url, b.queue)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	defer func() { _ = conn.Close() }()
 
 	// Without a prefetch limit RabbitMQ pushes the whole backlog at once, and
 	// closes the channel when a delivery then waits past its ack timeout.
 	if err := ch.Qos(concurrency, 0, false); err != nil {
-		return false, fmt.Errorf("set prefetch: %w", err)
+		_ = conn.Close()
+		return nil, fmt.Errorf("set prefetch: %w", err)
 	}
 
-	deliveries, err := ch.Consume(QName, consumerTag, false, false, false, false, nil)
+	deliveries, err := ch.Consume(b.queue, consumerTag, false, false, false, false, nil)
 	if err != nil {
-		return false, fmt.Errorf("consume: %w", err)
+		_ = conn.Close()
+		return nil, fmt.Errorf("consume: %w", err)
 	}
 
-	closed := ch.NotifyClose(make(chan *amqp.Error, 1))
+	return &consumer{conn: conn, deliveries: deliveries, closed: ch.NotifyClose(make(chan *amqp.Error, 1))}, nil
+}
+
+// serve hands deliveries to processor until the session fails or the broker
+// stops, which is the only time it returns nil.
+func (b *broker) serve(session *consumer, processor iface.TaskProcessor) error {
+	defer func() { _ = session.conn.Close() }()
 
 	// tasks in flight finish, and ack, before the connection closes
 	var inFlight sync.WaitGroup
@@ -328,10 +185,10 @@ func (b *broker) consume(consumerTag string, concurrency int, processor iface.Ta
 	for {
 		select {
 		case <-b.stop:
-			return true, nil
-		case delivery, ok := <-deliveries:
+			return nil
+		case delivery, ok := <-session.deliveries:
 			if !ok {
-				return true, consumerEnded(closed)
+				return consumerEnded(session.closed)
 			}
 
 			inFlight.Add(1)
@@ -366,10 +223,8 @@ func (b *broker) handle(delivery amqp.Delivery, processor iface.TaskProcessor) {
 		return
 	}
 
-	// machinery would ack it without a word
 	if !b.IsTaskRegistered(signature.Name) {
-		b.logger.Warn("Bridge queue: dropping task with no registered processor", "taskName", signature.Name, "uuid", signature.UUID)
-		b.settle(delivery.Reject(false))
+		b.handBack(delivery, signature)
 		return
 	}
 
@@ -381,7 +236,7 @@ func (b *broker) handle(delivery amqp.Delivery, processor iface.TaskProcessor) {
 	switch {
 	case unqueued.Load():
 		b.logger.Error("Bridge queue: retry not queued, returning task to the queue", "taskName", signature.Name, "uuid", signature.UUID, "err", err)
-		b.wait(requeuePause)
+		b.wait(b.requeuePause)
 		b.settle(delivery.Nack(false, true))
 	case err != nil:
 		b.logger.Error("Bridge queue: dropping task machinery could not run", "taskName", signature.Name, "uuid", signature.UUID, "err", err)
@@ -389,6 +244,27 @@ func (b *broker) handle(delivery amqp.Delivery, processor iface.TaskProcessor) {
 	default:
 		b.settle(delivery.Ack(false))
 	}
+}
+
+// handBack returns a task this bridge has no processor for to the queue after
+// a delay: a bridge sharing the queue may have one. Requeueing it directly
+// would redeliver it at once, ahead of the tasks behind it.
+func (b *broker) handBack(delivery amqp.Delivery, signature *tasks.Signature) {
+	if _, warned := b.unregisteredWarned.LoadOrStore(signature.Name, struct{}{}); !warned {
+		b.logger.Warn("Bridge queue: handing back tasks with no registered processor", "taskName", signature.Name)
+	}
+
+	eta := time.Now().Add(b.handBackDelay)
+	signature.ETA = &eta
+
+	if err := b.Publish(context.Background(), signature); err != nil {
+		b.logger.Error("Bridge queue: could not hand task back, returning it to the queue", "taskName", signature.Name, "uuid", signature.UUID, "err", err)
+		b.wait(b.requeuePause)
+		b.settle(delivery.Nack(false, true))
+		return
+	}
+
+	b.settle(delivery.Ack(false))
 }
 
 // settle logs a failed ack, nack or reject.
@@ -438,7 +314,5 @@ func (b *broker) StopConsuming() {
 
 	b.consumers.Wait()
 
-	b.pubMu.Lock()
-	b.closePublisher()
-	b.pubMu.Unlock()
+	b.pub.close()
 }

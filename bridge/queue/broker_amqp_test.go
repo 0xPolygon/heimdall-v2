@@ -38,15 +38,18 @@ func newAMQPFixture(t *testing.T) *amqpFixture {
 		t.Skipf("%s is not set", amqpTestURLEnv)
 	}
 
+	t.Parallel()
+
+	// a queue per test, so tests and test processes can share the RabbitMQ
 	cnf := newConfig(url)
+	cnf.DefaultQueue = fmt.Sprintf("%s.%s.%d", QName, t.Name(), time.Now().UnixNano())
 	b := newBroker(cnf, log.NewNopLogger())
-	require.NoError(t, b.connect())
+	b.requeuePause, b.consumeBackoff, b.handBackDelay = 50*time.Millisecond, 50*time.Millisecond, time.Second
+	require.NoError(t, b.pub.connect(t.Context()))
 
 	conn, err := amqp.Dial(url)
 	require.NoError(t, err)
 	admin, err := conn.Channel()
-	require.NoError(t, err)
-	_, err = admin.QueuePurge(QName, false)
 	require.NoError(t, err)
 
 	f := &amqpFixture{
@@ -57,7 +60,8 @@ func newAMQPFixture(t *testing.T) *amqpFixture {
 		admin:  admin,
 	}
 	t.Cleanup(func() {
-		b.StopConsuming()
+		stopBroker(t, b)
+		_, _ = admin.QueueDelete(b.queue, false, false, false)
 		_ = conn.Close()
 	})
 
@@ -93,7 +97,7 @@ func (f *amqpFixture) inspect(name string) (amqp.Queue, error) {
 }
 
 func (f *amqpFixture) queued() int {
-	q, err := f.inspect(QName)
+	q, err := f.inspect(f.broker.queue)
 	require.NoError(f.t, err)
 
 	return q.Messages
@@ -131,7 +135,7 @@ func TestBrokerAMQPDeliversDirectAndDelayedTasks(t *testing.T) {
 		require.GreaterOrEqual(t, ranAt[id].Sub(start), longDelay, "a task runs no earlier than its ETA")
 	}
 
-	_, err := f.inspect(delayQueueName(2 * time.Second))
+	_, err := f.inspect(delayQueueName(f.broker.queue, 2*time.Second))
 	require.NoError(t, err, "delays share a queue per whole second")
 }
 
@@ -152,7 +156,7 @@ func TestBrokerAMQPRequeuesTaskWhoseRetryWasNotQueued(t *testing.T) {
 
 	f.startWorker()
 	require.Eventually(t, func() bool {
-		q, err := f.inspect(QName)
+		q, err := f.inspect(f.broker.queue)
 		return err == nil && q.Consumers == 1
 	}, 5*time.Second, 20*time.Millisecond)
 
@@ -162,34 +166,26 @@ func TestBrokerAMQPRequeuesTaskWhoseRetryWasNotQueued(t *testing.T) {
 	}
 
 	// the consumer stays connected while the publisher cannot dial
-	url := f.broker.url
-	f.broker.pubMu.Lock()
-	f.broker.closePublisher()
-	f.broker.url = "amqp://guest:guest@127.0.0.1:1/"
-	f.broker.pubMu.Unlock()
+	pub := f.broker.pub
+	url := pub.url
+	require.NoError(t, pub.acquire(t.Context()))
+	pub.drop()
+	pub.url = unreachableURL
+	pub.release()
 
 	require.Eventually(t, func() bool { return runs.Load() >= 2*n }, 20*time.Second, 100*time.Millisecond,
 		"tasks whose retry is not queued come back")
 	require.Zero(t, completed.Load())
 
 	outage.Store(false)
-	f.broker.pubMu.Lock()
-	f.broker.url = url
-	f.broker.pubMu.Unlock()
+	require.NoError(t, pub.acquire(t.Context()))
+	pub.url = url
+	pub.release()
 
 	require.Eventually(t, func() bool { return completed.Load() == n }, 20*time.Second, 100*time.Millisecond,
 		"every task survives the publisher outage")
 
-	stopped := make(chan struct{})
-	go func() {
-		f.broker.StopConsuming()
-		close(stopped)
-	}()
-	select {
-	case <-stopped:
-	case <-time.After(5 * time.Second):
-		t.Fatal("StopConsuming blocked after failed publishes")
-	}
+	stopBroker(t, f.broker)
 }
 
 func TestBrokerAMQPDropsTasksItCannotRun(t *testing.T) {
@@ -202,10 +198,9 @@ func TestBrokerAMQPDropsTasksItCannotRun(t *testing.T) {
 	}))
 
 	publish := func(body string) {
-		require.NoError(t, f.admin.Publish(exchangeName, QName, false, false, amqp.Publishing{Body: []byte(body)}))
+		require.NoError(t, f.admin.Publish(exchangeName, f.broker.queue, false, false, amqp.Publishing{Body: []byte(body)}))
 	}
 	for range 2 * workerConcurrency {
-		publish(`{"Name":"unregistered"}`)
 		publish(`not json`)
 		publish(`{"Name":"known","Args":[{"Type":"no such type","Value":1}]}`)
 	}
@@ -213,7 +208,59 @@ func TestBrokerAMQPDropsTasksItCannotRun(t *testing.T) {
 	f.startWorker()
 
 	require.Eventually(t, func() bool { return ran.Load() == 1 && f.queued() == 0 }, 10*time.Second, 50*time.Millisecond,
-		"tasks behind undeliverable ones still run, and none loops")
+		"tasks behind ones that cannot run still run, and none loops")
+}
+
+func TestBrokerAMQPSharedQueueWithDifferentProcessors(t *testing.T) {
+	f := newAMQPFixture(t)
+
+	// a second bridge on the same queue, with another processor set
+	other := newBroker(f.broker.GetConfig(), log.NewNopLogger())
+	other.handBackDelay = f.broker.handBackDelay
+	otherServer := machinery.NewServerWithBrokerBackendLock(other.GetConfig(), other, nullbackend.New(), eagerlock.New())
+	t.Cleanup(func() { stopBroker(t, other) })
+
+	var ranHere, ranThere atomic.Int64
+	require.NoError(t, f.server.RegisterTask("here", func(int) error {
+		ranHere.Add(1)
+		return nil
+	}))
+	require.NoError(t, otherServer.RegisterTask("there", func(int) error {
+		ranThere.Add(1)
+		return nil
+	}))
+
+	// more of the other bridge's tasks than the prefetch, ahead of this one's
+	const n = workerConcurrency + 2
+	for id := range n {
+		f.send("there", 0, id)
+	}
+	for id := range n {
+		f.send("here", 0, id)
+	}
+
+	f.startWorker()
+	require.Eventually(t, func() bool { return ranHere.Load() == n }, 10*time.Second, 20*time.Millisecond,
+		"tasks behind another bridge's tasks still run")
+	require.Zero(t, ranThere.Load())
+
+	newWorker(otherServer).LaunchAsync(make(chan error, 1))
+	require.Eventually(t, func() bool { return ranThere.Load() == n }, 30*time.Second, 50*time.Millisecond,
+		"tasks handed back reach the bridge that has their processor")
+}
+
+func TestBrokerAMQPReturnsUnroutableTask(t *testing.T) {
+	f := newAMQPFixture(t)
+
+	// the publisher's channel outlives the queue
+	_, err := f.admin.QueueDelete(f.broker.queue, false, false, false)
+	require.NoError(t, err)
+
+	_, err = f.server.SendTask(&tasks.Signature{Name: "unroutable"})
+	require.ErrorContains(t, err, "task not routed")
+
+	f.send("unroutable", 0, 1)
+	require.Equal(t, 1, f.queued(), "the next publish redeclares the queue")
 }
 
 func TestBrokerAMQPConsumerReconnects(t *testing.T) {
@@ -230,13 +277,13 @@ func TestBrokerAMQPConsumerReconnects(t *testing.T) {
 	require.Eventually(t, func() bool { return ran.Load() == 1 }, 5*time.Second, 20*time.Millisecond)
 
 	// deleting the queue cancels the consumer, as a failed channel would
-	_, err := f.admin.QueueDelete(QName, false, false, false)
+	_, err := f.admin.QueueDelete(f.broker.queue, false, false, false)
 	require.NoError(t, err)
 
 	require.Eventually(t, func() bool {
-		q, err := f.inspect(QName)
+		q, err := f.inspect(f.broker.queue)
 		return err == nil && q.Consumers == 1
-	}, 3*minConsumeBackoff+5*time.Second, 100*time.Millisecond, "the consumer redeclares the queue and resumes")
+	}, 10*time.Second, 20*time.Millisecond, "the consumer redeclares the queue and resumes")
 
 	f.send("reconnect", 0, 2)
 	require.Eventually(t, func() bool { return ran.Load() == 2 }, 5*time.Second, 20*time.Millisecond)
@@ -259,7 +306,11 @@ func TestBrokerAMQPStopWaitsForTasksInFlight(t *testing.T) {
 		f.send("slow", 0, id)
 	}
 	for range workerConcurrency {
-		<-started
+		select {
+		case <-started:
+		case <-time.After(10 * time.Second):
+			t.Fatal("tasks not delivered")
+		}
 	}
 	time.Sleep(200 * time.Millisecond)
 	require.Len(t, started, 0, "no more than workerConcurrency tasks run at once")
@@ -277,9 +328,17 @@ func TestBrokerAMQPStopWaitsForTasksInFlight(t *testing.T) {
 	}
 
 	close(release)
-	<-stopped
+	select {
+	case <-stopped:
+	case <-time.After(10 * time.Second):
+		t.Fatal("StopConsuming blocked after tasks finished")
+	}
 	require.EqualValues(t, workerConcurrency, finished.Load())
 	require.Equal(t, workerConcurrency, f.queued(), "tasks not started stay queued for the next run")
+
+	require.NoError(t, f.broker.pub.acquire(t.Context()))
+	defer f.broker.pub.release()
+	require.Nil(t, f.broker.pub.conn, "stopping closes the publisher connection")
 }
 
 func TestBrokerAMQPRedialsAfterFailedPublish(t *testing.T) {
@@ -287,13 +346,17 @@ func TestBrokerAMQPRedialsAfterFailedPublish(t *testing.T) {
 
 	// a delay queue declared with other arguments fails the publish and its channel
 	const delay = 7 * time.Second
-	_, err := f.admin.QueueDeclare(delayQueueName(delay), true, false, false, false, amqp.Table{"x-expires": int64(60_000)})
+	_, err := f.admin.QueueDeclare(delayQueueName(f.broker.queue, delay), true, false, false, false, amqp.Table{"x-expires": int64(60_000)})
 	require.NoError(t, err)
-	t.Cleanup(func() { _, _ = f.admin.QueueDelete(delayQueueName(delay), false, false, false) })
+	t.Cleanup(func() { _, _ = f.admin.QueueDelete(delayQueueName(f.broker.queue, delay), false, false, false) })
 
 	eta := time.Now().Add(delay)
 	_, err = f.server.SendTask(&tasks.Signature{Name: "redial", ETA: &eta})
 	require.ErrorContains(t, err, "declare delay queue")
+
+	require.NoError(t, f.broker.pub.acquire(t.Context()))
+	require.Nil(t, f.broker.pub.ch, "a failed channel is dropped")
+	f.broker.pub.release()
 
 	f.send("redial", 0, 1)
 	require.Equal(t, 1, f.queued())
@@ -306,9 +369,9 @@ func TestBrokerAMQPClosedChannelErrors(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, ch.Close())
 
-	require.ErrorContains(t, declareTaskQueue(ch), "declare exchange")
-	require.ErrorContains(t, publishConfirmed(t.Context(), ch, exchangeName, QName, amqp.Publishing{}), "publish task")
-	_, err = declareDelayQueue(ch, time.Second)
+	require.ErrorContains(t, declareTaskQueue(ch, f.broker.queue), "declare exchange")
+	require.ErrorContains(t, publishConfirmed(t.Context(), ch, nil, exchangeName, f.broker.queue, amqp.Publishing{}), "publish task")
+	_, err = declareDelayQueue(ch, f.broker.queue, time.Second)
 	require.ErrorContains(t, err, "declare delay queue")
 }
 
@@ -318,8 +381,18 @@ func TestConnectorAMQPRunsTasks(t *testing.T) {
 		t.Skipf("%s is not set", amqpTestURLEnv)
 	}
 
-	qc, err := NewQueueConnector(url)
+	cnf := newConfig(url)
+	cnf.DefaultQueue = fmt.Sprintf("%s.%s.%d", QName, t.Name(), time.Now().UnixNano())
+	qc, err := newConnector(cnf)
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		conn, err := amqp.Dial(url)
+		require.NoError(t, err)
+		defer func() { _ = conn.Close() }()
+		ch, err := conn.Channel()
+		require.NoError(t, err)
+		_, _ = ch.QueueDelete(cnf.DefaultQueue, false, false, false)
+	})
 
 	ran := make(chan struct{}, 1)
 	require.NoError(t, qc.Server.RegisterTask("connector", func() error {
@@ -339,8 +412,45 @@ func TestConnectorAMQPRunsTasks(t *testing.T) {
 		t.Fatal("task not run")
 	}
 
-	qc.StopWorker()
-	qc.StopWorker()
+	stopped := make(chan struct{})
+	go func() {
+		qc.StopWorker()
+		qc.StopWorker()
+		close(stopped)
+	}()
+	select {
+	case <-stopped:
+	case <-time.After(10 * time.Second):
+		t.Fatal("StopWorker blocked")
+	}
+}
+
+func TestBrokerAMQPConsumerReturnsWhenStopped(t *testing.T) {
+	f := newAMQPFixture(t)
+
+	type result struct {
+		retry bool
+		err   error
+	}
+	done := make(chan result, 1)
+	go func() {
+		retry, err := f.broker.StartConsuming("tag", 1, processorFunc(func(*tasks.Signature) error { return nil }))
+		done <- result{retry, err}
+	}()
+
+	require.Eventually(t, func() bool {
+		q, err := f.inspect(f.broker.queue)
+		return err == nil && q.Consumers == 1
+	}, 10*time.Second, 20*time.Millisecond)
+
+	stopBroker(t, f.broker)
+
+	select {
+	case got := <-done:
+		require.Equal(t, result{}, got, "machinery is never asked to retry")
+	case <-time.After(10 * time.Second):
+		t.Fatal("consumer still running after StopConsuming")
+	}
 }
 
 func BenchmarkBrokerAMQPPublishDelayed(b *testing.B) {

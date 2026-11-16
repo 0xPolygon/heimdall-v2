@@ -93,6 +93,7 @@ func StartWithCtx(ctx context.Context, clientCtx client.Context) error {
 	httpClient, err := createAndStartRPC(helper.GetConfig().CometBFTRPCUrl)
 	if err != nil {
 		logger().Error("Bridge: error connecting to server", "err", err)
+		qc.StopWorker()
 		return err
 	}
 

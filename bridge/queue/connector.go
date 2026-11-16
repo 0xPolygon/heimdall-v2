@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"context"
 	"errors"
 	"strconv"
 	"sync"
@@ -22,6 +23,7 @@ import (
 type Connector struct {
 	logger log.Logger
 	Server *machinery.Server
+	broker *broker
 
 	mu     sync.Mutex
 	worker *machinery.Worker
@@ -67,7 +69,11 @@ func observeTaskDelivery(signature *tasks.Signature) {
 
 // NewQueueConnector connects to RabbitMQ and declares the task queue.
 func NewQueueConnector(dialer string) (*Connector, error) {
-	if _, err := amqp.ParseURI(dialer); err != nil {
+	return newConnector(newConfig(dialer))
+}
+
+func newConnector(cnf *config.Config) (*Connector, error) {
+	if _, err := amqp.ParseURI(cnf.Broker); err != nil {
 		// the parse error can embed the url, credentials included
 		return nil, errors.New("unsupported amqp url")
 	}
@@ -75,17 +81,18 @@ func NewQueueConnector(dialer string) (*Connector, error) {
 	qlogger := helper.Logger.With("module", "bridge/queue")
 	redirectMachineryLog(qlogger)
 
-	cnf := newConfig(dialer)
-
 	broker := newBroker(cnf, qlogger)
-	if err := broker.connect(); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), publishTimeout)
+	defer cancel()
+
+	if err := broker.pub.connect(ctx); err != nil {
 		return nil, err
 	}
 
 	// The bridge never reads task results, so they go to the null backend.
 	server := machinery.NewServerWithBrokerBackendLock(cnf, broker, nullbackend.New(), eagerlock.New())
 
-	return &Connector{logger: qlogger, Server: server}, nil
+	return &Connector{logger: qlogger, Server: server, broker: broker}, nil
 }
 
 func newConfig(dialer string) *config.Config {
@@ -130,12 +137,15 @@ func (qc *Connector) StopWorker() {
 	qc.worker = nil
 	qc.mu.Unlock()
 
-	if worker == nil {
-		return
+	if worker != nil {
+		qc.logger.Info("Stopping machinery worker")
+		worker.Quit()
 	}
 
-	qc.logger.Info("Stopping machinery worker")
-	worker.Quit()
+	// also when no worker was started: the connector opens a connection
+	if qc.broker != nil {
+		qc.broker.StopConsuming()
+	}
 }
 
 func (qc *Connector) watchWorker(worker *machinery.Worker, errors <-chan error) {

@@ -48,16 +48,16 @@ func TestDelayFor(t *testing.T) {
 	}
 }
 
-func TestDelayQueueMatchesMachinery(t *testing.T) {
+func TestDelayQueue(t *testing.T) {
 	t.Parallel()
 
-	require.Equal(t, "delay.3000.machinery_exchange.machinery_tasks", delayQueueName(3*time.Second))
+	require.Equal(t, "machinery_tasks.delay.3000", delayQueueName(QName, 3*time.Second))
 	require.Equal(t, amqp.Table{
 		"x-dead-letter-exchange":    "machinery_exchange",
 		"x-dead-letter-routing-key": "machinery_tasks",
 		"x-message-ttl":             int64(3000),
-		"x-expires":                 int64(6000),
-	}, delayQueueArgs(3*time.Second))
+		"x-expires":                 int64(66_000),
+	}, delayQueueArgs(QName, 3*time.Second))
 }
 
 func TestDecodeSignature(t *testing.T) {
@@ -102,6 +102,7 @@ func (processorFunc) PreConsumeHandler() bool                    { return true }
 func testBroker(url string) *broker {
 	b := newBroker(newConfig(url), log.NewNopLogger())
 	b.SetRegisteredTaskNames([]string{"task"})
+	b.requeuePause = 50 * time.Millisecond
 
 	return b
 }
@@ -111,8 +112,6 @@ const unreachableURL = "amqp://guest:guest@127.0.0.1:1/"
 func TestBrokerHandleSettlesDelivery(t *testing.T) {
 	t.Parallel()
 
-	notRun := func(*broker, *tasks.Signature) error { return errors.New("ran a task that should be dropped") }
-
 	tests := []struct {
 		name    string
 		body    string
@@ -120,8 +119,11 @@ func TestBrokerHandleSettlesDelivery(t *testing.T) {
 		want    settlement
 	}{
 		{"acks a processed task", `{"Name":"task"}`, func(*broker, *tasks.Signature) error { return nil }, settlement{acked: true}},
-		{"drops an undecodable task", "{", notRun, settlement{rejected: true}},
-		{"drops a task with no registered processor", `{"Name":"other"}`, notRun, settlement{rejected: true}},
+		{"drops an undecodable task", "{", nil, settlement{rejected: true}},
+		{"requeues a task with no registered processor it cannot hand back", `{"Name":"other"}`, nil, settlement{nacked: true, requeue: true}},
+		{"drops a task whose retry can never be queued", `{"Name":"task","Headers":{"n":1}}`, func(b *broker, signature *tasks.Signature) error {
+			return b.Publish(context.Background(), signature)
+		}, settlement{rejected: true}},
 		{"drops a task machinery could not run", `{"Name":"task"}`, func(*broker, *tasks.Signature) error {
 			return errors.New("malformed")
 		}, settlement{rejected: true}},
@@ -140,11 +142,17 @@ func TestBrokerHandleSettlesDelivery(t *testing.T) {
 			b, got := testBroker(unreachableURL), new(settlement)
 			start := time.Now()
 			b.handle(amqp.Delivery{Acknowledger: got, Body: []byte(tt.body)}, processorFunc(func(signature *tasks.Signature) error {
+				if tt.process == nil {
+					t.Error("ran a task that should be dropped")
+					return nil
+				}
 				return tt.process(b, signature)
 			}))
 
 			require.Equal(t, tt.want, *got)
-			require.Equal(t, tt.want.requeue, time.Since(start) >= requeuePause, "only a requeue pauses")
+			if tt.want.requeue {
+				require.GreaterOrEqual(t, time.Since(start), b.requeuePause, "a requeue pauses first")
+			}
 			b.retryUnqueued.Range(func(any, any) bool {
 				t.Error("signature still tracked after its delivery was settled")
 				return false
@@ -182,10 +190,49 @@ func TestBrokerPublish(t *testing.T) {
 
 	unmarshalable := &tasks.Signature{Name: "task", Args: []tasks.Arg{{Value: make(chan int)}}}
 	require.ErrorContains(t, b.Publish(context.Background(), unmarshalable), "marshal task")
+
+	badHeaders := &tasks.Signature{Name: "task", Headers: tasks.Headers{"n": struct{}{}}}
+	require.ErrorContains(t, b.Publish(context.Background(), badHeaders), "task headers")
+
+	expired, cancel := context.WithCancel(context.Background())
+	cancel()
+	require.NoError(t, b.pub.acquire(context.Background()))
+	require.ErrorIs(t, b.Publish(expired, &tasks.Signature{Name: "task"}), context.Canceled, "waiting for the publisher ends with the context")
+	b.pub.release()
+}
+
+// stopBroker fails the test rather than hang it when StopConsuming blocks.
+func stopBroker(t *testing.T, b *broker) {
+	t.Helper()
+
+	stopped := make(chan struct{})
+	go func() {
+		b.StopConsuming()
+		close(stopped)
+	}()
+
+	select {
+	case <-stopped:
+	case <-time.After(10 * time.Second):
+		t.Error("StopConsuming blocked")
+	}
+}
+
+func TestNextBackoff(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, 2*time.Second, nextBackoff(time.Second))
+	require.Equal(t, 30*time.Second, nextBackoff(15*time.Second))
+	require.Equal(t, 30*time.Second, nextBackoff(16*time.Second))
+	require.Equal(t, 30*time.Second, nextBackoff(30*time.Second))
 }
 
 func TestBrokerStop(t *testing.T) {
 	t.Parallel()
+
+	consume := func(b *broker) (bool, error) {
+		return b.StartConsuming("tag", 1, processorFunc(func(*tasks.Signature) error { return nil }))
+	}
 
 	t.Run("wait reports whether the broker is still running", func(t *testing.T) {
 		t.Parallel()
@@ -193,7 +240,7 @@ func TestBrokerStop(t *testing.T) {
 		b := testBroker(unreachableURL)
 		require.True(t, b.wait(time.Millisecond))
 
-		b.StopConsuming()
+		stopBroker(t, b)
 		start := time.Now()
 		require.False(t, b.wait(time.Minute))
 		require.Less(t, time.Since(start), time.Second)
@@ -203,33 +250,53 @@ func TestBrokerStop(t *testing.T) {
 		t.Parallel()
 
 		b := testBroker(unreachableURL)
-		b.StopConsuming()
-		b.StopConsuming()
+		stopBroker(t, b)
+		stopBroker(t, b)
 
-		retry, err := b.StartConsuming("tag", 1, processorFunc(func(*tasks.Signature) error { return nil }))
+		retry, err := consume(b)
 		require.False(t, retry)
 		require.NoError(t, err)
 	})
 
-	t.Run("stop ends a consumer that cannot connect", func(t *testing.T) {
+	t.Run("a consumer that cannot connect backs off until stopped", func(t *testing.T) {
 		t.Parallel()
 
+		waits := make(chan time.Duration, 64)
+		nop := func(string, ...any) {}
 		b := testBroker(unreachableURL)
-		done := make(chan struct{})
-		go func() {
-			defer close(done)
+		b.consumeBackoff = 5 * time.Millisecond
+		b.logger = fakeLogger{debug: nop, info: nop, warn: nop, err: func(_ string, keyVals ...any) {
+			select {
+			case waits <- keyVals[3].(time.Duration):
+			default:
+			}
+		}}
 
-			retry, err := b.StartConsuming("tag", 1, processorFunc(func(*tasks.Signature) error { return nil }))
-			require.False(t, retry)
-			require.NoError(t, err)
+		type result struct {
+			retry bool
+			err   error
+		}
+		done := make(chan result, 1)
+		go func() {
+			retry, err := consume(b)
+			done <- result{retry, err}
 		}()
 
-		time.Sleep(100 * time.Millisecond)
-		b.StopConsuming()
+		for _, want := range []time.Duration{5 * time.Millisecond, 10 * time.Millisecond, 20 * time.Millisecond} {
+			select {
+			case got := <-waits:
+				require.Equal(t, want, got)
+			case <-time.After(10 * time.Second):
+				t.Fatal("consumer did not retry")
+			}
+		}
+
+		stopBroker(t, b)
 
 		select {
-		case <-done:
-		case <-time.After(5 * time.Second):
+		case got := <-done:
+			require.Equal(t, result{}, got, "machinery is never asked to retry")
+		case <-time.After(10 * time.Second):
 			t.Fatal("consumer still running after StopConsuming")
 		}
 	})
@@ -264,4 +331,32 @@ func TestBrokerHandleLogsFailedSettlement(t *testing.T) {
 
 	require.Len(t, warned, 1)
 	require.Contains(t, warned[0], "could not settle task")
+}
+
+func TestDial(t *testing.T) {
+	t.Parallel()
+
+	expired, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Second))
+	defer cancel()
+
+	_, err := dial(expired, unreachableURL)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+
+	_, err = dial(context.Background(), unreachableURL)
+	require.ErrorContains(t, err, "dial amqp")
+	require.NotErrorIs(t, err, context.DeadlineExceeded)
+}
+
+func TestConnectorStopWorkerWithoutWorker(t *testing.T) {
+	t.Parallel()
+
+	b := testBroker(unreachableURL)
+	qc := &Connector{logger: log.NewNopLogger(), broker: b}
+	qc.StopWorker()
+
+	retry, err := b.StartConsuming("tag", 1, processorFunc(func(*tasks.Signature) error { return nil }))
+	require.False(t, retry, "the broker is stopped even though no worker ran")
+	require.NoError(t, err)
+
+	(&Connector{logger: log.NewNopLogger()}).StopWorker()
 }
