@@ -17,8 +17,6 @@ const (
 	// if it has no connection, and the broker's confirmation.
 	publishTimeout = 15 * time.Second
 
-	dialTimeout = 10 * time.Second
-
 	// delayQueueSlack is how much longer than its messages a delay queue
 	// lives, so a publish stalled after the queue was declared still lands in it.
 	delayQueueSlack = time.Minute
@@ -48,10 +46,12 @@ type publisher struct {
 	// lock serializes publishing. It is a channel so that waiting for it ends
 	// with the caller's context.
 	lock    chan struct{}
-	conn    *amqp.Connection
-	ch      *amqp.Channel
+	link    *link
 	returns <-chan amqp.Return
+	closed  bool
 }
+
+var errPublisherClosed = errors.New("publisher closed")
 
 func newPublisher(url, queue string) *publisher {
 	return &publisher{url: url, queue: queue, lock: make(chan struct{}, 1)}
@@ -75,7 +75,7 @@ func (p *publisher) connect(ctx context.Context) error {
 	}
 	defer p.release()
 
-	_, err := p.channel(ctx)
+	_, err := p.open(ctx)
 
 	return err
 }
@@ -86,13 +86,16 @@ func (p *publisher) publish(ctx context.Context, signature *tasks.Signature, bod
 	}
 	defer p.release()
 
-	ch, err := p.channel(ctx)
+	l, err := p.open(ctx)
 	if err != nil {
 		return err
 	}
 
-	if err := p.send(ctx, ch, signature, body); err != nil {
-		// a failed channel is not reused: the next publish dials again and
+	stop := l.abortOn(ctx)
+	defer stop()
+
+	if err := p.send(ctx, l.ch, signature, body); err != nil {
+		// a failed link is not reused: the next publish dials again and
 		// redeclares the task queue
 		p.drop()
 		return err
@@ -121,101 +124,54 @@ func (p *publisher) send(ctx context.Context, ch *amqp.Channel, signature *tasks
 	})
 }
 
-// channel returns the open channel, dialing if there is none. The caller holds
-// the lock.
-func (p *publisher) channel(ctx context.Context) (*amqp.Channel, error) {
-	if p.ch != nil && !p.ch.IsClosed() {
-		return p.ch, nil
+// open returns the publisher's link, dialing if there is none. The caller
+// holds the lock.
+func (p *publisher) open(ctx context.Context) (*link, error) {
+	if p.closed {
+		return nil, errPublisherClosed
+	}
+
+	if p.link != nil && !p.link.ch.IsClosed() {
+		return p.link, nil
 	}
 
 	p.drop()
 
-	conn, ch, err := openChannel(ctx, p.url, p.queue)
+	l, err := openLink(ctx, p.url, p.queue)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ch.Confirm(noWait); err != nil {
-		_ = conn.Close()
+	stop := l.abortOn(ctx)
+	defer stop()
+
+	if err := l.ch.Confirm(noWait); err != nil {
+		l.close()
 		return nil, fmt.Errorf("enable publisher confirms: %w", err)
 	}
 
-	p.conn, p.ch, p.returns = conn, ch, ch.NotifyReturn(make(chan amqp.Return, 1))
+	p.link, p.returns = l, l.ch.NotifyReturn(make(chan amqp.Return, 1))
 
-	return ch, nil
+	return l, nil
 }
 
-// drop closes the connection. The caller holds the lock.
+// drop closes the link. The caller holds the lock.
 func (p *publisher) drop() {
-	if p.conn != nil {
-		_ = p.conn.Close()
+	if p.link != nil {
+		p.link.close()
 	}
 
-	p.conn, p.ch, p.returns = nil, nil, nil
+	p.link, p.returns = nil, nil
 }
 
+// close ends the publisher for good: a publish after it fails rather than
+// open a connection nothing would close.
 func (p *publisher) close() {
 	p.lock <- struct{}{}
 	defer p.release()
 
+	p.closed = true
 	p.drop()
-}
-
-// dial connects within dialTimeout, or ctx's deadline if that is sooner.
-func dial(ctx context.Context, url string) (*amqp.Connection, error) {
-	timeout := dialTimeout
-	if deadline, ok := ctx.Deadline(); ok {
-		timeout = min(timeout, time.Until(deadline))
-	}
-
-	if timeout <= 0 {
-		return nil, fmt.Errorf("dial amqp: %w", context.DeadlineExceeded)
-	}
-
-	conn, err := amqp.DialConfig(url, amqp.Config{Locale: "en_US", Dial: amqp.DefaultDial(timeout)})
-	if err != nil {
-		return nil, fmt.Errorf("dial amqp: %w", err)
-	}
-
-	return conn, nil
-}
-
-// openChannel dials url and declares the exchange, the task queue and their
-// binding.
-func openChannel(ctx context.Context, url, queue string) (*amqp.Connection, *amqp.Channel, error) {
-	conn, err := dial(ctx, url)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	ch, err := conn.Channel()
-	if err != nil {
-		_ = conn.Close()
-		return nil, nil, fmt.Errorf("open channel: %w", err)
-	}
-
-	if err := declareTaskQueue(ch, queue); err != nil {
-		_ = conn.Close()
-		return nil, nil, err
-	}
-
-	return conn, ch, nil
-}
-
-func declareTaskQueue(ch *amqp.Channel, queue string) error {
-	if err := ch.ExchangeDeclare(exchangeName, amqp.ExchangeDirect, durable, autoDelete, internal, noWait, nil); err != nil {
-		return fmt.Errorf("declare exchange: %w", err)
-	}
-
-	if _, err := ch.QueueDeclare(queue, durable, autoDelete, exclusive, noWait, nil); err != nil {
-		return fmt.Errorf("declare queue: %w", err)
-	}
-
-	if err := ch.QueueBind(queue, queue, exchangeName, noWait, nil); err != nil {
-		return fmt.Errorf("bind queue: %w", err)
-	}
-
-	return nil
 }
 
 // delayFor returns how long a task with the given ETA waits in a delay queue,

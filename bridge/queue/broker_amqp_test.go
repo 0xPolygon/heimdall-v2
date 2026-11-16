@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
@@ -336,9 +337,12 @@ func TestBrokerAMQPStopWaitsForTasksInFlight(t *testing.T) {
 	require.EqualValues(t, workerConcurrency, finished.Load())
 	require.Equal(t, workerConcurrency, f.queued(), "tasks not started stay queued for the next run")
 
+	_, err := f.server.SendTask(&tasks.Signature{Name: "slow"})
+	require.ErrorContains(t, err, errPublisherClosed.Error(), "a stopped broker opens no new connection")
+
 	require.NoError(t, f.broker.pub.acquire(t.Context()))
 	defer f.broker.pub.release()
-	require.Nil(t, f.broker.pub.conn, "stopping closes the publisher connection")
+	require.Nil(t, f.broker.pub.link, "stopping closes the publisher connection")
 }
 
 func TestBrokerAMQPRedialsAfterFailedPublish(t *testing.T) {
@@ -355,7 +359,7 @@ func TestBrokerAMQPRedialsAfterFailedPublish(t *testing.T) {
 	require.ErrorContains(t, err, "declare delay queue")
 
 	require.NoError(t, f.broker.pub.acquire(t.Context()))
-	require.Nil(t, f.broker.pub.ch, "a failed channel is dropped")
+	require.Nil(t, f.broker.pub.link, "a failed link is dropped")
 	f.broker.pub.release()
 
 	f.send("redial", 0, 1)
@@ -451,6 +455,31 @@ func TestBrokerAMQPConsumerReturnsWhenStopped(t *testing.T) {
 	case <-time.After(10 * time.Second):
 		t.Fatal("consumer still running after StopConsuming")
 	}
+}
+
+func TestLinkAMQPEndsWithItsContext(t *testing.T) {
+	f := newAMQPFixture(t)
+
+	l, err := openLink(t.Context(), f.broker.url, f.broker.queue)
+	require.NoError(t, err)
+	require.False(t, l.conn.IsClosed(), "the link outlives the context it was opened with only until that ends")
+
+	ctx, cancel := context.WithCancel(t.Context())
+	stop := l.abortOn(ctx)
+	require.True(t, stop(), "a stopped abort leaves the link alone")
+	cancel()
+	require.NoError(t, declareTaskQueue(l.ch, f.broker.queue))
+
+	ctx, cancel = context.WithCancel(t.Context())
+	l.abortOn(ctx)
+	cancel()
+	require.Eventually(t, l.conn.IsClosed, 5*time.Second, 10*time.Millisecond, "ending the context kills the socket")
+	require.Error(t, declareTaskQueue(l.ch, f.broker.queue))
+
+	closing, err := openLink(t.Context(), f.broker.url, f.broker.queue)
+	require.NoError(t, err)
+	closing.close()
+	require.True(t, closing.conn.IsClosed())
 }
 
 func BenchmarkBrokerAMQPPublishDelayed(b *testing.B) {

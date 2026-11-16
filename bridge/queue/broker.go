@@ -144,39 +144,45 @@ func nextBackoff(backoff time.Duration) time.Duration {
 	return min(2*backoff, maxConsumeBackoff)
 }
 
-// consumer is one consuming session on its own connection.
+// consumer is one consuming session on its own link.
 type consumer struct {
-	conn       *amqp.Connection
+	link       *link
 	deliveries <-chan amqp.Delivery
 	closed     <-chan *amqp.Error
 }
 
 func (b *broker) openConsumer(consumerTag string, concurrency int) (*consumer, error) {
-	conn, ch, err := openChannel(context.Background(), b.url, b.queue)
+	ctx, cancel := context.WithTimeout(context.Background(), publishTimeout)
+	defer cancel()
+
+	l, err := openLink(ctx, b.url, b.queue)
 	if err != nil {
 		return nil, err
 	}
 
+	stop := l.abortOn(ctx)
+	defer stop()
+
 	// Without a prefetch limit RabbitMQ pushes the whole backlog at once, and
 	// closes the channel when a delivery then waits past its ack timeout.
-	if err := ch.Qos(concurrency, 0, false); err != nil {
-		_ = conn.Close()
+	if err := l.ch.Qos(concurrency, 0, false); err != nil {
+		l.close()
 		return nil, fmt.Errorf("set prefetch: %w", err)
 	}
 
-	deliveries, err := ch.Consume(b.queue, consumerTag, false, false, false, false, nil)
+	deliveries, err := l.ch.Consume(b.queue, consumerTag, false, false, false, false, nil)
 	if err != nil {
-		_ = conn.Close()
+		l.close()
 		return nil, fmt.Errorf("consume: %w", err)
 	}
 
-	return &consumer{conn: conn, deliveries: deliveries, closed: ch.NotifyClose(make(chan *amqp.Error, 1))}, nil
+	return &consumer{link: l, deliveries: deliveries, closed: l.ch.NotifyClose(make(chan *amqp.Error, 1))}, nil
 }
 
 // serve hands deliveries to processor until the session fails or the broker
 // stops, which is the only time it returns nil.
 func (b *broker) serve(session *consumer, processor iface.TaskProcessor) error {
-	defer func() { _ = session.conn.Close() }()
+	defer session.link.close()
 
 	// tasks in flight finish, and ack, before the connection closes
 	var inFlight sync.WaitGroup

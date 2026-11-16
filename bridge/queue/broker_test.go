@@ -3,6 +3,7 @@ package queue
 import (
 	"context"
 	"errors"
+	"net"
 	"testing"
 	"time"
 
@@ -340,11 +341,31 @@ func TestDial(t *testing.T) {
 	defer cancel()
 
 	_, err := dial(expired, unreachableURL)
-	require.ErrorIs(t, err, context.DeadlineExceeded)
-
-	_, err = dial(context.Background(), unreachableURL)
 	require.ErrorContains(t, err, "dial amqp")
-	require.NotErrorIs(t, err, context.DeadlineExceeded)
+
+	// a listener that never answers the AMQP handshake
+	silent, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = silent.Close() })
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+
+	start := time.Now()
+	_, err = dial(ctx, "amqp://guest:guest@"+silent.Addr().String()+"/")
+	require.ErrorContains(t, err, "dial amqp")
+	require.Less(t, time.Since(start), 5*time.Second, "the handshake shares the dial deadline")
+}
+
+func TestPublisherClosed(t *testing.T) {
+	t.Parallel()
+
+	b := testBroker(unreachableURL)
+	b.pub.close()
+	b.pub.close()
+
+	require.ErrorIs(t, b.Publish(context.Background(), &tasks.Signature{Name: "task"}), errPublisherClosed)
+	require.ErrorIs(t, b.pub.connect(context.Background()), errPublisherClosed)
 }
 
 func TestConnectorStopWorkerWithoutWorker(t *testing.T) {
