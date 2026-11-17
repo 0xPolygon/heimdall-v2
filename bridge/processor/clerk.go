@@ -207,31 +207,33 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(ctx context.Context, eventNa
 	return cp.submitEventRecord(ctx, sendStateSyncedToHeimdallCtx, eventName, event, &vLog, chainParams.BorChainId, lowest)
 }
 
-// checkStored runs recordStored unless record lookups are held. The lowest
-// ID, the one bor waits on, is looked up anyway.
+// checkStored runs recordStored unless the lookup gate turns the task away.
 func (cp *ClerkProcessor) checkStored(ctx context.Context, eventName string, event *statesender.StatesenderStateSynced, vLog *types.Log, id, lowest uint64) (stored, missing bool, err error) {
-	if id != lowest {
-		if ok, wait := cp.recordLookups.enter(time.Now()); !ok {
-			// back when lookups may run again: the task holds the order window
-			delay := wholeSeconds(wait)
-			if windowReleased(tasks.SignatureFromContext(ctx)) {
-				delay = deferDelay(id, lowest, true)
-			}
-			return false, false, tasks.NewErrRetryTaskLater(msgLookupsHeld, delay)
+	released := windowReleased(tasks.SignatureFromContext(ctx))
+	retryDelay := wholeSeconds(clerkDeferRetryDelay + spread(id, clerkDeferRetryDelay))
+
+	done := cp.recordLookups.enter(id == lowest, time.Now())
+	if done == nil {
+		if released {
+			retryDelay = deferDelay(id, lowest, true)
 		}
+		return false, false, tasks.NewErrRetryTaskLater(msgLookupsSlow, retryDelay)
 	}
-	stored, missing = cp.recordStored(ctx, eventName, event, vLog)
+
+	stored, missing = cp.recordStored(ctx, eventName, event, vLog, done)
+	if !stored && !missing && id != lowest && !released {
+		// Not known to be missing: broadcasting it could repeat a stored
+		// record. The lowest ID goes on, so state sync moves without the API.
+		return false, false, tasks.NewErrRetryTaskLater(msgRecordUnreadable, retryDelay)
+	}
 	return stored, missing, nil
 }
 
 // recordStored reports whether heimdall already stored the event's record, and
 // if so stops tracking it, or else whether heimdall answered that it doesn't
 // hold it (missing); a failed lookup is neither.
-func (cp *ClerkProcessor) recordStored(ctx context.Context, eventName string, event *statesender.StatesenderStateSynced, vLog *types.Log) (stored, missing bool) {
-	lookupCtx, cancel := context.WithTimeout(ctx, clerkLookupTimeout)
-	stored, err := util.ClerkRecordStored(lookupCtx, cp.cliCtx.Codec, event.Id.Uint64())
-	cancel()
-	cp.recordLookups.done(err != nil, time.Now())
+func (cp *ClerkProcessor) recordStored(ctx context.Context, eventName string, event *statesender.StatesenderStateSynced, vLog *types.Log, done lookupDone) (stored, missing bool) {
+	stored, err := cp.lookUpRecord(ctx, event.Id.Uint64(), done)
 	if err != nil {
 		return false, false
 	}
@@ -262,6 +264,22 @@ func (cp *ClerkProcessor) finishStored(ctx context.Context, id uint64, now time.
 	}
 	cp.pending.done(id)
 	cp.pending.seed(id, now)
+}
+
+// lookUpRecord asks heimdall whether it stored the record and reports to done
+// how that went: a lookup that fails, panics or outlasts clerkSlowLookup is
+// not quick.
+func (cp *ClerkProcessor) lookUpRecord(ctx context.Context, id uint64, done lookupDone) (bool, error) {
+	start, quick := time.Now(), false
+	defer func() { done(quick, time.Now()) }()
+
+	ctx, cancel := context.WithTimeout(ctx, clerkLookupTimeout)
+	defer cancel()
+
+	stored, err := util.ClerkRecordStored(ctx, cp.cliCtx.Codec, id)
+	quick = err == nil && time.Since(start) <= clerkSlowLookup
+
+	return stored, err
 }
 
 // submitEventRecord broadcasts the record for an event heimdall has not stored yet.

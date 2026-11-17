@@ -176,7 +176,7 @@ const (
 	msgAheadOfPending   = "state sync ahead of the lowest pending one"
 	msgNotOnL1          = "state sync ID above the latest one on L1"
 	msgWarmingUp        = "clerk processor warming up its order window"
-	msgLookupsHeld      = "heimdall's record lookups are held after a failed one"
+	msgLookupsSlow      = "heimdall's record lookups are slow, other clerk tasks are running theirs"
 	msgReleasedOwned    = "another task retries this released state sync"
 	msgRecordUnreadable = "heimdall's record lookup failed, asking again"
 )

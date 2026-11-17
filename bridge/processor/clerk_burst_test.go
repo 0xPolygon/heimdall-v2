@@ -2289,33 +2289,73 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		defer n.mu.Unlock()
 		for i, err := range errs {
 			if err != nil {
-				require.NotContains(t, err.Error(), msgLookupsHeld, "id %d", first+i)
+				require.NotContains(t, err.Error(), msgLookupsSlow, "id %d", first+i)
 			}
 			require.Equal(t, 1, n.recordLookups[uint64(first+i)], "id %d", first+i)
 		}
 	})
 
-	t.Run("a failed record lookup holds the others until one succeeds again", func(t *testing.T) {
+	t.Run("a failed record lookup isn't followed by a broadcast, except the lowest ID's", func(t *testing.T) {
 		n, rest, comet := newBurstNode(t)
 		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
 		cp.pending.touch(49991, "lower", time.Now())
 
 		n.lookupStatus = http.StatusInternalServerError
-		_ = runClerkTask(t, cp, &tasks.Signature{UUID: "failed"}, 49992)
+		requireRetryLater(t, runClerkTask(t, cp, &tasks.Signature{UUID: "failed"}, 49992), msgRecordUnreadable, wholeSeconds(clerkDeferRetryDelay+spread(49992, clerkDeferRetryDelay)))
 		require.Equal(t, 1, n.recordLookups[49992])
+		require.Empty(t, n.sequences, "a record that may be stored isn't broadcast")
 
-		requireRetryLater(t, runClerkTask(t, cp, &tasks.Signature{UUID: "held"}, 49993), msgLookupsHeld, clerkLookupHold)
-		require.Zero(t, n.recordLookups[49993], "a held lookup doesn't take a worker")
-
-		requireRetryLater(t, runClerkTask(t, cp, releasedSignature(), 49994), msgLookupsHeld, wholeSeconds(releasedRetryDelay+spread(49994, releasedRetryDelay)))
-		require.Zero(t, n.recordLookups[49994], "a released store check waits on the slow cadence")
-
-		n.lookupStatus = 0
 		requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{UUID: "lowest"}, 49991))
-		require.Equal(t, 1, n.recordLookups[49991], "the lowest ID is looked up anyway")
+		require.Len(t, n.sequences, 1, "state sync moves without the API")
+	})
 
-		requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{UUID: "held"}, 49993))
-		require.Equal(t, 1, n.recordLookups[49993], "its success lets the others through")
+	t.Run("after a slow or failed record lookup only a few run at a time", func(t *testing.T) {
+		for name, slowDown := range map[string]func(*burstNode){
+			"failed": func(n *burstNode) { n.lookupStatus = http.StatusInternalServerError },
+			"slow":   func(n *burstNode) { n.lookupDelay = clerkSlowLookup + 50*time.Millisecond },
+		} {
+			t.Run(name, func(t *testing.T) {
+				n, rest, comet := newBurstNode(t)
+				cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+				cp.pending.touch(49991, "lower", time.Now())
+
+				slowDown(n)
+				_ = runClerkTask(t, cp, &tasks.Signature{UUID: "first"}, 49992)
+				n.lookupStatus, n.lookupDelay = 0, 0
+
+				running := make([]lookupDone, clerkSlowLookups)
+				for i := range running {
+					running[i] = cp.recordLookups.enter(false, time.Now())
+					require.NotNil(t, running[i])
+				}
+
+				requireRetryLater(t, runClerkTask(t, cp, &tasks.Signature{UUID: "over"}, 49993), msgLookupsSlow, wholeSeconds(clerkDeferRetryDelay+spread(49993, clerkDeferRetryDelay)))
+				require.Zero(t, n.recordLookups[49993], "a task turned away doesn't take a worker")
+				requireRetryLater(t, runClerkTask(t, cp, releasedSignature(), 49994), msgLookupsSlow, wholeSeconds(releasedRetryDelay+spread(49994, releasedRetryDelay)))
+				require.Zero(t, n.recordLookups[49994], "a released store check waits on the slow cadence")
+
+				requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{UUID: "lowest"}, 49991))
+				require.Equal(t, 1, n.recordLookups[49991], "the lowest ID is looked up anyway")
+
+				running[0](true, time.Now())
+				requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{UUID: "over"}, 49993))
+				require.Equal(t, 1, n.recordLookups[49993], "a quick answer lets every lookup run again")
+			})
+		}
+	})
+
+	t.Run("a record lookup that panics counts as failed and gives its place back", func(t *testing.T) {
+		n, rest, comet := newBurstNode(t)
+		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
+
+		cp.cliCtx.Codec = nil
+		n.stored[49992] = true
+		require.Panics(t, func() { _, _ = cp.lookUpRecord(context.Background(), 49992, cp.recordLookups.enter(false, time.Now())) })
+
+		for range clerkSlowLookups {
+			require.NotNil(t, cp.recordLookups.enter(false, time.Now()), "its place is free again")
+		}
+		require.Nil(t, cp.recordLookups.enter(false, time.Now()), "and lookups are bounded as after any failed one")
 	})
 
 	t.Run("a last attempt that panics still lets go of the order window", func(t *testing.T) {

@@ -655,35 +655,36 @@ func TestAbandonRetryDelayIsOnTheReleasedCadence(t *testing.T) {
 func TestLookupGate(t *testing.T) {
 	t.Parallel()
 
-	now := time.Unix(1_760_000_000, 0)
+	at := func(seconds int) time.Time { return time.Unix(1_760_000_000+int64(seconds), 0) }
 	var g lookupGate
 
-	ok, _ := g.enter(now)
-	require.True(t, ok, "open until a lookup fails")
-	ok, _ = g.enter(now)
-	require.True(t, ok, "to every lookup")
-
-	g.done(true, now)
-	ok, wait := g.enter(now.Add(time.Second))
-	require.False(t, ok)
-	require.Equal(t, clerkLookupHold-time.Second, wait, "held tasks come back when the hold is over")
-
-	ok, _ = g.enter(now.Add(clerkLookupHold))
-	require.True(t, ok, "one lookup tries the API once the hold is over")
-	ok, wait = g.enter(now.Add(clerkLookupHold))
-	require.False(t, ok, "the others wait for it")
-	require.Equal(t, clerkLookupTimeout, wait)
-
-	g.done(true, now.Add(clerkLookupHold))
-	ok, wait = g.enter(now.Add(clerkLookupHold))
-	require.False(t, ok, "a failed try holds them again")
-	require.Equal(t, clerkLookupHold, wait)
-
-	ok, _ = g.enter(now.Add(2 * clerkLookupHold))
-	require.True(t, ok)
-	g.done(false, now.Add(2*clerkLookupHold))
-	for range 2 {
-		ok, _ = g.enter(now.Add(2 * clerkLookupHold))
-		require.True(t, ok, "a successful try opens it to every lookup")
+	early := make([]lookupDone, 10)
+	for i := range early {
+		early[i] = g.enter(false, at(0))
+		require.NotNil(t, early[i], "every lookup runs while the API is quick")
 	}
+
+	early[0](false, at(1))
+	require.Nil(t, g.enter(false, at(1)), "after a slow or failed one, none runs beyond the bound")
+	require.NotNil(t, g.enter(true, at(1)), "except the lowest ID's")
+
+	for _, done := range early[1:] {
+		done(true, at(1))
+	}
+	bounded := make([]lookupDone, clerkSlowLookups)
+	for i := range bounded {
+		bounded[i] = g.enter(false, at(2))
+		require.NotNil(t, bounded[i], "a quick answer to a lookup from before doesn't lift the bound")
+	}
+	require.Nil(t, g.enter(false, at(2)))
+
+	bounded[0](true, at(3))
+	later := make([]lookupDone, 10)
+	for i := range later {
+		later[i] = g.enter(false, at(3))
+		require.NotNil(t, later[i], "a quick answer to a lookup started since does")
+	}
+
+	g.enter(true, at(4))(false, at(5))
+	require.Nil(t, g.enter(false, at(5)), "the lowest ID's lookup counts as any other")
 }
