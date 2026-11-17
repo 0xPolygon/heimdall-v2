@@ -31,8 +31,11 @@ func TestNewWorkerObservesDeliveries(t *testing.T) {
 
 	worker := newWorker(server)
 	require.Equal(t, workerConcurrency, worker.Concurrency)
+
+	// the counters are global: other runs of the test in this process count too
+	before := testutil.ToFloat64(metrics.BridgeTaskDeliveries.WithLabelValues(task))
 	require.NoError(t, worker.Process(&tasks.Signature{UUID: "task_probe", Name: task}))
-	require.InDelta(t, 1, testutil.ToFloat64(metrics.BridgeTaskDeliveries.WithLabelValues(task)), 0)
+	require.InDelta(t, before+1, testutil.ToFloat64(metrics.BridgeTaskDeliveries.WithLabelValues(task)), 0)
 }
 
 func TestTaskQueuedAt(t *testing.T) {
@@ -74,13 +77,19 @@ func TestObserveTaskDelivery(t *testing.T) {
 	const task = "observeDeliveryTestTask"
 	signature := &tasks.Signature{Name: task, Headers: NewTaskHeaders(time.Now().Add(-time.Minute))}
 
+	taskAge := func() *dto.Histogram {
+		var age dto.Metric
+		require.NoError(t, metrics.BridgeTaskAge.WithLabelValues(task).(prometheus.Metric).Write(&age))
+		return age.GetHistogram()
+	}
+	deliveries := testutil.ToFloat64(metrics.BridgeTaskDeliveries.WithLabelValues(task))
+	age := taskAge()
+
 	observeTaskDelivery(signature)
 	observeTaskDelivery(&tasks.Signature{Name: task})
 
-	require.InDelta(t, 2, testutil.ToFloat64(metrics.BridgeTaskDeliveries.WithLabelValues(task)), 0, "every delivery counts, with or without a queue time")
-
-	var age dto.Metric
-	require.NoError(t, metrics.BridgeTaskAge.WithLabelValues(task).(prometheus.Metric).Write(&age))
-	require.Equal(t, uint64(1), age.GetHistogram().GetSampleCount(), "only a delivery with a queue time has an age")
-	require.GreaterOrEqual(t, age.GetHistogram().GetSampleSum(), time.Minute.Seconds())
+	require.InDelta(t, deliveries+2, testutil.ToFloat64(metrics.BridgeTaskDeliveries.WithLabelValues(task)), 0, "every delivery counts, with or without a queue time")
+	after := taskAge()
+	require.Equal(t, age.GetSampleCount()+1, after.GetSampleCount(), "only a delivery with a queue time has an age")
+	require.GreaterOrEqual(t, after.GetSampleSum()-age.GetSampleSum(), time.Minute.Seconds())
 }

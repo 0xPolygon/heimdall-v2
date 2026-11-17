@@ -185,6 +185,22 @@ func TestBrokerHandleRequeuesWhenMachineryCannotQueueRetry(t *testing.T) {
 	}
 }
 
+func TestBrokerHandBackDelay(t *testing.T) {
+	t.Parallel()
+
+	b := newBroker(newConfig(unreachableURL), log.NewNopLogger())
+	b.requeuePause = time.Millisecond
+
+	signature := &tasks.Signature{Name: "unregistered"}
+	start := time.Now()
+	b.handBack(amqp.Delivery{Acknowledger: new(settlement)}, signature)
+
+	end := time.Now()
+
+	require.WithinRange(t, *signature.ETA, start.Add(5*time.Second), end.Add(5*time.Second),
+		"a bridge sharing the queue gets the task five seconds later")
+}
+
 func TestBrokerPublish(t *testing.T) {
 	t.Parallel()
 

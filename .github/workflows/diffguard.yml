@@ -10,7 +10,8 @@ jobs:
   diffguard:
     name: Quality metrics
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # mutation testing runs the RabbitMQ-backed bridge queue tests for every mutant
+    timeout-minutes: 40
     concurrency:
       group: diffguard-${{ github.event.pull_request.number }}
       cancel-in-progress: true

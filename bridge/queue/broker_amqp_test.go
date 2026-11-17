@@ -317,6 +317,31 @@ func TestBrokerAMQPConsumerReconnects(t *testing.T) {
 	require.Eventually(t, func() bool { return ran.Load() == 2 }, 5*time.Second, 20*time.Millisecond)
 }
 
+func TestBrokerAMQPPrefetchIsTheConcurrency(t *testing.T) {
+	f := newAMQPFixture(t)
+
+	const concurrency = 3
+	started, release := make(chan struct{}, 2*concurrency), make(chan struct{})
+	require.NoError(t, f.server.RegisterTask("held", func(int) error {
+		started <- struct{}{}
+		<-release
+		return nil
+	}))
+	t.Cleanup(func() { close(release) })
+
+	for id := range 2 * concurrency {
+		f.send("held", 0, id)
+	}
+	f.server.NewWorker("prefetch", concurrency).LaunchAsync(make(chan error, 1))
+
+	for range concurrency {
+		within(t, 10*time.Second, func() { <-started })
+	}
+	time.Sleep(50 * time.Millisecond)
+	require.Empty(t, started, "RabbitMQ delivers no more than the concurrency at once")
+	require.Equal(t, concurrency, f.queued(), "the rest stay queued")
+}
+
 func TestBrokerAMQPStopWaitsForTasksInFlight(t *testing.T) {
 	f := newAMQPFixture(t)
 
