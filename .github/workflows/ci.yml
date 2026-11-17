@@ -48,6 +48,19 @@ jobs:
     name: test
     if: (github.event.action != 'closed' || github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
+    services:
+      # bridge/queue's broker tests run against a real RabbitMQ
+      rabbitmq:
+        image: mirror.gcr.io/library/rabbitmq:4.4-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      BRIDGE_TEST_AMQP_URL: amqp://guest:guest@127.0.0.1:5672/
     steps:
       - uses: actions/checkout@v6
 

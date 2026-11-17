@@ -1,0 +1,230 @@
+package queue
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/RichardKnop/machinery/v1/tasks"
+	amqp "github.com/rabbitmq/amqp091-go"
+)
+
+const (
+	// publishTimeout bounds one publish: the wait for the publisher, the dial
+	// if it has no connection, and the broker's confirmation.
+	publishTimeout = 15 * time.Second
+
+	// delayQueueSlack is how much longer than its messages a delay queue
+	// lives, so a publish stalled after the queue was declared still lands in it.
+	delayQueueSlack = time.Minute
+
+	// mandatory has RabbitMQ return a task it could not route, as when the
+	// queue was deleted, instead of confirming and discarding it.
+	mandatory = true
+	immediate = false
+)
+
+// publisher publishes tasks on one long-lived channel in confirm mode.
+type publisher struct {
+	url   string
+	queue string
+
+	// lock serializes publishing. It is a channel so that waiting for it ends
+	// with the caller's context.
+	lock   chan struct{}
+	link   *link
+	closed bool
+}
+
+var errPublisherClosed = errors.New("publisher closed")
+
+func newPublisher(url, queue string) *publisher {
+	return &publisher{url: url, queue: queue, lock: make(chan struct{}, 1)}
+}
+
+func (p *publisher) acquire(ctx context.Context) error {
+	select {
+	case p.lock <- struct{}{}:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("wait for publisher: %w", ctx.Err())
+	}
+}
+
+func (p *publisher) release() { <-p.lock }
+
+// connect opens the connection and declares the task queue.
+func (p *publisher) connect(ctx context.Context) error {
+	if err := p.acquire(ctx); err != nil {
+		return err
+	}
+	defer p.release()
+
+	_, err := p.open(ctx)
+
+	return err
+}
+
+func (p *publisher) publish(ctx context.Context, signature *tasks.Signature, body []byte) error {
+	if err := p.acquire(ctx); err != nil {
+		return err
+	}
+	defer p.release()
+
+	l, err := p.open(ctx)
+	if err != nil {
+		return err
+	}
+
+	stop := l.abortOn(ctx)
+	defer stop()
+
+	if err := p.send(ctx, l, signature, body); err != nil {
+		// a failed link is not reused: the next publish dials again and
+		// redeclares the task queue
+		p.drop()
+		return err
+	}
+
+	return nil
+}
+
+func (p *publisher) send(ctx context.Context, l *link, signature *tasks.Signature, body []byte) error {
+	exchange, key := exchangeName, p.queue
+	if delay := delayFor(signature.ETA, time.Now()); delay > 0 {
+		name, err := declareDelayQueue(l.ch, p.queue, delay)
+		if err != nil {
+			return err
+		}
+		// the default exchange routes to the queue named by the key
+		exchange, key = "", name
+	}
+
+	return publishConfirmed(ctx, l.ch, l.returns, exchange, key, amqp.Publishing{
+		Headers:      amqp.Table(signature.Headers),
+		ContentType:  "application/json",
+		Body:         body,
+		Priority:     signature.Priority,
+		DeliveryMode: amqp.Persistent,
+	})
+}
+
+// open returns the publisher's link, dialing if there is none. The caller
+// holds the lock.
+func (p *publisher) open(ctx context.Context) (*link, error) {
+	if p.closed {
+		return nil, errPublisherClosed
+	}
+
+	if p.link != nil && !p.link.ch.IsClosed() {
+		return p.link, nil
+	}
+
+	p.drop()
+
+	l, err := openLink(ctx, p.url, p.queue, confirmPublishes)
+	if err != nil {
+		return nil, err
+	}
+
+	p.link = l
+
+	return l, nil
+}
+
+// confirmPublishes has RabbitMQ confirm each publish and return unroutable ones.
+func confirmPublishes(l *link) error {
+	if err := l.ch.Confirm(noWait); err != nil {
+		return fmt.Errorf("enable publisher confirms: %w", err)
+	}
+
+	l.returns = l.ch.NotifyReturn(make(chan amqp.Return, 1))
+
+	return nil
+}
+
+// drop closes the link. The caller holds the lock.
+func (p *publisher) drop() {
+	if p.link != nil {
+		p.link.close()
+	}
+
+	p.link = nil
+}
+
+// close ends the publisher for good: a publish after it fails rather than
+// open a connection nothing would close.
+func (p *publisher) close() {
+	p.lock <- struct{}{}
+	defer p.release()
+
+	p.closed = true
+	p.drop()
+}
+
+// delayFor returns how long a task with the given ETA waits in a delay queue,
+// zero if it is due. Delays round up to whole seconds so tasks share a queue
+// per delay instead of declaring one per millisecond of jitter.
+func delayFor(eta *time.Time, now time.Time) time.Duration {
+	if eta == nil || !eta.After(now) {
+		return 0
+	}
+
+	return (eta.Sub(now) + time.Second - 1).Truncate(time.Second)
+}
+
+// delayQueueName is unlike machinery's, whose delay queues take other arguments.
+func delayQueueName(queue string, delay time.Duration) string {
+	return fmt.Sprintf("%s.delay.%d", queue, delay.Milliseconds())
+}
+
+// delayQueueArgs makes a queue hold each message for delay and then dead-letter
+// it to the task queue. The queue expires once unused for long enough that
+// every message it accepted has left; declaring it restarts that timer.
+func delayQueueArgs(queue string, delay time.Duration) amqp.Table {
+	return amqp.Table{
+		"x-dead-letter-exchange":    exchangeName,
+		"x-dead-letter-routing-key": queue,
+		"x-message-ttl":             delay.Milliseconds(),
+		"x-expires":                 (2*delay + delayQueueSlack).Milliseconds(),
+	}
+}
+
+func declareDelayQueue(ch *amqp.Channel, queue string, delay time.Duration) (string, error) {
+	name := delayQueueName(queue, delay)
+	if _, err := ch.QueueDeclare(name, durable, autoDelete, exclusive, noWait, delayQueueArgs(queue, delay)); err != nil {
+		return "", fmt.Errorf("declare delay queue: %w", err)
+	}
+
+	return name, nil
+}
+
+// publishConfirmed publishes msg and waits for RabbitMQ to take responsibility
+// for it. RabbitMQ sends the return of an unroutable message before its
+// confirmation.
+func publishConfirmed(ctx context.Context, ch *amqp.Channel, returns <-chan amqp.Return, exchange, key string, msg amqp.Publishing) error {
+	confirmation, err := ch.PublishWithDeferredConfirmWithContext(ctx, exchange, key, mandatory, immediate, msg)
+	if err != nil {
+		return fmt.Errorf("publish task: %w", err)
+	}
+
+	acked, err := confirmation.WaitContext(ctx)
+	if err != nil {
+		return fmt.Errorf("await publish confirmation: %w", err)
+	}
+
+	select {
+	case returned, ok := <-returns:
+		if ok {
+			return fmt.Errorf("task not routed: %s", returned.ReplyText)
+		}
+	default:
+	}
+
+	if !acked {
+		return errors.New("broker rejected the task")
+	}
+
+	return nil
+}

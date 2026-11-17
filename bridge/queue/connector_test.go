@@ -1,14 +1,12 @@
 package queue
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/RichardKnop/machinery/v1"
 	eagerbackend "github.com/RichardKnop/machinery/v1/backends/eager"
-	"github.com/RichardKnop/machinery/v1/brokers/amqp"
 	eagerbroker "github.com/RichardKnop/machinery/v1/brokers/eager"
 	eagerlock "github.com/RichardKnop/machinery/v1/locks/eager"
 	"github.com/RichardKnop/machinery/v1/tasks"
@@ -20,53 +18,24 @@ import (
 	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
-func TestNewConfigRoutesTasksToWorkerQueue(t *testing.T) {
-	cnf := newConfig("amqp://localhost:5672")
-	require.Equal(t, QName, cnf.DefaultQueue)
-
-	broker := amqp.New(cnf)
-	sig := &tasks.Signature{Name: "sendCheckpointToHeimdall"}
-	broker.AdjustRoutingKey(sig)
-	require.Equal(t, QName, sig.RoutingKey)
-}
-
 func TestNewConfigLeavesSignalsToHeimdalld(t *testing.T) {
 	require.True(t, newConfig("amqp://localhost:5672").NoUnixSignals)
 }
 
-func TestNormalizeRoutingKey(t *testing.T) {
-	tests := []struct {
-		name string
-		in   string
-		want string
-	}{
-		{"legacy key", legacyRoutingKey, QName},
-		{"current key", QName, QName},
-		{"empty", "", ""},
-		{"custom", "other", "other"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sig := &tasks.Signature{RoutingKey: tt.in}
-			normalizeRoutingKey(sig)
-			require.Equal(t, tt.want, sig.RoutingKey)
-		})
-	}
-}
-
-func TestNewWorkerNormalizesLegacyRoutingKey(t *testing.T) {
+func TestNewWorkerObservesDeliveries(t *testing.T) {
 	server := machinery.NewServerWithBrokerBackendLock(
 		newConfig("amqp://localhost:5672"), eagerbroker.New(), eagerbackend.New(), eagerlock.New())
 
-	var seen string
-	require.NoError(t, server.RegisterTask("probe", func(ctx context.Context) error {
-		seen = tasks.SignatureFromContext(ctx).RoutingKey
-		return nil
-	}))
+	const task = "newWorkerObservesDeliveriesTask"
+	require.NoError(t, server.RegisterTask(task, func() error { return nil }))
 
-	sig := &tasks.Signature{UUID: "task_probe", Name: "probe", RoutingKey: legacyRoutingKey}
-	require.NoError(t, newWorker(server).Process(sig))
-	require.Equal(t, QName, seen)
+	worker := newWorker(server)
+	require.Equal(t, workerConcurrency, worker.Concurrency)
+
+	// the counters are global: other runs of the test in this process count too
+	before := testutil.ToFloat64(metrics.BridgeTaskDeliveries.WithLabelValues(task))
+	require.NoError(t, worker.Process(&tasks.Signature{UUID: "task_probe", Name: task}))
+	require.InDelta(t, before+1, testutil.ToFloat64(metrics.BridgeTaskDeliveries.WithLabelValues(task)), 0)
 }
 
 func TestTaskQueuedAt(t *testing.T) {
@@ -108,13 +77,19 @@ func TestObserveTaskDelivery(t *testing.T) {
 	const task = "observeDeliveryTestTask"
 	signature := &tasks.Signature{Name: task, Headers: NewTaskHeaders(time.Now().Add(-time.Minute))}
 
+	taskAge := func() *dto.Histogram {
+		var age dto.Metric
+		require.NoError(t, metrics.BridgeTaskAge.WithLabelValues(task).(prometheus.Metric).Write(&age))
+		return age.GetHistogram()
+	}
+	deliveries := testutil.ToFloat64(metrics.BridgeTaskDeliveries.WithLabelValues(task))
+	age := taskAge()
+
 	observeTaskDelivery(signature)
 	observeTaskDelivery(&tasks.Signature{Name: task})
 
-	require.InDelta(t, 2, testutil.ToFloat64(metrics.BridgeTaskDeliveries.WithLabelValues(task)), 0, "every delivery counts, with or without a queue time")
-
-	var age dto.Metric
-	require.NoError(t, metrics.BridgeTaskAge.WithLabelValues(task).(prometheus.Metric).Write(&age))
-	require.Equal(t, uint64(1), age.GetHistogram().GetSampleCount(), "only a delivery with a queue time has an age")
-	require.GreaterOrEqual(t, age.GetHistogram().GetSampleSum(), time.Minute.Seconds())
+	require.InDelta(t, deliveries+2, testutil.ToFloat64(metrics.BridgeTaskDeliveries.WithLabelValues(task)), 0, "every delivery counts, with or without a queue time")
+	after := taskAge()
+	require.Equal(t, age.GetSampleCount()+1, after.GetSampleCount(), "only a delivery with a queue time has an age")
+	require.GreaterOrEqual(t, after.GetSampleSum()-age.GetSampleSum(), time.Minute.Seconds())
 }

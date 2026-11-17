@@ -651,3 +651,40 @@ func TestAbandonRetryDelayIsOnTheReleasedCadence(t *testing.T) {
 	}
 	require.NotEqual(t, abandonRetryDelay(49990), abandonRetryDelay(49999), "spread per ID")
 }
+
+func TestLookupGate(t *testing.T) {
+	t.Parallel()
+
+	at := func(seconds int) time.Time { return time.Unix(1_760_000_000+int64(seconds), 0) }
+	var g lookupGate
+
+	early := make([]lookupDone, 10)
+	for i := range early {
+		early[i] = g.enter(false, at(0))
+		require.NotNil(t, early[i], "every lookup runs while the API is quick")
+	}
+
+	early[0](false, at(1))
+	require.Nil(t, g.enter(false, at(1)), "after a slow or failed one, none runs beyond the bound")
+	require.NotNil(t, g.enter(true, at(1)), "except the lowest ID's")
+
+	for _, done := range early[1:] {
+		done(true, at(1))
+	}
+	bounded := make([]lookupDone, clerkSlowLookups)
+	for i := range bounded {
+		bounded[i] = g.enter(false, at(2))
+		require.NotNil(t, bounded[i], "a quick answer to a lookup from before doesn't lift the bound")
+	}
+	require.Nil(t, g.enter(false, at(2)))
+
+	bounded[0](true, at(3))
+	later := make([]lookupDone, 10)
+	for i := range later {
+		later[i] = g.enter(false, at(3))
+		require.NotNil(t, later[i], "a quick answer to a lookup started since does")
+	}
+
+	g.enter(true, at(4))(false, at(5))
+	require.Nil(t, g.enter(false, at(5)), "the lowest ID's lookup counts as any other")
+}

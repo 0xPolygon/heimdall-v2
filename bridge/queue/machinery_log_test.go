@@ -84,7 +84,8 @@ func TestRedirectMachineryLogRoutesEachLevel(t *testing.T) {
 
 func TestNewQueueConnectorReturnsDialError(t *testing.T) {
 	for url, want := range map[string]string{
-		"":                                "create machinery server",
+		"":                                "unsupported amqp url",
+		"http://guest:guest@127.0.0.1:1/": "unsupported amqp url",
 		"amqp://guest:guest@127.0.0.1:1/": "dial amqp",
 	} {
 		qc, err := NewQueueConnector(url)
