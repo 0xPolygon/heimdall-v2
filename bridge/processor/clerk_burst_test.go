@@ -2267,64 +2267,55 @@ func TestClerkTaskUnderStateSyncBurst(t *testing.T) {
 		require.Equal(t, uint64(burstCommittedSeq+1), n.sequences[len(n.sequences)-1], "the next tx signs the following sequence")
 	})
 
-	t.Run("record lookups beyond the bound wait without holding a worker", func(t *testing.T) {
+	t.Run("a window of tasks delivered at once to every worker is not turned away", func(t *testing.T) {
 		n, rest, comet := newBurstNode(t)
 		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
-		releases := make([]func(), 0, clerkRecordLookups)
-		for range clerkRecordLookups {
-			release := cp.recordLookups.tryAcquire(false)
-			require.NotNil(t, release)
-			releases = append(releases, release)
-		}
-
+		// the harness's log buffer isn't safe for concurrent tasks
+		cp.Logger = log.NewNopLogger()
 		cp.pending.touch(49991, "lower", time.Now())
-		requireRetryLater(t, runClerkTask(t, cp, &tasks.Signature{}, 49992), msgLookupsBusy, wholeSeconds(clerkDeferRetryDelay+spread(49992, clerkDeferRetryDelay)))
-		require.Zero(t, n.recordLookups[49992])
-		require.Empty(t, n.sequences)
 
-		requireRetryLater(t, runClerkTask(t, cp, releasedSignature(), 49993), msgLookupsBusy, wholeSeconds(releasedRetryDelay+spread(49993, releasedRetryDelay)))
-		require.Zero(t, n.recordLookups[49993], "a released store check waits on the slow cadence")
-
-		requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{}, 49991))
-		require.NotZero(t, n.recordLookups[49991], "the lowest ID has a slot of its own")
-
-		releases[0]()
-		requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{}, 49992))
-		require.NotNil(t, cp.recordLookups.tryAcquire(false), "the task gave its slot back")
-	})
-
-	t.Run("a second lowest-ID lookup in flight waits instead of taking another worker", func(t *testing.T) {
-		n, rest, comet := newBurstNode(t)
-		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
-		releasePriority := cp.recordLookups.tryAcquire(true)
-		require.NotNil(t, releasePriority)
-
-		requireRetryLater(t, runClerkTask(t, cp, &tasks.Signature{}, 49991), msgLookupsBusy, clerkDeferRetryDelay)
-		require.Zero(t, n.recordLookups[49991])
-
-		for range clerkRecordLookups {
-			require.NotNil(t, cp.recordLookups.tryAcquire(false), "the shared slots stay free for the other tasks")
+		const first, count = 49992, clerkOrderWindow - 1
+		errs := make([]error, count)
+		var wg sync.WaitGroup
+		for i := range errs {
+			wg.Go(func() {
+				id := uint64(first + i)
+				errs[i] = runClerkTask(t, cp, &tasks.Signature{UUID: strconv.FormatUint(id, 10)}, id)
+			})
 		}
+		wg.Wait()
 
-		releasePriority()
-		requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{}, 49991))
-		require.NotZero(t, n.recordLookups[49991])
+		n.mu.Lock()
+		defer n.mu.Unlock()
+		for i, err := range errs {
+			if err != nil {
+				require.NotContains(t, err.Error(), msgLookupsHeld, "id %d", first+i)
+			}
+			require.Equal(t, 1, n.recordLookups[uint64(first+i)], "id %d", first+i)
+		}
 	})
 
-	t.Run("a lookup that panics gives its slot back", func(t *testing.T) {
+	t.Run("a failed record lookup holds the others until one succeeds again", func(t *testing.T) {
 		n, rest, comet := newBurstNode(t)
 		cp, _ := newBurstClerkProcessor(t, n, rest, comet)
 		cp.pending.touch(49991, "lower", time.Now())
-		var event statesender.StatesenderStateSynced
-		event.Id = big.NewInt(49992)
-		n.stored[49992] = true
-		cp.cliCtx.Codec = nil
 
-		require.Panics(t, func() { _, _, _ = cp.checkStored(context.Background(), "StateSynced", &event, nil, 49992, 49991) })
-		for range clerkRecordLookups {
-			require.NotNil(t, cp.recordLookups.tryAcquire(false))
-		}
-		require.NotNil(t, cp.recordLookups.tryAcquire(true))
+		n.lookupStatus = http.StatusInternalServerError
+		_ = runClerkTask(t, cp, &tasks.Signature{UUID: "failed"}, 49992)
+		require.Equal(t, 1, n.recordLookups[49992])
+
+		requireRetryLater(t, runClerkTask(t, cp, &tasks.Signature{UUID: "held"}, 49993), msgLookupsHeld, clerkLookupHold)
+		require.Zero(t, n.recordLookups[49993], "a held lookup doesn't take a worker")
+
+		requireRetryLater(t, runClerkTask(t, cp, releasedSignature(), 49994), msgLookupsHeld, wholeSeconds(releasedRetryDelay+spread(49994, releasedRetryDelay)))
+		require.Zero(t, n.recordLookups[49994], "a released store check waits on the slow cadence")
+
+		n.lookupStatus = 0
+		requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{UUID: "lowest"}, 49991))
+		require.Equal(t, 1, n.recordLookups[49991], "the lowest ID is looked up anyway")
+
+		requireAwaitingStore(t, runClerkTask(t, cp, &tasks.Signature{UUID: "held"}, 49993))
+		require.Equal(t, 1, n.recordLookups[49993], "its success lets the others through")
 	})
 
 	t.Run("a last attempt that panics still lets go of the order window", func(t *testing.T) {

@@ -68,7 +68,7 @@ type ClerkProcessor struct {
 	stateReceiver func(address string) (lastStateIDReader, error)
 	mempool       mempoolSize
 	chainParams   cachedChainParams
-	recordLookups lookupSlots
+	recordLookups lookupGate
 }
 
 type cachedChainParams struct {
@@ -207,20 +207,19 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(ctx context.Context, eventNa
 	return cp.submitEventRecord(ctx, sendStateSyncedToHeimdallCtx, eventName, event, &vLog, chainParams.BorChainId, lowest)
 }
 
-// checkStored runs recordStored within the bound on concurrent record lookups.
-// The lowest ID, the one bor waits on, has a slot of its own.
+// checkStored runs recordStored unless record lookups are held. The lowest
+// ID, the one bor waits on, is looked up anyway.
 func (cp *ClerkProcessor) checkStored(ctx context.Context, eventName string, event *statesender.StatesenderStateSynced, vLog *types.Log, id, lowest uint64) (stored, missing bool, err error) {
-	release := cp.recordLookups.tryAcquire(id == lowest)
-	if release == nil {
-		delay := wholeSeconds(clerkDeferRetryDelay + spread(id, clerkDeferRetryDelay))
-		if id == lowest {
-			delay = clerkDeferRetryDelay
-		} else if windowReleased(tasks.SignatureFromContext(ctx)) {
-			delay = deferDelay(id, lowest, true)
+	if id != lowest {
+		if ok, wait := cp.recordLookups.enter(time.Now()); !ok {
+			// back when lookups may run again: the task holds the order window
+			delay := wholeSeconds(wait)
+			if windowReleased(tasks.SignatureFromContext(ctx)) {
+				delay = deferDelay(id, lowest, true)
+			}
+			return false, false, tasks.NewErrRetryTaskLater(msgLookupsHeld, delay)
 		}
-		return false, false, tasks.NewErrRetryTaskLater(msgLookupsBusy, delay)
 	}
-	defer release()
 	stored, missing = cp.recordStored(ctx, eventName, event, vLog)
 	return stored, missing, nil
 }
@@ -229,7 +228,10 @@ func (cp *ClerkProcessor) checkStored(ctx context.Context, eventName string, eve
 // if so stops tracking it, or else whether heimdall answered that it doesn't
 // hold it (missing); a failed lookup is neither.
 func (cp *ClerkProcessor) recordStored(ctx context.Context, eventName string, event *statesender.StatesenderStateSynced, vLog *types.Log) (stored, missing bool) {
-	stored, err := util.ClerkRecordStored(ctx, cp.cliCtx.Codec, event.Id.Uint64())
+	lookupCtx, cancel := context.WithTimeout(ctx, clerkLookupTimeout)
+	stored, err := util.ClerkRecordStored(lookupCtx, cp.cliCtx.Codec, event.Id.Uint64())
+	cancel()
+	cp.recordLookups.done(err != nil, time.Now())
 	if err != nil {
 		return false, false
 	}

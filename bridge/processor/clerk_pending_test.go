@@ -651,3 +651,39 @@ func TestAbandonRetryDelayIsOnTheReleasedCadence(t *testing.T) {
 	}
 	require.NotEqual(t, abandonRetryDelay(49990), abandonRetryDelay(49999), "spread per ID")
 }
+
+func TestLookupGate(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(1_760_000_000, 0)
+	var g lookupGate
+
+	ok, _ := g.enter(now)
+	require.True(t, ok, "open until a lookup fails")
+	ok, _ = g.enter(now)
+	require.True(t, ok, "to every lookup")
+
+	g.done(true, now)
+	ok, wait := g.enter(now.Add(time.Second))
+	require.False(t, ok)
+	require.Equal(t, clerkLookupHold-time.Second, wait, "held tasks come back when the hold is over")
+
+	ok, _ = g.enter(now.Add(clerkLookupHold))
+	require.True(t, ok, "one lookup tries the API once the hold is over")
+	ok, wait = g.enter(now.Add(clerkLookupHold))
+	require.False(t, ok, "the others wait for it")
+	require.Equal(t, clerkLookupTimeout, wait)
+
+	g.done(true, now.Add(clerkLookupHold))
+	ok, wait = g.enter(now.Add(clerkLookupHold))
+	require.False(t, ok, "a failed try holds them again")
+	require.Equal(t, clerkLookupHold, wait)
+
+	ok, _ = g.enter(now.Add(2 * clerkLookupHold))
+	require.True(t, ok)
+	g.done(false, now.Add(2*clerkLookupHold))
+	for range 2 {
+		ok, _ = g.enter(now.Add(2 * clerkLookupHold))
+		require.True(t, ok, "a successful try opens it to every lookup")
+	}
+}

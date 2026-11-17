@@ -55,14 +55,13 @@ func orderRetryDelay(aheadOfLowest uint64) time.Duration {
 	return time.Duration(windows) * clerkDeferRetryDelay
 }
 
-// releasedRetryDelay is how long a released task waits when a lookup slot or
+// releasedRetryDelay is how long a released task waits when the lookup gate or
 // the busy gate holds it back, unless it ranks as the lowest ID. Its check
 // isn't urgent, and a burst's released tasks retrying every few seconds would
 // flood the task queue.
 const releasedRetryDelay = clerkMaxStoreWait / 2
 
-// deferDelay is how soon a task held back by a lookup slot or the busy gate
-// runs again.
+// deferDelay is how soon a task held back by the busy gate runs again.
 func deferDelay(id, lowest uint64, released bool) time.Duration {
 	if !released || id == lowest {
 		return clerkDeferRetryDelay
@@ -70,35 +69,52 @@ func deferDelay(id, lowest uint64, released bool) time.Duration {
 	return wholeSeconds(releasedRetryDelay + spread(id, releasedRetryDelay))
 }
 
-// clerkRecordLookups bounds the record lookups clerk tasks run at once, so a
-// slow heimdall API can't take every shared bridge worker.
-const clerkRecordLookups = 2
+const (
+	// clerkLookupTimeout bounds a record lookup; one that takes longer has
+	// failed. A healthy heimdall answers in a few milliseconds.
+	clerkLookupTimeout = time.Second
 
-// lookupSlots hands out clerkRecordLookups slots without waiting, plus one
-// kept for the lowest ID, so the record bor waits on isn't queued behind the
-// others and still can't take more than one extra worker. The zero value is
-// ready to use.
-type lookupSlots struct {
-	once     sync.Once
-	slots    chan struct{}
-	priority sync.Mutex
+	// clerkLookupHold is how long record lookups stay held after a failed one.
+	clerkLookupHold = 5 * time.Second
+)
+
+// lookupGate holds record lookups after one failed, so a slow heimdall API
+// can't keep the shared bridge workers: once the hold is over a single lookup
+// tries the API, and the rest follow when it succeeds. While lookups succeed
+// every one runs: a task turned away keeps its place in the order window, so
+// a burst delivered at once would stall behind the few deferred. The zero
+// value is ready to use.
+type lookupGate struct {
+	mu        sync.Mutex
+	heldUntil time.Time
+	probing   bool
 }
 
-// tryAcquire returns the release func of the slot it took, or nil.
-func (l *lookupSlots) tryAcquire(lowest bool) func() {
-	l.once.Do(func() { l.slots = make(chan struct{}, clerkRecordLookups) })
-	if lowest {
-		// Only its own slot: duplicate tasks for the lowest ID can't take
-		// the shared ones.
-		if l.priority.TryLock() {
-			return l.priority.Unlock
-		}
-		return nil
+// enter reports whether a lookup may run now, and if not how long until one may.
+func (g *lookupGate) enter(now time.Time) (bool, time.Duration) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	switch {
+	case g.heldUntil.IsZero():
+		return true, 0
+	case now.Before(g.heldUntil):
+		return false, g.heldUntil.Sub(now)
+	case g.probing:
+		return false, clerkLookupTimeout
 	}
-	select {
-	case l.slots <- struct{}{}:
-		return func() { <-l.slots }
-	default:
-		return nil
+	g.probing = true
+	return true, 0
+}
+
+// done records how a lookup ended.
+func (g *lookupGate) done(failed bool, now time.Time) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	g.probing = false
+	g.heldUntil = time.Time{}
+	if failed {
+		g.heldUntil = now.Add(clerkLookupHold)
 	}
 }
