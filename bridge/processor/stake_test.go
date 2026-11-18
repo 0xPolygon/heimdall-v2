@@ -41,15 +41,11 @@ func TestStakingProcessor_Constants(t *testing.T) {
 			errMsgParsingEvent,
 			errMsgValidatingNonce,
 			errMsgCreatingMsg,
-			errMsgBroadcasting,
-			errMsgTxFailed,
 			errMsgConvertingAddress,
 			errMsgCheckingOldTx,
 			errMsgInvalidSignerPubkey,
 			errMsgFetchValidatorNonce,
 			errMsgNonceNotInOrder,
-			errMsgQueryStakeTxs,
-			errMsgSearchTxs,
 		}
 
 		for _, msg := range errorMessages {
@@ -65,7 +61,7 @@ func TestStakingProcessor_Constants(t *testing.T) {
 			infoMsgIgnoringAlreadyProcessed,
 			infoMsgIgnoringNonceOutOfOrder,
 			infoMsgAccountDoesNotExist,
-			infoMsgRecentStakingTxnNotZero,
+			infoMsgNonceAlreadyUsed,
 		}
 
 		for _, msg := range infoMessages {

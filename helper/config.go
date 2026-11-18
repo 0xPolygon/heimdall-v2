@@ -315,6 +315,11 @@ var luganoHeight int64 = 0
 // height 1.
 var karwarHeight int64 = 0
 
+// purleyHeight gates the consensus-affecting changes activated at the Purley hardfork.
+// Zero disables it (no network height assigned yet); local/devnet activates it from
+// height 1.
+var purleyHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -584,6 +589,7 @@ func InitHeimdallConfigWith(ctx context.Context, homeDir string, heimdallConfigF
 		kyotoHeight = 51533000
 		luganoHeight = 54627000
 		karwarHeight = 57006000
+		purleyHeight = 0
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -600,6 +606,7 @@ func InitHeimdallConfigWith(ctx context.Context, homeDir string, heimdallConfigF
 		kyotoHeight = 0
 		luganoHeight = 0
 		karwarHeight = 0
+		purleyHeight = 0
 	case AmoyChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -616,6 +623,7 @@ func InitHeimdallConfigWith(ctx context.Context, homeDir string, heimdallConfigF
 		kyotoHeight = 42252000
 		luganoHeight = 47105000
 		karwarHeight = 50020000
+		purleyHeight = 52108000
 	default:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
@@ -632,6 +640,7 @@ func InitHeimdallConfigWith(ctx context.Context, homeDir string, heimdallConfigF
 		kyotoHeight = 1
 		luganoHeight = 1
 		karwarHeight = 1
+		purleyHeight = 1
 	}
 }
 
@@ -1092,6 +1101,18 @@ func SetKarwarHeight(height int64) {
 
 func GetKarwarHeight() int64 {
 	return karwarHeight
+}
+
+func IsPurley(height int64) bool {
+	return purleyHeight > 0 && height >= purleyHeight
+}
+
+func SetPurleyHeight(height int64) {
+	purleyHeight = height
+}
+
+func GetPurleyHeight() int64 {
+	return purleyHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {

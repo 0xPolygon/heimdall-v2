@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -35,7 +35,6 @@ const (
 	infoMsgClerkRegisteringTasks         = "ClerkProcessor: registering clerk tasks"
 	infoMsgClerkIgnoringAlreadyProcessed = "ClerkProcessor: ignoring task to send deposit to heimdall as already processed"
 	infoMsgClerkDataTooLarge             = `ClerkProcessor: data is too large to process, Resetting to ""`
-	infoMsgClerkTxInMempool              = "ClerkProcessor: similar transaction already in mempool, retrying in sometime"
 
 	// Debug messages
 	debugMsgClerkNewEventFound = "ClerkProcessor: new event found"
@@ -77,7 +76,7 @@ func (cp *ClerkProcessor) RegisterTasks() {
 // sendStateSyncedToHeimdall - handle state sync event from rootChain
 // 1. Check if this deposit event has to be broadcast to heimdall
 // 2. Create and broadcast record transaction to heimdall
-func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes string) error {
+func (cp *ClerkProcessor) sendStateSyncedToHeimdall(ctx context.Context, eventName string, logBytes string) (err error) {
 	tracingCtx := tracing.WithTracer(context.Background(), otel.Tracer("State-Sync"))
 	// work begins
 	sendStateSyncedToHeimdallCtx, sendStateSyncedToHeimdallSpan := tracing.StartSpan(tracingCtx, "sendStateSyncedToHeimdall")
@@ -91,17 +90,12 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		return err
 	}
 
-	clerkContext, err := cp.getClerkContext()
-	if err != nil {
-		return err
-	}
-
-	chainParams := clerkContext.ChainmanagerParams.ChainParams
-
 	event := new(statesender.StatesenderStateSynced)
 	if err = helper.UnpackLog(cp.stateSenderAbi, event, eventName, &vLog); err != nil {
 		cp.Logger.Error(errMsgClerkParsingEvent, "name", eventName, "error", err)
+		return err
 	} else {
+		defer retryEventFailure(ctx, &err)
 		defer util.LogElapsedTimeForStateSyncedEvent(event, "sendStateSyncedToHeimdall", start)
 
 		tracing.SetAttributes(sendStateSyncedToHeimdallSpan, []attribute.KeyValue{
@@ -110,22 +104,29 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 			attribute.String("contract", event.ContractAddress.String()),
 		}...)
 
-		// Check if this event has already been processed by querying the event record.
-		existingRecord, err := util.GetClerkEventRecord(event.Id.Int64(), cp.cliCtx.Codec)
-
-		if err == nil && existingRecord.Id != 0 {
+		applied, err := cp.eventRecordApplied(vLog, event)
+		if err != nil {
+			return err
+		}
+		if applied {
 			cp.Logger.Info(infoMsgClerkIgnoringAlreadyProcessed,
 				"event", eventName,
 				"id", event.Id,
 				"contract", event.ContractAddress,
 				"data", hex.EncodeToString(event.Data),
-				"borChainId", chainParams.BorChainId,
 				"txHash", vLog.TxHash.String(),
 				"logIndex", uint64(vLog.Index),
 				"blockNumber", vLog.BlockNumber,
 			)
 			return nil
 		}
+
+		clerkContext, err := cp.getClerkContext()
+		if err != nil {
+			return err
+		}
+
+		chainParams := clerkContext.ChainmanagerParams.ChainParams
 
 		cp.Logger.Debug(
 			debugMsgClerkNewEventFound,
@@ -162,30 +163,32 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 			chainParams.BorChainId,
 		)
 
-		_, checkTxAgainstMempoolSpan := tracing.StartSpan(sendStateSyncedToHeimdallCtx, "checkTxAgainstMempool")
-		// Check if we have the same transaction in mempool or not.
-		// Don't drop the transaction. Keep retrying after `util.RetryStateSyncTaskDelay = 24 seconds`,
-		// until the transaction in mempool is processed or canceled.
-		inMempool, _ := cp.checkTxAgainstMempool(&msg, event)
-		tracing.EndSpan(checkTxAgainstMempoolSpan)
-
-		if inMempool {
-			cp.Logger.Info(infoMsgClerkTxInMempool, "event", eventName, "retry delay", util.RetryStateSyncTaskDelay)
-			return tasks.NewErrRetryTaskLater("transaction already in mempool", util.RetryStateSyncTaskDelay)
-		}
-
 		_, BroadcastToHeimdallSpan := tracing.StartSpan(sendStateSyncedToHeimdallCtx, "BroadcastToHeimdall")
-		// Broadcast the transaction to heimdall.
-		_, err = cp.txBroadcaster.BroadcastToHeimdall(context.Background(), &msg, event)
+		// Shares the ownership, mempool and resend checks of the other event processors.
+		err = cp.submitEvent(ctx, &msg, event)
 		tracing.EndSpan(BroadcastToHeimdallSpan)
 
 		if err != nil {
 			cp.Logger.Error(errMsgClerkBroadcasting, "error", err)
 			return err
 		}
+		return retryEvent(ctx, "waiting for state-sync record", util.RetryStateSyncTaskDelay)
 	}
+}
 
-	return nil
+// eventRecordApplied reports whether heimdall already stored the record. The record endpoint answers 500
+// for a missing record, same as on failure, so a failed lookup falls back to the tx-status query. That
+// one answers 404 once the receipt is confirmed and no record holds its sequence, and 500 when it can't tell.
+func (cp *ClerkProcessor) eventRecordApplied(vLog types.Log, event *statesender.StatesenderStateSynced) (bool, error) {
+	record, err := util.GetClerkEventRecord(event.Id.Int64(), cp.cliCtx.Codec)
+	if err == nil {
+		return record.Id == event.Id.Uint64(), nil
+	}
+	applied, err := cp.isOldTx(cp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.ClerkEvent, event)
+	if errors.Is(err, helper.ErrAPINotFound) {
+		return false, nil
+	}
+	return applied, err
 }
 
 func (cp *ClerkProcessor) getClerkContext() (*ClerkContext, error) {

@@ -39,6 +39,9 @@ type HTTPClient interface {
 
 var Client HTTPClient
 
+// ErrAPINotFound marks a 404 from the API, which some queries use to answer that an entry doesn't exist.
+var ErrAPINotFound = errors.New("not found")
+
 // GetFromAddress returns the from address from the context's name
 func GetFromAddress(cliCtx client.Context) string {
 	ac := address.NewHexCodec()
@@ -178,6 +181,10 @@ func FetchFromAPI(URL string) ([]byte, error) {
 	}
 
 	Logger.Info("Error while fetching data from URL", "status", resp.StatusCode, "url", URL)
+
+	if resp.StatusCode == http.StatusNotFound {
+		err = ErrAPINotFound
+	}
 
 	return nil, fmt.Errorf("error while fetching data from url: %s, status: %d, error: %w", URL, resp.StatusCode, err)
 }

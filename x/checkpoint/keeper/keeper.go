@@ -33,6 +33,7 @@ type Keeper struct {
 
 	checkpoints        collections.Map[uint64, types.Checkpoint]
 	bufferedCheckpoint collections.Item[types.Checkpoint]
+	bufferHeight       collections.Item[uint64]
 	params             collections.Item[types.Params]
 	lastNoAck          collections.Item[uint64]
 	ackCount           collections.Item[uint64]
@@ -73,6 +74,7 @@ func NewKeeper(
 		IContractCaller: contractCaller,
 
 		bufferedCheckpoint:         collections.NewItem(sb, types.BufferedCheckpointPrefixKey, "buffered_checkpoint", codec.CollValue[types.Checkpoint](cdc)),
+		bufferHeight:               collections.NewItem(sb, types.BufferedCheckpointHeightPrefixKey, "buffered_checkpoint_height", collections.Uint64Value),
 		checkpoints:                collections.NewMap(sb, types.CheckpointMapPrefixKey, "checkpoints", collections.Uint64Key, codec.CollValue[types.Checkpoint](cdc)),
 		params:                     collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
 		lastNoAck:                  collections.NewItem(sb, types.LastNoAckPrefixKey, "last_no_ack", collections.Uint64Value),
@@ -190,7 +192,7 @@ func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint types.Check
 		return err
 	}
 
-	return nil
+	return k.recordBufferHeight(ctx)
 }
 
 // GetCheckpointByNumber gets the checkpoint by its number

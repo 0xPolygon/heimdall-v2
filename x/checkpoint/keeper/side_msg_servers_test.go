@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"time"
+
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -8,6 +10,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
@@ -590,4 +593,46 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 
 		require.Equal(checkpoint6.EndBlock+1, latestCheckpoint.EndBlock, "expected latest checkpoint based on ack value")
 	})
+}
+
+// From Purley a replacement is approved only once the buffer has expired at the voted block.
+func (s *KeeperTestSuite) TestSideHandleMsgCheckpointBufferExpiry() {
+	ctx, require := s.ctx.WithBlockHeight(10), s.Require()
+	keeper, contractCaller := s.checkpointKeeper, s.contractCaller
+
+	params, err := keeper.GetParams(ctx)
+	require.NoError(err)
+	bufferTime := uint64(params.CheckpointBufferTime.Seconds())
+
+	chainParams := cmTypes.DefaultParams()
+	s.cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(chainParams, nil)
+	s.topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return([]hmTypes.DividendAccount{
+		{User: "0x000000000000000000000000000000000000dEaD", FeeAmount: "1000"},
+	}, nil)
+	validatorSet := stakeSim.GetRandomValidatorSet(2)
+	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+
+	buffered := testutil.GenRandCheckpoint(0, 255, 1)
+	buffered.Proposer = validatorSet.Proposer.Signer
+	require.NoError(keeper.SetCheckpointBuffer(ctx, buffered))
+
+	msg := types.NewMsgCheckpointBlock(buffered.Proposer, buffered.StartBlock, buffered.EndBlock, buffered.RootHash,
+		common.Hex2Bytes("b1c33eede53d5c39b5a2da9f1b5fe2bb49f7dbbbd98ac238b43294381eeb838a"), chainParams.ChainParams.BorChainId)
+	contractCaller.Mock = mock.Mock{}
+	contractCaller.On("CheckIfBlocksExist", mock.Anything, buffered.EndBlock+chainParams.BorChainTxConfirmations).Return(true, nil)
+	contractCaller.On("GetRootHash", mock.Anything, buffered.StartBlock, buffered.EndBlock, uint64(1024)).Return(buffered.RootHash, nil)
+
+	orig := helper.GetPurleyHeight()
+	s.T().Cleanup(func() { helper.SetPurleyHeight(orig) })
+
+	at := func(elapsed uint64) sdk.Context {
+		return ctx.WithBlockTime(time.Unix(int64(buffered.Timestamp+elapsed), 0))
+	}
+
+	helper.SetPurleyHeight(0)
+	require.Equal(sidetxs.Vote_VOTE_YES, s.sideHandler(at(bufferTime-1), msg))
+
+	helper.SetPurleyHeight(1)
+	require.Equal(sidetxs.Vote_VOTE_NO, s.sideHandler(at(bufferTime-1), msg))
+	require.Equal(sidetxs.Vote_VOTE_YES, s.sideHandler(at(bufferTime), msg))
 }

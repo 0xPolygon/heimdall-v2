@@ -149,6 +149,33 @@ func TestIsKarwar(t *testing.T) {
 	}
 }
 
+func TestIsPurley(t *testing.T) {
+	tests := []struct {
+		name           string
+		hardforkHeight int64
+		queryHeight    int64
+		want           bool
+	}{
+		{name: "dormant: height 0 stays false at height 0", hardforkHeight: 0, queryHeight: 0, want: false},
+		{name: "dormant: height 0 stays false at large height", hardforkHeight: 0, queryHeight: 1_000_000, want: false},
+		{name: "below hardfork height returns false", hardforkHeight: 100, queryHeight: 99, want: false},
+		{name: "exact hardfork height returns true", hardforkHeight: 100, queryHeight: 100, want: true},
+		{name: "above hardfork height returns true", hardforkHeight: 100, queryHeight: 101, want: true},
+	}
+
+	original := GetPurleyHeight()
+	t.Cleanup(func() {
+		SetPurleyHeight(original)
+	})
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			SetPurleyHeight(tc.hardforkHeight)
+			require.Equal(t, tc.want, IsPurley(tc.queryHeight))
+		})
+	}
+}
+
 // TestHeimdallConfig checks heimdall configs
 func TestHeimdallConfig(t *testing.T) {
 	// Not t.Parallel(): this test mutates package-level configs via InitTestHeimdallConfig

@@ -10,12 +10,14 @@ import (
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	checkpointante "github.com/0xPolygon/heimdall-v2/x/checkpoint/ante"
 	clerkante "github.com/0xPolygon/heimdall-v2/x/clerk/ante"
+	stakeante "github.com/0xPolygon/heimdall-v2/x/stake/ante"
 )
 
 // HandlerOptions are the options required for constructing a default SDK AnteHandler.
 type HandlerOptions struct {
 	ante.HandlerOptions
 	SideTxConfig sidetxs.SideTxConfigurator
+	StakeKeeper  stakeante.StakeKeeper
 }
 
 // maxMultiSendOutputs bounds aggregate bank-transfer outputs per tx so flat-ante txs can't fan out unboundedly.
@@ -48,6 +50,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		// Bound the fee-coin count before ValidateBasicDecorator's own O(n) scan over the same slice.
 		ante.NewFeeCoinsCapDecorator(maxFeeCoins, helper.IsKyoto),
 		ante.NewValidateBasicDecorator(),
+		stakeante.NewStakeNonceDecorator(options.StakeKeeper, helper.IsPurley),
 		clerkante.NewTxHashDecorator(helper.IsLugano),
 		ante.NewMsgMultiSendCapDecorator(maxMultiSendOutputs, helper.IsZurichHardfork),
 		checkpointante.NewAccountRootHashLenDecorator(helper.IsZurichHardfork),

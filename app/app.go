@@ -589,6 +589,7 @@ func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig, sideTxConfig si
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
 			SideTxConfig: sideTxConfig,
+			StakeKeeper:  &app.StakeKeeper,
 		},
 	)
 	if err != nil {

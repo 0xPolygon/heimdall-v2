@@ -6,6 +6,7 @@ import (
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
+	"github.com/RichardKnop/machinery/v1/tasks"
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -23,6 +24,9 @@ type Connector struct {
 const (
 	// QName is machinery task queue
 	QName = "machinery_tasks"
+
+	// legacyRoutingKey is the routing key older bridges stamped on every task.
+	legacyRoutingKey = "machinery_task"
 )
 
 // NewQueueConnector creates a new queue connector
@@ -39,18 +43,7 @@ func NewQueueConnector(dialer string) *Connector {
 		panic(err)
 	}
 
-	cnf := &config.Config{
-		Broker:        dialer,
-		DefaultQueue:  QName,
-		ResultBackend: dialer,
-		AMQP: &config.AMQPConfig{
-			Exchange:     "machinery_exchange",
-			ExchangeType: "direct",
-			BindingKey:   "machinery_task",
-		},
-	}
-
-	server, err := machinery.NewServer(cnf)
+	server, err := machinery.NewServer(newConfig(dialer))
 	if err != nil {
 		panic(err)
 	}
@@ -66,6 +59,37 @@ func NewQueueConnector(dialer string) *Connector {
 	return &connector
 }
 
+// newConfig binds the worker queue with its own name as binding key: on a direct
+// exchange machinery publishes to a queue named after the routing key, so any
+// other key makes publishers declare and fill a queue nobody consumes.
+func newConfig(dialer string) *config.Config {
+	return &config.Config{
+		Broker:        dialer,
+		DefaultQueue:  QName,
+		ResultBackend: dialer,
+		AMQP: &config.AMQPConfig{
+			Exchange:     "machinery_exchange",
+			ExchangeType: "direct",
+			BindingKey:   QName,
+		},
+	}
+}
+
+// normalizeRoutingKey moves tasks queued by older bridges onto QName, so their
+// retries don't redeclare the unconsumed legacy queue.
+func normalizeRoutingKey(s *tasks.Signature) {
+	if s.RoutingKey == legacyRoutingKey {
+		s.RoutingKey = QName
+	}
+}
+
+func newWorker(server *machinery.Server) *machinery.Worker {
+	worker := server.NewWorker("invoke-processor", 10)
+	worker.SetPreTaskHandler(normalizeRoutingKey)
+
+	return worker
+}
+
 // StartWorker - starts worker to process registered tasks
 func (qc *Connector) StartWorker() {
 	qc.mu.Lock()
@@ -75,7 +99,7 @@ func (qc *Connector) StartWorker() {
 		return
 	}
 
-	worker := qc.Server.NewWorker("invoke-processor", 10)
+	worker := newWorker(qc.Server)
 	errors := make(chan error, 1)
 	qc.worker = worker
 

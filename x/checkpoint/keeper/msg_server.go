@@ -61,12 +61,10 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 	if err == nil {
 		checkpointBufferTime := uint64(params.CheckpointBufferTime.Seconds())
 
-		if checkpointBuffer.Timestamp == 0 || ((timeStamp > checkpointBuffer.Timestamp) && (timeStamp-checkpointBuffer.Timestamp) >= checkpointBufferTime) {
+		if checkpointBuffer.Timestamp == 0 || isCheckpointBufferExpired(checkpointBuffer, timeStamp, checkpointBufferTime) {
 			// this is also the case when the checkpoint buffer is empty (because of zero timestamp),
 			// hence no need for IsBufferedCheckpointZero check
-			logger.Debug("Checkpoint has been timed out. flushing buffer.", "checkpointTimestamp", timeStamp, "prevCheckpointTimestamp", checkpointBuffer.Timestamp)
-			err := srv.FlushCheckpointBuffer(ctx)
-			if err != nil {
+			if err := srv.flushExpiredBuffer(ctx); err != nil {
 				logger.Error("Error in flushing the checkpoint buffer")
 				return nil, types.ErrBufferFlush
 			}
@@ -204,7 +202,6 @@ func (srv msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*t
 			"checkpointNumber", msg.Number,
 		)
 		return nil, errorsmod.Wrap(types.ErrBadAck, "invalid checkpoint number")
-
 	}
 	// get the last checkpoint from the buffer
 	bufCheckpoint, err := srv.GetCheckpointFromBuffer(ctx)
