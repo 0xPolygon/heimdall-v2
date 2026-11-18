@@ -589,7 +589,7 @@ func InitHeimdallConfigWith(ctx context.Context, homeDir string, heimdallConfigF
 		kyotoHeight = 51533000
 		luganoHeight = 54627000
 		karwarHeight = 57006000
-		purleyHeight = 0
+		purleyHeight = 58280000
 	case MumbaiChain:
 		milestoneDeletionHeight = 0
 		faultyMilestoneNumber = -1
