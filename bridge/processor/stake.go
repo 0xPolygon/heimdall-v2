@@ -120,7 +120,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(ctx context.Context, eve
 		}
 
 		// if the account doesn't exist, retry with delay for top-up to process first.
-		if _, err := util.GetAccount(context.Background(), sp.cliCtx, sdk.MustAccAddressFromHex(event.Signer.Hex()).String()); err != nil {
+		if _, err := util.GetAccount(ctx, sp.cliCtx,sdk.MustAccAddressFromHex(event.Signer.Hex()).String()); err != nil {
 			sp.Logger.Info(
 				infoMsgAccountDoesNotExist,
 				"event", eventName,
