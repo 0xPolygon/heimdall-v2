@@ -8,7 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
@@ -520,4 +523,79 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 			}
 		})
 	}
+}
+
+func (s *KeeperTestSuite) TestHandleMsgCheckpointExpiredBufferReplacement() {
+	ctx, require, msgServer := s.ctx.WithBlockHeight(10), s.Require(), s.msgServer
+	keeper, topupKeeper, stakeKeeper := s.checkpointKeeper, s.topupKeeper, s.stakeKeeper
+
+	params, err := keeper.GetParams(ctx)
+	require.NoError(err)
+	bufferTime := uint64(params.CheckpointBufferTime.Seconds())
+
+	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(chSim.RandDividendAccounts(), nil)
+	dividendAccounts, err := topupKeeper.GetAllDividendAccounts(ctx)
+	require.NoError(err)
+	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
+	require.NoError(err)
+
+	validatorSet := stakeSim.GetRandomValidatorSet(2)
+	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	s.cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(cmTypes.DefaultParams(), nil)
+
+	buffered := chSim.GenRandCheckpoint(0, 256, 1)
+	buffered.Proposer = validatorSet.Proposer.Signer
+	replacement := types.NewMsgCheckpointBlock(buffered.Proposer, buffered.StartBlock, buffered.EndBlock, chSim.RandomBytes(), accRootHash, "1234")
+
+	orig := helper.GetPurleyHeight()
+	s.T().Cleanup(func() { helper.SetPurleyHeight(orig) })
+
+	tests := []struct {
+		name         string
+		purleyHeight int64
+		elapsed      uint64
+		vote         sidetxs.Vote
+		wantMsgErr   error
+		wantRoot     []byte
+	}{
+		{name: "pre-Purley msg handler flushes before the replacement is side-validated", elapsed: bufferTime, vote: sidetxs.Vote_VOTE_NO},
+		{name: "rejected replacement keeps the expired buffer", purleyHeight: 1, elapsed: bufferTime, vote: sidetxs.Vote_VOTE_NO, wantRoot: buffered.RootHash},
+		{name: "approved replacement overwrites the expired buffer", purleyHeight: 1, elapsed: bufferTime, vote: sidetxs.Vote_VOTE_YES, wantRoot: replacement.RootHash},
+		{name: "approved replacement of an unexpired buffer is refused", purleyHeight: 1, elapsed: bufferTime - 1, vote: sidetxs.Vote_VOTE_YES, wantMsgErr: types.ErrNoAck, wantRoot: buffered.RootHash},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			helper.SetPurleyHeight(tc.purleyHeight)
+			require.NoError(keeper.SetCheckpointBuffer(ctx.WithBlockHeight(ctx.BlockHeight()-1), buffered))
+
+			txCtx := ctx.WithBlockTime(time.Unix(int64(buffered.Timestamp+tc.elapsed), 0))
+			_, err := msgServer.Checkpoint(txCtx, replacement)
+			require.ErrorIs(err, tc.wantMsgErr)
+
+			// Side txs are voted on even when the msg handler failed, so the post-handler must hold the line too.
+			s.postHandler(txCtx.WithBlockHeight(txCtx.BlockHeight()+1), replacement, tc.vote)
+
+			got, err := keeper.GetCheckpointFromBuffer(ctx)
+			require.NoError(err)
+			require.Equal(tc.wantRoot, got.RootHash)
+		})
+	}
+
+	// With Purley at H, the post-handler at H applies a tx voted on at H-1 under the old rule.
+	helper.SetPurleyHeight(ctx.BlockHeight() + 1)
+	require.NoError(keeper.SetCheckpointBuffer(ctx, buffered))
+	require.NoError(keeper.ForgetBufferHeight(ctx))
+	expired := ctx.WithBlockTime(time.Unix(int64(buffered.Timestamp+bufferTime), 0))
+	postHandler := s.sideMsgCfg.GetPostHandler(replacement)
+	require.Error(postHandler(expired.WithBlockHeight(ctx.BlockHeight()+1), replacement, sidetxs.Vote_VOTE_YES))
+	got, err := keeper.GetCheckpointFromBuffer(ctx)
+	require.NoError(err)
+	require.Equal(buffered.RootHash, got.RootHash)
+
+	// A replacement voted on at H applies at H+1.
+	require.NoError(postHandler(expired.WithBlockHeight(ctx.BlockHeight()+2), replacement, sidetxs.Vote_VOTE_YES))
+	got, err = keeper.GetCheckpointFromBuffer(ctx)
+	require.NoError(err)
+	require.Equal(replacement.RootHash, got.RootHash)
 }

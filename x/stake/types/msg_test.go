@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -122,4 +123,51 @@ func TestMsgDecode(t *testing.T) {
 	require.Equal(t, msgValidatorExit.From, msgValidatorExit2.From)
 	require.Equal(t, msgValidatorExit.ValId, msgValidatorExit2.ValId)
 	require.Equal(t, msgValidatorExit.DeactivationEpoch, msgValidatorExit2.DeactivationEpoch)
+}
+
+func TestMsgValidatorJoin_ValidateBasic_NilAmount(t *testing.T) {
+	t.Parallel()
+
+	pk1 := secp256k1.GenPrivKey().PubKey()
+	msg := types.MsgValidatorJoin{
+		From:            pk1.Address().String(),
+		ValId:           1,
+		ActivationEpoch: 1,
+		Amount:          math.Int{},
+		SignerPubKey:    pk1.Bytes(),
+		TxHash:          make([]byte, 32),
+		LogIndex:        1,
+		BlockNumber:     1,
+		Nonce:           1,
+	}
+
+	requireNilAmountRejected(t, msg.ValidateBasic)
+}
+
+func TestMsgStakeUpdate_ValidateBasic_NilAmount(t *testing.T) {
+	t.Parallel()
+
+	pk1 := secp256k1.GenPrivKey().PubKey()
+	msg := types.MsgStakeUpdate{
+		From:        pk1.Address().String(),
+		ValId:       1,
+		NewAmount:   math.Int{},
+		TxHash:      make([]byte, 32),
+		LogIndex:    1,
+		BlockNumber: 1,
+		Nonce:       1,
+	}
+
+	requireNilAmountRejected(t, msg.ValidateBasic)
+}
+
+// The result code must match the ErrPanic that runTx returned when the nil amount panicked,
+// otherwise mixed-version nodes would compute different results hashes.
+func requireNilAmountRejected(t *testing.T, validateBasic func() error) {
+	t.Helper()
+
+	var err error
+	require.NotPanics(t, func() { err = validateBasic() })
+	require.ErrorIs(t, err, sdkerrors.ErrPanic)
+	require.ErrorContains(t, err, "amount is required")
 }

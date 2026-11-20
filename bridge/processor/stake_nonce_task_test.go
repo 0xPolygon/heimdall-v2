@@ -1,14 +1,17 @@
 package processor
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1/tasks"
@@ -80,13 +83,10 @@ func stakeEventLog(t *testing.T, stakingABI *abi.ABI, eventName string, validato
 	return string(logBytes)
 }
 
-func TestStakeTasks_OutOfOrderNonceRetriesLater(t *testing.T) {
-	// Not parallel: mutates global helper config.
-	const (
-		validatorID   = 10
-		heimdallNonce = 256
-		eventNonce    = 261
-	)
+// stakeNonceProcessor returns a StakingProcessor whose heimdall reports every event as new and the
+// validator at heimdallNonce.
+func stakeNonceProcessor(t *testing.T, validatorID, heimdallNonce uint64) (*StakingProcessor, *abi.ABI, *bytes.Buffer) {
+	t.Helper()
 
 	registry := codectypes.NewInterfaceRegistry()
 	cryptocodec.RegisterInterfaces(registry)
@@ -112,7 +112,7 @@ func TestStakeTasks_OutOfOrderNonceRetriesLater(t *testing.T) {
 		require.NoError(t, err)
 		_, _ = w.Write(body)
 	}))
-	defer heimdall.Close()
+	t.Cleanup(heimdall.Close)
 
 	// Other tests in this package swap helper.Client for gomock mocks without
 	// restoring it, so install a real client for this test's REST calls.
@@ -128,31 +128,75 @@ func TestStakeTasks_OutOfOrderNonceRetriesLater(t *testing.T) {
 	require.NoError(t, err)
 
 	sp := NewStakingProcessor(stakingABI)
-	sp.Logger = log.NewNopLogger()
+	logs := new(bytes.Buffer)
+	sp.Logger = log.NewLogger(logs, log.ColorOption(false))
 	sp.cliCtx = client.Context{}.WithCodec(cdc)
+	return sp, stakingABI, logs
+}
 
-	tests := []struct {
-		event string
-		task  func(context.Context, string, string) error
-	}{
-		{event: "StakeUpdate", task: sp.sendStakeUpdateToHeimdall},
-		{event: "UnstakeInit", task: sp.sendUnstakeInitToHeimdall},
-		{event: "SignerChange", task: sp.sendSignerChangeToHeimdall},
+func stakeNonceTasks(sp *StakingProcessor) map[string]func(context.Context, string, string) error {
+	return map[string]func(context.Context, string, string) error{
+		"StakeUpdate":  sp.sendStakeUpdateToHeimdall,
+		"UnstakeInit":  sp.sendUnstakeInitToHeimdall,
+		"SignerChange": sp.sendSignerChangeToHeimdall,
 	}
+}
 
-	for _, tc := range tests {
-		t.Run(tc.event, func(t *testing.T) {
-			signature := &tasks.Signature{}
-			task, err := tasks.NewWithSignature(tc.task, signature)
-			require.NoError(t, err)
+func TestStakeTasks_OutOfOrderNonceRetriesLater(t *testing.T) {
+	// Not parallel: mutates global helper config.
+	const (
+		validatorID   = 10
+		heimdallNonce = 256
+	)
+	sp, stakingABI, logs := stakeNonceProcessor(t, validatorID, heimdallNonce)
 
-			err = tc.task(task.Context, tc.event, stakeEventLog(t, stakingABI, tc.event, validatorID, eventNonce))
+	for event, task := range stakeNonceTasks(sp) {
+		for _, eventNonce := range []int64{heimdallNonce + 2, heimdallNonce + 5, heimdallNonce + 10, heimdallNonce + 50} {
+			t.Run(fmt.Sprintf("%s/%d", event, eventNonce), func(t *testing.T) {
+				logs.Reset()
+				signature := &tasks.Signature{}
+				taskCtx, err := tasks.NewWithSignature(task, signature)
+				require.NoError(t, err)
 
-			var retryLater tasks.ErrRetryTaskLater
-			require.True(t, errors.As(err, &retryLater), "got %v", err)
-			require.Equal(t, (eventNonce-heimdallNonce)*util.StakeNonceRetryDelay, retryLater.RetryIn())
-			_, stamped := retryStart(signature.Headers, nonceRetryStartHeader)
-			require.True(t, stamped)
-		})
+				err = task(taskCtx.Context, event, stakeEventLog(t, stakingABI, event, validatorID, eventNonce))
+
+				var retryLater tasks.ErrRetryTaskLater
+				require.True(t, errors.As(err, &retryLater), "got %v", err)
+				delay := time.Duration(min(eventNonce-heimdallNonce, 10)) * util.StakeNonceRetryDelay
+				require.Equal(t, delay, retryLater.RetryIn())
+				require.Contains(t, logs.String(), errMsgNonceNotInOrder)
+				require.Contains(t, logs.String(), fmt.Sprintf("delay=%d", int64(delay)))
+				require.NotContains(t, logs.String(), infoMsgNonceAlreadyUsed)
+				_, stamped := signature.Headers[eventRetryStartHeader]
+				require.True(t, stamped)
+			})
+		}
+	}
+}
+
+// A nonce heimdall already used can never apply, so the task ends instead of polling forever.
+func TestStakeTasks_UsedNonceEndsTask(t *testing.T) {
+	// Not parallel: mutates global helper config.
+	const (
+		validatorID   = 10
+		heimdallNonce = 256
+	)
+	sp, stakingABI, logs := stakeNonceProcessor(t, validatorID, heimdallNonce)
+
+	for event, task := range stakeNonceTasks(sp) {
+		for _, eventNonce := range []int64{0, 1, heimdallNonce - 1, heimdallNonce} {
+			t.Run(fmt.Sprintf("%s/%d", event, eventNonce), func(t *testing.T) {
+				logs.Reset()
+				signature := &tasks.Signature{}
+				taskCtx, err := tasks.NewWithSignature(task, signature)
+				require.NoError(t, err)
+
+				err = task(taskCtx.Context, event, stakeEventLog(t, stakingABI, event, validatorID, eventNonce))
+				require.NoError(t, err)
+				require.NotContains(t, signature.Headers, eventRetryStartHeader)
+				require.Contains(t, logs.String(), infoMsgNonceAlreadyUsed)
+				require.NotContains(t, logs.String(), errMsgNonceNotInOrder)
+			})
+		}
 	}
 }

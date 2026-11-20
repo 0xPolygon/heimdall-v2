@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"math/big"
@@ -146,7 +147,7 @@ func TestSendValidatorJoin_SignerAccountMissing(t *testing.T) {
 			sp.cliCtx = client.Context{}.WithCodec(cdc).WithInterfaceRegistry(registry)
 			sp.contractCaller = &helper.ContractCaller{MainChainClient: mainClient, MainChainTimeout: 5 * time.Second}
 
-			err = sp.sendValidatorJoinToHeimdall("Staked", stakeEventLog(t, stakingABI, "Staked", 202, 1))
+			err = sp.sendValidatorJoinToHeimdall(context.Background(), "Staked", stakeEventLog(t, stakingABI, "Staked", 202, 1))
 
 			if !tc.retry {
 				require.NoError(t, err)
@@ -196,7 +197,7 @@ func TestSignerAccountReady_AccountExists(t *testing.T) {
 	sp.Logger = log.NewNopLogger()
 	sp.cliCtx = client.Context{}.WithCodec(cdc).WithInterfaceRegistry(registry)
 
-	ready, err := sp.signerAccountReady("Staked", &stakinginfo.StakinginfoStaked{Signer: signer, ValidatorId: big.NewInt(202)}, "0xaa")
+	ready, err := sp.signerAccountReady(context.Background(), "Staked", &stakinginfo.StakinginfoStaked{Signer: signer, ValidatorId: big.NewInt(202)}, "0xaa")
 	require.NoError(t, err)
 	require.True(t, ready)
 }
