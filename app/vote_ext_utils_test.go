@@ -2541,6 +2541,7 @@ func TestVoteExtensionAtPropositionLengthCapFitsSizeLimits(t *testing.T) {
 	}
 
 	ve := sidetxs.VoteExtension{
+		NonRpExtensionHash:   hash,
 		BlockHash:            hash,
 		Height:               math.MaxInt64,
 		SideTxResponses:      responses,
@@ -2550,6 +2551,7 @@ func TestVoteExtensionAtPropositionLengthCapFitsSizeLimits(t *testing.T) {
 	require.NoError(t, err)
 
 	require.LessOrEqual(t, len(bz), maxVESize)
+	require.LessOrEqual(t, len(bz), maxSignedVESize)
 
 	// Per-validator budget filterVoteExtensions applies at the mainnet block size (2 MiB) and validator count (104).
 	const mainnetMaxBytes, mainnetValidators = 2 * 1024 * 1024, 104

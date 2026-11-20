@@ -55,6 +55,13 @@ const (
 	// proposition of at most MilestonePropositionLengthCap blocks, ~5KB in the worst case
 	// (TestVoteExtensionAtPropositionLengthCapFitsSizeLimits).
 	maxVESize = 10 * 1024 // 10KB maximum
+
+	// The extension signature binds height and round, so the block hash only has to identify the
+	// block being voted on, not resist collisions.
+	compactVEBlockHashLength = 8
+
+	// 0x00 marker (distinct from the 0x01 vote byte of checkpoint extensions) + 8-byte height.
+	compactMinNonRpVoteExtensionSize = 1 + 8
 )
 
 // ValidateVoteExtensions verifies the vote extension correctness
@@ -98,7 +105,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 		}
 
 		// reject unknown fields
-		if err := rejectUnknownVoteExtFields(vote.VoteExtension); err != nil {
+		if err := rejectVoteEnvelopeFields(vote.VoteExtension, reqHeight-1); err != nil {
 			return fmt.Errorf("unknown fields detected in vote extensions at height %d: %w", reqHeight, err)
 		}
 
@@ -370,7 +377,7 @@ func filterVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTy
 		}
 
 		// reject unknown fields and skip invalid ones
-		if err := rejectUnknownVoteExtFields(vote.VoteExtension); err != nil {
+		if err := rejectVoteEnvelopeFields(vote.VoteExtension, reqHeight-1); err != nil {
 			if applyVEsFilteringFixes {
 				logger.Warn("Unknown fields detected in vote extensions, emitting placeholder",
 					"height", reqHeight, "error", err)
@@ -687,8 +694,8 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, validatorSet *stak
 			return nil, err
 		}
 
-		if ve.Height != currentHeight-1 {
-			return nil, fmt.Errorf("invalid height received for vote extension, VeHeight should match CurrentHeight-1. VeHeight: %d, CurrentHeight: %d", ve.Height, currentHeight)
+		if err := validateVoteExtensionHeader(ve, currentHeight-1); err != nil {
+			return nil, err
 		}
 
 		// blockHash consistency check
@@ -789,6 +796,39 @@ func validateSideTxResponses(sideTxResponses []sidetxs.SideTxResponse) ([]byte, 
 	return nil, nil
 }
 
+// voteExtensionBlockHash returns the block hash a vote extension produced at height carries.
+func voteExtensionBlockHash(height int64, blockHash []byte) []byte {
+	if helper.IsPurley(height) && len(blockHash) > compactVEBlockHashLength {
+		return blockHash[:compactVEBlockHashLength]
+	}
+	return blockHash
+}
+
+// validateVoteExtensionHeader checks the height and block hash encoding of an extension produced at
+// veHeight. Compact extensions omit the height, which the extension signature already covers.
+func validateVoteExtensionHeader(ve *sidetxs.VoteExtension, veHeight int64) error {
+	if !helper.IsPurley(veHeight) {
+		if ve.Height != veHeight {
+			return fmt.Errorf("invalid vote extension height: expected %d, got %d", veHeight, ve.Height)
+		}
+		return nil
+	}
+	if ve.Height != 0 {
+		return fmt.Errorf("compact vote extension must omit height, got %d", ve.Height)
+	}
+	if len(ve.BlockHash) != compactVEBlockHashLength {
+		return fmt.Errorf("invalid compact vote extension block hash length: %d", len(ve.BlockHash))
+	}
+	return nil
+}
+
+func minNonRpVoteExtensionSizeAt(height int64) int {
+	if helper.IsPurley(height) {
+		return compactMinNonRpVoteExtensionSize
+	}
+	return minNonRpVoteExtensionSize
+}
+
 // checkIfVoteExtensionsDisabled indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.
 // Since we are using a hard fork approach for the heimdall migration, VEs will be enabled from v2 genesis' initial height (v1 last height +1).
 // Returning an error will result in CometBFT panic.
@@ -831,8 +871,16 @@ func retrieveVoteExtensionsEnableHeight(ctx sdk.Context) int64 {
 	return consensusParams.GetAbci().GetVoteExtensionsEnableHeight()
 }
 
-// GetDummyNonRpVoteExtension returns a dummy non-rp vote extension for given height and chain id
+// GetDummyNonRpVoteExtension returns the non-rp placeholder for the format active at height.
 func GetDummyNonRpVoteExtension(height int64, chainID string) ([]byte, error) {
+	if helper.IsPurley(height) {
+		return CompactDummyNonRpVoteExtension(height, chainID), nil
+	}
+	return LegacyDummyNonRpVoteExtension(height, chainID)
+}
+
+// LegacyDummyNonRpVoteExtension returns the non-rp placeholder used before the Purley hardfork.
+func LegacyDummyNonRpVoteExtension(height int64, chainID string) ([]byte, error) {
 	var buf bytes.Buffer
 
 	writtenBytes, err := buf.Write(dummyNonRpVoteExtension)
@@ -864,6 +912,14 @@ func GetDummyNonRpVoteExtension(height int64, chainID string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// CompactDummyNonRpVoteExtension returns the non-rp placeholder used from the Purley hardfork.
+func CompactDummyNonRpVoteExtension(height int64, chainID string) []byte {
+	ext := make([]byte, 0, compactMinNonRpVoteExtensionSize+len(chainID))
+	ext = append(ext, 0x00)
+	ext = binary.BigEndian.AppendUint64(ext, uint64(height))
+	return append(ext, chainID...)
+}
+
 // ValidateNonRpVoteExtensions validates the non-rp vote extensions
 func ValidateNonRpVoteExtensions(
 	ctx sdk.Context,
@@ -883,6 +939,11 @@ func ValidateNonRpVoteExtensions(
 	// Wrap every failure, not only a bad signature, so ProcessProposal rejects on all of them.
 	if err := checkNonRpVoteExtensionsSignatures(ctx, extVoteInfo, validatorSet); err != nil {
 		return fmt.Errorf("%w: %w", errNonRpSignature, err)
+	}
+
+	if helper.IsPurley(height) {
+		// An ACK can advance checkpoint state after these legacy votes were signed.
+		return nil
 	}
 
 	// Check if there is a vote extension with majority voting power
@@ -911,8 +972,8 @@ func validateNonRpVoteExtensionData(
 	checkpointKeeper checkpointKeeper.Keeper,
 	contractCaller helper.IContractCaller,
 ) error {
-	if len(extension) < minNonRpVoteExtensionSize {
-		return fmt.Errorf("non-rp vote extension size is too small: %d, min: %d", len(extension), minNonRpVoteExtensionSize)
+	if minSize := minNonRpVoteExtensionSizeAt(height); len(extension) < minSize {
+		return fmt.Errorf("non-rp vote extension size is too small: %d, min: %d", len(extension), minSize)
 	}
 
 	if len(extension) > maxNonRpVoteExtensionSize {

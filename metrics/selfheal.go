@@ -38,13 +38,14 @@ var (
 		Help:      "Total number of self-heal cycles that skipped a validator whose next stake event is already processed but whose nonce did not advance",
 	})
 
-	// StakeNonceRetriesDropped counts bridge stake tasks dropped after
-	// retrying an out-of-order nonce for longer than the retry age limit.
-	StakeNonceRetriesDropped = promauto.NewCounter(prometheus.CounterOpts{
+	// EventRetriesPastSelfHealDepth counts bridge event-task retries for events still unapplied
+	// after the default self-heal depth. Tasks no longer give up, so this is the stuck-event signal.
+	// It counts attempts, so its rate follows each task's polling interval, not just the backlog.
+	EventRetriesPastSelfHealDepth = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: Namespace,
 		Subsystem: "bridge",
-		Name:      "stake_nonce_retries_dropped_total",
-		Help:      "Total number of stake tasks dropped after retrying an out-of-order nonce past the retry age limit",
+		Name:      "event_retries_past_self_heal_depth_total",
+		Help:      "Total number of bridge event-task retry attempts for events still unapplied after the default self-heal depth",
 	})
 
 	// ClerkMempoolBusyDeferrals counts clerk broadcasts the bridge deferred

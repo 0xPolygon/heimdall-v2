@@ -35,4 +35,7 @@ var (
 
 	// CheckpointSignaturesTxHashPrefixKey represents the prefix for checkpoint signatures tx hash
 	CheckpointSignaturesTxHashPrefixKey = collections.NewPrefix([]byte{0x86})
+
+	// BufferedCheckpointHeightPrefixKey represents the prefix for the height the buffered checkpoint was installed at
+	BufferedCheckpointHeightPrefixKey = collections.NewPrefix([]byte{0x87})
 )

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/RichardKnop/machinery/v1/tasks"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -20,8 +19,8 @@ const infoMsgDroppingExitedJoin = "StakingProcessor: dropping validator-join tas
 // signer has a heimdall account the task is retried, unless the validator has
 // already started exiting on L1: heimdall votes against such a join, so the task
 // is dropped instead of retrying for as long as the account stays missing.
-func (sp *StakingProcessor) signerAccountReady(eventName string, event *stakinginfo.StakinginfoStaked, txHash string) (bool, error) {
-	if _, err := util.GetAccount(context.Background(), sp.cliCtx, sdk.MustAccAddressFromHex(event.Signer.Hex()).String()); err == nil {
+func (sp *StakingProcessor) signerAccountReady(ctx context.Context, eventName string, event *stakinginfo.StakinginfoStaked, txHash string) (bool, error) {
+	if _, err := util.GetAccount(ctx, sp.cliCtx, sdk.MustAccAddressFromHex(event.Signer.Hex()).String()); err == nil {
 		return true, nil
 	}
 
@@ -39,7 +38,7 @@ func (sp *StakingProcessor) signerAccountReady(eventName string, event *stakingi
 		"event", eventName,
 		"signer", event.Signer,
 	)
-	return false, tasks.NewErrRetryTaskLater(msgAccountDoesNotExist, util.RetryTaskDelay)
+	return false, retryEvent(ctx, msgAccountDoesNotExist, util.RetryTaskDelay)
 }
 
 func (sp *StakingProcessor) hasExitedOnMainChain(validatorID *big.Int) (bool, error) {

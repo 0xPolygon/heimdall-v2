@@ -35,6 +35,10 @@ type Processor interface {
 	Stop()
 }
 
+type heimdallBroadcaster interface {
+	BroadcastToHeimdall(context.Context, types.Msg, interface{}) (*types.TxResponse, error)
+}
+
 type BaseProcessor struct {
 	Logger log.Logger
 	name   string
@@ -43,7 +47,7 @@ type BaseProcessor struct {
 	queueConnector *queue.Connector
 
 	// tx broadcaster
-	txBroadcaster *broadcaster.TxBroadcaster
+	txBroadcaster heimdallBroadcaster
 
 	// cli context
 	cliCtx client.Context
@@ -153,19 +157,14 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 	return false, nil
 }
 
-// checkTxAgainstMempool checks if the transaction is already in the mempool or not.
-// It is consumed only for `clerk` processor.
-// checkTxAgainstMempool reports whether the mempool holds the same event
-// record; with ownOnly, only one this bridge signed counts.
+// checkTxAgainstMempool reports whether the mempool holds the same L1 event as
+// msg, from any validator; with ownOnly, only a tx this bridge signed counts.
+// A clerk record matches on its event fields, any other event message on every
+// field but the relayer address.
 func (bp *BaseProcessor) checkTxAgainstMempool(ctx context.Context, msg types.Msg, event interface{}, ownOnly bool) (bool, error) {
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "checkTxAgainstMempool", time.Now())
 
-	clerkMsg, ok := msg.(*clerkTypes.MsgEventRecord)
-	if !ok {
-		return false, nil
-	}
-
-	if bp.httpClient == nil {
+	if _, ok := eventPayload(msg); !ok || bp.httpClient == nil {
 		return false, nil
 	}
 
@@ -181,11 +180,25 @@ func (bp *BaseProcessor) checkTxAgainstMempool(ctx context.Context, msg types.Ms
 		return false, err
 	}
 
+	clerkMsg, isClerk := msg.(*clerkTypes.MsgEventRecord)
 	for _, txBytes := range result.Txs {
-		mempoolClerkMsg := bp.decodeClerkMsg(txBytes)
-		if mempoolClerkMsg != nil && sameEventRecord(mempoolClerkMsg, clerkMsg) && (!ownOnly || mempoolClerkMsg.From == clerkMsg.From) {
-			bp.Logger.Debug("Duplicate clerk tx found in mempool", "txHash", clerkMsg.GetTxHash(), "logIndex", clerkMsg.GetLogIndex())
-			return true, nil
+		if isClerk {
+			mempoolClerkMsg := bp.decodeClerkMsg(txBytes)
+			if mempoolClerkMsg != nil && sameEventRecord(mempoolClerkMsg, clerkMsg) && (!ownOnly || mempoolClerkMsg.From == clerkMsg.From) {
+				bp.Logger.Debug("Duplicate clerk tx found in mempool", "txHash", clerkMsg.GetTxHash(), "logIndex", clerkMsg.GetLogIndex())
+				return true, nil
+			}
+			continue
+		}
+
+		decodedTx, err := authlegacytx.DefaultTxDecoder(bp.cliCtx.Codec)(txBytes)
+		if err != nil {
+			continue
+		}
+		for _, pending := range decodedTx.GetMsgs() {
+			if sameEventMsg(bp.cliCtx.Codec, pending, msg) {
+				return true, nil
+			}
 		}
 	}
 

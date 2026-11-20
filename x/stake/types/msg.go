@@ -3,10 +3,12 @@ package types
 import (
 	"bytes"
 
+	errorsmod "cosmossdk.io/errors"
 	sdkmath "cosmossdk.io/math"
 	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
@@ -24,6 +26,12 @@ var (
 	_ sdk.Msg = &MsgSignerUpdate{}
 	_ sdk.Msg = &MsgValidatorExit{}
 )
+
+// errNilAmount covers an omitted amount field, which used to panic in IsZero. runTx recovered that
+// panic as ErrPanic, so returning ErrPanic keeps the tx result code, and the results hash, unchanged.
+func errNilAmount() error {
+	return errorsmod.Wrap(sdkerrors.ErrPanic, "amount is required")
+}
 
 // NewMsgValidatorJoin creates a new MsgCreateValidator instance.
 func NewMsgValidatorJoin(
@@ -70,6 +78,9 @@ func (msg MsgValidatorJoin) ValidateBasic() error {
 		return ErrInvalidMsg.Wrap("signer public key can't be of zero bytes")
 	}
 
+	if msg.Amount.IsNil() {
+		return errNilAmount()
+	}
 	if msg.Amount.IsZero() || msg.Amount.IsNegative() {
 		return ErrInvalidMsg.Wrapf("invalid amount %v", msg.Amount)
 	}
@@ -115,6 +126,9 @@ func (msg MsgStakeUpdate) ValidateBasic() error {
 		return ErrInvalidMsg.Wrapf(errInvalidProposer, msg.From)
 	}
 
+	if msg.NewAmount.IsNil() {
+		return errNilAmount()
+	}
 	if msg.NewAmount.IsZero() || msg.NewAmount.IsNegative() {
 		return ErrInvalidMsg.Wrapf("invalid amount %v", msg.NewAmount)
 	}

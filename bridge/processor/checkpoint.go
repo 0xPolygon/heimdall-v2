@@ -16,6 +16,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -44,8 +45,6 @@ const (
 	errMsgCpSendingCheckpointToRootChain     = "CheckpointProcessor: error sending checkpoint to rootChain"
 	errMsgCpUnmarshallingEventFromRootChain  = "CheckpointProcessor: Error while unmarshalling event from rootChain"
 	errMsgCpParsingEvent                     = "CheckpointProcessor: error while parsing event"
-	errMsgCpBroadcastingCheckpointAck        = "CheckpointProcessor: error while broadcasting checkpoint-ack to heimdall"
-	errMsgCpCheckpointAckTxFailed            = "CheckpointProcessor: checkpoint-ack tx failed"
 	errMsgCpFetchingLatestCheckpointTime     = "CheckpointProcessor error fetching latest checkpoint time from rootChain"
 	errMsgCpCheckingProposerList             = "CheckpointProcessor: error checking IsInProposerList while proposing Checkpoint No-Ack "
 	errMsgCpProposingNoAck                   = "CheckpointProcessor: error proposing Checkpoint No-Ack "
@@ -341,13 +340,7 @@ func (cp *CheckpointProcessor) sendCheckpointToRootChain(eventBytes string, bloc
 
 // sendCheckpointAckToHeimdall - handles checkpointAck event from rootChain
 // 1. create and broadcast checkpointAck msg to heimdall.
-func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, checkpointAckStr string) error {
-	// fetch checkpoint context
-	checkpointContext, err := cp.getCheckpointContext()
-	if err != nil {
-		return err
-	}
-
+func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(ctx context.Context, eventName string, checkpointAckStr string) (err error) {
 	log := ethTypes.Log{}
 	if err = json.Unmarshal([]byte(checkpointAckStr), &log); err != nil {
 		cp.Logger.Error(errMsgCpUnmarshallingEventFromRootChain, "error", err)
@@ -358,6 +351,13 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 	if err = helper.UnpackLog(cp.rootChainAbi, event, eventName, &log); err != nil {
 		cp.Logger.Error(errMsgCpParsingEvent, "name", eventName, "error", err)
 	} else {
+		defer retryEventFailure(ctx, &err)
+
+		var checkpointContext *CheckpointContext
+		if checkpointContext, err = cp.getCheckpointContext(); err != nil {
+			return err
+		}
+
 		checkpointNumber := big.NewInt(0).Div(event.HeaderBlockId, big.NewInt(0).SetUint64(checkpointContext.CheckpointParams.ChildChainBlockInterval))
 
 		cp.Logger.Info(
@@ -373,10 +373,11 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 			"logIndex", uint64(log.Index),
 		)
 
-		// fetch latest checkpoint
-		latestCheckpoint, err := util.GetLatestCheckpoint(cp.cliCtx.Codec)
-		// event checkpoint is older than or equal to the latest checkpoint
-		if err == nil && latestCheckpoint != nil && latestCheckpoint.EndBlock >= event.End.Uint64() {
+		acked, err := checkpointAcked(cp.cliCtx.Codec, event.End.Uint64())
+		if err != nil {
+			return err
+		}
+		if acked {
 			cp.Logger.Debug(debugMsgCpCheckpointAckAlreadySubmitted, "start", event.Start, "end", event.End)
 			return nil
 		}
@@ -391,21 +392,23 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 			event.Root[:],
 		)
 
-		// return broadcast to heimdall
-		txRes, err := cp.txBroadcaster.BroadcastToHeimdall(context.Background(), &msg, event)
-		if err != nil {
-			cp.Logger.Error(errMsgCpBroadcastingCheckpointAck, "error", err)
-			return err
-		}
-
-		if txRes.Code != abci.CodeTypeOK {
-			cp.Logger.Error(errMsgCpCheckpointAckTxFailed, "txHash", txRes.TxHash, "code", txRes.Code)
-			return fmt.Errorf("CheckpointProcessor: checkpoint-ack tx failed, tx response code: %d", txRes.Code)
-		}
-
+		return cp.broadcastEvent(ctx, &msg, event, "waiting for checkpoint ack")
 	}
 
 	return nil
+}
+
+// checkpointAcked reports whether heimdall's latest checkpoint already covers end. The latest-checkpoint
+// endpoint answers 500 both on failure and before the first ack, so only a zero ack count means none yet.
+func checkpointAcked(cdc codec.Codec, end uint64) (bool, error) {
+	latest, err := util.GetLatestCheckpoint(cdc)
+	if err == nil {
+		return latest.EndBlock >= end, nil
+	}
+	if count, countErr := util.GetCheckpointAckCount(cdc); countErr == nil && count == 0 {
+		return false, nil
+	}
+	return false, err
 }
 
 // handleCheckpointNoAck - Checkpoint No-Ack handler

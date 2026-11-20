@@ -3,10 +3,8 @@ package processor
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"cosmossdk.io/math"
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -20,8 +18,6 @@ const (
 	// Error messages
 	errMsgTopupUnmarshallingEvent = "FeeProcessor: error while unmarshalling event from rootChain"
 	errMsgTopupParsingEvent       = "FeeProcessor: error while parsing event"
-	errMsgTopupBroadcasting       = "FeeProcessor: error while broadcasting TopUpFee msg to heimdall"
-	errMsgTopupTxFailed           = "FeeProcessor: topUp tx failed on heimdall"
 	errMsgTopupRegisteringTask    = "FeeProcessor | RegisterTasks | sendTopUpFeeToHeimdall"
 
 	// Info messages
@@ -62,7 +58,7 @@ func (fp *FeeProcessor) RegisterTasks() {
 }
 
 // sendTopUpFeeToHeimdall - processes top up fee event
-func (fp *FeeProcessor) sendTopUpFeeToHeimdall(eventName string, logBytes string) error {
+func (fp *FeeProcessor) sendTopUpFeeToHeimdall(ctx context.Context, eventName string, logBytes string) (err error) {
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		fp.Logger.Error(errMsgTopupUnmarshallingEvent, "error", err)
@@ -70,10 +66,15 @@ func (fp *FeeProcessor) sendTopUpFeeToHeimdall(eventName string, logBytes string
 	}
 
 	event := new(stakinginfo.StakinginfoTopUpFee)
-	if err := helper.UnpackLog(fp.stakingInfoAbi, event, eventName, &vLog); err != nil {
+	if err = helper.UnpackLog(fp.stakingInfoAbi, event, eventName, &vLog); err != nil {
 		fp.Logger.Error(errMsgTopupParsingEvent, "name", eventName, "error", err)
 	} else {
-		if isOld, _ := fp.isOldTx(fp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.TopupEvent, event); isOld {
+		defer retryEventFailure(ctx, &err)
+		isOld, err := fp.isOldTx(fp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.TopupEvent, event)
+		if err != nil {
+			return err
+		}
+		if isOld {
 			fp.Logger.Debug(debugMsgTopupIgnoringProcessed,
 				"event", eventName,
 				"user", event.User,
@@ -97,18 +98,7 @@ func (fp *FeeProcessor) sendTopUpFeeToHeimdall(eventName string, logBytes string
 		// create msg checkpoint ack message
 		msg := topupTypes.NewMsgTopupTx(helper.GetFromAddress(fp.cliCtx), event.User.String(), math.NewIntFromBigInt(event.Fee), vLog.TxHash.Bytes(), uint64(vLog.Index), vLog.BlockNumber)
 
-		// return broadcast to heimdall
-		txRes, err := fp.txBroadcaster.BroadcastToHeimdall(context.Background(), msg, event)
-		if err != nil {
-			fp.Logger.Error(errMsgTopupBroadcasting, "msg", msg, "error", err)
-			return err
-		}
-
-		if txRes.Code != abci.CodeTypeOK {
-			fp.Logger.Error(errMsgTopupTxFailed, "txHash", txRes.TxHash, "code", txRes.Code)
-			return fmt.Errorf(errMsgTopupTxFailed+", tx response code: %v", txRes.Code)
-		}
-
+		return fp.broadcastEvent(ctx, msg, event, "waiting for topup")
 	}
 
 	return nil

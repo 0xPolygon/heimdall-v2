@@ -55,6 +55,8 @@ func keyForValidator(t *testing.T, val *stakeTypes.Validator, keys []secp256k1.P
 }
 
 type nonRpSigScenario struct {
+	keys     []secp256k1.PrivKey
+	cpTx     []byte
 	app      *HeimdallApp
 	ctx      sdk.Context
 	vs       stakeTypes.ValidatorSet
@@ -104,13 +106,13 @@ func newNonRpSigScenario(t *testing.T, karwar int64) *nonRpSigScenario {
 
 	ve := sidetxs.VoteExtension{
 		Height:          nonRpSigHeight - 1,
-		BlockHash:       common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"),
+		BlockHash:       scenarioBlockHash,
 		SideTxResponses: []sidetxs.SideTxResponse{{TxHash: txHash, Result: sidetxs.Vote_VOTE_YES}},
 	}
 	veBytes, err := ve.Marshal()
 	require.NoError(t, err)
 
-	s := &nonRpSigScenario{app: app, ctx: ctx, vs: vs, cpTxHash: txHash, endBlock: end, logs: logs}
+	s := &nonRpSigScenario{app: app, ctx: ctx, vs: vs, cpTxHash: txHash, endBlock: end, logs: logs, cpTx: txBytes}
 	for _, val := range vs.Validators {
 		vote := abci.ExtendedVoteInfo{
 			BlockIdFlag:        cmtproto.BlockIDFlagCommit,
@@ -119,6 +121,7 @@ func newNonRpSigScenario(t *testing.T, karwar int64) *nonRpSigScenario {
 			NonRpVoteExtension: nonRp,
 		}
 		createSignatureForVoteExtension(t, nonRpSigHeight-1, keyForValidator(t, val, keys), veBytes, nonRp, &vote)
+		s.keys = append(s.keys, keyForValidator(t, val, keys))
 		s.votes = append(s.votes, vote)
 		s.genuine = append(s.genuine, bytes.Clone(vote.NonRpExtensionSignature))
 	}

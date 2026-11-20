@@ -27,8 +27,6 @@ func TestTopupFeeProcessor_Constants(t *testing.T) {
 		errorMessages := []string{
 			errMsgTopupUnmarshallingEvent,
 			errMsgTopupParsingEvent,
-			errMsgTopupBroadcasting,
-			errMsgTopupTxFailed,
 			errMsgTopupRegisteringTask,
 		}
 
