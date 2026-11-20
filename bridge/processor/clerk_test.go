@@ -61,7 +61,7 @@ func BenchmarkSendStateSyncedToHeimdall(b *testing.B) {
 			// when
 			b.StartTimer()
 
-			if err = cp.sendStateSyncedToHeimdall("StateSynced", dlb.String()); err != nil {
+			if err = cp.sendStateSyncedToHeimdall(context.Background(), "StateSynced", dlb.String()); err != nil {
 				b.Fatal(err)
 			}
 
@@ -278,7 +278,6 @@ func TestClerkProcessor_Constants(t *testing.T) {
 			infoMsgClerkRegisteringTasks,
 			infoMsgClerkIgnoringAlreadyProcessed,
 			infoMsgClerkDataTooLarge,
-			infoMsgClerkTxInMempool,
 		}
 
 		for _, msg := range infoMessages {

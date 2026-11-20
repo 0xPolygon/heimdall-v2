@@ -172,8 +172,6 @@ func TestCheckpointProcessor_Constants(t *testing.T) {
 			errMsgCpSendingCheckpointToRootChain,
 			errMsgCpUnmarshallingEventFromRootChain,
 			errMsgCpParsingEvent,
-			errMsgCpBroadcastingCheckpointAck,
-			errMsgCpCheckpointAckTxFailed,
 			errMsgCpFetchingLatestCheckpointTime,
 			errMsgCpCheckingProposerList,
 			errMsgCpProposingNoAck,

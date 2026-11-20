@@ -59,16 +59,8 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			return nil, err
 		}
 
-		validVoteExtensions, err := filterVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, validatorSet, app.MilestoneKeeper, req.MaxTxBytes, logger)
-		if err != nil {
-			logger.Error("Error occurred while filtering VEs in PrepareProposal", err)
+		if err := app.prepareCommit(ctx, req, validatorSet); err != nil {
 			return nil, err
-		}
-
-		req.LocalLastCommit.Votes = validVoteExtensions
-
-		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, validatorSet, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
-			logger.Warn("Error occurred while validating non-rp VEs in PrepareProposal", err)
 		}
 
 		// prepare the proposal with the vote extensions and the validators set's votes
@@ -228,50 +220,9 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			}
 		}
 
-		// validate the vote extensions
-		if err := ValidateVoteExtensions(ctx, req.Height, extCommitInfo.Votes, req.ProposedLastCommit.Round, validatorSet, app.MilestoneKeeper); err != nil {
-			logger.Error("Invalid vote extension, rejecting proposal", "error", err)
+		if err := app.validateProposalCommit(ctx, req, extCommitInfo, validatorSet); err != nil {
+			logger.Error("Invalid proposal commit", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
-		}
-
-		// validate non-RP vote extensions
-		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, validatorSet, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
-			// The signatures belong to the previous block's checkpoint, so this proposal's own txs can't
-			// excuse them. filterVoteExtensions keeps failing ones out of honest proposals.
-			if helper.IsPhuketHardfork(req.Height) && helper.IsKarwar(req.Height) && errors.Is(err, errNonRpSignature) {
-				logger.Error("Invalid non-rp vote extension signature, rejecting proposal", "error", err)
-				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
-			}
-
-			hasCheckpointTx := false
-			for _, tx := range req.Txs[1:] {
-				txn, decodeErr := app.TxDecode(tx)
-				if decodeErr != nil {
-					logger.Error("Error occurred while decoding tx bytes while checking checkpoint txs in ProcessProposalHandler", "error", decodeErr)
-					return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
-				}
-
-				for _, msg := range txn.GetMsgs() {
-					if checkpointTypes.IsCheckpointMsg(msg) {
-						hasCheckpointTx = true
-						break
-					}
-				}
-
-				if hasCheckpointTx {
-					break
-				}
-			}
-
-			tolerateBorErr := helper.IsZurichHardfork(req.Height) &&
-				(errors.Is(err, borTypes.ErrFailedToQueryBor) ||
-					errors.Is(err, borTypes.ErrBorBlockNotFound))
-			if helper.IsPhuketHardfork(req.Height) && hasCheckpointTx && !tolerateBorErr {
-				logger.Error("Invalid non-rp vote extension proposal for checkpoint tx, rejecting proposal", "error", err)
-				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
-			}
-
-			logger.Warn("Invalid non-rp vote extension proposal", "error", err)
 		}
 
 		sideTxsCount := 0
@@ -338,6 +289,9 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		logger := app.Logger()
 		logger.Debug("Extending Vote", "height", ctx.BlockHeight())
+
+		// BaseApp leaves the time unset; side handlers judge expiry by the voted block's time.
+		ctx = ctx.WithBlockTime(req.Time)
 
 		budgetActive := helper.IsZurichHardfork(req.Height)
 		deadline := startTime.Add(extendVoteBudget)
@@ -471,16 +425,21 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		}
 
 		vt := sidetxs.VoteExtension{
-			Height:               req.Height,
-			BlockHash:            req.Hash,
+			NonRpExtensionHash:   nonRpExtensionHash(req.Height, nonRpVoteExt),
+			BlockHash:            voteExtensionBlockHash(req.Height, req.Hash),
 			SideTxResponses:      sideTxRes,
 			MilestoneProposition: nil,
+		}
+		if !helper.IsPurley(req.Height) {
+			vt.Height = req.Height
 		}
 
 		getBlockAuthor := func(ctx sdk.Context, blockNumber uint64) ([]common.Address, error) {
 			return app.BorKeeper.GetProducersByBlockNumber(ctx, blockNumber)
 		}
 
+		// Gate fork-specific proposition fields at the authenticated height, as VerifyVoteExtension does.
+		milestoneCtx := ctx.WithBlockHeight(req.Height)
 		var milestoneProp *milestoneTypes.MilestoneProposition
 		if budgetActive {
 			metrics.RecordExtendVoteElapsed("pre_milestone", startTime)
@@ -491,7 +450,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				"elapsed", time.Since(startTime))
 		} else {
 			genStart := time.Now()
-			milestoneProp, err = milestoneAbci.GenMilestoneProposition(ctx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
+			milestoneProp, err = milestoneAbci.GenMilestoneProposition(milestoneCtx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
 			metrics.RecordMilestoneGenerationDuration(genStart)
 		}
 		if err != nil {
@@ -503,7 +462,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			}
 			// We still want to participate in the consensus even if we fail to generate the milestone proposition
 		} else if milestoneProp != nil {
-			if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, milestoneProp); err != nil {
+			if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &app.MilestoneKeeper, milestoneProp); err != nil {
 				logger.Warn("Invalid milestone proposition generated",
 					"startBlock", milestoneProp.StartBlockNumber,
 					"endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)-1),
@@ -527,9 +486,11 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, err
 		}
 
-		if err := validateNonRpVoteExtensionData(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper,
-			app.caller); err != nil {
-			logger.Warn("Error occurred while validating non-rp vote extension", "error", err)
+		if !helper.IsPurley(req.Height) {
+			if err := validateNonRpVoteExtensionData(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper,
+				app.caller); err != nil {
+				logger.Warn("Error occurred while validating non-rp vote extension", "error", err)
+			}
 		}
 
 		return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: nonRpVoteExt}, nil
@@ -539,6 +500,9 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 // VerifyVoteExtensionHandler performs some sanity checks on the VE received from other validators
 func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHandler {
 	return func(ctx sdk.Context, req *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error) {
+		if helper.IsPurley(req.Height) {
+			return verifyVoteEnvelope(req), nil
+		}
 		startTime := time.Now()
 		defer metrics.RecordABCIHandlerDuration(metrics.VerifyVoteExtensionDuration, startTime)
 
@@ -567,7 +531,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
-		if err := rejectUnknownVoteExtFields(req.VoteExtension); err != nil {
+		if err := rejectVoteEnvelopeFields(req.VoteExtension, req.Height); err != nil {
 			metrics.RecordVoteExtensionRejected("unknown_fields")
 			logger.Error(heimdallTypes.ErrAlertVoteExtensionRejected+" Error while checking unknown fields in VoteExtension", "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
@@ -657,6 +621,10 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		logger.Info("Deleted milestone matching target condition", "milestone", milestoneNumber)
 	}
 
+	if err := app.normalizeCancelCharge(ctx, req.Height); err != nil {
+		return nil, err
+	}
+
 	// Process pending visibility events from the previous block before new side txs are processed.
 	// This assigns visibility_height = currentBlockHeight to events stored in the prior block.
 	// This runs before PostHandlers add new events to the pending list, ensuring a clean
@@ -715,9 +683,8 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	validatorSet, err := app.getValidatorSetForHeight(ctx, req.Height)
+	validatorSet, extVoteInfo, err := app.validatorCommitVotes(ctx, req.Height, extCommitInfo)
 	if err != nil {
-		logger.Error("Error occurred while getting validator set for height in PreBlocker", "error", err, "height", req.Height)
 		return nil, err
 	}
 

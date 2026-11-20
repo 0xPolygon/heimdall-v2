@@ -5,15 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 
 	"cosmossdk.io/math"
-	"github.com/RichardKnop/machinery/v1/tasks"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authTx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -30,21 +25,17 @@ const (
 	errMsgParsingEvent        = "StakingProcessor: error while parsing event"
 	errMsgValidatingNonce     = "StakingProcessor: error while validating nonce for the validator"
 	errMsgCreatingMsg         = "StakingProcessor: error while creating new message"
-	errMsgBroadcasting        = "StakingProcessor: error while broadcasting to heimdall"
-	errMsgTxFailed            = "StakingProcessor: tx failed on heimdall"
 	errMsgConvertingAddress   = "StakingProcessor: error converting address to string"
 	errMsgCheckingOldTx       = "StakingProcessor: error while checking if tx is old"
 	errMsgInvalidSignerPubkey = "StakingProcessor: invalid signer pubkey"
 	errMsgFetchValidatorNonce = "StakingProcessor: failed to fetch validator nonce and height data from API"
 	errMsgNonceNotInOrder     = "StakingProcessor: nonce for the given event not in order"
-	errMsgQueryStakeTxs       = "StakingProcessor: failed to query stake txs by txQuery for the given validator"
-	errMsgSearchTxs           = "StakingProcessor: failed to search for txs"
 
 	// Info messages
 	infoMsgIgnoringAlreadyProcessed = "StakingProcessor: ignoring task to send %s to heimdall as already processed"
 	infoMsgIgnoringNonceOutOfOrder  = "StakingProcessor: ignoring task to send %s to heimdall as nonce is out of order"
 	infoMsgAccountDoesNotExist      = "StakingProcessor: heimdall account doesn't exist. Retrying validator-join after 10 seconds"
-	infoMsgRecentStakingTxnNotZero  = "StakingProcessor: recent staking txn count for the given validator is not zero"
+	infoMsgNonceAlreadyUsed         = "StakingProcessor: heimdall already applied the event's nonce, ending task"
 
 	// Other messages
 	msgNonceOutOfOrder     = "StakingProcessor: nonce out of order"
@@ -91,7 +82,7 @@ func (sp *StakingProcessor) RegisterTasks() {
 	}
 }
 
-func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logBytes string) error {
+func (sp *StakingProcessor) sendValidatorJoinToHeimdall(ctx context.Context, eventName string, logBytes string) (err error) {
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error(errMsgUnmarshallingEvent, "error", err)
@@ -99,14 +90,20 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 	}
 
 	event := new(stakinginfo.StakinginfoStaked)
-	if err := helper.UnpackLog(sp.stakingInfoAbi, event, eventName, &vLog); err != nil {
+	if err = helper.UnpackLog(sp.stakingInfoAbi, event, eventName, &vLog); err != nil {
 		sp.Logger.Error(errMsgParsingEvent, "name", eventName, "error", err)
+		return err
 	} else {
+		defer retryEventFailure(ctx, &err)
 		signerPubKey := event.SignerPubkey
 		if len(signerPubKey) == 64 {
 			signerPubKey = util.AppendPrefix(signerPubKey)
 		}
-		if isOld, _ := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event); isOld {
+		isOld, err := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event)
+		if err != nil {
+			return err
+		}
+		if isOld {
 			sp.Logger.Info(fmt.Sprintf(infoMsgIgnoringAlreadyProcessed, "validatorJoin"),
 				"event", eventName,
 				"validatorID", event.ValidatorId,
@@ -123,13 +120,13 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 		}
 
 		// if the account doesn't exist, retry with delay for top-up to process first.
-		if _, err := util.GetAccount(context.Background(), sp.cliCtx, sdk.MustAccAddressFromHex(event.Signer.Hex()).String()); err != nil {
+		if _, err := util.GetAccount(ctx, sp.cliCtx,sdk.MustAccAddressFromHex(event.Signer.Hex()).String()); err != nil {
 			sp.Logger.Info(
 				infoMsgAccountDoesNotExist,
 				"event", eventName,
 				"signer", event.Signer,
 			)
-			return tasks.NewErrRetryTaskLater(msgAccountDoesNotExist, util.RetryTaskDelay)
+			return retryEvent(ctx, msgAccountDoesNotExist, util.RetryTaskDelay)
 		}
 
 		sp.Logger.Info(
@@ -168,24 +165,11 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 			return err
 		}
 
-		// return broadcast to heimdall
-		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(context.Background(), msg, event)
-		if err != nil {
-			sp.Logger.Error(errMsgBroadcasting, "validatorId", event.ValidatorId.Uint64(), "error", err)
-			return err
-		}
-
-		if txRes.Code != abci.CodeTypeOK {
-			sp.Logger.Error(errMsgTxFailed, "txHash", txRes.TxHash, "code", txRes.Code)
-			return fmt.Errorf("validator-join %s, tx response code: %v", errMsgTxFailed, txRes.Code)
-		}
-
+		return sp.broadcastStakeEvent(ctx, msg, event)
 	}
-
-	return nil
 }
 
-func (sp *StakingProcessor) sendUnstakeInitToHeimdall(ctx context.Context, eventName string, logBytes string) error {
+func (sp *StakingProcessor) sendUnstakeInitToHeimdall(ctx context.Context, eventName string, logBytes string) (err error) {
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error(errMsgUnmarshallingEvent, "error", err)
@@ -193,10 +177,16 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(ctx context.Context, event
 	}
 
 	event := new(stakinginfo.StakinginfoUnstakeInit)
-	if err := helper.UnpackLog(sp.stakingInfoAbi, event, eventName, &vLog); err != nil {
+	if err = helper.UnpackLog(sp.stakingInfoAbi, event, eventName, &vLog); err != nil {
 		sp.Logger.Error(errMsgParsingEvent, "name", eventName, "error", err)
+		return err
 	} else {
-		if isOld, _ := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event); isOld {
+		defer retryEventFailure(ctx, &err)
+		isOld, err := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event)
+		if err != nil {
+			return err
+		}
+		if isOld {
 			sp.Logger.Info(fmt.Sprintf(infoMsgIgnoringAlreadyProcessed, "unStakeInit"),
 				"event", eventName,
 				"validator", event.User,
@@ -256,24 +246,11 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(ctx context.Context, event
 
 		}
 
-		// return broadcast to heimdall
-		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(ctx, msg, event)
-		if err != nil {
-			sp.Logger.Error(errMsgBroadcasting, "validatorId", event.ValidatorId.Uint64(), "error", err)
-			return err
-		}
-
-		if txRes.Code != abci.CodeTypeOK {
-			sp.Logger.Error(errMsgTxFailed, "txHash", txRes.TxHash, "code", txRes.Code)
-			return fmt.Errorf("unStakeInit %s, tx response code: %v", errMsgTxFailed, txRes.Code)
-		}
-
+		return sp.broadcastStakeEvent(ctx, msg, event)
 	}
-
-	return nil
 }
 
-func (sp *StakingProcessor) sendStakeUpdateToHeimdall(ctx context.Context, eventName string, logBytes string) error {
+func (sp *StakingProcessor) sendStakeUpdateToHeimdall(ctx context.Context, eventName string, logBytes string) (err error) {
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error(errMsgUnmarshallingEvent, "error", err)
@@ -281,10 +258,16 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(ctx context.Context, event
 	}
 
 	event := new(stakinginfo.StakinginfoStakeUpdate)
-	if err := helper.UnpackLog(sp.stakingInfoAbi, event, eventName, &vLog); err != nil {
+	if err = helper.UnpackLog(sp.stakingInfoAbi, event, eventName, &vLog); err != nil {
 		sp.Logger.Error(errMsgParsingEvent, "name", eventName, "error", err)
+		return err
 	} else {
-		if isOld, _ := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event); isOld {
+		defer retryEventFailure(ctx, &err)
+		isOld, err := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event)
+		if err != nil {
+			return err
+		}
+		if isOld {
 			sp.Logger.Info(fmt.Sprintf(infoMsgIgnoringAlreadyProcessed, "stakeUpdate"),
 				"event", eventName,
 				"validatorID", event.ValidatorId,
@@ -339,24 +322,11 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(ctx context.Context, event
 			return err
 		}
 
-		// return broadcast to heimdall
-		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(ctx, msg, event)
-		if err != nil {
-			sp.Logger.Error(errMsgBroadcasting, "validatorId", event.ValidatorId.Uint64(), "error", err)
-			return err
-		}
-
-		if txRes.Code != abci.CodeTypeOK {
-			sp.Logger.Error(errMsgTxFailed, "txHash", txRes.TxHash, "code", txRes.Code)
-			return fmt.Errorf("stakeupdate %s, tx response code: %d", errMsgTxFailed, txRes.Code)
-		}
-
+		return sp.broadcastStakeEvent(ctx, msg, event)
 	}
-
-	return nil
 }
 
-func (sp *StakingProcessor) sendSignerChangeToHeimdall(ctx context.Context, eventName string, logBytes string) error {
+func (sp *StakingProcessor) sendSignerChangeToHeimdall(ctx context.Context, eventName string, logBytes string) (err error) {
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error(errMsgUnmarshallingEvent, "error", err)
@@ -364,9 +334,11 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(ctx context.Context, even
 	}
 
 	event := new(stakinginfo.StakinginfoSignerChange)
-	if err := helper.UnpackLog(sp.stakingInfoAbi, event, eventName, &vLog); err != nil {
+	if err = helper.UnpackLog(sp.stakingInfoAbi, event, eventName, &vLog); err != nil {
 		sp.Logger.Error(errMsgParsingEvent, "name", eventName, "error", err)
+		return err
 	} else {
+		defer retryEventFailure(ctx, &err)
 		newSignerPubKey := event.SignerPubkey
 		if len(newSignerPubKey) == 64 {
 			newSignerPubKey = util.AppendPrefix(newSignerPubKey)
@@ -439,23 +411,12 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(ctx context.Context, even
 			return err
 		}
 
-		// return broadcast to heimdall
-		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(ctx, msg, event)
-		if err != nil {
-			sp.Logger.Error(errMsgBroadcasting, "msg", msg, "validatorId", event.ValidatorId.Uint64(), "error", err)
-			return err
-		}
-
-		if txRes.Code != abci.CodeTypeOK {
-			sp.Logger.Error(errMsgTxFailed, "txHash", txRes.TxHash, "code", txRes.Code)
-			return fmt.Errorf("signerChange %s, tx response code: %v", errMsgTxFailed, txRes.Code)
-		}
-
+		return sp.broadcastStakeEvent(ctx, msg, event)
 	}
-
-	return nil
 }
 
+// checkValidNonce reports whether txNonce is the validator's next nonce, otherwise how many nonces
+// heimdall still has to apply first (capped at 10). A gap of 0 means heimdall already used txNonce.
 func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txNonce uint64) (bool, uint64, error) {
 	currentNonce, err := util.GetValidatorNonce(validatorId, sp.cliCtx.Codec)
 	if err != nil {
@@ -463,62 +424,16 @@ func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txNonce uint64) 
 		return false, 0, err
 	}
 
-	if currentNonce+1 != txNonce {
-		diff := txNonce - currentNonce
-		if diff > 10 {
-			diff = 10
-		}
-
-		sp.Logger.Error(errMsgNonceNotInOrder, "validatorId", validatorId, "currentNonce", currentNonce, "txNonce", txNonce, "delay", diff*uint64(util.StakeNonceRetryDelay))
-
-		return false, diff, nil
+	if txNonce <= currentNonce {
+		sp.Logger.Info(infoMsgNonceAlreadyUsed, "validatorId", validatorId, "currentNonce", currentNonce, "txNonce", txNonce)
+		return false, 0, nil
 	}
 
-	stakingTxnCount, err := queryTxCount(sp.cliCtx, validatorId)
-	if err != nil {
-		sp.Logger.Error(errMsgQueryStakeTxs, "validatorId", validatorId)
-		return false, 0, err
-	}
-
-	if stakingTxnCount != 0 {
-		sp.Logger.Info(infoMsgRecentStakingTxnNotZero, "validatorId", validatorId, "currentNonce", currentNonce, "txNonce", txNonce)
-		return false, 1, nil
+	if txNonce != currentNonce+1 {
+		gap := min(txNonce-currentNonce, 10)
+		sp.Logger.Error(errMsgNonceNotInOrder, "validatorId", validatorId, "currentNonce", currentNonce, "txNonce", txNonce, "delay", gap*uint64(util.StakeNonceRetryDelay))
+		return false, gap, nil
 	}
 
 	return true, 0, nil
-}
-
-func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
-	const (
-		defaultPage  = 1
-		defaultLimit = 100
-	)
-
-	stakingTxnMsgMap := map[string]string{
-		"validator-stake-update": "stake-update",
-		"validator-join":         "validator-join",
-		"signer-update":          "signer-update",
-		"validator-exit":         "validator-exit",
-	}
-
-	for msg, action := range stakingTxnMsgMap {
-		events := []string{
-			fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeyAction, msg),
-			fmt.Sprintf("%s.%s=%d", action, "validator-id", validatorId),
-		}
-
-		// XXX: implement ANY
-		query := strings.Join(events, " AND ")
-
-		searchTxResult, err := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, query, "")
-		if err != nil {
-			return 0, fmt.Errorf("%s: %w", errMsgSearchTxs, err)
-		}
-
-		if searchTxResult.TotalCount != 0 {
-			return int(searchTxResult.TotalCount), nil
-		}
-	}
-
-	return 0, nil
 }

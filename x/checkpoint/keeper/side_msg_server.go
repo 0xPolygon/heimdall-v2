@@ -3,7 +3,6 @@ package keeper
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -82,6 +81,15 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	if !ok {
 		logger.Error(helper.ErrTypeMismatch("MsgCheckpoint"))
 		return sidetxs.Vote_VOTE_NO
+	}
+
+	// From Purley the post-handler replaces an expired buffer whatever the message handler decided,
+	// so approve only once the buffer is empty or expired at this block.
+	if helper.IsPurley(ctx.BlockHeight()) {
+		if err = srv.checkReplaceableBuffer(ctx); err != nil {
+			logger.Debug("Checkpoint buffer can't be replaced at this block", hmTypes.LogKeyError, err)
+			return sidetxs.Vote_VOTE_NO
+		}
 	}
 
 	contractCaller := srv.IContractCaller
@@ -427,24 +435,12 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return err
 	}
 
-	if doExist && !IsBufferedCheckpointZero(checkpointBuffer) {
-		logger.Debug("Checkpoint already exists in buffer")
-
-		// get checkpoint buffer time from params
-		params, err := srv.GetParams(ctx)
-		if err != nil {
-			logger.Error("Checkpoint params not found", hmTypes.LogKeyError, err)
-			return err
-		}
-
-		expiryTime := checkpointBuffer.Timestamp + uint64(params.CheckpointBufferTime.Seconds())
-
-		logger.Error(fmt.Sprintf("Checkpoint already exists in buffer, ack expected, expires at %s", strconv.FormatUint(expiryTime, 10)))
-
-		return errors.New("checkpoint already exists in buffer")
-	}
-
 	timeStamp := uint64(ctx.BlockTime().Unix())
+
+	// Post-handlers apply the transaction voted on at the previous height.
+	if err := srv.checkVotedBufferReplacement(ctx, checkpointBuffer, doExist, ctx.BlockHeight()-1, timeStamp); err != nil {
+		return err
+	}
 
 	// add checkpoint to buffer with root hash and account hash
 	if err = srv.SetCheckpointBuffer(ctx, types.Checkpoint{
@@ -631,6 +627,10 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 func recordCheckpointMetric(method string, apiType string, start time.Time, err *error) {
 	success := *err == nil
 	api.RecordAPICallWithStart(api.CheckpointSubsystem, method, apiType, success, start)
+}
+
+func isCheckpointBufferExpired(cp types.Checkpoint, now, bufferTime uint64) bool {
+	return now > cp.Timestamp && now-cp.Timestamp >= bufferTime
 }
 
 func IsBufferedCheckpointZero(cp types.Checkpoint) bool {

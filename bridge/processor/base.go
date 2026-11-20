@@ -36,6 +36,10 @@ type Processor interface {
 	Stop()
 }
 
+type heimdallBroadcaster interface {
+	BroadcastToHeimdall(context.Context, types.Msg, interface{}) (*types.TxResponse, error)
+}
+
 type BaseProcessor struct {
 	Logger log.Logger
 	name   string
@@ -45,7 +49,7 @@ type BaseProcessor struct {
 	queueConnector *queue.Connector
 
 	// tx broadcaster
-	txBroadcaster *broadcaster.TxBroadcaster
+	txBroadcaster heimdallBroadcaster
 
 	// The "subclass" of BaseProcessor
 	impl Processor
@@ -184,25 +188,17 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 }
 
 // checkTxAgainstMempool checks if the transaction is already in the mempool or not.
-// It is consumed only for `clerk` processor.
-func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{}) (bool, error) {
+// It is shared by clerk and staking confirmation retries.
+func (bp *BaseProcessor) checkTxAgainstMempool(ctx context.Context, msg types.Msg, event interface{}) (bool, error) {
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "checkTxAgainstMempool", time.Now())
 
-	clerkMsg, ok := msg.(*clerkTypes.MsgEventRecord)
-	if !ok {
+	if _, ok := eventPayload(msg); !ok || bp.httpClient == nil {
 		return false, nil
 	}
-
-	if bp.httpClient == nil {
-		return false, nil
-	}
-
-	targetTxHash := clerkMsg.GetTxHash()
-	targetLogIndex := clerkMsg.GetLogIndex()
 
 	// Use the typed CometBFT RPC client instead of raw HTTP + manual JSON/base64 decoding.
 	// The client returns txs as already-decoded []byte slices.
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	limit := 100 // CometBFT caps at maxPerPage=100; higher values are silently clamped
@@ -218,19 +214,10 @@ func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{})
 			continue
 		}
 
-		msgs := decodedTx.GetMsgs()
-		if len(msgs) == 0 {
-			continue
-		}
-
-		mempoolClerkMsg, ok := msgs[0].(*clerkTypes.MsgEventRecord)
-		if !ok {
-			continue
-		}
-
-		if mempoolClerkMsg.TxHash == targetTxHash && mempoolClerkMsg.LogIndex == targetLogIndex {
-			bp.Logger.Debug("Duplicate clerk tx found in mempool", "txHash", targetTxHash, "logIndex", targetLogIndex)
-			return true, nil
+		for _, pending := range decodedTx.GetMsgs() {
+			if sameEventMsg(bp.cliCtx.Codec, pending, msg) {
+				return true, nil
+			}
 		}
 	}
 
