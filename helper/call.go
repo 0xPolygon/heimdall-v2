@@ -145,6 +145,18 @@ type ContractCaller struct {
 	// finalizedHeaderCache stores the last fetched finalized main chain block header.
 	// Reset after each round of ExtendVoteHandler.
 	finalizedHeaderCache *ethTypes.Header
+	// prefetchRoundActive is true between BeginPrefetchRound and EndPrefetchRound. Inside a
+	// round, L1 head lookups are done at most once, so a block full of side txs that point at
+	// not-yet-final L1 txs cannot cost one L1 round trip each.
+	prefetchRoundActive bool
+	// prefetchRoundGen changes on every BeginPrefetchRound and EndPrefetchRound. A head
+	// lookup only writes the round caches when the generation it started in is still
+	// current, so a slower call that began in an earlier round (or outside any round,
+	// e.g. a query on this shared caller) cannot put an older head into this round.
+	prefetchRoundGen uint64
+	// latestHeaderCache stores the latest main chain header fetched in this round (the
+	// N-confirmations fallback when the finalized API is unavailable).
+	latestHeaderCache *ethTypes.Header
 }
 
 // contractInstanceKey keys cached bindings by type as well as address, so two
@@ -760,61 +772,132 @@ func (c *ContractCaller) GetConfirmedTxReceipt(ctx context.Context, tx common.Ha
 	}
 
 	receiptBlockNumber := receipt.BlockNumber.Uint64()
+	round := c.snapshotPrefetchRound()
 
-	c.prefetchMu.RLock()
-	cachedFinalizedHeader := c.finalizedHeaderCache
-	c.prefetchMu.RUnlock()
-
-	if cachedFinalizedHeader != nil && cachedFinalizedHeader.Number != nil {
-		if receiptBlockNumber <= cachedFinalizedHeader.Number.Uint64() {
-			return receipt, nil
+	if done, err := round.checkCachedFinalized(receiptBlockNumber); done {
+		if err != nil {
+			return nil, err
 		}
+		return receipt, nil
 	}
 
-	latestFinalizedBlock, err := c.GetMainChainFinalizedBlock(ctx)
-	if err != nil {
-		Logger.Error("Error getting latest finalized main chain block", "error", err)
-	}
-
-	if latestFinalizedBlock != nil && latestFinalizedBlock.Number != nil {
-		Logger.Debug("Fetched latest finalized main chain block",
-			"blockNumber", latestFinalizedBlock.Number.Uint64(),
-		)
-		c.prefetchMu.Lock()
-		c.finalizedHeaderCache = latestFinalizedBlock
-		c.prefetchMu.Unlock()
-
-		if receiptBlockNumber > latestFinalizedBlock.Number.Uint64() {
-			return nil, errors.New("receipt block number is ahead of latest finalized main chain block")
+	// Never skip the finalized lookup based on an earlier failure: the caller is shared with
+	// other paths (queries, bridge), and a failure there must not move a vote onto the weaker
+	// N-confirmations rule below.
+	if finalized := c.fetchFinalizedHeader(ctx, round.gen); finalized != nil {
+		if receiptBlockNumber > finalized.Number.Uint64() {
+			return nil, errAheadOfFinalized
 		}
-
 		return receipt, nil
 	}
 
 	// No finalized API: fall back to N confirmations.
-	latestBlock, err := c.GetMainChainBlock(ctx, nil)
+	latestBlock, err := c.latestHeaderForRound(ctx, round)
 	if err != nil {
-		Logger.Error("Error getting latest main chain block", "error", err)
 		return nil, err
 	}
-	if latestBlock == nil || latestBlock.Number == nil {
-		return nil, errors.New("latest main chain block header or number is nil")
-	}
-	Logger.Debug("Fetched latest main chain block",
-		"blockNumber", latestBlock.Number.Uint64(),
-	)
-
-	latestNum := latestBlock.Number.Uint64()
-	if latestNum < receiptBlockNumber {
-		return nil, errors.New("receipt block number is ahead of latest main chain block")
-	}
-
-	diff := latestNum - receiptBlockNumber
-	if diff < requiredConfirmations {
-		return nil, errors.New("not enough confirmations")
+	if err := checkConfirmations(latestBlock.Number.Uint64(), receiptBlockNumber, requiredConfirmations); err != nil {
+		return nil, err
 	}
 
 	return receipt, nil
+}
+
+var errAheadOfFinalized = errors.New("receipt block number is ahead of latest finalized main chain block")
+
+// prefetchRoundSnapshot is a consistent copy of the per-round L1 head caches.
+type prefetchRoundSnapshot struct {
+	finalized *ethTypes.Header
+	latest    *ethTypes.Header
+	inRound   bool
+	gen       uint64
+}
+
+func (c *ContractCaller) snapshotPrefetchRound() prefetchRoundSnapshot {
+	c.prefetchMu.RLock()
+	defer c.prefetchMu.RUnlock()
+
+	return prefetchRoundSnapshot{
+		finalized: c.finalizedHeaderCache,
+		latest:    c.latestHeaderCache,
+		inRound:   c.prefetchRoundActive,
+		gen:       c.prefetchRoundGen,
+	}
+}
+
+// checkCachedFinalized decides from the cached finalized header alone, when it can. done is
+// false when a fresh finalized lookup is needed.
+func (s prefetchRoundSnapshot) checkCachedFinalized(receiptBlockNumber uint64) (done bool, err error) {
+	if s.finalized == nil || s.finalized.Number == nil {
+		return false, nil
+	}
+	if receiptBlockNumber <= s.finalized.Number.Uint64() {
+		return true, nil
+	}
+	// Inside an ExtendVote round the cached header was fetched in this round. L1 finality
+	// does not move within one round, so do not pay another round trip per receipt.
+	if s.inRound {
+		return true, errAheadOfFinalized
+	}
+	return false, nil
+}
+
+// fetchFinalizedHeader looks up the finalized L1 header and caches it if no new round started
+// meanwhile. It returns nil when the finalized API is not available.
+func (c *ContractCaller) fetchFinalizedHeader(ctx context.Context, gen uint64) *ethTypes.Header {
+	finalized, err := c.GetMainChainFinalizedBlock(ctx)
+	if err != nil {
+		Logger.Error("Error getting latest finalized main chain block", "error", err)
+	}
+	if finalized == nil || finalized.Number == nil {
+		return nil
+	}
+	Logger.Debug("Fetched latest finalized main chain block", "blockNumber", finalized.Number.Uint64())
+
+	c.prefetchMu.Lock()
+	if c.prefetchRoundGen == gen {
+		c.finalizedHeaderCache = finalized
+	}
+	c.prefetchMu.Unlock()
+
+	return finalized
+}
+
+// latestHeaderForRound returns the latest L1 header, looked up once per ExtendVote round.
+// Outside a round it is looked up on every call.
+func (c *ContractCaller) latestHeaderForRound(ctx context.Context, s prefetchRoundSnapshot) (*ethTypes.Header, error) {
+	latest := s.latest
+	if !s.inRound || latest == nil {
+		var err error
+		latest, err = c.GetMainChainBlock(ctx, nil)
+		if err != nil {
+			Logger.Error("Error getting latest main chain block", "error", err)
+			return nil, err
+		}
+		if s.inRound && latest != nil && latest.Number != nil {
+			c.prefetchMu.Lock()
+			if c.prefetchRoundActive && c.prefetchRoundGen == s.gen {
+				c.latestHeaderCache = latest
+			}
+			c.prefetchMu.Unlock()
+		}
+	}
+	if latest == nil || latest.Number == nil {
+		return nil, errors.New("latest main chain block header or number is nil")
+	}
+	Logger.Debug("Fetched latest main chain block", "blockNumber", latest.Number.Uint64())
+
+	return latest, nil
+}
+
+func checkConfirmations(latestNum, receiptBlockNumber, required uint64) error {
+	if latestNum < receiptBlockNumber {
+		return errors.New("receipt block number is ahead of latest main chain block")
+	}
+	if latestNum-receiptBlockNumber < required {
+		return errors.New("not enough confirmations")
+	}
+	return nil
 }
 
 // decodeLog unpacks the log at logIndex in receipt as eventName, accepting it
@@ -1199,6 +1282,9 @@ func (c *ContractCaller) BeginPrefetchRound() {
 
 	c.prefetchedReceipts = make(map[common.Hash]*ethTypes.Receipt)
 	c.finalizedHeaderCache = nil
+	c.prefetchRoundActive = true
+	c.prefetchRoundGen++
+	c.latestHeaderCache = nil
 }
 
 // EndPrefetchRound clears the round of prefetch lifecycle for ExtendVote.
@@ -1208,4 +1294,7 @@ func (c *ContractCaller) EndPrefetchRound() {
 
 	c.prefetchedReceipts = make(map[common.Hash]*ethTypes.Receipt)
 	c.finalizedHeaderCache = nil
+	c.prefetchRoundActive = false
+	c.prefetchRoundGen++
+	c.latestHeaderCache = nil
 }

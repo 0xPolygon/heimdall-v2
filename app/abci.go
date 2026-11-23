@@ -356,10 +356,30 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		nonRpVoteExt := dummyVoteExt
 
+		// Build the milestone proposition before any side-tx work. Side-tx L1 calls can take
+		// the whole budget, so the proposition (which only reads Bor and committed state) goes
+		// first and side txs get the time left.
+		// Only the proposition moves here: the VE is still assembled after the side-tx loop,
+		// because a checkpoint YES changes nonRpVoteExt and its final bytes are bound into
+		// NonRpExtensionHash. ctx is the clean (pre-loop) deadline context.
 		txs := req.Txs[1:]
+		milestoneProp := app.buildMilestoneProposition(ctx, req.Height, budgetActive, app.hasSideTxs(txs), deadline, startTime, logger)
+		if budgetActive {
+			// Budget already used when side-tx work starts (mostly Bor RPC for the proposition).
+			metrics.RecordExtendVoteElapsed("post_milestone", startTime)
+		}
 
-		// Prefetch L1 receipts in a single batch RPC call to warm the cache.
-		app.prefetchReceipts(ctx, txs, logger)
+		// Prefetch L1 receipts in a single batch RPC call to warm the cache. Under the budget the
+		// prefetch ends at startTime+prefetchReceiptsTimeout, as when it ran first: side handlers
+		// always keep the time after that, even when the proposition used its whole share. Skip it
+		// when that point has passed.
+		if !budgetActive {
+			app.prefetchReceipts(ctx, txs, logger)
+		} else if prefetchEnd := startTime.Add(prefetchReceiptsTimeout); time.Now().Before(prefetchEnd) {
+			pCtx, pCancel := context.WithDeadline(ctx.Context(), prefetchEnd)
+			app.prefetchReceipts(ctx.WithContext(pCtx), txs, logger)
+			pCancel()
+		}
 
 		// decode txs and execute side txs
 		for _, rawTx := range txs {
@@ -428,56 +448,10 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			NonRpExtensionHash:   nonRpExtensionHash(req.Height, nonRpVoteExt),
 			BlockHash:            voteExtensionBlockHash(req.Height, req.Hash),
 			SideTxResponses:      sideTxRes,
-			MilestoneProposition: nil,
+			MilestoneProposition: milestoneProp,
 		}
 		if !helper.IsPurley(req.Height) {
 			vt.Height = req.Height
-		}
-
-		getBlockAuthor := func(ctx sdk.Context, blockNumber uint64) ([]common.Address, error) {
-			return app.BorKeeper.GetProducersByBlockNumber(ctx, blockNumber)
-		}
-
-		// Gate fork-specific proposition fields at the authenticated height, as VerifyVoteExtension does.
-		milestoneCtx := ctx.WithBlockHeight(req.Height)
-		var milestoneProp *milestoneTypes.MilestoneProposition
-		if budgetActive {
-			metrics.RecordExtendVoteElapsed("pre_milestone", startTime)
-		}
-		if budgetActive && !time.Now().Before(deadline) {
-			metrics.RecordExtendVoteBudgetExhausted("pre_milestone")
-			logger.Warn("extend vote budget exhausted before milestone proposition, skipping",
-				"elapsed", time.Since(startTime))
-		} else {
-			genStart := time.Now()
-			milestoneProp, err = milestoneAbci.GenMilestoneProposition(milestoneCtx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
-			metrics.RecordMilestoneGenerationDuration(genStart)
-		}
-		if err != nil {
-			if errors.Is(err, milestoneAbci.ErrNoNewHeadersFound) {
-				metrics.RecordMilestoneNoNewHeaders()
-				logger.Debug("No new headers found for generating milestone proposition, continuing without it")
-			} else {
-				logger.Warn("Error occurred while generating milestone proposition", "error", err)
-			}
-			// We still want to participate in the consensus even if we fail to generate the milestone proposition
-		} else if milestoneProp != nil {
-			if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &app.MilestoneKeeper, milestoneProp); err != nil {
-				logger.Warn("Invalid milestone proposition generated",
-					"startBlock", milestoneProp.StartBlockNumber,
-					"endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)-1),
-					"blockHashes", strutil.HashesToString(milestoneProp.BlockHashes),
-					"error", err,
-				)
-				// We don't want to halt consensus because of an invalid milestone proposition
-			} else {
-				vt.MilestoneProposition = milestoneProp
-				logger.Info("Generated a new milestone proposition",
-					"startBlock", milestoneProp.StartBlockNumber,
-					"endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)-1),
-					"blockHashes", strutil.HashesToString(milestoneProp.BlockHashes),
-				)
-			}
 		}
 
 		bz, err = vt.Marshal()
@@ -495,6 +469,91 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: nonRpVoteExt}, nil
 	}
+}
+
+// hasSideTxs reports whether any tx carries a message with a side handler, i.e. a message that
+// gets a vote in this ExtendVote. Other txs (for example bank sends) do not need reserved time.
+func (app *HeimdallApp) hasSideTxs(txs [][]byte) bool {
+	for _, rawTx := range txs {
+		tx, err := app.TxDecode(rawTx)
+		if err != nil {
+			continue
+		}
+		for _, msg := range tx.GetMsgs() {
+			if app.sideTxCfg.GetSideHandler(msg) != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// buildMilestoneProposition generates and locally validates this validator's milestone
+// proposition for the vote at height. It returns nil when there is nothing to propose,
+// generation fails, the proposition is invalid, or the ExtendVote budget is already spent.
+// It never fails the vote: a validator still takes part in consensus without a proposition.
+//
+// When side txs wait for votes, the proposition may use only half of the ExtendVote budget, so a
+// slow Bor cannot leave them with no vote. Mainnet generation takes a few milliseconds. With no
+// side txs it keeps the whole budget.
+func (app *HeimdallApp) buildMilestoneProposition(ctx sdk.Context, height int64, budgetActive, hasSideTxs bool, deadline, startTime time.Time, logger log.Logger) *milestoneTypes.MilestoneProposition {
+	if budgetActive {
+		metrics.RecordExtendVoteElapsed("pre_milestone", startTime)
+		if !time.Now().Before(deadline) {
+			metrics.RecordExtendVoteBudgetExhausted("pre_milestone")
+			logger.Warn("extend vote budget exhausted before milestone proposition, skipping",
+				"elapsed", time.Since(startTime))
+			return nil
+		}
+	}
+
+	getBlockAuthor := func(ctx sdk.Context, blockNumber uint64) ([]common.Address, error) {
+		return app.BorKeeper.GetProducersByBlockNumber(ctx, blockNumber)
+	}
+
+	// Gate fork-specific proposition fields at the authenticated height, as VerifyVoteExtension does.
+	milestoneCtx := ctx.WithBlockHeight(height)
+	if budgetActive && hasSideTxs {
+		// The proposition runs before the side-tx loop: keep the rest of the budget for side txs.
+		mCtx, mCancel := context.WithDeadline(milestoneCtx.Context(), startTime.Add(extendVoteBudget/2))
+		defer mCancel()
+		milestoneCtx = milestoneCtx.WithContext(mCtx)
+	}
+
+	genStart := time.Now()
+	milestoneProp, err := milestoneAbci.GenMilestoneProposition(milestoneCtx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
+	metrics.RecordMilestoneGenerationDuration(genStart)
+	if err != nil {
+		if errors.Is(err, milestoneAbci.ErrNoNewHeadersFound) {
+			metrics.RecordMilestoneNoNewHeaders()
+			logger.Debug("No new headers found for generating milestone proposition, continuing without it")
+		} else {
+			logger.Warn("Error occurred while generating milestone proposition", "error", err)
+		}
+		return nil
+	}
+	if milestoneProp == nil {
+		return nil
+	}
+
+	if err := milestoneAbci.ValidateMilestoneProposition(milestoneCtx, &app.MilestoneKeeper, milestoneProp); err != nil {
+		logger.Warn("Invalid milestone proposition generated",
+			"startBlock", milestoneProp.StartBlockNumber,
+			"endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)-1),
+			"blockHashes", strutil.HashesToString(milestoneProp.BlockHashes),
+			"error", err,
+		)
+		// We don't want to halt consensus because of an invalid milestone proposition
+		return nil
+	}
+
+	logger.Info("Generated a new milestone proposition",
+		"startBlock", milestoneProp.StartBlockNumber,
+		"endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)-1),
+		"blockHashes", strutil.HashesToString(milestoneProp.BlockHashes),
+	)
+
+	return milestoneProp
 }
 
 // VerifyVoteExtensionHandler performs some sanity checks on the VE received from other validators
