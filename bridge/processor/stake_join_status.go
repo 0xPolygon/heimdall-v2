@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/contracts/stakemanager"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 )
 
@@ -47,15 +48,16 @@ func (sp *StakingProcessor) hasExitedOnMainChain(validatorID *big.Int) (bool, er
 		return false, fmt.Errorf("failed to fetch chainmanager params: %w", err)
 	}
 
-	stakingInfo, err := stakinginfo.NewStakinginfoCaller(common.HexToAddress(params.ChainParams.StakingInfoAddress), sp.contractCaller.MainChainClient)
+	stakeManager, err := stakemanager.NewStakemanagerCaller(common.HexToAddress(params.ChainParams.StakingManagerAddress), sp.contractCaller.MainChainClient)
 	if err != nil {
-		return false, fmt.Errorf("failed to bind staking info: %w", err)
+		return false, fmt.Errorf("failed to bind stake manager: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), sp.contractCaller.MainChainTimeout)
 	defer cancel()
 
-	details, err := stakingInfo.GetStakerDetails(&bind.CallOpts{Context: ctx}, validatorID)
+	// StakingInfo.getStakerDetails reverts for every validator on the deployed contracts, so read the stake manager.
+	details, err := stakeManager.Validators(&bind.CallOpts{Context: ctx}, validatorID)
 	if err != nil {
 		return false, fmt.Errorf("failed to fetch staker details: %w", err)
 	}

@@ -14,13 +14,13 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/require"
 
-	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
+	"github.com/0xPolygon/heimdall-v2/contracts/stakemanager"
 )
 
 func TestGetValidatorInfo(t *testing.T) {
 	t.Parallel()
 
-	stakingABI, err := stakinginfo.StakinginfoMetaData.GetAbi()
+	stakeManagerABI, err := stakemanager.StakemanagerMetaData.GetAbi()
 	require.NoError(t, err)
 
 	oneToken := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
@@ -47,8 +47,9 @@ func TestGetValidatorInfo(t *testing.T) {
 
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				var req struct {
-					ID     json.RawMessage `json:"id"`
-					Method string          `json:"method"`
+					ID     json.RawMessage   `json:"id"`
+					Method string            `json:"method"`
+					Params []json.RawMessage `json:"params"`
 				}
 				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
@@ -56,11 +57,15 @@ func TestGetValidatorInfo(t *testing.T) {
 				}
 
 				resp := map[string]any{"jsonrpc": "2.0", "id": req.ID}
-				if tc.rpcErr || req.Method != "eth_call" {
+				switch {
+				case tc.rpcErr || req.Method != "eth_call":
 					resp["error"] = map[string]any{"code": -32000, "message": "unavailable"}
-				} else {
-					out, err := stakingABI.Methods["getStakerDetails"].Outputs.Pack(
-						tc.amount, big.NewInt(0), big.NewInt(3), big.NewInt(tc.deactivationEpoch), signer, big.NewInt(1),
+				case !callsValidators(req.Params, stakeManagerABI.Methods["validators"].ID):
+					// StakingInfo.getStakerDetails reverts on the deployed contracts, so only validators() answers.
+					resp["error"] = map[string]any{"code": 3, "message": "execution reverted", "data": "0x"}
+				default:
+					out, err := stakeManagerABI.Methods["validators"].Outputs.Pack(
+						tc.amount, big.NewInt(0), big.NewInt(3), big.NewInt(tc.deactivationEpoch), big.NewInt(0), signer, common.Address{}, uint8(1),
 					)
 					if err != nil {
 						http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -76,7 +81,7 @@ func TestGetValidatorInfo(t *testing.T) {
 			require.NoError(t, err)
 			defer client.Close()
 
-			instance, err := stakinginfo.NewStakinginfo(common.HexToAddress("0xa1"), client)
+			instance, err := stakemanager.NewStakemanager(common.HexToAddress("0xa1"), client)
 			require.NoError(t, err)
 
 			ctx, cancel := context.WithCancel(context.Background())
@@ -100,4 +105,18 @@ func TestGetValidatorInfo(t *testing.T) {
 			require.Equal(t, signer.String(), validator.Signer)
 		})
 	}
+}
+
+// callsValidators reports whether an eth_call carries the given method selector.
+func callsValidators(params []json.RawMessage, selector []byte) bool {
+	if len(params) == 0 {
+		return false
+	}
+	var call struct {
+		Data hexutil.Bytes `json:"input"`
+	}
+	if err := json.Unmarshal(params[0], &call); err != nil || len(call.Data) < 4 {
+		return false
+	}
+	return string(call.Data[:4]) == string(selector)
 }

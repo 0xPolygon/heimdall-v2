@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -27,20 +28,22 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/contracts/stakemanager"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-const testStakingInfoAddress = "0x00000000000000000000000000000000000000a1"
+const testStakeManagerAddress = "0x00000000000000000000000000000000000000a1"
 
-// mainChainStub answers eth_call for getStakerDetails with the given
-// deactivation epoch, or with an RPC error when rpcErr is set.
+// mainChainStub answers eth_call for the stake manager's validators() with the given
+// deactivation epoch, or with an RPC error when rpcErr is set. Like the deployed
+// contracts, it reverts on StakingInfo.getStakerDetails.
 func mainChainStub(t *testing.T, deactivationEpoch int64, rpcErr bool) *httptest.Server {
 	t.Helper()
 
-	stakingABI, err := stakinginfo.StakinginfoMetaData.GetAbi()
+	stakeManagerABI, err := stakemanager.StakemanagerMetaData.GetAbi()
 	require.NoError(t, err)
 
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -61,12 +64,14 @@ func mainChainStub(t *testing.T, deactivationEpoch int64, rpcErr bool) *httptest
 				Data hexutil.Bytes  `json:"input"`
 			}
 			require.NoError(t, json.Unmarshal(req.Params[0], &call))
-			require.Equal(t, common.HexToAddress(testStakingInfoAddress), call.To)
-			require.Equal(t, stakingABI.Methods["getStakerDetails"].ID, []byte(call.Data[:4]))
+			if call.To != common.HexToAddress(testStakeManagerAddress) || !bytes.Equal(stakeManagerABI.Methods["validators"].ID, call.Data[:4]) {
+				resp["error"] = map[string]any{"code": 3, "message": "execution reverted", "data": "0x"}
+				break
+			}
 
-			out, err := stakingABI.Methods["getStakerDetails"].Outputs.Pack(
+			out, err := stakeManagerABI.Methods["validators"].Outputs.Pack(
 				big.NewInt(0), big.NewInt(0), big.NewInt(1), big.NewInt(deactivationEpoch),
-				common.Address{}, big.NewInt(3),
+				big.NewInt(0), common.Address{}, common.Address{}, uint8(3),
 			)
 			require.NoError(t, err)
 			resp["result"] = hexutil.Encode(out)
@@ -94,7 +99,7 @@ func TestSendValidatorJoin_SignerAccountMissing(t *testing.T) {
 			return
 		case strings.HasPrefix(r.URL.Path, util.ChainManagerParamsURL):
 			params := chainmanagertypes.DefaultParams()
-			params.ChainParams.StakingInfoAddress = testStakingInfoAddress
+			params.ChainParams.StakingManagerAddress = testStakeManagerAddress
 			resp = &chainmanagertypes.QueryParamsResponse{Params: params}
 		default:
 			t.Errorf("unexpected heimdall path: %s", r.URL.Path)
