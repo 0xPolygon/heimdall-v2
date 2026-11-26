@@ -185,6 +185,9 @@ type APIStatusError struct {
 }
 
 func (e *APIStatusError) Error() string {
+	if e.Body == "" {
+		return fmt.Sprintf("error while fetching data from url: %s, status: %d", e.URL, e.Status)
+	}
 	return fmt.Sprintf("error while fetching data from url: %s, status: %d, body: %s", e.URL, e.Status, e.Body)
 }
 
@@ -220,7 +223,9 @@ func readAPIResponse(resp *http.Response, URL string) ([]byte, error) {
 
 	Logger.Info("Error while fetching data from URL", "status", resp.StatusCode, "url", URL)
 
-	return nil, fmt.Errorf("error while fetching data from url: %s, status: %d", URL, resp.StatusCode)
+	body, _ := io.ReadAll(io.LimitReader(limitedBody, apiErrorBodyLimit))
+
+	return nil, &APIStatusError{URL: URL, Status: resp.StatusCode, Body: string(body)}
 }
 
 // get sends the request with ctx when the client supports it; test doubles

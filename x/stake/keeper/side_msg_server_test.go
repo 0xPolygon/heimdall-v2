@@ -1,13 +1,16 @@
 package keeper_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"math/big"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -20,6 +23,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/0xPolygon/heimdall-v2/contracts/stakemanager"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -95,7 +99,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 
 		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
-		contractCaller.On("GetStakingInfoInstance", chainParams.ChainParams.StakingInfoAddress).Return(&stakinginfo.Stakinginfo{}, nil)
+		contractCaller.On("GetStakeManagerInstance", chainParams.ChainParams.StakingManagerAddress).Return(&stakemanager.Stakemanager{}, nil)
 		contractCaller.On("GetValidatorInfo", mock.Anything, validatorId, mock.Anything).Return(types.Validator{ValId: validatorId}, nil)
 
 		result := sideHandler(ctx, msgValJoin)
@@ -439,7 +443,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	}{
 		{name: "Exit started on main chain", validator: types.Validator{ValId: validatorId, EndEpoch: 5}},
 		{name: "Stake claimed on main chain", validatorErr: errors.New("amount must be more than 1 token")},
-		{name: "Staking info instance unavailable", instanceErr: errors.New("dial failed")},
+		{name: "Stake manager instance unavailable", instanceErr: errors.New("dial failed")},
 		{name: "Main chain client panics", panics: true},
 	}
 
@@ -476,14 +480,16 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 
 			contractCaller.On("GetConfirmedTxReceipt", mock.Anything, common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 			contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
-			contractCaller.On("GetStakingInfoInstance", chainParams.ChainParams.StakingInfoAddress).Return(&stakinginfo.Stakinginfo{}, tc.instanceErr)
+			contractCaller.On("GetStakeManagerInstance", chainParams.ChainParams.StakingManagerAddress).Return(&stakemanager.Stakemanager{}, tc.instanceErr)
 			call := contractCaller.On("GetValidatorInfo", mock.Anything, validatorId, mock.Anything).Return(tc.validator, tc.validatorErr)
 			if tc.panics {
 				call.Run(func(mock.Arguments) { panic("malformed response") })
 			}
 
-			result := sideHandler(ctx, msgValJoin)
+			var logs bytes.Buffer
+			result := sideHandler(ctx.WithLogger(log.NewLogger(&logs)), msgValJoin)
 			req.Equal(sidetxs.Vote_VOTE_NO, result)
+			req.Equal(tc.instanceErr != nil, strings.Contains(logs.String(), "Error getting the stake manager instance"))
 		})
 	}
 
@@ -495,16 +501,20 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 		mutate func(msg *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked)
 	}{
 		{
-			name:   "Signer pubkey length",
-			mutate: func(msg *types.MsgValidatorJoin, _ *stakinginfo.StakinginfoStaked) { msg.SignerPubKey = msg.SignerPubKey[:33] },
+			name: "Signer pubkey length",
+			mutate: func(msg *types.MsgValidatorJoin, _ *stakinginfo.StakinginfoStaked) {
+				msg.SignerPubKey = msg.SignerPubKey[:33]
+			},
 		},
 		{
 			name:   "Signer address",
 			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) { event.Signer = common.Address{} },
 		},
 		{
-			name:   "Signer pubkey first byte",
-			mutate: func(msg *types.MsgValidatorJoin, _ *stakinginfo.StakinginfoStaked) { msg.SignerPubKey = badPrefixPubKey },
+			name: "Signer pubkey first byte",
+			mutate: func(msg *types.MsgValidatorJoin, _ *stakinginfo.StakinginfoStaked) {
+				msg.SignerPubKey = badPrefixPubKey
+			},
 		},
 		{
 			name: "Signer pubkey",
@@ -513,12 +523,16 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			},
 		},
 		{
-			name:   "Validator id",
-			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) { event.ValidatorId = big.NewInt(2) },
+			name: "Validator id",
+			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) {
+				event.ValidatorId = big.NewInt(2)
+			},
 		},
 		{
-			name:   "Activation epoch",
-			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) { event.ActivationEpoch = big.NewInt(2) },
+			name: "Activation epoch",
+			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) {
+				event.ActivationEpoch = big.NewInt(2)
+			},
 		},
 		{
 			name: "Amount",
@@ -566,7 +580,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 
 			contractCaller.On("GetConfirmedTxReceipt", mock.Anything, common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 			contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
-			contractCaller.On("GetStakingInfoInstance", chainParams.ChainParams.StakingInfoAddress).Return(&stakinginfo.Stakinginfo{}, nil)
+			contractCaller.On("GetStakeManagerInstance", chainParams.ChainParams.StakingManagerAddress).Return(&stakemanager.Stakemanager{}, nil)
 			contractCaller.On("GetValidatorInfo", mock.Anything, validatorId, mock.Anything).Return(types.Validator{ValId: validatorId}, nil)
 
 			result := sideHandler(ctx, msgValJoin)
