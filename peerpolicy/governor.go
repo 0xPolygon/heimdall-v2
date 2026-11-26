@@ -247,8 +247,11 @@ func (g *Governor) admitPeer(p *peerState, pool *pool, req servebudget.Request, 
 		g.events.WithLabelValues("peer_memory_capacity").Inc()
 		return nil, 0, false, false
 	}
-	// Leave room for at least three peers in each pool.
-	if p.pending(req.Family) >= min(maxPeerInflight, inflightCap/peersPerPool) || (obj != nil && obj.pending > 0) {
+	// Leave room for at least three peers in each pool. Comet admits every
+	// catch-up vote of a height under one request, so a pending catch-up
+	// object is the previous vote still flushing, not a duplicate send.
+	busyObject := obj != nil && obj.pending > 0 && req.Family != servebudget.Catchup
+	if p.pending(req.Family) >= min(maxPeerInflight, inflightCap/peersPerPool) || busyObject {
 		g.events.WithLabelValues("peer_busy").Inc()
 		return nil, 0, false, false
 	}
