@@ -30,7 +30,7 @@ All Ethereum/Bor contract interactions flow through `helper.IContractCaller`. Th
 - Every method must validate its return values -- nil checks on all pointer returns, length checks on byte slices
 - `GetConfirmedTxReceipt()` must enforce finality (finalized block, not latest) -- this is the root of all L1 trust
 - `GetHeaderInfo()`, `GetLastChildBlock()` read from RootChain -- verify the contract instance was created with the address from ChainManager params, not a hardcoded address
-- `GetValidatorInfo()` reads from StakingInfo -- cross-check returned data against expected ranges (non-zero amount, valid epoch)
+- `GetValidatorInfo()` reads `StakeManager.validators(id)` (StakingInfo.getStakerDetails reverts on the deployed contracts) -- cross-check returned data against expected ranges (non-zero amount, valid epoch)
 - `GetRootHash()` and `GetVoteOnHash()` call Bor RPC -- validate response length (root hash = 32 bytes) and non-nil
 - `CurrentAccountStateRoot()` reads merkle root -- used for checkpoint validation, single-bit difference means invalid checkpoint
 - ABI instances are loaded at init time from compiled bindings in `contracts/` -- integrity depends on the bindings matching deployed contracts

@@ -84,3 +84,29 @@ func TestFetchFromAPIWithContextBadURL(t *testing.T) {
 	_, err := FetchFromAPIWithContext(context.Background(), "http://\x7f")
 	require.Error(t, err)
 }
+
+func TestFetchFromAPIStatusError(t *testing.T) {
+	// Not parallel: swaps the global client.
+	prev := Client
+	t.Cleanup(func() { Client = prev })
+	Client = &http.Client{Timeout: time.Minute}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"message":"not found"}`))
+	}))
+	defer srv.Close()
+
+	_, err := FetchFromAPI(srv.URL)
+	var statusErr *APIStatusError
+	require.ErrorAs(t, err, &statusErr)
+	require.Equal(t, http.StatusNotFound, statusErr.Status)
+	require.JSONEq(t, `{"message":"not found"}`, statusErr.Body)
+	require.Equal(t, "error while fetching data from url: "+srv.URL+", status: 404, body: "+`{"message":"not found"}`, err.Error())
+
+	empty := &APIStatusError{URL: "http://heimdall/x", Status: http.StatusNotFound}
+	require.Equal(t, "error while fetching data from url: http://heimdall/x, status: 404", empty.Error())
+
+	withBody := &APIStatusError{URL: "http://heimdall/x", Status: http.StatusBadGateway, Body: "upstream down"}
+	require.Equal(t, "error while fetching data from url: http://heimdall/x, status: 502, body: upstream down", withBody.Error())
+}

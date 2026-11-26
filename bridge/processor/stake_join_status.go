@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rpc"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakemanager"
@@ -27,7 +28,7 @@ func (sp *StakingProcessor) signerAccountReady(ctx context.Context, eventName st
 
 	exited, err := sp.hasExitedOnMainChain(event.ValidatorId)
 	if err != nil {
-		sp.Logger.Error("StakingProcessor: failed to check the validator status on L1", "validatorID", event.ValidatorId, "error", err)
+		sp.Logger.Error(errMsgCheckExitOnL1, "validatorID", event.ValidatorId, "error", err)
 	}
 	if exited {
 		sp.Logger.Info(infoMsgDroppingExitedJoin, "validatorID", event.ValidatorId, "signer", event.Signer, "txHash", txHash)
@@ -57,7 +58,8 @@ func (sp *StakingProcessor) hasExitedOnMainChain(validatorID *big.Int) (bool, er
 	defer cancel()
 
 	// StakingInfo.getStakerDetails reverts for every validator on the deployed contracts, so read the stake manager.
-	details, err := stakeManager.Validators(&bind.CallOpts{Context: ctx}, validatorID)
+	// The finalized block keeps a reorged-out unstake from ending a task.
+	details, err := stakeManager.Validators(&bind.CallOpts{Context: ctx, BlockNumber: big.NewInt(int64(rpc.FinalizedBlockNumber))}, validatorID)
 	if err != nil {
 		return false, fmt.Errorf("failed to fetch staker details: %w", err)
 	}

@@ -1,13 +1,16 @@
 package keeper_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"math/big"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
+	"cosmossdk.io/log"
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -483,8 +486,10 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 				call.Run(func(mock.Arguments) { panic("malformed response") })
 			}
 
-			result := sideHandler(ctx, msgValJoin)
+			var logs bytes.Buffer
+			result := sideHandler(ctx.WithLogger(log.NewLogger(&logs)), msgValJoin)
 			req.Equal(sidetxs.Vote_VOTE_NO, result)
+			req.Equal(tc.instanceErr != nil, strings.Contains(logs.String(), "Error getting the stake manager instance"))
 		})
 	}
 
@@ -496,16 +501,20 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 		mutate func(msg *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked)
 	}{
 		{
-			name:   "Signer pubkey length",
-			mutate: func(msg *types.MsgValidatorJoin, _ *stakinginfo.StakinginfoStaked) { msg.SignerPubKey = msg.SignerPubKey[:33] },
+			name: "Signer pubkey length",
+			mutate: func(msg *types.MsgValidatorJoin, _ *stakinginfo.StakinginfoStaked) {
+				msg.SignerPubKey = msg.SignerPubKey[:33]
+			},
 		},
 		{
 			name:   "Signer address",
 			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) { event.Signer = common.Address{} },
 		},
 		{
-			name:   "Signer pubkey first byte",
-			mutate: func(msg *types.MsgValidatorJoin, _ *stakinginfo.StakinginfoStaked) { msg.SignerPubKey = badPrefixPubKey },
+			name: "Signer pubkey first byte",
+			mutate: func(msg *types.MsgValidatorJoin, _ *stakinginfo.StakinginfoStaked) {
+				msg.SignerPubKey = badPrefixPubKey
+			},
 		},
 		{
 			name: "Signer pubkey",
@@ -514,12 +523,16 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			},
 		},
 		{
-			name:   "Validator id",
-			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) { event.ValidatorId = big.NewInt(2) },
+			name: "Validator id",
+			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) {
+				event.ValidatorId = big.NewInt(2)
+			},
 		},
 		{
-			name:   "Activation epoch",
-			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) { event.ActivationEpoch = big.NewInt(2) },
+			name: "Activation epoch",
+			mutate: func(_ *types.MsgValidatorJoin, event *stakinginfo.StakinginfoStaked) {
+				event.ActivationEpoch = big.NewInt(2)
+			},
 		},
 		{
 			name: "Amount",

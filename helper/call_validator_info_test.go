@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"math/big"
@@ -60,7 +61,7 @@ func TestGetValidatorInfo(t *testing.T) {
 				switch {
 				case tc.rpcErr || req.Method != "eth_call":
 					resp["error"] = map[string]any{"code": -32000, "message": "unavailable"}
-				case !callsValidators(req.Params, stakeManagerABI.Methods["validators"].ID):
+				case !hasSelector(req.Params, stakeManagerABI.Methods["validators"].ID):
 					// StakingInfo.getStakerDetails reverts on the deployed contracts, so only validators() answers.
 					resp["error"] = map[string]any{"code": 3, "message": "execution reverted", "data": "0x"}
 				default:
@@ -107,8 +108,7 @@ func TestGetValidatorInfo(t *testing.T) {
 	}
 }
 
-// callsValidators reports whether an eth_call carries the given method selector.
-func callsValidators(params []json.RawMessage, selector []byte) bool {
+func hasSelector(params []json.RawMessage, selector []byte) bool {
 	if len(params) == 0 {
 		return false
 	}
@@ -118,5 +118,5 @@ func callsValidators(params []json.RawMessage, selector []byte) bool {
 	if err := json.Unmarshal(params[0], &call); err != nil || len(call.Data) < 4 {
 		return false
 	}
-	return string(call.Data[:4]) == string(selector)
+	return bytes.Equal(call.Data[:4], selector)
 }

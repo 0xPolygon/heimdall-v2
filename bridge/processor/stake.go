@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"net/http"
 
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"google.golang.org/grpc/codes"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
@@ -29,12 +32,14 @@ const (
 	errMsgInvalidSignerPubkey = "StakingProcessor: invalid signer pubkey"
 	errMsgFetchValidatorNonce = "StakingProcessor: failed to fetch validator nonce and height data from API"
 	errMsgNonceNotInOrder     = "StakingProcessor: nonce for the given event not in order"
+	errMsgCheckExitOnL1       = "StakingProcessor: failed to check the validator status on L1"
 
 	// Info messages
 	infoMsgIgnoringAlreadyProcessed = "StakingProcessor: ignoring task to send %s to heimdall as already processed"
 	infoMsgIgnoringNonceOutOfOrder  = "StakingProcessor: ignoring task to send %s to heimdall as nonce is out of order"
 	infoMsgAccountDoesNotExist      = "StakingProcessor: heimdall account doesn't exist. Retrying validator-join after 10 seconds"
 	infoMsgNonceAlreadyUsed         = "StakingProcessor: heimdall already applied the event's nonce, ending task"
+	infoMsgDroppingExitedValidator  = "StakingProcessor: dropping task as heimdall has no record of the validator and it has started exiting on L1"
 
 	// Other messages
 	msgNonceOutOfOrder     = "StakingProcessor: nonce out of order"
@@ -408,10 +413,35 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(ctx context.Context, even
 	}
 }
 
+// isValidatorNotFound reports whether err is heimdall's "not found" answer for a validator, as opposed
+// to any other 404 such as a wrong REST route or a proxy in front of the node.
+func isValidatorNotFound(err error) bool {
+	var apiErr *helper.APIStatusError
+	if !errors.As(err, &apiErr) || apiErr.Status != http.StatusNotFound {
+		return false
+	}
+	var body struct {
+		Code int `json:"code"`
+	}
+	return json.Unmarshal([]byte(apiErr.Body), &body) == nil && body.Code == int(codes.NotFound)
+}
+
 // checkValidNonce reports whether txNonce is the validator's next nonce, otherwise how many nonces
 // heimdall still has to apply first (capped at 10). A gap of 0 means heimdall already used txNonce.
+// A validator heimdall has no record of is not retried once it has started exiting on L1: the side
+// handler votes against events for unknown validators, so the task could never succeed.
 func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txNonce uint64) (bool, uint64, error) {
 	currentNonce, err := util.GetValidatorNonce(validatorId, sp.cliCtx.Codec)
+	if isValidatorNotFound(err) {
+		exited, exitErr := sp.hasExitedOnMainChain(new(big.Int).SetUint64(validatorId))
+		if exitErr != nil {
+			sp.Logger.Error(errMsgCheckExitOnL1, "validatorID", validatorId, "error", exitErr)
+		}
+		if exited {
+			sp.Logger.Info(infoMsgDroppingExitedValidator, "validatorID", validatorId, "txNonce", txNonce)
+			return false, 0, nil
+		}
+	}
 	if err != nil {
 		sp.Logger.Error(errMsgFetchValidatorNonce, "validatorId", validatorId)
 		return false, 0, err

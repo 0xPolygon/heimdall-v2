@@ -64,6 +64,7 @@ func mainChainStub(t *testing.T, deactivationEpoch int64, rpcErr bool) *httptest
 				Data hexutil.Bytes  `json:"input"`
 			}
 			require.NoError(t, json.Unmarshal(req.Params[0], &call))
+			require.JSONEq(t, `"finalized"`, string(req.Params[1]), "the exit state is read at the finalized block")
 			if call.To != common.HexToAddress(testStakeManagerAddress) || !bytes.Equal(stakeManagerABI.Methods["validators"].ID, call.Data[:4]) {
 				resp["error"] = map[string]any{"code": 3, "message": "execution reverted", "data": "0x"}
 				break
@@ -148,11 +149,13 @@ func TestSendValidatorJoin_SignerAccountMissing(t *testing.T) {
 			defer mainClient.Close()
 
 			sp := NewStakingProcessor(stakingABI)
-			sp.Logger = log.NewNopLogger()
+			var logs bytes.Buffer
+			sp.Logger = log.NewLogger(&logs)
 			sp.cliCtx = client.Context{}.WithCodec(cdc).WithInterfaceRegistry(registry)
 			sp.contractCaller = &helper.ContractCaller{MainChainClient: mainClient, MainChainTimeout: 5 * time.Second}
 
 			err = sp.sendValidatorJoinToHeimdall(context.Background(), "Staked", stakeEventLog(t, stakingABI, "Staked", 202, 1))
+			require.Equal(t, tc.rpcErr || tc.paramsUnavailable, strings.Contains(logs.String(), errMsgCheckExitOnL1))
 
 			if !tc.retry {
 				require.NoError(t, err)
