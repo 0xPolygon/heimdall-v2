@@ -116,8 +116,10 @@ var (
 	// ExtendVoteBudgetExhaustedTotal counts ExtendVote handler turns where the
 	// Zurich budget was exhausted before completion. Labels: phase = "side_tx_loop"
 	// (truncated mid-side-tx iteration) or "pre_milestone" (skipped milestone
-	// proposition entirely). This can be used to tune extendVoteBudget
-	// against real Bor RPC tail latency.
+	// proposition entirely; the proposition is built first, so this only fires
+	// when the budget is gone before any work). Read it together with the
+	// "post_milestone" elapsed phase, which shows how much of the budget Bor
+	// RPC used for the proposition, to tune extendVoteBudget.
 	ExtendVoteBudgetExhaustedTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: Namespace,
