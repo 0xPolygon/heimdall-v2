@@ -1,21 +1,29 @@
 package queue
 
 import (
+	"context"
+	"errors"
+	"strconv"
 	"sync"
+	"time"
 
 	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1"
+	nullbackend "github.com/RichardKnop/machinery/v1/backends/null"
 	"github.com/RichardKnop/machinery/v1/config"
+	eagerlock "github.com/RichardKnop/machinery/v1/locks/eager"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	amqp "github.com/rabbitmq/amqp091-go"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 )
 
 // Connector is used to connect to the queue
 type Connector struct {
 	logger log.Logger
 	Server *machinery.Server
+	broker *broker
 
 	mu     sync.Mutex
 	worker *machinery.Worker
@@ -25,67 +33,80 @@ const (
 	// QName is machinery task queue
 	QName = "machinery_tasks"
 
-	// legacyRoutingKey is the routing key older bridges stamped on every task.
-	legacyRoutingKey = "machinery_task"
+	// queuedAtHeader holds the unix milliseconds a task was first queued at.
+	// machinery republishes the same signature on retry, so it persists.
+	queuedAtHeader = "bridgeQueuedAt"
+
+	// workerConcurrency is how many tasks run at once, and the consumer's prefetch.
+	workerConcurrency = 10
 )
 
-// NewQueueConnector creates a new queue connector
-func NewQueueConnector(dialer string) *Connector {
-	// amqp dialer
-	c, err := amqp.Dial(dialer)
-	defer func(c *amqp.Connection) {
-		err := c.Close()
-		if err != nil {
-			panic(err)
-		}
-	}(c)
+// NewTaskHeaders returns the headers for a task first queued at queuedAt.
+func NewTaskHeaders(queuedAt time.Time) tasks.Headers {
+	return tasks.Headers{queuedAtHeader: strconv.FormatInt(queuedAt.UnixMilli(), 10)}
+}
+
+// taskQueuedAt reads the time NewTaskHeaders recorded in headers.
+func taskQueuedAt(headers tasks.Headers) (time.Time, bool) {
+	raw, _ := headers[queuedAtHeader].(string)
+	ms, err := strconv.ParseInt(raw, 10, 64)
 	if err != nil {
-		panic(err)
+		return time.Time{}, false
 	}
 
-	server, err := machinery.NewServer(newConfig(dialer))
-	if err != nil {
-		panic(err)
+	return time.UnixMilli(ms), true
+}
+
+// observeTaskDelivery records a delivery of a registered task, retries
+// included, and how long ago the task was first queued.
+func observeTaskDelivery(signature *tasks.Signature) {
+	metrics.BridgeTaskDeliveries.WithLabelValues(signature.Name).Inc()
+
+	if queuedAt, ok := taskQueuedAt(signature.Headers); ok {
+		metrics.BridgeTaskAge.WithLabelValues(signature.Name).Observe(time.Since(queuedAt).Seconds())
+	}
+}
+
+// NewQueueConnector connects to RabbitMQ and declares the task queue.
+func NewQueueConnector(dialer string) (*Connector, error) {
+	return newConnector(newConfig(dialer))
+}
+
+func newConnector(cnf *config.Config) (*Connector, error) {
+	if _, err := amqp.ParseURI(cnf.Broker); err != nil {
+		// the parse error can embed the url, credentials included
+		return nil, errors.New("unsupported amqp url")
 	}
 
 	qlogger := helper.Logger.With("module", "bridge/queue")
 	redirectMachineryLog(qlogger)
 
-	connector := Connector{
-		logger: qlogger,
-		Server: server,
+	broker := newBroker(cnf, qlogger)
+	ctx, cancel := context.WithTimeout(context.Background(), publishTimeout)
+	defer cancel()
+
+	if err := broker.connect(ctx); err != nil {
+		return nil, err
 	}
 
-	return &connector
+	// The bridge never reads task results, so they go to the null backend.
+	server := machinery.NewServerWithBrokerBackendLock(cnf, broker, nullbackend.New(), eagerlock.New())
+
+	return &Connector{logger: qlogger, Server: server, broker: broker}, nil
 }
 
-// newConfig binds the worker queue with its own name as binding key: on a direct
-// exchange machinery publishes to a queue named after the routing key, so any
-// other key makes publishers declare and fill a queue nobody consumes.
 func newConfig(dialer string) *config.Config {
 	return &config.Config{
-		Broker:        dialer,
-		DefaultQueue:  QName,
-		ResultBackend: dialer,
-		AMQP: &config.AMQPConfig{
-			Exchange:     "machinery_exchange",
-			ExchangeType: "direct",
-			BindingKey:   QName,
-		},
-	}
-}
-
-// normalizeRoutingKey moves tasks queued by older bridges onto QName, so their
-// retries don't redeclare the unconsumed legacy queue.
-func normalizeRoutingKey(s *tasks.Signature) {
-	if s.RoutingKey == legacyRoutingKey {
-		s.RoutingKey = QName
+		Broker:       dialer,
+		DefaultQueue: QName,
+		// heimdalld owns SIGTERM; machinery's handler would quit the worker a second time after StopWorker
+		NoUnixSignals: true,
 	}
 }
 
 func newWorker(server *machinery.Server) *machinery.Worker {
-	worker := server.NewWorker("invoke-processor", 10)
-	worker.SetPreTaskHandler(normalizeRoutingKey)
+	worker := server.NewWorker("invoke-processor", workerConcurrency)
+	worker.SetPreTaskHandler(observeTaskDelivery)
 
 	return worker
 }
@@ -116,12 +137,15 @@ func (qc *Connector) StopWorker() {
 	qc.worker = nil
 	qc.mu.Unlock()
 
-	if worker == nil {
-		return
+	if worker != nil {
+		qc.logger.Info("Stopping machinery worker")
+		worker.Quit()
 	}
 
-	qc.logger.Info("Stopping machinery worker")
-	worker.Quit()
+	// also when no worker was started: the connector opens a connection
+	if qc.broker != nil {
+		qc.broker.StopConsuming()
+	}
 }
 
 func (qc *Connector) watchWorker(worker *machinery.Worker, errors <-chan error) {

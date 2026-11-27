@@ -5,15 +5,18 @@ import (
 	"math/big"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"cosmossdk.io/log"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/metrics"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
@@ -67,6 +70,50 @@ func TestFromBlockAfterLastPersisted(t *testing.T) {
 		got, ok := rl.fromBlockAfterLastPersisted(big.NewInt(50))
 		require.True(t, ok)
 		require.Equal(t, big.NewInt(50), got)
+
+		stored, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+		require.NoError(t, err)
+		require.Equal(t, "49", string(stored), "the cursor starts just before headerNumber")
+	})
+
+	t.Run("a failed first range is retried from the same block after the head moves", func(t *testing.T) {
+		rl := &RootChainListener{}
+		rl.BaseListener.Logger = log.NewNopLogger()
+		rl.storageClient = newMemLevelDB(t)
+
+		first, ok := rl.fromBlockAfterLastPersisted(big.NewInt(50))
+		require.True(t, ok)
+		require.Equal(t, big.NewInt(50), first)
+
+		// The range starting at 50 failed, so nothing else was persisted.
+		next, ok := rl.fromBlockAfterLastPersisted(big.NewInt(60))
+		require.True(t, ok)
+		require.Equal(t, big.NewInt(50), next)
+	})
+
+	t.Run("a headerNumber of zero starts at zero without persisting", func(t *testing.T) {
+		rl := &RootChainListener{}
+		rl.BaseListener.Logger = log.NewNopLogger()
+		rl.storageClient = newMemLevelDB(t)
+
+		got, ok := rl.fromBlockAfterLastPersisted(big.NewInt(0))
+		require.True(t, ok)
+		require.Equal(t, big.NewInt(0), got)
+
+		has, err := rl.storageClient.Has([]byte(lastRootBlockKey), nil)
+		require.NoError(t, err)
+		require.False(t, has)
+	})
+
+	t.Run("a cursor that can't be written stops the poll", func(t *testing.T) {
+		rl := &RootChainListener{}
+		rl.BaseListener.Logger = log.NewNopLogger()
+		db := newMemLevelDB(t)
+		require.NoError(t, db.Close())
+		rl.storageClient = db
+
+		_, ok := rl.fromBlockAfterLastPersisted(big.NewInt(50))
+		require.False(t, ok)
 	})
 
 	t.Run("a last block below headerNumber returns last+1", func(t *testing.T) {
@@ -100,7 +147,7 @@ func TestFromBlockAfterLastPersisted(t *testing.T) {
 		require.False(t, ok)
 	})
 
-	t.Run("an unparseable last block falls back to headerNumber", func(t *testing.T) {
+	t.Run("an unparseable last block restarts the cursor at headerNumber", func(t *testing.T) {
 		rl := &RootChainListener{}
 		rl.BaseListener.Logger = log.NewNopLogger()
 		rl.storageClient = newMemLevelDB(t)
@@ -109,6 +156,10 @@ func TestFromBlockAfterLastPersisted(t *testing.T) {
 		got, ok := rl.fromBlockAfterLastPersisted(big.NewInt(50))
 		require.True(t, ok)
 		require.Equal(t, big.NewInt(50), got)
+
+		stored, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
+		require.NoError(t, err)
+		require.Equal(t, "49", string(stored))
 	})
 }
 
@@ -188,8 +239,7 @@ func emptyLogsListener(t *testing.T) (*RootChainListener, *RootChainListenerCont
 	rpcURL := mockEthGetLogs(t, string(emptyLogs), &requestCount)
 	client, err := ethclient.Dial(rpcURL)
 	require.NoError(t, err)
-	rl.contractCaller.MainChainClient = client
-	rl.contractCaller.MainChainTimeout = 5_000_000_000 // 5s, as time.Duration nanoseconds
+	rl.contractCaller = &helper.ContractCaller{MainChainClient: client, MainChainTimeout: 5 * time.Second}
 
 	rootChainContext := &RootChainListenerContext{
 		ChainmanagerParams: &chainmanagerTypes.Params{
@@ -272,6 +322,8 @@ func TestProcessRootChainBlockRangeInChunks_TransientAbortPreservesFailureCount(
 	rl, rootChainContext := twoBlockListener(t, func(fromBlock, toBlock uint64) []*types.Log {
 		return []*types.Log{badLog}
 	})
+	queryFailures := metrics.BridgeListenerRangeRetries.WithLabelValues(rootChainListenerStr, "query_failed")
+	queryFailuresBefore := testutil.ToFloat64(queryFailures)
 
 	rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)))
 	require.Equal(t, uint64(1), rl.logFailureCounts[logKey], "cycle 1: a fresh validation failure counts once")
@@ -284,6 +336,7 @@ func TestProcessRootChainBlockRangeInChunks_TransientAbortPreservesFailureCount(
 
 	rl.processRootChainBlockRangeInChunks(rootChainContext, big.NewInt(int64(block)), big.NewInt(int64(block)))
 	require.Equal(t, uint64(2), rl.logFailureCounts[logKey], "cycle 3: progress resumes across the transient blip instead of restarting from zero")
+	require.InDelta(t, 3, testutil.ToFloat64(queryFailures)-queryFailuresBefore, 0, "every cycle left the range for the next poll")
 }
 
 func TestPersistLastRootBlock(t *testing.T) {
@@ -297,6 +350,7 @@ func TestPersistLastRootBlock(t *testing.T) {
 		got, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
 		require.NoError(t, err)
 		require.Equal(t, "12345", string(got))
+		require.InDelta(t, 12345, testutil.ToFloat64(metrics.BridgeListenerProcessedBlock.WithLabelValues(rootChainListenerStr)), 0)
 	})
 
 	t.Run("returns an error when the storage client can't be written to", func(t *testing.T) {

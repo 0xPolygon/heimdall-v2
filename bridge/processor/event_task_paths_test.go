@@ -19,7 +19,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
-	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -240,19 +239,13 @@ func checkpointAckLog(t *testing.T, rootChainABI *abi.ABI) string {
 // A log that does not decode fails the task outright instead of retrying.
 func TestEventTasksRejectInvalidABI(t *testing.T) {
 	f := newEventTaskFixture(t)
-	state, err := prepareDummyLogBytes()
-	require.NoError(t, err)
 	runs := map[string]func(context.Context, string, string) error{
 		"Staked": f.sp.sendValidatorJoinToHeimdall, "StakeUpdate": f.sp.sendStakeUpdateToHeimdall,
 		"SignerChange": f.sp.sendSignerChangeToHeimdall, "UnstakeInit": f.sp.sendUnstakeInitToHeimdall,
-		"StateSynced": f.cp.sendStateSyncedToHeimdall,
 	}
 	for event, run := range runs {
 		t.Run(event, func(t *testing.T) {
-			payload := state.String()
-			if event != "StateSynced" {
-				payload = stakeEventLog(t, f.sp.stakingInfoAbi, event, 10, 5)
-			}
+			payload := stakeEventLog(t, f.sp.stakingInfoAbi, event, 10, 5)
 			var eventLog ethtypes.Log
 			require.NoError(t, json.Unmarshal([]byte(payload), &eventLog))
 			eventLog.Topics = eventLog.Topics[:1]
@@ -267,25 +260,12 @@ func TestEventTasksRejectInvalidABI(t *testing.T) {
 	}
 }
 
-// An unreachable mempool retries the task rather than broadcasting or completing it.
-func TestClerkMempoolOutageDoesNotCompleteTask(t *testing.T) {
-	f := newEventTaskFixture(t)
-	rpc, err := rpchttp.New(f.url, "/websocket")
-	require.NoError(t, err)
-	f.cp.httpClient = rpc
-	payload, err := prepareDummyLogBytes()
-	require.NoError(t, err)
-	var later tasks.ErrRetryTaskLater
-	require.ErrorAs(t, f.cp.sendStateSyncedToHeimdall(context.Background(), "StateSynced", payload.String()), &later)
-	require.Zero(t, f.broadcast.calls)
-}
-
 // Messages without an L1 event identity never match a mempool entry.
 func TestMempoolIgnoresUnsupportedMessages(t *testing.T) {
 	cdc := eventTestCodec()
 	msg := &banktypes.MsgSend{}
 	bp := mempoolProcessor(t, cdc, encodeEventTx(t, cdc, msg))
-	found, err := bp.checkTxAgainstMempool(context.Background(), msg, nil)
+	found, err := bp.checkTxAgainstMempool(context.Background(), msg, nil, false)
 	require.NoError(t, err)
 	require.False(t, found)
 }

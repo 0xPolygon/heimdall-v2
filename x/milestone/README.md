@@ -86,10 +86,7 @@ message Milestone {
 
 ### Tx Commands
 
-#### Send Milestone Transaction 
-```bash
-heimdalld tx milestone milestone [proposer] [startBlock] [endBlock] [hash] [borChainId] [milestoneId]
-```
+There is no CLI command for submitting milestones: they are proposed and finalized through validator vote extensions (see [Flow](#flow)). The module's only message, `MsgUpdateParams`, is restricted to the governance authority.
 
 ### CLI Query Commands
 
@@ -99,9 +96,6 @@ One can run the following query commands from the milestone module:
 * `get-count` - Get milestone count
 * `get-latest-milestone` - Get latest milestone
 * `get-milestone-by-number` - Get the milestone by number
-* `get-milestone-proposer` - Get the milestone proposer
-* `get-latest-no-ack-milestone` - Get the latest no ack milestone
-* `get-no-ack-milestone-by-id` - Get the no ack milestone by id
 
 ```bash
 heimdalld query milestone get-params
@@ -117,18 +111,6 @@ heimdalld query milestone get-latest-milestone
 
 ```bash
 heimdalld query milestone get-milestone-by-number
-```
-
-```bash
-heimdalld query milestone get-milestone-proposer
-```
-
-```bash
-heimdalld query milestone get-latest-no-ack-milestone
-```
-
-```bash
-heimdalld query milestone get-no-ack-milestone-by-id
 ```
 
 ### GRPC Endpoints

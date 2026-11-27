@@ -40,7 +40,7 @@ func TestInitHeimdallConfigWithSetsIthacaHeightPerChain(t *testing.T) {
 		{name: "mumbai", chain: MumbaiChain, wantRioHeight: 48473856},
 		{name: "amoy", chain: AmoyChain, wantRioHeight: 26272256, wantInitHeight: 8788501, wantIthacaHeight: 40776000, wantLuganoHeight: 47105000, wantKarwarHeight: 50020000, wantPurleyHeight: 52108000, wantPhuket: 32276400, wantZurich: 37750000, wantFeeGate: 35914000},
 		// Local devnets run every fork from genesis.
-		{name: "default", chain: "local", wantRioHeight: 128, wantIthacaHeight: 1, wantLuganoHeight: 1, wantKarwarHeight: 1, wantPurleyHeight: 1, wantPhuket: 1, wantZurich: 1, wantFeeGate: 1},
+		{name: "default", chain: "local", wantRioHeight: 0, wantIthacaHeight: 1, wantLuganoHeight: 1, wantKarwarHeight: 1, wantPurleyHeight: 1, wantPhuket: 1, wantZurich: 1, wantFeeGate: 1},
 	}
 
 	for _, tc := range cases {

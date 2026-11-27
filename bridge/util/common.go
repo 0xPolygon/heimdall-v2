@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 
 	"cosmossdk.io/log"
@@ -52,6 +53,9 @@ const (
 	TopupTxStatusURL        = "/topup/is-old-tx"
 	ClerkTxStatusURL        = "/clerk/is-old-tx"
 	ClerkEventRecordURL     = "/clerk/event-records/%d"
+	ClerkLatestRecordIDURL  = "/clerk/event-records/latest-id"
+	ClerkRecordCountURL     = "/clerk/event-records/count"
+	ClerkRecordListURL      = "/clerk/event-records/list?page=%d&limit=%d"
 
 	CometBFTUnconfirmedTxsURL      = "/unconfirmed_txs"
 	CometBFTUnconfirmedTxsCountURL = "/num_unconfirmed_txs"
@@ -146,38 +150,29 @@ func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	return false, nil
 }
 
-// CalculateTaskDelay calculates delay required for the current validator to propose the tx
-// It solves for multiple validators sending the same transaction.
-func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration) {
-	logger := Logger()
-
-	defer LogElapsedTimeForStateSyncedEvent(event, "CalculateTaskDelay", time.Now())
-
-	// calculate validator position
-	valPosition := 0
-	isCurrentValidator := false
-
+// CalculateTaskDelay reports whether this node is in the current validator set
+// and, if so, how long it should wait before submitting a bridge transaction,
+// so validators don't all broadcast the same one at once.
+func CalculateTaskDelay(cdc codec.Codec) (bool, time.Duration, error) {
 	validatorSet, err := GetValidatorSet(cdc)
 	if err != nil {
-		logger.Error("Error getting current validatorSet data ", "error", err)
-		return false, 0
+		return false, 0, err
 	}
 
-	logger.Info("Fetched current validator set list", "currentValidatorCount", len(validatorSet.Validators))
-
+	valPosition := 0
 	ac := addressCodec.NewHexCodec()
 	for i, validator := range validatorSet.Validators {
 		signerBytes, err := ac.StringToBytes(validator.Signer)
 		if err != nil {
-			logger.Error(errorAddressConversion, "error", err)
-			return false, 0
+			return false, 0, fmt.Errorf("%s: %w", errorAddressConversion, err)
 		}
 		if bytes.Equal(signerBytes, helper.GetAddress()) {
 			valPosition = i + 1
-			isCurrentValidator = true
-
 			break
 		}
+	}
+	if valPosition == 0 {
+		return false, 0, nil
 	}
 
 	// Multiply the delay for every 1000 unconfirmed txs in the mempool.
@@ -186,12 +181,9 @@ func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration
 	// For 1000-2000 It will be 24 seconds.
 	// For 2000-3000 it will be 36 seconds.
 	// Basically, for every 1000 txs it will increase the factor by 1.
-	mempoolFactor := GetUnconfirmedTxnCount(event) / mempoolTxnCountDivisor
+	mempoolFactor := GetUnconfirmedTxnCount() / mempoolTxnCountDivisor
 
-	// calculate delay
-	taskDelay := time.Duration(valPosition) * TaskDelayBetweenEachVal * time.Duration(mempoolFactor+1)
-
-	return isCurrentValidator, taskDelay
+	return true, time.Duration(valPosition) * TaskDelayBetweenEachVal * time.Duration(mempoolFactor+1), nil
 }
 
 // IsCurrentProposer checks if we are the current proposer
@@ -284,13 +276,39 @@ func IsCatchingUp(ctx context.Context, cliCtx client.Context) bool {
 	return resp.SyncInfo.CatchingUp
 }
 
+var accountClientCache struct {
+	mu  sync.Mutex
+	url string
+	rpc client.CometRPC
+}
+
+// accountClient returns the client account queries use, rebuilt whenever the
+// configured CometBFT RPC URL changes.
+func accountClient() (client.CometRPC, error) {
+	url := helper.GetConfig().CometBFTRPCUrl
+
+	accountClientCache.mu.Lock()
+	defer accountClientCache.mu.Unlock()
+
+	if accountClientCache.rpc != nil && accountClientCache.url == url {
+		return accountClientCache.rpc, nil
+	}
+
+	rpc, err := client.NewClientFromNode(url)
+	if err != nil {
+		return nil, err
+	}
+	accountClientCache.url, accountClientCache.rpc = url, rpc
+
+	return rpc, nil
+}
+
 // GetAccount returns heimdall auth account
 func GetAccount(ctx context.Context, cliCtx client.Context, address string) (sdk.AccountI, error) {
 	var account sdk.AccountI
-	cmt := helper.GetConfig().CometBFTRPCUrl
-	rpc, err := client.NewClientFromNode(cmt)
+	rpc, err := accountClient()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	cliCtx = cliCtx.WithClient(rpc)
 
@@ -497,52 +515,45 @@ func GetClerkEventRecord(stateId int64, cdc codec.Codec) (*clerktypes.EventRecor
 	return &eventRecordResponse.Record, nil
 }
 
-func GetUnconfirmedTxnCount(event interface{}) int {
-	logger := Logger()
+// GetUnconfirmedTxnCount returns the local mempool size, or 0 when it can't be read.
+func GetUnconfirmedTxnCount() int {
+	count, err := UnconfirmedTxnCount()
+	if err != nil {
+		Logger().Error("Error fetching mempool txs count", "error", err)
+		return 0
+	}
+	return count
+}
 
-	defer LogElapsedTimeForStateSyncedEvent(event, "GetUnconfirmedTxnCount", time.Now())
-
+// UnconfirmedTxnCount returns the local mempool size from CometBFT's num_unconfirmed_txs.
+func UnconfirmedTxnCount() (int, error) {
 	endpoint := helper.GetConfig().CometBFTRPCUrl + CometBFTUnconfirmedTxsCountURL
 
 	resp, err := helper.Client.Get(endpoint)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		logger.Error("Error fetching mempool txs count", "url", endpoint, "error", err)
-		return 0
-	}
-
-	// Limit the number of bytes read from the response body
-	limitedBody := http.MaxBytesReader(nil, resp.Body, helper.APIBodyLimit)
-	defer func(limitedBody io.ReadCloser) {
-		err := limitedBody.Close()
-		if err != nil {
-			logger.Error("Error closing limited response body:", err)
-		}
-	}(limitedBody)
-
-	body, err := io.ReadAll(limitedBody)
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			logger.Error("Error closing response body:", err)
-		}
-	}()
-
 	if err != nil {
-		logger.Error("Error fetching mempool txs count", "error", err)
-		return 0
+		return 0, fmt.Errorf("fetching %s: %w", endpoint, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("fetching %s: status %d", endpoint, resp.StatusCode)
 	}
 
-	// a minimal response of the unconfirmed txs
+	body, err := io.ReadAll(http.MaxBytesReader(nil, resp.Body, helper.APIBodyLimit))
+	if err != nil {
+		return 0, fmt.Errorf("reading %s: %w", endpoint, err)
+	}
+
 	var response CometBFTUnconfirmedTxs
-
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		logger.Error("Error unmarshalling response received from Heimdall Server", "error", err)
-		return 0
+	if err = json.Unmarshal(body, &response); err != nil {
+		return 0, fmt.Errorf("decoding %s: %w", endpoint, err)
 	}
 
-	count, _ := strconv.Atoi(response.Result.Total)
-
-	return count
+	count, err := strconv.Atoi(response.Result.Total)
+	if err != nil {
+		return 0, fmt.Errorf("decoding %s total %q: %w", endpoint, response.Result.Total, err)
+	}
+	return count, nil
 }
 
 // LogElapsedTimeForStateSyncedEvent logs useful info for StateSynced events

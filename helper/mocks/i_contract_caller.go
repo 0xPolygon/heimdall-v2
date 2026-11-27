@@ -1218,9 +1218,9 @@ func (_m *IContractCaller) GetTokenInstance(tokenAddress string) (*erc20.Erc20, 
 	return r0, r1
 }
 
-// GetValidatorInfo provides a mock function with given fields: valID, stakingInfoInstance
-func (_m *IContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (staketypes.Validator, error) {
-	ret := _m.Called(valID, stakingInfoInstance)
+// GetValidatorInfo provides a mock function with given fields: ctx, valID, stakeManagerInstance
+func (_m *IContractCaller) GetValidatorInfo(ctx context.Context, valID uint64, stakeManagerInstance *stakemanager.Stakemanager) (staketypes.Validator, error) {
+	ret := _m.Called(ctx, valID, stakeManagerInstance)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetValidatorInfo")
@@ -1228,17 +1228,17 @@ func (_m *IContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *s
 
 	var r0 staketypes.Validator
 	var r1 error
-	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) (staketypes.Validator, error)); ok {
-		return rf(valID, stakingInfoInstance)
+	if rf, ok := ret.Get(0).(func(context.Context, uint64, *stakemanager.Stakemanager) (staketypes.Validator, error)); ok {
+		return rf(ctx, valID, stakeManagerInstance)
 	}
-	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) staketypes.Validator); ok {
-		r0 = rf(valID, stakingInfoInstance)
+	if rf, ok := ret.Get(0).(func(context.Context, uint64, *stakemanager.Stakemanager) staketypes.Validator); ok {
+		r0 = rf(ctx, valID, stakeManagerInstance)
 	} else {
 		r0 = ret.Get(0).(staketypes.Validator)
 	}
 
-	if rf, ok := ret.Get(1).(func(uint64, *stakinginfo.Stakinginfo) error); ok {
-		r1 = rf(valID, stakingInfoInstance)
+	if rf, ok := ret.Get(1).(func(context.Context, uint64, *stakemanager.Stakemanager) error); ok {
+		r1 = rf(ctx, valID, stakeManagerInstance)
 	} else {
 		r1 = ret.Error(1)
 	}

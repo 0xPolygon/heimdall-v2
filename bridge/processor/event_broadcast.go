@@ -34,7 +34,7 @@ func (bp *BaseProcessor) submitEvent(ctx context.Context, msg sdk.Msg, event int
 	if !liveEvents.claim(ctx, now) || !liveEvents.broadcastDue(ctx, now) {
 		return nil
 	}
-	pending, err := bp.checkTxAgainstMempool(ctx, msg, event)
+	pending, err := bp.checkTxAgainstMempool(ctx, msg, event, false)
 	if err != nil || pending {
 		return err
 	}

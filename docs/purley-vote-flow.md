@@ -21,15 +21,17 @@ not described here.
 4. The bridge relays a validator's staking events one nonce at a time. A task
    whose nonce is ahead of heimdall's polls on the nonce gap; a task whose nonce
    heimdall already used ends, since the side handler can never apply it.
-5. Any other valid decoded bridge task completes only when the event's persistent
-   effect is observed. An OK CheckTx response, elapsed time, or an API outage
-   cannot complete the task. Both confirmation and transient-failure retries
-   bypass Machinery's finite ordinary retry budget.
+5. Any other valid decoded staking, topup or checkpoint-ACK task completes only
+   when the event's persistent effect is observed. An OK CheckTx response, elapsed
+   time, or an API outage cannot complete the task. Both confirmation and
+   transient-failure retries bypass Machinery's finite ordinary retry budget.
+   State-sync tasks also wait for the record to be stored, within the clerk
+   processor's bounds described under the accepted tradeoffs.
 
 ## Implementation boundaries
 
-Purley is disabled (`0`) on mainnet, Mumbai and Amoy, and starts at `1` on devnets.
-The height remains a coordinated rollout decision.
+Purley activates at Heimdall height `58,280,000` on mainnet and `52,108,000` on
+Amoy, and starts at `1` on devnets. It is disabled (`0`) on Mumbai.
 
 At vote height H, the Purley envelope adds the NR hash and enforces an RP ceiling
 of 6 KiB and an NR ceiling of 500 bytes. Comet authenticates signatures before
@@ -61,10 +63,15 @@ proposition is omitted from the local view; its side votes and the transported
 bytes remain unchanged. Derived bytes are never used as signature evidence.
 
 The first activation proposal (height H) still carries legacy votes from H-1
-and takes the legacy path: PrepareProposal filters them, and ProcessProposal runs
-the existing vote extension checks plus `ValidateNonRpVoteExtensions`, including
-its checkpoint-state and Bor-dependent validation, under the existing failure
-policy. Signed envelope transport starts at H+1, so pre-H votes never need the
+and keeps the legacy wire format, but not the full pre-fork validation policy:
+PrepareProposal filters them, and ProcessProposal runs the existing vote
+extension checks plus `ValidateNonRpVoteExtensions`, which at H verifies the NR
+signatures and then returns before its checkpoint-state and Bor-dependent
+validation. A checkpoint ACK can advance checkpoint state after those votes were
+signed, so that validation could reject honest votes at the activation block
+(`TestActivationProposalAcceptsLegacyCheckpointVotesAfterAck`). Before H the
+full validation applies under the existing failure policy. Signed envelope
+transport starts at H+1, so pre-H votes never need the
 new field. Pre-H binaries and upgraded binaries reject the new field on pre-H
 wire payloads, including explicit empty fields.
 
@@ -78,8 +85,12 @@ wire payloads, including explicit empty fields.
   can defer an effect; bridge confirmation retries provide recovery when honest
   proposals and external services resume. This is not a multi-block voting or
   absolute censorship-resistance protocol.
-- State-sync, topup and checkpoint-ACK polling backs off to at most 384 seconds;
-  staking polling is described below. Missing valid events remain queued
+- Topup and checkpoint-ACK polling backs off in 24-second steps to at most 384
+  seconds; staking polling is described below. State syncs go through the clerk
+  processor's own ordering and store checks: it checks 10 minutes after a record
+  enters the mempool, broadcasts again if heimdall has not stored it, and gives
+  up one hour after this bridge's first accepted broadcast. Missing valid
+  staking, topup and checkpoint-ACK events remain queued
   indefinitely, including during
   API/broadcast outages; retries past the self-heal depth are counted in
   `event_retries_past_self_heal_depth_total` for alerting.
@@ -87,7 +98,7 @@ wire payloads, including explicit empty fields.
   another task still owns ends on its first run. After an accepted broadcast the
   task keeps polling but resends the event only once per interval of the
   self-heal pass that used to resend it (by default 30 min for checkpoint ACKs,
-  3 h for state syncs, staking events and topups): without the tx indexer,
+  3 h for staking events and topups): without the tx indexer,
   which the shipped configs disable, a dropped tx can't be told apart from a
   committed one whose side tx failed. An event that never applies therefore
   costs what self-heal cost before, and a dropped tx is resent within that

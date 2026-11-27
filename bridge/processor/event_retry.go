@@ -34,7 +34,8 @@ func retryEvent(ctx context.Context, reason string, minimum time.Duration) error
 	if !liveEvents.claim(ctx, time.Now()) {
 		return nil
 	}
-	delay := max(minimum, trackEventRetry(ctx))
+	// The broker keeps one delay queue per distinct delay, so the backoff grows in whole steps.
+	delay := max(minimum, trackEventRetry(ctx).Truncate(util.RetryStateSyncTaskDelay))
 	return tasks.NewErrRetryTaskLater(reason, min(delay, 16*util.RetryStateSyncTaskDelay))
 }
 
@@ -69,4 +70,14 @@ func trackEventRetry(ctx context.Context) time.Duration {
 		metrics.EventRetriesPastSelfHealDepth.Inc()
 	}
 	return waited
+}
+
+// retryStart reads the unix time a task stamped under header on an earlier run.
+func retryStart(headers tasks.Headers, header string) (time.Time, bool) {
+	raw, _ := headers[header].(string)
+	unix, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return time.Unix(unix, 0), true
 }

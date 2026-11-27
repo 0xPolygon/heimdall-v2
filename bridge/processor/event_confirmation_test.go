@@ -54,8 +54,6 @@ func TestConfirmationTasksSurviveAPIOutage(t *testing.T) {
 	sp.Logger, cp.Logger = log.NewNopLogger(), log.NewNopLogger()
 	sp.cliCtx = client.Context{}.WithCodec(codec.NewProtoCodec(codectypes.NewInterfaceRegistry()))
 	cp.cliCtx = sp.cliCtx
-	stateLog, err := prepareDummyLogBytes()
-	require.NoError(t, err)
 	tests := []struct {
 		event   string
 		payload string
@@ -65,7 +63,6 @@ func TestConfirmationTasksSurviveAPIOutage(t *testing.T) {
 		{"UnstakeInit", stakeEventLog(t, stakingABI, "UnstakeInit", 10, 5), sp.sendUnstakeInitToHeimdall},
 		{"SignerChange", stakeEventLog(t, stakingABI, "SignerChange", 10, 5), sp.sendSignerChangeToHeimdall},
 		{"Staked", stakeEventLog(t, stakingABI, "Staked", 10, 5), sp.sendValidatorJoinToHeimdall},
-		{"StateSynced", stateLog.String(), cp.sendStateSyncedToHeimdall},
 	}
 	for _, tc := range tests {
 		t.Run(tc.event, func(t *testing.T) {

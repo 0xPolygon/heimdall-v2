@@ -2,7 +2,10 @@ package broadcaster
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"regexp"
+	"strconv"
 	"sync"
 	"time"
 
@@ -13,6 +16,7 @@ import (
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsign "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/ethereum/go-ethereum"
@@ -23,6 +27,11 @@ import (
 )
 
 const accountRetrieverPollingTimer = 10 * time.Second
+
+// ErrMempoolFull marks a heimdall broadcast that the node's mempool refused for lack of space.
+var ErrMempoolFull = errors.New("heimdall mempool is full")
+
+var expectedSequenceRe = regexp.MustCompile(`account sequence mismatch, expected (\d+), got \d+`)
 
 // TxBroadcaster is used to broadcast transaction to each chain
 type TxBroadcaster struct {
@@ -165,14 +174,14 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(ctx context.Context, msg sdk.Msg, e
 
 	// Now check if the transaction response is not okay
 	if txResponse.Code != abci.CodeTypeOK {
-		tb.logger.Error("Transaction response returned a non-ok code", "txResponseCode", txResponse.Code)
-
-		// Handle fetching account and updating seqNo
-		if handleAccountUpdateErr := updateAccountSequence(ctx, tb); handleAccountUpdateErr != nil {
-			return txResponse, handleAccountUpdateErr
+		if !inMempoolCache(txResponse) {
+			tb.logger.Error("Transaction response returned a non-ok code", "txResponseCode", txResponse.Code)
+			return txResponse, tb.handleNonOKResponse(ctx, txResponse)
 		}
-
-		return txResponse, fmt.Errorf("broadcast succeeded but received non-ok response code: %d", txResponse.Code)
+		// The node already holds this exact tx, signed with lastSeqNo: an
+		// earlier broadcast whose result was lost got in and took the sequence.
+		tb.logger.Info("Tx already in the mempool", "txHash", txResponse.TxHash)
+		txResponse.Code = abci.CodeTypeOK
 	}
 
 	txHash := txResponse.TxHash
@@ -183,6 +192,53 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(ctx context.Context, msg sdk.Msg, e
 	tb.lastSeqNo += 1
 
 	return txResponse, nil
+}
+
+// handleNonOKResponse resyncs lastSeqNo after a rejected broadcast and returns
+// the error to report. The committed account sequence lags behind our own txs
+// still pending in the mempool, so resetting to it on a rejection would make
+// each following broadcast fail with a sequence mismatch until the mempool
+// drains: only a sequence mismatch moves lastSeqNo.
+func (tb *TxBroadcaster) handleNonOKResponse(ctx context.Context, txResponse *sdk.TxResponse) error {
+	rejected := fmt.Errorf("broadcast succeeded but received non-ok response code: %d", txResponse.Code)
+
+	isRoot := txResponse.Codespace == sdkerrors.RootCodespace
+	switch {
+	case isRoot && txResponse.Code == sdkerrors.ErrMempoolIsFull.ABCICode():
+		// CometBFT refused the tx before CheckTx, so its sequence is still unused.
+		return fmt.Errorf("%w: %w", rejected, ErrMempoolFull)
+	case isRoot && txResponse.Code == sdkerrors.ErrWrongSequence.ABCICode():
+		if expected, ok := expectedSequence(txResponse.RawLog); ok {
+			tb.logger.Info("Resyncing account sequence from CheckTx", "oldSeq", tb.lastSeqNo, "newSeq", expected)
+			tb.lastSeqNo = expected
+			return rejected
+		}
+		// Without the expected value, the committed sequence is the best guess.
+		if err := updateAccountSequence(ctx, tb); err != nil {
+			return err
+		}
+	}
+	// Any other CheckTx rejection discarded the tx with its state changes, so
+	// the sequence it used is still the next one.
+	return rejected
+}
+
+func inMempoolCache(txResponse *sdk.TxResponse) bool {
+	return txResponse.Codespace == sdkerrors.RootCodespace && txResponse.Code == sdkerrors.ErrTxInMempoolCache.ABCICode()
+}
+
+// expectedSequence parses the sequence CheckTx expects out of the auth ante
+// handler's "account sequence mismatch, expected N, got M" log.
+func expectedSequence(rawLog string) (uint64, bool) {
+	match := expectedSequenceRe.FindStringSubmatch(rawLog)
+	if match == nil {
+		return 0, false
+	}
+	seq, err := strconv.ParseUint(match[1], 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return seq, true
 }
 
 // Helper function to update account sequence

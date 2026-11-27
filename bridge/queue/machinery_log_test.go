@@ -81,3 +81,15 @@ func TestRedirectMachineryLogRoutesEachLevel(t *testing.T) {
 	machinerylog.FATAL.Print("f")
 	require.Equal(t, "f", fatal, "FATAL must route to our logger's Error level")
 }
+
+func TestNewQueueConnectorReturnsDialError(t *testing.T) {
+	for url, want := range map[string]string{
+		"":                                "unsupported amqp url",
+		"http://guest:guest@127.0.0.1:1/": "unsupported amqp url",
+		"amqp://guest:guest@127.0.0.1:1/": "dial amqp",
+	} {
+		qc, err := NewQueueConnector(url)
+		require.ErrorContains(t, err, want, url)
+		require.Nil(t, qc)
+	}
+}

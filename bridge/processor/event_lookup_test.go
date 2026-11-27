@@ -27,9 +27,6 @@ func TestEventTasksBroadcastOnlyOnAuthoritativeLookup(t *testing.T) {
 		{name: "ack latest and count fail", event: "NewHeaderBlock", status: map[string]int{"/checkpoints/latest": internal, "/checkpoints/count": unavailable}},
 		{name: "ack latest fails with acks", event: "NewHeaderBlock", status: map[string]int{"/checkpoints/latest": internal}, ackCount: 3},
 		{name: "ack before first checkpoint", event: "NewHeaderBlock", status: map[string]int{"/checkpoints/latest": internal}, broadcast: true},
-		{name: "record and status fail", event: "StateSynced", status: map[string]int{"/clerk/": internal}},
-		{name: "record missing, not applied", event: "StateSynced", status: map[string]int{"/clerk/event-records/": internal}, broadcast: true},
-		{name: "record missing, applied", event: "StateSynced", status: map[string]int{"/clerk/event-records/": internal}, applied: true, done: true},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -54,10 +51,6 @@ func (f *eventTaskFixture) lookupTask(t *testing.T, event string) (func(context.
 	switch event {
 	case "NewHeaderBlock":
 		return f.chp.sendCheckpointAckToHeimdall, checkpointAckLog(t, f.chp.rootChainAbi)
-	case "StateSynced":
-		payload, err := prepareDummyLogBytes()
-		require.NoError(t, err)
-		return f.cp.sendStateSyncedToHeimdall, payload.String()
 	default:
 		return f.fp.sendTopUpFeeToHeimdall, stakeEventLog(t, f.fp.stakingInfoAbi, event, 10, 5)
 	}

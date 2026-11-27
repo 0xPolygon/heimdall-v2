@@ -1,14 +1,13 @@
 package processor
 
 import (
+	"bytes"
 	"context"
 	"time"
 
 	"cosmossdk.io/log"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types"
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/spf13/viper"
@@ -43,7 +42,6 @@ type heimdallBroadcaster interface {
 type BaseProcessor struct {
 	Logger log.Logger
 	name   string
-	quit   chan struct{}
 
 	// queue connector
 	queueConnector *queue.Connector
@@ -51,14 +49,11 @@ type BaseProcessor struct {
 	// tx broadcaster
 	txBroadcaster heimdallBroadcaster
 
-	// The "subclass" of BaseProcessor
-	impl Processor
-
 	// cli context
 	cliCtx client.Context
 
 	// contract caller
-	contractCaller helper.ContractCaller
+	contractCaller *helper.ContractCaller
 
 	// http client to subscribe to
 	httpClient *rpchttp.HTTP
@@ -73,37 +68,12 @@ func Logger(name string) log.Logger {
 }
 
 // NewBaseProcessor creates a new BaseProcessor.
-func NewBaseProcessor(cdc codec.Codec, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, txBroadcaster *broadcaster.TxBroadcaster, name string, impl Processor) *BaseProcessor {
-	logger := Logger(name)
-
-	cliCtx := client.Context{}.WithCodec(cdc)
-	cliCtx.BroadcastMode = flags.BroadcastSync
-	cmt := helper.GetConfig().CometBFTRPCUrl
-	rpc, err := client.NewClientFromNode(cmt)
-	if err != nil {
-		logger.Error("BaseProcessor: error while creating rpc client", "error", err)
-		panic(err)
-	}
-	cliCtx = cliCtx.WithClient(rpc)
-
-	contractCaller, err := helper.NewContractCaller()
-	if err != nil {
-		logger.Error("BaseProcessor: error while getting root chain instance", "error", err)
-		panic(err)
-	}
-
-	if logger == nil {
-		logger = helper.Logger.With("module", "bridge/processor")
-	}
-
-	// creating the syncer object
+func NewBaseProcessor(queueConnector *queue.Connector, httpClient *rpchttp.HTTP, txBroadcaster *broadcaster.TxBroadcaster, contractCaller *helper.ContractCaller, name string) *BaseProcessor {
 	return &BaseProcessor{
-		Logger: logger,
+		Logger: Logger(name),
 		name:   name,
-		quit:   make(chan struct{}),
-		impl:   impl,
 
-		cliCtx:         cliCtx,
+		cliCtx:         txBroadcaster.CliCtx,
 		queueConnector: queueConnector,
 		contractCaller: contractCaller,
 		txBroadcaster:  txBroadcaster,
@@ -187,9 +157,11 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 	return false, nil
 }
 
-// checkTxAgainstMempool checks if the transaction is already in the mempool or not.
-// It is shared by clerk and staking confirmation retries.
-func (bp *BaseProcessor) checkTxAgainstMempool(ctx context.Context, msg types.Msg, event interface{}) (bool, error) {
+// checkTxAgainstMempool reports whether the mempool holds the same L1 event as
+// msg, from any validator; with ownOnly, only a tx this bridge signed counts.
+// A clerk record matches on its event fields, any other event message on every
+// field but the relayer address.
+func (bp *BaseProcessor) checkTxAgainstMempool(ctx context.Context, msg types.Msg, event interface{}, ownOnly bool) (bool, error) {
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "checkTxAgainstMempool", time.Now())
 
 	if _, ok := eventPayload(msg); !ok || bp.httpClient == nil {
@@ -201,19 +173,28 @@ func (bp *BaseProcessor) checkTxAgainstMempool(ctx context.Context, msg types.Ms
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	limit := 100 // CometBFT caps at maxPerPage=100; higher values are silently clamped
+	limit := unconfirmedTxsScanLimit
 	result, err := bp.httpClient.UnconfirmedTxs(ctx, &limit)
 	if err != nil {
 		bp.Logger.Error("BaseProcessor: error fetching unconfirmed txs", "error", err)
 		return false, err
 	}
 
+	clerkMsg, isClerk := msg.(*clerkTypes.MsgEventRecord)
 	for _, txBytes := range result.Txs {
+		if isClerk {
+			mempoolClerkMsg := bp.decodeClerkMsg(txBytes)
+			if mempoolClerkMsg != nil && sameEventRecord(mempoolClerkMsg, clerkMsg) && (!ownOnly || mempoolClerkMsg.From == clerkMsg.From) {
+				bp.Logger.Debug("Duplicate clerk tx found in mempool", "txHash", clerkMsg.GetTxHash(), "logIndex", clerkMsg.GetLogIndex())
+				return true, nil
+			}
+			continue
+		}
+
 		decodedTx, err := authlegacytx.DefaultTxDecoder(bp.cliCtx.Codec)(txBytes)
 		if err != nil {
 			continue
 		}
-
 		for _, pending := range decodedTx.GetMsgs() {
 			if sameEventMsg(bp.cliCtx.Codec, pending, msg) {
 				return true, nil
@@ -222,4 +203,34 @@ func (bp *BaseProcessor) checkTxAgainstMempool(ctx context.Context, msg types.Ms
 	}
 
 	return false, nil
+}
+
+// decodeClerkMsg returns the clerk record a mempool tx carries, or nil.
+func (bp *BaseProcessor) decodeClerkMsg(txBytes []byte) *clerkTypes.MsgEventRecord {
+	decodedTx, err := authlegacytx.DefaultTxDecoder(bp.cliCtx.Codec)(txBytes)
+	if err != nil {
+		return nil
+	}
+	msgs := decodedTx.GetMsgs()
+	if len(msgs) == 0 {
+		return nil
+	}
+	clerkMsg, _ := msgs[0].(*clerkTypes.MsgEventRecord)
+	return clerkMsg
+}
+
+// unconfirmedTxsScanLimit is how many mempool txs checkTxAgainstMempool reads:
+// CometBFT's unconfirmed_txs caps a page at 100 and clamps higher values.
+const unconfirmedTxsScanLimit = 100
+
+// sameEventRecord reports whether a record in the mempool carries the same event
+// as ours: a mempool tx counts as a duplicate only if every event field matches.
+func sameEventRecord(a, b *clerkTypes.MsgEventRecord) bool {
+	return a.TxHash == b.TxHash &&
+		a.LogIndex == b.LogIndex &&
+		a.Id == b.Id &&
+		a.BlockNumber == b.BlockNumber &&
+		a.ChainId == b.ChainId &&
+		a.ContractAddress == b.ContractAddress &&
+		bytes.Equal(a.Data, b.Data)
 }

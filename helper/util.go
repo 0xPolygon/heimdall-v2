@@ -2,6 +2,7 @@ package helper
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -38,9 +39,6 @@ type HTTPClient interface {
 }
 
 var Client HTTPClient
-
-// ErrAPINotFound marks a 404 from the API, which some queries use to answer that an entry doesn't exist.
-var ErrAPINotFound = errors.New("not found")
 
 // GetFromAddress returns the from address from the context's name
 func GetFromAddress(cliCtx client.Context) string {
@@ -154,12 +152,55 @@ func FetchFromAPI(URL string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer closeResponseBody(resp)
+	return readAPIResponse(resp, URL)
+}
 
-	defer func() {
-		if err = resp.Body.Close(); err != nil {
-			Logger.Error("Error closing response body:", err)
-		}
-	}()
+// FetchFromAPIWithContext is FetchFromAPI bounded by ctx as well as by the
+// client's timeout.
+func FetchFromAPIWithContext(ctx context.Context, URL string) ([]byte, error) {
+	resp, err := get(ctx, URL)
+	if err != nil {
+		return nil, err
+	}
+	defer closeResponseBody(resp)
+	if resp.StatusCode != http.StatusOK {
+		// Keep the start of the body: callers tell apart answers such as
+		// "not found" from failures by it.
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, apiErrorBodyLimit))
+		Logger.Info("Error while fetching data from URL", "status", resp.StatusCode, "url", URL)
+		return nil, &APIStatusError{URL: URL, Status: resp.StatusCode, Body: string(body)}
+	}
+	return readAPIResponse(resp, URL)
+}
+
+// apiErrorBodyLimit caps how much of a non-200 body an APIStatusError keeps.
+const apiErrorBodyLimit = 4096
+
+// APIStatusError is a non-200 answer from FetchFromAPIWithContext.
+type APIStatusError struct {
+	URL    string
+	Status int
+	Body   string
+}
+
+func (e *APIStatusError) Error() string {
+	if e.Body == "" {
+		return fmt.Sprintf("error while fetching data from url: %s, status: %d", e.URL, e.Status)
+	}
+	return fmt.Sprintf("error while fetching data from url: %s, status: %d, body: %s", e.URL, e.Status, e.Body)
+}
+
+func closeResponseBody(resp *http.Response) {
+	if err := resp.Body.Close(); err != nil {
+		Logger.Error("Error closing response body:", err)
+	}
+}
+
+// readAPIResponse reads a 200 response body with a limited read size. The
+// caller closes resp.Body.
+func readAPIResponse(resp *http.Response, URL string) ([]byte, error) {
+	var err error
 
 	// Limit the number of bytes read from the response body
 	limitedBody := http.MaxBytesReader(nil, resp.Body, APIBodyLimit)
@@ -182,11 +223,25 @@ func FetchFromAPI(URL string) ([]byte, error) {
 
 	Logger.Info("Error while fetching data from URL", "status", resp.StatusCode, "url", URL)
 
-	if resp.StatusCode == http.StatusNotFound {
-		err = ErrAPINotFound
-	}
+	body, _ := io.ReadAll(io.LimitReader(limitedBody, apiErrorBodyLimit))
 
-	return nil, fmt.Errorf("error while fetching data from url: %s, status: %d, error: %w", URL, resp.StatusCode, err)
+	return nil, &APIStatusError{URL: URL, Status: resp.StatusCode, Body: string(body)}
+}
+
+// get sends the request with ctx when the client supports it; test doubles
+// that only implement HTTPClient ignore ctx.
+func get(ctx context.Context, URL string) (*http.Response, error) {
+	doer, ok := Client.(interface {
+		Do(*http.Request) (*http.Response, error)
+	})
+	if !ok {
+		return Client.Get(URL)
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, URL, nil)
+	if err != nil {
+		return nil, err
+	}
+	return doer.Do(req)
 }
 
 // IsPubKeyFirstByteValid checks the validity of the public key's first byte.

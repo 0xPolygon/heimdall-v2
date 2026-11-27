@@ -4,11 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
-	"sync/atomic"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -26,15 +23,10 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
 
-	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	chaintypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointtypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	topuptypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
-	"github.com/cometbft/cometbft/crypto/secp256k1"
-	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 )
 
 type broadcastResult struct {
@@ -104,11 +96,6 @@ func TestMempoolRetainsPendingEvent(t *testing.T) {
 		spoofed sdk.Msg
 	}{
 		{
-			&clerktypes.MsgEventRecord{From: "relayer-a", TxHash: "0x01", LogIndex: 7, Data: []byte{1}},
-			&clerktypes.MsgEventRecord{From: "relayer-b", TxHash: "0x01", LogIndex: 7, Data: []byte{1}},
-			&clerktypes.MsgEventRecord{From: "relayer-b", TxHash: "0x01", LogIndex: 7, Data: []byte{2}},
-		},
-		{
 			&staketypes.MsgValidatorJoin{From: "relayer-a", ValId: 1, Amount: math.NewInt(10), TxHash: []byte{1}, LogIndex: 7},
 			&staketypes.MsgValidatorJoin{From: "relayer-b", ValId: 1, Amount: math.NewInt(10), TxHash: []byte{1}, LogIndex: 7},
 			&staketypes.MsgValidatorJoin{From: "relayer-b", ValId: 1, Amount: math.NewInt(20), TxHash: []byte{1}, LogIndex: 7},
@@ -143,11 +130,11 @@ func TestMempoolRetainsPendingEvent(t *testing.T) {
 		t.Run(sdk.MsgTypeURL(tc.relayed), func(t *testing.T) {
 			pending := encodeEventTx(t, cdc, &banktypes.MsgSend{}, tc.pending)
 			bp := mempoolProcessor(t, cdc, []byte{0xff}, encodeEventTx(t, cdc, tc.spoofed), pending)
-			found, err := bp.checkTxAgainstMempool(context.Background(), tc.relayed, nil)
+			found, err := bp.checkTxAgainstMempool(context.Background(), tc.relayed, nil, false)
 			require.NoError(t, err)
 			require.True(t, found)
 			bp = mempoolProcessor(t, cdc, encodeEventTx(t, cdc, &banktypes.MsgSend{}, tc.spoofed))
-			found, err = bp.checkTxAgainstMempool(context.Background(), tc.relayed, nil)
+			found, err = bp.checkTxAgainstMempool(context.Background(), tc.relayed, nil, false)
 			require.NoError(t, err)
 			require.False(t, found)
 			var foreign sdk.Msg = &clerktypes.MsgEventRecord{TxHash: "0x01", LogIndex: 7, Data: []byte{1}}
@@ -155,7 +142,7 @@ func TestMempoolRetainsPendingEvent(t *testing.T) {
 				foreign = &staketypes.MsgStakeUpdate{ValId: 1, NewAmount: math.NewInt(10), TxHash: []byte{1}, LogIndex: 7}
 			}
 			bp = mempoolProcessor(t, cdc, encodeEventTx(t, cdc, foreign))
-			found, err = bp.checkTxAgainstMempool(context.Background(), tc.relayed, nil)
+			found, err = bp.checkTxAgainstMempool(context.Background(), tc.relayed, nil, false)
 			require.NoError(t, err)
 			require.False(t, found)
 		})
@@ -207,61 +194,4 @@ func TestStakingBroadcastDoesNotDuplicateMempoolEvent(t *testing.T) {
 	require.Error(t, err)
 	require.NotErrorAs(t, err, &later)
 	require.Zero(t, broadcaster.calls)
-}
-
-func TestClerkBroadcastRetriesUntilRecordExists(t *testing.T) {
-	useLiveEvents(t)
-	cdc := eventTestCodec()
-	params, err := cdc.MarshalJSON(&chaintypes.QueryParamsResponse{Params: chaintypes.DefaultParams()})
-	require.NoError(t, err)
-	var applied atomic.Bool
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		if strings.HasPrefix(r.URL.Path, "/chainmanager/") {
-			_, _ = w.Write(params)
-			return
-		}
-		if strings.HasPrefix(r.URL.Path, "/clerk/is-old-tx") {
-			_, _ = fmt.Fprintf(w, `{"is_old":%t}`, applied.Load())
-			return
-		}
-		if !applied.Load() {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		id := r.URL.Path[strings.LastIndex(r.URL.Path, "/")+1:]
-		_, _ = fmt.Fprintf(w, `{"record":{"id":%q}}`, id)
-	}))
-	t.Cleanup(server.Close)
-	oldClient := helper.Client
-	helper.Client = server.Client()
-	t.Cleanup(func() { helper.Client = oldClient })
-	previousKey := helper.GetPrivKey()
-	helper.SetTestPrivPubKey(secp256k1.GenPrivKey())
-	if len(previousKey) > 0 {
-		t.Cleanup(func() { helper.SetTestPrivPubKey(previousKey) })
-	}
-	cfg := helper.CustomAppConfig{Config: *serverconfig.DefaultConfig(), Custom: helper.GetDefaultHeimdallConfig()}
-	cfg.Config.API.Address = server.URL
-	helper.SetTestConfig(cfg)
-	stateABI, err := statesender.StatesenderMetaData.GetAbi()
-	require.NoError(t, err)
-	cp := NewClerkProcessor(stateABI)
-	cp.Logger = log.NewNopLogger()
-	cp.cliCtx = client.Context{}.WithCodec(cdc)
-	broadcaster := &broadcastResult{response: &sdk.TxResponse{}}
-	cp.txBroadcaster = broadcaster
-	payload, err := prepareDummyLogBytes()
-	require.NoError(t, err)
-	signature := &tasks.Signature{RetryCount: 0}
-	task, err := tasks.NewWithSignature(cp.sendStateSyncedToHeimdall, signature)
-	require.NoError(t, err)
-	var later tasks.ErrRetryTaskLater
-	for range 2 {
-		require.ErrorAs(t, cp.sendStateSyncedToHeimdall(task.Context, "StateSynced", payload.String()), &later)
-	}
-	require.Equal(t, 1, broadcaster.calls, "resent only after rebroadcastDelay")
-	applied.Store(true)
-	require.NoError(t, cp.sendStateSyncedToHeimdall(task.Context, "StateSynced", payload.String()))
-	require.Equal(t, 1, broadcaster.calls)
 }
